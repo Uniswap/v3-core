@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "solc": "^0.5.11"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^2.1.0",
+    "mocha": "^6.2.0",
+    "openzeppelin-solidity": "^2.3.0"
+  },
+  "scripts": {
+    "test": "waffle && mocha"
+  }
+}
