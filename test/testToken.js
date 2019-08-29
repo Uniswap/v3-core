@@ -1,6 +1,6 @@
 const chai = require('chai');
 const {createMockProvider, deployContract, getWallets, solidity} = require('ethereum-waffle');
-const BasicTokenMock = require('../build/Token');
+const TestTokenMock = require('../build/TestERC20');
 
 
 chai.use(solidity);
@@ -12,7 +12,7 @@ describe('INTEGRATION: Example', () => {
   let token;
 
   beforeEach(async () => {
-    token = await deployContract(wallet, BasicTokenMock, ['HayCoin', 'HAY', 18, 1000]);
+    token = await deployContract(wallet, TestTokenMock, ['HayCoin', 'HAY', 18, 1000]);
   });
 
   it('Is named HayCoin', async () => {
