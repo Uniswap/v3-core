@@ -2,8 +2,8 @@
 
 1) Clone Uniswap
 ```
-$ git clone https://github.com/Uniswap/contracts-vyper
-$ cd contracts-vyper
+$ git clone https://github.com/Uniswap/uniswap-v2
+$ cd uniswap-v2
 ```
 
 2) Install dependencies
