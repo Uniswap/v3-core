@@ -5,18 +5,18 @@ import './interfaces/IUniswapFactory.sol';
 import './interfaces/IUniswapExchange.sol';
 
 
-contract UniswapExchange is ERC20 {
+contract UniswapETH is ERC20 {
 
   event TokenPurchase(address indexed buyer, uint256 indexed ethSold, uint256 indexed tokensBought);
   event EthPurchase(address indexed buyer, uint256 indexed tokensSold, uint256 indexed ethBought);
   event AddLiquidity(address indexed provider, uint256 indexed ethAmount, uint256 indexed tokenAmount);
   event RemoveLiquidity(address indexed provider, uint256 indexed ethAmount, uint256 indexed tokenAmount);
 
-  string public name;         // Uniswap V1
-  string public symbol;       // UNI-V1
-  uint256 public decimals;     // 18
-  IERC20 token;                // address of the ERC20 token traded on this contract
-  IUniswapFactory factory;     // interface for the factory that created this contract
+  string public name;                   // Uniswap V2
+  string public symbol;                 // UNI-V2
+  uint256 public decimals;              // 18
+  IERC20 token;                         // ERC20 token traded on this contract
+  IUniswapFactory factory;              // factory that created this contract
 
   bool private rentrancyLock = false;
 
@@ -293,7 +293,7 @@ contract UniswapExchange is ERC20 {
 
 
   function addLiquidity(uint256 minLiquidity, uint256 maxTokens, uint256 deadline) public payable nonReentrant returns (uint256) {
-    require(deadline > block.timestamp && maxTokens > 0 && msg.value > 0, 'UniswapExchange#addLiquidity: INVALID_ARGUMENT');
+    require(deadline >= block.timestamp && maxTokens > 0 && msg.value > 0, 'INVALID_INPUT');
     uint256 totalLiquidity = totalSupply;
 
     if (totalLiquidity > 0) {
@@ -326,7 +326,7 @@ contract UniswapExchange is ERC20 {
 
 
   function removeLiquidity(uint256 amount, uint256 minEth, uint256 minTokens, uint256 deadline) public nonReentrant returns (uint256, uint256) {
-    require(amount > 0 && deadline > block.timestamp && minEth > 0 && minTokens > 0);
+    require(amount > 0 && deadline >= block.timestamp && minEth > 0 && minTokens > 0);
     uint256 totalLiquidity = totalSupply;
     require(totalLiquidity > 0);
     uint256 tokenReserve = token.balanceOf(address(this));
