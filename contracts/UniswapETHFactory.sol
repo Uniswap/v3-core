@@ -1,7 +1,5 @@
 pragma solidity ^0.5.11;
 import "./UniswapETH.sol";
-import "./interfaces/IUniswapETH.sol";
-
 
 contract UniswapETHFactory {
 
