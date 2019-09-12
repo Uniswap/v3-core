@@ -1,8 +1,8 @@
 pragma solidity ^0.5.11;
 import './ERC20.sol';
 import './interfaces/IERC20.sol';
-import './interfaces/IUniswapFactory.sol';
-import './interfaces/IUniswapExchange.sol';
+import './interfaces/IUniswapETHFactory.sol';
+import './interfaces/IUniswapETH.sol';
 
 
 contract UniswapETH is ERC20 {

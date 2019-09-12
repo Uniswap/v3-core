@@ -1,9 +1,9 @@
 pragma solidity ^0.5.11;
-import "./UniswapExchange.sol";
-import "./interfaces/IUniswapExchange.sol";
+import "./UniswapERC20.sol";
+import "./interfaces/IUniswapERC20.sol";
 
 
-contract UniswapFactory {
+contract UniswapERC20Factory {
 
   event NewExchange(address indexed token, address indexed exchange);
 
