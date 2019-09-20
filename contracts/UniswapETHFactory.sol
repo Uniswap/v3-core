@@ -13,7 +13,7 @@ contract UniswapETHFactory {
   function createExchange(address token) public returns (address) {
     require(token != address(0));
     require(getExchange[token] == address(0), 'EXCHANGE_EXISTS');
-    UniswapExchange exchange = new UniswapExchange(token);
+    UniswapETH exchange = new UniswapETH(token);
     getExchange[token] = address(exchange);
     getToken[address(exchange)] = token;
     uint256 tokenId = tokenCount + 1;

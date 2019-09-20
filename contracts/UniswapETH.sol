@@ -29,7 +29,7 @@ contract UniswapETH is ERC20 {
 
 
   constructor(address tokenAddr) public {
-    require(address(tokenAddr != address(0), 'INVALID_ADDRESS');
+    require(address(tokenAddr) != address(0), 'INVALID_ADDRESS');
     factory = IUniswapFactory(msg.sender);
     token = IERC20(tokenAddr);
     name = 'Uniswap V2';

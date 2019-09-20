@@ -1,5 +1,5 @@
 pragma solidity ^0.5.11;
-import "./UniswapERC20.sol";ss
+import "./UniswapERC20.sol";
 
 contract UniswapERC20Factory {
 
