@@ -1,10 +1,10 @@
 pragma solidity ^0.5.0;
 
 interface IUniswapExchange {
-  event TokenPurchase(address indexed buyer, uint256 indexed eth_sold, uint256 indexed tokens_bought);
-  event EthPurchase(address indexed buyer, uint256 indexed tokens_sold, uint256 indexed eth_bought);
-  event AddLiquidity(address indexed provider, uint256 indexed eth_amount, uint256 indexed token_amount);
-  event RemoveLiquidity(address indexed provider, uint256 indexed eth_amount, uint256 indexed token_amount);
+  event TokenPurchase(address indexed buyer, uint256 eth_sold, uint256 tokens_bought);
+  event EthPurchase(address indexed buyer, uint256 tokens_sold, uint256 eth_bought);
+  event AddLiquidity(address indexed provider, uint256 eth_amount, uint256 token_amount);
+  event RemoveLiquidity(address indexed provider, uint256 eth_amount, uint256 token_amount);
 
    /**
    * @notice Convert ETH to Tokens.

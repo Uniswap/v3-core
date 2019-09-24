@@ -11,7 +11,7 @@ contract UniswapETHFactory {
   mapping (uint256 => address) public getTokenWithId;
 
   function createExchange(address token) public returns (address) {
-    require(token != address(0));
+    require(token != address(0), 'INVALID_INPUT');
     require(getExchange[token] == address(0), 'EXCHANGE_EXISTS');
     UniswapETH exchange = new UniswapETH(token);
     getExchange[token] = address(exchange);
