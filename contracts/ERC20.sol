@@ -42,4 +42,6 @@ contract ERC20 {
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(value);
     emit Transfer(msg.sender, address(0), value);
   }
+
+  // TODO: metaapprove https://github.com/makerdao/dss/blob/master/src/dai.sol
 }

@@ -3,18 +3,21 @@ import './ERC20.sol';
 import './interfaces/IERC20.sol';
 
 contract UniswapERC20 is ERC20 {
+  using SafeMath for uint256;
 
   event SwapAForB(address indexed buyer, uint256 amountSold, uint256 amountBought);
   event SwapBForA(address indexed buyer, uint256 amountSold, uint256 amountBought);
   event AddLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
   event RemoveLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
 
-  string public name;                   // Uniswap V2
-  string public symbol;                 // UNI-V2
-  uint256 public decimals;              // 18
+  // ERC20 Data
+  string public constant name = 'Uniswap V2';
+  string public constant symbol = 'UNI-V2';
+  uint256 public constant decimals = 18;
+
   address public tokenA;                // ERC20 token traded on this contract
   address public tokenB;                // ERC20 token traded on this contract
-  address public factoryAddress;        // factory that created this contract
+  address public factory;               // factory that created this contract
 
   bool private rentrancyLock = false;
 
@@ -28,19 +31,13 @@ contract UniswapERC20 is ERC20 {
 
   constructor(address _tokenA, address _tokenB) public {
     require(address(_tokenA) != address(0) && _tokenB != address(0), 'INVALID_ADDRESS');
-    factoryAddress = msg.sender;
+    factory = msg.sender;
     tokenA = _tokenA;
     tokenB = _tokenB;
-    name = 'Uniswap V2';
-    symbol = 'UNI-V2';
-    decimals = 18;
   }
 
-  /*
-  TO:DO: Find usage for fallback
-  function () external {
-    pass;
-  } */
+
+  function () external {}
 
 
   function getInputPrice(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
@@ -144,30 +141,17 @@ contract UniswapERC20 is ERC20 {
   }
 
 
-  function tokenAAddress() public view returns (address) {
-    return address(tokenA);
-  }
-
-
-  function tokenBAddress() public view returns (address) {
-    return address(tokenB);
-  }
-
-
-  function addLiquidity(uint256 amountA, uint256 maxTokenB, uint256 minLiquidity) public nonReentrant returns (uint256) {
-    require(amountA > 0 && maxTokenB > 0);
+  function addLiquidity(uint256 amountA, uint256 maxTokenB) public nonReentrant returns (uint256) {
+    require(amountA > 0);
     uint256 _totalSupply = totalSupply;
-    address _tokenA = tokenA;
-    address _tokenB = tokenB;
 
     if (_totalSupply > 0) {
-      require(minLiquidity > 0);
-
+      address _tokenA = tokenA;
+      address _tokenB = tokenB;
       uint256 reserveA = IERC20(_tokenA).balanceOf(address(this));
       uint256 reserveB = IERC20(_tokenB).balanceOf(address(this));
       uint256 amountB = (amountA.mul(reserveB) / reserveA).add(1);
       uint256 liquidityMinted = amountA.mul(_totalSupply) / reserveA;
-      require(maxTokenB >= amountB && liquidityMinted >= minLiquidity);
       balanceOf[msg.sender] = balanceOf[msg.sender].add(liquidityMinted);
       totalSupply = _totalSupply.add(liquidityMinted);
       require(IERC20(_tokenA).transferFrom(msg.sender, address(this), amountA));
@@ -177,13 +161,12 @@ contract UniswapERC20 is ERC20 {
       return liquidityMinted;
 
     } else {
-      // TODO: figure out how to set this safely
-      // arithemtic or geometric mean?
+      // TODO: figure out how to set this safely (arithemtic or geometric mean?)
       uint256 initialLiquidity = amountA;
       totalSupply = initialLiquidity;
       balanceOf[msg.sender] = initialLiquidity;
-      require(IERC20(_tokenA).transferFrom(msg.sender, address(this), amountA));
-      require(IERC20(_tokenB).transferFrom(msg.sender, address(this), maxTokenB));
+      require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountA));
+      require(IERC20(tokenB).transferFrom(msg.sender, address(this), maxTokenB));
       emit AddLiquidity(msg.sender, amountA, maxTokenB);
       emit Transfer(address(0), msg.sender, initialLiquidity);
       return initialLiquidity;
@@ -191,16 +174,15 @@ contract UniswapERC20 is ERC20 {
   }
 
 
-  function removeLiquidity(uint256 amount, uint256 minTokenA, uint256 minTokenB) public nonReentrant returns (uint256, uint256) {
-    uint256 _totalSupply = totalSupply;
-    require(amount > 0 && minTokenA > 0 && minTokenB > 0 && _totalSupply > 0);
+  function removeLiquidity(uint256 amount) public nonReentrant returns (uint256, uint256) {
+    require(amount > 0);
     address _tokenA = tokenA;
     address _tokenB = tokenB;
     uint256 reserveA = IERC20(_tokenA).balanceOf(address(this));
     uint256 reserveB = IERC20(_tokenB).balanceOf(address(this));
+    uint256 _totalSupply = totalSupply;
     uint256 tokenAAmount = amount.mul(reserveA) / _totalSupply;
     uint256 tokenBAmount = amount.mul(reserveB) / _totalSupply;
-    require(tokenAAmount >= minTokenA && tokenBAmount >= minTokenB);
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(amount);
     totalSupply = _totalSupply.sub(amount);
     require(IERC20(_tokenA).transfer(msg.sender, tokenAAmount));

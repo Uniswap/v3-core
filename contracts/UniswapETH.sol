@@ -3,18 +3,20 @@ import './ERC20.sol';
 import './interfaces/IERC20.sol';
 
 contract UniswapETH is ERC20 {
+  using SafeMath for uint256;
 
   event TokenPurchase(address indexed buyer, uint256 ethSold, uint256 tokensBought);
   event EthPurchase(address indexed buyer, uint256 tokensSold, uint256 ethBought);
   event AddLiquidity(address indexed provider, uint256 ethAmount, uint256 tokenAmount);
   event RemoveLiquidity(address indexed provider, uint256 ethAmount, uint256 tokenAmount);
 
-  string public name;                   // Uniswap V2
-  string public symbol;                 // UNI-V2
-  uint256 public decimals;              // 18
+  // ERC20 Data
+  string public constant name = 'Uniswap V2';
+  string public constant symbol = 'UNI-V2';
+  uint256 public constant decimals = 18;
+
   IERC20 token;                         // ERC20 token traded on this contract
   address public factory;               // factory that created this contract
-
   bool private locked = false;
 
 
@@ -30,9 +32,6 @@ contract UniswapETH is ERC20 {
   constructor(address tokenAddr) public {
     factory = msg.sender;
     token = IERC20(tokenAddr);
-    name = 'Uniswap V2';
-    symbol = 'UNI-V2';
-    decimals = 18;
   }
 
 
@@ -63,7 +62,7 @@ contract UniswapETH is ERC20 {
     uint256 tokenReserve = token.balanceOf(address(this));
     uint256 ethBought = getInputPrice(tokensSold, tokenReserve, address(this).balance);
     (bool success, ) = recipient.call.value(ethBought)('');
-    require(success);
+    require(success, 'ETH TRANSFER');
     require(token.transferFrom(msg.sender, address(this), tokensSold));
     emit EthPurchase(msg.sender, tokensSold, ethBought);
     return ethBought;
@@ -106,15 +105,15 @@ contract UniswapETH is ERC20 {
 
 
   function removeLiquidity(address payable recipient, uint256 amount) public nonReentrant returns (uint256, uint256) {
+    require(amount > 0);
     uint256 _totalSupply = totalSupply;
-    require(amount > 0 && _totalSupply > 0);
     uint256 tokenReserve = token.balanceOf(address(this));
     uint256 ethAmount = amount.mul(address(this).balance) / _totalSupply;
     uint256 tokenAmount = amount.mul(tokenReserve) / _totalSupply;
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(amount);
     totalSupply = _totalSupply.sub(amount);
     (bool success, ) = recipient.call.value(ethAmount)('');
-    require(success);
+    require(success, 'ETH TRANSFER');
     require(token.transfer(recipient, tokenAmount));
     emit RemoveLiquidity(msg.sender, ethAmount, tokenAmount);
     emit Transfer(msg.sender, address(0), amount);
@@ -123,13 +122,13 @@ contract UniswapETH is ERC20 {
 
 
   function unsafeRemoveOnlyETH(address payable recipient, uint256 amount) public nonReentrant returns (uint256) {
+    require(amount > 0);
     uint256 _totalSupply = totalSupply;
-    require(amount > 0 && _totalSupply > 0);
     uint256 ethAmount = amount.mul(address(this).balance) / _totalSupply;
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(amount);
     totalSupply = _totalSupply.sub(amount);
     (bool success, ) = recipient.call.value(ethAmount)('');
-    require(success);
+    require(success, 'ETH TRANSFER');
     emit RemoveLiquidity(msg.sender, ethAmount, 0);
     emit Transfer(msg.sender, address(0), amount);
     return (ethAmount);
