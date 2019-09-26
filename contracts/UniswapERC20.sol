@@ -84,33 +84,6 @@ contract UniswapERC20 is ERC20 {
   }
 
 
-  //TO: DO msg.sender is wrapper
-  function swapOutput(address outputToken, uint256 amountBought, address recipient) public nonReentrant returns (uint256) {
-      address _tokenA = address(tokenA);
-      address _tokenB = address(tokenB);
-      bool outputIsA = outputToken == _tokenA;
-      require(outputIsA || outputToken == _tokenB);
-      address inputToken = _tokenA;
-      if(outputIsA) {
-        inputToken = _tokenB;
-      }
-
-      uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
-      uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
-      uint256 amountSold = getOutputPrice(amountBought, inputReserve, outputReserve);
-      require(IERC20(inputToken).transferFrom(msg.sender, address(this), amountSold));
-      require(IERC20(outputToken).transfer(recipient, amountBought));
-
-      if(outputIsA) {
-        emit SwapBForA(msg.sender, amountSold, amountBought);
-      } else {
-        emit SwapAForB(msg.sender, amountSold, amountBought);
-      }
-
-      return amountSold;
-  }
-
-
   function getInputPrice(address inputToken, uint256 amountSold) public view returns (uint256) {
     require(amountSold > 0);
     address _tokenA = address(tokenA);
