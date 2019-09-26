@@ -65,7 +65,7 @@ contract UniswapERC20 is ERC20 {
       require(inputIsA || inputToken == _tokenB);
       address outputToken = _tokenA;
       if(inputIsA) {
-        outputToken == _tokenB;
+        outputToken = _tokenB;
       }
 
       uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
@@ -92,7 +92,7 @@ contract UniswapERC20 is ERC20 {
       require(outputIsA || outputToken == _tokenB);
       address inputToken = _tokenA;
       if(outputIsA) {
-        inputToken == _tokenB;
+        inputToken = _tokenB;
       }
 
       uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
