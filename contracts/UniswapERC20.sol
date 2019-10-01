@@ -48,15 +48,6 @@ contract UniswapERC20 is ERC20 {
     return numerator / denominator;
   }
 
-
-  function getOutputPrice(uint256 outputAmount, uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
-    require(inputReserve > 0 && outputReserve > 0);
-    uint256 numerator = inputReserve.mul(outputAmount).mul(1000);
-    uint256 denominator = (outputReserve.sub(outputAmount)).mul(997);
-    return (numerator / denominator).add(1);
-  }
-
-
   //TO: DO msg.sender is wrapper
   function swapInput(address inputToken, uint256 amountSold, address recipient) public nonReentrant returns (uint256) {
       address _tokenA = address(tokenA);
@@ -84,33 +75,6 @@ contract UniswapERC20 is ERC20 {
   }
 
 
-  //TO: DO msg.sender is wrapper
-  function swapOutput(address outputToken, uint256 amountBought, address recipient) public nonReentrant returns (uint256) {
-      address _tokenA = address(tokenA);
-      address _tokenB = address(tokenB);
-      bool outputIsA = outputToken == _tokenA;
-      require(outputIsA || outputToken == _tokenB);
-      address inputToken = _tokenA;
-      if(outputIsA) {
-        inputToken = _tokenB;
-      }
-
-      uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
-      uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
-      uint256 amountSold = getOutputPrice(amountBought, inputReserve, outputReserve);
-      require(IERC20(inputToken).transferFrom(msg.sender, address(this), amountSold));
-      require(IERC20(outputToken).transfer(recipient, amountBought));
-
-      if(outputIsA) {
-        emit SwapBForA(msg.sender, amountSold, amountBought);
-      } else {
-        emit SwapAForB(msg.sender, amountSold, amountBought);
-      }
-
-      return amountSold;
-  }
-
-
   function getInputPrice(address inputToken, uint256 amountSold) public view returns (uint256) {
     require(amountSold > 0);
     address _tokenA = address(tokenA);
@@ -123,21 +87,6 @@ contract UniswapERC20 is ERC20 {
     uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
     uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
     return getInputPrice(amountSold, inputReserve, outputReserve);
-  }
-
-
-  function getOutputPrice(address outputToken, uint256 amountBought) public view returns (uint256) {
-    require(amountBought > 0);
-    address _tokenA = address(tokenA);
-    address _tokenB = address(tokenB);
-    require(outputToken == _tokenA || outputToken == _tokenB);
-    address inputToken = _tokenA;
-    if(outputToken == _tokenA) {
-      inputToken = _tokenB;
-    }
-    uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
-    uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
-    return getOutputPrice(amountBought, inputReserve, outputReserve);
   }
 
 
