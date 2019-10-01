@@ -68,7 +68,7 @@ contract UniswapERC20 is ERC20 {
       uint256 amountBought = getInputPrice(amountSold, inputReserve, outputReserve);
       require(IERC20(inputToken).transferFrom(msg.sender, address(this), amountSold));
       require(IERC20(outputToken).transfer(recipient, amountBought));
-      return amountBought
+      return amountBought;
   }
 
   function getInputPrice(address inputToken, uint256 amountSold) public view returns (uint256) {
