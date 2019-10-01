@@ -48,6 +48,15 @@ contract UniswapERC20 is ERC20 {
     return numerator / denominator;
   }
 
+  function swap(address inputToken, address outputToken, uint256 amountSold, address recipient) private returns (uint256) {
+      uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
+      uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
+      uint256 amountBought = getInputPrice(amountSold, inputReserve, outputReserve);
+      require(IERC20(inputToken).transferFrom(msg.sender, address(this), amountSold));
+      require(IERC20(outputToken).transfer(recipient, amountBought));
+      return amountBought;
+  }
+
   //TO: DO msg.sender is wrapper
   function swapAForB(uint256 amountSold, address recipient) public nonReentrant returns (uint256) {
       uint256 amountBought = swap(tokenA, tokenB, amountSold, recipient);
@@ -59,15 +68,6 @@ contract UniswapERC20 is ERC20 {
   function swapBForA(uint256 amountSold, address recipient) public nonReentrant returns (uint256) {
       uint256 amountBought = swap(tokenB, tokenA, amountSold, recipient);
       emit SwapBForA(msg.sender, amountSold, amountBought);
-      return amountBought;
-  }
-
-  function swap(address inputToken, address outputToken, uint256 amountSold, address recipient) private returns (uint256) {
-      uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
-      uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
-      uint256 amountBought = getInputPrice(amountSold, inputReserve, outputReserve);
-      require(IERC20(inputToken).transferFrom(msg.sender, address(this), amountSold));
-      require(IERC20(outputToken).transfer(recipient, amountBought));
       return amountBought;
   }
 
