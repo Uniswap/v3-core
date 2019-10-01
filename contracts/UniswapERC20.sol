@@ -61,11 +61,11 @@ contract UniswapERC20 is ERC20 {
       Reserves memory _reserves = reserves;
       uint256 newInputReserve = IERC20(_tokenA).balanceOf(address(this));
       uint256 oldInputReserve = uint256(_reserves.reserveA);
-      uint256 oldOutputReserve = uint256(_reserves.reserveB);
+      uint256 currentOutputReserve = IERC20(_tokenB).balanceOf(address(this));
       uint256 amountSold = newInputReserve - oldInputReserve;
-      uint256 amountBought = getInputPrice(amountSold, oldInputReserve, oldOutputReserve);
+      uint256 amountBought = getInputPrice(amountSold, oldInputReserve, currentOutputReserve);
       require(IERC20(_tokenB).transfer(recipient, amountBought), "TRANSFER_FAILED");
-      uint256 newOutputReserve = IERC20(_tokenB).balanceOf(address(this));
+      uint256 newOutputReserve = currentOutputReserve - amountBought;
       reserves = Reserves({
         reserveA: uint128(newInputReserve),
         reserveB: uint128(newOutputReserve)
@@ -81,11 +81,11 @@ contract UniswapERC20 is ERC20 {
       Reserves memory _reserves = reserves;
       uint256 newInputReserve = IERC20(_tokenB).balanceOf(address(this));
       uint256 oldInputReserve = uint256(_reserves.reserveB);
-      uint256 oldOutputReserve = uint256(_reserves.reserveA);
+      uint256 currentOutputReserve = IERC20(_tokenA).balanceOf(address(this));
       uint256 amountSold = newInputReserve - oldInputReserve;
-      uint256 amountBought = getInputPrice(amountSold, oldInputReserve, oldOutputReserve);
+      uint256 amountBought = getInputPrice(amountSold, oldInputReserve, currentOutputReserve);
       require(IERC20(_tokenA).transfer(recipient, amountBought), "TRANSFER_FAILED");
-      uint256 newOutputReserve = IERC20(_tokenA).balanceOf(address(this));
+      uint256 newOutputReserve = currentOutputReserve - amountBought;
       reserves = Reserves({
         reserveA: uint128(newOutputReserve),
         reserveB: uint128(newInputReserve)
