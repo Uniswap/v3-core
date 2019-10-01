@@ -48,32 +48,28 @@ contract UniswapERC20 is ERC20 {
     return numerator / denominator;
   }
 
-  //TO: DO msg.sender is wrapper
-  function swapInput(address inputToken, uint256 amountSold, address recipient) public nonReentrant returns (uint256) {
-      address _tokenA = address(tokenA);
-      address _tokenB = address(tokenB);
-      bool inputIsA = inputToken == _tokenA;
-      require(inputIsA || inputToken == _tokenB);
-      address outputToken = _tokenA;
-      if(inputIsA) {
-        outputToken = _tokenB;
-      }
-
+  function swap(address inputToken, address outputToken, uint256 amountSold, address recipient) private returns (uint256) {
       uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
       uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
       uint256 amountBought = getInputPrice(amountSold, inputReserve, outputReserve);
       require(IERC20(inputToken).transferFrom(msg.sender, address(this), amountSold));
       require(IERC20(outputToken).transfer(recipient, amountBought));
-
-      if(inputIsA) {
-        emit SwapAForB(msg.sender, amountSold, amountBought);
-      } else {
-        emit SwapBForA(msg.sender, amountSold, amountBought);
-      }
-
       return amountBought;
   }
 
+  //TO: DO msg.sender is wrapper
+  function swapAForB(uint256 amountSold, address recipient) public nonReentrant returns (uint256) {
+      uint256 amountBought = swap(tokenA, tokenB, amountSold, recipient);
+      emit SwapAForB(msg.sender, amountSold, amountBought);
+      return amountBought;
+  }
+
+  //TO: DO msg.sender is wrapper
+  function swapBForA(uint256 amountSold, address recipient) public nonReentrant returns (uint256) {
+      uint256 amountBought = swap(tokenB, tokenA, amountSold, recipient);
+      emit SwapBForA(msg.sender, amountSold, amountBought);
+      return amountBought;
+  }
 
   function getInputPrice(address inputToken, uint256 amountSold) public view returns (uint256) {
     require(amountSold > 0);
