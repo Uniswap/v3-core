@@ -10,9 +10,9 @@ contract UniswapERC20 is ERC20 {
   event AddLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
   event RemoveLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
 
-  struct Reserves {
-    uint128 reserveA;
-    uint128 reserveB;
+  struct TokenData {
+    uint128 reserve;                    // cached reserve for this token
+    uint128 accumulator;                // accumulated TWAP value (TODO)
   }
 
   // ERC20 Data
@@ -23,7 +23,8 @@ contract UniswapERC20 is ERC20 {
   address public tokenA;                // ERC20 token traded on this contract
   address public tokenB;                // ERC20 token traded on this contract
   address public factory;               // factory that created this contract
-  Reserves public reserves;             // cached reserve amounts
+
+  mapping (address => TokenData) internal dataForToken;
 
   bool private rentrancyLock = false;
 
@@ -54,42 +55,40 @@ contract UniswapERC20 is ERC20 {
     return numerator / denominator;
   }
 
+  function swap(address inputToken, address outputToken, address recipient) private returns (uint256, uint256) {
+    TokenData memory inputTokenData = dataForToken[inputToken];
+    TokenData memory outputTokenData = dataForToken[outputToken];
+
+    uint256 newInputReserve = IERC20(inputToken).balanceOf(address(this));
+    uint256 oldInputReserve = uint256(inputTokenData.reserve);
+    uint256 currentOutputReserve = IERC20(outputToken).balanceOf(address(this));
+    uint256 amountSold = newInputReserve - oldInputReserve;
+    uint256 amountBought = getInputPrice(amountSold, oldInputReserve, currentOutputReserve);
+    require(IERC20(outputToken).transfer(recipient, amountBought), "TRANSFER_FAILED");
+    uint256 newOutputReserve = currentOutputReserve - amountBought;
+
+    dataForToken[inputToken] = TokenData({
+      reserve: uint128(newInputReserve),
+      accumulator: inputTokenData.accumulator // TODO: update accumulator value
+    });
+    dataForToken[outputToken] = TokenData({
+      reserve: uint128(newOutputReserve),
+      accumulator: outputTokenData.accumulator // TODO: update accumulator value
+    });
+
+    return (amountSold, amountBought);
+  }
+
   //TO: DO msg.sender is wrapper
   function swapAForB(address recipient) public nonReentrant returns (uint256) {
-      address _tokenA = tokenA;
-      address _tokenB = tokenB;
-      Reserves memory _reserves = reserves;
-      uint256 newInputReserve = IERC20(_tokenA).balanceOf(address(this));
-      uint256 oldInputReserve = uint256(_reserves.reserveA);
-      uint256 currentOutputReserve = IERC20(_tokenB).balanceOf(address(this));
-      uint256 amountSold = newInputReserve - oldInputReserve;
-      uint256 amountBought = getInputPrice(amountSold, oldInputReserve, currentOutputReserve);
-      require(IERC20(_tokenB).transfer(recipient, amountBought), "TRANSFER_FAILED");
-      uint256 newOutputReserve = currentOutputReserve - amountBought;
-      reserves = Reserves({
-        reserveA: uint128(newInputReserve),
-        reserveB: uint128(newOutputReserve)
-      });
+      (uint256 amountSold, uint256 amountBought) = swap(tokenA, tokenB, recipient);
       emit SwapAForB(msg.sender, amountSold, amountBought);
       return amountBought;
   }
 
   //TO: DO msg.sender is wrapper
   function swapBForA(address recipient) public nonReentrant returns (uint256) {
-      address _tokenA = tokenA;
-      address _tokenB = tokenB;
-      Reserves memory _reserves = reserves;
-      uint256 newInputReserve = IERC20(_tokenB).balanceOf(address(this));
-      uint256 oldInputReserve = uint256(_reserves.reserveB);
-      uint256 currentOutputReserve = IERC20(_tokenA).balanceOf(address(this));
-      uint256 amountSold = newInputReserve - oldInputReserve;
-      uint256 amountBought = getInputPrice(amountSold, oldInputReserve, currentOutputReserve);
-      require(IERC20(_tokenA).transfer(recipient, amountBought), "TRANSFER_FAILED");
-      uint256 newOutputReserve = currentOutputReserve - amountBought;
-      reserves = Reserves({
-        reserveA: uint128(newOutputReserve),
-        reserveB: uint128(newInputReserve)
-      });
+      (uint256 amountSold, uint256 amountBought) = swap(tokenB, tokenA, recipient);
       emit SwapBForA(msg.sender, amountSold, amountBought);
       return amountBought;
   }
@@ -112,6 +111,8 @@ contract UniswapERC20 is ERC20 {
   function addLiquidity(uint256 amountA, uint256 maxTokenB) public nonReentrant returns (uint256) {
     require(amountA > 0);
     uint256 _totalSupply = totalSupply;
+
+    // TODO: update inputTokenData and outputTokenData, and accumulate TWAP
 
     if (_totalSupply > 0) {
       address _tokenA = tokenA;
