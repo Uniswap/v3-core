@@ -16,6 +16,11 @@ contract UniswapERC20 is ERC20 {
     uint128 accumulator;                // accumulated TWAP value (TODO)
   }
 
+  struct LastUpdate {
+    uint128 time;
+    uint128 blockNumber;
+  }
+
   // ERC20 Data
   string public constant name = 'Uniswap V2';
   string public constant symbol = 'UNI-V2';
@@ -25,7 +30,9 @@ contract UniswapERC20 is ERC20 {
   address public tokenB;                // ERC20 token traded on this contract
   address public factory;               // factory that created this contract
 
-  mapping (address => TokenData) public dataForToken;
+  mapping (address => TokenData) public dataForToken; // cached information about the token
+
+  LastUpdate public lastUpdate;         // information about the last time the reserves were updated
 
   bool private reentrancyLock = false;
 
@@ -55,6 +62,32 @@ contract UniswapERC20 is ERC20 {
     return numerator / denominator;
   }
 
+  function updateData(
+      address firstToken,
+      address secondToken,
+      TokenData memory oldFirstTokenData,
+      TokenData memory oldSecondTokenData,
+      uint128 newFirstTokenReserve,
+      uint128 newSecondTokenReserve
+    ) internal returns (uint128, uint128) {
+      uint128 diff = uint128(block.number) - lastUpdate.blockNumber;
+      dataForToken[firstToken] = TokenData({
+          reserve: newFirstTokenReserve,
+          accumulator: diff * oldFirstTokenData.reserve + oldFirstTokenData.accumulator
+      });
+      dataForToken[secondToken] = TokenData({
+          reserve: newSecondTokenReserve,
+          accumulator: diff * oldSecondTokenData.reserve + oldSecondTokenData.accumulator
+      });
+      if (diff != 0) {
+        lastUpdate = LastUpdate({
+          blockNumber: uint128(block.number),
+          time: uint128(block.timestamp)
+        });
+      }
+  }
+
+
   function swap(address inputToken, address outputToken, address recipient) internal returns (uint256, uint256) {
     TokenData memory inputTokenData = dataForToken[inputToken];
     TokenData memory outputTokenData = dataForToken[outputToken];
@@ -67,21 +100,16 @@ contract UniswapERC20 is ERC20 {
     require(IERC20(outputToken).transfer(recipient, amountBought), "TRANSFER_FAILED");
     uint256 newOutputReserve = currentOutputReserve - amountBought;
 
-    dataForToken[inputToken] = TokenData({
-      reserve: uint128(newInputReserve),
-      accumulator: inputTokenData.accumulator // TODO: update accumulator value
-    });
-    dataForToken[outputToken] = TokenData({
-      reserve: uint128(newOutputReserve),
-      accumulator: outputTokenData.accumulator // TODO: update accumulator value
-    });
+    updateData(inputToken, outputToken, inputTokenData, outputTokenData, uint128(newInputReserve), uint128(newOutputReserve));
 
     return (amountSold, amountBought);
   }
 
   //TO: DO msg.sender is wrapper
   function swapAForB(address recipient) public nonReentrant returns (uint256) {
-      (uint256 amountSold, uint256 amountBought) = swap(tokenA, tokenB, recipient);
+      address _tokenA = tokenA;
+      address _tokenB = tokenB;
+      (uint256 amountSold, uint256 amountBought) = swap(_tokenA, _tokenB, recipient);
       emit SwapAForB(msg.sender, amountSold, amountBought);
       return amountBought;
   }
@@ -118,15 +146,7 @@ contract UniswapERC20 is ERC20 {
     balanceOf[recipient] = balanceOf[recipient].add(liquidityMinted);
     totalSupply = _totalSupply.add(liquidityMinted);
 
-    dataForToken[_tokenA] = TokenData({
-      reserve: uint128(newReserveA),
-      accumulator: tokenAData.accumulator // TODO: accumulate
-    });
-
-    dataForToken[_tokenB] = TokenData({
-      reserve: uint128(newReserveB),
-      accumulator: tokenBData.accumulator // TODO: accumulate
-    });
+    updateData(_tokenA, _tokenB, tokenAData, tokenBData, uint128(newReserveA), uint128(newReserveB));
 
     emit AddLiquidity(msg.sender, amountA, amountB);
     emit Transfer(address(0), msg.sender, liquidityMinted);
@@ -136,7 +156,6 @@ contract UniswapERC20 is ERC20 {
 
 
   function removeLiquidity(uint256 amount, address recipient) public nonReentrant returns (uint256, uint256) {
-    require(amount > 0);
     address _tokenA = tokenA;
     address _tokenB = tokenB;
 
@@ -153,15 +172,7 @@ contract UniswapERC20 is ERC20 {
     require(IERC20(_tokenA).transfer(recipient, tokenAAmount));
     require(IERC20(_tokenB).transfer(recipient, tokenBAmount));
 
-    dataForToken[_tokenA] = TokenData({
-      reserve: uint128(reserveA - tokenAAmount),
-      accumulator: tokenAData.accumulator // TODO: accumulate
-    });
-
-    dataForToken[_tokenB] = TokenData({
-      reserve: uint128(reserveB - tokenBAmount),
-      accumulator: tokenBData.accumulator // TODO: accumulate
-    });
+    updateData(_tokenA, _tokenB, tokenAData, tokenBData, uint128(reserveA - tokenAAmount), uint128(reserveB - tokenBAmount));
 
     emit RemoveLiquidity(recipient, tokenAAmount, tokenBAmount);
     emit Transfer(msg.sender, address(0), amount);
