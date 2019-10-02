@@ -6,8 +6,8 @@ import './interfaces/IERC20.sol';
 contract UniswapERC20 is ERC20 {
   using SafeMath for uint256;
 
-  event SwapAForB(address indexed buyer, uint256 amountSold, uint256 amountBought);
-  event SwapBForA(address indexed buyer, uint256 amountSold, uint256 amountBought);
+  event SwapAForB(address indexed buyer, uint256 amountSold, uint256 amountBought, address recipient);
+  event SwapBForA(address indexed buyer, uint256 amountSold, uint256 amountBought, address recipient);
   event AddLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
   event RemoveLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
 
@@ -105,19 +105,17 @@ contract UniswapERC20 is ERC20 {
     return (amountSold, amountBought);
   }
 
-  //TO: DO msg.sender is wrapper
   function swapAForB(address recipient) public nonReentrant returns (uint256) {
       address _tokenA = tokenA;
       address _tokenB = tokenB;
       (uint256 amountSold, uint256 amountBought) = swap(_tokenA, _tokenB, recipient);
-      emit SwapAForB(msg.sender, amountSold, amountBought);
+      emit SwapAForB(msg.sender, amountSold, amountBought, recipient);
       return amountBought;
   }
 
-  //TO: DO msg.sender is wrapper
   function swapBForA(address recipient) public nonReentrant returns (uint256) {
       (uint256 amountSold, uint256 amountBought) = swap(tokenB, tokenA, recipient);
-      emit SwapBForA(msg.sender, amountSold, amountBought);
+      emit SwapBForA(msg.sender, amountSold, amountBought, recipient);
       return amountBought;
   }
 
@@ -165,17 +163,17 @@ contract UniswapERC20 is ERC20 {
     uint256 reserveA = IERC20(_tokenA).balanceOf(address(this));
     uint256 reserveB = IERC20(_tokenB).balanceOf(address(this));
     uint256 _totalSupply = totalSupply;
-    uint256 tokenAAmount = amount.mul(reserveA) / _totalSupply;
-    uint256 tokenBAmount = amount.mul(reserveB) / _totalSupply;
+    uint256 amountA = amount.mul(reserveA) / _totalSupply;
+    uint256 amountB = amount.mul(reserveB) / _totalSupply;
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(amount);
     totalSupply = _totalSupply.sub(amount);
-    require(IERC20(_tokenA).transfer(recipient, tokenAAmount));
-    require(IERC20(_tokenB).transfer(recipient, tokenBAmount));
+    require(IERC20(_tokenA).transfer(recipient, amountA));
+    require(IERC20(_tokenB).transfer(recipient, amountB));
 
-    updateData(_tokenA, _tokenB, tokenAData, tokenBData, uint128(reserveA - tokenAAmount), uint128(reserveB - tokenBAmount));
+    updateData(_tokenA, _tokenB, tokenAData, tokenBData, uint128(reserveA - amountA), uint128(reserveB - amountB));
 
-    emit RemoveLiquidity(recipient, tokenAAmount, tokenBAmount);
+    emit RemoveLiquidity(recipient, amountA, amountB);
     emit Transfer(msg.sender, address(0), amount);
-    return (tokenAAmount, tokenBAmount);
+    return (amountA, amountB);
   }
 }
