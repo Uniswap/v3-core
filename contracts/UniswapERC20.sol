@@ -24,7 +24,7 @@ contract UniswapERC20 is ERC20 {
   address public tokenB;                // ERC20 token traded on this contract
   address public factory;               // factory that created this contract
 
-  mapping (address => TokenData) internal dataForToken;
+  mapping (address => TokenData) public dataForToken;
 
   bool private rentrancyLock = false;
 
@@ -107,39 +107,58 @@ contract UniswapERC20 is ERC20 {
     return getInputPrice(amountSold, inputReserve, outputReserve);
   }
 
+  function min(uint256 a, uint256 b) internal pure returns (uint256) {
+      return a < b ? a : b;
+  }
 
-  function addLiquidity(uint256 amountA, uint256 maxTokenB) public nonReentrant returns (uint256) {
-    require(amountA > 0);
+  function addLiquidity() public nonReentrant returns (uint256) {
     uint256 _totalSupply = totalSupply;
 
-    // TODO: update inputTokenData and outputTokenData, and accumulate TWAP
+    address _tokenA = tokenA;
+    address _tokenB = tokenB;
+
+    TokenData memory tokenAData = dataForToken[_tokenA];
+    TokenData memory tokenBData = dataForToken[_tokenB];
+
+    uint256 oldReserveA = uint256(tokenAData.reserve);
+    uint256 oldReserveB = uint256(tokenBData.reserve);
+
+    uint256 newReserveA = IERC20(_tokenA).balanceOf(address(this));
+    uint256 newReserveB = IERC20(_tokenB).balanceOf(address(this));
+
+    uint256 amountA = newReserveA - oldReserveA;
+    uint256 amountB = newReserveB - oldReserveB;
+
+    require(amountA > 0, "INVALID_AMOUNT_A");
+    require(amountB > 0, "INVALID_AMOUNT_B");
+
+    uint256 liquidityMinted;
 
     if (_totalSupply > 0) {
-      address _tokenA = tokenA;
-      address _tokenB = tokenB;
-      uint256 reserveA = IERC20(_tokenA).balanceOf(address(this));
-      uint256 reserveB = IERC20(_tokenB).balanceOf(address(this));
-      uint256 amountB = (amountA.mul(reserveB) / reserveA).add(1);
-      uint256 liquidityMinted = amountA.mul(_totalSupply) / reserveA;
-      balanceOf[msg.sender] = balanceOf[msg.sender].add(liquidityMinted);
-      totalSupply = _totalSupply.add(liquidityMinted);
-      require(IERC20(_tokenA).transferFrom(msg.sender, address(this), amountA));
-      require(IERC20(_tokenB).transferFrom(msg.sender, address(this), amountB));
-      emit AddLiquidity(msg.sender, amountA, amountB);
-      emit Transfer(address(0), msg.sender, liquidityMinted);
-      return liquidityMinted;
-
+      require(oldReserveA > 0, "INVALID_TOKEN_A_RESERVE");
+      require(oldReserveB > 0, "INVALID_TOKEN_B_RESERVE");
+      liquidityMinted = min((amountA.mul(_totalSupply) / oldReserveA), (amountB.mul(_totalSupply) / oldReserveB));
     } else {
-      // TODO: figure out how to set this safely (arithemtic or geometric mean?)
-      uint256 initialLiquidity = amountA;
-      totalSupply = initialLiquidity;
-      balanceOf[msg.sender] = initialLiquidity;
-      require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountA));
-      require(IERC20(tokenB).transferFrom(msg.sender, address(this), maxTokenB));
-      emit AddLiquidity(msg.sender, amountA, maxTokenB);
-      emit Transfer(address(0), msg.sender, initialLiquidity);
-      return initialLiquidity;
+      // TODO: figure out how to set this safely (arithmetic or geometric mean?)
+      liquidityMinted = amountA;
     }
+    balanceOf[msg.sender] = balanceOf[msg.sender].add(liquidityMinted);
+    totalSupply = _totalSupply.add(liquidityMinted);
+  
+    dataForToken[_tokenA] = TokenData({
+      reserve: uint128(newReserveA),
+      accumulator: tokenAData.accumulator // TODO: accumulate
+    });
+
+    dataForToken[_tokenA] = TokenData({
+      reserve: uint128(newReserveB),
+      accumulator: tokenBData.accumulator // TODO: accumulate
+    });
+
+    emit AddLiquidity(msg.sender, amountA, amountB);
+    emit Transfer(address(0), msg.sender, liquidityMinted);
+
+    return liquidityMinted;
   }
 
 
