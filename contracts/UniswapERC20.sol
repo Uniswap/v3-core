@@ -137,7 +137,7 @@ contract UniswapERC20 is ERC20 {
     uint256 liquidityMinted;
 
     if (_totalSupply > 0) {
-      liquidityMinted = Math.min((amountA.mul(_totalSupply).div(tokenAData.reserve)), (amountB.mul(_totalSupply).div(tokenBData.reserve)));
+      liquidityMinted = Math.min(amountA.mul(_totalSupply).div(tokenAData.reserve), amountB.mul(_totalSupply).div(tokenBData.reserve));
     } else {
       liquidityMinted = Math.sqrt(amountA.mul(amountB));
     }
