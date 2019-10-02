@@ -103,14 +103,11 @@ contract UniswapERC20 is ERC20 {
     TokenData memory tokenAData = dataForToken[_tokenA];
     TokenData memory tokenBData = dataForToken[_tokenB];
 
-    uint256 oldReserveA = uint256(tokenAData.reserve);
-    uint256 oldReserveB = uint256(tokenBData.reserve);
-
     uint256 newReserveA = IERC20(_tokenA).balanceOf(address(this));
     uint256 newReserveB = IERC20(_tokenB).balanceOf(address(this));
 
-    uint256 amountA = newReserveA - oldReserveA;
-    uint256 amountB = newReserveB - oldReserveB;
+    uint256 amountA = newReserveA - tokenAData.reserve;
+    uint256 amountB = newReserveB - tokenBData.reserve;
 
     require(amountA > 0, "INVALID_AMOUNT_A");
     require(amountB > 0, "INVALID_AMOUNT_B");
@@ -118,7 +115,7 @@ contract UniswapERC20 is ERC20 {
     uint256 liquidityMinted;
 
     if (_totalSupply > 0) {
-      liquidityMinted = Math.min((amountA.mul(_totalSupply).div(oldReserveA)), (amountB.mul(_totalSupply).div(oldReserveB)));
+      liquidityMinted = Math.min((amountA.mul(_totalSupply).div(tokenAData.reserve)), (amountB.mul(_totalSupply).div(tokenBData.reserve)));
     } else {
       liquidityMinted = Math.sqrt(amountA.mul(amountB));
     }
