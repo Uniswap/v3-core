@@ -27,13 +27,13 @@ contract UniswapERC20 is ERC20 {
 
   mapping (address => TokenData) public dataForToken;
 
-  bool private rentrancyLock = false;
+  bool private reentrancyLock = false;
 
   modifier nonReentrant() {
-    require(!rentrancyLock);
-    rentrancyLock = true;
+    require(!reentrancyLock);
+    reentrancyLock = true;
     _;
-    rentrancyLock = false;
+    reentrancyLock = false;
   }
 
 
