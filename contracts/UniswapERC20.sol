@@ -1,5 +1,6 @@
 pragma solidity ^0.5.11;
 import './ERC20.sol';
+import './Math.sol';
 import './interfaces/IERC20.sol';
 
 contract UniswapERC20 is ERC20 {
@@ -93,10 +94,6 @@ contract UniswapERC20 is ERC20 {
       return amountBought;
   }
 
-  function min(uint256 a, uint256 b) internal pure returns (uint256) {
-      return a < b ? a : b;
-  }
-
   function addLiquidity() public nonReentrant returns (uint256) {
     uint256 _totalSupply = totalSupply;
 
@@ -123,11 +120,9 @@ contract UniswapERC20 is ERC20 {
     if (_totalSupply > 0) {
       require(oldReserveA > 0, "INVALID_TOKEN_A_RESERVE");
       require(oldReserveB > 0, "INVALID_TOKEN_B_RESERVE");
-      // TODO: take the geometric mean instead of the min?? equivalently sqrt(newK / oldK) * _totalSupply
-      liquidityMinted = min((amountA.mul(_totalSupply) / oldReserveA), (amountB.mul(_totalSupply) / oldReserveB));
+      liquidityMinted = Math.min((amountA.mul(_totalSupply).div(oldReserveA)), (amountB.mul(_totalSupply).div(oldReserveB)));
     } else {
-      // TODO: figure out how to set this safely (arithmetic or geometric mean?)
-      liquidityMinted = amountA;
+      liquidityMinted = Math.sqrt(amountA.mul(amountB));
     }
     balanceOf[msg.sender] = balanceOf[msg.sender].add(liquidityMinted);
     totalSupply = _totalSupply.add(liquidityMinted);
