@@ -163,7 +163,7 @@ contract UniswapERC20 is ERC20 {
       accumulator: tokenBData.accumulator // TODO: accumulate
     });
 
-    emit RemoveLiquidity(msg.sender, tokenAAmount, tokenBAmount);
+    emit RemoveLiquidity(recipient, tokenAAmount, tokenBAmount);
     emit Transfer(msg.sender, address(0), amount);
     return (tokenAAmount, tokenBAmount);
   }
