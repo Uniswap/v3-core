@@ -47,8 +47,7 @@ contract UniswapERC20 is ERC20 {
 
   function () external {}
 
-
-  function getInputPrice(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
+  function getInputPrice(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) internal pure returns (uint256) {
     require(inputReserve > 0 && outputReserve > 0, 'INVALID_VALUE');
     uint256 inputAmountWithFee = inputAmount.mul(997);
     uint256 numerator = inputAmountWithFee.mul(outputReserve);
