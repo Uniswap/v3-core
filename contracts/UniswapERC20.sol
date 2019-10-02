@@ -109,9 +109,6 @@ contract UniswapERC20 is ERC20 {
     uint256 amountA = newReserveA - tokenAData.reserve;
     uint256 amountB = newReserveB - tokenBData.reserve;
 
-    require(amountA > 0, "INVALID_AMOUNT_A");
-    require(amountB > 0, "INVALID_AMOUNT_B");
-
     uint256 liquidityMinted;
 
     if (_totalSupply > 0) {
