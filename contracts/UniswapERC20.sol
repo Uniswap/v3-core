@@ -94,7 +94,7 @@ contract UniswapERC20 is ERC20 {
       return amountBought;
   }
 
-  function addLiquidity() public nonReentrant returns (uint256) {
+  function addLiquidity(address recipient) public nonReentrant returns (uint256) {
     uint256 _totalSupply = totalSupply;
 
     address _tokenA = tokenA;
@@ -119,7 +119,7 @@ contract UniswapERC20 is ERC20 {
     } else {
       liquidityMinted = Math.sqrt(amountA.mul(amountB));
     }
-    balanceOf[msg.sender] = balanceOf[msg.sender].add(liquidityMinted);
+    balanceOf[recipient] = balanceOf[recipient].add(liquidityMinted);
     totalSupply = _totalSupply.add(liquidityMinted);
 
     dataForToken[_tokenA] = TokenData({
@@ -139,7 +139,7 @@ contract UniswapERC20 is ERC20 {
   }
 
 
-  function removeLiquidity(uint256 amount) public nonReentrant returns (uint256, uint256) {
+  function removeLiquidity(uint256 amount, address recipient) public nonReentrant returns (uint256, uint256) {
     require(amount > 0);
     address _tokenA = tokenA;
     address _tokenB = tokenB;
@@ -154,8 +154,8 @@ contract UniswapERC20 is ERC20 {
     uint256 tokenBAmount = amount.mul(reserveB) / _totalSupply;
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(amount);
     totalSupply = _totalSupply.sub(amount);
-    require(IERC20(_tokenA).transfer(msg.sender, tokenAAmount));
-    require(IERC20(_tokenB).transfer(msg.sender, tokenBAmount));
+    require(IERC20(_tokenA).transfer(recipient, tokenAAmount));
+    require(IERC20(_tokenB).transfer(recipient, tokenBAmount));
 
     dataForToken[_tokenA] = TokenData({
       reserve: uint128(reserveA - tokenAAmount),
