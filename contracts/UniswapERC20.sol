@@ -37,7 +37,7 @@ contract UniswapERC20 is ERC20 {
   bool private reentrancyLock = false;
 
   modifier nonReentrant() {
-    require(!reentrancyLock);
+    require(!reentrancyLock, "REENTRANCY_FORBIDDEN");
     reentrancyLock = true;
     _;
     reentrancyLock = false;
@@ -167,8 +167,8 @@ contract UniswapERC20 is ERC20 {
     uint256 amountB = amount.mul(reserveB) / _totalSupply;
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(amount);
     totalSupply = _totalSupply.sub(amount);
-    require(IERC20(_tokenA).transfer(recipient, amountA));
-    require(IERC20(_tokenB).transfer(recipient, amountB));
+    require(IERC20(_tokenA).transfer(recipient, amountA), "TRANSFER_FAILED");
+    require(IERC20(_tokenB).transfer(recipient, amountB), "TRANSFER_FAILED");
 
     updateData(_tokenA, _tokenB, tokenAData, tokenBData, uint128(reserveA - amountA), uint128(reserveB - amountB));
 
