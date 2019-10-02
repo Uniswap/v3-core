@@ -93,20 +93,6 @@ contract UniswapERC20 is ERC20 {
       return amountBought;
   }
 
-  function getInputPrice(address inputToken, uint256 amountSold) public view returns (uint256) {
-    require(amountSold > 0);
-    address _tokenA = address(tokenA);
-    address _tokenB = address(tokenB);
-    require(inputToken == _tokenA || inputToken == _tokenB);
-    address outputToken = _tokenA;
-    if(inputToken == _tokenA) {
-      outputToken = _tokenB;
-    }
-    uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
-    uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
-    return getInputPrice(amountSold, inputReserve, outputReserve);
-  }
-
   function min(uint256 a, uint256 b) internal pure returns (uint256) {
       return a < b ? a : b;
   }
