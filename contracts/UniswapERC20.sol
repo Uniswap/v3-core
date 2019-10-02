@@ -55,7 +55,7 @@ contract UniswapERC20 is ERC20 {
     return numerator / denominator;
   }
 
-  function swap(address inputToken, address outputToken, address recipient) private returns (uint256, uint256) {
+  function swap(address inputToken, address outputToken, address recipient) internal returns (uint256, uint256) {
     TokenData memory inputTokenData = dataForToken[inputToken];
     TokenData memory outputTokenData = dataForToken[outputToken];
 
@@ -123,6 +123,7 @@ contract UniswapERC20 is ERC20 {
     if (_totalSupply > 0) {
       require(oldReserveA > 0, "INVALID_TOKEN_A_RESERVE");
       require(oldReserveB > 0, "INVALID_TOKEN_B_RESERVE");
+      // TODO: take the geometric mean instead of the min?? equivalently sqrt(newK / oldK) * _totalSupply
       liquidityMinted = min((amountA.mul(_totalSupply) / oldReserveA), (amountB.mul(_totalSupply) / oldReserveB));
     } else {
       // TODO: figure out how to set this safely (arithmetic or geometric mean?)
@@ -130,7 +131,7 @@ contract UniswapERC20 is ERC20 {
     }
     balanceOf[msg.sender] = balanceOf[msg.sender].add(liquidityMinted);
     totalSupply = _totalSupply.add(liquidityMinted);
-  
+
     dataForToken[_tokenA] = TokenData({
       reserve: uint128(newReserveA),
       accumulator: tokenAData.accumulator // TODO: accumulate
