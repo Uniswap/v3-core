@@ -34,7 +34,10 @@ contract UniswapWrapper {
   ) internal returns (uint256) {
       address exchange = UniswapERC20Factory(factory).getExchange(inputToken, outputToken);
       require(exchange != address(0), "NO_EXCHANGE");
-      require(IERC20(inputToken).transferFrom(msg.sender, exchange, amountSold), "TRANSFER_FAILED");
+      if (amountSold != 0) {
+        require(IERC20(inputToken).transferFrom(msg.sender, exchange, amountSold), "TRANSFER_FAILED");
+      }
+      // TODO: update EMA oracle?
       return UniswapERC20(exchange).swap(inputToken, recipient);
   }
 
@@ -49,11 +52,7 @@ contract UniswapWrapper {
       require(block.timestamp <= deadline, "DEADLINE_PASSED");
       uint256 amountBought = _send(inputToken, outputToken, amountSold, recipient);
       require(amountBought >= minBought, "INSUFFICIENT_AMOUNT_BOUGHT");
-
       emit Swap(inputToken, outputToken, msg.sender, recipient, amountSold, amountBought);
-
-      // TODO: update EMA oracle?
-
       return amountBought;
   }
 
@@ -67,8 +66,11 @@ contract UniswapWrapper {
       address recipient
   ) public nonReentrant returns (uint256) {
       require(block.timestamp <= deadline, "DEADLINE_PASSED");
+      // send intermediate amount directly to the next contract
       uint256 intermediateAmountBought = _send(inputToken, intermediateToken, amountSold, outputToken);
-      uint256 amountBought = _send(inputToken, intermediateToken, intermediateAmountBought, recipient);
+      emit Swap(inputToken, intermediateToken, msg.sender, msg.sender, amountSold, intermediateAmountBought);
+      uint256 amountBought = _send(inputToken, intermediateToken, 0, recipient);
+      emit Swap(intermediateToken, outputToken, msg.sender, recipient, intermediateAmountBought, amountBought);
       require(amountBought >= minBought, "INSUFFICIENT_AMOUNT_BOUGHT");
       return amountBought;
   }
