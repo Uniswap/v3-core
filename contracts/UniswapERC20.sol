@@ -6,8 +6,7 @@ import './interfaces/IERC20.sol';
 contract UniswapERC20 is ERC20 {
   using SafeMath for uint256;
 
-  event SwapAForB(address indexed buyer, uint256 amountSold, uint256 amountBought, address recipient);
-  event SwapBForA(address indexed buyer, uint256 amountSold, uint256 amountBought, address recipient);
+  event Swap(address inputToken, address buyer, address recipient, uint256 amountSold, uint256 amountBought);
   event AddLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
   event RemoveLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
 
@@ -61,7 +60,7 @@ contract UniswapERC20 is ERC20 {
     uint256 denominator = inputReserve.mul(1000).add(inputAmountWithFee);
     return numerator / denominator;
   }
-
+  
   function updateData(
       address firstToken,
       address secondToken,
@@ -88,7 +87,16 @@ contract UniswapERC20 is ERC20 {
   }
 
 
-  function swap(address inputToken, address outputToken, address recipient) internal returns (uint256, uint256) {
+  function swap(address inputToken, address recipient) public returns (uint256) {
+    
+    address outputToken;
+    if (inputToken == tokenA) {
+      outputToken = tokenB;
+    } else {
+      require(inputToken == tokenB, "INVALID_TOKEN");
+      outputToken = tokenA;
+    }
+
     TokenData memory inputTokenData = dataForToken[inputToken];
     TokenData memory outputTokenData = dataForToken[outputToken];
 
@@ -102,21 +110,9 @@ contract UniswapERC20 is ERC20 {
 
     updateData(inputToken, outputToken, inputTokenData, outputTokenData, uint128(newInputReserve), uint128(newOutputReserve));
 
-    return (amountSold, amountBought);
-  }
+    emit Swap(inputToken, msg.sender, recipient, amountSold, amountBought);
 
-  function swapAForB(address recipient) public nonReentrant returns (uint256) {
-      address _tokenA = tokenA;
-      address _tokenB = tokenB;
-      (uint256 amountSold, uint256 amountBought) = swap(_tokenA, _tokenB, recipient);
-      emit SwapAForB(msg.sender, amountSold, amountBought, recipient);
-      return amountBought;
-  }
-
-  function swapBForA(address recipient) public nonReentrant returns (uint256) {
-      (uint256 amountSold, uint256 amountBought) = swap(tokenB, tokenA, recipient);
-      emit SwapBForA(msg.sender, amountSold, amountBought, recipient);
-      return amountBought;
+    return amountBought;
   }
 
   function addLiquidity(address recipient) public nonReentrant returns (uint256) {
