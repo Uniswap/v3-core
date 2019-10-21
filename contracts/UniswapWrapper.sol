@@ -2,10 +2,10 @@ pragma solidity ^0.5.11;
 import './Math.sol';
 import './SafeMath.sol';
 import './interfaces/IERC20.sol';
-import './interfaces/IERC20.sol';
 import './UniswapERC20Factory.sol';
 import './UniswapERC20.sol';
 
+// TODO: review wrapper
 contract UniswapWrapper {
   using SafeMath for uint256;
 

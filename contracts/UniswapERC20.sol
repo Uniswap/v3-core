@@ -15,6 +15,7 @@ contract UniswapERC20 is ERC20 {
     uint128 accumulator;                // accumulated TWAP value (TODO)
   }
 
+  // TODO: add overflow counter?
   struct LastUpdate {
     uint128 time;
     uint128 blockNumber;
@@ -60,7 +61,7 @@ contract UniswapERC20 is ERC20 {
     uint256 denominator = inputReserve.mul(1000).add(inputAmountWithFee);
     return numerator / denominator;
   }
-  
+
   function updateData(
       address firstToken,
       address secondToken,
@@ -87,8 +88,9 @@ contract UniswapERC20 is ERC20 {
   }
 
 
-  function swap(address inputToken, address recipient) public returns (uint256) {
-    
+  // TODO: consider switching to output token
+  function swap(address inputToken, address recipient) public nonReentrant returns (uint256) {
+
     address outputToken;
     if (inputToken == tokenA) {
       outputToken = tokenB;
@@ -148,7 +150,7 @@ contract UniswapERC20 is ERC20 {
     return liquidityMinted;
   }
 
-
+  // TODO: input liquidity amount instead of calculating token amount
   function removeLiquidity(uint256 amount, address recipient) public nonReentrant returns (uint256, uint256) {
     address _tokenA = tokenA;
     address _tokenB = tokenB;
@@ -163,8 +165,8 @@ contract UniswapERC20 is ERC20 {
     uint256 amountB = amount.mul(reserveB) / _totalSupply;
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(amount);
     totalSupply = _totalSupply.sub(amount);
-    require(IERC20(_tokenA).transfer(recipient, amountA), "TRANSFER_FAILED");
-    require(IERC20(_tokenB).transfer(recipient, amountB), "TRANSFER_FAILED");
+    require(IERC20(_tokenA).transfer(recipient, amountA), "TRANSFER_A_FAILED");
+    require(IERC20(_tokenB).transfer(recipient, amountB), "TRANSFER_B_FAILED");
 
     updateData(_tokenA, _tokenB, tokenAData, tokenBData, uint128(reserveA - amountA), uint128(reserveB - amountB));
 
