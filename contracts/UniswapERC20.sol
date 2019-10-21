@@ -1,14 +1,25 @@
 pragma solidity ^0.5.11;
 import './ERC20.sol';
+import './Math.sol';
 import './interfaces/IERC20.sol';
 
 contract UniswapERC20 is ERC20 {
   using SafeMath for uint256;
 
-  event SwapAForB(address indexed buyer, uint256 amountSold, uint256 amountBought);
-  event SwapBForA(address indexed buyer, uint256 amountSold, uint256 amountBought);
+  event Swap(address inputToken, address buyer, address recipient, uint256 amountSold, uint256 amountBought);
   event AddLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
   event RemoveLiquidity(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
+
+  struct TokenData {
+    uint128 reserve;                    // cached reserve for this token
+    uint128 accumulator;                // accumulated TWAP value (TODO)
+  }
+
+  // TODO: add overflow counter?
+  struct LastUpdate {
+    uint128 time;
+    uint128 blockNumber;
+  }
 
   // ERC20 Data
   string public constant name = 'Uniswap V2';
@@ -19,13 +30,17 @@ contract UniswapERC20 is ERC20 {
   address public tokenB;                // ERC20 token traded on this contract
   address public factory;               // factory that created this contract
 
-  bool private rentrancyLock = false;
+  mapping (address => TokenData) public dataForToken; // cached information about the token
+
+  LastUpdate public lastUpdate;         // information about the last time the reserves were updated
+
+  bool private reentrancyLock = false;
 
   modifier nonReentrant() {
-    require(!rentrancyLock);
-    rentrancyLock = true;
+    require(!reentrancyLock, "REENTRANCY_FORBIDDEN");
+    reentrancyLock = true;
     _;
-    rentrancyLock = false;
+    reentrancyLock = false;
   }
 
 
@@ -39,8 +54,7 @@ contract UniswapERC20 is ERC20 {
 
   function () external {}
 
-
-  function getInputPrice(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
+  function getInputPrice(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) internal pure returns (uint256) {
     require(inputReserve > 0 && outputReserve > 0, 'INVALID_VALUE');
     uint256 inputAmountWithFee = inputAmount.mul(997);
     uint256 numerator = inputAmountWithFee.mul(outputReserve);
@@ -48,92 +62,116 @@ contract UniswapERC20 is ERC20 {
     return numerator / denominator;
   }
 
-  function swap(address inputToken, address outputToken, uint256 amountSold, address recipient) private returns (uint256) {
-      uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
-      uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
-      uint256 amountBought = getInputPrice(amountSold, inputReserve, outputReserve);
-      require(IERC20(inputToken).transferFrom(msg.sender, address(this), amountSold));
-      require(IERC20(outputToken).transfer(recipient, amountBought));
-      return amountBought;
+  function updateData(
+      address firstToken,
+      address secondToken,
+      TokenData memory oldFirstTokenData,
+      TokenData memory oldSecondTokenData,
+      uint128 newFirstTokenReserve,
+      uint128 newSecondTokenReserve
+    ) internal returns (uint128, uint128) {
+      uint128 diff = uint128(block.number) - lastUpdate.blockNumber;
+      dataForToken[firstToken] = TokenData({
+          reserve: newFirstTokenReserve,
+          accumulator: diff * oldFirstTokenData.reserve + oldFirstTokenData.accumulator
+      });
+      dataForToken[secondToken] = TokenData({
+          reserve: newSecondTokenReserve,
+          accumulator: diff * oldSecondTokenData.reserve + oldSecondTokenData.accumulator
+      });
+      if (diff != 0) {
+        lastUpdate = LastUpdate({
+          blockNumber: uint128(block.number),
+          time: uint128(block.timestamp)
+        });
+      }
   }
 
-  //TO: DO msg.sender is wrapper
-  function swapAForB(uint256 amountSold, address recipient) public nonReentrant returns (uint256) {
-      uint256 amountBought = swap(tokenA, tokenB, amountSold, recipient);
-      emit SwapAForB(msg.sender, amountSold, amountBought);
-      return amountBought;
-  }
 
-  //TO: DO msg.sender is wrapper
-  function swapBForA(uint256 amountSold, address recipient) public nonReentrant returns (uint256) {
-      uint256 amountBought = swap(tokenB, tokenA, amountSold, recipient);
-      emit SwapBForA(msg.sender, amountSold, amountBought);
-      return amountBought;
-  }
+  // TODO: consider switching to output token
+  function swap(address inputToken, address recipient) public nonReentrant returns (uint256) {
 
-  function getInputPrice(address inputToken, uint256 amountSold) public view returns (uint256) {
-    require(amountSold > 0);
-    address _tokenA = address(tokenA);
-    address _tokenB = address(tokenB);
-    require(inputToken == _tokenA || inputToken == _tokenB);
-    address outputToken = _tokenA;
-    if(inputToken == _tokenA) {
-      outputToken = _tokenB;
+    address outputToken;
+    if (inputToken == tokenA) {
+      outputToken = tokenB;
+    } else {
+      require(inputToken == tokenB, "INVALID_TOKEN");
+      outputToken = tokenA;
     }
-    uint256 inputReserve = IERC20(inputToken).balanceOf(address(this));
-    uint256 outputReserve = IERC20(outputToken).balanceOf(address(this));
-    return getInputPrice(amountSold, inputReserve, outputReserve);
+
+    TokenData memory inputTokenData = dataForToken[inputToken];
+    TokenData memory outputTokenData = dataForToken[outputToken];
+
+    uint256 newInputReserve = IERC20(inputToken).balanceOf(address(this));
+    uint256 oldInputReserve = uint256(inputTokenData.reserve);
+    uint256 currentOutputReserve = IERC20(outputToken).balanceOf(address(this));
+    uint256 amountSold = newInputReserve - oldInputReserve;
+    uint256 amountBought = getInputPrice(amountSold, oldInputReserve, currentOutputReserve);
+    require(IERC20(outputToken).transfer(recipient, amountBought), "TRANSFER_FAILED");
+    uint256 newOutputReserve = currentOutputReserve - amountBought;
+
+    updateData(inputToken, outputToken, inputTokenData, outputTokenData, uint128(newInputReserve), uint128(newOutputReserve));
+
+    emit Swap(inputToken, msg.sender, recipient, amountSold, amountBought);
+
+    return amountBought;
   }
 
-
-  function addLiquidity(uint256 amountA, uint256 maxTokenB) public nonReentrant returns (uint256) {
-    require(amountA > 0);
+  function addLiquidity(address recipient) public nonReentrant returns (uint256) {
     uint256 _totalSupply = totalSupply;
 
-    if (_totalSupply > 0) {
-      address _tokenA = tokenA;
-      address _tokenB = tokenB;
-      uint256 reserveA = IERC20(_tokenA).balanceOf(address(this));
-      uint256 reserveB = IERC20(_tokenB).balanceOf(address(this));
-      uint256 amountB = (amountA.mul(reserveB) / reserveA).add(1);
-      uint256 liquidityMinted = amountA.mul(_totalSupply) / reserveA;
-      balanceOf[msg.sender] = balanceOf[msg.sender].add(liquidityMinted);
-      totalSupply = _totalSupply.add(liquidityMinted);
-      require(IERC20(_tokenA).transferFrom(msg.sender, address(this), amountA));
-      require(IERC20(_tokenB).transferFrom(msg.sender, address(this), amountB));
-      emit AddLiquidity(msg.sender, amountA, amountB);
-      emit Transfer(address(0), msg.sender, liquidityMinted);
-      return liquidityMinted;
-
-    } else {
-      // TODO: figure out how to set this safely (arithemtic or geometric mean?)
-      uint256 initialLiquidity = amountA;
-      totalSupply = initialLiquidity;
-      balanceOf[msg.sender] = initialLiquidity;
-      require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountA));
-      require(IERC20(tokenB).transferFrom(msg.sender, address(this), maxTokenB));
-      emit AddLiquidity(msg.sender, amountA, maxTokenB);
-      emit Transfer(address(0), msg.sender, initialLiquidity);
-      return initialLiquidity;
-    }
-  }
-
-
-  function removeLiquidity(uint256 amount) public nonReentrant returns (uint256, uint256) {
-    require(amount > 0);
     address _tokenA = tokenA;
     address _tokenB = tokenB;
+
+    TokenData memory tokenAData = dataForToken[_tokenA];
+    TokenData memory tokenBData = dataForToken[_tokenB];
+
+    uint256 newReserveA = IERC20(_tokenA).balanceOf(address(this));
+    uint256 newReserveB = IERC20(_tokenB).balanceOf(address(this));
+
+    uint256 amountA = newReserveA - tokenAData.reserve;
+    uint256 amountB = newReserveB - tokenBData.reserve;
+
+    uint256 liquidityMinted;
+
+    if (_totalSupply > 0) {
+      liquidityMinted = Math.min(amountA.mul(_totalSupply).div(tokenAData.reserve), amountB.mul(_totalSupply).div(tokenBData.reserve));
+    } else {
+      liquidityMinted = Math.sqrt(amountA.mul(amountB));
+    }
+    balanceOf[recipient] = balanceOf[recipient].add(liquidityMinted);
+    totalSupply = _totalSupply.add(liquidityMinted);
+
+    updateData(_tokenA, _tokenB, tokenAData, tokenBData, uint128(newReserveA), uint128(newReserveB));
+
+    emit AddLiquidity(msg.sender, amountA, amountB);
+    emit Transfer(address(0), msg.sender, liquidityMinted);
+
+    return liquidityMinted;
+  }
+
+  // TODO: input liquidity amount instead of calculating token amount
+  function removeLiquidity(uint256 amount, address recipient) public nonReentrant returns (uint256, uint256) {
+    address _tokenA = tokenA;
+    address _tokenB = tokenB;
+
+    TokenData memory tokenAData = dataForToken[_tokenA];
+    TokenData memory tokenBData = dataForToken[_tokenB];
+
     uint256 reserveA = IERC20(_tokenA).balanceOf(address(this));
     uint256 reserveB = IERC20(_tokenB).balanceOf(address(this));
     uint256 _totalSupply = totalSupply;
-    uint256 tokenAAmount = amount.mul(reserveA) / _totalSupply;
-    uint256 tokenBAmount = amount.mul(reserveB) / _totalSupply;
+    uint256 amountA = amount.mul(reserveA) / _totalSupply;
+    uint256 amountB = amount.mul(reserveB) / _totalSupply;
     balanceOf[msg.sender] = balanceOf[msg.sender].sub(amount);
     totalSupply = _totalSupply.sub(amount);
-    require(IERC20(_tokenA).transfer(msg.sender, tokenAAmount));
-    require(IERC20(_tokenB).transfer(msg.sender, tokenBAmount));
-    emit RemoveLiquidity(msg.sender, tokenAAmount, tokenBAmount);
+    require(IERC20(_tokenA).transfer(recipient, amountA), "TRANSFER_A_FAILED");
+    require(IERC20(_tokenB).transfer(recipient, amountB), "TRANSFER_B_FAILED");
+
+    updateData(_tokenA, _tokenB, tokenAData, tokenBData, uint128(reserveA - amountA), uint128(reserveB - amountB));
+
+    emit RemoveLiquidity(recipient, amountA, amountB);
     emit Transfer(msg.sender, address(0), amount);
-    return (tokenAAmount, tokenBAmount);
+    return (amountA, amountB);
   }
 }

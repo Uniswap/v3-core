@@ -16,7 +16,7 @@ contract UniswapERC20Factory {
   mapping (uint256 => address) public getExchangeWithId;
 
 
-  function createExchange(address token1, address token2) public returns (address) {
+  function createExchange(address token1, address token2) public returns (address) {    
     require(token1 != address(0) && token2 != address(0) && token1 != token2);
     require(setExchange[token1][token2] == address(0), 'EXCHANGE_EXISTS');
 
@@ -38,5 +38,13 @@ contract UniswapERC20Factory {
 
     emit NewERC20Exchange(tokenA, tokenB, address(exchange));
     return address(exchange);
+  }
+
+  function getExchange(address token1, address token2) public view returns (address) {
+    if (token1 < token2) {
+      return setExchange[token1][token2];
+    } else {
+      return setExchange[token2][token1];
+    }
   }
 }
