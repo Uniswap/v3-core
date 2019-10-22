@@ -1,13 +1,25 @@
 {
+  "engines": {
+    "node": "^10"
+  },
   "dependencies": {
-    "solc": "^0.5.11"
+    "solc": "0.5.12"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.3",
+    "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
     "ethereum-waffle": "^2.1.0",
-    "mocha": "^6.2.0"
+    "mocha": "^6.2.2",
+    "prettier": "^1.18.2",
+    "ts-node": "^8.4.1",
+    "typescript": "^3.6.4"
   },
   "scripts": {
-    "test": "waffle && mocha"
-  }
+    "prettier:check": "yarn prettier ./test/*.ts --check",
+    "prettier:write": "yarn prettier ./test/*.ts --write",
+    "compile": "rm -rf ./build/ && waffle waffle.json",
+    "test": "mocha"
+  },
+  "license": "GPL-3.0-or-later"
 }

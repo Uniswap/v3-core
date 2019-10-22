@@ -1,17 +1,21 @@
-## Installation:
+# Uniswap v2 Smart Contracts
 
-1) Clone Uniswap
+## Development
+
+### Clone
+
 ```
-$ git clone https://github.com/Uniswap/uniswap-v2
-$ cd uniswap-v2
+git clone https://github.com/Uniswap/uniswap-v2.git
+cd uniswap-v2
 ```
 
-2) Install dependencies
+### Install Dependencies
 ```
 yarn
 ```
 
-3) Run tests
+### Compile Contracts and Run Tests
 ```
+yarn compile
 yarn test
 ```
