@@ -1,8 +1,10 @@
 # Uniswap v2 Smart Contracts
 
-## Development
+[![CircleCI](https://circleci.com/gh/Uniswap/uniswap-v2.svg?style=svg)](https://circleci.com/gh/Uniswap/uniswap-v2)
 
-### Clone
+## Local Development
+
+### Clone Repository
 
 ```
 git clone https://github.com/Uniswap/uniswap-v2.git
