@@ -10,7 +10,7 @@ contract ERC20 is IERC20 {
 
 	string public name;
 	string public symbol;
-	uint8 public decimals = 18;
+	uint8 public decimals;
 	uint256 public totalSupply;
 	mapping (address => uint256) public balanceOf;
 	mapping (address => mapping (address => uint256)) public allowance;
@@ -18,15 +18,15 @@ contract ERC20 is IERC20 {
 	event Transfer(address indexed from, address indexed to, uint256 value);
 	event Approval(address indexed owner, address indexed spender, uint256 value);
 
-	constructor(string memory _name, string memory _symbol, uint256 _totalSupply) public {
+	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _totalSupply) public {
 		name = _name;
 		symbol = _symbol;
+		decimals = _decimals;
 		totalSupply = _totalSupply;
 		balanceOf[msg.sender] = totalSupply;
 	}
 
 	function _transfer(address from, address to, uint256 value) internal {
-		require(to != address(0), "ERC20: transfer to the zero address");
 		balanceOf[from] = balanceOf[from].sub(value);
 		balanceOf[to] = balanceOf[to].add(value);
 		emit Transfer(from, to, value);

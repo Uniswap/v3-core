@@ -3,10 +3,10 @@ pragma solidity 0.5.12;
 
 import "./libraries/Math.sol";
 import "./libraries/SafeMath.sol";
-import "./UniswapERC20Factory.sol";
-import "./UniswapERC20.sol";
+import "./UniswapV2Factory.sol";
+import "./UniswapV2.sol";
 
-contract UniswapWrapper {
+contract UniswapV2Helper {
     using SafeMath for uint256;
 
     event Swap(address inputToken, address outputToken, address indexed buyer, address recipient, uint256 amountSold, uint256 amountBought);
@@ -32,12 +32,12 @@ contract UniswapWrapper {
         uint256 amountSold,
         address recipient
     ) internal returns (uint256) {
-        address exchange = UniswapERC20Factory(factory).getExchange(inputToken, outputToken);
+        address exchange = UniswapV2Factory(factory).getExchange(inputToken, outputToken);
         require(exchange != address(0), "NO_EXCHANGE");
         if (amountSold != 0) {
         require(IERC20(inputToken).transferFrom(msg.sender, exchange, amountSold), "TRANSFER_FAILED");
         }
-        return UniswapERC20(exchange).swap(inputToken, recipient);
+        return UniswapV2(exchange).swap(inputToken, recipient);
     }
 
     function send(
@@ -94,7 +94,7 @@ contract UniswapWrapper {
     ) public nonReentrant returns (uint256) {
         require(IERC20(token1).transferFrom(msg.sender, exchange, amount1), "TRANSFER_FAILED");
         require(IERC20(token2).transferFrom(msg.sender, exchange, amount2), "TRANSFER_FAILED");
-        return UniswapERC20(exchange).addLiquidity(recipient);
+        return UniswapV2(exchange).addLiquidity(recipient);
     }
 
     function addLiquidity(
@@ -106,10 +106,10 @@ contract UniswapWrapper {
         uint256 deadline
     ) public nonReentrant returns (uint256) {
         require(block.timestamp <= deadline, "DEADLINE_PASSED");
-        address exchange = UniswapERC20Factory(factory).getExchange(token1, token2);
+        address exchange = UniswapV2Factory(factory).getExchange(token1, token2);
         require(exchange != address(0), "NO_EXCHANGE");
-        (uint256 reserve1,) = UniswapERC20(exchange).dataForToken(token1);
-        (uint256 reserve2,) = UniswapERC20(exchange).dataForToken(token2);
+        (uint256 reserve1,) = UniswapV2(exchange).dataForToken(token1);
+        (uint256 reserve2,) = UniswapV2(exchange).dataForToken(token2);
         uint256 amount2 = amount1.mul(reserve2).div(reserve1);
         uint256 amountBought = _addLiquidity(token1, token2, amount1, amount2, exchange, recipient);
         require(amountBought >= minBought, "INSUFFICIENT_AMOUNT_BOUGHT");
@@ -123,8 +123,8 @@ contract UniswapWrapper {
         uint256 deadline
     ) public nonReentrant returns (uint256, uint256) {
         require(block.timestamp <= deadline, "DEADLINE_PASSED");
-        address exchange = UniswapERC20Factory(factory).getExchange(token1, token2);
+        address exchange = UniswapV2Factory(factory).getExchange(token1, token2);
         require(exchange != address(0), "NO_EXCHANGE");
-        return UniswapERC20(exchange).removeLiquidity(amount, recipient);
+        return UniswapV2(exchange).removeLiquidity(amount, recipient);
     }
 }

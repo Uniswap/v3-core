@@ -1,11 +1,12 @@
-// TODO overflow counter, review
+// TODO overflow counter, review, fee
 pragma solidity 0.5.12;
 
-import "./implementations/ERC20.sol";
 import "./libraries/Math.sol";
 import "./libraries/SafeMath.sol";
+import "./interfaces/IERC20.sol";
+import "./token/ERC20.sol";
 
-contract UniswapERC20 is ERC20("Uniswap V2", "UNI-V2", 0) {
+contract UniswapV2 is ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     using Math for uint256;
     using SafeMath for uint256;
 
@@ -50,6 +51,7 @@ contract UniswapERC20 is ERC20("Uniswap V2", "UNI-V2", 0) {
 
     function () external {}
 
+    // TODO public?
     function getInputPrice(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) internal pure returns (uint256) {
         require(inputReserve > 0 && outputReserve > 0, "Uniswap: INVALID_VALUE");
         uint256 inputAmountWithFee = inputAmount.mul(997);
@@ -130,8 +132,11 @@ contract UniswapERC20 is ERC20("Uniswap V2", "UNI-V2", 0) {
         uint256 liquidityMinted;
 
         if (_totalSupply > 0) {
+            // TODO think about "donating" the non-min token amount by not updating stored balances
+            // TODO think about rounding here
             liquidityMinted = Math.min(amountA.mul(_totalSupply).div(tokenAData.reserve), amountB.mul(_totalSupply).div(tokenBData.reserve));
         } else {
+            // TODO think through this (enforce min amount?)
             liquidityMinted = amountA.mul(amountB).sqrt();
         }
         
@@ -146,7 +151,6 @@ contract UniswapERC20 is ERC20("Uniswap V2", "UNI-V2", 0) {
         return liquidityMinted;
     }
 
-    // TODO: input liquidity amount instead of calculating token amount
     function removeLiquidity(uint256 amount, address recipient) public nonReentrant returns (uint256, uint256) {
         address _tokenA = tokenA;
         address _tokenB = tokenB;
@@ -170,4 +174,6 @@ contract UniswapERC20 is ERC20("Uniswap V2", "UNI-V2", 0) {
         emit Transfer(msg.sender, address(0), amount);
         return (amountA, amountB);
     }
+
+    // TODO merge/sync/donate function? think about the difference between over/under cases
 }
