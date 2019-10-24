@@ -42,11 +42,10 @@ contract UniswapV2 is ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         reentrancyLock = false;
     }
 
-    constructor(address _tokenA, address _tokenB) public {
-        require(address(_tokenA) != address(0) && _tokenB != address(0), "Uniswap: INVALID_ADDRESS");
+    constructor() public {
         factory = msg.sender;
-        tokenA = _tokenA;
-        tokenB = _tokenB;
+        // tokenA = _tokenA;
+        // tokenB = _tokenB;
     }
 
     function () external {}

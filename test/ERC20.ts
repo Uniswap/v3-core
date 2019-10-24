@@ -4,7 +4,6 @@ import { Contract } from 'ethers'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
 import ERC20 from '../build/ERC20.json'
-import {} from 'ethers/utils'
 
 chai.use(solidity)
 const { expect } = chai
@@ -13,6 +12,7 @@ const decimalize = (n: number): BigNumber => bigNumberify(n).mul(bigNumberify(10
 
 const name = 'Mock ERC20'
 const symbol = 'MOCK'
+const decimals = 18
 const totalSupply = decimalize(1000)
 
 describe('ERC20', () => {
@@ -21,7 +21,7 @@ describe('ERC20', () => {
   let token: Contract
 
   beforeEach(async () => {
-    token = await deployContract(wallet, ERC20, [name, symbol, totalSupply])
+    token = await deployContract(wallet, ERC20, [name, symbol, decimals, totalSupply])
   })
 
   it('name, symbol, decimals, totalSupply, balanceOf', async () => {

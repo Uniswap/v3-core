@@ -1,45 +1,62 @@
-// TODO review, create2
+// TODO create2 exchanges
 pragma solidity 0.5.12;
 
-import "./UniswapV2.sol";
+import "./interfaces/IUniswapV2Factory.sol";
 
-contract UniswapV2Factory {
-    event ExchangeCreated(address indexed token0, address indexed token1, address exchange);
+contract UniswapV2Factory is IUniswapV2Factory {
+    event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint256 exchangeCount);
 
-    mapping (address => address) internal exchangeToToken0;
-    mapping (address => address) internal exchangeToToken1;
-    mapping (address => mapping(address => address)) internal token0ToToken1ToExchange;
-
-    function orderTokens(address tokenA, address tokenB) internal pure returns (address, address) {
-        address token0 = tokenA < tokenB ? tokenA : tokenB;
-        address token1 = tokenA < tokenB ? tokenB : tokenA;
-        return (token0, token1);
+    struct Pair {
+        address token0;
+        address token1;
     }
 
-    function createExchange(address tokenA, address tokenB) public returns (address) {
-        require(tokenA != tokenB, "UniswapV2Factory: INVALID_PAIR");
-        require(tokenA != address(0) && tokenB != address(0), "UniswapV2Factory: NO_ZERO_ADDRESS_TOKENS");
+    bytes private exchangeBytecode;
+    uint256 public exchangeCount;
+    mapping (address => Pair) private exchangeToPair;
+    mapping (address => mapping(address => address)) private token0ToToken1ToExchange;
 
-        (address token0, address token1) = orderTokens(tokenA, tokenB);
-
-        require(token0ToToken1ToExchange[token0][token1] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
-
-        UniswapV2 exchange = new UniswapV2(token0, token1);
-        exchangeToToken0[address(exchange)] = token0;
-        exchangeToToken1[address(exchange)] = token1;
-        token0ToToken1ToExchange[token0][token1] = address(exchange);
-
-        emit ExchangeCreated(token0, token1, address(exchange));
-
-        return address(exchange);
+    constructor(bytes memory _exchangeBytecode) public {
+        require(_exchangeBytecode.length >= 0x20, "UniswapV2Factory: SHORT_BYTECODE");
+        exchangeBytecode = _exchangeBytecode;
     }
 
-    function getExchange(address tokenA, address tokenB) public view returns (address) {
-        (address token0, address token1) = orderTokens(tokenA, tokenB);
-        return token0ToToken1ToExchange[token0][token1];
+    function orderTokens(address tokenA, address tokenB) private pure returns (Pair memory pair) {
+        pair = tokenA < tokenB ? Pair(tokenA, tokenB) : Pair(tokenB, tokenA);
     }
 
-    function getTokens(address exchange) public view returns (address, address) {
-        return (exchangeToToken0[exchange], exchangeToToken1[exchange]);
+    function getTokens(address exchange) public view returns (address token0, address token1) {
+        Pair storage pair = exchangeToPair[exchange];
+        (token0, token1) = (pair.token0, pair.token1);
+    }
+
+    function getExchange(address tokenA, address tokenB) public view returns (address exchange) {
+        Pair memory pair = orderTokens(tokenA, tokenB);
+        exchange = token0ToToken1ToExchange[pair.token0][pair.token1];
+    }
+
+    function createExchange(address tokenA, address tokenB) public returns (address exchange) {
+        require(tokenA != tokenB, "UniswapV2Factory: SAME_TOKEN");
+        require(tokenA != address(0) && tokenB != address(0), "UniswapV2Factory: ZERO_ADDRESS_TOKEN");
+
+        Pair memory pair = orderTokens(tokenA, tokenB);
+
+        require(token0ToToken1ToExchange[pair.token0][pair.token1] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
+
+        bytes memory exchangeBytecodeMemory = exchangeBytecode;
+        uint256 exchangeBytecodeLength = exchangeBytecode.length;
+        bytes32 salt = keccak256(abi.encodePacked(pair.token0, pair.token1));
+        assembly {
+            exchange := create2(
+                0,
+                add(exchangeBytecodeMemory, 0x20),
+                exchangeBytecodeLength,
+                salt
+            )
+        }
+        exchangeToPair[exchange] = pair;
+        token0ToToken1ToExchange[pair.token0][pair.token1] = exchange;
+
+        emit ExchangeCreated(pair.token0, pair.token1, exchange, exchangeCount++);
     }
 }

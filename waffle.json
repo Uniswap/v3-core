@@ -1,3 +1,15 @@
 {
-  "solcVersion": "./node_modules/solc"
+  "solcVersion": "./node_modules/solc",
+  "compilerOptions": {
+    "evmVersion": "constantinople",
+    "optimizer": {
+      "enabled": true,
+      "runs": 1000
+    }
+  },
+  "ganacheOptions": {
+    "hardfork": "constantinople",
+    "mnemonic": "horn horn horn horn horn horn horn horn horn horn horn horn",
+    "gasLimit": "0x7A1200"
+  }
 }
