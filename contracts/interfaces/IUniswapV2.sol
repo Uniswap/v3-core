@@ -11,12 +11,14 @@ interface IUniswapV2 {
     event LiquidityMinted(
         address indexed sender,
         address indexed recipient,
+        uint256 liquidity,
         uint256 amountToken0,
         uint256 amountToken1
     );
     event LiquidityBurned(
         address indexed sender,
         address indexed recipient,
+        uint256 liquidity,
         uint256 amountToken0,
         uint256 amountToken1
     );
@@ -36,7 +38,7 @@ interface IUniswapV2 {
 
     function mintLiquidity(address recipient) external returns (uint256 liquidity);
     function burnLiquidity(
-        uint256 amount,
+        uint256 liquidity,
         address recipient
     ) external returns (uint256 amountToken0, uint256 amountToken1);
     function swap(address input, address recipient) external returns (uint256 amountOutput);

@@ -23,12 +23,14 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     event LiquidityMinted(
         address indexed sender,
         address indexed recipient,
+        uint256 liquidity,
         uint256 amountToken0,
         uint256 amountToken1
     );
     event LiquidityBurned(
         address indexed sender,
         address indexed recipient,
+        uint256 liquidity,
         uint256 amountToken0,
         uint256 amountToken1
     );
@@ -138,19 +140,19 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         
         updateData(balanceToken0, balanceToken1);
 
-        emit LiquidityMinted(msg.sender, recipient, amountToken0, amountToken1);
+        emit LiquidityMinted(msg.sender, recipient, liquidity, amountToken0, amountToken1);
     }
 
     function burnLiquidity(
-        uint256 amount,
+        uint256 liquidity,
         address recipient
     ) public lock returns (uint256 amountToken0, uint256 amountToken1) {
-        require(amount > 0, "UniswapV2: ZERO_AMOUNT");
+        require(liquidity > 0, "UniswapV2: ZERO_AMOUNT");
 
-        amountToken0 = amount.mul(tokenData[token0].reserve).div(totalSupply);
-        amountToken1 = amount.mul(tokenData[token1].reserve).div(totalSupply);
+        amountToken0 = liquidity.mul(tokenData[token0].reserve).div(totalSupply);
+        amountToken1 = liquidity.mul(tokenData[token1].reserve).div(totalSupply);
 
-        burnFrom(msg.sender, amount); // TODO gas golf?
+        burnFrom(msg.sender, liquidity); // TODO gas golf?
         require(IERC20(token0).transfer(recipient, amountToken0), "UniswapV2: TRANSFER_FAILED");
         require(IERC20(token1).transfer(recipient, amountToken1), "UniswapV2: TRANSFER_FAILED");
 
@@ -159,7 +161,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         uint256 balanceToken1 = IERC20(token1).balanceOf(address(this));
         updateData(balanceToken0, balanceToken1);
 
-        emit LiquidityBurned(msg.sender, recipient, amountToken0, amountToken1);
+        emit LiquidityBurned(msg.sender, recipient, liquidity, amountToken0, amountToken1);
     }
 
     function swap(address input, address recipient) public lock returns (uint256 amountOutput) {
