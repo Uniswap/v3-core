@@ -39,10 +39,10 @@ describe('UniswapV2', () => {
   })
 
   it('mintLiquidity', async () => {
-    await token0.transfer(exchange.address, decimalize(1))
+    await token0.transfer(exchange.address, decimalize(4))
     await token1.transfer(exchange.address, decimalize(1))
     await expect(exchange.connect(wallet).mintLiquidity(wallet.address))
       .to.emit(exchange, 'LiquidityMinted')
-      .withArgs(wallet.address, wallet.address, decimalize(1), decimalize(1), decimalize(1))
+      .withArgs(wallet.address, wallet.address, decimalize(2), decimalize(4), decimalize(1))
   })
 })

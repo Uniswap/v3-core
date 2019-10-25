@@ -7,15 +7,14 @@ library Math {
     }
 
     // based on https://github.com/ethereum/dapp-bin/blob/11f05fc9e3f31a00d57982bc2f65ef2654f1b569/library/math.sol#L28 via https://github.com/ethereum/dapp-bin/pull/50
-    function sqrt(uint256 x) internal pure returns (uint256) {
+    function sqrt(uint256 x) internal pure returns (uint256 y) {
         if (x == 0) return 0;
         else if (x <= 3) return 1;
         uint256 z = (x + 1) / 2;
-        uint256 y = x;
+        y = x;
         while (z < y) {
             y = z;
             z = (x / z + z) / 2;
         }
-        return y;
     }
 }
