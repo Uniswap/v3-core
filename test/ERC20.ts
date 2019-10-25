@@ -1,3 +1,4 @@
+import path from 'path'
 import chai from 'chai'
 import { solidity, createMockProvider, getWallets, deployContract } from 'ethereum-waffle'
 import { Contract } from 'ethers'
@@ -13,10 +14,11 @@ const decimalize = (n: number): BigNumber => bigNumberify(n).mul(bigNumberify(10
 const name = 'Mock ERC20'
 const symbol = 'MOCK'
 const decimals = 18
-const totalSupply = decimalize(1000)
+const totalSupply = decimalize(100)
+const transferAmount = decimalize(100)
 
 describe('ERC20', () => {
-  const provider = createMockProvider()
+  const provider = createMockProvider(path.join(__dirname, '..', 'waffle.json'))
   const [wallet, walletTo] = getWallets(provider)
   let token: Contract
 
@@ -33,8 +35,6 @@ describe('ERC20', () => {
   })
 
   it('transfer', async () => {
-    const transferAmount = decimalize(10)
-
     await expect(token.transfer(walletTo.address, transferAmount))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, walletTo.address, transferAmount)
@@ -44,8 +44,6 @@ describe('ERC20', () => {
   })
 
   it('transferFrom', async () => {
-    const transferAmount = decimalize(10)
-
     await expect(token.approve(walletTo.address, transferAmount))
       .to.emit(token, 'Approval')
       .withArgs(wallet.address, walletTo.address, transferAmount)
