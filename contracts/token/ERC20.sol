@@ -26,13 +26,19 @@ contract ERC20 is IERC20 {
 		balanceOf[msg.sender] = totalSupply;
 	}
 
-	function _transfer(address from, address to, uint256 value) internal {
+	function mint(address to, uint256 value) internal {
+		totalSupply = totalSupply.add(value);
+		balanceOf[to] = balanceOf[to].add(value);
+		emit Transfer(address(0), to, value);
+	}
+
+	function _transfer(address from, address to, uint256 value) private {
 		balanceOf[from] = balanceOf[from].sub(value);
 		balanceOf[to] = balanceOf[to].add(value);
 		emit Transfer(from, to, value);
 	}
 
-	function _burn(address from, uint256 value) internal {
+	function _burn(address from, uint256 value) private {
 		balanceOf[from] = balanceOf[from].sub(value);
 		totalSupply = totalSupply.sub(value);
 		emit Transfer(from, address(0), value);
@@ -55,7 +61,7 @@ contract ERC20 is IERC20 {
 		_burn(msg.sender, value);
 	}
 
-	function burnFrom(address from, uint256 value) external {
+	function burnFrom(address from, uint256 value) public {
 		if (allowance[from][msg.sender] != uint256(-1)) {
 			allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
 		}
