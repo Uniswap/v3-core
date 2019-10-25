@@ -57,11 +57,11 @@ contract ERC20 is IERC20 {
 		return true;
 	}
 
-	function burn(uint256 value) external {
+	function burn(uint256 value) public {
 		_burn(msg.sender, value);
 	}
 
-	function burnFrom(address from, uint256 value) public {
+	function burnFrom(address from, uint256 value) external {
 		if (allowance[from][msg.sender] != uint256(-1)) {
 			allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
 		}

@@ -74,8 +74,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         token1 = _token1;
     }
 
-    function updateData(uint256 balanceToken0, uint256 balanceToken1) private {
-        require(balanceToken0 <= uint128(-1) && balanceToken1 <= uint128(-1), "UniswapV2: OVERFLOW");
+    function updateData(uint256 reserveToken0, uint256 reserveToken1) private {
+        require(reserveToken0 <= uint128(-1) && reserveToken1 <= uint128(-1), "UniswapV2: OVERFLOW");
 
         require(block.number <= uint64(-1), "UniswapV2: BLOCK_NUMBER_TOO_HIGH");
         uint64 blocksElapsed = uint64(block.number) - lastUpdate.blockNumber;
@@ -88,8 +88,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         tokenDataToken0.accumulator += tokenDataToken0.reserve * blocksElapsed;
         tokenDataToken1.accumulator += tokenDataToken1.reserve * blocksElapsed;
         // update reserves
-        tokenDataToken0.reserve = uint128(balanceToken0);
-        tokenDataToken1.reserve = uint128(balanceToken1);
+        tokenDataToken0.reserve = uint128(reserveToken0);
+        tokenDataToken1.reserve = uint128(reserveToken1);
 
         if (blocksElapsed > 0) {
             require(block.timestamp <= uint64(-1), "UniswapV2: BLOCK_TIMESTAMP_TOO_HIGH");
@@ -152,7 +152,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         amountToken0 = liquidity.mul(tokenData[token0].reserve).div(totalSupply);
         amountToken1 = liquidity.mul(tokenData[token1].reserve).div(totalSupply);
 
-        burnFrom(msg.sender, liquidity); // TODO gas golf?
+        burn(liquidity); // TODO gas golf?
         require(IERC20(token0).transfer(recipient, amountToken0), "UniswapV2: TRANSFER_FAILED");
         require(IERC20(token1).transfer(recipient, amountToken1), "UniswapV2: TRANSFER_FAILED");
 
