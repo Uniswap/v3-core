@@ -56,7 +56,7 @@ describe('ERC20', () => {
     expect(await token.balanceOf(walletTo.address)).to.eq(transferAmount)
   })
 
-  it('transfer fails', async () => {
+  it('transfer:fail', async () => {
     await expect(token.transfer(walletTo.address, totalSupply.add(1))).to.be.revertedWith(
       'SafeMath: subtraction overflow'
     )
