@@ -1,4 +1,3 @@
-// TODO create2 exchanges
 pragma solidity 0.5.12;
 
 import "./interfaces/IUniswapV2Factory.sol";
@@ -13,14 +12,16 @@ contract UniswapV2Factory is IUniswapV2Factory {
         address token1;
     }
 
+    uint256 public chainId;
     bytes public exchangeBytecode;
     uint256 public exchangeCount;
     mapping (address => Pair) private exchangeToPair;
     mapping (address => mapping(address => address)) private token0ToToken1ToExchange;
 
-    constructor(bytes memory _exchangeBytecode) public {
+    constructor(bytes memory _exchangeBytecode, uint256 _chainId) public {
         require(_exchangeBytecode.length >= 0x20, "UniswapV2Factory: SHORT_BYTECODE");
         exchangeBytecode = _exchangeBytecode;
+        chainId = _chainId;
     }
 
     function orderTokens(address tokenA, address tokenB) private pure returns (Pair memory pair) {
@@ -47,7 +48,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
         bytes memory exchangeBytecodeMemory = exchangeBytecode;
         uint256 exchangeBytecodeLength = exchangeBytecode.length;
-        bytes32 salt = keccak256(abi.encodePacked(pair.token0, pair.token1));
+        bytes32 salt = keccak256(abi.encodePacked(pair.token0, pair.token1, chainId));
         assembly {
             exchange := create2(
                 0,
@@ -56,7 +57,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
                 salt
             )
         }
-        UniswapV2(exchange).initialize(pair.token0, pair.token1);
+        UniswapV2(exchange).initialize(pair.token0, pair.token1, chainId);
         exchangeToPair[exchange] = pair;
         token0ToToken1ToExchange[pair.token0][pair.token1] = exchange;
 

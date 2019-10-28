@@ -1,4 +1,3 @@
-// TODO overflow counter, review, fee
 pragma solidity 0.5.12;
 
 import "./interfaces/IUniswapV2.sol";
@@ -45,7 +44,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         uint64 blockTimestamp; // overflows about 280 billion years after the earth's sun explodes
     }
 
-    bool public initialized;
     bool private locked;
     
     address public factory;
@@ -66,12 +64,11 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         factory = msg.sender;
     }
 
-    function initialize(address _token0, address _token1) public {
-        require(!initialized, "UniswapV2: ALREADY_INITIALIZED");
-        initialized = true;
-
+    function initialize(address _token0, address _token1, uint256 chainId) public {
+        require(token0 == address(0) && token1 == address(0), "UniswapV2: ALREADY_INITIALIZED");
         token0 = _token0;
         token1 = _token1;
+        initialize(chainId);
     }
 
     function updateData(uint256 reserveToken0, uint256 reserveToken1) private {
