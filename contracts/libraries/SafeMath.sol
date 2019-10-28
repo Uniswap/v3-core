@@ -26,4 +26,14 @@ library SafeMath {
         uint256 c = a / b;
         return c;
     }
+
+    function downcastTo64(uint256 a) internal pure returns (uint64) {
+        require(a <= uint64(-1), "SafeMath: downcast overflow");
+        return uint64(a);
+    }
+
+    function downcastTo128(uint256 a) internal pure returns (uint128) {
+        require(a <= uint128(-1), "SafeMath: downcast overflow");
+        return uint128(a);
+    }
 }

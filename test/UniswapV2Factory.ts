@@ -36,9 +36,6 @@ describe('UniswapV2Factory', () => {
     factory = await deployContract(wallet, UniswapV2Factory, [bytecode, chainId], {
       gasLimit: (provider._web3Provider as any).options.gasLimit
     })
-
-    expect(await factory.exchangeBytecode()).to.eq(bytecode)
-    expect(await factory.exchangeCount()).to.eq(0)
   })
 
   async function createExchange(tokens: string[]) {
@@ -63,6 +60,12 @@ describe('UniswapV2Factory', () => {
     expect(await exchange.token0()).to.eq(dummyTokens[0])
     expect(await exchange.token1()).to.eq(dummyTokens[1])
   }
+
+  it('exchangeBytecode, chainId, exchangeCount', async () => {
+    expect(await factory.exchangeBytecode()).to.eq(bytecode)
+    expect(await factory.chainId()).to.eq(chainId)
+    expect(await factory.exchangeCount()).to.eq(0)
+  })
 
   it('createExchange', async () => {
     await createExchange(dummyTokens)

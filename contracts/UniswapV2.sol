@@ -2,6 +2,7 @@ pragma solidity 0.5.12;
 
 import "./interfaces/IUniswapV2.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IIncompatibleERC20.sol";
 
 import "./libraries/Math.sol";
 import "./libraries/SafeMath.sol";
@@ -71,28 +72,46 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         initialize(chainId);
     }
 
-    function updateData(uint256 reserveToken0, uint256 reserveToken1) private {
-        require(reserveToken0 <= uint128(-1) && reserveToken1 <= uint128(-1), "UniswapV2: OVERFLOW");
+    // https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
+	function safeTransfer(address token, address to, uint value) private returns (bool result) {
+		IIncompatibleERC20(token).transfer(to, value);
+		
+		assembly {
+			switch returndatasize()   
+				case 0 {
+					result := not(0)
+                }
+				case 32 {
+                    returndatacopy(0, 0, 32)
+                    result := mload(0)
+                }
+				default {
+					revert(0, 0)
+				}
+        }
+    }
 
-        require(block.number <= uint64(-1), "UniswapV2: BLOCK_NUMBER_TOO_HIGH");
-        uint64 blocksElapsed = uint64(block.number) - lastUpdate.blockNumber;
+    function updateData(uint256 reserveToken0, uint256 reserveToken1) private {
+        uint64 blockNumber = (block.number).downcastTo64();
+        uint64 blocksElapsed = blockNumber - lastUpdate.blockNumber;
 
         // get token data
         TokenData storage tokenDataToken0 = tokenData[token0];
         TokenData storage tokenDataToken1 = tokenData[token1];
-        // TODO does this have a gas impact because it unnecessarily triggers for the 2nd+ trades within a block?
-        // update accumulators
-        tokenDataToken0.accumulator += tokenDataToken0.reserve * blocksElapsed;
-        tokenDataToken1.accumulator += tokenDataToken1.reserve * blocksElapsed;
-        // update reserves
-        tokenDataToken0.reserve = uint128(reserveToken0);
-        tokenDataToken1.reserve = uint128(reserveToken1);
 
         if (blocksElapsed > 0) {
-            require(block.timestamp <= uint64(-1), "UniswapV2: BLOCK_TIMESTAMP_TOO_HIGH");
-            lastUpdate.blockNumber = uint64(block.number);
-            lastUpdate.blockTimestamp = uint64(block.timestamp);
+            // TODO do edge case math here
+            // update accumulators
+            tokenDataToken0.accumulator += tokenDataToken0.reserve * blocksElapsed;
+            tokenDataToken1.accumulator += tokenDataToken1.reserve * blocksElapsed;
+
+            // update last update
+            lastUpdate.blockNumber = blockNumber;
+            lastUpdate.blockTimestamp = (block.timestamp).downcastTo64();
         }
+
+        tokenDataToken0.reserve = reserveToken0.downcastTo128();
+        tokenDataToken1.reserve = reserveToken1.downcastTo128();
     }
 
     // TODO merge/sync/donate function? think about the difference between over/under cases
@@ -118,6 +137,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         uint256 reserveToken0 = uint256(tokenData[token0].reserve);
         uint256 reserveToken1 = uint256(tokenData[token1].reserve);
 
+        // TODO think about what happens if this fails
         // get amounts
         uint256 amountToken0 = balanceToken0.sub(reserveToken0);
         uint256 amountToken1 = balanceToken1.sub(reserveToken1);
@@ -150,8 +170,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         amountToken1 = liquidity.mul(tokenData[token1].reserve).div(totalSupply);
 
         burn(liquidity); // TODO gas golf?
-        require(IERC20(token0).transfer(recipient, amountToken0), "UniswapV2: TRANSFER_FAILED");
-        require(IERC20(token1).transfer(recipient, amountToken1), "UniswapV2: TRANSFER_FAILED");
+        require(safeTransfer(token0, recipient, amountToken0), "UniswapV2: TRANSFER_FAILED");
+        require(safeTransfer(token1, recipient, amountToken1), "UniswapV2: TRANSFER_FAILED");
 
         // get balances
         uint256 balanceToken0 = IERC20(token0).balanceOf(address(this));
@@ -165,22 +185,24 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         require(input == token0 || input == token1, "UniswapV2: INVALID_INPUT");
         address output = input == token0 ? token1 : token0;
 
-        // get balances
+        // get input balance
         uint256 balanceInput = IERC20(input).balanceOf(address(this));
 
         // get reserves
         uint256 reserveInput = uint256(tokenData[input].reserve);
         uint256 reserveOutput = uint256(tokenData[output].reserve);
 
+        // TODO think about what happens if this fails
         // get input amount
-        uint256 amountInput = balanceInput.sub(reserveInput); // TODO think through edge cases here
+        uint256 amountInput = balanceInput.sub(reserveInput);
         require(amountInput > 0, "UniswapV2: ZERO_AMOUNT");
 
         // calculate output amount and send to the recipient
         amountOutput = getAmountOutput(amountInput, reserveInput, reserveOutput);
-        require(IERC20(output).transfer(recipient, amountOutput), "UniswapV2: TRANSFER_FAILED"); // TODO fallback here
+        require(safeTransfer(output, recipient, amountOutput), "UniswapV2: TRANSFER_FAILED");
 
         // update data
+        // TODO re-fetch input balance here?
         uint256 balanceOutput = IERC20(output).balanceOf(address(this));
         input == token0 ? updateData(balanceInput, balanceOutput) : updateData(balanceOutput, balanceInput);
 
