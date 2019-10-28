@@ -10,6 +10,8 @@ import UniswapV2Factory from '../build/UniswapV2Factory.json'
 chai.use(solidity)
 const { expect } = chai
 
+const chainId = 1
+
 const dummyTokens = ['0x1000000000000000000000000000000000000000', '0x2000000000000000000000000000000000000000']
 const getExpectedAddress = (factoryAddress: string, bytecode: string): string =>
   getAddress(
@@ -17,7 +19,7 @@ const getExpectedAddress = (factoryAddress: string, bytecode: string): string =>
       [
         '0xff',
         factoryAddress.slice(2),
-        keccak256(solidityPack(['address', 'address'], dummyTokens)).slice(2),
+        keccak256(solidityPack(['address', 'address', 'uint256'], [...dummyTokens, chainId])).slice(2),
         keccak256(bytecode).slice(2)
       ].join('')
     ).slice(-40)}`
@@ -31,7 +33,7 @@ describe('UniswapV2Factory', () => {
 
   beforeEach(async () => {
     bytecode = `0x${UniswapV2.evm.bytecode.object}`
-    factory = await deployContract(wallet, UniswapV2Factory, [bytecode], {
+    factory = await deployContract(wallet, UniswapV2Factory, [bytecode, chainId], {
       gasLimit: (provider._web3Provider as any).options.gasLimit
     })
 
@@ -57,7 +59,6 @@ describe('UniswapV2Factory', () => {
     expect(await factory.getExchange(...tokens.slice().reverse())).to.eq(expectedAddress)
 
     const exchange = new Contract(expectedAddress, UniswapV2.abi as any, provider)
-    expect(await exchange.initialized()).to.eq(true)
     expect(await exchange.factory()).to.eq(factory.address)
     expect(await exchange.token0()).to.eq(dummyTokens[0])
     expect(await exchange.token1()).to.eq(dummyTokens[1])

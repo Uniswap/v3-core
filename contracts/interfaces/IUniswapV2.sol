@@ -23,7 +23,6 @@ interface IUniswapV2 {
         uint256 amountToken1
     );
 
-    function initialized() external view returns (bool);
     function factory() external view returns (address);
     function token0() external view returns (address);
     function token1() external view returns (address);
@@ -34,7 +33,7 @@ interface IUniswapV2 {
         uint256 reserveOutput
     ) external pure returns (uint256 amountOutput);
 
-    function initialize(address _token0, address _token1) external;
+    function initialize(address _token0, address _token1, uint256 chainId) external;
 
     function mintLiquidity(address recipient) external returns (uint256 liquidity);
     function burnLiquidity(

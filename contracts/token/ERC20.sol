@@ -16,12 +16,9 @@ contract ERC20 is IERC20 {
 	mapping (address => uint256) public balanceOf;
 	mapping (address => mapping (address => uint256)) public allowance;
 
-	// EIP-712
+	// EIP-191
+	uint256 public chainId;
     mapping (address => uint) public nonceFor;
-	bytes32 public DOMAIN_SEPARATOR;
-    bytes32 public APPROVE_TYPEHASH = keccak256(
-		"Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)"
-	);
 
 	event Transfer(address indexed from, address indexed to, uint256 value);
 	event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -33,15 +30,9 @@ contract ERC20 is IERC20 {
 		mint(msg.sender, _totalSupply);
 	}
 
-    function initialize(uint256 chainId) internal {
-		require(DOMAIN_SEPARATOR == bytes32(0), "ERC20: ALREADY_INITIALIZED");
-		DOMAIN_SEPARATOR = keccak256(abi.encode(
-            keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-            keccak256(bytes(name)),
-            keccak256(bytes("1")),
-            chainId,
-            address(this)
-        ));
+    function initialize(uint256 _chainId) internal {
+        require(chainId == 0, "ERC20: ALREADY_INITIALIZED");
+		chainId = _chainId;
 	}
 
 	function mint(address to, uint256 value) internal {
@@ -106,20 +97,20 @@ contract ERC20 is IERC20 {
 		bytes32 r,
 		bytes32 s
 	) external {
-		require(DOMAIN_SEPARATOR != bytes32(0), "ERC20: UNINITIALIZED");
+		require(chainId != 0, "ERC20: UNINITIALIZED");
         require(nonce == nonceFor[owner]++, "ERC20: INVALID_NONCE");
 		require(expiration > block.timestamp, "ERC20: EXPIRED_SIGNATURE");
 
         bytes32 digest = keccak256(abi.encodePacked(
-			byte(0x19),
-			byte(0x01),
-			DOMAIN_SEPARATOR,
-			keccak256(abi.encode(
-				APPROVE_TYPEHASH, owner, spender, value, nonce, expiration
+			hex'19',
+			hex'00',
+			address(this),
+			keccak256(abi.encodePacked(
+				owner, spender, value, nonce, expiration, chainId
 			))
-        ));
+		));
         require(owner == ecrecover(digest, v, r, s), "ERC20: INVALID_SIGNATURE"); // TODO add ECDSA checks? https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
 
-		_approve(msg.sender, spender, value);
+		_approve(owner, spender, value);
 	}
 }

@@ -12,8 +12,8 @@ contract UniswapV2Factory is IUniswapV2Factory {
         address token1;
     }
 
-    uint256 public chainId;
     bytes public exchangeBytecode;
+    uint256 public chainId;
     uint256 public exchangeCount;
     mapping (address => Pair) private exchangeToPair;
     mapping (address => mapping(address => address)) private token0ToToken1ToExchange;

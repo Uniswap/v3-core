@@ -4,17 +4,19 @@ import { solidity, createMockProvider, getWallets, deployContract } from 'ethere
 import { Contract } from 'ethers'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
-import ERC20 from '../build/ERC20.json'
+import ERC20 from '../build/GenericERC20.json'
 import UniswapV2 from '../build/UniswapV2.json'
 import UniswapV2Factory from '../build/UniswapV2Factory.json'
 
 chai.use(solidity)
 const { expect } = chai
 
+const chainId = 1
+
 const decimalize = (n: number): BigNumber => bigNumberify(n).mul(bigNumberify(10).pow(18))
 
-const token0Details = ['Token 0', 'T0', 18, decimalize(100)]
-const token1Details = ['Token 1', 'T1', 18, decimalize(100)]
+const token0Details = ['Token 0', 'T0', 18, decimalize(100), chainId]
+const token1Details = ['Token 1', 'T1', 18, decimalize(100), chainId]
 
 describe('UniswapV2', () => {
   const provider = createMockProvider(path.join(__dirname, '..', 'waffle.json'))
@@ -29,7 +31,7 @@ describe('UniswapV2', () => {
     token1 = await deployContract(wallet, ERC20, token1Details)
 
     const bytecode = `0x${UniswapV2.evm.bytecode.object}`
-    factory = await deployContract(wallet, UniswapV2Factory, [bytecode], {
+    factory = await deployContract(wallet, UniswapV2Factory, [bytecode, chainId], {
       gasLimit: (provider._web3Provider as any).options.gasLimit
     })
 

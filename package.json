@@ -3,6 +3,7 @@
     "node": "^10"
   },
   "dependencies": {
+    "ethereumjs-util": "^6.1.0",
     "solc": "0.5.12"
   },
   "devDependencies": {
