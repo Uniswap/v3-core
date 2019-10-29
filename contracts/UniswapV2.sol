@@ -73,21 +73,21 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     // https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
-	function safeTransfer(address token, address to, uint value) private returns (bool result) {
-		IIncompatibleERC20(token).transfer(to, value);
-		
-		assembly {
-			switch returndatasize()   
-				case 0 {
-					result := not(0)
+    function safeTransfer(address token, address to, uint value) private returns (bool result) {
+        IIncompatibleERC20(token).transfer(to, value);
+
+        assembly {
+            switch returndatasize()   
+                case 0 {
+                    result := not(0)
                 }
-				case 32 {
+                case 32 {
                     returndatacopy(0, 0, 32)
                     result := mload(0)
                 }
-				default {
-					revert(0, 0)
-				}
+                default {
+                    revert(0, 0)
+                }
         }
     }
 
