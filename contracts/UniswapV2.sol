@@ -91,8 +91,27 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         }
     }
 
+    // TODO merge/sync/donate function? think about the difference between over/under cases
+
+    function getReserves() public view returns (uint128 reserveToken0, uint128 reserveToken1) {
+        reserveToken0 = tokenData[token0].reserve;
+        reserveToken1 = tokenData[token1].reserve;
+    }
+
+    function getData() public view returns (
+        uint128 accumulatorToken0,
+        uint128 accumulatorToken1,
+        uint64 blockNumber,
+        uint64 blockTimestamp
+    ) {
+        accumulatorToken0 = tokenData[token0].accumulator;
+        accumulatorToken1 = tokenData[token1].accumulator;
+        blockNumber = lastUpdate.blockNumber;
+        blockTimestamp = lastUpdate.blockTimestamp;
+    }
+
     function updateData(uint256 reserveToken0, uint256 reserveToken1) private {
-        uint64 blockNumber = (block.number).downcastTo64();
+        uint64 blockNumber = block.number.downcastTo64();
         uint64 blocksElapsed = blockNumber - lastUpdate.blockNumber;
 
         // get token data
@@ -101,28 +120,29 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
 
         if (blocksElapsed > 0) {
             // TODO do edge case math here
-            // update accumulators
-            tokenDataToken0.accumulator += tokenDataToken0.reserve * blocksElapsed;
-            tokenDataToken1.accumulator += tokenDataToken1.reserve * blocksElapsed;
+            // update accumulators if this isn't the first call to updateData
+            if (lastUpdate.blockNumber != 0) {
+                tokenDataToken0.accumulator += tokenDataToken0.reserve * blocksElapsed;
+                tokenDataToken1.accumulator += tokenDataToken1.reserve * blocksElapsed;
+            }
 
             // update last update
             lastUpdate.blockNumber = blockNumber;
-            lastUpdate.blockTimestamp = (block.timestamp).downcastTo64();
+            lastUpdate.blockTimestamp = block.timestamp.downcastTo64();
         }
 
         tokenDataToken0.reserve = reserveToken0.downcastTo128();
         tokenDataToken1.reserve = reserveToken1.downcastTo128();
     }
 
-    // TODO merge/sync/donate function? think about the difference between over/under cases
-
     function getAmountOutput(
         uint256 amountInput,
         uint256 reserveInput,
         uint256 reserveOutput
     ) public pure returns (uint256 amountOutput) {
-        require(reserveInput > 0 && reserveOutput > 0, "UniswapV2: INVALID_VALUE");
-        uint256 amountInputWithFee = amountInput.mul(997);
+        require(amountInput > 0 && reserveInput > 0 && reserveOutput > 0, "UniswapV2: INVALID_VALUE");
+        uint256 fee = 3; // TODO 30 bips for now, think through this later
+        uint256 amountInputWithFee = amountInput.mul(1000 - fee);
         uint256 numerator = amountInputWithFee.mul(reserveOutput);
         uint256 denominator = reserveInput.mul(1000).add(amountInputWithFee);
         amountOutput = numerator.div(denominator);
@@ -169,7 +189,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         amountToken0 = liquidity.mul(tokenData[token0].reserve).div(totalSupply);
         amountToken1 = liquidity.mul(tokenData[token1].reserve).div(totalSupply);
 
-        burn(liquidity); // TODO gas golf?
+        _burn(address(this), liquidity); // TODO gas golf?
         require(safeTransfer(token0, recipient, amountToken0), "UniswapV2: TRANSFER_FAILED");
         require(safeTransfer(token1, recipient, amountToken1), "UniswapV2: TRANSFER_FAILED");
 
@@ -195,7 +215,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         // TODO think about what happens if this fails
         // get input amount
         uint256 amountInput = balanceInput.sub(reserveInput);
-        require(amountInput > 0, "UniswapV2: ZERO_AMOUNT");
 
         // calculate output amount and send to the recipient
         amountOutput = getAmountOutput(amountInput, reserveInput, reserveOutput);

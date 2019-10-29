@@ -13,7 +13,7 @@ const { expect } = chai
 
 const decimalize = (n: number): BigNumber => bigNumberify(n).mul(bigNumberify(10).pow(18))
 
-const name = 'Mock ERC20'
+const name = 'Mock Token'
 const symbol = 'MOCK'
 const decimals = 18
 

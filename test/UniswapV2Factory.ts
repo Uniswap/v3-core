@@ -38,6 +38,12 @@ describe('UniswapV2Factory', () => {
     })
   })
 
+  it('exchangeBytecode, chainId, exchangeCount', async () => {
+    expect(await factory.exchangeBytecode()).to.eq(bytecode)
+    expect(await factory.chainId()).to.eq(chainId)
+    expect(await factory.exchangeCount()).to.eq(0)
+  })
+
   async function createExchange(tokens: string[]) {
     const expectedAddress = getExpectedAddress(factory.address, bytecode)
 
@@ -60,12 +66,6 @@ describe('UniswapV2Factory', () => {
     expect(await exchange.token0()).to.eq(dummyTokens[0])
     expect(await exchange.token1()).to.eq(dummyTokens[1])
   }
-
-  it('exchangeBytecode, chainId, exchangeCount', async () => {
-    expect(await factory.exchangeBytecode()).to.eq(bytecode)
-    expect(await factory.chainId()).to.eq(chainId)
-    expect(await factory.exchangeCount()).to.eq(0)
-  })
 
   it('createExchange', async () => {
     await createExchange(dummyTokens)

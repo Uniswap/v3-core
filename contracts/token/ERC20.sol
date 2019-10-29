@@ -9,6 +9,7 @@ import "../libraries/SafeMath.sol";
 contract ERC20 is IERC20 {
     using SafeMath for uint256;
 
+    // ERC-20 data
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -16,7 +17,7 @@ contract ERC20 is IERC20 {
     mapping (address => uint256) public balanceOf;
     mapping (address => mapping (address => uint256)) public allowance;
 
-    // EIP-191
+    // ERC-191 data
     uint256 public chainId;
     mapping (address => uint) public nonceFor;
 
@@ -34,7 +35,7 @@ contract ERC20 is IERC20 {
         require(chainId == 0, "ERC20: ALREADY_INITIALIZED");
         chainId = _chainId;
     }
-
+    
     function mint(address to, uint256 value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);
@@ -47,7 +48,7 @@ contract ERC20 is IERC20 {
         emit Transfer(from, to, value);
     }
 
-    function _burn(address from, uint256 value) private {
+    function _burn(address from, uint256 value) internal {
         balanceOf[from] = balanceOf[from].sub(value);
         totalSupply = totalSupply.sub(value);
         emit Transfer(from, address(0), value);
@@ -71,7 +72,7 @@ contract ERC20 is IERC20 {
         return true;
     }
 
-    function burn(uint256 value) public {
+    function burn(uint256 value) external {
         _burn(msg.sender, value);
     }
 

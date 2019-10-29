@@ -27,6 +27,13 @@ interface IUniswapV2 {
     function token0() external view returns (address);
     function token1() external view returns (address);
 
+    function getReserves() external view returns (uint128 reserveToken0, uint128 reserveToken1);
+    function getData() external view returns (
+        uint128 accumulatorToken0,
+        uint128 accumulatorToken1,
+        uint64 blockNumber,
+        uint64 blockTimestamp
+    );
     function getAmountOutput(
         uint256 amountInput,
         uint256 reserveInput,
