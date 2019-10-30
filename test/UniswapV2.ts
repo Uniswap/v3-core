@@ -1,65 +1,51 @@
 import path from 'path'
 import chai from 'chai'
-import { solidity, createMockProvider, getWallets, deployContract } from 'ethereum-waffle'
+import { solidity, createMockProvider, getWallets, createFixtureLoader } from 'ethereum-waffle'
 import { Contract } from 'ethers'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
-import ERC20 from '../build/GenericERC20.json'
-import UniswapV2 from '../build/UniswapV2.json'
-import UniswapV2Factory from '../build/UniswapV2Factory.json'
+import { CHAIN_ID } from './shared/constants'
+import { expandTo18Decimals } from './shared/utilities'
+import { exchangeFixture, ExchangeFixture } from './shared/fixtures'
 
 chai.use(solidity)
 const { expect } = chai
 
-const chainId = 1
-
-const decimalize = (n: number | string): BigNumber => bigNumberify(n).mul(bigNumberify(10).pow(18))
-
-const tokenADetails = ['Mock Token A', 'MOCKA', 18, decimalize(100), chainId]
-const tokenBDetails = ['Mock Token B', 'MOCKB', 18, decimalize(100), chainId]
-
 describe('UniswapV2', () => {
   const provider = createMockProvider(path.join(__dirname, '..', 'waffle.json'))
   const [wallet] = getWallets(provider)
+  const loadFixture = createFixtureLoader(provider, [wallet])
+
   let token0: Contract
   let token1: Contract
-  let factory: Contract
   let exchange: Contract
-
   beforeEach(async () => {
-    const tokenA = await deployContract(wallet, ERC20, tokenADetails)
-    const tokenB = await deployContract(wallet, ERC20, tokenBDetails)
-
-    token0 = tokenA.address < tokenB.address ? tokenA : tokenB
-    token1 = tokenA.address < tokenB.address ? tokenB : tokenA
-
-    const bytecode = `0x${UniswapV2.evm.bytecode.object}`
-    factory = await deployContract(wallet, UniswapV2Factory, [bytecode, chainId], {
-      gasLimit: (provider._web3Provider as any).options.gasLimit
-    })
-
-    await factory.createExchange(token0.address, token1.address)
-    const exchangeAddress = await factory.getExchange(token0.address, token1.address)
-    exchange = new Contract(exchangeAddress, UniswapV2.abi, provider)
+    const { token0: _token0, token1: _token1, exchange: _exchange } = (await loadFixture(
+      exchangeFixture as any
+    )) as ExchangeFixture
+    token0 = _token0
+    token1 = _token1
+    exchange = _exchange
   })
 
   it('initialize:fail', async () => {
-    await expect(exchange.connect(wallet).initialize(token0.address, token1.address, chainId)).to.be.revertedWith(
+    await expect(exchange.connect(wallet).initialize(token0.address, token1.address, CHAIN_ID)).to.be.revertedWith(
       'UniswapV2: ALREADY_INITIALIZED'
     )
   })
 
   it('getAmountOutput', async () => {
     const testCases: BigNumber[][] = [
-      ['1', '005', '010'].map((n: string) => decimalize(n)),
-      ['1', '010', '005'].map((n: string) => decimalize(n)),
+      [1, 5, 10],
+      [1, 10, 5],
 
-      ['2', '005', '010'].map((n: string) => decimalize(n)),
-      ['2', '010', '005'].map((n: string) => decimalize(n)),
+      [2, 5, 10],
+      [2, 10, 5],
 
-      ['1', '010', '010'].map((n: string) => decimalize(n)),
-      ['1', '100', '100'].map((n: string) => decimalize(n))
-    ]
+      [1, 10, 10],
+      [1, 100, 100],
+      [1, 1000, 1000]
+    ].map(a => a.map((n: number) => expandTo18Decimals(n)))
 
     const expectedOutputs: BigNumber[] = [
       '1662497915624478906',
@@ -69,17 +55,19 @@ describe('UniswapV2', () => {
       '0831248957812239453',
 
       '0906610893880149131',
-      '0987158034397061298'
+      '0987158034397061298',
+      '0996006981039903216'
     ].map((n: string) => bigNumberify(n))
 
     const outputs = await Promise.all(testCases.map(c => exchange.getAmountOutput(...c)))
+
     expect(outputs).to.deep.eq(expectedOutputs)
   })
 
   it('mintLiquidity', async () => {
-    const token0Amount = decimalize(1)
-    const token1Amount = decimalize(4)
-    const expectedLiquidity = decimalize(2)
+    const token0Amount = expandTo18Decimals(1)
+    const token1Amount = expandTo18Decimals(4)
+    const expectedLiquidity = expandTo18Decimals(2)
 
     await token0.transfer(exchange.address, token0Amount)
     await token1.transfer(exchange.address, token1Amount)
@@ -98,11 +86,11 @@ describe('UniswapV2', () => {
   }
 
   it('swap', async () => {
-    const token0Amount = decimalize(5)
-    const token1Amount = decimalize(10)
+    const token0Amount = expandTo18Decimals(5)
+    const token1Amount = expandTo18Decimals(10)
     await addLiquidity(token0Amount, token1Amount)
 
-    const swapAmount = decimalize(1)
+    const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('1662497915624478906')
 
     await token0.transfer(exchange.address, swapAmount)
@@ -118,10 +106,10 @@ describe('UniswapV2', () => {
   })
 
   it('burnLiquidity', async () => {
-    const token0Amount = decimalize(3)
-    const token1Amount = decimalize(3)
+    const token0Amount = expandTo18Decimals(3)
+    const token1Amount = expandTo18Decimals(3)
     await addLiquidity(token0Amount, token1Amount)
-    const liquidity = decimalize(3)
+    const liquidity = expandTo18Decimals(3)
 
     await exchange.connect(wallet).transfer(exchange.address, liquidity)
     await expect(exchange.connect(wallet).burnLiquidity(liquidity, wallet.address))
@@ -140,8 +128,8 @@ describe('UniswapV2', () => {
   })
 
   it('getReserves', async () => {
-    const token0Amount = decimalize(3)
-    const token1Amount = decimalize(3)
+    const token0Amount = expandTo18Decimals(3)
+    const token1Amount = expandTo18Decimals(3)
 
     expect(await exchange.getReserves()).to.deep.eq([0, 0].map(n => bigNumberify(n)))
     await addLiquidity(token0Amount, token1Amount)
@@ -149,8 +137,8 @@ describe('UniswapV2', () => {
   })
 
   it('getData', async () => {
-    const token0Amount = decimalize(3)
-    const token1Amount = decimalize(3)
+    const token0Amount = expandTo18Decimals(3)
+    const token1Amount = expandTo18Decimals(3)
 
     const preData = await exchange.getData()
     expect(preData).to.deep.eq([0, 0, 0, 0].map(n => bigNumberify(n)))
