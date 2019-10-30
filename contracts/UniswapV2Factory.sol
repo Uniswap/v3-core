@@ -15,6 +15,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
     bytes public exchangeBytecode;
     uint256 public chainId;
     uint256 public exchangeCount;
+
     mapping (address => Pair) private exchangeToPair;
     mapping (address => mapping(address => address)) private token0ToToken1ToExchange;
 
@@ -24,25 +25,15 @@ contract UniswapV2Factory is IUniswapV2Factory {
         chainId = _chainId;
     }
 
-    function orderTokens(address tokenA, address tokenB) private pure returns (Pair memory pair) {
-        pair = tokenA < tokenB ? Pair({ token0: tokenA, token1: tokenB }) : Pair({ token0: tokenB, token1: tokenA });
+    function getPair(address tokenA, address tokenB) private pure returns (Pair memory) {
+        return tokenA < tokenB ? Pair({ token0: tokenA, token1: tokenB }) : Pair({ token0: tokenB, token1: tokenA });
     }
 
-    function getTokens(address exchange) public view returns (address token0, address token1) {
-        Pair storage pair = exchangeToPair[exchange];
-        (token0, token1) = (pair.token0, pair.token1);
-    }
+    function createExchange(address tokenA, address tokenB) external returns (address exchange) {
+        require(tokenA != tokenB, "UniswapV2Factory: SAME_ADDRESS");
+        require(tokenA != address(0) && tokenB != address(0), "UniswapV2Factory: ZERO_ADDRESS");
 
-    function getExchange(address tokenA, address tokenB) public view returns (address exchange) {
-        Pair memory pair = orderTokens(tokenA, tokenB);
-        exchange = token0ToToken1ToExchange[pair.token0][pair.token1];
-    }
-
-    function createExchange(address tokenA, address tokenB) public returns (address exchange) {
-        require(tokenA != tokenB, "UniswapV2Factory: SAME_TOKEN");
-        require(tokenA != address(0) && tokenB != address(0), "UniswapV2Factory: ZERO_ADDRESS_TOKEN");
-
-        Pair memory pair = orderTokens(tokenA, tokenB);
+        Pair memory pair = getPair(tokenA, tokenB);
 
         require(token0ToToken1ToExchange[pair.token0][pair.token1] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
 
@@ -62,5 +53,15 @@ contract UniswapV2Factory is IUniswapV2Factory {
         token0ToToken1ToExchange[pair.token0][pair.token1] = exchange;
 
         emit ExchangeCreated(pair.token0, pair.token1, exchange, exchangeCount++);
+    }
+
+    function getTokens(address exchange) external view returns (address, address) {
+        Pair storage pair = exchangeToPair[exchange];
+        return (pair.token0, pair.token1);
+    }
+
+    function getExchange(address tokenA, address tokenB) external view returns (address) {
+        Pair memory pair = getPair(tokenA, tokenB);
+        return token0ToToken1ToExchange[pair.token0][pair.token1];
     }
 }

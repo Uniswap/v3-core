@@ -5,54 +5,44 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IIncompatibleERC20.sol";
 
 import "./libraries/Math.sol";
-import "./libraries/SafeMath.sol";
+import "./libraries/SafeMath128.sol";
+import "./libraries/SafeMath256.sol";
 
 import "./token/ERC20.sol";
 
 contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
-    using Math for uint256;
-    using SafeMath for uint256;
+    using SafeMath128 for uint128;
+    using SafeMath256 for uint256;
 
-    event Swap(
-        address indexed input,
-        address indexed sender,
-        address indexed recipient,
-        uint256 amountInput,
-        uint256 amountOutput
-    );
     event LiquidityMinted(
-        address indexed sender,
-        address indexed recipient,
-        uint256 liquidity,
-        uint256 amountToken0,
-        uint256 amountToken1
+        address indexed sender, address indexed recipient, uint256 liquidity, uint128 amountToken0, uint128 amountToken1
     );
     event LiquidityBurned(
-        address indexed sender,
-        address indexed recipient,
-        uint256 liquidity,
-        uint256 amountToken0,
-        uint256 amountToken1
+        address indexed sender, address indexed recipient, uint256 liquidity, uint128 amountToken0, uint128 amountToken1
+    );
+    event Swap(
+        address indexed sender, address indexed recipient, address input, uint128 amountInput, uint128 amountOutput
     );
 
     struct TokenData {
-        uint128 reserve;
-        uint128 accumulator;
+        uint128 token0;
+        uint128 token1;
     }
 
-    struct LastUpdate {
+    struct Time {
         uint64 blockNumber;
         uint64 blockTimestamp; // overflows about 280 billion years after the earth's sun explodes
     }
 
-    bool private locked;
+    bool private locked; // reentrancy lock
     
     address public factory;
     address public token0;
     address public token1;
 
-    mapping (address => TokenData) private tokenData;
-    LastUpdate private lastUpdate;
+    TokenData private reserves;
+    TokenData private reservesCumulative;
+    Time private lastUpdate;
 
     modifier lock() {
         require(!locked, "UniswapV2: LOCKED");
@@ -65,7 +55,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         factory = msg.sender;
     }
 
-    function initialize(address _token0, address _token1, uint256 chainId) public {
+    function initialize(address _token0, address _token1, uint256 chainId) external {
         require(token0 == address(0) && token1 == address(0), "UniswapV2: ALREADY_INITIALIZED");
         token0 = _token0;
         token1 = _token1;
@@ -73,57 +63,47 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     // https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
-    function safeTransfer(address token, address to, uint value) private returns (bool result) {
-        IIncompatibleERC20(token).transfer(to, value);
-
+    function safeTransfer(address token, address to, uint128 value) private returns (bool result) {
+        IIncompatibleERC20(token).transfer(to, uint256(value));
         assembly {
             switch returndatasize()   
                 case 0 {
-                    result := not(0)
+                    result := not(0) // for no-bool responses, treat as successful
                 }
                 case 32 {
                     returndatacopy(0, 0, 32)
-                    result := mload(0)
+                    result := mload(0) // for (presumably) bool responses, return whatever the function returned
                 }
                 default {
-                    revert(0, 0)
+                    revert(0, 0) // for invalid responses, revert
                 }
         }
     }
 
-    // TODO merge/sync/donate function? think about the difference between over/under cases
+    // TODO sync/merge/donate function? think about the difference between over/under cases
 
-    function getReserves() public view returns (uint128 reserveToken0, uint128 reserveToken1) {
-        reserveToken0 = tokenData[token0].reserve;
-        reserveToken1 = tokenData[token1].reserve;
+    function getReserves() external view returns (uint128, uint128) {
+        return (reserves.token0, reserves.token1);
     }
 
-    function getData() public view returns (
-        uint128 accumulatorToken0,
-        uint128 accumulatorToken1,
-        uint64 blockNumber,
-        uint64 blockTimestamp
-    ) {
-        accumulatorToken0 = tokenData[token0].accumulator;
-        accumulatorToken1 = tokenData[token1].accumulator;
-        blockNumber = lastUpdate.blockNumber;
-        blockTimestamp = lastUpdate.blockTimestamp;
+    function getReservesCumulative() external view returns (uint128, uint128) {
+        return (reservesCumulative.token0, reservesCumulative.token1);
     }
 
-    function updateData(uint256 reserveToken0, uint256 reserveToken1) private {
+    function getLastUpdate() external view returns (uint64, uint64) {
+        return (lastUpdate.blockNumber, lastUpdate.blockTimestamp);
+    }
+
+    function updateReserves(TokenData memory reservesNext) private {
         uint64 blockNumber = block.number.downcastTo64();
         uint64 blocksElapsed = blockNumber - lastUpdate.blockNumber;
 
-        // get token data
-        TokenData storage tokenDataToken0 = tokenData[token0];
-        TokenData storage tokenDataToken1 = tokenData[token1];
-
         if (blocksElapsed > 0) {
-            // TODO do edge case math here
-            // update accumulators if this isn't the first call to updateData
+            // if this isn't the first-ever call to this function, update the accumulators
             if (lastUpdate.blockNumber != 0) {
-                tokenDataToken0.accumulator += tokenDataToken0.reserve * blocksElapsed;
-                tokenDataToken1.accumulator += tokenDataToken1.reserve * blocksElapsed;
+                // TODO do edge case math here
+                reservesCumulative.token0 += reserves.token0 * blocksElapsed;
+                reservesCumulative.token1 += reserves.token1 * blocksElapsed;
             }
 
             // update last update
@@ -131,100 +111,102 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
             lastUpdate.blockTimestamp = block.timestamp.downcastTo64();
         }
 
-        tokenDataToken0.reserve = reserveToken0.downcastTo128();
-        tokenDataToken1.reserve = reserveToken1.downcastTo128();
+        reserves.token0 = reservesNext.token0;
+        reserves.token1 = reservesNext.token1;
     }
 
     function getAmountOutput(
-        uint256 amountInput,
-        uint256 reserveInput,
-        uint256 reserveOutput
-    ) public pure returns (uint256 amountOutput) {
+        uint128 amountInput, uint128 reserveInput, uint128 reserveOutput
+    ) public pure returns (uint128 amountOutput) {
         require(amountInput > 0 && reserveInput > 0 && reserveOutput > 0, "UniswapV2: INVALID_VALUE");
-        uint256 fee = 3; // TODO 30 bips for now, think through this later
-        uint256 amountInputWithFee = amountInput.mul(1000 - fee);
-        uint256 numerator = amountInputWithFee.mul(reserveOutput);
-        uint256 denominator = reserveInput.mul(1000).add(amountInputWithFee);
-        amountOutput = numerator.div(denominator);
+        uint256 amountInputWithFee = uint256(amountInput).mul(1000 - 3); // 30 bips for now, TODO think through this later
+        uint256 numerator = amountInputWithFee.mul(uint256(reserveOutput));
+        uint256 denominator = uint256(reserveInput).mul(1000).add(amountInputWithFee);
+        amountOutput = numerator.div(denominator).downcastTo128();
     }
 
-    function mintLiquidity(address recipient) public lock returns (uint256 liquidity) {
+    function mintLiquidity(address recipient) external lock returns (uint256 liquidity) {
         // get balances
-        uint256 balanceToken0 = IERC20(token0).balanceOf(address(this));
-        uint256 balanceToken1 = IERC20(token1).balanceOf(address(this));
+        TokenData memory balances = TokenData({
+            token0: IERC20(token0).balanceOf(address(this)).downcastTo128(),
+            token1: IERC20(token1).balanceOf(address(this)).downcastTo128()
+        });
 
-        // get reserves
-        uint256 reserveToken0 = uint256(tokenData[token0].reserve);
-        uint256 reserveToken1 = uint256(tokenData[token1].reserve);
-
-        // TODO think about what happens if this fails
-        // get amounts
-        uint256 amountToken0 = balanceToken0.sub(reserveToken0);
-        uint256 amountToken1 = balanceToken1.sub(reserveToken1);
+        // get amounts sent to be added as liquidity
+        TokenData memory amounts = TokenData({
+            token0: balances.token0.sub(reserves.token0),
+            token1: balances.token1.sub(reserves.token1)
+        });
 
         if (totalSupply == 0) {
-            liquidity = amountToken0.mul(amountToken1).sqrt(); // TODO think through this (enforce min amount?)
+            // TODO is this right? enforce min amount? enforce no remainder?
+            liquidity = Math.sqrt(uint256(amounts.token0).mul(uint256(amounts.token1)));
         } else {
-            // TODO think about "donating" the non-min token amount somehow
-            // TODO think about rounding here
+            // TODO is this right?
+            // TODO "donate" or ignore the non-min token amount?
+            // TODO does this round the way we want?
             liquidity = Math.min(
-                amountToken0.mul(totalSupply).div(reserveToken0),
-                amountToken1.mul(totalSupply).div(reserveToken1)
+                uint256(amounts.token0).mul(totalSupply).div(uint256(reserves.token0)),
+                uint256(amounts.token1).mul(totalSupply).div(uint256(reserves.token1))
             );
         }
 
         mint(recipient, liquidity); // TODO gas golf?
-        
-        updateData(balanceToken0, balanceToken1);
-
-        emit LiquidityMinted(msg.sender, recipient, liquidity, amountToken0, amountToken1);
+        updateReserves(balances);
+        emit LiquidityMinted(msg.sender, recipient, liquidity, amounts.token0, amounts.token1);
     }
 
     function burnLiquidity(
-        uint256 liquidity,
-        address recipient
-    ) public lock returns (uint256 amountToken0, uint256 amountToken1) {
+        uint256 liquidity, address recipient
+    ) external lock returns (uint128 amountToken0, uint128 amountToken1) {
         require(liquidity > 0, "UniswapV2: ZERO_AMOUNT");
 
-        amountToken0 = liquidity.mul(tokenData[token0].reserve).div(totalSupply);
-        amountToken1 = liquidity.mul(tokenData[token1].reserve).div(totalSupply);
+        // send tokens back
+         // TODO is this right?
+        TokenData memory amounts = TokenData({
+            token0: liquidity.mul(uint256(reserves.token0)).div(totalSupply).downcastTo128(),
+            token1: liquidity.mul(uint256(reserves.token1)).div(totalSupply).downcastTo128()
+        });
+        (amountToken0, amountToken1) = (amounts.token0, amounts.token1);
+        require(safeTransfer(token0, recipient, amounts.token0), "UniswapV2: TRANSFER_FAILED");
+        require(safeTransfer(token1, recipient, amounts.token1), "UniswapV2: TRANSFER_FAILED");
 
         _burn(address(this), liquidity); // TODO gas golf?
-        require(safeTransfer(token0, recipient, amountToken0), "UniswapV2: TRANSFER_FAILED");
-        require(safeTransfer(token1, recipient, amountToken1), "UniswapV2: TRANSFER_FAILED");
 
-        // get balances
-        uint256 balanceToken0 = IERC20(token0).balanceOf(address(this));
-        uint256 balanceToken1 = IERC20(token1).balanceOf(address(this));
-        updateData(balanceToken0, balanceToken1);
-
+        TokenData memory balances = TokenData({
+            token0: IERC20(token0).balanceOf(address(this)).downcastTo128(),
+            token1: IERC20(token1).balanceOf(address(this)).downcastTo128()
+        });
+        updateReserves(balances);
         emit LiquidityBurned(msg.sender, recipient, liquidity, amountToken0, amountToken1);
     }
 
-    function swap(address input, address recipient) public lock returns (uint256 amountOutput) {
-        require(input == token0 || input == token1, "UniswapV2: INVALID_INPUT");
-        address output = input == token0 ? token1 : token0;
+    function swap(address input, address recipient) external lock returns (uint128 amountOutput) {
+        uint128 inputBalance = IERC20(input).balanceOf(address(this)).downcastTo128();
 
-        // get input balance
-        uint256 balanceInput = IERC20(input).balanceOf(address(this));
+        uint128 amountInput;
+        TokenData memory balances;
+        if (input == token0) {
+            amountInput = inputBalance.sub(reserves.token0);
+            amountOutput = getAmountOutput(amountInput, reserves.token0, reserves.token1);
+            require(safeTransfer(token1, recipient, amountOutput), "UniswapV2: TRANSFER_FAILED");
+            balances = TokenData({
+                token0: inputBalance,
+                token1: IERC20(token1).balanceOf(address(this)).downcastTo128()
+            });
+        } else {
+            require(input == token1, "UniswapV2: INVALID_INPUT");
 
-        // get reserves
-        uint256 reserveInput = uint256(tokenData[input].reserve);
-        uint256 reserveOutput = uint256(tokenData[output].reserve);
+            amountInput = inputBalance.sub(reserves.token1);
+            amountOutput = getAmountOutput(amountInput, reserves.token1, reserves.token0);
+            require(safeTransfer(token0, recipient, amountOutput), "UniswapV2: TRANSFER_FAILED");
+            balances = TokenData({
+                token0: IERC20(token0).balanceOf(address(this)).downcastTo128(),
+                token1: inputBalance
+            });
+        }
 
-        // TODO think about what happens if this fails
-        // get input amount
-        uint256 amountInput = balanceInput.sub(reserveInput);
-
-        // calculate output amount and send to the recipient
-        amountOutput = getAmountOutput(amountInput, reserveInput, reserveOutput);
-        require(safeTransfer(output, recipient, amountOutput), "UniswapV2: TRANSFER_FAILED");
-
-        // update data
-        // TODO re-fetch input balance here?
-        uint256 balanceOutput = IERC20(output).balanceOf(address(this));
-        input == token0 ? updateData(balanceInput, balanceOutput) : updateData(balanceOutput, balanceInput);
-
-        emit Swap(input, msg.sender, recipient, amountInput, amountOutput);
+        updateReserves(balances);
+        emit Swap(msg.sender, recipient, input, amountInput, amountOutput);
     }
 }
