@@ -52,7 +52,7 @@ describe('Oracle', () => {
     const token1Amount = expandTo18Decimals(5)
 
     await addLiquidity(token0Amount, token1Amount)
-    await oracle.connect(wallet).updateCurrentPrice()
+    await oracle.connect(wallet).initialize()
     await swap(token0, bigNumberify(1))
 
     await oracle.connect(wallet).updateCurrentPrice()

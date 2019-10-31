@@ -17,7 +17,6 @@ interface IUniswapV2 {
 
     function getReserves() external view returns (uint128, uint128);
     function getReservesCumulative() external view returns (uint128, uint128);
-    function getLastUpdate() external view returns (uint64, uint64);
 
     function getAmountOutput(
         uint128 amountInput, uint128 reserveInput, uint128 reserveOutput

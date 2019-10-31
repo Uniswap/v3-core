@@ -54,6 +54,8 @@ describe('UniswapV2Factory', () => {
     expect(await factory.getExchange(...tokens.slice().reverse())).to.eq(create2Address)
     expect(await factory.getOtherTokens(tokens[0])).to.deep.eq([tokens[1]])
     expect(await factory.getOtherTokens(tokens[1])).to.deep.eq([tokens[0]])
+    expect(await factory.getOtherTokensLength(tokens[0])).to.deep.eq(bigNumberify(1))
+    expect(await factory.getOtherTokensLength(tokens[1])).to.deep.eq(bigNumberify(1))
 
     const exchange = new Contract(create2Address, JSON.stringify(UniswapV2.abi), provider)
     expect(await exchange.factory()).to.eq(factory.address)

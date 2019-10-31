@@ -21,8 +21,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     struct TimeData {
-        uint64 blockNumber;
-        uint64 blockTimestamp; // overflows about 280 billion years after the earth's sun explodes
+        uint64 blockNumber; // overflows >280 billion years after the earth's sun explodes
     }
 
     bool private locked; // reentrancy lock
@@ -87,11 +86,17 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     function getReservesCumulative() external view returns (uint128, uint128) {
-        return (reservesCumulative.token0, reservesCumulative.token1);
-    }
-
-    function getLastUpdate() external view returns (uint64, uint64) {
-        return (lastUpdate.blockNumber, lastUpdate.blockTimestamp);
+        uint64 blockNumber = block.number.downcastTo64();
+        if (blockNumber == lastUpdate.blockNumber) {
+            return (reservesCumulative.token0, reservesCumulative.token1);
+        } else {
+            // replicate the logic in updateReserves
+            // TODO do we want to make callers pay for our storage updates here instead of this view method?
+            uint64 blocksElapsed = blockNumber - lastUpdate.blockNumber;
+            uint128 reservesCumulativeToken0 = reservesCumulative.token0 + (reserves.token0 * blocksElapsed);
+            uint128 reservesCumulativeToken1 = reservesCumulative.token1 + (reserves.token1 * blocksElapsed);
+            return (reservesCumulativeToken0, reservesCumulativeToken1);
+        }
     }
 
     function getAmountOutput(
@@ -118,7 +123,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
 
             // update last update
             lastUpdate.blockNumber = blockNumber;
-            lastUpdate.blockTimestamp = block.timestamp.downcastTo64();
         }
 
         reserves.token0 = reservesNext.token0;
@@ -164,7 +168,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
 
     function burnLiquidity(address recipient) external lock returns (uint128 amountToken0, uint128 amountToken1) {
         // get liquidity sent to be burned
-        uint256 liquidity = balanceOf[address(this)];
+        uint256 liquidity = balanceOf[address(this)]; // TODO is this right?
 
         // require(liquidity > 0, "UniswapV2: ZERO_AMOUNT");
 
@@ -181,7 +185,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
 
         _burn(address(this), liquidity);
 
-            // TODO replace with reserves math?
+        // TODO replace with reserves math?
         TokenData memory balances = TokenData({
             token0: IERC20(token0).balanceOf(address(this)).downcastTo128(),
             token1: IERC20(token1).balanceOf(address(this)).downcastTo128()

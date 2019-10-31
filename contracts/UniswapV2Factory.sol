@@ -40,6 +40,10 @@ contract UniswapV2Factory is IUniswapV2Factory {
         return tokensToOtherTokens[token];
     }
 
+    function getOtherTokensLength(address token) external view returns (uint256) {
+        return tokensToOtherTokens[token].length;
+    }
+
     function getPair(address tokenA, address tokenB) private pure returns (Pair memory) {
         return tokenA < tokenB ? Pair({ token0: tokenA, token1: tokenB }) : Pair({ token0: tokenB, token1: tokenA });
     }
@@ -54,7 +58,8 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
         bytes memory exchangeBytecodeMemory = exchangeBytecode;
         uint256 exchangeBytecodeLength = exchangeBytecode.length;
-        bytes32 salt = keccak256(abi.encodePacked(pair.token0, pair.token1, chainId));
+        bytes32 salt = keccak256(abi.encodePacked(pair.token0, pair.token1, chainId)); // TODO include chainId?
+        // TODO constructor args?
         assembly {
             exchange := create2(
                 0,

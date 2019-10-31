@@ -19,7 +19,7 @@ contract ERC20 is IERC20 {
 
     // ERC-191 data
     uint256 public chainId;
-    mapping (address => uint) public nonceFor;
+    mapping (address => uint256) public nonceFor;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -95,7 +95,7 @@ contract ERC20 is IERC20 {
                 owner, spender, value, nonce, expiration, chainId
             ))
         ));
-        // TODO add ECDSA checks? https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
+        // TODO add ECDSA checks https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
         require(owner == ecrecover(digest, v, r, s), "ERC20: INVALID_SIGNATURE");
 
         _approve(owner, spender, value);
