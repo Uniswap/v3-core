@@ -1,7 +1,6 @@
 # Uniswap v2 Smart Contracts
 [![CircleCI](https://circleci.com/gh/Uniswap/uniswap-v2.svg?style=svg)](https://circleci.com/gh/Uniswap/uniswap-v2)
 
-
 ## Local Development
 
 The following assumes the use of `node@^10`.
@@ -26,18 +25,20 @@ yarn test
 
 ## Implementation References
 
-### [`contracts/libraries/SafeMath.sol`](./contracts/libraries/SafeMath.sol)
-
-#### OpenZeppelin
-[https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/SafeMath.sol](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/SafeMath.sol)
-
 ### [`contracts/libraries/Math.sol`](./contracts/libraries/Math.sol)
 
 #### OpenZeppelin
 [https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/Math.sol#L17](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/Math.sol#L17)
 
 #### dapp-bin
-[https://github.com/ethereum/dapp-bin/blob/11f05fc9e3f31a00d57982bc2f65ef2654f1b569/library/math.sol#L28](https://github.com/ethereum/dapp-bin/blob/11f05fc9e3f31a00d57982bc2f65ef2654f1b569/library/math.sol#L28) via [https://github.com/ethereum/dapp-bin/pull/50](https://github.com/ethereum/dapp-bin/pull/50)
+[https://github.com/ethereum/dapp-bin/pull/50](https://github.com/ethereum/dapp-bin/pull/50)
+
+[https://github.com/ethereum/dapp-bin/blob/11f05fc9e3f31a00d57982bc2f65ef2654f1b569/library/math.sol#L28](https://github.com/ethereum/dapp-bin/blob/11f05fc9e3f31a00d57982bc2f65ef2654f1b569/library/math.sol#L28)
+
+### [`contracts/libraries/SafeMath{128,256}.sol`](./contracts/libraries/)
+
+#### OpenZeppelin
+[https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/SafeMath.sol](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/SafeMath.sol)
 
 ### [`contracts/implementations/ERC20.sol`](./contracts/implementations/ERC20.sol)
 
