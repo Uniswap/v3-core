@@ -35,7 +35,7 @@ contract ERC20 is IERC20 {
         require(chainId == 0, "ERC20: ALREADY_INITIALIZED");
         chainId = _chainId;
     }
-    
+
     function mint(address to, uint256 value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);
@@ -110,7 +110,8 @@ contract ERC20 is IERC20 {
                 owner, spender, value, nonce, expiration, chainId
             ))
         ));
-        require(owner == ecrecover(digest, v, r, s), "ERC20: INVALID_SIGNATURE"); // TODO add ECDSA checks? https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
+        // TODO add ECDSA checks? https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
+        require(owner == ecrecover(digest, v, r, s), "ERC20: INVALID_SIGNATURE");
 
         _approve(owner, spender, value);
     }

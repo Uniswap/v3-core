@@ -11,6 +11,7 @@ import "./libraries/SafeMath256.sol";
 import "./token/ERC20.sol";
 
 contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
+    using Math for uint256;
     using SafeMath128 for uint128;
     using SafeMath256 for uint256;
 
@@ -35,7 +36,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     bool private locked; // reentrancy lock
-    
+
     address public factory;
     address public token0;
     address public token1;
@@ -66,7 +67,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     function safeTransfer(address token, address to, uint128 value) private returns (bool result) {
         IIncompatibleERC20(token).transfer(to, uint256(value));
         assembly {
-            switch returndatasize()   
+            switch returndatasize()
                 case 0 {
                     result := not(0) // for no-bool responses, treat as successful
                 }

@@ -56,7 +56,7 @@ contract Oracle {
                     token0: deltas.token0 / blocksElapsed,
                     token1: deltas.token1 / blocksElapsed
                 });
-    
+
                 uint128 timeElapsed = blockTimestamp - lastUpdate.blockTimestamp;
                 _updateCurrentPrice(averages, timeElapsed);
             }
