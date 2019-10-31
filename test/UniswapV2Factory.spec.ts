@@ -43,7 +43,6 @@ describe('UniswapV2Factory', () => {
     await expect(factory.createExchange(...tokens))
       .to.emit(factory, 'ExchangeCreated')
       .withArgs(TEST_ADDRESSES.token0, TEST_ADDRESSES.token1, create2Address, bigNumberify(0))
-
     await expect(factory.createExchange(...tokens)).to.be.revertedWith('UniswapV2Factory: EXCHANGE_EXISTS')
     await expect(factory.createExchange(...tokens.slice().reverse())).to.be.revertedWith(
       'UniswapV2Factory: EXCHANGE_EXISTS'
@@ -53,6 +52,8 @@ describe('UniswapV2Factory', () => {
     expect(await factory.getTokens(create2Address)).to.deep.eq([TEST_ADDRESSES.token0, TEST_ADDRESSES.token1])
     expect(await factory.getExchange(...tokens)).to.eq(create2Address)
     expect(await factory.getExchange(...tokens.slice().reverse())).to.eq(create2Address)
+    expect(await factory.getOtherTokens(tokens[0])).to.deep.eq([tokens[1]])
+    expect(await factory.getOtherTokens(tokens[1])).to.deep.eq([tokens[0]])
 
     const exchange = new Contract(create2Address, JSON.stringify(UniswapV2.abi), provider)
     expect(await exchange.factory()).to.eq(factory.address)

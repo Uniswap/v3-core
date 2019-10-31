@@ -84,9 +84,7 @@ describe('ERC20', () => {
     const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
 
     await expect(
-      token
-        .connect(other)
-        .approveMeta(wallet.address, other.address, TEST_AMOUNT, nonce, expiration, v, hexlify(r), hexlify(s))
+      token.approveMeta(wallet.address, other.address, TEST_AMOUNT, nonce, expiration, v, hexlify(r), hexlify(s))
     )
       .to.emit(token, 'Approval')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
@@ -97,7 +95,6 @@ describe('ERC20', () => {
 
   it('transferFrom', async () => {
     await token.approve(other.address, TEST_AMOUNT)
-
     await expect(token.connect(other).transferFrom(wallet.address, other.address, TEST_AMOUNT))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
@@ -109,7 +106,6 @@ describe('ERC20', () => {
 
   it('burnFrom', async () => {
     await token.approve(other.address, TEST_AMOUNT)
-
     await expect(token.connect(other).burnFrom(wallet.address, TEST_AMOUNT))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, AddressZero, TEST_AMOUNT)
@@ -124,7 +120,7 @@ describe('ERC20', () => {
     await expect(token.transfer(other.address, TOKEN_DETAILS.totalSupply.add(1))).to.be.revertedWith(
       'SafeMath256: subtraction overflow'
     )
-    await expect(token.connect(other).transfer(other.address, 1)).to.be.revertedWith(
+    await expect(token.connect(other).transfer(wallet.address, 1)).to.be.revertedWith(
       'SafeMath256: subtraction overflow'
     )
   })

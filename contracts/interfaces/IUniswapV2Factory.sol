@@ -7,8 +7,9 @@ interface IUniswapV2Factory {
     function chainId() external view returns (uint256);
     function exchangeCount() external view returns (uint256);
 
-    function createExchange(address tokenA, address tokenB) external returns (address exchange);
-
     function getTokens(address exchange) external view returns (address, address);
     function getExchange(address tokenA, address tokenB) external view returns (address);
+    function getOtherTokens(address token) external view returns (address[] memory);
+
+    function createExchange(address tokenA, address tokenB) external returns (address exchange);
 }

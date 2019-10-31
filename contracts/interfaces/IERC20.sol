@@ -15,9 +15,7 @@ interface IERC20 {
     function nonceFor(address owner) external view returns (uint256);
 
     function transfer(address to, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
     function burn(uint256 value) external;
-    function burnFrom(address from, uint256 value) external;
     function approve(address spender, uint256 value) external returns (bool);
     function approveMeta(
         address owner,
@@ -29,4 +27,6 @@ interface IERC20 {
         bytes32 r,
         bytes32 s
     ) external;
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function burnFrom(address from, uint256 value) external;
 }
