@@ -2,28 +2,24 @@
 pragma solidity 0.5.12;
 
 library SafeMath128 {
-    function add(uint128 a, uint128 b) internal pure returns (uint128) {
-        uint128 c = a + b;
-        require(c >= a, "SafeMath: addition overflow");
-        return c;
+    function add(uint128 a, uint128 b) internal pure returns (uint128 c) {
+        c = a + b;
+        require(c >= a, "SafeMath128: addition overflow");
     }
 
     function sub(uint128 a, uint128 b) internal pure returns (uint128) {
-        require(b <= a, "SafeMath: subtraction overflow");
-        uint128 c = a - b;
-        return c;
+        require(b <= a, "SafeMath128: subtraction overflow");
+        return a - b;
     }
 
-    function mul(uint128 a, uint128 b) internal pure returns (uint128) {
+    function mul(uint128 a, uint128 b) internal pure returns (uint128 c) {
         if (a == 0) return 0;
-        uint128 c = a * b;
-        require(c / a == b, "SafeMath: multiplication overflow");
-        return c;
+        c = a * b;
+        require(c / a == b, "SafeMath128: multiplication overflow");
     }
 
     function div(uint128 a, uint128 b) internal pure returns (uint128) {
-        require(b > 0, "SafeMath: division by zero");
-        uint128 c = a / b;
-        return c;
+        require(b > 0, "SafeMath128: division by zero");
+        return a / b;
     }
 }

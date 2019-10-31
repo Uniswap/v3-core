@@ -2,38 +2,24 @@
 pragma solidity 0.5.12;
 
 library SafeMath256 {
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        require(c >= a, "SafeMath: addition overflow");
-        return c;
+    function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        c = a + b;
+        require(c >= a, "SafeMath256: addition overflow");
     }
 
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b <= a, "SafeMath: subtraction overflow");
-        uint256 c = a - b;
-        return c;
+        require(b <= a, "SafeMath256: subtraction overflow");
+        return a - b;
     }
 
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {
         if (a == 0) return 0;
-        uint256 c = a * b;
-        require(c / a == b, "SafeMath: multiplication overflow");
-        return c;
+        c = a * b;
+        require(c / a == b, "SafeMath256: multiplication overflow");
     }
 
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b > 0, "SafeMath: division by zero");
-        uint256 c = a / b;
-        return c;
-    }
-
-    function downcastTo64(uint256 a) internal pure returns (uint64) {
-        require(a <= uint64(-1), "SafeMath: downcast overflow");
-        return uint64(a);
-    }
-
-    function downcastTo128(uint256 a) internal pure returns (uint128) {
-        require(a <= uint128(-1), "SafeMath: downcast overflow");
-        return uint128(a);
+        require(b > 0, "SafeMath256: division by zero");
+        return a / b;
     }
 }
