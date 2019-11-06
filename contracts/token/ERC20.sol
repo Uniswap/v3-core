@@ -1,5 +1,3 @@
-// https://github.com/makerdao/dss/blob/b1fdcfc9b2ab7961bf2ce7ab4008bfcec1c73a88/src/dai.sol
-// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/token/ERC20
 pragma solidity 0.5.12;
 
 import "../interfaces/IERC20.sol";
@@ -74,18 +72,16 @@ contract ERC20 is IERC20 {
     }
 
     function approveMeta(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 nonce,
-        uint256 expiration,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+        address owner, address spender, uint256 value, uint256 nonce, uint256 expiration, uint8 v, bytes32 r, bytes32 s
+    )
+        external
+    {
         require(chainId != 0, "ERC20: UNINITIALIZED");
         require(nonce == nonceFor[owner]++, "ERC20: INVALID_NONCE");
         require(expiration > block.timestamp, "ERC20: EXPIRED_SIGNATURE");
+
+        require(v == 27 || v == 28, "ECDSA: INVALID_V");
+        require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "ECDSA: INVALID_S");
 
         bytes32 digest = keccak256(abi.encodePacked(
             hex'19',
@@ -95,8 +91,10 @@ contract ERC20 is IERC20 {
                 owner, spender, value, nonce, expiration, chainId
             ))
         ));
-        // TODO add ECDSA checks https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
-        require(owner == ecrecover(digest, v, r, s), "ERC20: INVALID_SIGNATURE");
+
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress != address(0), "ERC20: INVALID_RECOVERED_ADDRESS");
+        require(owner == recoveredAddress, "ERC20: INVALID_SIGNATURE");
 
         _approve(owner, spender, value);
     }

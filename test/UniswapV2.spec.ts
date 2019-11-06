@@ -94,7 +94,15 @@ describe('UniswapV2', () => {
     const expectedOutputAmount = bigNumberify('1662497915624478906')
 
     await token0.transfer(exchange.address, swapAmount)
-    await expect(exchange.connect(wallet).swap(token0.address, wallet.address))
+    console.log(await exchange.estimate.swap(token0.address, wallet.address))
+    await expect(
+      exchange
+        .connect(wallet)
+        .swap(token0.address, wallet.address)
+        .then((a: any) => {
+          console.log(a)
+        })
+    )
       .to.emit(exchange, 'Swap')
       .withArgs(wallet.address, wallet.address, token0.address, swapAmount, expectedOutputAmount)
 
@@ -127,31 +135,36 @@ describe('UniswapV2', () => {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1)
   })
 
-  it('getReserves', async () => {
-    expect(await exchange.getReserves()).to.deep.eq([0, 0].map(n => bigNumberify(n)))
+  // it('getReserves', async () => {
+  //   expect(await exchange.getReserves()).to.deep.eq([0, 0].map(n => bigNumberify(n)))
+
+  //   const token0Amount = expandTo18Decimals(3)
+  //   const token1Amount = expandTo18Decimals(3)
+  //   await addLiquidity(token0Amount, token1Amount)
+
+  //   expect(await exchange.getReserves()).to.deep.eq([token0Amount, token1Amount])
+  // })
+
+  it('getReservesCumulativeAndOverflows', async () => {
+    expect(await exchange.getReservesCumulativeAndOverflows()).to.deep.eq([0, 0, 0, 0].map(n => bigNumberify(n)))
 
     const token0Amount = expandTo18Decimals(3)
     const token1Amount = expandTo18Decimals(3)
     await addLiquidity(token0Amount, token1Amount)
 
-    expect(await exchange.getReserves()).to.deep.eq([token0Amount, token1Amount])
-  })
-
-  it('getReservesCumulative', async () => {
-    expect(await exchange.getReservesCumulative()).to.deep.eq([0, 0].map(n => bigNumberify(n)))
-
-    const token0Amount = expandTo18Decimals(3)
-    const token1Amount = expandTo18Decimals(3)
-    await addLiquidity(token0Amount, token1Amount)
-
-    const reservesCumulativePre = await exchange.getReservesCumulative()
-    expect(reservesCumulativePre).to.deep.eq([0, 0].map(n => bigNumberify(n)))
+    const reservesCumulativePre = await exchange.getReservesCumulativeAndOverflows()
+    expect(reservesCumulativePre).to.deep.eq([0, 0, 0, 0].map(n => bigNumberify(n)))
 
     const dummySwapAmount = bigNumberify(1)
     await token0.transfer(exchange.address, dummySwapAmount)
     await exchange.connect(wallet).swap(token0.address, wallet.address)
 
-    const reservesCumulativePost = await exchange.getReservesCumulative()
-    expect(reservesCumulativePost).to.deep.eq([token0Amount.mul(bigNumberify(2)), token1Amount.mul(bigNumberify(2))])
+    const reservesCumulativePost = await exchange.getReservesCumulativeAndOverflows()
+    expect(reservesCumulativePost).to.deep.eq([
+      token0Amount.mul(bigNumberify(2)),
+      token1Amount.mul(bigNumberify(2)),
+      0,
+      0
+    ])
   })
 })

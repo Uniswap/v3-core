@@ -25,25 +25,8 @@ yarn test
 
 ## Implementation References
 
-### [`contracts/libraries/Math.sol`](./contracts/libraries/Math.sol)
-
-#### OpenZeppelin
-[https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/Math.sol#L17](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/Math.sol#L17)
-
-#### dapp-bin
-[https://github.com/ethereum/dapp-bin/pull/50](https://github.com/ethereum/dapp-bin/pull/50)
-
-[https://github.com/ethereum/dapp-bin/blob/11f05fc9e3f31a00d57982bc2f65ef2654f1b569/library/math.sol#L28](https://github.com/ethereum/dapp-bin/blob/11f05fc9e3f31a00d57982bc2f65ef2654f1b569/library/math.sol#L28)
-
-### [`contracts/libraries/SafeMath{128,256}.sol`](./contracts/libraries/)
-
-#### OpenZeppelin
-[https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/SafeMath.sol](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/SafeMath.sol)
-
-### [`contracts/implementations/ERC20.sol`](./contracts/implementations/ERC20.sol)
-
-#### OpenZeppelin
-[https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/token/ERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/token/ERC20)
-
-#### Dai
-[https://github.com/makerdao/dss/blob/b1fdcfc9b2ab7961bf2ce7ab4008bfcec1c73a88/src/dai.sol](https://github.com/makerdao/dss/blob/b1fdcfc9b2ab7961bf2ce7ab4008bfcec1c73a88/src/dai.sol)
+- [dapphub math](https://github.com/dapphub/ds-math/blob/de4576712dcf2c5152d16a04e677002d51d46e60/src/math.sol)
+- [dapp-bin math](https://github.com/ethereum/dapp-bin/pull/50)
+- [OpenZeppelin ECDSA](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/81b1e4810761b088922dbd19a0642873ea581176/contracts/cryptography/ECDSA.sol)
+- [DAI token](https://github.com/makerdao/dss/blob/17be7db1c663d8069308c6b78fa5c5f9d71134a3/src/dai.sol)
+- [Coinmonks](https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca)

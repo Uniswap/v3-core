@@ -2,10 +2,12 @@ pragma solidity 0.5.12;
 
 import "../interfaces/IUniswapV2.sol";
 
-import "../libraries/Math.sol";
+import "../libraries/SafeMath256.sol";
 
 contract Oracle {
-    using Math for uint256;
+    using SafeMath256 for uint256;
+
+    enum OracleStates { NeedsInitialization, NeedsActivation, Active }
 
     struct TokenData {
         uint128 token0;
@@ -13,79 +15,105 @@ contract Oracle {
     }
 
     struct TimeData {
-        uint64 blockNumber;
-        uint64 blockTimestamp;
+        uint128 blockNumber;
+        uint128 blockTimestamp;
     }
 
     address public exchange;
-    bool public initialized;
-    uint64 constant period = 1 days;
+    uint128 constant period = 1 days;
 
+    OracleStates private state = OracleStates.NeedsInitialization;
     TokenData private reservesCumulative;
     TimeData private lastUpdate;
-
     TokenData private currentPrice;
 
     constructor(address _exchange) public {
         exchange = _exchange;
     }
 
-    function _updateCurrentPrice(TokenData memory averages, uint64 timeElapsed) private {
-        TokenData memory nextPrice;
-        if (timeElapsed >= period || (currentPrice.token0 == 0 && currentPrice.token1 == 0)) {
-            nextPrice = averages;
-        } else {
-            nextPrice = TokenData({
-                token0: (currentPrice.token0 * (period - timeElapsed) + averages.token0 * timeElapsed) / period,
-                token1: (currentPrice.token1 * (period - timeElapsed) + averages.token1 * timeElapsed) / period
-            });
-        }
-        currentPrice = nextPrice;
+    function getReservesCumulative() private view returns (TokenData memory) {
+        IUniswapV2 uniswapV2 = IUniswapV2(exchange);
+        (uint128 reservesCumulativeToken0, uint128 reservesCumulativeToken1,,) = uniswapV2.getReservesCumulativeAndOverflows();
+        return TokenData({
+            token0: reservesCumulativeToken0,
+            token1: reservesCumulativeToken1
+        });
+    }
+
+    function getTimeData() private view returns (TimeData memory) {
+        return TimeData({
+            blockNumber: block.number.downcast128(),
+            blockTimestamp: block.timestamp.downcast128()
+        });
     }
 
     function initialize() external {
-        require(!initialized, "Oracle: ALREADY_INITIALIZED");
+        require(state == OracleStates.NeedsInitialization, "Oracle: DOES_NOT_NEED_INITIALIZATION");
 
-        IUniswapV2 uniswapV2 = IUniswapV2(exchange);
-        (uint128 reserveCumulativeToken0, uint128 reserveCumulativeToken1) = uniswapV2.getReservesCumulative();
+        reservesCumulative = getReservesCumulative();
+        lastUpdate = getTimeData();
 
-        reservesCumulative.token0 = reserveCumulativeToken0;
-        reservesCumulative.token1 = reserveCumulativeToken1;
-        lastUpdate.blockNumber = block.number.downcastTo64();
-        lastUpdate.blockTimestamp = block.timestamp.downcastTo64();
-
-        initialized = true;
+        state = OracleStates.NeedsActivation;
     }
 
-    function updateCurrentPrice() external {
-        require(initialized, "Oracle: UNINITIALIZED");
+    function activate() external {
+        require(state == OracleStates.NeedsActivation, "Oracle: DOES_NOT_NEED_ACTIVATION");
 
-        uint64 blockNumber = block.number.downcastTo64();
-        // if we haven't updated this block yet...
-        if (blockNumber > lastUpdate.blockNumber) {
-            IUniswapV2 uniswapV2 = IUniswapV2(exchange);
-            (uint128 reserveCumulativeToken0, uint128 reserveCumulativeToken1) = uniswapV2.getReservesCumulative();
+        // get the current time, ensure it's been >=1 blocks since last update, and record the update
+        TimeData memory currentTime = getTimeData();
+        uint128 blocksElapsed = currentTime.blockNumber - lastUpdate.blockNumber;
+        require(blocksElapsed > 0, "Oracle: INSUFFICIENT_BLOCKS_PASSED");
+        lastUpdate = currentTime;
 
-            uint128 blocksElapsed = blockNumber - lastUpdate.blockNumber;
+        // get the current cumulative reserves, calculate the deltas, and record the new values
+        TokenData memory reservesCumulativeNext = getReservesCumulative();
+        TokenData memory deltas = TokenData({
+            token0: reservesCumulativeNext.token0 - reservesCumulative.token0,
+            token1: reservesCumulativeNext.token1 - reservesCumulative.token1
+        });
+        reservesCumulative = reservesCumulativeNext;
 
-            TokenData memory deltas = TokenData({
-                token0: reserveCumulativeToken0 - reservesCumulative.token0,
-                token1: reserveCumulativeToken1 - reservesCumulative.token1
+        // get the average price over the period and set it to the current price
+        currentPrice = TokenData({
+            token0: deltas.token0 / blocksElapsed,
+            token1: deltas.token1 / blocksElapsed
+        });
+
+        state = OracleStates.Active;
+    }
+
+    function update() external {
+        require(state == OracleStates.Active, "Oracle: INACTIVE");
+
+        // get the current time, ensure it's been >=1 blocks since last update, and record the update
+        TimeData memory currentTime = getTimeData();
+        uint128 blocksElapsed = currentTime.blockNumber - lastUpdate.blockNumber;
+        require(blocksElapsed > 0, "Oracle: INSUFFICIENT_BLOCKS_PASSED");
+        uint128 timeElapsed = currentTime.blockTimestamp - lastUpdate.blockTimestamp;
+        lastUpdate = currentTime;
+
+        // get the current cumulative reserves, calculate the deltas, and record the new values
+        TokenData memory reservesCumulativeNext = getReservesCumulative();
+        TokenData memory deltas = TokenData({
+            token0: reservesCumulativeNext.token0 - reservesCumulative.token0,
+            token1: reservesCumulativeNext.token1 - reservesCumulative.token1
+        });
+        reservesCumulative = reservesCumulativeNext;
+
+        // get the average price over the period
+        TokenData memory averages = TokenData({
+            token0: deltas.token0 / blocksElapsed,
+            token1: deltas.token1 / blocksElapsed
+        });
+
+        // update the current price with this information
+        if (timeElapsed < period) {
+            currentPrice = TokenData({
+                token0: (currentPrice.token0 * (period - timeElapsed) + averages.token0 * timeElapsed) / period,
+                token1: (currentPrice.token1 * (period - timeElapsed) + averages.token1 * timeElapsed) / period
             });
-
-            TokenData memory averages = TokenData({
-                token0: deltas.token0 / blocksElapsed,
-                token1: deltas.token1 / blocksElapsed
-            });
-
-            uint64 blockTimestamp = block.timestamp.downcastTo64();
-            uint64 timeElapsed = blockTimestamp - lastUpdate.blockTimestamp;
-            _updateCurrentPrice(averages, timeElapsed);
-
-            reservesCumulative.token0 = reserveCumulativeToken0;
-            reservesCumulative.token1 = reserveCumulativeToken1;
-            lastUpdate.blockNumber = blockNumber;
-            lastUpdate.blockTimestamp = blockTimestamp;
+        } else {
+            currentPrice = averages;
         }
     }
 

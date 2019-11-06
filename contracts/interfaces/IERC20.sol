@@ -18,15 +18,9 @@ interface IERC20 {
     function burn(uint256 value) external;
     function approve(address spender, uint256 value) external returns (bool);
     function approveMeta(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 nonce,
-        uint256 expiration,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
+        address owner, address spender, uint256 value, uint256 nonce, uint256 expiration, uint8 v, bytes32 r, bytes32 s
+    )
+        external;
     function transferFrom(address from, address to, uint256 value) external returns (bool);
     function burnFrom(address from, uint256 value) external;
 }

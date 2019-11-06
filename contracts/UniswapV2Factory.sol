@@ -57,14 +57,12 @@ contract UniswapV2Factory is IUniswapV2Factory {
         require(token0ToToken1ToExchange[pair.token0][pair.token1] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
 
         bytes memory exchangeBytecodeMemory = exchangeBytecode;
-        uint256 exchangeBytecodeLength = exchangeBytecode.length;
-        bytes32 salt = keccak256(abi.encodePacked(pair.token0, pair.token1, chainId)); // TODO include chainId?
-        // TODO constructor args?
+        bytes32 salt = keccak256(abi.encodePacked(pair.token0, pair.token1, chainId));
         assembly {
             exchange := create2(
                 0,
                 add(exchangeBytecodeMemory, 0x20),
-                exchangeBytecodeLength,
+                mload(exchangeBytecodeMemory),
                 salt
             )
         }

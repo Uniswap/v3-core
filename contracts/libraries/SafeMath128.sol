@@ -1,25 +1,24 @@
-// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/2f9ae975c8bdc5c7f7fa26204896f6c717f07164/contracts/math/SafeMath.sol
 pragma solidity 0.5.12;
 
 library SafeMath128 {
-    function add(uint128 a, uint128 b) internal pure returns (uint128 c) {
-        c = a + b;
-        require(c >= a, "SafeMath128: addition overflow");
+    function add(uint128 x, uint128 y) internal pure returns (uint128 z) {
+        require((z = x + y) >= x, "ds-math-add-overflow");
+    }
+    function sub(uint128 x, uint128 y) internal pure returns (uint128 z) {
+        require((z = x - y) <= x, "ds-math-sub-underflow");
+    }
+    function mul(uint128 x, uint128 y) internal pure returns (uint128 z) {
+        require(y == 0 || (z = x * y) / y == x, "ds-math-mul-overflow");
     }
 
-    function sub(uint128 a, uint128 b) internal pure returns (uint128) {
-        require(b <= a, "SafeMath128: subtraction overflow");
-        return a - b;
+    function oadd(uint128 w, uint128 x) internal pure returns (uint128 y, uint128 z) {
+        uint256 sum = uint256(w) + x;
+        z = uint128(sum / uint128(-1));
+        y = uint128(sum % uint128(-1));
     }
-
-    function mul(uint128 a, uint128 b) internal pure returns (uint128 c) {
-        if (a == 0) return 0;
-        c = a * b;
-        require(c / a == b, "SafeMath128: multiplication overflow");
-    }
-
-    function div(uint128 a, uint128 b) internal pure returns (uint128) {
-        require(b > 0, "SafeMath128: division by zero");
-        return a / b;
+    function omul(uint128 w, uint128 x) internal pure returns (uint128 y, uint128 z) {
+        uint256 product = uint256(w) * x;
+        z = uint128(product / uint128(-1));
+        y = uint128(product % uint128(-1));
     }
 }

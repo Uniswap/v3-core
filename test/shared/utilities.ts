@@ -1,3 +1,4 @@
+import { providers } from 'ethers'
 import { BigNumber, bigNumberify, getAddress, keccak256, solidityPack } from 'ethers/utils'
 
 import { CHAIN_ID } from './constants'
@@ -47,4 +48,28 @@ export function getCreate2Address(
   const sanitizedInputs = `0x${create2Inputs.map(i => i.slice(2)).join('')}`
 
   return getAddress(`0x${keccak256(sanitizedInputs).slice(-40)}`)
+}
+
+async function mineBlock(provider: providers.Web3Provider, timestamp?: number): Promise<void> {
+  await new Promise((resolve, reject) => {
+    ;(provider._web3Provider.sendAsync as any)(
+      { jsonrpc: '2.0', method: 'evm_mine', params: timestamp ? [timestamp] : [] },
+      (error: any, result: any): void => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve(result)
+        }
+      }
+    )
+  })
+}
+
+export async function mineBlocks(
+  provider: providers.Web3Provider,
+  numberOfBlocks: number,
+  timestamp?: number
+): Promise<void> {
+  await Promise.all([...Array(numberOfBlocks - 1)].map(() => mineBlock(provider)))
+  await mineBlock(provider, timestamp)
 }

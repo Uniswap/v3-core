@@ -118,10 +118,8 @@ describe('ERC20', () => {
 
   it('transfer:fail', async () => {
     await expect(token.transfer(other.address, TOKEN_DETAILS.totalSupply.add(1))).to.be.revertedWith(
-      'SafeMath256: subtraction overflow'
+      'ds-math-sub-underflow'
     )
-    await expect(token.connect(other).transfer(wallet.address, 1)).to.be.revertedWith(
-      'SafeMath256: subtraction overflow'
-    )
+    await expect(token.connect(other).transfer(wallet.address, 1)).to.be.revertedWith('ds-math-sub-underflow')
   })
 })
