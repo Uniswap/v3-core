@@ -23,35 +23,48 @@ contract Oracle {
     uint128 constant period = 1 days;
 
     OracleStates private state = OracleStates.NeedsInitialization;
+
     TokenData private reservesCumulative;
-    TimeData private lastUpdate;
+    TokenData private reservesCumulativeOverflows;
+
     TokenData private currentPrice;
+
+    TimeData private updateLast;
 
     constructor(address _exchange) public {
         exchange = _exchange;
     }
 
-    function getReservesCumulative() private view returns (TokenData memory) {
-        IUniswapV2 uniswapV2 = IUniswapV2(exchange);
-        (uint128 reservesCumulativeToken0, uint128 reservesCumulativeToken1,,) = uniswapV2.getReservesCumulativeAndOverflows();
-        return TokenData({
-            token0: reservesCumulativeToken0,
-            token1: reservesCumulativeToken1
-        });
+    function getReservesCumulative() private view returns (TokenData memory, TokenData memory) {
+        (
+            uint128 reservesCumulativeToken0,
+            uint128 reservesCumulativeToken1,
+            uint128 reservesCumulativeOverflowsToken0,
+            uint128 reservesCumulativeOverflowsToken1
+        ) = IUniswapV2(exchange).getReservesCumulative();
+        return (
+            TokenData(reservesCumulativeToken0, reservesCumulativeToken1),
+            TokenData(reservesCumulativeOverflowsToken0, reservesCumulativeOverflowsToken1)
+        );
     }
 
-    function getTimeData() private view returns (TimeData memory) {
-        return TimeData({
-            blockNumber: block.number.downcast128(),
-            blockTimestamp: block.timestamp.downcast128()
-        });
+    function getNow() private view returns (TimeData memory) {
+        return TimeData(block.number.downcast128(), block.timestamp.downcast128());
+    }
+
+    function reset() private {
+        delete(reservesCumulative);
+        delete(reservesCumulativeOverflows);
+        delete(currentPrice);
+        delete(updateLast);
+        state = OracleStates.NeedsInitialization;
     }
 
     function initialize() external {
         require(state == OracleStates.NeedsInitialization, "Oracle: DOES_NOT_NEED_INITIALIZATION");
 
-        reservesCumulative = getReservesCumulative();
-        lastUpdate = getTimeData();
+        (reservesCumulative, reservesCumulativeOverflows) = getReservesCumulative();
+        updateLast = getNow();
 
         state = OracleStates.NeedsActivation;
     }
@@ -59,14 +72,26 @@ contract Oracle {
     function activate() external {
         require(state == OracleStates.NeedsActivation, "Oracle: DOES_NOT_NEED_ACTIVATION");
 
-        // get the current time, ensure it's been >=1 blocks since last update, and record the update
-        TimeData memory currentTime = getTimeData();
-        uint128 blocksElapsed = currentTime.blockNumber - lastUpdate.blockNumber;
+        // get the current time, ensure it's been >=1 blocks since the last update
+        TimeData memory _now = getNow();
+        uint128 blocksElapsed = _now.blockNumber - updateLast.blockNumber;
         require(blocksElapsed > 0, "Oracle: INSUFFICIENT_BLOCKS_PASSED");
-        lastUpdate = currentTime;
 
-        // get the current cumulative reserves, calculate the deltas, and record the new values
-        TokenData memory reservesCumulativeNext = getReservesCumulative();
+        // get the current cumulative reserves and overflows
+        TokenData memory reservesCumulativeNext;
+        TokenData memory reservesCumulativeOverflowsNext;
+        (reservesCumulativeNext, reservesCumulativeOverflowsNext) = getReservesCumulative();
+
+        // reset if there's been an overflow
+        if (
+            reservesCumulativeOverflows.token0 != reservesCumulativeOverflowsNext.token0 ||
+            reservesCumulativeOverflows.token1 != reservesCumulativeOverflowsNext.token1
+        ) {
+            reset();
+            require(false, "Oracle: OVERFLOW");
+        }
+
+        // calculate the deltas, and record the new values
         TokenData memory deltas = TokenData({
             token0: reservesCumulativeNext.token0 - reservesCumulative.token0,
             token1: reservesCumulativeNext.token1 - reservesCumulative.token1
@@ -79,21 +104,35 @@ contract Oracle {
             token1: deltas.token1 / blocksElapsed
         });
 
+        updateLast = _now;
+
         state = OracleStates.Active;
     }
 
     function update() external {
         require(state == OracleStates.Active, "Oracle: INACTIVE");
 
-        // get the current time, ensure it's been >=1 blocks since last update, and record the update
-        TimeData memory currentTime = getTimeData();
-        uint128 blocksElapsed = currentTime.blockNumber - lastUpdate.blockNumber;
+        // get the current time, ensure it's been >=1 blocks since the last update
+        TimeData memory _now = getNow();
+        uint128 blocksElapsed = _now.blockNumber - updateLast.blockNumber;
         require(blocksElapsed > 0, "Oracle: INSUFFICIENT_BLOCKS_PASSED");
-        uint128 timeElapsed = currentTime.blockTimestamp - lastUpdate.blockTimestamp;
-        lastUpdate = currentTime;
+        uint128 timeElapsed = _now.blockTimestamp - updateLast.blockTimestamp;
 
-        // get the current cumulative reserves, calculate the deltas, and record the new values
-        TokenData memory reservesCumulativeNext = getReservesCumulative();
+        // get the current cumulative reserves and overflows
+        TokenData memory reservesCumulativeNext;
+        TokenData memory reservesCumulativeOverflowsNext;
+        (reservesCumulativeNext, reservesCumulativeOverflowsNext) = getReservesCumulative();
+
+        // reset if there's been an overflow
+        if (
+            reservesCumulativeOverflows.token0 != reservesCumulativeOverflowsNext.token0 ||
+            reservesCumulativeOverflows.token1 != reservesCumulativeOverflowsNext.token1
+        ) {
+            reset();
+            require(false, "Oracle: OVERFLOW");
+        }
+
+        // calculate the deltas, and record the new values
         TokenData memory deltas = TokenData({
             token0: reservesCumulativeNext.token0 - reservesCumulative.token0,
             token1: reservesCumulativeNext.token1 - reservesCumulative.token1
@@ -115,6 +154,8 @@ contract Oracle {
         } else {
             currentPrice = averages;
         }
+
+        updateLast = _now;
     }
 
     function getCurrentPrice() external view returns (uint128, uint128) {
