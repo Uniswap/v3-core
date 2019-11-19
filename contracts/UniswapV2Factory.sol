@@ -11,7 +11,6 @@ contract UniswapV2Factory is IUniswapV2Factory {
     }
 
     bytes public exchangeBytecode;
-    uint256 public chainId;
     uint256 public exchangeCount;
 
     mapping (address => Pair) private exchangeToPair;
@@ -20,10 +19,9 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
     event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint256 exchangeCount);
 
-    constructor(bytes memory _exchangeBytecode, uint256 _chainId) public {
+    constructor(bytes memory _exchangeBytecode) public {
         require(_exchangeBytecode.length >= 0x20, "UniswapV2Factory: SHORT_BYTECODE");
         exchangeBytecode = _exchangeBytecode;
-        chainId = _chainId;
     }
 
     function getTokens(address exchange) external view returns (address, address) {
@@ -66,7 +64,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
                 salt
             )
         }
-        UniswapV2(exchange).initialize(pair.token0, pair.token1, chainId);
+        UniswapV2(exchange).initialize(pair.token0, pair.token1);
         exchangeToPair[exchange] = pair;
         token0ToToken1ToExchange[pair.token0][pair.token1] = exchange;
         tokensToOtherTokens[pair.token0].push(pair.token1);

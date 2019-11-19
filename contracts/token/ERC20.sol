@@ -17,30 +17,27 @@ contract ERC20 is IERC20 {
 
     // ERC-721 data
 	bytes32 public DOMAIN_SEPARATOR;
-	bytes32 public APPROVE_TYPEHASH = keccak256(
-		"Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)"
-	);
-    uint256 public chainId;
+    // keccak256("Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)");
+	bytes32 public constant APPROVE_TYPEHASH = hex'25a0822e8c2ed7ff64a57c55df37ff176282195b9e0c9bb770ed24a300c89762';
     mapping (address => uint256) public nonces;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
+    function MOCK_getChainId() private pure returns (uint256) {
+        return 1;
+    }
+
     constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _totalSupply) public {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
-        mint(msg.sender, _totalSupply);
-    }
-
-    function initialize(uint256 _chainId) internal {
-        require(chainId == 0 && DOMAIN_SEPARATOR == bytes32(0), "ERC20: ALREADY_INITIALIZED");
-        chainId = _chainId;
+        if (_totalSupply > 0) mint(msg.sender, _totalSupply);
         DOMAIN_SEPARATOR = keccak256(abi.encode(
 			keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
 			keccak256(bytes(name)),
 			keccak256(bytes("1")),
-			chainId,
+			MOCK_getChainId(),
 			address(this)
 		));
     }
@@ -87,10 +84,8 @@ contract ERC20 is IERC20 {
     )
         external
     {
-		require(chainId != 0 && DOMAIN_SEPARATOR != bytes32(0), "ERC20: UNINITIALIZED");
         require(nonce == nonces[owner]++, "ERC20: INVALID_NONCE");
         require(expiration > block.timestamp, "ERC20: EXPIRED_SIGNATURE");
-
         require(v == 27 || v == 28, "ECDSA: INVALID_V");
         require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "ECDSA: INVALID_S");
 
@@ -103,8 +98,13 @@ contract ERC20 is IERC20 {
             ))
         ));
         address recoveredAddress = ecrecover(digest, v, r, s);
+        if (recoveredAddress != owner) {
+            recoveredAddress = ecrecover(
+                keccak256(abi.encodePacked(hex"19", "Ethereum Signed Message:", hex"32", digest)), v, r, s
+            );
+        }
         require(recoveredAddress != address(0), "ERC20: INVALID_RECOVERED_ADDRESS");
-        require(owner == recoveredAddress, "ERC20: INVALID_SIGNATURE");
+        require(recoveredAddress == owner, "ERC20: INVALID_SIGNATURE");
 
         _approve(owner, spender, value);
     }

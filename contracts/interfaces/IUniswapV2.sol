@@ -2,13 +2,31 @@ pragma solidity 0.5.12;
 
 interface IUniswapV2 {
     event LiquidityMinted(
-        address indexed sender, address indexed recipient, uint256 liquidity, uint128 amountToken0, uint128 amountToken1
+        address indexed sender,
+        address indexed recipient,
+        uint128 amountToken0,
+        uint128 amountToken1,
+        uint128 reserveToken0,
+        uint128 reserveToken1,
+        uint256 liquidity
     );
     event LiquidityBurned(
-        address indexed sender, address indexed recipient, uint256 liquidity, uint128 amountToken0, uint128 amountToken1
+        address indexed sender,
+        address indexed recipient,
+        uint128 amountToken0,
+        uint128 amountToken1,
+        uint128 reserveToken0,
+        uint128 reserveToken1,
+        uint256 liquidity
     );
     event Swap(
-        address indexed sender, address indexed recipient, address input, uint128 amountToken0, uint128 amountToken1
+        address indexed sender,
+        address indexed recipient,
+        uint128 amountToken0,
+        uint128 amountToken1,
+        uint128 reserveToken0,
+        uint128 reserveToken1,
+        address input
     );
 
     function factory() external view returns (address);
