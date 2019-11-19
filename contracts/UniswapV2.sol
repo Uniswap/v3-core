@@ -214,6 +214,30 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         );
     }
 
+    function rageQuit(address output, address recipient) external lock returns (uint128 amountOutput) {
+        uint256 liquidity = balanceOf[address(this)];
+        TokenData memory amounts;
+
+        if (output == token0) {
+            amounts.token0 = amountOutput = (liquidity.mul(reserves.token0) / totalSupply).downcast128();
+            require(safeTransfer(token0, recipient, amounts.token0), "UniswapV2: TRANSFER_0_FAILED");
+        } else {
+            amounts.token1 = amountOutput = (liquidity.mul(reserves.token1) / totalSupply).downcast128();
+            require(safeTransfer(token1, recipient, amounts.token1), "UniswapV2: TRANSFER_0_FAILED");
+        }
+
+        if (liquidity > 0) _burn(address(this), liquidity);
+
+        TokenData memory balances = TokenData({
+            token0: IERC20(token0).balanceOf(address(this)).downcast128(),
+            token1: IERC20(token1).balanceOf(address(this)).downcast128()
+        });
+        update(balances);
+        emit LiquidityBurned(
+            msg.sender, recipient, amounts.token0, amounts.token1, balances.token0, balances.token1, liquidity
+        );
+    }
+
     function swap(address input, address recipient) external lock returns (uint128 amountOutput) {
         TokenData memory balances;
         TokenData memory amounts;
