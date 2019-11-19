@@ -1,7 +1,6 @@
 import { providers, Wallet, Contract } from 'ethers'
 import { deployContract } from 'ethereum-waffle'
 
-import { CHAIN_ID } from './constants'
 import { expandTo18Decimals } from './utilities'
 
 import ERC20 from '../../build/GenericERC20.json'
@@ -15,7 +14,7 @@ export interface FactoryFixture {
 
 export async function factoryFixture(provider: providers.Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
   const bytecode = `0x${UniswapV2.evm.bytecode.object}`
-  const factory = await deployContract(wallet, UniswapV2Factory, [bytecode, CHAIN_ID], {
+  const factory = await deployContract(wallet, UniswapV2Factory, [bytecode], {
     gasLimit: (provider._web3Provider as any).options.gasLimit
   })
 
@@ -31,8 +30,8 @@ export interface ExchangeFixture extends FactoryFixture {
 export async function exchangeFixture(provider: providers.Web3Provider, [wallet]: Wallet[]): Promise<ExchangeFixture> {
   const { bytecode, factory } = await factoryFixture(provider, [wallet])
 
-  const tokenA = await deployContract(wallet, ERC20, ['Test Token A', 'TESTA', 18, expandTo18Decimals(1000), CHAIN_ID])
-  const tokenB = await deployContract(wallet, ERC20, ['Test Token B', 'TESTB', 18, expandTo18Decimals(1000), CHAIN_ID])
+  const tokenA = await deployContract(wallet, ERC20, ['Test Token A', 'TESTA', 18, expandTo18Decimals(1000)])
+  const tokenB = await deployContract(wallet, ERC20, ['Test Token B', 'TESTB', 18, expandTo18Decimals(1000)])
 
   await factory.createExchange(tokenA.address, tokenB.address)
   const exchangeAddress = await factory.getExchange(tokenA.address, tokenB.address)

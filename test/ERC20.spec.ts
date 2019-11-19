@@ -6,7 +6,6 @@ import { AddressZero, MaxUint256 } from 'ethers/constants'
 import { bigNumberify, hexlify } from 'ethers/utils'
 import { ecsign } from 'ethereumjs-util'
 
-import { CHAIN_ID } from './shared/constants'
 import { expandTo18Decimals, getApprovalDigest } from './shared/utilities'
 
 import ERC20 from '../build/GenericERC20.json'
@@ -32,17 +31,15 @@ describe('ERC20', () => {
       TOKEN_DETAILS.name,
       TOKEN_DETAILS.symbol,
       TOKEN_DETAILS.decimals,
-      TOKEN_DETAILS.totalSupply,
-      CHAIN_ID
+      TOKEN_DETAILS.totalSupply
     ])
   })
 
-  it('name, symbol, decimals, totalSupply, chainId', async () => {
+  it('name, symbol, decimals, totalSupply', async () => {
     expect(await token.name()).to.eq(TOKEN_DETAILS.name)
     expect(await token.symbol()).to.eq(TOKEN_DETAILS.symbol)
     expect(await token.decimals()).to.eq(TOKEN_DETAILS.decimals)
     expect(await token.totalSupply()).to.eq(TOKEN_DETAILS.totalSupply)
-    expect(await token.chainId()).to.eq(CHAIN_ID)
   })
 
   it('transfer', async () => {

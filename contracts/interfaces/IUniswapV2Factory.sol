@@ -1,10 +1,10 @@
 pragma solidity 0.5.12;
 
 interface IUniswapV2Factory {
-    event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint256 exchangeCount);
+    event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint256 exchangeNumber);
 
     function exchangeBytecode() external view returns (bytes memory);
-    function exchangeCount() external view returns (uint256);
+    function exchanges(uint256) external view returns (address);
 
     function getTokens(address exchange) external view returns (address, address);
     function getExchange(address tokenA, address tokenB) external view returns (address);
@@ -12,4 +12,5 @@ interface IUniswapV2Factory {
     function getOtherTokensLength(address token) external view returns (uint256);
 
     function createExchange(address tokenA, address tokenB) external returns (address exchange);
+    function getExchangesLength() external view returns(uint256);
 }

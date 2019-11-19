@@ -4,7 +4,6 @@ import { solidity, createMockProvider, getWallets, createFixtureLoader } from 'e
 import { Contract } from 'ethers'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
-import { CHAIN_ID } from './shared/constants'
 import { expandTo18Decimals } from './shared/utilities'
 import { exchangeFixture, ExchangeFixture } from './shared/fixtures'
 
@@ -26,12 +25,6 @@ describe('UniswapV2', () => {
     token0 = _token0
     token1 = _token1
     exchange = _exchange
-  })
-
-  it('initialize:fail', async () => {
-    await expect(exchange.connect(wallet).initialize(token0.address, token1.address, CHAIN_ID)).to.be.revertedWith(
-      'UniswapV2: ALREADY_INITIALIZED'
-    )
   })
 
   it('getAmountOutput', async () => {
@@ -73,7 +66,15 @@ describe('UniswapV2', () => {
     await token1.transfer(exchange.address, token1Amount)
     await expect(exchange.connect(wallet).mintLiquidity(wallet.address))
       .to.emit(exchange, 'LiquidityMinted')
-      .withArgs(wallet.address, wallet.address, expectedLiquidity, token0Amount, token1Amount)
+      .withArgs(
+        wallet.address,
+        wallet.address,
+        token0Amount,
+        token1Amount,
+        token0Amount,
+        token1Amount,
+        expectedLiquidity
+      )
 
     expect(await exchange.totalSupply()).to.eq(expectedLiquidity)
     expect(await exchange.balanceOf(wallet.address)).to.eq(expectedLiquidity)
@@ -122,7 +123,15 @@ describe('UniswapV2', () => {
     expect(await exchange.swap)
     await expect(exchange.connect(wallet).swap(token0.address, wallet.address))
       .to.emit(exchange, 'Swap')
-      .withArgs(wallet.address, wallet.address, token0.address, swapAmount, expectedOutputAmount)
+      .withArgs(
+        wallet.address,
+        wallet.address,
+        swapAmount,
+        expectedOutputAmount,
+        token0Amount.add(swapAmount),
+        token1Amount.sub(expectedOutputAmount),
+        token0.address
+      )
 
     expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount.add(swapAmount))
     expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount.sub(expectedOutputAmount))
@@ -140,7 +149,7 @@ describe('UniswapV2', () => {
     await exchange.connect(wallet).transfer(exchange.address, liquidity)
     await expect(exchange.connect(wallet).burnLiquidity(wallet.address))
       .to.emit(exchange, 'LiquidityBurned')
-      .withArgs(wallet.address, wallet.address, liquidity, token0Amount, token1Amount)
+      .withArgs(wallet.address, wallet.address, token0Amount, token1Amount, bigNumberify(0), bigNumberify(0), liquidity)
 
     expect(await exchange.balanceOf(wallet.address)).to.eq(0)
     expect(await token0.balanceOf(exchange.address)).to.eq(0)

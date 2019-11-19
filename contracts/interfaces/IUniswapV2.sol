@@ -42,5 +42,6 @@ interface IUniswapV2 {
 
     function mintLiquidity(address recipient) external returns (uint256 liquidity);
     function burnLiquidity(address recipient) external returns (uint128 amountToken0, uint128 amountToken1);
+    function rageQuit(address output, address recipient) external returns (uint128 amountOutput);
     function swap(address input, address recipient) external returns (uint128 amountOutput);
 }

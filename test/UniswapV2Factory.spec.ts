@@ -4,7 +4,6 @@ import { solidity, createMockProvider, getWallets, createFixtureLoader } from 'e
 import { Contract } from 'ethers'
 import { bigNumberify } from 'ethers/utils'
 
-import { CHAIN_ID } from './shared/constants'
 import { getCreate2Address } from './shared/utilities'
 import { factoryFixture, FactoryFixture } from './shared/fixtures'
 
@@ -31,10 +30,9 @@ describe('UniswapV2Factory', () => {
     factory = _factory
   })
 
-  it('exchangeBytecode, chainId, exchangeCount', async () => {
+  it('exchangeBytecode', async () => {
     expect(await factory.exchangeBytecode()).to.eq(bytecode)
-    expect(await factory.chainId()).to.eq(CHAIN_ID)
-    expect(await factory.exchangeCount()).to.eq(0)
+    expect(await factory.getExchangesLength()).to.eq(0)
   })
 
   async function createExchange(tokens: string[]) {
@@ -42,13 +40,13 @@ describe('UniswapV2Factory', () => {
 
     await expect(factory.createExchange(...tokens))
       .to.emit(factory, 'ExchangeCreated')
-      .withArgs(TEST_ADDRESSES.token0, TEST_ADDRESSES.token1, create2Address, bigNumberify(0))
+      .withArgs(TEST_ADDRESSES.token0, TEST_ADDRESSES.token1, create2Address, bigNumberify(1))
     await expect(factory.createExchange(...tokens)).to.be.revertedWith('UniswapV2Factory: EXCHANGE_EXISTS')
     await expect(factory.createExchange(...tokens.slice().reverse())).to.be.revertedWith(
       'UniswapV2Factory: EXCHANGE_EXISTS'
     )
 
-    expect(await factory.exchangeCount()).to.eq(1)
+    expect(await factory.getExchangesLength()).to.eq(1)
     expect(await factory.getTokens(create2Address)).to.deep.eq([TEST_ADDRESSES.token0, TEST_ADDRESSES.token1])
     expect(await factory.getExchange(...tokens)).to.eq(create2Address)
     expect(await factory.getExchange(...tokens.slice().reverse())).to.eq(create2Address)

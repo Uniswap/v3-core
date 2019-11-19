@@ -9,8 +9,6 @@ import {
   solidityPack
 } from 'ethers/utils'
 
-import { CHAIN_ID } from './constants'
-
 const APPROVE_TYPEHASH = keccak256(
   toUtf8Bytes('Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)')
 )
@@ -24,7 +22,7 @@ const GET_DOMAIN_SEPARATOR = async (token: Contract) => {
         keccak256(toUtf8Bytes('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')),
         keccak256(toUtf8Bytes(name)),
         keccak256(toUtf8Bytes('1')),
-        CHAIN_ID,
+        1,
         token.address
       ]
     )
