@@ -10,6 +10,6 @@
   "ganacheOptions": {
     "hardfork": "constantinople",
     "mnemonic": "horn horn horn horn horn horn horn horn horn horn horn horn",
-    "gasLimit": "0x7A1200"
+    "gasLimit": "0x989680"
   }
 }

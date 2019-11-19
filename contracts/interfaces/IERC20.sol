@@ -11,8 +11,10 @@ interface IERC20 {
     function balanceOf(address owner) external view returns (uint256);
     function allowance(address owner, address spender) external view returns (uint256);
 
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function APPROVE_TYPEHASH() external pure returns (bytes32);
     function chainId() external returns (uint256);
-    function nonceFor(address owner) external view returns (uint256);
+    function nonces(address owner) external view returns (uint256);
 
     function transfer(address to, uint256 value) external returns (bool);
     function burn(uint256 value) external;

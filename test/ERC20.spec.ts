@@ -72,10 +72,10 @@ describe('ERC20', () => {
   })
 
   it('approveMeta', async () => {
-    const nonce = await token.nonceFor(wallet.address)
+    const nonce = await token.nonces(wallet.address)
     const expiration = MaxUint256
-    const digest = getApprovalDigest(
-      token.address,
+    const digest = await getApprovalDigest(
+      token,
       { owner: wallet.address, spender: other.address, value: TEST_AMOUNT },
       nonce,
       expiration
@@ -89,7 +89,7 @@ describe('ERC20', () => {
       .to.emit(token, 'Approval')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
 
-    expect(await token.nonceFor(wallet.address)).to.eq(bigNumberify(1))
+    expect(await token.nonces(wallet.address)).to.eq(bigNumberify(1))
     expect(await token.allowance(wallet.address, other.address)).to.eq(TEST_AMOUNT)
   })
 
