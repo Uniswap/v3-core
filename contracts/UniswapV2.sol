@@ -26,12 +26,12 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     TokenData private reservesCumulativeOverflows;
     uint256 private blockNumberLast;
 
-    bool private locked;
+    bool private notEntered = true;
     modifier lock() {
-        require(!locked, "UniswapV2: LOCKED");
-        locked = true;
+        require(notEntered, "UniswapV2: LOCKED");
+        notEntered = false;
         _;
-        locked = false;
+        notEntered = true;
     }
 
     event LiquidityMinted(
