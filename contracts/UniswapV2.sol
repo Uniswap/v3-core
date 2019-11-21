@@ -221,6 +221,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             amounts.token0 = amountOutput = (liquidity.mul(reserves.token0) / totalSupply).downcast128();
             safeTransfer(token0, recipient, amounts.token0);
         } else {
+            require(output == token1, "UniswapV2: INVALID_OUTPUT");
             amounts.token1 = amountOutput = (liquidity.mul(reserves.token1) / totalSupply).downcast128();
             safeTransfer(token1, recipient, amounts.token1);
         }
