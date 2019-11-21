@@ -3,9 +3,10 @@ pragma solidity 0.5.12;
 import "../interfaces/IIncompatibleERC20.sol";
 
 contract SafeTransfer {
-    function safeTransfer(address token, address to, uint256 value) internal returns (bool result) {
+    function safeTransfer(address token, address to, uint256 value) internal {
         IIncompatibleERC20(token).transfer(to, value);
 
+        bool result;
         assembly {
             switch returndatasize()
                 case 0 { // if there was no return data, treat the transfer as successful
@@ -19,5 +20,7 @@ contract SafeTransfer {
                     revert(0, 0)
                 }
         }
+
+        require(result, "SafeTransfer: SWAP_FAILED");
     }
 }

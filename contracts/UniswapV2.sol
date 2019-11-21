@@ -199,11 +199,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             token0: amountToken0 = (liquidity.mul(reserves.token0) / totalSupply).downcast128(),
             token1: amountToken1 = (liquidity.mul(reserves.token1) / totalSupply).downcast128()
         });
-
-        require(amounts.token0 == 0 || safeTransfer(token0, recipient, amounts.token0), "UniswapV2: TRANSFER_0_FAILED");
-        require(amounts.token1 == 0 || safeTransfer(token1, recipient, amounts.token1), "UniswapV2: TRANSFER_1_FAILED");
-
+        if (amounts.token0 > 0) safeTransfer(token0, recipient, amounts.token0);
+        if (amounts.token1 > 0) safeTransfer(token1, recipient, amounts.token1);
         if (liquidity > 0) _burn(address(this), liquidity);
+
         TokenData memory balances = TokenData({
             token0: IERC20(token0).balanceOf(address(this)).downcast128(),
             token1: IERC20(token1).balanceOf(address(this)).downcast128()
@@ -220,10 +219,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
 
         if (output == token0) {
             amounts.token0 = amountOutput = (liquidity.mul(reserves.token0) / totalSupply).downcast128();
-            require(safeTransfer(token0, recipient, amounts.token0), "UniswapV2: TRANSFER_0_FAILED");
+            safeTransfer(token0, recipient, amounts.token0);
         } else {
             amounts.token1 = amountOutput = (liquidity.mul(reserves.token1) / totalSupply).downcast128();
-            require(safeTransfer(token1, recipient, amounts.token1), "UniswapV2: TRANSFER_0_FAILED");
+            safeTransfer(token1, recipient, amounts.token1);
         }
 
         if (liquidity > 0) _burn(address(this), liquidity);
@@ -246,14 +245,14 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             balances.token0 = IERC20(input).balanceOf(address(this)).downcast128();
             amounts.token0 = balances.token0.sub(reserves.token0);
             amounts.token1 = amountOutput = getAmountOutput(amounts.token0, reserves.token0, reserves.token1);
-            require(safeTransfer(token1, recipient, amounts.token1), "UniswapV2: TRANSFER_1_FAILED");
+            safeTransfer(token1, recipient, amounts.token1);
             balances.token1 = IERC20(token1).balanceOf(address(this)).downcast128();
         } else {
             require(input == token1, "UniswapV2: INVALID_INPUT");
             balances.token1 = IERC20(input).balanceOf(address(this)).downcast128();
             amounts.token1 = balances.token1.sub(reserves.token1);
             amounts.token0 = amountOutput = getAmountOutput(amounts.token1, reserves.token1, reserves.token0);
-            require(safeTransfer(token0, recipient, amounts.token0), "UniswapV2: TRANSFER_0_FAILED");
+            safeTransfer(token0, recipient, amounts.token0);
             balances.token0 = IERC20(token0).balanceOf(address(this)).downcast128();
         }
 
