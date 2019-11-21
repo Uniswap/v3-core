@@ -4,6 +4,7 @@ import "./interfaces/IUniswapV2.sol";
 
 import "./libraries/Math.sol";
 import "./libraries/SafeMath128.sol";
+import "./libraries/MOCK_Decimal.sol";
 
 import "./token/ERC20.sol";
 import "./token/SafeTransfer.sol";
@@ -22,8 +23,9 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     address public token1;
 
     TokenData private reserves;
-    TokenData private reservesCumulative;
-    TokenData private reservesCumulativeOverflows;
+
+    MOCK_Decimal.Decimal private accumulatedPriceToken0; // mocked accumulated price of token0 / token1
+    MOCK_Decimal.Decimal private accumulatedPriceToken1; // mocked accumulated price of token1 / token0
     uint256 private blockNumberLast;
 
     bool private notEntered = true;
@@ -77,39 +79,32 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         return (reserves.token0, reserves.token1);
     }
 
-    function getReservesCumulative() external view returns (uint128, uint128, uint128, uint128) {
+    function getAccumulatedPrices() external view returns (uint256, uint256) {
         require(blockNumberLast > 0, "UniswapV2: NOT_INITIALIZED");
 
-        TokenData memory reservesCumulativeNext;
-        TokenData memory reservesCumulativeOverflowsNext;
         // replicate the logic in update
         if (block.number > blockNumberLast) {
             uint128 blocksElapsed = (block.number - blockNumberLast).downcast128();
 
-            TokenData memory remaindersMul;
-            TokenData memory overflowsMul;
-            (remaindersMul.token0, overflowsMul.token0) = reserves.token0.omul(blocksElapsed);
-            (remaindersMul.token1, overflowsMul.token1) = reserves.token1.omul(blocksElapsed);
+            // get the prices according to the reserves as of the last official interaction with the contract
+            MOCK_Decimal.Decimal memory priceToken0 = MOCK_Decimal.div(reserves.token0, reserves.token1);
+            MOCK_Decimal.Decimal memory priceToken1 = MOCK_Decimal.div(reserves.token1, reserves.token0);
 
-            TokenData memory overflowsAdd;
-            (reservesCumulativeNext.token0, overflowsAdd.token0) = reservesCumulative.token0.oadd(remaindersMul.token0);
-            (reservesCumulativeNext.token1, overflowsAdd.token1) = reservesCumulative.token1.oadd(remaindersMul.token1);
+            // multiply these prices by the number of elapsed blocks
+            MOCK_Decimal.Decimal memory priceToken0Accumulated = MOCK_Decimal.mul(priceToken0, blocksElapsed);
+            MOCK_Decimal.Decimal memory priceToken1Accumulated = MOCK_Decimal.mul(priceToken1, blocksElapsed);
 
-            reservesCumulativeOverflowsNext = TokenData({
-                token0: reservesCumulativeOverflows.token0.add(overflowsMul.token0.add(overflowsAdd.token0)),
-                token1: reservesCumulativeOverflows.token1.add(overflowsMul.token1.add(overflowsAdd.token1))
-            });
+            // add the accumulated prices to the global accumulators
+            return (
+                MOCK_Decimal.add(accumulatedPriceToken0, priceToken0Accumulated).data,
+                MOCK_Decimal.add(accumulatedPriceToken1, priceToken1Accumulated).data
+            );
         } else {
-            reservesCumulativeNext = reservesCumulative;
-            reservesCumulativeOverflowsNext = reservesCumulativeOverflows;
+            return (
+                accumulatedPriceToken0.data,
+                accumulatedPriceToken1.data
+            );
         }
-
-        return (
-            reservesCumulativeNext.token0,
-            reservesCumulativeNext.token1,
-            reservesCumulativeOverflowsNext.token0,
-            reservesCumulativeOverflowsNext.token1
-        );
     }
 
     function getBlockNumberLast() external view returns (uint256) {
@@ -133,30 +128,17 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             if (blockNumberLast > 0) {
                 uint128 blocksElapsed = (block.number - blockNumberLast).downcast128();
 
-                // TODO address ratio of sum / sum of ratios / price accumulator issue
+                // get the prices according to the reserves as of the last official interaction with the contract
+                MOCK_Decimal.Decimal memory priceToken0 = MOCK_Decimal.div(reserves.token0, reserves.token1);
+                MOCK_Decimal.Decimal memory priceToken1 = MOCK_Decimal.div(reserves.token1, reserves.token0);
 
-                // multiply previous reserves by elapsed blocks in an overflow-safe way
-                TokenData memory remaindersMul;
-                TokenData memory overflowsMul;
-                (remaindersMul.token0, overflowsMul.token0) = reserves.token0.omul(blocksElapsed);
-                (remaindersMul.token1, overflowsMul.token1) = reserves.token1.omul(blocksElapsed);
+                // multiply these prices by the number of elapsed blocks
+                MOCK_Decimal.Decimal memory priceToken0Accumulated = MOCK_Decimal.mul(priceToken0, blocksElapsed);
+                MOCK_Decimal.Decimal memory priceToken1Accumulated = MOCK_Decimal.mul(priceToken1, blocksElapsed);
 
-                // update cumulative reserves in an overflow-safe way
-                TokenData memory overflowsAdd;
-                (reservesCumulative.token0, overflowsAdd.token0) = reservesCumulative.token0.oadd(remaindersMul.token0);
-                (reservesCumulative.token1, overflowsAdd.token1) = reservesCumulative.token1.oadd(remaindersMul.token1);
-
-                // update cumulative reserves overflows
-                TokenData memory overflows = TokenData({
-                    token0: overflowsMul.token0.add(overflowsAdd.token0),
-                    token1: overflowsMul.token1.add(overflowsAdd.token1)
-                });
-                if (overflows.token0 > 0 || overflows.token1 > 0) {
-                    reservesCumulativeOverflows = TokenData({
-                        token0: reservesCumulativeOverflows.token0.add(overflows.token0),
-                        token1: reservesCumulativeOverflows.token1.add(overflows.token1)
-                    });
-                }
+                // add these incremental accumulated prices to the global accumulators
+                accumulatedPriceToken0 = MOCK_Decimal.add(accumulatedPriceToken0, priceToken0Accumulated);
+                accumulatedPriceToken1 = MOCK_Decimal.add(accumulatedPriceToken1, priceToken1Accumulated);
             }
 
             // update the last block number
