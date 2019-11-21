@@ -1,6 +1,8 @@
 pragma solidity 0.5.12;
 
-import "../interfaces/IIncompatibleERC20.sol";
+interface IIncompatibleERC20 {
+    function transfer(address to, uint256 value) external;
+}
 
 contract SafeTransfer {
     function safeTransfer(address token, address to, uint256 value) internal {
