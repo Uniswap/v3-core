@@ -4,7 +4,7 @@ import "./interfaces/IUniswapV2.sol";
 
 import "./libraries/Math.sol";
 import "./libraries/SafeMath128.sol";
-import "./libraries/MOCK_Decimal.sol";
+import "./libraries/UQ104x104.sol";
 
 import "./token/ERC20.sol";
 import "./token/SafeTransfer.sol";
@@ -12,6 +12,7 @@ import "./token/SafeTransfer.sol";
 contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTransfer {
     using SafeMath128 for uint128;
     using SafeMath256 for uint256;
+    using UQ104x104 for uint208;
 
     struct TokenData {
         uint128 token0;
@@ -24,9 +25,9 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
 
     TokenData private reserves;
 
-    MOCK_Decimal.Decimal private accumulatedPriceToken0; // mocked accumulated price of token0 / token1
-    MOCK_Decimal.Decimal private accumulatedPriceToken1; // mocked accumulated price of token1 / token0
-    uint256 private blockNumberLast;
+    uint240 private priceToken0Accumulated;
+    uint240 private priceToken1Accumulated;
+    uint32 private blockNumberLast;
 
     bool private notEntered = true;
     modifier lock() {
@@ -87,22 +88,18 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             uint128 blocksElapsed = (block.number - blockNumberLast).downcast128();
 
             // get the prices according to the reserves as of the last official interaction with the contract
-            MOCK_Decimal.Decimal memory priceToken0 = MOCK_Decimal.div(reserves.token0, reserves.token1);
-            MOCK_Decimal.Decimal memory priceToken1 = MOCK_Decimal.div(reserves.token1, reserves.token0);
+            uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(UQ104x104.encode(reserves.token1));
+            uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(UQ104x104.encode(reserves.token0));
 
-            // multiply these prices by the number of elapsed blocks
-            MOCK_Decimal.Decimal memory priceToken0Accumulated = MOCK_Decimal.mul(priceToken0, blocksElapsed);
-            MOCK_Decimal.Decimal memory priceToken1Accumulated = MOCK_Decimal.mul(priceToken1, blocksElapsed);
-
-            // add the accumulated prices to the global accumulators
+                // multiply these prices by the number of elapsed blocks and add to the accumulators
             return (
-                MOCK_Decimal.add(accumulatedPriceToken0, priceToken0Accumulated).data,
-                MOCK_Decimal.add(accumulatedPriceToken1, priceToken1Accumulated).data
+                priceToken0Accumulated + (uint240(priceToken0) * blocksElapsed),
+                priceToken1Accumulated + (uint240(priceToken1) * blocksElapsed)
             );
         } else {
             return (
-                accumulatedPriceToken0.data,
-                accumulatedPriceToken1.data
+                priceToken0Accumulated,
+                priceToken1Accumulated
             );
         }
     }
@@ -125,24 +122,21 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         // if any blocks have gone by since the last time this function was called, we have to update
         if (block.number > blockNumberLast) {
             // make sure that this isn't the first time this function is being called
+            uint32 blockNumber = block.number.downcast32();
             if (blockNumberLast > 0) {
-                uint128 blocksElapsed = (block.number - blockNumberLast).downcast128();
+                uint32 blocksElapsed = blockNumber - blockNumberLast;
 
                 // get the prices according to the reserves as of the last official interaction with the contract
-                MOCK_Decimal.Decimal memory priceToken0 = MOCK_Decimal.div(reserves.token0, reserves.token1);
-                MOCK_Decimal.Decimal memory priceToken1 = MOCK_Decimal.div(reserves.token1, reserves.token0);
+                uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(UQ104x104.encode(reserves.token1));
+                uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(UQ104x104.encode(reserves.token0));
 
-                // multiply these prices by the number of elapsed blocks
-                MOCK_Decimal.Decimal memory priceToken0Accumulated = MOCK_Decimal.mul(priceToken0, blocksElapsed);
-                MOCK_Decimal.Decimal memory priceToken1Accumulated = MOCK_Decimal.mul(priceToken1, blocksElapsed);
-
-                // add these incremental accumulated prices to the global accumulators
-                accumulatedPriceToken0 = MOCK_Decimal.add(accumulatedPriceToken0, priceToken0Accumulated);
-                accumulatedPriceToken1 = MOCK_Decimal.add(accumulatedPriceToken1, priceToken1Accumulated);
+                // multiply these prices by the number of elapsed blocks and add to the accumulators
+                priceToken0Accumulated = priceToken0Accumulated + (uint240(priceToken0) * blocksElapsed);
+                priceToken1Accumulated = priceToken1Accumulated + (uint240(priceToken1) * blocksElapsed);
             }
 
             // update the last block number
-            blockNumberLast = block.number;
+            blockNumberLast = blockNumber;
         }
 
         // update reserves

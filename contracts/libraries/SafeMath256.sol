@@ -15,4 +15,9 @@ library SafeMath256 {
         require(y <= uint128(-1), "downcast-128-overflow");
         z = uint128(y);
     }
+
+    function downcast32(uint256 y) internal pure returns (uint32 z) {
+        require(y <= uint32(-1), "downcast-32-overflow");
+        z = uint32(y);
+    }
 }
