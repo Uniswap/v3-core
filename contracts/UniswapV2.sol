@@ -88,8 +88,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             uint128 blocksElapsed = (block.number - blockNumberLast).downcast128();
 
             // get the prices according to the reserves as of the last official interaction with the contract
-            uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(UQ104x104.encode(reserves.token1));
-            uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(UQ104x104.encode(reserves.token0));
+            uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(reserves.token1);
+            uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
 
             return (
                 priceToken0Accumulated + (uint240(priceToken0) * blocksElapsed),
@@ -126,8 +126,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
                 uint32 blocksElapsed = blockNumber - blockNumberLast;
 
                 // get the prices according to the reserves as of the last official interaction with the contract
-                uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(UQ104x104.encode(reserves.token1));
-                uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(UQ104x104.encode(reserves.token0));
+                uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(reserves.token1);
+                uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
 
                 // multiply these prices by the number of elapsed blocks and add to the accumulators
                 priceToken0Accumulated = priceToken0Accumulated + (uint240(priceToken0) * blocksElapsed);

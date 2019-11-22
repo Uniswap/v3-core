@@ -17,14 +17,18 @@ library UQ104x104 {
         return uint232(y) * Q104;
     }
 
-    // we want to divide two modified-UQ104.104s (the outputs of encode), and return a traditional Q104.
-    // for our purposes, we'll do that by flooring the output of the division with `uint208(-1)`.
-    // (this corresponds to capping the relative prices of x and y at `1 / 2**104` and `uint208(-1) / 2**104`.)
-    // unfortunately, before we can compute `min(uint208(-1), output), we need to compute `output = x * 2**104 / y`,
-    // for which we need at least 416 bits (possibly 438 or 464? TODO think this through).
-    // for now, we just mock the function
-    function qdiv(uint232 x, uint232 y) internal pure returns (uint208 z) {
-        // TODO replace mock with real logic
-        z = uint208(x * Q104 / y);
+    // we want to divide a modified UQ104.104 (the output of encode) by an unencoded uint128,
+    // and return a traditional Q104. since we're using a modified UQ104.104, though, we need to handle overflows.
+    // for the moment, we simply truncate these to 1 and uint208(-1), though it's likely we'll handle this slightly
+    // differently in the future
+    function qdiv(uint232 x, uint128 y) internal pure returns (uint208 z) {
+        uint232 temp = x / y;
+        if (temp == 0) {
+            z = 1;
+        } else if (temp > uint208(-1)) {
+            z = uint208(-1);
+        } else {
+            z = uint208(temp);
+        }
     }
 }
