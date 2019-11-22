@@ -12,7 +12,7 @@ import "./token/SafeTransfer.sol";
 contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTransfer {
     using SafeMath128 for uint128;
     using SafeMath256 for uint256;
-    using UQ104x104 for uint208;
+    using UQ104x104 for uint232;
 
     struct TokenData {
         uint128 token0;
@@ -91,7 +91,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(UQ104x104.encode(reserves.token1));
             uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(UQ104x104.encode(reserves.token0));
 
-                // multiply these prices by the number of elapsed blocks and add to the accumulators
             return (
                 priceToken0Accumulated + (uint240(priceToken0) * blocksElapsed),
                 priceToken1Accumulated + (uint240(priceToken1) * blocksElapsed)
