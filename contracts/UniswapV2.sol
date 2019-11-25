@@ -19,15 +19,22 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         uint128 token1;
     }
 
+    struct OracleData {
+        uint240 priceAccumulated;
+        uint16 blockNumberHalf;
+    }
+
     address public factory;
     address public token0;
     address public token1;
 
     TokenData private reserves;
 
+    OracleData private oracleDataToken0;
+    OracleData private oracleDataToken1;
+
     uint240 private priceToken0Accumulated;
     uint240 private priceToken1Accumulated;
-    uint32 private blockNumberLast;
 
     bool private notEntered = true;
     modifier lock() {
@@ -80,7 +87,13 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         return (reserves.token0, reserves.token1);
     }
 
+    function getBlockNumberLast() public view returns (uint32) {
+        return oracleDataToken0.blockNumberHalf + (oracleDataToken1.blockNumberHalf << 16);
+    }
+
     function getAccumulatedPrices() external view returns (uint256, uint256) {
+        uint32 blockNumberLast = getBlockNumberLast();
+
         require(blockNumberLast > 0, "UniswapV2: NOT_INITIALIZED");
 
         // replicate the logic in update
@@ -92,20 +105,17 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             uint240 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
 
             return (
-                priceToken0Accumulated + priceToken0 * blocksElapsed,
-                priceToken1Accumulated + priceToken1 * blocksElapsed
+                oracleDataToken0.priceAccumulated + priceToken0 * blocksElapsed,
+                oracleDataToken0.priceAccumulated + priceToken1 * blocksElapsed
             );
         } else {
             return (
-                priceToken0Accumulated,
-                priceToken1Accumulated
+                oracleDataToken0.priceAccumulated,
+                oracleDataToken0.priceAccumulated
             );
         }
     }
 
-    function getBlockNumberLast() external view returns (uint256) {
-        return blockNumberLast;
-    }
 
     function getAmountOutput(uint128 amountInput, uint128 reserveInput, uint128 reserveOutput)
         public pure returns (uint128 amountOutput)
@@ -118,6 +128,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     }
 
     function update(TokenData memory balances) private {
+        uint32 blockNumberLast = getBlockNumberLast();
+
         // if any blocks have gone by since the last time this function was called, we have to update
         if (block.number > blockNumberLast) {
             // make sure that this isn't the first time this function is being called
@@ -130,12 +142,13 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
                 uint240 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
 
                 // multiply these prices by the number of elapsed blocks and add to the accumulators
-                priceToken0Accumulated = priceToken0Accumulated + priceToken0 * blocksElapsed;
-                priceToken1Accumulated = priceToken1Accumulated + priceToken1 * blocksElapsed;
+                oracleDataToken0.priceAccumulated = oracleDataToken0.priceAccumulated + priceToken0 * blocksElapsed;
+                oracleDataToken1.priceAccumulated = oracleDataToken1.priceAccumulated + priceToken1 * blocksElapsed;
             }
 
             // update the last block number
-            blockNumberLast = blockNumber;
+            oracleDataToken0.blockNumberHalf = uint16(now);
+            oracleDataToken1.blockNumberHalf = uint16(uint32(now >> 16));
         }
 
         // update reserves
