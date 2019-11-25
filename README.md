@@ -7,8 +7,8 @@ The following assumes the use of `node@^10`.
 
 ### Clone Repository
 ```
-git clone https://github.com/Uniswap/uniswap-v2.git
-cd uniswap-v2
+git clone https://github.com/Uniswap/uniswap-v2-core.git
+cd uniswap-v2-core
 ```
 
 ### Install Dependencies
