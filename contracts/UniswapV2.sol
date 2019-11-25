@@ -12,7 +12,7 @@ import "./token/SafeTransfer.sol";
 contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTransfer {
     using SafeMath128 for uint128;
     using SafeMath256 for uint256;
-    using UQ104x104 for uint232;
+    using UQ104x104 for uint240;
 
     struct TokenData {
         uint128 token0;
@@ -88,12 +88,12 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
             uint128 blocksElapsed = (block.number - blockNumberLast).downcast128();
 
             // get the prices according to the reserves as of the last official interaction with the contract
-            uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(reserves.token1);
-            uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
+            uint240 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(reserves.token1);
+            uint240 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
 
             return (
-                priceToken0Accumulated + (uint240(priceToken0) * blocksElapsed),
-                priceToken1Accumulated + (uint240(priceToken1) * blocksElapsed)
+                priceToken0Accumulated + priceToken0 * blocksElapsed,
+                priceToken1Accumulated + priceToken1 * blocksElapsed
             );
         } else {
             return (
@@ -126,12 +126,12 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
                 uint32 blocksElapsed = blockNumber - blockNumberLast;
 
                 // get the prices according to the reserves as of the last official interaction with the contract
-                uint208 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(reserves.token1);
-                uint208 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
+                uint240 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(reserves.token1);
+                uint240 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
 
                 // multiply these prices by the number of elapsed blocks and add to the accumulators
-                priceToken0Accumulated = priceToken0Accumulated + (uint240(priceToken0) * blocksElapsed);
-                priceToken1Accumulated = priceToken1Accumulated + (uint240(priceToken1) * blocksElapsed);
+                priceToken0Accumulated = priceToken0Accumulated + priceToken0 * blocksElapsed;
+                priceToken1Accumulated = priceToken1Accumulated + priceToken1 * blocksElapsed;
             }
 
             // update the last block number
