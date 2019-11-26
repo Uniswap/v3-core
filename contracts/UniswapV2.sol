@@ -33,9 +33,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     OracleData private oracleDataToken0;
     OracleData private oracleDataToken1;
 
-    uint240 private priceToken0Accumulated;
-    uint240 private priceToken1Accumulated;
-
     bool private notEntered = true;
     modifier lock() {
         require(notEntered, "UniswapV2: LOCKED");
@@ -88,7 +85,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     }
 
     function getBlockNumberLast() public view returns (uint32) {
-        return oracleDataToken0.blockNumberHalf + (oracleDataToken1.blockNumberHalf << 16);
+        return oracleDataToken0.blockNumberHalf + (uint32(oracleDataToken1.blockNumberHalf) << 16);
     }
 
     function getAccumulatedPrices() external view returns (uint256, uint256) {
