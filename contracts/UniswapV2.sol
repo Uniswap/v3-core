@@ -84,31 +84,33 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         return (reserves.token0, reserves.token1);
     }
 
-    function getBlockNumberLast() public view returns (uint32) {
-        return oracleDataToken0.blockNumberHalf + (uint32(oracleDataToken1.blockNumberHalf) << 16);
+    function readOraclePricesAccumulated() external view returns (uint240, uint240) {
+        return (oracleDataToken0.priceAccumulated, oracleDataToken1.priceAccumulated);
     }
 
-    function getAccumulatedPrices() external view returns (uint256, uint256) {
-        uint32 blockNumberLast = getBlockNumberLast();
+    function readOracleBlockNumber() public view returns (uint32) {
+        return (uint32(oracleDataToken0.blockNumberHalf) << 16) + oracleDataToken1.blockNumberHalf;
+    }
 
-        require(blockNumberLast > 0, "UniswapV2: NOT_INITIALIZED");
+    function consultOracle() external view returns (uint240, uint240) {
+        uint32 blockNumberLast = readOracleBlockNumber();
+
+        require(reserves.token0 != 0 && reserves.token1 != 0, "UniswapV2: NO_LIQUIDITY");
 
         // replicate the logic in update
         if (block.number > blockNumberLast) {
-            uint128 blocksElapsed = (block.number - blockNumberLast).downcast128();
-
-            // get the prices according to the reserves as of the last official interaction with the contract
             uint240 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(reserves.token1);
             uint240 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
 
+            uint32 blocksElapsed = block.number.downcast32() - blockNumberLast;
             return (
                 oracleDataToken0.priceAccumulated + priceToken0 * blocksElapsed,
-                oracleDataToken0.priceAccumulated + priceToken1 * blocksElapsed
+                oracleDataToken1.priceAccumulated + priceToken1 * blocksElapsed
             );
         } else {
             return (
                 oracleDataToken0.priceAccumulated,
-                oracleDataToken0.priceAccumulated
+                oracleDataToken1.priceAccumulated
             );
         }
     }
@@ -118,34 +120,32 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         public pure returns (uint128 amountOutput)
     {
         require(amountInput > 0 && reserveInput > 0 && reserveOutput > 0, "UniswapV2: INVALID_VALUE");
-        uint256 amountInputWithFee = uint256(amountInput).mul(1000 - 3);
+        uint256 amountInputWithFee = uint256(amountInput).mul(997);
         uint256 numerator = amountInputWithFee.mul(reserveOutput);
         uint256 denominator = uint256(reserveInput).mul(1000).add(amountInputWithFee);
         amountOutput = (numerator / denominator).downcast128();
     }
 
     function update(TokenData memory balances) private {
-        uint32 blockNumberLast = getBlockNumberLast();
+        uint32 blockNumberLast = readOracleBlockNumber();
 
         // if any blocks have gone by since the last time this function was called, we have to update
         if (block.number > blockNumberLast) {
-            // make sure that this isn't the first time this function is being called
-            uint32 blockNumber = block.number.downcast32();
-            if (blockNumberLast > 0) {
-                uint32 blocksElapsed = blockNumber - blockNumberLast;
-
+            // we have to ensure that neither reserves are 0, else our price division fails
+            if (reserves.token0 != 0 && reserves.token1 != 0) {
                 // get the prices according to the reserves as of the last official interaction with the contract
                 uint240 priceToken0 = UQ104x104.encode(reserves.token0).qdiv(reserves.token1);
                 uint240 priceToken1 = UQ104x104.encode(reserves.token1).qdiv(reserves.token0);
 
                 // multiply these prices by the number of elapsed blocks and add to the accumulators
-                oracleDataToken0.priceAccumulated = oracleDataToken0.priceAccumulated + priceToken0 * blocksElapsed;
-                oracleDataToken1.priceAccumulated = oracleDataToken1.priceAccumulated + priceToken1 * blocksElapsed;
+                uint32 blocksElapsed = block.number.downcast32() - blockNumberLast;
+                oracleDataToken0.priceAccumulated += priceToken0 * blocksElapsed;
+                oracleDataToken1.priceAccumulated += priceToken1 * blocksElapsed;
             }
 
             // update the last block number
-            oracleDataToken0.blockNumberHalf = uint16(now);
-            oracleDataToken1.blockNumberHalf = uint16(uint32(now >> 16));
+            oracleDataToken0.blockNumberHalf = uint16(block.number >> 16);
+            oracleDataToken1.blockNumberHalf = uint16(block.number);
         }
 
         // update reserves

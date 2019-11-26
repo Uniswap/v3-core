@@ -1,28 +1,15 @@
 pragma solidity 0.5.12;
 
-interface IIncompatibleERC20 {
-    function transfer(address to, uint256 value) external;
-}
-
 contract SafeTransfer {
     function safeTransfer(address token, address to, uint256 value) internal {
-        IIncompatibleERC20(token).transfer(to, value);
+        (bool success, bytes memory data) = token.call(abi.encodeWithSignature("transfer(address,uint256)", to, value));
 
-        bool result;
-        assembly {
-            switch returndatasize()
-                case 0 { // if there was no return data, treat the transfer as successful
-                    result := 1
-                }
-                case 0x20 { // if the return data was 32 bytes long, return that value
-                    returndatacopy(0, 0, 0x20)
-                    result := mload(0)
-                }
-                default { // revert in all other cases
-                    revert(0, 0)
-                }
+        require(success, "SafeTransfer: SWAP_FAILED");
+
+        if (data.length == 32) {
+            require(abi.decode(data, (bool)), "SafeTransfer: SWAP_FAILED");
+        } else if (data.length > 32) {
+            revert("SafeTransfer: SWAP_FAILED");
         }
-
-        require(result, "SafeTransfer: SWAP_FAILED");
     }
 }

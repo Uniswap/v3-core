@@ -10,20 +10,20 @@ library UQ104x104 {
 
     // we want to encode a uint128 `y` s.t. `y := y_encoded / 2**104` (i.e. with a Q104 denominator).
     // in other words, to encode `y` we simply multiply by `2**104`, aka Q104.
-    // however, in the case of a traditional UQ104.104, we'd store this output in a 208-bit slot,
-    // which would overflow for values of `y` in (`uint104(-1)`, `uint128(-1)`], so instead we need to
-    // store the output in 232 bits (TODO check this logic).
+    // in the case of a traditional UQ104.104, we'd store this output in a 208-bit slot,
+    // but since we're encoding a uint128, this would overflow for values of `y` in (`uint104(-1)`, `uint128(-1)`],
+    // so instead we need to store the output in at least 232 bits (we use 240 for compatibility later on)
     function encode(uint128 y) internal pure returns (uint240 z) {
         return uint240(y) * Q104;
     }
 
-    // we want to divide a modified UQ104.104 (the output of encode) by an unencoded uint128,
-    // and return a traditional Q104. since we're using a modified UQ104.104, though, we need to handle overflows.
-    // for the moment, we simply truncate these to 1 and uint208(-1), though it's likely we'll handle this slightly
-    // differently in the future
+    // we want to divide a modified UQ104.104 (the output of encode above) by an unencoded uint128 and return another
+    // modified UQ104.104. to do this, it's sufficient to divide the UQ104.104 by the unencoded value.
+    // since we want our output to fit in 208 bits, and behave consistently at the margins, we clamp this quotient
+    // within [1, uint208(-1)]
     function qdiv(uint240 x, uint128 y) internal pure returns (uint240 z) {
         z = x / y;
-        
+
         if (z == 0) {
             z = 1;
         } else if (z > uint208(-1)) {
