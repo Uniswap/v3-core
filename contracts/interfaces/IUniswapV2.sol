@@ -34,8 +34,9 @@ interface IUniswapV2 {
     function token1() external view returns (address);
 
     function getReserves() external view returns (uint128, uint128);
-    function getAccumulatedPrices() external view returns (uint256, uint256);
-    function getBlockNumberLast() external view returns (uint32);
+    function readOraclePricesAccumulated() external view returns (uint240, uint240);
+    function readOracleBlockNumber() external view returns (uint32);
+    function consultOracle() external view returns (uint240, uint240);
 
     function getAmountOutput(uint128 amountInput, uint128 reserveInput, uint128 reserveOutput)
         external pure returns (uint128 amountOutput);

@@ -29,9 +29,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     address public token1;
 
     TokenData private reserves;
-
-    OracleData public oracleDataToken0;
-    OracleData public oracleDataToken1;
+    OracleData private oracleDataToken0;
+    OracleData private oracleDataToken1;
 
     bool private notEntered = true;
     modifier lock() {
