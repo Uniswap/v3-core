@@ -17,7 +17,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
     mapping (address => address[]) private tokensToOtherTokens;
     address[] public exchanges;
 
-    event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint256 exchangeNumber);
+    event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint exchangeNumber);
 
     constructor(bytes memory _exchangeBytecode) public {
         require(_exchangeBytecode.length >= 0x20, "UniswapV2Factory: SHORT_BYTECODE");
@@ -38,11 +38,11 @@ contract UniswapV2Factory is IUniswapV2Factory {
         return tokensToOtherTokens[token];
     }
 
-    function getOtherTokensLength(address token) external view returns (uint256) {
+    function getOtherTokensLength(address token) external view returns (uint) {
         return tokensToOtherTokens[token].length;
     }
 
-    function getExchangesLength() external view returns(uint256) {
+    function getExchangesLength() external view returns(uint) {
         return exchanges.length;
     }
 

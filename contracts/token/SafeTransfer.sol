@@ -1,15 +1,15 @@
 pragma solidity 0.5.12;
 
 contract SafeTransfer {
-    function safeTransfer(address token, address to, uint256 value) internal {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSignature("transfer(address,uint256)", to, value));
+    function safeTransfer(address token, address to, uint value) internal {
+        (bool success, bytes memory data) = token.call(abi.encodeWithSignature("transfer(address,uint)", to, value));
 
-        require(success, "SafeTransfer: SWAP_FAILED");
+        require(success, "SafeTransfer: SWAP_REVERTED");
 
         if (data.length == 32) {
-            require(abi.decode(data, (bool)), "SafeTransfer: SWAP_FAILED");
+            require(abi.decode(data, (bool)), "SafeTransfer: SWAP_UNSUCCESSFUL");
         } else if (data.length > 32) {
-            revert("SafeTransfer: SWAP_FAILED");
+            revert("SafeTransfer: SWAP_INVALID_RETURN");
         }
     }
 }

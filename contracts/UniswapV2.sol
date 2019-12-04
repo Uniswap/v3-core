@@ -11,7 +11,7 @@ import "./token/SafeTransfer.sol";
 
 contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTransfer {
     using SafeMath128 for uint128;
-    using SafeMath256 for uint256;
+    using SafeMath for uint;
     using UQ104x104 for uint240;
 
     struct TokenData {
@@ -43,26 +43,26 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     event LiquidityMinted(
         address indexed sender,
         address indexed recipient,
-        uint128 amountToken0,
-        uint128 amountToken1,
+        uint amountToken0,
+        uint amountToken1,
         uint128 reserveToken0,
         uint128 reserveToken1,
-        uint256 liquidity
+        uint liquidity
     );
     event LiquidityBurned(
         address indexed sender,
         address indexed recipient,
-        uint128 amountToken0,
-        uint128 amountToken1,
+        uint amountToken0,
+        uint amountToken1,
         uint128 reserveToken0,
         uint128 reserveToken1,
-        uint256 liquidity
+        uint liquidity
     );
     event Swap(
         address indexed sender,
         address indexed recipient,
-        uint128 amountToken0,
-        uint128 amountToken1,
+        uint amountToken0,
+        uint amountToken1,
         uint128 reserveToken0,
         uint128 reserveToken1,
         address input
@@ -114,18 +114,16 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         }
     }
 
-
-    function getAmountOutput(uint128 amountInput, uint128 reserveInput, uint128 reserveOutput)
-        public pure returns (uint128 amountOutput)
-    {
-        require(amountInput > 0 && reserveInput > 0 && reserveOutput > 0, "UniswapV2: INVALID_VALUE");
-        uint256 amountInputWithFee = uint256(amountInput).mul(997);
-        uint256 numerator = amountInputWithFee.mul(reserveOutput);
-        uint256 denominator = uint256(reserveInput).mul(1000).add(amountInputWithFee);
-        amountOutput = (numerator / denominator).downcast128();
+    // uniswap-v1 naming
+    function getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) public pure returns (uint) {
+        require(inputReserve > 0 && outputReserve > 0, "UniswapV2: INVALID_VALUE");
+        uint amountInputWithFee = inputAmount.mul(997);
+        uint numerator = amountInputWithFee.mul(outputReserve);
+        uint denominator = inputReserve.mul(1000).add(amountInputWithFee);
+        return numerator / denominator;
     }
 
-    function update(TokenData memory balances) private {
+    function update(uint balanceToken0, uint balanceToken1) private {
         uint32 blockNumberLast = readOracleBlockNumber();
 
         // if any blocks have gone by since the last time this function was called, we have to update
@@ -148,102 +146,97 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         }
 
         // update reserves
-        reserves = balances;
+        reserves = TokenData({
+            token0: balanceToken0.clamp128(),
+            token1: balanceToken1.clamp128()
+        });
     }
 
-    function mintLiquidity(address recipient) external lock returns (uint256 liquidity) {
-        TokenData memory balances = TokenData({
-            token0: IERC20(token0).balanceOf(address(this)).downcast128(),
-            token1: IERC20(token1).balanceOf(address(this)).downcast128()
-        });
-        TokenData memory amounts = TokenData({
-            token0: balances.token0.sub(reserves.token0),
-            token1: balances.token1.sub(reserves.token1)
-        });
+    function mintLiquidity(address recipient) external lock returns (uint liquidity) {
+        uint balanceToken0 = IERC20(token0).balanceOf(address(this));
+        uint balanceToken1 = IERC20(token1).balanceOf(address(this));
+        uint amountToken0 = balanceToken0.sub(reserves.token0);
+        uint amountToken1 = balanceToken1.sub(reserves.token1);
 
-        if (totalSupply == 0) {
-            liquidity = Math.sqrt(uint256(amounts.token0).mul(amounts.token1));
-        } else {
-            liquidity = Math.min(
-                uint256(amounts.token0).mul(totalSupply) / reserves.token0,
-                uint256(amounts.token1).mul(totalSupply) / reserves.token1
-            );
-        }
+        liquidity = totalSupply == 0 ?
+            Math.sqrt(amountToken0.mul(amountToken1)) :
+            Math.min(amountToken0.mul(totalSupply) / reserves.token0, amountToken1.mul(totalSupply) / reserves.token1);
+        require(liquidity > 0, "UniswapV2: INSUFFICIENT_VALUE");
+        mint(recipient, liquidity);
 
-        if (liquidity > 0) mint(recipient, liquidity);
-        update(balances);
+        update(balanceToken0, balanceToken1);
         emit LiquidityMinted(
-            msg.sender, recipient, amounts.token0, amounts.token1, balances.token0, balances.token1, liquidity
+            msg.sender, recipient, amountToken0, amountToken1, reserves.token0, reserves.token1, liquidity
         );
     }
 
-    function burnLiquidity(address recipient) external lock returns (uint128 amountToken0, uint128 amountToken1) {
-        uint256 liquidity = balanceOf[address(this)];
-        TokenData memory amounts = TokenData({
-            token0: amountToken0 = (liquidity.mul(reserves.token0) / totalSupply).downcast128(),
-            token1: amountToken1 = (liquidity.mul(reserves.token1) / totalSupply).downcast128()
-        });
-        if (amounts.token0 > 0) safeTransfer(token0, recipient, amounts.token0);
-        if (amounts.token1 > 0) safeTransfer(token1, recipient, amounts.token1);
-        if (liquidity > 0) _burn(address(this), liquidity);
+    function burnLiquidity(address recipient) external lock returns (uint amountToken0, uint amountToken1) {
+        uint liquidity = balanceOf[address(this)];
+        require(liquidity > 0, "UniswapV2: INSUFFICIENT_VALUE");
 
-        TokenData memory balances = TokenData({
-            token0: IERC20(token0).balanceOf(address(this)).downcast128(),
-            token1: IERC20(token1).balanceOf(address(this)).downcast128()
-        });
-        update(balances);
+        amountToken0 = liquidity.mul(reserves.token0) / totalSupply;
+        amountToken1 = liquidity.mul(reserves.token1) / totalSupply;
+        require(amountToken0 > 0 && amountToken1 > 0, "UniswapV2: INSUFFICIENT_VALUE");
+        safeTransfer(token0, recipient, amountToken0);
+        safeTransfer(token1, recipient, amountToken1);
+
+        update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
         emit LiquidityBurned(
-            msg.sender, recipient, amounts.token0, amounts.token1, balances.token0, balances.token1, liquidity
+            msg.sender, recipient, amountToken0, amountToken1, reserves.token0, reserves.token1, liquidity
         );
     }
 
-    function rageQuit(address output, address recipient) external lock returns (uint128 amountOutput) {
-        uint256 liquidity = balanceOf[address(this)];
-        TokenData memory amounts;
+    function rageQuitToken0(address recipient) external lock returns (uint amountToken1) {
+        uint liquidity = balanceOf[address(this)];
+        require(liquidity > 0, "UniswapV2: INSUFFICIENT_VALUE");
 
-        if (output == token0) {
-            amounts.token0 = amountOutput = (liquidity.mul(reserves.token0) / totalSupply).downcast128();
-            safeTransfer(token0, recipient, amounts.token0);
-        } else {
-            require(output == token1, "UniswapV2: INVALID_OUTPUT");
-            amounts.token1 = amountOutput = (liquidity.mul(reserves.token1) / totalSupply).downcast128();
-            safeTransfer(token1, recipient, amounts.token1);
-        }
+        amountToken1 = liquidity.mul(reserves.token1) / totalSupply;
+        require(amountToken1 > 0, "UniswapV2: INSUFFICIENT_VALUE");
+        safeTransfer(token1, recipient, amountToken1);
 
-        if (liquidity > 0) _burn(address(this), liquidity);
-
-        TokenData memory balances = TokenData({
-            token0: IERC20(token0).balanceOf(address(this)).downcast128(),
-            token1: IERC20(token1).balanceOf(address(this)).downcast128()
-        });
-        update(balances);
-        emit LiquidityBurned(
-            msg.sender, recipient, amounts.token0, amounts.token1, balances.token0, balances.token1, liquidity
-        );
+        update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+        emit LiquidityBurned(msg.sender, recipient, 0, amountToken1, reserves.token0, reserves.token1, liquidity);
     }
 
-    function swap(address input, address recipient) external lock returns (uint128 amountOutput) {
-        TokenData memory balances;
-        TokenData memory amounts;
+    function rageQuitToken1(address recipient) external lock returns (uint amountToken0) {
+        uint liquidity = balanceOf[address(this)];
+        require(liquidity > 0, "UniswapV2: INSUFFICIENT_VALUE");
 
-        if (input == token0) {
-            balances.token0 = IERC20(input).balanceOf(address(this)).downcast128();
-            amounts.token0 = balances.token0.sub(reserves.token0);
-            amounts.token1 = amountOutput = getAmountOutput(amounts.token0, reserves.token0, reserves.token1);
-            safeTransfer(token1, recipient, amounts.token1);
-            balances.token1 = IERC20(token1).balanceOf(address(this)).downcast128();
-        } else {
-            require(input == token1, "UniswapV2: INVALID_INPUT");
-            balances.token1 = IERC20(input).balanceOf(address(this)).downcast128();
-            amounts.token1 = balances.token1.sub(reserves.token1);
-            amounts.token0 = amountOutput = getAmountOutput(amounts.token1, reserves.token1, reserves.token0);
-            safeTransfer(token0, recipient, amounts.token0);
-            balances.token0 = IERC20(token0).balanceOf(address(this)).downcast128();
-        }
+        amountToken0 = liquidity.mul(reserves.token0) / totalSupply;
+        require(amountToken0 > 0, "UniswapV2: INSUFFICIENT_VALUE");
+        safeTransfer(token0, recipient, amountToken0);
 
-        update(balances);
-        emit Swap(
-            msg.sender, recipient, amounts.token0, amounts.token1, balances.token0, balances.token1, input
-        );
+        update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+        emit LiquidityBurned(msg.sender, recipient, amountToken0, 0, reserves.token0, reserves.token1, liquidity);
+    }
+
+    function swapToken0(address recipient) external lock returns (uint amountToken1) {
+        uint balanceToken0 = IERC20(token0).balanceOf(address(this));
+        uint amountToken0 = balanceToken0.sub(reserves.token0); // this can fail
+        require(amountToken0 > 0, "UniswapV2: INSUFFICIENT_VALUE_INPUT");
+
+        amountToken1 = getInputPrice(amountToken0, reserves.token0, reserves.token1);
+        require(amountToken1 > 0, "UniswapV2: INSUFFICIENT_VALUE_OUTPUT");
+        safeTransfer(token1, recipient, amountToken1);
+
+        update(balanceToken0, IERC20(token1).balanceOf(address(this)));
+        emit Swap(msg.sender, recipient, amountToken0, amountToken1, reserves.token0, reserves.token1, token0);
+    }
+
+    function swapToken1(address recipient) external lock returns (uint amountToken0) {
+        uint balanceToken1 = IERC20(token1).balanceOf(address(this));
+        uint amountToken1 = balanceToken1.sub(reserves.token1); // this can fail
+        require(amountToken1 > 0, "UniswapV2: INSUFFICIENT_VALUE_INPUT");
+
+        amountToken0 = getInputPrice(amountToken1, reserves.token1, reserves.token0);
+        require(amountToken0 > 0, "UniswapV2: INSUFFICIENT_VALUE_OUTPUT");
+        safeTransfer(token0, recipient, amountToken0);
+
+        update(IERC20(token0).balanceOf(address(this)), balanceToken1);
+        emit Swap(msg.sender, recipient, amountToken0, amountToken1, reserves.token0, reserves.token1, token1);
+    }
+
+    function sync() external {
+        update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
     }
 }
