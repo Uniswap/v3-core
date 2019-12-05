@@ -30,3 +30,5 @@ yarn test
 - [OpenZeppelin ECDSA](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/81b1e4810761b088922dbd19a0642873ea581176/contracts/cryptography/ECDSA.sol)
 - [DAI token](https://github.com/makerdao/dss/blob/17be7db1c663d8069308c6b78fa5c5f9d71134a3/src/dai.sol)
 - [Coinmonks](https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca)
+- [Remco Bloemen](https://medium.com/wicketh/mathemagic-full-multiply-27650fec525d)
+- [Remco Bloemen](https://medium.com/wicketh/mathemagic-512-bit-division-in-solidity-afa55870a65)

@@ -2,7 +2,7 @@ pragma solidity 0.5.12;
 
 contract SafeTransfer {
     function safeTransfer(address token, address to, uint value) internal {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSignature("transfer(address,uint)", to, value));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSignature("transfer(address,uint256)", to, value));
 
         require(success, "SafeTransfer: SWAP_REVERTED");
 
