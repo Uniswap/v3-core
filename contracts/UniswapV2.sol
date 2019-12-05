@@ -9,15 +9,20 @@ import "./token/ERC20.sol";
 import "./token/SafeTransfer.sol";
 
 contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTransfer {
-    using SafeMath for uint;
+    using SafeMath  for uint;
     using UQ128x128 for uint;
 
     address public factory;
-    address public token0; address public token1;
+    address public token0;
+    address public token1;
 
-    uint128 public reserve0; uint128 public reserve1;
-    uint   public priceCumulative0;         uint public   priceCumulative1;
-    uint64 public priceCumulative0Overflow; uint64 public priceCumulative1Overflow; uint64 public blockNumber;
+    uint128 public reserve0;
+    uint128 public reserve1;
+    uint    public priceCumulative0;
+    uint    public priceCumulative1;
+    uint64  public priceCumulative0Overflow;
+    uint64  public priceCumulative1Overflow;
+    uint64  public blockNumber;
 
     bool private notEntered = true;
     modifier lock() {
@@ -28,21 +33,30 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     }
 
     event LiquidityMinted(
-        address indexed sender, address indexed recipient,
-        uint amount0, uint amount1,
-        uint128 reserve0, uint128 reserve1,
+        address indexed sender,
+        address indexed recipient,
+        uint amount0,
+        uint amount1,
+        uint128 reserve0,
+        uint128 reserve1,
         uint liquidity
     );
     event LiquidityBurned(
-        address indexed sender, address indexed recipient,
-        uint amount0, uint amount1,
-        uint128 reserve0, uint128 reserve1,
+        address indexed sender,
+        address indexed recipient,
+        uint amount0,
+        uint amount1,
+        uint128 reserve0,
+        uint128 reserve1,
         uint liquidity
     );
     event Swap(
-        address indexed sender, address indexed recipient,
-        uint amount0, uint amount1,
-        uint128 reserve0, uint128 reserve1,
+        address indexed sender,
+        address indexed recipient,
+        uint amount0,
+        uint amount1,
+        uint128 reserve0,
+        uint128 reserve1,
         address input
     );
 
@@ -99,7 +113,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
 
     function burnLiquidity(address recipient) external lock returns (uint amount0, uint amount1) {
         uint liquidity = balanceOf[address(this)];
-        require(liquidity > 0, "UniswapV2: INSUFFICIENT_VALUE");
 
         amount0 = liquidity.mul(reserve0) / totalSupply;
         amount1 = liquidity.mul(reserve1) / totalSupply;
@@ -115,9 +128,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint amount0 = balance0.sub(reserve0); // this can fail for weird tokens, hence sync
 
-        require(amount0 > 0, "UniswapV2: INSUFFICIENT_VALUE_INPUT");
         amount1 = getInputPrice(amount0, reserve0, reserve1);
-        require(amount1 > 0, "UniswapV2: INSUFFICIENT_VALUE_OUTPUT");
+        require(amount1 > 0, "UniswapV2: INSUFFICIENT_VALUE");
         safeTransfer(token1, recipient, amount1);
 
         update(balance0, IERC20(token1).balanceOf(address(this)));
@@ -128,45 +140,16 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         uint balance1 = IERC20(token1).balanceOf(address(this));
         uint amount1 = balance1.sub(reserve1); // this can fail for weird tokens, hence sync
 
-        require(amount1 > 0, "UniswapV2: INSUFFICIENT_VALUE_INPUT");
         amount0 = getInputPrice(amount1, reserve1, reserve0);
-        require(amount0 > 0, "UniswapV2: INSUFFICIENT_VALUE_OUTPUT");
+        require(amount0 > 0, "UniswapV2: INSUFFICIENT_VALUE");
         safeTransfer(token0, recipient, amount0);
 
         update(IERC20(token0).balanceOf(address(this)), balance1);
         emit Swap(msg.sender, recipient, amount0, amount1, reserve0, reserve1, token1);
     }
 
-    // this function almost certainly never needs to be called, it's for weird token
+    // this function almost certainly never needs to be called, it's for weird tokens
     function sync() external lock {
         update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
-    }
-
-    // DONT CALL THIS FUNCTION UNLESS token0 IS PERMANENTLY BROKEN
-    function unsafeRageQuit0(address recipient) external lock returns (uint amount1) {
-        uint liquidity = balanceOf[address(this)];
-        require(liquidity > 0, "UniswapV2: INSUFFICIENT_VALUE");
-
-        uint amount0 = liquidity.mul(reserve0) / totalSupply;
-        amount1 = liquidity.mul(reserve1) / totalSupply;
-        require(amount0 > 0 && amount1 > 0, "UniswapV2: INSUFFICIENT_VALUE");
-        safeTransfer(token1, recipient, amount1);
-
-        update(IERC20(token0).balanceOf(address(this)).sub(amount0), IERC20(token1).balanceOf(address(this)));
-        emit LiquidityBurned(msg.sender, recipient, 0, amount1, reserve0, reserve1, liquidity);
-    }
-
-    // DONT CALL THIS FUNCTION UNLESS token1 IS PERMANENTLY BROKEN
-    function unsafeRageQuit1(address recipient) external lock returns (uint amount0) {
-        uint liquidity = balanceOf[address(this)];
-        require(liquidity > 0, "UniswapV2: INSUFFICIENT_VALUE");
-
-        amount0 = liquidity.mul(reserve0) / totalSupply;
-        uint amount1 = liquidity.mul(reserve1) / totalSupply;
-        require(amount0 > 0 && amount1 > 0, "UniswapV2: INSUFFICIENT_VALUE");
-        safeTransfer(token0, recipient, amount0);
-
-        update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)).sub(amount1));
-        emit LiquidityBurned(msg.sender, recipient, amount0, 0, reserve0, reserve1, liquidity);
     }
 }
