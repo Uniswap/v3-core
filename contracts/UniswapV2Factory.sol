@@ -5,14 +5,9 @@ import "./interfaces/IUniswapV2Factory.sol";
 import "./UniswapV2.sol";
 
 contract UniswapV2Factory is IUniswapV2Factory {
-    struct Pair {
-        address token0;
-        address token1;
-    }
-
     bytes public exchangeBytecode;
 
-    mapping (address => Pair) private exchangeToPair;
+    mapping (address => address[2]) private exchangeToTokens;
     mapping (address => mapping(address => address)) private token0ToToken1ToExchange;
     mapping (address => address[]) private tokensToOtherTokens;
     address[] public exchanges;
@@ -24,14 +19,13 @@ contract UniswapV2Factory is IUniswapV2Factory {
         exchangeBytecode = _exchangeBytecode;
     }
 
-    function getTokens(address exchange) external view returns (address, address) {
-        Pair storage pair = exchangeToPair[exchange];
-        return (pair.token0, pair.token1);
+    function getTokens(address exchange) external view returns (address token0, address token1) {
+        return (exchangeToTokens[exchange][0], exchangeToTokens[exchange][1]);
     }
 
-    function getExchange(address tokenA, address tokenB) external view returns (address) {
-        Pair memory pair = getPair(tokenA, tokenB);
-        return token0ToToken1ToExchange[pair.token0][pair.token1];
+    function getExchange(address tokenA, address tokenB) external view returns (address exchange) {
+        (address token0, address token1) = getTokenOrder(tokenA, tokenB);
+        return token0ToToken1ToExchange[token0][token1];
     }
 
     function getOtherTokens(address token) external view returns (address[] memory) {
@@ -46,19 +40,19 @@ contract UniswapV2Factory is IUniswapV2Factory {
         return exchanges.length;
     }
 
-    function getPair(address tokenA, address tokenB) private pure returns (Pair memory) {
-        return tokenA < tokenB ? Pair({ token0: tokenA, token1: tokenB }) : Pair({ token0: tokenB, token1: tokenA });
+    function getTokenOrder(address tokenA, address tokenB) private pure returns (address token0, address token1) {
+        return tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
     }
 
     function createExchange(address tokenA, address tokenB) external returns (address exchange) {
         require(tokenA != tokenB, "UniswapV2Factory: SAME_ADDRESS");
         require(tokenA != address(0) && tokenB != address(0), "UniswapV2Factory: ZERO_ADDRESS");
 
-        Pair memory pair = getPair(tokenA, tokenB);
-        require(token0ToToken1ToExchange[pair.token0][pair.token1] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
+        (address token0, address token1) = getTokenOrder(tokenA, tokenB);
+        require(token0ToToken1ToExchange[token0][token0] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
 
         bytes memory exchangeBytecodeMemory = exchangeBytecode;
-        bytes32 salt = keccak256(abi.encodePacked(pair.token0, pair.token1));
+        bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
             exchange := create2(
                 0,
@@ -67,13 +61,13 @@ contract UniswapV2Factory is IUniswapV2Factory {
                 salt
             )
         }
-        UniswapV2(exchange).initialize(pair.token0, pair.token1);
+        UniswapV2(exchange).initialize(token0, token1);
 
-        exchangeToPair[exchange] = pair;
-        token0ToToken1ToExchange[pair.token0][pair.token1] = exchange;
-        tokensToOtherTokens[pair.token0].push(pair.token1);
-        tokensToOtherTokens[pair.token1].push(pair.token0);
+        exchangeToTokens[exchange] = [token0, token1];
+        token0ToToken1ToExchange[token0][token1] = exchange;
+        tokensToOtherTokens[token0].push(token1);
+        tokensToOtherTokens[token1].push(token0);
 
-        emit ExchangeCreated(pair.token0, pair.token1, exchange, exchanges.push(exchange));
+        emit ExchangeCreated(token0, token1, exchange, exchanges.push(exchange));
     }
 }
