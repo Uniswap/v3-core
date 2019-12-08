@@ -1,10 +1,8 @@
 pragma solidity 0.5.13;
 
 import "./interfaces/IUniswapV2.sol";
-
 import "./libraries/Math.sol";
 import "./libraries/UQ128x128.sol";
-
 import "./token/ERC20.sol";
 import "./token/SafeTransfer.sol";
 
@@ -66,7 +64,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     }
 
     function initialize(address _token0, address _token1) external {
-        require(token0 == address(0) && token1 == address(0), 'UniswapV2: ALREADY_INITIALIZED');
+        require(msg.sender == factory && token0 == address(0) && token1 == address(0), 'UniswapV2: FORBIDDEN');
         (token0, token1) = (_token0, _token1);
     }
 
@@ -82,13 +80,13 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     function update(uint balance0, uint balance1) private {
         if (block.number > blockNumber) {
             if (reserve0 != 0 && reserve1 != 0) {
-                uint64 blocksElapsed = uint64(block.number) - blockNumber; // doesn't overflow until >the end of time
-                (uint p0, uint64 po0) = Math.mul512(UQ128x128.encode(reserve0).qdiv(reserve1), blocksElapsed);
-                (uint p1, uint64 po1) = Math.mul512(UQ128x128.encode(reserve1).qdiv(reserve0), blocksElapsed);
-                uint64 pc0o; uint64 pc1o;
+                uint blocksElapsed = block.number - blockNumber;
+                (uint p0, uint po0) = Math.mul512(UQ128x128.encode(reserve0).qdiv(reserve1), blocksElapsed);
+                (uint p1, uint po1) = Math.mul512(UQ128x128.encode(reserve1).qdiv(reserve0), blocksElapsed);
+                uint pc0o; uint pc1o;
                 (priceCumulative0, pc0o) = Math.add512(priceCumulative0, priceCumulative0Overflow, p0, po0);
                 (priceCumulative1, pc1o) = Math.add512(priceCumulative1, priceCumulative1Overflow, p1, po1);
-                (priceCumulative0Overflow, priceCumulative1Overflow) = (pc0o, pc1o);
+                (priceCumulative0Overflow, priceCumulative1Overflow) = (uint64(pc0o), uint64(pc1o));
             }
             blockNumber = uint64(block.number); // doesn't overflow until >the end of time
         }
@@ -126,7 +124,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
 
     function swap0(address recipient) external lock returns (uint amount1) {
         uint balance0 = IERC20(token0).balanceOf(address(this));
-        uint amount0 = balance0.sub(reserve0); // this can fail for weird tokens, hence sync
+        uint amount0 = balance0.sub(reserve0);
 
         amount1 = getInputPrice(amount0, reserve0, reserve1);
         require(amount1 > 0, "UniswapV2: INSUFFICIENT_VALUE");
@@ -138,7 +136,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
 
     function swap1(address recipient) external lock returns (uint amount0) {
         uint balance1 = IERC20(token1).balanceOf(address(this));
-        uint amount1 = balance1.sub(reserve1); // this can fail for weird tokens, hence sync
+        uint amount1 = balance1.sub(reserve1);
 
         amount0 = getInputPrice(amount1, reserve1, reserve0);
         require(amount0 > 0, "UniswapV2: INSUFFICIENT_VALUE");

@@ -2,21 +2,30 @@ pragma solidity 0.5.13;
 
 interface IUniswapV2 {
     event LiquidityMinted(
-        address indexed sender, address indexed recipient,
-        uint amount0, uint amount1,
-        uint128 reserve0, uint128 reserve1,
+        address indexed sender,
+        address indexed recipient,
+        uint amount0,
+        uint amount1,
+        uint128 reserve0,
+        uint128 reserve1,
         uint liquidity
     );
     event LiquidityBurned(
-        address indexed sender, address indexed recipient,
-        uint amount0, uint amount1,
-        uint128 reserve0, uint128 reserve1,
+        address indexed sender,
+        address indexed recipient,
+        uint amount0,
+        uint amount1,
+        uint128 reserve0,
+        uint128 reserve1,
         uint liquidity
     );
     event Swap(
-        address indexed sender, address indexed recipient,
-        uint amount0, uint amount1,
-        uint128 reserve0, uint128 reserve1,
+        address indexed sender,
+        address indexed recipient,
+        uint amount0,
+        uint amount1,
+        uint128 reserve0,
+        uint128 reserve1,
         address input
     );
 
@@ -26,7 +35,6 @@ interface IUniswapV2 {
 
     function reserve0() external view returns (uint128);
     function reserve1() external view returns (uint128);
-
     function priceCumulative0() external view returns (uint);
     function priceCumulative1() external view returns (uint);
     function priceCumulative0Overflow() external view returns (uint64);
