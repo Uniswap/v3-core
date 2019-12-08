@@ -16,12 +16,10 @@ interface IERC20 {
     function nonces(address owner) external view returns (uint);
 
     function transfer(address to, uint value) external returns (bool);
+    function burn(uint value) external;
     function approve(address spender, uint value) external returns (bool);
     function transferFrom(address from, address to, uint value) external returns (bool);
-
-    function burn(uint value) external;
     function burnFrom(address from, uint value) external;
-
 
     function approveMeta(
         address owner, address spender, uint value, uint nonce, uint expiration, uint8 v, bytes32 r, bytes32 s
