@@ -22,6 +22,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     uint64  public priceCumulative1Overflow;
     uint64  public blockNumber;
 
+    uint private invariantLast;
+
     bool private notEntered = true;
     modifier lock() {
         require(notEntered, "UniswapV2: LOCKED");
@@ -77,6 +79,15 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         return numerator / denominator;
     }
 
+    function mintFees() private {
+        invariant = Math.sqrt(reserve0.mul(reserve1));
+        if (invariant > lastInvariant) {
+            uint numerator = invariant.mul(200);
+            uint denominator = invariant - (invariant - lastInvariant).mul(200);
+            mint(factory, numerator / denominator - 1);
+        }
+    }
+
     function update(uint balance0, uint balance1) private {
         if (block.number > blockNumber) {
             if (reserve0 != 0 && reserve1 != 0) {
@@ -94,6 +105,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     }
 
     function mintLiquidity(address recipient) external lock returns (uint liquidity) {
+        mintFees();
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
         uint amount0 = balance0.sub(reserve0);
@@ -106,10 +118,12 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         mint(recipient, liquidity);
 
         update(balance0, balance1);
+        lastInvariant = Math.sqrt(reserve0.mul(reserve1));
         emit LiquidityMinted(msg.sender, recipient, amount0, amount1, reserve0, reserve1, liquidity);
     }
 
     function burnLiquidity(address recipient) external lock returns (uint amount0, uint amount1) {
+        mintFees();
         uint liquidity = balanceOf[address(this)];
 
         amount0 = liquidity.mul(reserve0) / totalSupply;
@@ -119,6 +133,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         safeTransfer(token1, recipient, amount1);
 
         update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+        lastInvariant = Math.sqrt(reserve0.mul(reserve1))
         emit LiquidityBurned(msg.sender, recipient, amount0, amount1, reserve0, reserve1, liquidity);
     }
 

@@ -47,5 +47,4 @@ interface IUniswapV2 {
     function burnLiquidity(address recipient) external returns (uint amount0, uint amount1);
     function swap0(address recipient) external returns (uint amount1);
     function swap1(address recipient) external returns (uint amount0);
-    function sync() external;
 }
