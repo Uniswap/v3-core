@@ -32,7 +32,7 @@ describe('UniswapV2Factory', () => {
 
   it('exchangeBytecode', async () => {
     expect(await factory.exchangeBytecode()).to.eq(bytecode)
-    expect(await factory.getExchangesLength()).to.eq(0)
+    expect(await factory.getExchangesCount()).to.eq(0)
   })
 
   async function createExchange(tokens: string[]) {
@@ -46,14 +46,11 @@ describe('UniswapV2Factory', () => {
       'UniswapV2Factory: EXCHANGE_EXISTS'
     )
 
-    expect(await factory.getExchangesLength()).to.eq(1)
-    expect(await factory.getTokens(create2Address)).to.deep.eq([TEST_ADDRESSES.token0, TEST_ADDRESSES.token1])
     expect(await factory.getExchange(...tokens)).to.eq(create2Address)
     expect(await factory.getExchange(...tokens.slice().reverse())).to.eq(create2Address)
-    expect(await factory.getOtherTokens(tokens[0])).to.deep.eq([tokens[1]])
-    expect(await factory.getOtherTokens(tokens[1])).to.deep.eq([tokens[0]])
-    expect(await factory.getOtherTokensLength(tokens[0])).to.deep.eq(bigNumberify(1))
-    expect(await factory.getOtherTokensLength(tokens[1])).to.deep.eq(bigNumberify(1))
+    expect(await factory.getTokens(create2Address)).to.deep.eq([TEST_ADDRESSES.token0, TEST_ADDRESSES.token1])
+    expect(await factory.getExchanges(0)).to.eq(create2Address)
+    expect(await factory.getExchangesCount()).to.eq(1)
 
     const exchange = new Contract(create2Address, JSON.stringify(UniswapV2.abi), provider)
     expect(await exchange.factory()).to.eq(factory.address)
