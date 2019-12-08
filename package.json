@@ -3,13 +3,13 @@
     "node": "^10"
   },
   "dependencies": {
-    "solc": "0.5.12"
+    "solc": "0.5.13"
   },
   "devDependencies": {
     "@types/chai": "^4.2.3",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
-    "ethereum-waffle": "^2.1.0",
+    "ethereum-waffle": "^2.1.1",
     "ethereumjs-util": "^6.1.0",
     "mocha": "^6.2.2",
     "prettier": "^1.18.2",

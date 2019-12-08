@@ -1,4 +1,4 @@
-pragma solidity 0.5.12;
+pragma solidity 0.5.13;
 
 // helpful links
 // https://en.wikipedia.org/wiki/Q_(number_format)
