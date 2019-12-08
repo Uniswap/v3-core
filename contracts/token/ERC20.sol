@@ -7,15 +7,13 @@ import "../libraries/SafeMath.sol";
 contract ERC20 is IERC20 {
     using SafeMath for uint;
 
-    // ERC-20 data
     string public name;
     string public symbol;
     uint8 public decimals;
-    uint public totalSupply;
+    uint  public totalSupply;
     mapping (address => uint) public balanceOf;
     mapping (address => mapping (address => uint)) public allowance;
 
-    // ERC-721 data
 	bytes32 public DOMAIN_SEPARATOR;
     // keccak256("Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)");
 	bytes32 public constant APPROVE_TYPEHASH = hex'25a0822e8c2ed7ff64a57c55df37ff176282195b9e0c9bb770ed24a300c89762';
@@ -85,6 +83,7 @@ contract ERC20 is IERC20 {
         external
     {
         require(nonce == nonces[owner]++, "ERC20: INVALID_NONCE");
+        // solium-disable-next-line security/no-block-members
         require(expiration > block.timestamp, "ERC20: EXPIRED_SIGNATURE");
         require(v == 27 || v == 28, "ECDSA: INVALID_V");
         require(uint(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "ECDSA: INVALID_S");
