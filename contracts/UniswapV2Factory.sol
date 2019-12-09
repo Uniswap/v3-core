@@ -8,7 +8,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
     mapping (address => mapping(address => address)) private _getExchange;
     mapping (address => address[2]) private _getTokens;
-    address[] public getExchanges;
+    address[] public exchanges;
 
     event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint exchangeNumber);
 
@@ -30,8 +30,8 @@ contract UniswapV2Factory is IUniswapV2Factory {
         return (_getTokens[exchange][0], _getTokens[exchange][1]);
     }
 
-    function getExchangesCount() external view returns (uint) {
-        return getExchanges.length;
+    function exchangesCount() external view returns (uint) {
+        return exchanges.length;
     }
 
     function createExchange(address tokenA, address tokenB) external returns (address exchange) {
@@ -49,6 +49,6 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
         _getExchange[token0][token1] = exchange;
         _getTokens[exchange] = [token0, token1];
-        emit ExchangeCreated(token0, token1, exchange, getExchanges.push(exchange));
+        emit ExchangeCreated(token0, token1, exchange, exchanges.push(exchange));
     }
 }

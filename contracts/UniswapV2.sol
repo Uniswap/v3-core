@@ -80,10 +80,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     }
 
     function mintFees() private {
-        invariant = Math.sqrt(reserve0.mul(reserve1));
-        if (invariant > lastInvariant) {
+        uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
+        if (invariant > invariantLast) {
             uint numerator = invariant.mul(200);
-            uint denominator = invariant - (invariant - lastInvariant).mul(200);
+            uint denominator = invariant - (invariant - invariantLast).mul(200);
             mint(factory, numerator / denominator - 1);
         }
     }
@@ -118,7 +118,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         mint(recipient, liquidity);
 
         update(balance0, balance1);
-        lastInvariant = Math.sqrt(reserve0.mul(reserve1));
+        invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit LiquidityMinted(msg.sender, recipient, amount0, amount1, reserve0, reserve1, liquidity);
     }
 
@@ -133,7 +133,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         safeTransfer(token1, recipient, amount1);
 
         update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
-        lastInvariant = Math.sqrt(reserve0.mul(reserve1))
+        invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit LiquidityBurned(msg.sender, recipient, amount0, amount1, reserve0, reserve1, liquidity);
     }
 
