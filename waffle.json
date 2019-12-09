@@ -1,7 +1,7 @@
 {
   "solcVersion": "./node_modules/solc",
   "compilerOptions": {
-    "evmVersion": "constantinople",
+    "evmVersion": "istanbul",
     "optimizer": {
       "enabled": true,
       "runs": 1000
