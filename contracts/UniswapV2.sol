@@ -60,7 +60,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         address input
     );
 
-
     constructor() public {
         factory = msg.sender;
     }
@@ -70,7 +69,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         (token0, token1) = (_token0, _token1);
     }
 
-    // uniswap-v1 naming
     function getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) public pure returns (uint) {
         require(inputReserve > 0 && outputReserve > 0, "UniswapV2: INVALID_VALUE");
         uint amountInputWithFee = inputAmount.mul(997);
@@ -84,7 +82,9 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         if (invariant > invariantLast) {
             uint numerator = invariant.mul(200);
             uint denominator = invariant - (invariant - invariantLast).mul(200);
-            mint(factory, numerator / denominator - 1);
+            uint liquidity = numerator / denominator - 1;
+            mint(factory, liquidity);
+            emit LiquidityMinted(msg.sender, factory, 0, 0, reserve0, reserve1, liquidity);
         }
     }
 
@@ -161,7 +161,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         emit Swap(msg.sender, recipient, amount0, amount1, reserve0, reserve1, token1);
     }
 
-    // this function almost certainly never needs to be called, it's for weird tokens
+    // almost certainly never needs to be called, it's for weird tokens
     function sync() external lock {
         update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
     }
