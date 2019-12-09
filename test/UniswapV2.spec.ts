@@ -19,9 +19,9 @@ describe('UniswapV2', () => {
   let token1: Contract
   let exchange: Contract
   beforeEach(async () => {
-    const { token0: _token0, token1: _token1, exchange: _exchange } = (await loadFixture(
+    const { token0: _token0, token1: _token1, exchange: _exchange }: ExchangeFixture = await loadFixture(
       exchangeFixture as any
-    )) as ExchangeFixture
+    )
     token0 = _token0
     token1 = _token1
     exchange = _exchange

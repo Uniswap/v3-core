@@ -1,5 +1,5 @@
 # Uniswap v2 Smart Contracts
-[![CircleCI](https://circleci.com/gh/Uniswap/uniswap-v2.svg?style=svg)](https://circleci.com/gh/Uniswap/uniswap-v2)
+[![CircleCI](https://circleci.com/gh/Uniswap/uniswap-v2-core.svg?style=svg)](https://circleci.com/gh/Uniswap/uniswap-v2-core)
 
 ## Local Development
 

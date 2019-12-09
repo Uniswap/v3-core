@@ -161,7 +161,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         emit Swap(msg.sender, recipient, amount0, amount1, reserve0, reserve1, token1);
     }
 
-    // almost certainly never needs to be called, it's for weird tokens
+    // almost never _needs_ to be called, it's for weird tokens and can also be helpful for oracles
     function sync() external lock {
         update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
     }
