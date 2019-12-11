@@ -28,6 +28,7 @@ interface IUniswapV2 {
         uint128 reserve1,
         address input
     );
+    event FeesMinted(uint liquidity);
 
     function factory() external view returns (address);
     function token0() external view returns (address);
@@ -47,5 +48,7 @@ interface IUniswapV2 {
     function burnLiquidity(address recipient) external returns (uint amount0, uint amount1);
     function swap0(address recipient) external returns (uint amount1);
     function swap1(address recipient) external returns (uint amount0);
+
     function sync() external;
+    function sweep() external;
 }

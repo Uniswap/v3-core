@@ -30,7 +30,7 @@ contract ERC20 is IERC20 {
         symbol = _symbol;
         decimals = _decimals;
         if (_totalSupply > 0) {
-            mint(msg.sender, _totalSupply);
+            _mint(msg.sender, _totalSupply);
         }
         DOMAIN_SEPARATOR = keccak256(abi.encode(
 			keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
@@ -41,7 +41,7 @@ contract ERC20 is IERC20 {
 		));
     }
 
-    function mint(address to, uint value) internal {
+    function _mint(address to, uint value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(address(0), to, value);
