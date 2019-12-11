@@ -61,6 +61,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
 
     constructor() public {
         factory = msg.sender;
+        blockNumberLast = uint32(block.number % 2**32);
     }
 
     function initialize(address _token0, address _token1) external {
@@ -126,6 +127,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         uint liquidity = balanceOf[address(this)];
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
+        require(balance0 >= reserve0 && balance0 >= reserve1, "UniswapV2: INSUFFICIENT_BALANCE");
 
         mintFees();
         amount0 = liquidity.mul(balance0) / totalSupply; // intentionally using balances not reserves
@@ -135,7 +137,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         safeTransfer(token1, recipient, amount1);
         _burn(address(this), liquidity);
 
-        update(balance0, balance1);
+        update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
         invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit LiquidityBurned(msg.sender, recipient, amount0, amount1, reserve0, reserve1, liquidity);
     }

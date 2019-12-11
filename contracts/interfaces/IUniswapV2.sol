@@ -34,13 +34,11 @@ interface IUniswapV2 {
     function token0() external view returns (address);
     function token1() external view returns (address);
 
-    function reserve0() external view returns (uint128);
-    function reserve1() external view returns (uint128);
+    function reserve0() external view returns (uint112);
+    function reserve1() external view returns (uint112);
+    function blockNumberLast() external view returns (uint32);
     function priceCumulative0() external view returns (uint);
     function priceCumulative1() external view returns (uint);
-    function priceCumulative0Overflow() external view returns (uint64);
-    function priceCumulative1Overflow() external view returns (uint64);
-    function blockNumber() external view returns (uint64);
 
     function getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) external pure returns (uint);
 
