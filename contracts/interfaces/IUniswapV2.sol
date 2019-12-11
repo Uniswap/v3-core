@@ -28,7 +28,7 @@ interface IUniswapV2 {
         uint128 reserve1,
         address input
     );
-    event FeesMinted(uint liquidity);
+    event FeeLiquidityMinted(uint liquidity);
 
     function factory() external view returns (address);
     function token0() external view returns (address);
