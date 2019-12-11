@@ -17,8 +17,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     uint112 public reserve0;
     uint112 public reserve1;
     uint32  public blockNumberLast;
-    uint    public priceCumulative0;
-    uint    public priceCumulative1;
+    uint    public priceCumulative0Last;
+    uint    public priceCumulative1Last;
 
     uint private invariantLast;
 
@@ -83,8 +83,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         uint32 blocksElapsed = blockNumber - blockNumberLast; // overflow is desired
         if (blocksElapsed > 0 && reserve0 != 0 && reserve1 != 0) {
             // in the following 2 lines, * never overflows, + overflow is desired
-            priceCumulative0 += uint256(UQ112x112.encode(reserve0).qdiv(reserve1)) * blocksElapsed;
-            priceCumulative1 += uint256(UQ112x112.encode(reserve1).qdiv(reserve0)) * blocksElapsed;
+            priceCumulative0Last += uint256(UQ112x112.encode(reserve0).qdiv(reserve1)) * blocksElapsed;
+            priceCumulative1Last += uint256(UQ112x112.encode(reserve1).qdiv(reserve0)) * blocksElapsed;
         }
         reserve0 = balance0.clamp112();
         reserve1 = balance1.clamp112();

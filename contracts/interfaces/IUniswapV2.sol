@@ -37,8 +37,8 @@ interface IUniswapV2 {
     function reserve0() external view returns (uint112);
     function reserve1() external view returns (uint112);
     function blockNumberLast() external view returns (uint32);
-    function priceCumulative0() external view returns (uint);
-    function priceCumulative1() external view returns (uint);
+    function priceCumulative0Last() external view returns (uint);
+    function priceCumulative1Last() external view returns (uint);
 
     function getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) external pure returns (uint);
 
