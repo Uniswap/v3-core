@@ -59,6 +59,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         uint128 reserve1,
         address input
     );
+    event FeesMinted(uint liquidity);
 
     constructor() public {
         factory = msg.sender;
@@ -77,17 +78,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         return numerator / denominator;
     }
 
-    function mintFees() private {
-        uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
-        if (invariant > invariantLast) {
-            uint numerator = invariant.mul(200);
-            uint denominator = invariant - (invariant - invariantLast).mul(200);
-            uint liquidity = numerator / denominator - 1;
-            mint(factory, liquidity);
-            emit LiquidityMinted(msg.sender, factory, 0, 0, reserve0, reserve1, liquidity);
-        }
-    }
-
     function update(uint balance0, uint balance1) private {
         if (block.number > blockNumber) {
             if (reserve0 != 0 && reserve1 != 0) {
@@ -104,13 +94,26 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
         (reserve0, reserve1) = (balance0.clamp128(), balance1.clamp128()); // update reserves
     }
 
+    // mint liquidity equivalent to 20% of accumulated fees
+    function mintFees() private {
+        uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
+        if (invariant > invariantLast) {
+            uint numerator = totalSupply.mul(invariant.sub(invariantLast));
+            uint denominator = uint256(4).mul(invariant).add(invariantLast);
+            uint liquidity = numerator / denominator;
+            mint(factory, liquidity);
+            emit FeesMinted(liquidity);
+        }
+    }
+
     function mintLiquidity(address recipient) external lock returns (uint liquidity) {
-        mintFees();
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
+        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: EXCESSSIVE_LIQUIDITY");
         uint amount0 = balance0.sub(reserve0);
         uint amount1 = balance1.sub(reserve1);
 
+        mintFees();
         liquidity = totalSupply == 0 ?
             Math.sqrt(amount0.mul(amount1)) :
             Math.min(amount0.mul(totalSupply) / reserve0, amount1.mul(totalSupply) / reserve1);
@@ -123,9 +126,9 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     }
 
     function burnLiquidity(address recipient) external lock returns (uint amount0, uint amount1) {
-        mintFees();
         uint liquidity = balanceOf[address(this)];
 
+        mintFees();
         amount0 = liquidity.mul(reserve0) / totalSupply;
         amount1 = liquidity.mul(reserve1) / totalSupply;
         require(amount0 > 0 && amount1 > 0, "UniswapV2: INSUFFICIENT_VALUE");
@@ -164,5 +167,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0), SafeTran
     // almost never _needs_ to be called, it's for weird tokens and can also be helpful for oracles
     function sync() external lock {
         update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+    }
+
+    function sweep() external lock {
+        mintFees();
+        invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
     }
 }
