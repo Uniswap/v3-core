@@ -5,6 +5,9 @@ interface IUniswapV2Factory {
 
     function exchangeBytecode() external view returns (bytes memory);
 
+    function feeAddress() external view returns (address);
+    function feeOn() external view returns (bool);
+
     function sortTokens(address tokenA, address tokenB) external pure returns (address, address);
     function getExchange(address tokenA, address tokenB) external view returns (address);
     function getTokens(address exchange) external view returns (address, address);

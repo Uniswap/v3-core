@@ -1,5 +1,6 @@
 import { providers, Wallet, Contract } from 'ethers'
 import { deployContract } from 'ethereum-waffle'
+import { AddressZero } from 'ethers/constants'
 
 import { expandTo18Decimals } from './utilities'
 
@@ -14,7 +15,7 @@ export interface FactoryFixture {
 
 export async function factoryFixture(provider: providers.Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
   const bytecode = `0x${UniswapV2.evm.bytecode.object}`
-  const factory = await deployContract(wallet, UniswapV2Factory, [bytecode], {
+  const factory = await deployContract(wallet, UniswapV2Factory, [bytecode, AddressZero], {
     gasLimit: (provider._web3Provider as any).options.gasLimit
   })
 
