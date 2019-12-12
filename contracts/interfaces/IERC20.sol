@@ -1,4 +1,4 @@
-pragma solidity 0.5.13;
+pragma solidity 0.5.14;
 
 interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint value);
@@ -20,7 +20,6 @@ interface IERC20 {
     function approve(address spender, uint value) external returns (bool);
     function transferFrom(address from, address to, uint value) external returns (bool);
     function burnFrom(address from, uint value) external;
-
     function approveMeta(
         address owner, address spender, uint value, uint nonce, uint expiration, uint8 v, bytes32 r, bytes32 s
     )

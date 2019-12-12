@@ -1,34 +1,10 @@
-pragma solidity 0.5.13;
+pragma solidity 0.5.14;
 
 interface IUniswapV2 {
-    event LiquidityMinted(
-        address indexed sender,
-        address indexed recipient,
-        uint amount0,
-        uint amount1,
-        uint128 reserve0,
-        uint128 reserve1,
-        uint liquidity
-    );
-    event LiquidityBurned(
-        address indexed sender,
-        address indexed recipient,
-        uint amount0,
-        uint amount1,
-        uint128 reserve0,
-        uint128 reserve1,
-        uint liquidity
-    );
-    event Swap(
-        address indexed sender,
-        address indexed recipient,
-        uint amount0,
-        uint amount1,
-        uint128 reserve0,
-        uint128 reserve1,
-        address input
-    );
-    event FeeLiquidityMinted(uint liquidity);
+    event ReservesUpdated(uint112 reserve0, uint112 reserve1);
+    event LiquidityMinted(address indexed sender, uint amount0, uint amount1);
+    event LiquidityBurned(address indexed sender, address indexed recipient, uint amount0, uint amount1);
+    event Swap(address indexed sender, address indexed recipient, address indexed input, uint amount0, uint amount1);
 
     function factory() external view returns (address);
     function token0() external view returns (address);
@@ -37,8 +13,8 @@ interface IUniswapV2 {
     function reserve0() external view returns (uint112);
     function reserve1() external view returns (uint112);
     function blockNumberLast() external view returns (uint32);
-    function priceCumulative0Last() external view returns (uint);
-    function priceCumulative1Last() external view returns (uint);
+    function price0CumulativeLast() external view returns (uint);
+    function price1CumulativeLast() external view returns (uint);
 
     function getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) external pure returns (uint);
 

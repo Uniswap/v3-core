@@ -6,6 +6,7 @@ import { BigNumber, bigNumberify } from 'ethers/utils'
 
 import { expandTo18Decimals } from './shared/utilities'
 import { exchangeFixture, ExchangeFixture } from './shared/fixtures'
+import { AddressZero } from 'ethers/constants'
 
 chai.use(solidity)
 const { expect } = chai
@@ -69,15 +70,9 @@ describe('UniswapV2', () => {
     await token1.transfer(exchange.address, token1Amount)
     await expect(exchange.connect(wallet).mintLiquidity(wallet.address))
       .to.emit(exchange, 'LiquidityMinted')
-      .withArgs(
-        wallet.address,
-        wallet.address,
-        token0Amount,
-        token1Amount,
-        token0Amount,
-        token1Amount,
-        expectedLiquidity
-      )
+      .withArgs(wallet.address, token0Amount, token1Amount)
+      .to.emit(exchange, 'Transfer')
+      .withArgs(AddressZero, wallet.address, expectedLiquidity)
 
     expect(await exchange.totalSupply()).to.eq(expectedLiquidity)
     expect(await exchange.balanceOf(wallet.address)).to.eq(expectedLiquidity)
@@ -92,18 +87,19 @@ describe('UniswapV2', () => {
     await exchange.connect(wallet).mintLiquidity(wallet.address)
   }
 
-  // it('swap:gas', async () => {
-  //   const token0Amount = expandTo18Decimals(5)
-  //   const token1Amount = expandTo18Decimals(10)
-  //   await addLiquidity(token0Amount, token1Amount)
+  it('swap:gas', async () => {
+    const token0Amount = expandTo18Decimals(5)
+    const token1Amount = expandTo18Decimals(10)
+    await addLiquidity(token0Amount, token1Amount)
 
-  //   const swapAmount = expandTo18Decimals(1)
-  //   await token0.transfer(exchange.address, swapAmount)
-  //   await exchange.connect(wallet).swap0(wallet.address)
+    const swapAmount = expandTo18Decimals(1)
+    await token0.transfer(exchange.address, swapAmount)
+    await exchange.connect(wallet).swap0(wallet.address)
 
-  //   await token0.transfer(exchange.address, swapAmount)
-  //   console.log((await exchange.estimate.swap0(wallet.address)).toString())
-  // })
+    await token0.transfer(exchange.address, swapAmount)
+    const gasCost = await exchange.estimate.swap0(wallet.address)
+    console.log(`Gas cost of swap: ${gasCost}`)
+  })
 
   it('swap', async () => {
     const token0Amount = expandTo18Decimals(5)
@@ -115,15 +111,9 @@ describe('UniswapV2', () => {
     await token0.transfer(exchange.address, swapAmount)
     await expect(exchange.connect(wallet).swap0(wallet.address))
       .to.emit(exchange, 'Swap')
-      .withArgs(
-        wallet.address,
-        wallet.address,
-        swapAmount,
-        expectedOutputAmount,
-        token0Amount.add(swapAmount),
-        token1Amount.sub(expectedOutputAmount),
-        token0.address
-      )
+      .withArgs(wallet.address, wallet.address, token0.address, swapAmount, expectedOutputAmount)
+      .to.emit(exchange, 'ReservesUpdated')
+      .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
 
     expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount.add(swapAmount))
     expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount.sub(expectedOutputAmount))
@@ -143,7 +133,9 @@ describe('UniswapV2', () => {
     await exchange.connect(wallet).transfer(exchange.address, liquidity)
     await expect(exchange.connect(wallet).burnLiquidity(wallet.address))
       .to.emit(exchange, 'LiquidityBurned')
-      .withArgs(wallet.address, wallet.address, token0Amount, token1Amount, bigNumberify(0), bigNumberify(0), liquidity)
+      .withArgs(wallet.address, wallet.address, token0Amount, token1Amount)
+      .to.emit(exchange, 'ReservesUpdated')
+      .withArgs(bigNumberify(0), bigNumberify(0))
 
     expect(await exchange.balanceOf(wallet.address)).to.eq(0)
     expect(await token0.balanceOf(exchange.address)).to.eq(0)
