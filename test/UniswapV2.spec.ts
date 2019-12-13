@@ -61,22 +61,22 @@ describe('UniswapV2', () => {
   it('mintLiquidity', async () => {
     const token0Amount = expandTo18Decimals(1)
     const token1Amount = expandTo18Decimals(4)
-    const expectedLiquidity = expandTo18Decimals(2)
-
-    expect(await exchange.reserve0()).to.eq(bigNumberify(0))
-    expect(await exchange.reserve1()).to.eq(bigNumberify(0))
-
     await token0.transfer(exchange.address, token0Amount)
     await token1.transfer(exchange.address, token1Amount)
+
+    const expectedLiquidity = expandTo18Decimals(2)
     await expect(exchange.connect(wallet).mintLiquidity(wallet.address))
-      .to.emit(exchange, 'LiquidityMinted')
-      .withArgs(wallet.address, token0Amount, token1Amount)
       .to.emit(exchange, 'Transfer')
       .withArgs(AddressZero, wallet.address, expectedLiquidity)
+      .to.emit(exchange, 'ReservesUpdated')
+      .withArgs(token0Amount, token1Amount)
+      .to.emit(exchange, 'LiquidityMinted')
+      .withArgs(wallet.address, token0Amount, token1Amount)
 
     expect(await exchange.totalSupply()).to.eq(expectedLiquidity)
     expect(await exchange.balanceOf(wallet.address)).to.eq(expectedLiquidity)
-
+    expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount)
+    expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount)
     expect(await exchange.reserve0()).to.eq(token0Amount)
     expect(await exchange.reserve1()).to.eq(token1Amount)
   })
@@ -87,21 +87,7 @@ describe('UniswapV2', () => {
     await exchange.connect(wallet).mintLiquidity(wallet.address)
   }
 
-  it('swap:gas', async () => {
-    const token0Amount = expandTo18Decimals(5)
-    const token1Amount = expandTo18Decimals(10)
-    await addLiquidity(token0Amount, token1Amount)
-
-    const swapAmount = expandTo18Decimals(1)
-    await token0.transfer(exchange.address, swapAmount)
-    await exchange.connect(wallet).swap0(wallet.address)
-
-    await token0.transfer(exchange.address, swapAmount)
-    const gasCost = await exchange.estimate.swap0(wallet.address)
-    console.log(`Gas cost of swap: ${gasCost}`)
-  })
-
-  it('swap', async () => {
+  it('swap0', async () => {
     const token0Amount = expandTo18Decimals(5)
     const token1Amount = expandTo18Decimals(10)
     await addLiquidity(token0Amount, token1Amount)
@@ -110,18 +96,57 @@ describe('UniswapV2', () => {
     const expectedOutputAmount = bigNumberify('1662497915624478906')
     await token0.transfer(exchange.address, swapAmount)
     await expect(exchange.connect(wallet).swap0(wallet.address))
-      .to.emit(exchange, 'Swap')
-      .withArgs(wallet.address, wallet.address, token0.address, swapAmount, expectedOutputAmount)
       .to.emit(exchange, 'ReservesUpdated')
       .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
+      .to.emit(exchange, 'Swap')
+      .withArgs(wallet.address, wallet.address, token0.address, swapAmount, expectedOutputAmount)
 
+    expect(await exchange.reserve0()).to.eq(token0Amount.add(swapAmount))
+    expect(await exchange.reserve1()).to.eq(token1Amount.sub(expectedOutputAmount))
     expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount.add(swapAmount))
     expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount.sub(expectedOutputAmount))
-
     const totalSupplyToken0 = await token0.totalSupply()
     const totalSupplyToken1 = await token1.totalSupply()
     expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
+  })
+
+  it('swap1', async () => {
+    const token0Amount = expandTo18Decimals(5)
+    const token1Amount = expandTo18Decimals(10)
+    await addLiquidity(token0Amount, token1Amount)
+
+    const swapAmount = expandTo18Decimals(1)
+    const expectedOutputAmount = bigNumberify('453305446940074565')
+    await token1.transfer(exchange.address, swapAmount)
+    await expect(exchange.connect(wallet).swap1(wallet.address))
+      .to.emit(exchange, 'ReservesUpdated')
+      .withArgs(token0Amount.sub(expectedOutputAmount), token1Amount.add(swapAmount))
+      .to.emit(exchange, 'Swap')
+      .withArgs(wallet.address, wallet.address, token1.address, expectedOutputAmount, swapAmount)
+
+    expect(await exchange.reserve0()).to.eq(token0Amount.sub(expectedOutputAmount))
+    expect(await exchange.reserve1()).to.eq(token1Amount.add(swapAmount))
+    expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount.sub(expectedOutputAmount))
+    expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount.add(swapAmount))
+    const totalSupplyToken0 = await token0.totalSupply()
+    const totalSupplyToken1 = await token1.totalSupply()
+    expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).add(expectedOutputAmount))
+    expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
+  })
+
+  it('swap:gas', async () => {
+    const token0Amount = expandTo18Decimals(5)
+    const token1Amount = expandTo18Decimals(10)
+    await addLiquidity(token0Amount, token1Amount)
+
+    // ensure that setting price{0,1}CumulativeLast for the first time doesn't affect our gas math
+    await exchange.connect(wallet).sync()
+
+    const swapAmount = expandTo18Decimals(1)
+    await token0.transfer(exchange.address, swapAmount)
+    const gasCost = await exchange.estimate.swap0(wallet.address)
+    console.log(`Gas required for swap: ${gasCost}`)
   })
 
   it('burnLiquidity', async () => {
@@ -129,22 +154,52 @@ describe('UniswapV2', () => {
     const token1Amount = expandTo18Decimals(3)
     await addLiquidity(token0Amount, token1Amount)
 
-    const liquidity = expandTo18Decimals(3)
-    await exchange.connect(wallet).transfer(exchange.address, liquidity)
+    const expectedLiquidity = expandTo18Decimals(3)
+    await exchange.connect(wallet).transfer(exchange.address, expectedLiquidity)
+    // this test is bugged, it catches the token{0,1} transfers before the lp transfers
     await expect(exchange.connect(wallet).burnLiquidity(wallet.address))
+      // .to.emit(exchange, 'Transfer')
+      // .withArgs(exchange.address, AddressZero, expectedLiquidity)
       .to.emit(exchange, 'LiquidityBurned')
       .withArgs(wallet.address, wallet.address, token0Amount, token1Amount)
       .to.emit(exchange, 'ReservesUpdated')
-      .withArgs(bigNumberify(0), bigNumberify(0))
+      .withArgs(0, 0)
 
     expect(await exchange.balanceOf(wallet.address)).to.eq(0)
+    expect(await exchange.totalSupply()).to.eq(0)
     expect(await token0.balanceOf(exchange.address)).to.eq(0)
     expect(await token1.balanceOf(exchange.address)).to.eq(0)
-
     const totalSupplyToken0 = await token0.totalSupply()
     const totalSupplyToken1 = await token1.totalSupply()
-
     expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0)
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1)
+  })
+
+  it('price{0,1}CumulativeLast', async () => {
+    const token0Amount = expandTo18Decimals(3)
+    const token1Amount = expandTo18Decimals(3)
+    await addLiquidity(token0Amount, token1Amount)
+
+    const blockNumber = await exchange.blockNumberLast()
+    expect(await exchange.price0CumulativeLast()).to.eq(0)
+    expect(await exchange.price1CumulativeLast()).to.eq(0)
+
+    await exchange.connect(wallet).sync()
+    expect(await exchange.price0CumulativeLast()).to.eq(bigNumberify(2).pow(112))
+    expect(await exchange.price1CumulativeLast()).to.eq(bigNumberify(2).pow(112))
+    expect(await exchange.blockNumberLast()).to.eq(blockNumber + 1)
+
+    await exchange.connect(wallet).sync()
+    expect(await exchange.price0CumulativeLast()).to.eq(
+      bigNumberify(2)
+        .pow(112)
+        .mul(2)
+    )
+    expect(await exchange.price1CumulativeLast()).to.eq(
+      bigNumberify(2)
+        .pow(112)
+        .mul(2)
+    )
+    expect(await exchange.blockNumberLast()).to.eq(blockNumber + 2)
   })
 })

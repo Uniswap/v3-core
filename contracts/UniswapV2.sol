@@ -1,10 +1,10 @@
 pragma solidity 0.5.14;
 
 import "./interfaces/IUniswapV2.sol";
-import "./interfaces/IUniswapV2Factory.sol";
 import "./ERC20.sol";
 import "./libraries/UQ112x112.sol";
 import "./libraries/Math.sol";
+import "./interfaces/IUniswapV2Factory.sol";
 
 contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     using SafeMath  for uint;

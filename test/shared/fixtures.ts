@@ -15,10 +15,9 @@ export interface FactoryFixture {
 
 export async function factoryFixture(provider: providers.Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
   const bytecode = `0x${UniswapV2.evm.bytecode.object}`
-  const factory = await deployContract(wallet, UniswapV2Factory, [bytecode, AddressZero], {
+  const factory = await deployContract(wallet, UniswapV2Factory, [bytecode, wallet.address], {
     gasLimit: (provider._web3Provider as any).options.gasLimit
   })
-
   return { bytecode, factory }
 }
 

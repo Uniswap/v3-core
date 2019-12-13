@@ -9,6 +9,10 @@ import {
   solidityPack
 } from 'ethers/utils'
 
+export function expandTo18Decimals(n: number): BigNumber {
+  return bigNumberify(n).mul(bigNumberify(10).pow(18))
+}
+
 const APPROVE_TYPEHASH = keccak256(
   toUtf8Bytes('Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)')
 )
@@ -29,8 +33,22 @@ const GET_DOMAIN_SEPARATOR = async (token: Contract) => {
   )
 }
 
-export function expandTo18Decimals(n: number): BigNumber {
-  return bigNumberify(n).mul(bigNumberify(10).pow(18))
+export function getCreate2Address(
+  factoryAddress: string,
+  token0Address: string,
+  token1Address: string,
+  bytecode: string
+): string {
+  const create2Inputs = [
+    '0xff',
+    factoryAddress,
+    keccak256(solidityPack(['address', 'address'], [token0Address, token1Address])),
+    keccak256(bytecode)
+  ]
+
+  const sanitizedInputs = `0x${create2Inputs.map(i => i.slice(2)).join('')}`
+
+  return getAddress(`0x${keccak256(sanitizedInputs).slice(-40)}`)
 }
 
 interface Approve {
@@ -38,7 +56,6 @@ interface Approve {
   spender: string
   value: BigNumber
 }
-
 export async function getApprovalDigest(
   token: Contract,
   approve: Approve,
@@ -62,24 +79,6 @@ export async function getApprovalDigest(
       ]
     )
   )
-}
-
-export function getCreate2Address(
-  factoryAddress: string,
-  token0Address: string,
-  token1Address: string,
-  bytecode: string
-): string {
-  const create2Inputs = [
-    '0xff',
-    factoryAddress,
-    keccak256(solidityPack(['address', 'address'], [token0Address, token1Address])),
-    keccak256(bytecode)
-  ]
-
-  const sanitizedInputs = `0x${create2Inputs.map(i => i.slice(2)).join('')}`
-
-  return getAddress(`0x${keccak256(sanitizedInputs).slice(-40)}`)
 }
 
 async function mineBlock(provider: providers.Web3Provider, timestamp?: number): Promise<void> {

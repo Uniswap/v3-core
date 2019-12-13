@@ -29,4 +29,4 @@ yarn test
 - [dapp-bin math](https://github.com/ethereum/dapp-bin/pull/50)
 - [OpenZeppelin ECDSA](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/81b1e4810761b088922dbd19a0642873ea581176/contracts/cryptography/ECDSA.sol)
 - [OpenZeppelin SafeERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/81b1e4810761b088922dbd19a0642873ea581176/contracts/token/ERC20/SafeERC20.sol)
-- [DAI token](https://github.com/makerdao/dss/blob/17be7db1c663d8069308c6b78fa5c5f9d71134a3/src/dai.sol)
+- [DAI](https://github.com/makerdao/dss/blob/17be7db1c663d8069308c6b78fa5c5f9d71134a3/src/dai.sol)
