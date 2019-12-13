@@ -67,7 +67,6 @@ describe('UniswapV2Factory', () => {
     expect(await exchange.factory()).to.eq(factory.address)
     expect(await exchange.token0()).to.eq(TEST_ADDRESSES.token0)
     expect(await exchange.token1()).to.eq(TEST_ADDRESSES.token1)
-    expect(await exchange.feeAddress()).to.eq(wallet.address)
   }
 
   it('createExchange', async () => {

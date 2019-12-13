@@ -23,6 +23,7 @@ interface IUniswapV2 {
     function swap0(address recipient) external returns (uint amount1);
     function swap1(address recipient) external returns (uint amount0);
 
+    function skim(address recipient) external;
     function sync() external;
-    function sweep() external;
+    function sort() external;
 }

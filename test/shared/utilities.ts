@@ -13,8 +13,8 @@ export function expandTo18Decimals(n: number): BigNumber {
   return bigNumberify(n).mul(bigNumberify(10).pow(18))
 }
 
-const APPROVE_TYPEHASH = keccak256(
-  toUtf8Bytes('Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)')
+const PERMIT_TYPEHASH = keccak256(
+  toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)')
 )
 
 const GET_DOMAIN_SEPARATOR = async (token: Contract) => {
@@ -73,7 +73,7 @@ export async function getApprovalDigest(
         keccak256(
           defaultAbiCoder.encode(
             ['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-            [APPROVE_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, expiration]
+            [PERMIT_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, expiration]
           )
         )
       ]

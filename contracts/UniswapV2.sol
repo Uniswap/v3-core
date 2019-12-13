@@ -13,7 +13,6 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     address public factory;
     address public token0;
     address public token1;
-    address public feeAddress;
 
     uint112 public reserve0;
     uint112 public reserve1;
@@ -22,14 +21,13 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     uint    public price1CumulativeLast;
 
     uint private invariantLast;
-    bool private notEntered = true;
-    bool private feeOn;
 
     event ReservesUpdated(uint112 reserve0, uint112 reserve1);
     event LiquidityMinted(address indexed sender, uint amount0, uint amount1);
     event LiquidityBurned(address indexed sender, address indexed recipient, uint amount0, uint amount1);
     event Swap(address indexed sender, address indexed recipient, address indexed input, uint amount0, uint amount1);
 
+    bool private notEntered = true;
     modifier lock() {
         require(notEntered, "UniswapV2: LOCKED");
         notEntered = false;
@@ -42,11 +40,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         blockNumberLast = uint32(block.number % 2**32);
     }
 
-    function initialize(address _token0, address _token1, address _feeAddress) external {
+    function initialize(address _token0, address _token1) external {
         require(msg.sender == factory && token0 == address(0) && token1 == address(0), "UniswapV2: FORBIDDEN");
         token0 = _token0;
         token1 = _token1;
-        feeAddress = _feeAddress;
     }
 
     function safeTransfer(address token, address to, uint value) private {
@@ -68,6 +65,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
 
     // increment price accumulators if necessary, and update reserves
     function update(uint balance0, uint balance1) private {
+        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: EXCESS_BALANCES");
         uint32 blockNumber = uint32(block.number % 2**32);
         uint32 blocksElapsed = blockNumber - blockNumberLast; // overflow is desired
         if (blocksElapsed > 0 && reserve0 != 0 && reserve1 != 0) {
@@ -75,36 +73,33 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
             price0CumulativeLast += uint256(UQ112x112.encode(reserve0).qdiv(reserve1)) * blocksElapsed;
             price1CumulativeLast += uint256(UQ112x112.encode(reserve1).qdiv(reserve0)) * blocksElapsed;
         }
-        reserve0 = Math.clamp112(balance0);
-        reserve1 = Math.clamp112(balance1);
+        reserve0 = uint112(balance0);
+        reserve1 = uint112(balance1);
         blockNumberLast = blockNumber;
         emit ReservesUpdated(reserve0, reserve1);
     }
 
     // mint liquidity equivalent to 20% of accumulated fees
     function mintFeeLiquidity() private {
-        if (feeOn) {
+        if (invariantLast != 0) {
             uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
             if (invariant > invariantLast) {
                 uint numerator = totalSupply.mul(invariant.sub(invariantLast));
                 uint denominator = uint256(4).mul(invariant).add(invariantLast);
                 uint liquidity = numerator / denominator;
-                if (liquidity > 0) _mint(feeAddress, liquidity);
+                if (liquidity > 0) _mint(IUniswapV2Factory(factory).feeAddress(), liquidity);
             }
-        } else if (IUniswapV2Factory(factory).feeOn()) {
-            feeOn = true;
-            invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         }
     }
 
     function mintLiquidity(address recipient) external lock returns (uint liquidity) {
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: EXCESS_BALANCES");
         uint amount0 = balance0.sub(reserve0);
         uint amount1 = balance1.sub(reserve1);
 
-        mintFeeLiquidity();
+        bool feeOn = IUniswapV2Factory(factory).feeOn();
+        if (feeOn) mintFeeLiquidity();
         liquidity = totalSupply == 0 ?
             Math.sqrt(amount0.mul(amount1)) :
             Math.min(amount0.mul(totalSupply) / reserve0, amount1.mul(totalSupply) / reserve1);
@@ -118,13 +113,11 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
 
     function burnLiquidity(address recipient) external lock returns (uint amount0, uint amount1) {
         uint liquidity = balanceOf[address(this)];
-        uint balance0 = IERC20(token0).balanceOf(address(this));
-        uint balance1 = IERC20(token1).balanceOf(address(this));
-        require(balance0 >= reserve0 && balance1 >= reserve1, "UniswapV2: INSUFFICIENT_BALANCES");
 
-        mintFeeLiquidity();
-        amount0 = liquidity.mul(balance0) / totalSupply; // intentionally using balances not reserves
-        amount1 = liquidity.mul(balance1) / totalSupply; // intentionally using balances not reserves
+        bool feeOn = IUniswapV2Factory(factory).feeOn();
+        if (feeOn) mintFeeLiquidity();
+        amount0 = liquidity.mul(reserve0) / totalSupply;
+        amount1 = liquidity.mul(reserve1) / totalSupply;
         require(amount0 > 0 && amount1 > 0, "UniswapV2: INSUFFICIENT_AMOUNTS");
         safeTransfer(token0, recipient, amount0);
         safeTransfer(token1, recipient, amount1);
@@ -161,13 +154,23 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         emit Swap(msg.sender, recipient, token1, amount0, amount1);
     }
 
+    // recover from the case where the contract is force sent tokens so that its balance exceeds uint112(-1)
+    function skim(address recipient) external lock {
+        uint balance0 = IERC20(token0).balanceOf(address(this));
+        uint balance1 = IERC20(token1).balanceOf(address(this));
+        if (balance0 > uint112(-1)) safeTransfer(token0, recipient, balance0.sub(uint112(-1)));
+        if (balance1 > uint112(-1)) safeTransfer(token1, recipient, balance1.sub(uint112(-1)));
+    }
+
     // almost certainly never needs to be called, but can be helpful for oracles and possibly some weird tokens
     function sync() external lock {
         update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
     }
 
-    function sweep() external lock {
-        mintFeeLiquidity();
+    // mint fees without having to wait for {mint,burn}Liquidity
+    function sort() external lock {
+        bool feeOn = IUniswapV2Factory(factory).feeOn();
+        if (feeOn) mintFeeLiquidity();
         if (feeOn) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
     }
 }

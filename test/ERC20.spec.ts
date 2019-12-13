@@ -35,7 +35,7 @@ describe('ERC20', () => {
     ])
   })
 
-  it('name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, APPROVE_TYPEHASH', async () => {
+  it('name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
     const name = await token.name()
     expect(name).to.eq(TOKEN_DETAILS.name)
     expect(await token.symbol()).to.eq(TOKEN_DETAILS.symbol)
@@ -58,8 +58,8 @@ describe('ERC20', () => {
         )
       )
     )
-    expect(await token.APPROVE_TYPEHASH()).to.eq(
-      keccak256(toUtf8Bytes('Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)'))
+    expect(await token.PERMIT_TYPEHASH()).to.eq(
+      keccak256(toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)'))
     )
   })
 
@@ -124,7 +124,7 @@ describe('ERC20', () => {
     await expect(token.connect(other).transfer(wallet.address, 1)).to.be.revertedWith('ds-math-sub-underflow')
   })
 
-  it('approveMeta', async () => {
+  it('permit', async () => {
     const nonce = await token.nonces(wallet.address)
     const expiration = MaxUint256
     const digest = await getApprovalDigest(
@@ -136,9 +136,7 @@ describe('ERC20', () => {
 
     const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
 
-    await expect(
-      token.approveMeta(wallet.address, other.address, TEST_AMOUNT, nonce, expiration, v, hexlify(r), hexlify(s))
-    )
+    await expect(token.permit(wallet.address, other.address, TEST_AMOUNT, nonce, expiration, v, hexlify(r), hexlify(s)))
       .to.emit(token, 'Approval')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
     expect(await token.nonces(wallet.address)).to.eq(bigNumberify(1))

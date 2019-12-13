@@ -5,10 +5,6 @@ library Math {
         z = x <= y ? x : y;
     }
 
-    function clamp112(uint y) internal pure returns (uint112 z) {
-        z = y <= uint112(-1) ? uint112(y) : uint112(-1);
-    }
-
     function sqrt(uint y) internal pure returns (uint z) {
         if (y > 3) {
             uint x = (y + 1) / 2;

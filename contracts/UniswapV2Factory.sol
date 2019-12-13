@@ -49,7 +49,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
         assembly { // solium-disable-line security/no-inline-assembly
             exchange := create2(0, add(exchangeBytecodeMemory, 32), mload(exchangeBytecodeMemory), salt)
         }
-        UniswapV2(exchange).initialize(token0, token1, feeAddress);
+        UniswapV2(exchange).initialize(token0, token1);
 
         _getExchange[token0][token1] = exchange;
         _getTokens[exchange] = [token0, token1];

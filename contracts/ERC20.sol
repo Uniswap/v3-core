@@ -14,8 +14,8 @@ contract ERC20 is IERC20 {
     mapping (address => mapping (address => uint)) public allowance;
 
 	bytes32 public DOMAIN_SEPARATOR;
-    // keccak256("Approve(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)");
-	bytes32 public constant APPROVE_TYPEHASH = 0x25a0822e8c2ed7ff64a57c55df37ff176282195b9e0c9bb770ed24a300c89762;
+    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)");
+	bytes32 public constant PERMIT_TYPEHASH = 0xf0a99559fef847d211c4182aa5791e1529af3ce414597e8210f570d662791c01;
     mapping (address => uint) public nonces;
 
     event Transfer(address indexed from, address indexed to, uint value);
@@ -91,7 +91,7 @@ contract ERC20 is IERC20 {
         _burn(from, value);
     }
 
-    function approveMeta(
+    function permit(
         address owner, address spender, uint value, uint nonce, uint expiration, uint8 v, bytes32 r, bytes32 s
     )
         external
@@ -103,7 +103,7 @@ contract ERC20 is IERC20 {
         bytes32 digest = keccak256(abi.encodePacked(
             "\x19\x01",
             DOMAIN_SEPARATOR,
-            keccak256(abi.encode(APPROVE_TYPEHASH, owner, spender, value, nonce, expiration))
+            keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, expiration))
         ));
         address recoveredAddress = ecrecover(digest, v, r, s);
         require(recoveredAddress != address(0) && recoveredAddress == owner, "ERC20: INVALID_SIGNATURE");
