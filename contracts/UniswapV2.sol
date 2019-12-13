@@ -50,9 +50,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         // solium-disable-next-line security/no-low-level-calls
         (bool success, bytes memory data) = token.call(abi.encodeWithSignature("transfer(address,uint256)", to, value));
         require(success, "UniswapV2: TRANSFER_UNSUCCESSFUL");
-        if (data.length > 0) {
-            require(abi.decode(data, (bool)), "SafeTransfer: TRANSFER_FAILED");
-        }
+        if (data.length > 0) require(abi.decode(data, (bool)), "SafeTransfer: TRANSFER_FAILED");
     }
 
     function getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) public pure returns (uint) {
@@ -170,7 +168,9 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     // mint fees without having to wait for {mint,burn}Liquidity
     function sort() external lock {
         bool feeOn = IUniswapV2Factory(factory).feeOn();
-        if (feeOn) mintFeeLiquidity();
-        if (feeOn) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
+        if (feeOn) {
+            mintFeeLiquidity();
+            invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
+        }
     }
 }
