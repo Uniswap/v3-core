@@ -4,7 +4,7 @@ import { solidity, createMockProvider, getWallets, createFixtureLoader } from 'e
 import { Contract } from 'ethers'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
-import { expandTo18Decimals } from './shared/utilities'
+import { expandTo18Decimals, mineBlocks } from './shared/utilities'
 import { exchangeFixture, ExchangeFixture } from './shared/fixtures'
 import { AddressZero } from 'ethers/constants'
 
@@ -189,17 +189,18 @@ describe('UniswapV2', () => {
     expect(await exchange.price1CumulativeLast()).to.eq(bigNumberify(2).pow(112))
     expect(await exchange.blockNumberLast()).to.eq(blockNumber + 1)
 
+    await mineBlocks(provider, 8)
     await exchange.connect(wallet).sync()
     expect(await exchange.price0CumulativeLast()).to.eq(
       bigNumberify(2)
         .pow(112)
-        .mul(2)
+        .mul(10)
     )
     expect(await exchange.price1CumulativeLast()).to.eq(
       bigNumberify(2)
         .pow(112)
-        .mul(2)
+        .mul(10)
     )
-    expect(await exchange.blockNumberLast()).to.eq(blockNumber + 2)
+    expect(await exchange.blockNumberLast()).to.eq(blockNumber + 10)
   })
 })
