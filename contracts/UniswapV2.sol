@@ -167,8 +167,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
 
     // mint fees without having to wait for {mint,burn}Liquidity
     function sort() external lock {
-        bool feeOn = IUniswapV2Factory(factory).feeOn();
-        if (feeOn) {
+        if (IUniswapV2Factory(factory).feeOn()) {
             mintFeeLiquidity();
             invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         }
