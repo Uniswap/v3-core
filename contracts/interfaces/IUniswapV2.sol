@@ -1,10 +1,10 @@
 pragma solidity 0.5.14;
 
 interface IUniswapV2 {
-    event ReservesUpdated(uint112 reserve0, uint112 reserve1);
-    event LiquidityMinted(address indexed sender, uint amount0, uint amount1);
-    event LiquidityBurned(address indexed sender, address indexed recipient, uint amount0, uint amount1);
-    event Swap(address indexed sender, address indexed recipient, address indexed input, uint amount0, uint amount1);
+    event Sync(uint112 reserve0, uint112 reserve1);
+    event Mint(address indexed sender, uint amount0, uint amount1);
+    event Burn(address indexed sender, uint amount0, uint amount1);
+    event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut);
 
     function factory() external view returns (address);
     function token0() external view returns (address);
@@ -16,14 +16,11 @@ interface IUniswapV2 {
     function price0CumulativeLast() external view returns (uint);
     function price1CumulativeLast() external view returns (uint);
 
-    function getInputPrice(uint inputAmount, uint inputReserve, uint outputReserve) external pure returns (uint);
+    function mint() external returns (uint liquidity);
+    function burn() external returns (uint amount0, uint amount1);
+    function swap(address tokenIn, uint amountOut) external;
 
-    function mintLiquidity(address recipient) external returns (uint liquidity);
-    function burnLiquidity(address recipient) external returns (uint amount0, uint amount1);
-    function swap0(address recipient) external returns (uint amount1);
-    function swap1(address recipient) external returns (uint amount0);
-
-    function skim(address recipient) external;
+    function skim() external;
     function sync() external;
-    function sort() external;
+    function sift() external;
 }
