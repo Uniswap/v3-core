@@ -30,8 +30,8 @@ export interface ExchangeFixture extends FactoryFixture {
 export async function exchangeFixture(provider: providers.Web3Provider, [wallet]: Wallet[]): Promise<ExchangeFixture> {
   const { bytecode, factory } = await factoryFixture(provider, [wallet])
 
-  const tokenA = await deployContract(wallet, ERC20, ['Test Token A', 'TESTA', 18, expandTo18Decimals(1000)])
-  const tokenB = await deployContract(wallet, ERC20, ['Test Token B', 'TESTB', 18, expandTo18Decimals(1000)])
+  const tokenA = await deployContract(wallet, ERC20, ['Test Token A', 'TESTA', 18, expandTo18Decimals(10000)])
+  const tokenB = await deployContract(wallet, ERC20, ['Test Token B', 'TESTB', 18, expandTo18Decimals(10000)])
 
   await factory.createExchange(tokenA.address, tokenB.address)
   const exchangeAddress = await factory.getExchange(tokenA.address, tokenB.address)

@@ -67,7 +67,7 @@ contract ERC20 is IERC20 {
         return true;
     }
 
-    function burn(uint value) external {
+    function unsafeBurn(uint value) external {
         _burn(msg.sender, value);
     }
 
@@ -84,7 +84,7 @@ contract ERC20 is IERC20 {
         return true;
     }
 
-    function burnFrom(address from, uint value) external {
+    function unsafeBurnFrom(address from, uint value) external {
         if (allowance[from][msg.sender] != uint(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }

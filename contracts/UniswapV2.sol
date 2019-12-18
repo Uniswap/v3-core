@@ -52,7 +52,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     // update reserves + block number and, if necessary, increment price accumulators
-    function _sync(uint balance0, uint balance1) private {
+    function _update(uint balance0, uint balance1) private {
         require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: EXCESS_BALANCE");
         uint32 blockNumber = uint32(block.number % 2**32);
         uint32 blocksElapsed = blockNumber - blockNumberLast; // overflow is desired
@@ -94,7 +94,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         require(liquidity > 0, "UniswapV2: INSUFFICIENT_LIQUIDITY");
         _mint(msg.sender, liquidity);
 
-        _sync(balance0, balance1);
+        _update(balance0, balance1);
         if (feeOn) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit Mint(msg.sender, amount0, amount1);
     }
@@ -111,7 +111,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         _safeTransfer(token1, msg.sender, amount1);
         _burn(address(this), liquidity);
 
-        _sync(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
         if (feeOn) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit Burn(msg.sender, amount0, amount1);
     }
@@ -138,7 +138,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
             balance0 = IERC20(token0).balanceOf(address(this));
         }
 
-        _sync(balance0, balance1);
+        _update(balance0, balance1);
         emit Swap(msg.sender, tokenIn, amountIn, amountOut);
     }
 
@@ -150,10 +150,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
 
     // force reserves to match balances
     function sync() external lock {
-        _sync(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
     }
 
-    // force fee liquidity to be minted (without waiting for {mint,burn}Liquidity)
+    // force fee liquidity to be minted without waiting for mint/burn
     function sift() external lock {
         if (IUniswapV2Factory(factory).feeOn()) {
             mintFeeLiquidity();
