@@ -8,6 +8,7 @@ import { getCreate2Address } from './shared/utilities'
 import { factoryFixture, FactoryFixture } from './shared/fixtures'
 
 import UniswapV2 from '../build/UniswapV2.json'
+import { AddressZero } from 'ethers/constants'
 
 chai.use(solidity)
 const { expect } = chai
@@ -30,10 +31,10 @@ describe('UniswapV2Factory', () => {
     factory = _factory
   })
 
-  it('exchangeBytecode, feeAddress, feeOn, exchangesCount', async () => {
+  it('exchangeBytecode, factoryOwner, feeRecipient, exchangesCount', async () => {
     expect(await factory.exchangeBytecode()).to.eq(bytecode)
-    expect(await factory.feeAddress()).to.eq(wallet.address)
-    expect(await factory.feeOn()).to.eq(false)
+    expect(await factory.factoryOwner()).to.eq(wallet.address)
+    expect(await factory.feeRecipient()).to.eq(AddressZero)
     expect(await factory.exchangesCount()).to.eq(0)
   })
 
@@ -77,16 +78,20 @@ describe('UniswapV2Factory', () => {
     await createExchange([TEST_ADDRESSES.token1, TEST_ADDRESSES.token0])
   })
 
-  it('setFeeAddress', async () => {
-    await expect(factory.connect(other).setFeeAddress(other.address)).to.be.revertedWith('UniswapV2Factory: FORBIDDEN')
-    await factory.setFeeAddress(other.address)
-    expect(await factory.feeAddress()).to.eq(other.address)
-    await expect(factory.setFeeAddress(wallet.address)).to.be.revertedWith('UniswapV2Factory: FORBIDDEN')
+  it('setFactoryOwner', async () => {
+    await expect(factory.connect(other).setFactoryOwner(other.address)).to.be.revertedWith(
+      'UniswapV2Factory: FORBIDDEN'
+    )
+    await factory.setFactoryOwner(other.address)
+    expect(await factory.factoryOwner()).to.eq(other.address)
+    await expect(factory.setFactoryOwner(wallet.address)).to.be.revertedWith('UniswapV2Factory: FORBIDDEN')
   })
 
-  it('turnFeeOn', async () => {
-    await expect(factory.connect(other).turnFeeOn()).to.be.revertedWith('UniswapV2Factory: FORBIDDEN')
-    await factory.turnFeeOn()
-    expect(await factory.feeOn()).to.eq(true)
+  it('setFeeRecipient', async () => {
+    await expect(factory.connect(other).setFeeRecipient(other.address)).to.be.revertedWith(
+      'UniswapV2Factory: FORBIDDEN'
+    )
+    await factory.setFeeRecipient(wallet.address)
+    expect(await factory.feeRecipient()).to.eq(wallet.address)
   })
 })

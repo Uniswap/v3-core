@@ -1,10 +1,10 @@
 pragma solidity 0.5.14;
 
 interface IUniswapV2 {
-    event Sync(uint112 reserve0, uint112 reserve1);
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1);
     event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut);
+    event Sync(uint112 reserve0, uint112 reserve1);
 
     function factory() external view returns (address);
     function token0() external view returns (address);
@@ -22,5 +22,4 @@ interface IUniswapV2 {
 
     function skim() external;
     function sync() external;
-    function sift() external;
 }
