@@ -14,7 +14,7 @@ export function expandTo18Decimals(n: number): BigNumber {
 }
 
 const PERMIT_TYPEHASH = keccak256(
-  toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)')
+  toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)')
 )
 
 const GET_DOMAIN_SEPARATOR = async (token: Contract) => {

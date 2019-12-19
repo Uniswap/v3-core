@@ -59,7 +59,7 @@ describe('ERC20', () => {
       )
     )
     expect(await token.PERMIT_TYPEHASH()).to.eq(
-      keccak256(toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 expiration)'))
+      keccak256(toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)'))
     )
   })
 
@@ -71,8 +71,8 @@ describe('ERC20', () => {
     expect(await token.balanceOf(other.address)).to.eq(TEST_AMOUNT)
   })
 
-  it('unsafeBurn', async () => {
-    await expect(token.unsafeBurn(TEST_AMOUNT))
+  it('forfeit', async () => {
+    await expect(token.forfeit(TEST_AMOUNT))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, AddressZero, TEST_AMOUNT)
     expect(await token.balanceOf(wallet.address)).to.eq(TOKEN_DETAILS.totalSupply.sub(TEST_AMOUNT))
@@ -106,9 +106,9 @@ describe('ERC20', () => {
     expect(await token.balanceOf(other.address)).to.eq(TEST_AMOUNT)
   })
 
-  it('unsafeBurnFrom', async () => {
+  it('forfeitFrom', async () => {
     await token.approve(other.address, TEST_AMOUNT)
-    await expect(token.connect(other).unsafeBurnFrom(wallet.address, TEST_AMOUNT))
+    await expect(token.connect(other).forfeitFrom(wallet.address, TEST_AMOUNT))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, AddressZero, TEST_AMOUNT)
     expect(await token.allowance(wallet.address, other.address)).to.eq(0)
