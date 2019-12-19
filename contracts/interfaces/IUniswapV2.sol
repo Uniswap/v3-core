@@ -22,4 +22,6 @@ interface IUniswapV2 {
 
     function skim() external;
     function sync() external;
+
+    function initialize(address _token0, address _token1) external; // only called once by the factory on deploy
 }

@@ -1,7 +1,7 @@
 pragma solidity 0.5.14;
 
 import "./interfaces/IUniswapV2Factory.sol";
-import "./UniswapV2.sol";
+import "./interfaces/IUniswapV2.sol";
 
 contract UniswapV2Factory is IUniswapV2Factory {
     bytes public exchangeBytecode;
@@ -48,7 +48,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
         assembly { // solium-disable-line security/no-inline-assembly
             exchange := create2(0, add(exchangeBytecodeMemory, 32), mload(exchangeBytecodeMemory), salt)
         }
-        UniswapV2(exchange).initialize(token0, token1);
+        IUniswapV2(exchange).initialize(token0, token1);
 
         _getExchange[token0][token1] = exchange;
         _getTokens[exchange] = [token0, token1];
