@@ -104,10 +104,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
             balance0 = IERC20(token0).balanceOf(address(this));
             amountIn = balance0.sub(reserve0);
             require(amountIn > 0, "UniswapV2: INSUFFICIENT_INPUT_AMOUNT");
-            require(amountIn.mul(reserve1 - amountOut).mul(997) >= amountOut.mul(reserve0).mul(1000), "UniswapV2: K");
+            fee = feeRecipient == address(0) ? 0 : uint(amountIn).mul(3) / 5000;
+            require(amountIn.mul(reserve1 - amountOut).mul(fee > 0 ? 9976 : 9970) >= amountOut.mul(reserve0).mul(10000), "UniswapV2: K");
             _safeTransfer(token1, msg.sender, amountOut);
             balance1 = IERC20(token1).balanceOf(address(this));
-            fee = feeRecipient == address(0) ? 0 : uint(amountIn).mul(3) / 5000;
             if (fee > 0) {
                 _safeTransfer(token0, feeRecipient, fee);
                 balance0 = IERC20(token0).balanceOf(address(this));
@@ -118,7 +118,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
             balance1 = IERC20(token1).balanceOf(address(this));
             amountIn = balance1.sub(reserve1);
             require(amountIn > 0, "UniswapV2: INSUFFICIENT_INPUT_AMOUNT");
-            require(amountIn.mul(reserve0 - amountOut).mul(997) >= amountOut.mul(reserve1).mul(1000), "UniswapV2: K");
+            fee = feeRecipient == address(0) ? 0 : uint(amountIn).mul(3) / 5000;
+            require(amountIn.mul(reserve0 - amountOut).mul(fee > 0 ? 9976 : 9970) >= amountOut.mul(reserve1).mul(10000), "UniswapV2: K");
             _safeTransfer(token0, msg.sender, amountOut);
             balance0 = IERC20(token0).balanceOf(address(this));
             fee = feeRecipient == address(0) ? 0 : uint(amountIn).mul(3) / 5000;
