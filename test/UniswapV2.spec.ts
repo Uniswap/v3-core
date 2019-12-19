@@ -28,19 +28,19 @@ describe('UniswapV2', () => {
     exchange = _exchange
   })
 
-  it('mint', async () => {
+  it('make', async () => {
     const token0Amount = expandTo18Decimals(1)
     const token1Amount = expandTo18Decimals(4)
     await token0.transfer(exchange.address, token0Amount)
     await token1.transfer(exchange.address, token1Amount)
 
     const expectedLiquidity = expandTo18Decimals(2)
-    await expect(exchange.connect(wallet).mint())
+    await expect(exchange.connect(wallet).make())
       .to.emit(exchange, 'Transfer')
       .withArgs(AddressZero, wallet.address, expectedLiquidity)
       .to.emit(exchange, 'Sync')
       .withArgs(token0Amount, token1Amount)
-      .to.emit(exchange, 'Mint')
+      .to.emit(exchange, 'Make')
       .withArgs(wallet.address, token0Amount, token1Amount)
 
     expect(await exchange.totalSupply()).to.eq(expectedLiquidity)
@@ -54,7 +54,7 @@ describe('UniswapV2', () => {
   async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {
     await token0.transfer(exchange.address, token0Amount)
     await token1.transfer(exchange.address, token1Amount)
-    await exchange.connect(wallet).mint()
+    await exchange.connect(wallet).make()
   }
 
   it('getInputPrice', async () => {
@@ -73,15 +73,15 @@ describe('UniswapV2', () => {
     for (let testCase of testCases) {
       await addLiquidity(testCase[1], testCase[2])
       await token0.transfer(exchange.address, testCase[0])
-      await expect(exchange.connect(wallet).swap(token0.address, testCase[3].add(1))).to.be.revertedWith('UniswapV2: K')
-      await exchange.connect(wallet).swap(token0.address, testCase[3])
+      await expect(exchange.connect(wallet).move(token0.address, testCase[3].add(1))).to.be.revertedWith('UniswapV2: K')
+      await exchange.connect(wallet).move(token0.address, testCase[3])
       const totalSupply = await exchange.totalSupply()
       await exchange.connect(wallet).transfer(exchange.address, totalSupply)
-      await exchange.connect(wallet).burn()
+      await exchange.connect(wallet).made()
     }
   })
 
-  it('swap:0', async () => {
+  it('move:0', async () => {
     const token0Amount = expandTo18Decimals(5)
     const token1Amount = expandTo18Decimals(10)
     await addLiquidity(token0Amount, token1Amount)
@@ -89,10 +89,10 @@ describe('UniswapV2', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('1662497915624478906')
     await token0.transfer(exchange.address, swapAmount)
-    await expect(exchange.connect(wallet).swap(token0.address, expectedOutputAmount))
+    await expect(exchange.connect(wallet).move(token0.address, expectedOutputAmount))
       .to.emit(exchange, 'Sync')
       .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
-      .to.emit(exchange, 'Swap')
+      .to.emit(exchange, 'Move')
       .withArgs(wallet.address, token0.address, swapAmount, expectedOutputAmount)
 
     expect(await exchange.reserve0()).to.eq(token0Amount.add(swapAmount))
@@ -105,7 +105,7 @@ describe('UniswapV2', () => {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
   })
 
-  it('swap:1', async () => {
+  it('move:1', async () => {
     const token0Amount = expandTo18Decimals(5)
     const token1Amount = expandTo18Decimals(10)
     await addLiquidity(token0Amount, token1Amount)
@@ -113,10 +113,10 @@ describe('UniswapV2', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('453305446940074565')
     await token1.transfer(exchange.address, swapAmount)
-    await expect(exchange.connect(wallet).swap(token1.address, expectedOutputAmount))
+    await expect(exchange.connect(wallet).move(token1.address, expectedOutputAmount))
       .to.emit(exchange, 'Sync')
       .withArgs(token0Amount.sub(expectedOutputAmount), token1Amount.add(swapAmount))
-      .to.emit(exchange, 'Swap')
+      .to.emit(exchange, 'Move')
       .withArgs(wallet.address, token1.address, swapAmount, expectedOutputAmount)
 
     expect(await exchange.reserve0()).to.eq(token0Amount.sub(expectedOutputAmount))
@@ -129,7 +129,7 @@ describe('UniswapV2', () => {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
   })
 
-  it('swap:gas', async () => {
+  it('move:gas', async () => {
     const token0Amount = expandTo18Decimals(5)
     const token1Amount = expandTo18Decimals(10)
     await addLiquidity(token0Amount, token1Amount)
@@ -140,11 +140,11 @@ describe('UniswapV2', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('453305446940074565')
     await token0.transfer(exchange.address, swapAmount)
-    const gasCost = await exchange.estimate.swap(token0.address, expectedOutputAmount)
+    const gasCost = await exchange.estimate.move(token0.address, expectedOutputAmount)
     console.log(`Gas required for swap: ${gasCost}`)
   })
 
-  it('burn', async () => {
+  it('made', async () => {
     const token0Amount = expandTo18Decimals(3)
     const token1Amount = expandTo18Decimals(3)
     await addLiquidity(token0Amount, token1Amount)
@@ -152,10 +152,10 @@ describe('UniswapV2', () => {
     const expectedLiquidity = expandTo18Decimals(3)
     await exchange.connect(wallet).transfer(exchange.address, expectedLiquidity)
     // this test is bugged, it catches the token{0,1} transfers before the lp transfers
-    await expect(exchange.connect(wallet).burn())
+    await expect(exchange.connect(wallet).made())
       // .to.emit(exchange, 'Transfer')
       // .withArgs(exchange.address, AddressZero, expectedLiquidity)
-      .to.emit(exchange, 'Burn')
+      .to.emit(exchange, 'Made')
       .withArgs(wallet.address, token0Amount, token1Amount)
       .to.emit(exchange, 'Sync')
       .withArgs(0, 0)

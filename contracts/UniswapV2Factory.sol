@@ -20,16 +20,16 @@ contract UniswapV2Factory is IUniswapV2Factory {
         factoryOwner = _factoryOwner;
     }
 
-    function sortTokens(address tokenA, address tokenB) public pure returns (address, address) {
+    function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
         return tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
     }
 
-    function getExchange(address tokenA, address tokenB) external view returns (address) {
+    function getExchange(address tokenA, address tokenB) external view returns (address exchange) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         return _getExchange[token0][token1];
     }
 
-    function getTokens(address exchange) external view returns (address, address) {
+    function getTokens(address exchange) external view returns (address token0, address token1) {
         return (_getTokens[exchange][0], _getTokens[exchange][1]);
     }
 

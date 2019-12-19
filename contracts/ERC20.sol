@@ -67,7 +67,7 @@ contract ERC20 is IERC20 {
         return true;
     }
 
-    function forfeit(uint value) external {
+    function burn(uint value) external {
         _burn(msg.sender, value);
     }
 
@@ -84,7 +84,7 @@ contract ERC20 is IERC20 {
         return true;
     }
 
-    function forfeitFrom(address from, uint value) external {
+    function burnFrom(address from, uint value) external {
         if (allowance[from][msg.sender] != uint(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
