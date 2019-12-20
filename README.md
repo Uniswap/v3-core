@@ -1,4 +1,5 @@
-# Uniswap v2 Smart Contracts
+# UniswapV2
+
 [![CircleCI](https://circleci.com/gh/Uniswap/uniswap-v2-core.svg?style=svg)](https://circleci.com/gh/Uniswap/uniswap-v2-core)
 
 ## Local Development
@@ -6,22 +7,24 @@
 The following assumes the use of `node@^10`.
 
 ### Clone Repository
+
 ```
 git clone https://github.com/Uniswap/uniswap-v2-core.git
 cd uniswap-v2-core
 ```
 
 ### Install Dependencies
+
 ```
 yarn
 ```
 
 ### Compile Contracts and Run Tests
+
 ```
 yarn compile
 yarn test
 ```
-
 
 ## Implementation References
 

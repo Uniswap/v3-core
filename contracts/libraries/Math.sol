@@ -1,4 +1,4 @@
-pragma solidity 0.5.14;
+pragma solidity 0.5.15;
 
 library Math {
     function min(uint x, uint y) internal pure returns (uint z) {

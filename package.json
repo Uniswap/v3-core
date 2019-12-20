@@ -3,7 +3,7 @@
     "node": "^10"
   },
   "dependencies": {
-    "solc": "0.5.14"
+    "solc": "0.5.15"
   },
   "devDependencies": {
     "@types/chai": "^4.2.6",
