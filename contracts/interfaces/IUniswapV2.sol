@@ -9,7 +9,6 @@ interface IUniswapV2 {
     function factory() external view returns (address);
     function token0() external view returns (address);
     function token1() external view returns (address);
-
     function reserve0() external view returns (uint112);
     function reserve1() external view returns (uint112);
     function blockNumberLast() external view returns (uint32);
@@ -19,7 +18,6 @@ interface IUniswapV2 {
     function make() external returns (uint liquidity);
     function made() external returns (uint amount0, uint amount1);
     function move(address tokenIn, uint amountOut) external;
-
     function skim() external;
     function sync() external;
 

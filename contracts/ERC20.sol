@@ -99,7 +99,7 @@ contract ERC20 is IERC20 {
         require(nonce == nonces[owner]++, "ERC20: INVALID_NONCE");
         require(deadline > block.timestamp, "ERC20: EXPIRED"); // solium-disable-line security/no-block-members
         require(v == 27 || v == 28, "ERC20: INVALID_V");
-        require(uint(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "ERC20: INVALID_S");
+        require(s <= 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0, "ERC20: INVALID_S");
         bytes32 digest = keccak256(abi.encodePacked(
             "\x19\x01",
             DOMAIN_SEPARATOR,
