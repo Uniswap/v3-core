@@ -84,6 +84,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     function made() external lock returns (uint amount0, uint amount1) {
         uint liquidity = balanceOf[address(this)];
 
+        // there's a funny case here where if a token deflates uniswap's balance, we give too many tokens...
         amount0 = liquidity.mul(reserve0) / totalSupply;
         amount1 = liquidity.mul(reserve1) / totalSupply;
         require(amount0 > 0 && amount1 > 0, "UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED");
