@@ -28,8 +28,10 @@ contract ERC20 is IERC20 {
         if (_totalSupply > 0) {
             _mint(msg.sender, _totalSupply);
         }
-        uint chainId = 1; // hardcode as 1 until ethereum-waffle support istanbul-specific EVM opcodes
-        // assembly { chainId := chainid() }  // solium-disable-line security/no-inline-assembly
+        uint chainId;
+        assembly { // solium-disable-line security/no-inline-assembly
+            chainId := chainid()
+        }
         DOMAIN_SEPARATOR = keccak256(abi.encode(
 			keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
 			keccak256(bytes(name)),
