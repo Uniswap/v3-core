@@ -20,6 +20,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     uint    public price0CumulativeLast;
     uint    public price1CumulativeLast;
 
+    uint private invariantLast;
+
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1);
     event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut);
@@ -65,12 +67,27 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         emit Sync(reserve0, reserve1);
     }
 
+    // mint liquidity equivalent to 20% of accumulated fees
+    function mintFeeLiquidity(address feeRecipient) private {
+        if (feeRecipient != address(0) && invariantLast != 0) {
+            uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
+            if (invariant > invariantLast) {
+                uint numerator = totalSupply.mul(invariant.sub(invariantLast));
+                uint denominator = uint(4).mul(invariant).add(invariantLast);
+                uint liquidity = numerator / denominator;
+                if (liquidity > 0) _mint(feeRecipient, liquidity);
+            }
+        }
+    }
+
     function mint() external lock returns (uint liquidity) {
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
         uint amount0 = balance0.sub(reserve0);
         uint amount1 = balance1.sub(reserve1);
 
+        address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
+        mintFeeLiquidity(feeRecipient);
         liquidity = totalSupply == 0 ?
             Math.sqrt(amount0.mul(amount1)) :
             Math.min(amount0.mul(totalSupply) / reserve0, amount1.mul(totalSupply) / reserve1);
@@ -78,12 +95,15 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         _mint(msg.sender, liquidity);
 
         _update(balance0, balance1);
+        if (feeRecipient != address(0)) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit Mint(msg.sender, amount0, amount1);
     }
 
     function burn() external lock returns (uint amount0, uint amount1) {
         uint liquidity = balanceOf[address(this)];
 
+        address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
+        mintFeeLiquidity(feeRecipient);
         // there's a funny case here where if a token deflates uniswap's balance, we give too many tokens...
         amount0 = liquidity.mul(reserve0) / totalSupply;
         amount1 = liquidity.mul(reserve1) / totalSupply;
@@ -93,32 +113,19 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         _burn(address(this), liquidity);
 
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+        if (feeRecipient != address(0)) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit Burn(msg.sender, amount0, amount1);
     }
 
     function swap(address tokenIn, uint amountOut) external lock {
-        uint balance0; uint balance1; uint amountIn; uint fee;
-        address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
+        uint balance0; uint balance1; uint amountIn;
 
         if (tokenIn == token0) {
             require(0 < amountOut && amountOut < reserve1, "UniswapV2: INVALID_OUTPUT_AMOUNT");
             balance0 = IERC20(token0).balanceOf(address(this));
             amountIn = balance0.sub(reserve0);
             require(amountIn > 0, "UniswapV2: INSUFFICIENT_INPUT_AMOUNT");
-            fee = feeRecipient == address(0) ? 0 : uint(amountIn).mul(3) / 5000;
-            if (fee > 0) {
-                require(
-                    amountIn.sub(fee).mul(reserve1 - amountOut).mul(9976) >= amountOut.mul(reserve0).mul(10000),
-                    "UniswapV2: K_VIOLATED"
-                );
-                _safeTransfer(token0, feeRecipient, fee);
-                balance0 = IERC20(token0).balanceOf(address(this)); // re-fetch balance after the transfer
-            } else {
-                require(
-                    amountIn.mul(reserve1 - amountOut).mul(997) >= amountOut.mul(reserve0).mul(1000),
-                    "UniswapV2: K_VIOLATED"
-                );
-            }
+            require(amountIn.mul(reserve1 - amountOut).mul(997) >= amountOut.mul(reserve0).mul(1000), "UniswapV2: K");
             _safeTransfer(token1, msg.sender, amountOut);
             balance1 = IERC20(token1).balanceOf(address(this));
         } else {
@@ -127,20 +134,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
             balance1 = IERC20(token1).balanceOf(address(this));
             amountIn = balance1.sub(reserve1);
             require(amountIn > 0, "UniswapV2: INSUFFICIENT_INPUT_AMOUNT");
-            fee = feeRecipient == address(0) ? 0 : uint(amountIn).mul(3) / 5000;
-            if (fee > 0) {
-                require(
-                    amountIn.sub(fee).mul(reserve0 - amountOut).mul(9976) >= amountOut.mul(reserve1).mul(10000),
-                    "UniswapV2: K_VIOLATED"
-                );
-                _safeTransfer(token1, feeRecipient, fee);
-                balance1 = IERC20(token1).balanceOf(address(this)); // re-fetch balance after the transfer
-            } else {
-                require(
-                    amountIn.mul(reserve0 - amountOut).mul(997) >= amountOut.mul(reserve1).mul(1000),
-                    "UniswapV2: K_VIOLATED"
-                );
-            }
+            require(amountIn.mul(reserve0 - amountOut).mul(997) >= amountOut.mul(reserve1).mul(1000), "UniswapV2: K");
             _safeTransfer(token0, msg.sender, amountOut);
             balance0 = IERC20(token0).balanceOf(address(this));
         }
