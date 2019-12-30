@@ -1,6 +1,6 @@
 {
   "engines": {
-    "node": "^10"
+    "node": ">=10"
   },
   "dependencies": {
     "solc": "0.5.15"
