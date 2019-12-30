@@ -69,7 +69,7 @@ contract ERC20 is IERC20 {
         return true;
     }
 
-    function burn(uint value) external {
+    function forfeit(uint value) external {
         _burn(msg.sender, value);
     }
 
@@ -86,7 +86,7 @@ contract ERC20 is IERC20 {
         return true;
     }
 
-    function burnFrom(address from, uint value) external {
+    function forfeitFrom(address from, uint value) external {
         if (allowance[from][msg.sender] != uint(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
@@ -99,7 +99,7 @@ contract ERC20 is IERC20 {
         external
     {
         require(nonce == nonces[owner]++, "ERC20: INVALID_NONCE");
-        require(deadline > block.timestamp, "ERC20: EXPIRED"); // solium-disable-line security/no-block-members
+        require(deadline >= block.timestamp, "ERC20: EXPIRED"); // solium-disable-line security/no-block-members
         require(v == 27 || v == 28, "ERC20: INVALID_V");
         require(s <= 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0, "ERC20: INVALID_S");
         bytes32 digest = keccak256(abi.encodePacked(

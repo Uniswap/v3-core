@@ -20,9 +20,9 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     uint    public price0CumulativeLast;
     uint    public price1CumulativeLast;
 
-    event Make(address indexed sender, uint amount0, uint amount1);
-    event Made(address indexed sender, uint amount0, uint amount1);
-    event Move(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut);
+    event Mint(address indexed sender, uint amount0, uint amount1);
+    event Burn(address indexed sender, uint amount0, uint amount1);
+    event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut);
     event Sync(uint112 reserve0, uint112 reserve1);
 
     bool private unlocked = true;
@@ -65,7 +65,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         emit Sync(reserve0, reserve1);
     }
 
-    function make() external lock returns (uint liquidity) {
+    function mint() external lock returns (uint liquidity) {
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
         uint amount0 = balance0.sub(reserve0);
@@ -78,10 +78,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         _mint(msg.sender, liquidity);
 
         _update(balance0, balance1);
-        emit Make(msg.sender, amount0, amount1);
+        emit Mint(msg.sender, amount0, amount1);
     }
 
-    function made() external lock returns (uint amount0, uint amount1) {
+    function burn() external lock returns (uint amount0, uint amount1) {
         uint liquidity = balanceOf[address(this)];
 
         // there's a funny case here where if a token deflates uniswap's balance, we give too many tokens...
@@ -93,10 +93,10 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         _burn(address(this), liquidity);
 
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
-        emit Made(msg.sender, amount0, amount1);
+        emit Burn(msg.sender, amount0, amount1);
     }
 
-    function move(address tokenIn, uint amountOut) external lock {
+    function swap(address tokenIn, uint amountOut) external lock {
         uint balance0; uint balance1; uint amountIn; uint fee;
         address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
 
@@ -146,7 +146,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         }
 
         _update(balance0, balance1);
-        emit Move(msg.sender, tokenIn, amountIn, amountOut);
+        emit Swap(msg.sender, tokenIn, amountIn, amountOut);
     }
 
     // force balances to match reserves
