@@ -37,7 +37,7 @@ export async function exchangeFixture(provider: providers.Web3Provider, [wallet]
   const exchangeAddress = await factory.getExchange(tokenA.address, tokenB.address)
   const exchange = new Contract(exchangeAddress, JSON.stringify(UniswapV2.abi), provider)
 
-  const [token0Address] = await factory.getTokens(exchangeAddress)
+  const token0Address = (await exchange.token0()).address
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
 

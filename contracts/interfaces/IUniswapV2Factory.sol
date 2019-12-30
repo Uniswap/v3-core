@@ -9,7 +9,6 @@ interface IUniswapV2Factory {
 
     function sortTokens(address tokenA, address tokenB) external pure returns (address token0, address token1);
     function getExchange(address tokenA, address tokenB) external view returns (address exchange);
-    function getTokens(address exchange) external view returns (address token0, address token1);
     function exchanges(uint) external view returns (address exchange);
     function exchangesCount() external view returns (uint);
 

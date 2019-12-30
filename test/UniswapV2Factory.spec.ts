@@ -58,7 +58,6 @@ describe('UniswapV2Factory', () => {
     await expect(factory.createExchange(...tokens.slice().reverse())).to.be.reverted // UniswapV2Factory: EXCHANGE_EXISTS
     expect(await factory.getExchange(...tokens)).to.eq(create2Address)
     expect(await factory.getExchange(...tokens.slice().reverse())).to.eq(create2Address)
-    expect(await factory.getTokens(create2Address)).to.deep.eq([TEST_ADDRESSES.token0, TEST_ADDRESSES.token1])
     expect(await factory.exchanges(0)).to.eq(create2Address)
     expect(await factory.exchangesCount()).to.eq(1)
 
