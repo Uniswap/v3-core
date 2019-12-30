@@ -25,12 +25,12 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     event Move(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut);
     event Sync(uint112 reserve0, uint112 reserve1);
 
-    bool private notLocked = true;
+    bool private unlocked = true;
     modifier lock() {
-        require(notLocked, "UniswapV2: LOCKED");
-        notLocked = false;
+        require(unlocked, "UniswapV2: LOCKED");
+        unlocked = false;
         _;
-        notLocked = true;
+        unlocked = true;
     }
 
     function _safeTransfer(address token, address to, uint value) private {
