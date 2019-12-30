@@ -6,7 +6,7 @@ import "./interfaces/IUniswapV2.sol";
 contract UniswapV2Factory is IUniswapV2Factory {
     bytes public exchangeBytecode;
     address public factoryOwner;
-    address public feeRecipient;
+    address public feeTo;
 
     mapping (address => mapping(address => address)) private _getExchange;
     address[] public exchanges;
@@ -53,8 +53,8 @@ contract UniswapV2Factory is IUniswapV2Factory {
         factoryOwner = _factoryOwner;
     }
 
-    function setFeeRecipient(address _feeRecipient) external {
+    function setFeeTo(address _feeTo) external {
         require(msg.sender == factoryOwner, "UniswapV2Factory: FORBIDDEN");
-        feeRecipient = _feeRecipient;
+        feeTo = _feeTo;
     }
 }

@@ -23,8 +23,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     uint private invariantLast;
 
     event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1);
-    event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut);
+    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut, address indexed to);
     event Sync(uint112 reserve0, uint112 reserve1);
 
     bool private unlocked = true;
@@ -68,56 +68,56 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     // mint liquidity equivalent to 20% of accumulated fees
-    function mintFeeLiquidity(address feeRecipient) private {
-        if (feeRecipient != address(0) && invariantLast != 0) {
+    function _mintFeeLiquidity(address feeTo) private {
+        if (feeTo != address(0) && invariantLast != 0) {
             uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
             if (invariant > invariantLast) {
                 uint numerator = totalSupply.mul(invariant.sub(invariantLast));
                 uint denominator = uint(4).mul(invariant).add(invariantLast);
                 uint liquidity = numerator / denominator;
-                if (liquidity > 0) _mint(feeRecipient, liquidity);
+                if (liquidity > 0) _mint(feeTo, liquidity);
             }
         }
     }
 
-    function mint() external lock returns (uint liquidity) {
+    function mint(address to) external lock returns (uint liquidity) {
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
         uint amount0 = balance0.sub(reserve0);
         uint amount1 = balance1.sub(reserve1);
 
-        address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
-        mintFeeLiquidity(feeRecipient);
+        address feeTo = IUniswapV2Factory(factory).feeTo();
+        _mintFeeLiquidity(feeTo);
         liquidity = totalSupply == 0 ?
             Math.sqrt(amount0.mul(amount1)) :
             Math.min(amount0.mul(totalSupply) / reserve0, amount1.mul(totalSupply) / reserve1);
         require(liquidity > 0, "UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED");
-        _mint(msg.sender, liquidity);
+        _mint(to, liquidity);
 
         _update(balance0, balance1);
-        if (feeRecipient != address(0)) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
+        if (feeTo != address(0)) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit Mint(msg.sender, amount0, amount1);
     }
 
-    function burn() external lock returns (uint amount0, uint amount1) {
+    function burn(address to) external lock returns (uint amount0, uint amount1) {
         uint liquidity = balanceOf[address(this)];
 
-        address feeRecipient = IUniswapV2Factory(factory).feeRecipient();
-        mintFeeLiquidity(feeRecipient);
+        address feeTo = IUniswapV2Factory(factory).feeTo();
+        _mintFeeLiquidity(feeTo);
         // there's a funny case here where if a token deflates uniswap's balance, we give too many tokens...
         amount0 = liquidity.mul(reserve0) / totalSupply;
         amount1 = liquidity.mul(reserve1) / totalSupply;
         require(amount0 > 0 && amount1 > 0, "UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED");
-        _safeTransfer(token0, msg.sender, amount0);
-        _safeTransfer(token1, msg.sender, amount1);
+        _safeTransfer(token0, to, amount0);
+        _safeTransfer(token1, to, amount1);
         _burn(address(this), liquidity);
 
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
-        if (feeRecipient != address(0)) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
-        emit Burn(msg.sender, amount0, amount1);
+        if (feeTo != address(0)) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
+        emit Burn(msg.sender, amount0, amount1, to);
     }
 
-    function swap(address tokenIn, uint amountOut) external lock {
+    function swap(address tokenIn, uint amountOut, address to) external lock {
         uint balance0; uint balance1; uint amountIn;
 
         if (tokenIn == token0) {
@@ -126,7 +126,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
             amountIn = balance0.sub(reserve0);
             require(amountIn > 0, "UniswapV2: INSUFFICIENT_INPUT_AMOUNT");
             require(amountIn.mul(reserve1 - amountOut).mul(997) >= amountOut.mul(reserve0).mul(1000), "UniswapV2: K");
-            _safeTransfer(token1, msg.sender, amountOut);
+            _safeTransfer(token1, to, amountOut);
             balance1 = IERC20(token1).balanceOf(address(this));
         } else {
             require(tokenIn == token1, "UniswapV2: INVALID_INPUT_TOKEN");
@@ -135,18 +135,18 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
             amountIn = balance1.sub(reserve1);
             require(amountIn > 0, "UniswapV2: INSUFFICIENT_INPUT_AMOUNT");
             require(amountIn.mul(reserve0 - amountOut).mul(997) >= amountOut.mul(reserve1).mul(1000), "UniswapV2: K");
-            _safeTransfer(token0, msg.sender, amountOut);
+            _safeTransfer(token0, to, amountOut);
             balance0 = IERC20(token0).balanceOf(address(this));
         }
 
         _update(balance0, balance1);
-        emit Swap(msg.sender, tokenIn, amountIn, amountOut);
+        emit Swap(msg.sender, tokenIn, amountIn, amountOut, to);
     }
 
     // force balances to match reserves
-    function skim() external lock {
-        _safeTransfer(token0, msg.sender, IERC20(token0).balanceOf(address(this)).sub(reserve0));
-        _safeTransfer(token1, msg.sender, IERC20(token1).balanceOf(address(this)).sub(reserve1));
+    function skim(address to) external lock {
+        _safeTransfer(token0, to, IERC20(token0).balanceOf(address(this)).sub(reserve0));
+        _safeTransfer(token1, to, IERC20(token1).balanceOf(address(this)).sub(reserve1));
     }
 
     // force reserves to match balances
