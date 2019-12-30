@@ -44,7 +44,8 @@ contract UniswapV2Factory is IUniswapV2Factory {
         }
         IUniswapV2(exchange).initialize(token0, token1);
         _getExchange[token0][token1] = exchange;
-        emit ExchangeCreated(token0, token1, exchange, exchanges.push(exchange));
+        exchanges.push(exchange);
+        emit ExchangeCreated(token0, token1, exchange, exchanges.length);
     }
 
     function setFactoryOwner(address _factoryOwner) external {
