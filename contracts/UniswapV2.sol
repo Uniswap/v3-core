@@ -56,27 +56,33 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: BALANCE_OVERFLOW");
         uint32 blockNumber = uint32(block.number % 2**32);
         uint32 blocksElapsed = blockNumber - blockNumberLast; // overflow is desired
-        if (reserve0 != 0 && reserve1 != 0 && blocksElapsed > 0) {
+        if (blocksElapsed > 0 && reserve0 != 0 && reserve1 != 0) {
             // * never overflows, and + overflow is desired
             price0CumulativeLast += uint(UQ112x112.encode(reserve1).qdiv(reserve0)) * blocksElapsed;
             price1CumulativeLast += uint(UQ112x112.encode(reserve0).qdiv(reserve1)) * blocksElapsed;
         }
+        // ↓↓↓↓ single SSTORE ↓↓↓↓
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
         blockNumberLast = blockNumber;
+        // ↑↑↑↑ single SSTORE ↑↑↑↑
         emit Sync(reserve0, reserve1);
     }
 
-    // mint liquidity equivalent to 20% of accumulated fees
-    function _mintFeeLiquidity(address feeTo) private {
-        if (feeTo != address(0) && invariantLast != 0) {
-            uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
-            if (invariant > invariantLast) {
-                uint numerator = totalSupply.mul(invariant.sub(invariantLast));
-                uint denominator = uint(4).mul(invariant).add(invariantLast);
-                uint liquidity = numerator / denominator;
-                if (liquidity > 0) _mint(feeTo, liquidity);
+    // mint liquidity equivalent to 20% of newly accumulated fees
+    function _mintFee(uint invariantNext) private {
+        address feeTo = IUniswapV2Factory(factory).feeTo();
+        if (feeTo != address(0)) {
+            if (invariantLast != 0) {
+                uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
+                if (invariant > invariantLast) {
+                    uint numerator = totalSupply.mul(invariant.sub(invariantLast));
+                    uint denominator = uint(4).mul(invariant).add(invariantLast);
+                    uint liquidity = numerator / denominator;
+                    if (liquidity > 0) _mint(feeTo, liquidity);
+                }
             }
+            invariantLast = invariantNext;
         }
     }
 
@@ -86,8 +92,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         uint amount0 = balance0.sub(reserve0);
         uint amount1 = balance1.sub(reserve1);
 
-        address feeTo = IUniswapV2Factory(factory).feeTo();
-        _mintFeeLiquidity(feeTo);
+        _mintFee(Math.sqrt(balance0.mul(balance1)));
         liquidity = totalSupply == 0 ?
             Math.sqrt(amount0.mul(amount1)) :
             Math.min(amount0.mul(totalSupply) / reserve0, amount1.mul(totalSupply) / reserve1);
@@ -95,25 +100,26 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         _mint(to, liquidity);
 
         _update(balance0, balance1);
-        if (feeTo != address(0)) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
         emit Mint(msg.sender, amount0, amount1);
     }
 
     function burn(address to) external lock returns (uint amount0, uint amount1) {
+        uint balance0 = IERC20(token0).balanceOf(address(this));
+        uint balance1 = IERC20(token1).balanceOf(address(this));
         uint liquidity = balanceOf[address(this)];
 
-        address feeTo = IUniswapV2Factory(factory).feeTo();
-        _mintFeeLiquidity(feeTo);
-        // there's a funny case here where if a token deflates uniswap's balance, we give too many tokens...
-        amount0 = liquidity.mul(reserve0) / totalSupply;
-        amount1 = liquidity.mul(reserve1) / totalSupply;
+        _mintFee(Math.sqrt(balance0.mul(balance1)));
+        // use balances instead of reserves to address edges cases
+        amount0 = liquidity.mul(balance0) / totalSupply;
+        amount1 = liquidity.mul(balance1) / totalSupply;
         require(amount0 > 0 && amount1 > 0, "UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED");
         _safeTransfer(token0, to, amount0);
         _safeTransfer(token1, to, amount1);
+        balance0 = IERC20(token0).balanceOf(address(this));
+        balance1 = IERC20(token1).balanceOf(address(this));
         _burn(address(this), liquidity);
 
-        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
-        if (feeTo != address(0)) invariantLast = Math.sqrt(uint(reserve0).mul(reserve1));
+        _update(balance0, balance1);
         emit Burn(msg.sender, amount0, amount1, to);
     }
 
