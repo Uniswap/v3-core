@@ -58,8 +58,8 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         uint32 blocksElapsed = blockNumber - blockNumberLast; // overflow is desired
         if (reserve0 != 0 && reserve1 != 0 && blocksElapsed > 0) {
             // * never overflows, and + overflow is desired
-            price0CumulativeLast += uint(UQ112x112.encode(reserve0).qdiv(reserve1)) * blocksElapsed;
-            price1CumulativeLast += uint(UQ112x112.encode(reserve1).qdiv(reserve0)) * blocksElapsed;
+            price0CumulativeLast += uint(UQ112x112.encode(reserve1).qdiv(reserve0)) * blocksElapsed;
+            price1CumulativeLast += uint(UQ112x112.encode(reserve0).qdiv(reserve1)) * blocksElapsed;
         }
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
