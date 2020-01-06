@@ -1,6 +1,5 @@
 import { providers, Wallet, Contract } from 'ethers'
 import { deployContract } from 'ethereum-waffle'
-import { AddressZero } from 'ethers/constants'
 
 import { expandTo18Decimals } from './utilities'
 
