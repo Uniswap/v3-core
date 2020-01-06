@@ -51,8 +51,9 @@ describe('UniswapV2', () => {
     expect(await exchange.balanceOf(wallet.address)).to.eq(expectedLiquidity)
     expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount)
     expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount)
-    expect(await exchange.reserve0()).to.eq(token0Amount)
-    expect(await exchange.reserve1()).to.eq(token1Amount)
+    const reserves = await exchange.getReserves()
+    expect(reserves[0]).to.eq(token0Amount)
+    expect(reserves[1]).to.eq(token1Amount)
   })
 
   async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {
@@ -100,8 +101,9 @@ describe('UniswapV2', () => {
       .to.emit(exchange, 'Swap')
       .withArgs(wallet.address, token0.address, swapAmount, expectedOutputAmount, wallet.address)
 
-    expect(await exchange.reserve0()).to.eq(token0Amount.add(swapAmount))
-    expect(await exchange.reserve1()).to.eq(token1Amount.sub(expectedOutputAmount))
+    const reserves = await exchange.getReserves()
+    expect(reserves[0]).to.eq(token0Amount.add(swapAmount))
+    expect(reserves[1]).to.eq(token1Amount.sub(expectedOutputAmount))
     expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount.add(swapAmount))
     expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount.sub(expectedOutputAmount))
     const totalSupplyToken0 = await token0.totalSupply()
@@ -124,8 +126,9 @@ describe('UniswapV2', () => {
       .to.emit(exchange, 'Swap')
       .withArgs(wallet.address, token1.address, swapAmount, expectedOutputAmount, wallet.address)
 
-    expect(await exchange.reserve0()).to.eq(token0Amount.sub(expectedOutputAmount))
-    expect(await exchange.reserve1()).to.eq(token1Amount.add(swapAmount))
+    const reserves = await exchange.getReserves()
+    expect(reserves[0]).to.eq(token0Amount.sub(expectedOutputAmount))
+    expect(reserves[1]).to.eq(token1Amount.add(swapAmount))
     expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount.sub(expectedOutputAmount))
     expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount.add(swapAmount))
     const totalSupplyToken0 = await token0.totalSupply()
@@ -180,14 +183,14 @@ describe('UniswapV2', () => {
     const token1Amount = expandTo18Decimals(3)
     await addLiquidity(token0Amount, token1Amount)
 
-    const blockNumber = await exchange.blockNumberLast()
+    const blockNumber = (await exchange.getReserves())[2]
     expect(await exchange.price0CumulativeLast()).to.eq(0)
     expect(await exchange.price1CumulativeLast()).to.eq(0)
 
     await exchange.connect(wallet).sync(overrides)
     expect(await exchange.price0CumulativeLast()).to.eq(bigNumberify(2).pow(112))
     expect(await exchange.price1CumulativeLast()).to.eq(bigNumberify(2).pow(112))
-    expect(await exchange.blockNumberLast()).to.eq(blockNumber + 1)
+    expect((await exchange.getReserves())[2]).to.eq(blockNumber + 1)
 
     await mineBlocks(provider, 8)
     await exchange.connect(wallet).sync(overrides)
@@ -201,6 +204,6 @@ describe('UniswapV2', () => {
         .pow(112)
         .mul(10)
     )
-    expect(await exchange.blockNumberLast()).to.eq(blockNumber + 10)
+    expect((await exchange.getReserves())[2]).to.eq(blockNumber + 10)
   })
 })

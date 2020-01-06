@@ -14,11 +14,11 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     address public token0;
     address public token1;
 
-    uint112 public reserve0;
-    uint112 public reserve1;
-    uint32  public blockNumberLast;
-    uint    public price0CumulativeLast;
-    uint    public price1CumulativeLast;
+    uint112 private reserve0_;
+    uint112 private reserve1_;
+    uint32  private blockNumberLast_;
+    uint    public  price0CumulativeLast;
+    uint    public  price1CumulativeLast;
 
     uint private invariantLast;
 
@@ -51,22 +51,26 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         token1 = _token1;
     }
 
-    // update reserves + block number and, if necessary, increment price accumulators
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockNumberLast) {
+        return (reserve0_, reserve1_, blockNumberLast_);
+    }
+
+    // update reserves and, if necessary, increment price accumulators
     function _update(uint balance0, uint balance1, uint112 _reserve0, uint112 _reserve1) private {
         require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: BALANCE_OVERFLOW");
         uint32 blockNumber = uint32(block.number % 2**32);
-        uint32 blocksElapsed = blockNumber - blockNumberLast; // overflow is desired
+        uint32 blocksElapsed = blockNumber - blockNumberLast_; // overflow is desired
         if (blocksElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
             // * never overflows, and + overflow is desired
             price0CumulativeLast += uint(UQ112x112.encode(_reserve1).qdiv(_reserve0)) * blocksElapsed;
             price1CumulativeLast += uint(UQ112x112.encode(_reserve0).qdiv(_reserve1)) * blocksElapsed;
         }
         // ↓↓↓↓ single SSTORE ↓↓↓↓
-        reserve0 = uint112(balance0);
-        reserve1 = uint112(balance1);
-        blockNumberLast = blockNumber;
+        reserve0_ = uint112(balance0);
+        reserve1_ = uint112(balance1);
+        blockNumberLast_ = blockNumber;
         // ↑↑↑↑ single SSTORE ↑↑↑↑
-        emit Sync(reserve0, reserve1);
+        emit Sync(reserve0_, reserve1_);
     }
 
     // mint liquidity equivalent to 20% of newly accumulated fees
@@ -75,7 +79,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         if (feeTo != address(0)) {
             uint _invariantLast = invariantLast; // for gas savings
             if (_invariantLast != 0) {
-                uint invariant = Math.sqrt(uint(reserve0) * reserve1); // * doesn't overflow
+                uint invariant = Math.sqrt(uint(reserve0_) * reserve1_); // * doesn't overflow
                 if (invariant > _invariantLast) {
                     uint numerator = totalSupply.mul(invariant.sub(_invariantLast));
                     uint denominator = uint(4).mul(invariant).add(_invariantLast);
@@ -88,13 +92,13 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     function mint(address to) external lock returns (uint liquidity) {
-        uint112 _reserve0 = reserve0;    // for gas savings
-        uint112 _reserve1 = reserve1;    // for gas savings
-        uint _totalSupply = totalSupply; // for gas savings
-        uint balance0 = IERC20(token0).balanceOf(address(this));
-        uint balance1 = IERC20(token1).balanceOf(address(this));
-        uint amount0 = balance0.sub(_reserve0);
-        uint amount1 = balance1.sub(_reserve1);
+        uint    _totalSupply = totalSupply; // for gas savings
+        uint112 _reserve0 = reserve0_;      // for gas savings
+        uint112 _reserve1 = reserve1_;      // for gas savings
+        uint    balance0 = IERC20(token0).balanceOf(address(this));
+        uint    balance1 = IERC20(token1).balanceOf(address(this));
+        uint    amount0 = balance0.sub(_reserve0);
+        uint    amount1 = balance1.sub(_reserve1);
 
         _mintFee(balance0, balance1);
         liquidity = _totalSupply == 0 ?
@@ -108,12 +112,12 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     function burn(address to) external lock returns (uint amount0, uint amount1) {
-        address _token0 = token0;        // for gas savings
-        address _token1 = token1;        // for gas savings
-        uint _totalSupply = totalSupply; // for gas savings
-        uint balance0 = IERC20(_token0).balanceOf(address(this));
-        uint balance1 = IERC20(_token1).balanceOf(address(this));
-        uint liquidity = balanceOf[address(this)];
+        uint    _totalSupply = totalSupply; // for gas savings
+        address _token0 = token0;           // for gas savings
+        address _token1 = token1;           // for gas savings
+        uint    balance0 = IERC20(_token0).balanceOf(address(this));
+        uint    balance1 = IERC20(_token1).balanceOf(address(this));
+        uint    liquidity = balanceOf[address(this)];
 
         _mintFee(balance0, balance1);
         // use balances instead of reserves to address edges cases
@@ -126,15 +130,15 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         balance1 = IERC20(_token1).balanceOf(address(this));
         _burn(address(this), liquidity);
 
-        _update(balance0, balance1, reserve0, reserve1);
+        _update(balance0, balance1, reserve0_, reserve1_);
         emit Burn(msg.sender, amount0, amount1, to);
     }
 
     function swap(address tokenIn, uint amountOut, address to) external lock {
-        uint112 _reserve0 = reserve0; // for gas savings
-        uint112 _reserve1 = reserve1; // for gas savings
-        address _token0 = token0;     // for gas savings
-        address _token1 = token1;     // for gas savings
+        address _token0 = token0;      // for gas savings
+        address _token1 = token1;      // for gas savings
+        uint112 _reserve0 = reserve0_; // for gas savings
+        uint112 _reserve1 = reserve1_; // for gas savings
         uint balance0; uint balance1; uint amountIn;
 
         if (tokenIn == _token0) {
@@ -164,12 +168,12 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     function skim(address to) external lock {
         address _token0 = token0; // for gas savings
         address _token1 = token1; // for gas savings
-        _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0));
-        _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1));
+        _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0_));
+        _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1_));
     }
 
     // force reserves to match balances
     function sync() external lock {
-        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
+        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0_, reserve1_);
     }
 }

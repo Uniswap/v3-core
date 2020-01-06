@@ -9,9 +9,7 @@ interface IUniswapV2 {
     function factory() external view returns (address);
     function token0() external view returns (address);
     function token1() external view returns (address);
-    function reserve0() external view returns (uint112);
-    function reserve1() external view returns (uint112);
-    function blockNumberLast() external view returns (uint32);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockNumberLast);
     function price0CumulativeLast() external view returns (uint);
     function price1CumulativeLast() external view returns (uint);
 
