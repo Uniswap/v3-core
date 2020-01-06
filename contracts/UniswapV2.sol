@@ -70,11 +70,11 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
     }
 
     // mint liquidity equivalent to 20% of newly accumulated fees
-    function _mintFee(uint invariantNext) private {
+    function _mintFee(uint balance0, uint balance1) private {
         address feeTo = IUniswapV2Factory(factory).feeTo();
         if (feeTo != address(0)) {
             if (invariantLast != 0) {
-                uint invariant = Math.sqrt(uint(reserve0).mul(reserve1));
+                uint invariant = Math.sqrt(uint(reserve0) * reserve1); // * doesn't overflow
                 if (invariant > invariantLast) {
                     uint numerator = totalSupply.mul(invariant.sub(invariantLast));
                     uint denominator = uint(4).mul(invariant).add(invariantLast);
@@ -82,7 +82,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
                     if (liquidity > 0) _mint(feeTo, liquidity);
                 }
             }
-            invariantLast = invariantNext;
+            invariantLast = Math.sqrt(balance0.mul(balance1));
         }
     }
 
@@ -92,7 +92,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         uint amount0 = balance0.sub(reserve0);
         uint amount1 = balance1.sub(reserve1);
 
-        _mintFee(Math.sqrt(balance0.mul(balance1)));
+        _mintFee(balance0, balance1);
         liquidity = totalSupply == 0 ?
             Math.sqrt(amount0.mul(amount1)) :
             Math.min(amount0.mul(totalSupply) / reserve0, amount1.mul(totalSupply) / reserve1);
@@ -108,7 +108,7 @@ contract UniswapV2 is IUniswapV2, ERC20("Uniswap V2", "UNI-V2", 18, 0) {
         uint balance1 = IERC20(token1).balanceOf(address(this));
         uint liquidity = balanceOf[address(this)];
 
-        _mintFee(Math.sqrt(balance0.mul(balance1)));
+        _mintFee(balance0, balance1);
         // use balances instead of reserves to address edges cases
         amount0 = liquidity.mul(balance0) / totalSupply;
         amount1 = liquidity.mul(balance1) / totalSupply;
