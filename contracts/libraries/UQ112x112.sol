@@ -10,6 +10,6 @@ library UQ112x112 {
 
     // divide a UQ112.112 by a uint112 and return the result as a UQ112.112
     function qdiv(uint224 x, uint112 y) internal pure returns (uint224 z) {
-        z = x / y;
+        z = x / uint224(y);
     }
 }
