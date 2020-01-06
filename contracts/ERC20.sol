@@ -25,9 +25,7 @@ contract ERC20 is IERC20 {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
-        if (_totalSupply > 0) {
-            _mint(msg.sender, _totalSupply);
-        }
+        if (_totalSupply > 0) _mint(msg.sender, _totalSupply);
         uint chainId;
         assembly { // solium-disable-line security/no-inline-assembly
             chainId := chainid()
