@@ -5,7 +5,7 @@ import "./interfaces/IUniswapV2.sol";
 
 contract UniswapV2Factory is IUniswapV2Factory {
     bytes public exchangeBytecode;
-    address public factoryOwner;
+    address public feeToSetter;
     address public feeTo;
 
     mapping (address => mapping(address => address)) private _getExchange;
@@ -13,10 +13,10 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
     event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint);
 
-    constructor(bytes memory _exchangeBytecode, address _factoryOwner) public {
+    constructor(bytes memory _exchangeBytecode, address _feeToSetter) public {
         require(_exchangeBytecode.length >= 32, "UniswapV2Factory: SHORT_BYTECODE");
         exchangeBytecode = _exchangeBytecode;
-        factoryOwner = _factoryOwner;
+        feeToSetter = _feeToSetter;
     }
 
     function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
@@ -48,13 +48,13 @@ contract UniswapV2Factory is IUniswapV2Factory {
         emit ExchangeCreated(token0, token1, exchange, exchanges.length);
     }
 
-    function setFactoryOwner(address _factoryOwner) external {
-        require(msg.sender == factoryOwner, "UniswapV2Factory: FORBIDDEN");
-        factoryOwner = _factoryOwner;
+    function setFeeToSetter(address _feeToSetter) external {
+        require(msg.sender == feeToSetter, "UniswapV2Factory: FORBIDDEN");
+        feeToSetter = _feeToSetter;
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == factoryOwner, "UniswapV2Factory: FORBIDDEN");
+        require(msg.sender == feeToSetter, "UniswapV2Factory: FORBIDDEN");
         feeTo = _feeTo;
     }
 }

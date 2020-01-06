@@ -31,9 +31,9 @@ describe('UniswapV2Factory', () => {
     factory = _factory
   })
 
-  it('exchangeBytecode, factoryOwner, feeTo, exchangesCount', async () => {
+  it('exchangeBytecode, feeToSetter, feeTo, exchangesCount', async () => {
     expect(await factory.exchangeBytecode()).to.eq(bytecode)
-    expect(await factory.factoryOwner()).to.eq(wallet.address)
+    expect(await factory.feeToSetter()).to.eq(wallet.address)
     expect(await factory.feeTo()).to.eq(AddressZero)
     expect(await factory.exchangesCount()).to.eq(0)
   })
@@ -81,11 +81,11 @@ describe('UniswapV2Factory', () => {
     console.log(`Gas required for createExchange: ${gasCost}`)
   })
 
-  it('setFactoryOwner', async () => {
-    await expect(factory.connect(other).setFactoryOwner(other.address)).to.be.reverted // UniswapV2Factory: FORBIDDEN
-    await factory.setFactoryOwner(other.address)
-    expect(await factory.factoryOwner()).to.eq(other.address)
-    await expect(factory.setFactoryOwner(wallet.address)).to.be.reverted // UniswapV2Factory: FORBIDDEN
+  it('setFeeToSetter', async () => {
+    await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.reverted // UniswapV2Factory: FORBIDDEN
+    await factory.setFeeToSetter(other.address)
+    expect(await factory.feeToSetter()).to.eq(other.address)
+    await expect(factory.setFeeToSetter(wallet.address)).to.be.reverted // UniswapV2Factory: FORBIDDEN
   })
 
   it('setFeeTo', async () => {
