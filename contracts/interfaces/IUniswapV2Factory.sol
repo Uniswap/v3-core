@@ -3,7 +3,6 @@ pragma solidity 0.5.15;
 interface IUniswapV2Factory {
     event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint256);
 
-    function exchangeBytecode() external view returns (bytes memory);
     function feeToSetter() external view returns (address);
     function feeTo() external view returns (address);
 

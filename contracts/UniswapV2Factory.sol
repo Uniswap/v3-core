@@ -1,10 +1,10 @@
 pragma solidity 0.5.15;
 
+import "./UniswapV2.sol";
 import "./interfaces/IUniswapV2Factory.sol";
 import "./interfaces/IUniswapV2.sol";
 
 contract UniswapV2Factory is IUniswapV2Factory {
-    bytes public exchangeBytecode;
     address public feeToSetter;
     address public feeTo;
 
@@ -13,9 +13,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
     event ExchangeCreated(address indexed token0, address indexed token1, address exchange, uint);
 
-    constructor(bytes memory _exchangeBytecode, address _feeToSetter) public {
-        require(_exchangeBytecode.length >= 32, "UniswapV2Factory: SHORT_BYTECODE");
-        exchangeBytecode = _exchangeBytecode;
+    constructor(address _feeToSetter) public {
         feeToSetter = _feeToSetter;
     }
 
@@ -37,7 +35,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
         require(tokenA != address(0) && tokenB != address(0), "UniswapV2Factory: ZERO_ADDRESS");
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         require(getExchange_[token0][token1] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
-        bytes memory exchangeBytecodeMemory = exchangeBytecode; // load bytecode into memory because create2 requires it
+        bytes memory exchangeBytecodeMemory = type(UniswapV2).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {  // solium-disable-line security/no-inline-assembly
             exchange := create2(0, add(exchangeBytecodeMemory, 32), mload(exchangeBytecodeMemory), salt)
