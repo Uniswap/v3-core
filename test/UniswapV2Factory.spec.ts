@@ -23,16 +23,13 @@ describe('UniswapV2Factory', () => {
   const [wallet, other] = getWallets(provider)
   const loadFixture = createFixtureLoader(provider, [wallet])
 
-  let bytecode: string
   let factory: Contract
   beforeEach(async () => {
-    const { bytecode: _bytecode, factory: _factory }: FactoryFixture = await loadFixture(factoryFixture as any)
-    bytecode = _bytecode
+    const { factory: _factory }: FactoryFixture = await loadFixture(factoryFixture as any)
     factory = _factory
   })
 
-  it('exchangeBytecode, feeToSetter, feeTo, exchangesCount', async () => {
-    expect(await factory.exchangeBytecode()).to.eq(bytecode)
+  it('feeToSetter, feeTo, exchangesCount', async () => {
     expect(await factory.feeToSetter()).to.eq(wallet.address)
     expect(await factory.feeTo()).to.eq(AddressZero)
     expect(await factory.exchangesCount()).to.eq(0)
@@ -50,6 +47,7 @@ describe('UniswapV2Factory', () => {
   })
 
   async function createExchange(tokens: string[]) {
+    const bytecode = `0x${UniswapV2.evm.bytecode.object}`
     const create2Address = getCreate2Address(factory.address, TEST_ADDRESSES.token0, TEST_ADDRESSES.token1, bytecode)
     await expect(factory.createExchange(...tokens))
       .to.emit(factory, 'ExchangeCreated')

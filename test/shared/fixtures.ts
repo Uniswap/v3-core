@@ -8,16 +8,13 @@ import UniswapV2 from '../../build/UniswapV2.json'
 import UniswapV2Factory from '../../build/UniswapV2Factory.json'
 
 export interface FactoryFixture {
-  bytecode: string
   factory: Contract
 }
 
 export async function factoryFixture(provider: providers.Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
-  const bytecode = `0x${UniswapV2.evm.bytecode.object}`
-  const factory = await deployContract(wallet, UniswapV2Factory, [bytecode, wallet.address], {
-    gasLimit: (provider._web3Provider as any).options.gasLimit
-  })
-  return { bytecode, factory }
+  const factory = await deployContract(wallet, UniswapV2Factory, [wallet.address])
+
+  return { factory }
 }
 
 export interface ExchangeFixture extends FactoryFixture {
@@ -27,7 +24,7 @@ export interface ExchangeFixture extends FactoryFixture {
 }
 
 export async function exchangeFixture(provider: providers.Web3Provider, [wallet]: Wallet[]): Promise<ExchangeFixture> {
-  const { bytecode, factory } = await factoryFixture(provider, [wallet])
+  const { factory } = await factoryFixture(provider, [wallet])
 
   const tokenA = await deployContract(wallet, ERC20, ['Test Token A', 'TESTA', 18, expandTo18Decimals(10000)])
   const tokenB = await deployContract(wallet, ERC20, ['Test Token B', 'TESTB', 18, expandTo18Decimals(10000)])
@@ -40,5 +37,5 @@ export async function exchangeFixture(provider: providers.Web3Provider, [wallet]
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
 
-  return { bytecode, factory, token0, token1, exchange }
+  return { factory, token0, token1, exchange }
 }
