@@ -15,13 +15,12 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
     address public token0;
     address public token1;
 
-    uint112 private reserve0;
-    uint112 private reserve1;
-    uint32  private blockNumberLast;
+    uint112 private reserve0;        // accessible via getReserves()
+    uint112 private reserve1;        // accessible via getReserves()
+    uint32  private blockNumberLast; // accessible via getReserves()
     uint    public  price0CumulativeLast;
     uint    public  price1CumulativeLast;
-
-    uint private invariantLast;
+    uint    public invariantLast;
 
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
