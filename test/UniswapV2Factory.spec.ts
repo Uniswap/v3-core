@@ -7,7 +7,7 @@ import { bigNumberify } from 'ethers/utils'
 import { getCreate2Address } from './shared/utilities'
 import { factoryFixture, FactoryFixture } from './shared/fixtures'
 
-import UniswapV2 from '../build/UniswapV2.json'
+import UniswapV2Exchange from '../build/UniswapV2Exchange.json'
 import { AddressZero } from 'ethers/constants'
 
 chai.use(solidity)
@@ -47,7 +47,7 @@ describe('UniswapV2Factory', () => {
   })
 
   async function createExchange(tokens: string[]) {
-    const bytecode = `0x${UniswapV2.evm.bytecode.object}`
+    const bytecode = `0x${UniswapV2Exchange.evm.bytecode.object}`
     const create2Address = getCreate2Address(factory.address, TEST_ADDRESSES.token0, TEST_ADDRESSES.token1, bytecode)
     await expect(factory.createExchange(...tokens))
       .to.emit(factory, 'ExchangeCreated')
@@ -60,7 +60,7 @@ describe('UniswapV2Factory', () => {
     expect(await factory.exchanges(0)).to.eq(create2Address)
     expect(await factory.exchangesCount()).to.eq(1)
 
-    const exchange = new Contract(create2Address, JSON.stringify(UniswapV2.abi), provider)
+    const exchange = new Contract(create2Address, JSON.stringify(UniswapV2Exchange.abi), provider)
     expect(await exchange.factory()).to.eq(factory.address)
     expect(await exchange.token0()).to.eq(TEST_ADDRESSES.token0)
     expect(await exchange.token1()).to.eq(TEST_ADDRESSES.token1)

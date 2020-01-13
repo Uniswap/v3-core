@@ -2,46 +2,36 @@ import path from 'path'
 import chai from 'chai'
 import { solidity, createMockProvider, getWallets, deployContract } from 'ethereum-waffle'
 import { Contract } from 'ethers'
-import { AddressZero, MaxUint256 } from 'ethers/constants'
+import { MaxUint256 } from 'ethers/constants'
 import { bigNumberify, hexlify, keccak256, defaultAbiCoder, toUtf8Bytes } from 'ethers/utils'
 import { ecsign } from 'ethereumjs-util'
 
 import { expandTo18Decimals, getApprovalDigest } from './shared/utilities'
 
-import ERC20 from '../build/ERC20.json'
+import GenericERC20 from '../build/GenericERC20.json'
 
 chai.use(solidity)
 const { expect } = chai
 
-const TOKEN_DETAILS = {
-  name: 'Test Token',
-  symbol: 'TEST',
-  decimals: 18,
-  totalSupply: expandTo18Decimals(1000)
-}
+const TOTAL_SUPPLY = expandTo18Decimals(10000)
 const TEST_AMOUNT = expandTo18Decimals(10)
 
-describe('ERC20', () => {
+describe('UniswapV2ERC20 via GenericERC20', () => {
   const provider = createMockProvider(path.join(__dirname, '..', 'waffle.json'))
   const [wallet, other] = getWallets(provider)
 
   let token: Contract
   beforeEach(async () => {
-    token = await deployContract(wallet, ERC20, [
-      TOKEN_DETAILS.name,
-      TOKEN_DETAILS.symbol,
-      TOKEN_DETAILS.decimals,
-      TOKEN_DETAILS.totalSupply
-    ])
+    token = await deployContract(wallet, GenericERC20, [TOTAL_SUPPLY])
   })
 
   it('name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
     const name = await token.name()
-    expect(name).to.eq(TOKEN_DETAILS.name)
-    expect(await token.symbol()).to.eq(TOKEN_DETAILS.symbol)
-    expect(await token.decimals()).to.eq(TOKEN_DETAILS.decimals)
-    expect(await token.totalSupply()).to.eq(TOKEN_DETAILS.totalSupply)
-    expect(await token.balanceOf(wallet.address)).to.eq(TOKEN_DETAILS.totalSupply)
+    expect(name).to.eq('Uniswap V2')
+    expect(await token.symbol()).to.eq('UNI-V2')
+    expect(await token.decimals()).to.eq(18)
+    expect(await token.totalSupply()).to.eq(TOTAL_SUPPLY)
+    expect(await token.balanceOf(wallet.address)).to.eq(TOTAL_SUPPLY)
     expect(await token.DOMAIN_SEPARATOR()).to.eq(
       keccak256(
         defaultAbiCoder.encode(
@@ -67,16 +57,8 @@ describe('ERC20', () => {
     await expect(token.transfer(other.address, TEST_AMOUNT))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
-    expect(await token.balanceOf(wallet.address)).to.eq(TOKEN_DETAILS.totalSupply.sub(TEST_AMOUNT))
+    expect(await token.balanceOf(wallet.address)).to.eq(TOTAL_SUPPLY.sub(TEST_AMOUNT))
     expect(await token.balanceOf(other.address)).to.eq(TEST_AMOUNT)
-  })
-
-  it('forfeit', async () => {
-    await expect(token.forfeit(TEST_AMOUNT))
-      .to.emit(token, 'Transfer')
-      .withArgs(wallet.address, AddressZero, TEST_AMOUNT)
-    expect(await token.balanceOf(wallet.address)).to.eq(TOKEN_DETAILS.totalSupply.sub(TEST_AMOUNT))
-    expect(await token.totalSupply()).to.eq(TOKEN_DETAILS.totalSupply.sub(TEST_AMOUNT))
   })
 
   it('approve', async () => {
@@ -92,7 +74,7 @@ describe('ERC20', () => {
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
     expect(await token.allowance(wallet.address, other.address)).to.eq(0)
-    expect(await token.balanceOf(wallet.address)).to.eq(TOKEN_DETAILS.totalSupply.sub(TEST_AMOUNT))
+    expect(await token.balanceOf(wallet.address)).to.eq(TOTAL_SUPPLY.sub(TEST_AMOUNT))
     expect(await token.balanceOf(other.address)).to.eq(TEST_AMOUNT)
   })
 
@@ -102,23 +84,12 @@ describe('ERC20', () => {
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
     expect(await token.allowance(wallet.address, other.address)).to.eq(MaxUint256)
-    expect(await token.balanceOf(wallet.address)).to.eq(TOKEN_DETAILS.totalSupply.sub(TEST_AMOUNT))
+    expect(await token.balanceOf(wallet.address)).to.eq(TOTAL_SUPPLY.sub(TEST_AMOUNT))
     expect(await token.balanceOf(other.address)).to.eq(TEST_AMOUNT)
   })
 
-  it('forfeitFrom', async () => {
-    await token.approve(other.address, TEST_AMOUNT)
-    await expect(token.connect(other).forfeitFrom(wallet.address, TEST_AMOUNT))
-      .to.emit(token, 'Transfer')
-      .withArgs(wallet.address, AddressZero, TEST_AMOUNT)
-    expect(await token.allowance(wallet.address, other.address)).to.eq(0)
-    expect(await token.balanceOf(wallet.address)).to.eq(TOKEN_DETAILS.totalSupply.sub(TEST_AMOUNT))
-    expect(await token.totalSupply()).to.eq(TOKEN_DETAILS.totalSupply.sub(TEST_AMOUNT))
-    expect(await token.balanceOf(other.address)).to.eq(0)
-  })
-
   it('transfer:fail', async () => {
-    await expect(token.transfer(other.address, TOKEN_DETAILS.totalSupply.add(1))).to.be.reverted // ds-math-sub-underflow
+    await expect(token.transfer(other.address, TOTAL_SUPPLY.add(1))).to.be.reverted // ds-math-sub-underflow
     await expect(token.connect(other).transfer(wallet.address, 1)).to.be.reverted // ds-math-sub-underflow
   })
 

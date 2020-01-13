@@ -1,8 +1,8 @@
 pragma solidity 0.5.15;
 
 import "./interfaces/IUniswapV2Factory.sol";
-import "./interfaces/IUniswapV2.sol";
-import "./UniswapV2.sol";
+import "./UniswapV2Exchange.sol";
+import "./interfaces/IUniswapV2Exchange.sol";
 
 contract UniswapV2Factory is IUniswapV2Factory {
     address public feeToSetter;
@@ -35,12 +35,12 @@ contract UniswapV2Factory is IUniswapV2Factory {
         require(tokenA != address(0) && tokenB != address(0), "UniswapV2Factory: ZERO_ADDRESS");
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         require(getExchange_[token0][token1] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
-        bytes memory exchangeBytecode = type(UniswapV2).creationCode;
+        bytes memory exchangeBytecode = type(UniswapV2Exchange).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {  // solium-disable-line security/no-inline-assembly
             exchange := create2(0, add(exchangeBytecode, 32), mload(exchangeBytecode), salt)
         }
-        IUniswapV2(exchange).initialize(token0, token1);
+        IUniswapV2Exchange(exchange).initialize(token0, token1);
         getExchange_[token0][token1] = exchange;
         exchanges.push(exchange);
         emit ExchangeCreated(token0, token1, exchange, exchanges.length);

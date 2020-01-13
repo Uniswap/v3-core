@@ -15,7 +15,7 @@ const overrides = {
   gasLimit: 1000000
 }
 
-describe('UniswapV2', () => {
+describe('UniswapV2Exchange', () => {
   const provider = createMockProvider(path.join(__dirname, '..', 'waffle.json'))
   const [wallet] = getWallets(provider)
   const loadFixture = createFixtureLoader(provider, [wallet])

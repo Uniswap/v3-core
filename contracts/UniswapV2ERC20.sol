@@ -1,14 +1,14 @@
 pragma solidity 0.5.15;
 
-import "./interfaces/IERC20.sol";
+import "./interfaces/IUniswapV2ERC20.sol";
 import "./libraries/SafeMath.sol";
 
-contract ERC20 is IERC20 {
+contract UniswapV2ERC20 is IUniswapV2ERC20 {
     using SafeMath for uint;
 
-    string public name;
-    string public symbol;
-    uint8 public decimals;
+    string constant public name = "Uniswap V2";
+    string constant public symbol = "UNI-V2";
+    uint8 constant public decimals = 18;
     uint  public totalSupply;
     mapping (address => uint) public balanceOf;
     mapping (address => mapping (address => uint)) public allowance;
@@ -21,11 +21,7 @@ contract ERC20 is IERC20 {
     event Transfer(address indexed from, address indexed to, uint value);
     event Approval(address indexed owner, address indexed spender, uint value);
 
-    constructor(string memory _name, string memory _symbol, uint8 _decimals, uint _totalSupply) public {
-        name = _name;
-        symbol = _symbol;
-        decimals = _decimals;
-        if (_totalSupply > 0) _mint(msg.sender, _totalSupply);
+    constructor() public {
         uint chainId;
         assembly { // solium-disable-line security/no-inline-assembly
             chainId := chainid()
@@ -67,10 +63,6 @@ contract ERC20 is IERC20 {
         return true;
     }
 
-    function forfeit(uint value) external {
-        _burn(msg.sender, value);
-    }
-
     function approve(address spender, uint value) external returns (bool) {
         _approve(msg.sender, spender, value);
         return true;
@@ -82,13 +74,6 @@ contract ERC20 is IERC20 {
         }
         _transfer(from, to, value);
         return true;
-    }
-
-    function forfeitFrom(address from, uint value) external {
-        if (allowance[from][msg.sender] != uint(-1)) {
-            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
-        }
-        _burn(from, value);
     }
 
     function permit(
