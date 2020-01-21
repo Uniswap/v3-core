@@ -7,7 +7,7 @@ library Math {
 
     function sqrt(uint y) internal pure returns (uint z) {
         if (y > 3) {
-            uint x = (y + 1) / 2;
+            uint x = y / 2 + 1;
             z = y;
             while (x < z) {
                 z = x;
