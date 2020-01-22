@@ -18,14 +18,12 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     mapping (address => uint) public nonces;
 
-    event Transfer(address indexed from, address indexed to, uint value);
     event Approval(address indexed owner, address indexed spender, uint value);
+    event Transfer(address indexed from, address indexed to, uint value);
 
     constructor() public {
         uint chainId;
-        assembly { // solium-disable-line security/no-inline-assembly
-            chainId := chainid()
-        }
+        assembly { chainId := chainid() }
         DOMAIN_SEPARATOR = keccak256(abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
             keccak256(bytes(name)),
@@ -41,12 +39,6 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
         emit Transfer(address(0), to, value);
     }
 
-    function _transfer(address from, address to, uint value) private {
-        balanceOf[from] = balanceOf[from].sub(value);
-        balanceOf[to] = balanceOf[to].add(value);
-        emit Transfer(from, to, value);
-    }
-
     function _burn(address from, uint value) internal {
         balanceOf[from] = balanceOf[from].sub(value);
         totalSupply = totalSupply.sub(value);
@@ -58,13 +50,19 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
         emit Approval(owner, spender, value);
     }
 
-    function transfer(address to, uint value) external returns (bool) {
-        _transfer(msg.sender, to, value);
-        return true;
+    function _transfer(address from, address to, uint value) private {
+        balanceOf[from] = balanceOf[from].sub(value);
+        balanceOf[to] = balanceOf[to].add(value);
+        emit Transfer(from, to, value);
     }
 
     function approve(address spender, uint value) external returns (bool) {
         _approve(msg.sender, spender, value);
+        return true;
+    }
+
+    function transfer(address to, uint value) external returns (bool) {
+        _transfer(msg.sender, to, value);
         return true;
     }
 
@@ -81,17 +79,17 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
     )
         external
     {
-        require(nonce == nonces[owner]++, "ERC20: INVALID_NONCE");
-        require(deadline >= block.timestamp, "ERC20: EXPIRED"); // solium-disable-line security/no-block-members
-        require(v == 27 || v == 28, "ERC20: INVALID_V");
-        require(s <= 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0, "ERC20: INVALID_S");
+        require(nonce == nonces[owner]++, "UniswapV2ERC20: INVALID_NONCE");
+        require(deadline >= block.timestamp, "UniswapV2ERC20: EXPIRED");
+        require(v == 27 || v == 28, "UniswapV2ERC20: INVALID_V");
+        require(s <= 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0, "UniswapV2ERC20: INVALID_S");
         bytes32 digest = keccak256(abi.encodePacked(
             "\x19\x01",
             DOMAIN_SEPARATOR,
             keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, deadline))
         ));
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "ERC20: INVALID_SIGNATURE");
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "UniswapV2ERC20: INVALID_SIGNATURE");
         _approve(owner, spender, value);
     }
 }

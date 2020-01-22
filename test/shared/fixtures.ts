@@ -4,7 +4,7 @@ import { deployContract } from 'ethereum-waffle'
 
 import { expandTo18Decimals } from './utilities'
 
-import GenericERC20 from '../../build/GenericERC20.json'
+import ERC20 from '../../build/ERC20.json'
 import UniswapV2Factory from '../../build/UniswapV2Factory.json'
 import UniswapV2Exchange from '../../build/UniswapV2Exchange.json'
 
@@ -26,8 +26,8 @@ interface ExchangeFixture extends FactoryFixture {
 export async function exchangeFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<ExchangeFixture> {
   const { factory } = await factoryFixture(provider, [wallet])
 
-  const tokenA = await deployContract(wallet, GenericERC20, [expandTo18Decimals(10000)])
-  const tokenB = await deployContract(wallet, GenericERC20, [expandTo18Decimals(10000)])
+  const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
+  const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
 
   await factory.createExchange(tokenA.address, tokenB.address)
   const exchangeAddress = await factory.getExchange(tokenA.address, tokenB.address)

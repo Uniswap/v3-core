@@ -7,7 +7,7 @@ import { ecsign } from 'ethereumjs-util'
 
 import { expandTo18Decimals, getApprovalDigest } from './shared/utilities'
 
-import GenericERC20 from '../build/GenericERC20.json'
+import ERC20 from '../build/ERC20.json'
 
 chai.use(solidity)
 
@@ -24,7 +24,7 @@ describe('UniswapV2ERC20 via GenericERC20', () => {
 
   let token: Contract
   beforeEach(async () => {
-    token = await deployContract(wallet, GenericERC20, [TOTAL_SUPPLY])
+    token = await deployContract(wallet, ERC20, [TOTAL_SUPPLY])
   })
 
   it('name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
