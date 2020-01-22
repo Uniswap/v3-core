@@ -18,8 +18,8 @@ contract UniswapV2Factory is IUniswapV2Factory {
     }
 
     function sortTokens(address tokenA, address tokenB) public pure returns (address token0, address token1) {
-        require(tokenA != tokenB, "UniswapV2Factory: SAME_ADDRESS");
-        require(tokenA != address(0) && tokenB != address(0), "UniswapV2Factory: ZERO_ADDRESS");
+        require(tokenA != tokenB, "UniswapV2: SAME_ADDRESS");
+        require(tokenA != address(0) && tokenB != address(0), "UniswapV2: ZERO_ADDRESS");
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
     }
 
@@ -34,7 +34,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
     function createExchange(address tokenA, address tokenB) external returns (address exchange) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
-        require(_getExchange[token0][token1] == address(0), "UniswapV2Factory: EXCHANGE_EXISTS");
+        require(_getExchange[token0][token1] == address(0), "UniswapV2: EXCHANGE_EXISTS");
         bytes memory exchangeBytecode = type(UniswapV2Exchange).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly { exchange := create2(0, add(exchangeBytecode, 32), mload(exchangeBytecode), salt) }
@@ -45,12 +45,12 @@ contract UniswapV2Factory is IUniswapV2Factory {
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, "UniswapV2Factory: FORBIDDEN");
+        require(msg.sender == feeToSetter, "UniswapV2: FORBIDDEN");
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, "UniswapV2Factory: FORBIDDEN");
+        require(msg.sender == feeToSetter, "UniswapV2: FORBIDDEN");
         feeToSetter = _feeToSetter;
     }
 }

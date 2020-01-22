@@ -6,6 +6,7 @@ interface IUniswapV2Exchange {
     event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut, address indexed to);
     event Sync(uint112 reserve0, uint112 reserve1);
 
+    function selector() external view returns (bytes4);
     function factory() external view returns (address);
     function token0() external view returns (address);
     function token1() external view returns (address);
