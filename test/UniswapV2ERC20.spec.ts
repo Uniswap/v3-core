@@ -107,7 +107,7 @@ describe('UniswapV2ERC20 via GenericERC20', () => {
 
     const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
 
-    await expect(token.permit(wallet.address, other.address, TEST_AMOUNT, nonce, expiration, v, hexlify(r), hexlify(s)))
+    await expect(token.permit(wallet.address, other.address, TEST_AMOUNT, expiration, v, hexlify(r), hexlify(s)))
       .to.emit(token, 'Approval')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
     expect(await token.nonces(wallet.address)).to.eq(bigNumberify(1))
