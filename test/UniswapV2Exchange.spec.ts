@@ -1,14 +1,13 @@
-import chai from 'chai'
-import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
+import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
+import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
 import { expandTo18Decimals, mineBlocks } from './shared/utilities'
-import { exchangeFixture, ExchangeFixture } from './shared/fixtures'
+import { exchangeFixture } from './shared/fixtures'
 import { AddressZero } from 'ethers/constants'
 
 chai.use(solidity)
-const { expect } = chai
 
 const overrides = {
   gasLimit: 1000000
@@ -27,12 +26,10 @@ describe('UniswapV2Exchange', () => {
   let token1: Contract
   let exchange: Contract
   beforeEach(async () => {
-    const { token0: _token0, token1: _token1, exchange: _exchange }: ExchangeFixture = await loadFixture(
-      exchangeFixture as any
-    )
-    token0 = _token0
-    token1 = _token1
-    exchange = _exchange
+    const fixture = await loadFixture(exchangeFixture)
+    token0 = fixture.token0
+    token1 = fixture.token1
+    exchange = fixture.exchange
   })
 
   it('mint', async () => {
@@ -42,7 +39,7 @@ describe('UniswapV2Exchange', () => {
     await token1.transfer(exchange.address, token1Amount)
 
     const expectedLiquidity = expandTo18Decimals(2)
-    await expect(exchange.connect(wallet).mint(wallet.address, overrides))
+    await expect(exchange.mint(wallet.address, overrides))
       .to.emit(exchange, 'Transfer')
       .withArgs(AddressZero, wallet.address, expectedLiquidity)
       .to.emit(exchange, 'Sync')
@@ -62,7 +59,7 @@ describe('UniswapV2Exchange', () => {
   async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {
     await token0.transfer(exchange.address, token0Amount)
     await token1.transfer(exchange.address, token1Amount)
-    await exchange.connect(wallet).mint(wallet.address, overrides)
+    await exchange.mint(wallet.address, overrides)
   }
 
   it('getInputPrice', async () => {
@@ -81,12 +78,11 @@ describe('UniswapV2Exchange', () => {
     for (let testCase of testCases) {
       await addLiquidity(testCase[1], testCase[2])
       await token0.transfer(exchange.address, testCase[0])
-      await expect(exchange.connect(wallet).swap(token0.address, testCase[3].add(1), wallet.address, overrides)).to.be
-        .reverted // UniswapV2: K_VIOLATED
-      await exchange.connect(wallet).swap(token0.address, testCase[3], wallet.address, overrides)
+      await expect(exchange.swap(token0.address, testCase[3].add(1), wallet.address, overrides)).to.be.reverted // UniswapV2: K_VIOLATED
+      await exchange.swap(token0.address, testCase[3], wallet.address, overrides)
       const totalSupply = await exchange.totalSupply()
-      await exchange.connect(wallet).transfer(exchange.address, totalSupply)
-      await exchange.connect(wallet).burn(wallet.address, overrides)
+      await exchange.transfer(exchange.address, totalSupply)
+      await exchange.burn(wallet.address, overrides)
     }
   })
 
@@ -98,7 +94,7 @@ describe('UniswapV2Exchange', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('1662497915624478906')
     await token0.transfer(exchange.address, swapAmount)
-    await expect(exchange.connect(wallet).swap(token0.address, expectedOutputAmount, wallet.address, overrides))
+    await expect(exchange.swap(token0.address, expectedOutputAmount, wallet.address, overrides))
       .to.emit(exchange, 'Sync')
       .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
       .to.emit(exchange, 'Swap')
@@ -123,7 +119,7 @@ describe('UniswapV2Exchange', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('453305446940074565')
     await token1.transfer(exchange.address, swapAmount)
-    await expect(exchange.connect(wallet).swap(token1.address, expectedOutputAmount, wallet.address, overrides))
+    await expect(exchange.swap(token1.address, expectedOutputAmount, wallet.address, overrides))
       .to.emit(exchange, 'Sync')
       .withArgs(token0Amount.sub(expectedOutputAmount), token1Amount.add(swapAmount))
       .to.emit(exchange, 'Swap')
@@ -146,7 +142,7 @@ describe('UniswapV2Exchange', () => {
     await addLiquidity(token0Amount, token1Amount)
 
     // ensure that setting price{0,1}CumulativeLast for the first time doesn't affect our gas math
-    await exchange.connect(wallet).sync(overrides)
+    await exchange.sync(overrides)
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('453305446940074565')
@@ -161,9 +157,9 @@ describe('UniswapV2Exchange', () => {
     await addLiquidity(token0Amount, token1Amount)
 
     const expectedLiquidity = expandTo18Decimals(3)
-    await exchange.connect(wallet).transfer(exchange.address, expectedLiquidity)
+    await exchange.transfer(exchange.address, expectedLiquidity)
     // this test is bugged, it catches the token{0,1} transfers before the lp transfers
-    await expect(exchange.connect(wallet).burn(wallet.address, overrides))
+    await expect(exchange.burn(wallet.address, overrides))
       // .to.emit(exchange, 'Transfer')
       // .withArgs(exchange.address, AddressZero, expectedLiquidity)
       .to.emit(exchange, 'Burn')
@@ -190,13 +186,13 @@ describe('UniswapV2Exchange', () => {
     expect(await exchange.price0CumulativeLast()).to.eq(0)
     expect(await exchange.price1CumulativeLast()).to.eq(0)
 
-    await exchange.connect(wallet).sync(overrides)
+    await exchange.sync(overrides)
     expect(await exchange.price0CumulativeLast()).to.eq(bigNumberify(2).pow(112))
     expect(await exchange.price1CumulativeLast()).to.eq(bigNumberify(2).pow(112))
     expect((await exchange.getReserves())[2]).to.eq(blockNumber + 1)
 
     await mineBlocks(provider, 8)
-    await exchange.connect(wallet).sync(overrides)
+    await exchange.sync(overrides)
     expect(await exchange.price0CumulativeLast()).to.eq(
       bigNumberify(2)
         .pow(112)

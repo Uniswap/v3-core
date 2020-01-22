@@ -1,16 +1,15 @@
-import chai from 'chai'
-import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
+import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
+import { AddressZero } from 'ethers/constants'
 import { bigNumberify } from 'ethers/utils'
+import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 
 import { getCreate2Address } from './shared/utilities'
-import { factoryFixture, FactoryFixture } from './shared/fixtures'
+import { factoryFixture } from './shared/fixtures'
 
 import UniswapV2Exchange from '../build/UniswapV2Exchange.json'
-import { AddressZero } from 'ethers/constants'
 
 chai.use(solidity)
-const { expect } = chai
 
 const TEST_ADDRESSES = {
   token0: '0x1000000000000000000000000000000000000000',
@@ -24,12 +23,12 @@ describe('UniswapV2Factory', () => {
     gasLimit: 9999999
   })
   const [wallet, other] = provider.getWallets()
-  const loadFixture = createFixtureLoader(provider, [wallet])
+  const loadFixture = createFixtureLoader(provider, [wallet, other])
 
   let factory: Contract
   beforeEach(async () => {
-    const { factory: _factory }: FactoryFixture = await loadFixture(factoryFixture as any)
-    factory = _factory
+    const fixture = await loadFixture(factoryFixture)
+    factory = fixture.factory
   })
 
   it('feeToSetter, feeTo, exchangesCount', async () => {
