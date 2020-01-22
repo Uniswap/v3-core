@@ -1,6 +1,5 @@
-import path from 'path'
 import chai from 'chai'
-import { solidity, createMockProvider, getWallets, deployContract } from 'ethereum-waffle'
+import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 import { Contract } from 'ethers'
 import { MaxUint256 } from 'ethers/constants'
 import { bigNumberify, hexlify, keccak256, defaultAbiCoder, toUtf8Bytes } from 'ethers/utils'
@@ -17,8 +16,12 @@ const TOTAL_SUPPLY = expandTo18Decimals(10000)
 const TEST_AMOUNT = expandTo18Decimals(10)
 
 describe('UniswapV2ERC20 via GenericERC20', () => {
-  const provider = createMockProvider(path.join(__dirname, '..', 'waffle.json'))
-  const [wallet, other] = getWallets(provider)
+  const provider = new MockProvider({
+    hardfork: 'istanbul',
+    mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
+    gasLimit: 9999999
+  })
+  const [wallet, other] = provider.getWallets()
 
   let token: Contract
   beforeEach(async () => {

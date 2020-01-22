@@ -1,6 +1,5 @@
-import path from 'path'
 import chai from 'chai'
-import { solidity, createMockProvider, getWallets, createFixtureLoader } from 'ethereum-waffle'
+import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 import { Contract } from 'ethers'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
@@ -16,8 +15,12 @@ const overrides = {
 }
 
 describe('UniswapV2Exchange', () => {
-  const provider = createMockProvider(path.join(__dirname, '..', 'waffle.json'))
-  const [wallet] = getWallets(provider)
+  const provider = new MockProvider({
+    hardfork: 'istanbul',
+    mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
+    gasLimit: 9999999
+  })
+  const [wallet] = provider.getWallets()
   const loadFixture = createFixtureLoader(provider, [wallet])
 
   let token0: Contract

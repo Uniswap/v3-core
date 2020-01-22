@@ -1,9 +1,8 @@
-
 ## The contents of this GitHub repo are confidential until this disclaimer is removed and the repo is made public
 
 # UniswapV2
 
-[![CircleCI](https://circleci.com/gh/Uniswap/uniswap-v2-core.svg?style=svg)](https://circleci.com/gh/Uniswap/uniswap-v2-core)
+[![Actions Status](https://github.com/Uniswap/uniswap-v2-core/workflows/CI/badge.svg)](https://github.com/Uniswap/uniswap-v2-core/actions)
 
 ## Local Development
 
@@ -28,11 +27,3 @@ yarn
 yarn compile
 yarn test
 ```
-
-## Implementation References
-
-- [dapphub math](https://github.com/dapphub/ds-math/blob/de4576712dcf2c5152d16a04e677002d51d46e60/src/math.sol)
-- [dapp-bin math](https://github.com/ethereum/dapp-bin/pull/50)
-- [OpenZeppelin ECDSA](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/81b1e4810761b088922dbd19a0642873ea581176/contracts/cryptography/ECDSA.sol)
-- [OpenZeppelin SafeERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/81b1e4810761b088922dbd19a0642873ea581176/contracts/token/ERC20/SafeERC20.sol)
-- [DAI](https://github.com/makerdao/dss/blob/17be7db1c663d8069308c6b78fa5c5f9d71134a3/src/dai.sol)
