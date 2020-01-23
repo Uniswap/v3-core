@@ -3,7 +3,7 @@ import { Contract } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 import { BigNumber, bigNumberify } from 'ethers/utils'
 
-import { expandTo18Decimals, mineBlocks } from './shared/utilities'
+import { expandTo18Decimals, mineBlock } from './shared/utilities'
 import { exchangeFixture } from './shared/fixtures'
 import { AddressZero } from 'ethers/constants'
 
@@ -142,11 +142,13 @@ describe('UniswapV2Exchange', () => {
     await addLiquidity(token0Amount, token1Amount)
 
     // ensure that setting price{0,1}CumulativeLast for the first time doesn't affect our gas math
+    await mineBlock(provider, 1)
     await exchange.sync(overrides)
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('453305446940074565')
     await token0.transfer(exchange.address, swapAmount)
+    await mineBlock(provider, 1)
     const gasCost = await exchange.estimate.swap(token0.address, expectedOutputAmount, wallet.address, overrides)
     console.log(`Gas required for swap: ${gasCost}`)
   })
@@ -182,16 +184,17 @@ describe('UniswapV2Exchange', () => {
     const token1Amount = expandTo18Decimals(3)
     await addLiquidity(token0Amount, token1Amount)
 
-    const blockNumber = (await exchange.getReserves())[2]
+    const blockTimestamp = (await exchange.getReserves())[2]
     expect(await exchange.price0CumulativeLast()).to.eq(0)
     expect(await exchange.price1CumulativeLast()).to.eq(0)
 
+    await mineBlock(provider, 1)
     await exchange.sync(overrides)
     expect(await exchange.price0CumulativeLast()).to.eq(bigNumberify(2).pow(112))
     expect(await exchange.price1CumulativeLast()).to.eq(bigNumberify(2).pow(112))
-    expect((await exchange.getReserves())[2]).to.eq(blockNumber + 1)
+    expect((await exchange.getReserves())[2]).to.eq(blockTimestamp + 1)
 
-    await mineBlocks(provider, 8)
+    await mineBlock(provider, 9)
     await exchange.sync(overrides)
     expect(await exchange.price0CumulativeLast()).to.eq(
       bigNumberify(2)
@@ -203,6 +206,6 @@ describe('UniswapV2Exchange', () => {
         .pow(112)
         .mul(10)
     )
-    expect((await exchange.getReserves())[2]).to.eq(blockNumber + 10)
+    expect((await exchange.getReserves())[2]).to.eq(blockTimestamp + 10)
   })
 })

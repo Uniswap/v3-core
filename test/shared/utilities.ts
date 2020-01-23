@@ -79,10 +79,10 @@ export async function getApprovalDigest(
   )
 }
 
-async function mineBlock(provider: Web3Provider, timestamp?: number): Promise<void> {
-  await new Promise((resolve, reject) => {
+export async function mineBlock(provider: Web3Provider, seconds: number): Promise<void> {
+  await new Promise(async (resolve, reject) => {
     ;(provider._web3Provider.sendAsync as any)(
-      { jsonrpc: '2.0', method: 'evm_mine', params: timestamp ? [timestamp] : [] },
+      { jsonrpc: '2.0', method: 'evm_mine', params: [(await provider.getBlock('latest')).timestamp + seconds] },
       (error: any, result: any): void => {
         if (error) {
           reject(error)
@@ -92,9 +92,4 @@ async function mineBlock(provider: Web3Provider, timestamp?: number): Promise<vo
       }
     )
   })
-}
-
-export async function mineBlocks(provider: Web3Provider, numberOfBlocks: number, timestamp?: number): Promise<void> {
-  await Promise.all([...Array(numberOfBlocks - 1)].map(() => mineBlock(provider)))
-  await mineBlock(provider, timestamp)
 }

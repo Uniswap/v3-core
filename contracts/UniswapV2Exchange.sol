@@ -16,9 +16,9 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
     address public token0;
     address public token1;
 
-    uint112 private reserve0;        // single storage slot, (jointly) access via getReserves
-    uint112 private reserve1;        // single storage slot, (jointly) access via getReserves
-    uint32  private blockNumberLast; // single storage slot, (jointly) access via getReserves
+    uint112 private reserve0;           // single storage slot, (jointly) access via getReserves
+    uint112 private reserve1;           // single storage slot, (jointly) access via getReserves
+    uint32  private blockTimestampLast; // single storage slot, (jointly) access via getReserves
     
     uint    public  price0CumulativeLast;
     uint    public  price1CumulativeLast;
@@ -52,25 +52,25 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
         token1 = _token1;
     }
 
-    function getReserves() external view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockNumberLast) {
+    function getReserves() external view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
         _reserve0 = reserve0;
         _reserve1 = reserve1;
-        _blockNumberLast = blockNumberLast;
+        _blockTimestampLast = blockTimestampLast;
     }
 
     // update reserves and, on the first time this function is called per block, price accumulators
     function _update(uint balance0, uint balance1, uint112 _reserve0, uint112 _reserve1) private {
         require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: BALANCE_OVERFLOW");
-        uint32 blockNumber = uint32(block.number % 2**32);
-        uint32 blocksElapsed = blockNumber - blockNumberLast; // overflow is desired
-        if (blocksElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
+        uint32 blockTimestamp = uint32(block.timestamp % 2**32);
+        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
             // * never overflows, and + overflow is desired
-            price0CumulativeLast += uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * blocksElapsed;
-            price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * blocksElapsed;
+            price0CumulativeLast += uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
+            price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
         }
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
-        blockNumberLast = blockNumber;
+        blockTimestampLast = blockTimestamp;
         emit Sync(reserve0, reserve1);
     }
 
