@@ -12,6 +12,7 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
     using UQ112x112 for uint224;
 
     bytes4 public constant selector = bytes4(keccak256(bytes('transfer(address,uint256)')));
+
     address public factory;
     address public token0;
     address public token1;
@@ -47,7 +48,7 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
     }
 
     function initialize(address _token0, address _token1) external {
-        require(msg.sender == factory && token0 == address(0) && token1 == address(0), 'UniswapV2: FORBIDDEN');
+        require(msg.sender == factory, 'UniswapV2: FORBIDDEN');
         token0 = _token0;
         token1 = _token1;
     }
@@ -126,8 +127,8 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
         uint liquidity = balanceOf[address(this)];
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
-        amount0 = liquidity.mul(balance0) / _totalSupply; // use balances instead of reserves to address edge case
-        amount1 = liquidity.mul(balance1) / _totalSupply; // use balances instead of reserves to address edge case
+        amount0 = liquidity.mul(balance0) / _totalSupply; // use balances instead of reserves to address force sends
+        amount1 = liquidity.mul(balance1) / _totalSupply; // use balances instead of reserves to address force sends
         require(amount0 > 0 && amount1 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');
         _burn(address(this), liquidity);
         _safeTransfer(_token0, to, amount0);

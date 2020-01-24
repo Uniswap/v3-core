@@ -26,7 +26,6 @@ contract UniswapV2Factory is IUniswapV2Factory {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
         require(getExchange[token0][token1] == address(0), 'UniswapV2: EXCHANGE_EXISTS');
-        require(getExchange[token1][token0] == address(0), 'UniswapV2: EXCHANGE_EXISTS');
         bytes memory exchangeBytecode = type(UniswapV2Exchange).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
