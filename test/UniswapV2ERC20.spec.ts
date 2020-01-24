@@ -14,7 +14,7 @@ chai.use(solidity)
 const TOTAL_SUPPLY = expandTo18Decimals(10000)
 const TEST_AMOUNT = expandTo18Decimals(10)
 
-describe('UniswapV2ERC20 via GenericERC20', () => {
+describe('UniswapV2ERC20', () => {
   const provider = new MockProvider({
     hardfork: 'istanbul',
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
@@ -55,6 +55,13 @@ describe('UniswapV2ERC20 via GenericERC20', () => {
     )
   })
 
+  it('approve', async () => {
+    await expect(token.approve(other.address, TEST_AMOUNT))
+      .to.emit(token, 'Approval')
+      .withArgs(wallet.address, other.address, TEST_AMOUNT)
+    expect(await token.allowance(wallet.address, other.address)).to.eq(TEST_AMOUNT)
+  })
+
   it('transfer', async () => {
     await expect(token.transfer(other.address, TEST_AMOUNT))
       .to.emit(token, 'Transfer')
@@ -63,11 +70,9 @@ describe('UniswapV2ERC20 via GenericERC20', () => {
     expect(await token.balanceOf(other.address)).to.eq(TEST_AMOUNT)
   })
 
-  it('approve', async () => {
-    await expect(token.approve(other.address, TEST_AMOUNT))
-      .to.emit(token, 'Approval')
-      .withArgs(wallet.address, other.address, TEST_AMOUNT)
-    expect(await token.allowance(wallet.address, other.address)).to.eq(TEST_AMOUNT)
+  it('transfer:fail', async () => {
+    await expect(token.transfer(other.address, TOTAL_SUPPLY.add(1))).to.be.reverted // ds-math-sub-underflow
+    await expect(token.connect(other).transfer(wallet.address, 1)).to.be.reverted // ds-math-sub-underflow
   })
 
   it('transferFrom', async () => {
@@ -90,27 +95,22 @@ describe('UniswapV2ERC20 via GenericERC20', () => {
     expect(await token.balanceOf(other.address)).to.eq(TEST_AMOUNT)
   })
 
-  it('transfer:fail', async () => {
-    await expect(token.transfer(other.address, TOTAL_SUPPLY.add(1))).to.be.reverted // ds-math-sub-underflow
-    await expect(token.connect(other).transfer(wallet.address, 1)).to.be.reverted // ds-math-sub-underflow
-  })
-
   it('permit', async () => {
     const nonce = await token.nonces(wallet.address)
-    const expiration = MaxUint256
+    const deadline = MaxUint256
     const digest = await getApprovalDigest(
       token,
       { owner: wallet.address, spender: other.address, value: TEST_AMOUNT },
       nonce,
-      expiration
+      deadline
     )
 
     const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(wallet.privateKey.slice(2), 'hex'))
 
-    await expect(token.permit(wallet.address, other.address, TEST_AMOUNT, expiration, v, hexlify(r), hexlify(s)))
+    await expect(token.permit(wallet.address, other.address, TEST_AMOUNT, deadline, v, hexlify(r), hexlify(s)))
       .to.emit(token, 'Approval')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
-    expect(await token.nonces(wallet.address)).to.eq(bigNumberify(1))
     expect(await token.allowance(wallet.address, other.address)).to.eq(TEST_AMOUNT)
+    expect(await token.nonces(wallet.address)).to.eq(bigNumberify(1))
   })
 })

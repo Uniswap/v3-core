@@ -11,10 +11,10 @@ import UniswapV2Exchange from '../build/UniswapV2Exchange.json'
 
 chai.use(solidity)
 
-const TEST_ADDRESSES = {
-  token0: '0x1000000000000000000000000000000000000000',
-  token1: '0x2000000000000000000000000000000000000000'
-}
+const TEST_ADDRESSES: [string, string] = [
+  '0x1000000000000000000000000000000000000000',
+  '0x2000000000000000000000000000000000000000'
+]
 
 describe('UniswapV2Factory', () => {
   const provider = new MockProvider({
@@ -31,66 +31,55 @@ describe('UniswapV2Factory', () => {
     factory = fixture.factory
   })
 
-  it('feeToSetter, feeTo, exchangesCount', async () => {
-    expect(await factory.feeToSetter()).to.eq(wallet.address)
+  it('feeTo, feeToSetter, allExchanges, allExchangesLength', async () => {
     expect(await factory.feeTo()).to.eq(AddressZero)
-    expect(await factory.exchangesCount()).to.eq(0)
+    expect(await factory.feeToSetter()).to.eq(wallet.address)
+    expect(await factory.allExchangesLength()).to.eq(0)
   })
 
-  it('sortTokens', async () => {
-    expect(await factory.sortTokens(TEST_ADDRESSES.token0, TEST_ADDRESSES.token1)).to.deep.eq([
-      TEST_ADDRESSES.token0,
-      TEST_ADDRESSES.token1
-    ])
-    expect(await factory.sortTokens(TEST_ADDRESSES.token1, TEST_ADDRESSES.token0)).to.deep.eq([
-      TEST_ADDRESSES.token0,
-      TEST_ADDRESSES.token1
-    ])
-  })
-
-  async function createExchange(tokens: string[]) {
+  async function createExchange(tokens: [string, string]) {
     const bytecode = `0x${UniswapV2Exchange.evm.bytecode.object}`
-    const create2Address = getCreate2Address(factory.address, TEST_ADDRESSES.token0, TEST_ADDRESSES.token1, bytecode)
+    const create2Address = getCreate2Address(factory.address, tokens, bytecode)
     await expect(factory.createExchange(...tokens))
       .to.emit(factory, 'ExchangeCreated')
-      .withArgs(TEST_ADDRESSES.token0, TEST_ADDRESSES.token1, create2Address, bigNumberify(1))
+      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, bigNumberify(1))
 
-    await expect(factory.createExchange(...tokens)).to.be.reverted // UniswapV2Factory: EXCHANGE_EXISTS
-    await expect(factory.createExchange(...tokens.slice().reverse())).to.be.reverted // UniswapV2Factory: EXCHANGE_EXISTS
+    await expect(factory.createExchange(...tokens)).to.be.reverted // UniswapV2: EXCHANGE_EXISTS
+    await expect(factory.createExchange(...tokens.slice().reverse())).to.be.reverted // UniswapV2: EXCHANGE_EXISTS
     expect(await factory.getExchange(...tokens)).to.eq(create2Address)
     expect(await factory.getExchange(...tokens.slice().reverse())).to.eq(create2Address)
-    expect(await factory.exchanges(0)).to.eq(create2Address)
-    expect(await factory.exchangesCount()).to.eq(1)
+    expect(await factory.allExchanges(0)).to.eq(create2Address)
+    expect(await factory.allExchangesLength()).to.eq(1)
 
     const exchange = new Contract(create2Address, JSON.stringify(UniswapV2Exchange.abi), provider)
     expect(await exchange.factory()).to.eq(factory.address)
-    expect(await exchange.token0()).to.eq(TEST_ADDRESSES.token0)
-    expect(await exchange.token1()).to.eq(TEST_ADDRESSES.token1)
+    expect(await exchange.token0()).to.eq(TEST_ADDRESSES[0])
+    expect(await exchange.token1()).to.eq(TEST_ADDRESSES[1])
   }
 
   it('createExchange', async () => {
-    await createExchange([TEST_ADDRESSES.token0, TEST_ADDRESSES.token1])
+    await createExchange(TEST_ADDRESSES)
   })
 
   it('createExchange:reverse', async () => {
-    await createExchange([TEST_ADDRESSES.token1, TEST_ADDRESSES.token0])
+    await createExchange(TEST_ADDRESSES.slice().reverse() as [string, string])
   })
 
   it('createExchange:gas', async () => {
-    const gasCost = await factory.estimate.createExchange(TEST_ADDRESSES.token0, TEST_ADDRESSES.token1)
+    const gasCost = await factory.estimate.createExchange(...TEST_ADDRESSES)
     console.log(`Gas required for createExchange: ${gasCost}`)
   })
 
-  it('setFeeToSetter', async () => {
-    await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.reverted // UniswapV2Factory: FORBIDDEN
-    await factory.setFeeToSetter(other.address)
-    expect(await factory.feeToSetter()).to.eq(other.address)
-    await expect(factory.setFeeToSetter(wallet.address)).to.be.reverted // UniswapV2Factory: FORBIDDEN
-  })
-
   it('setFeeTo', async () => {
-    await expect(factory.connect(other).setFeeTo(other.address)).to.be.reverted // UniswapV2Factory: FORBIDDEN
+    await expect(factory.connect(other).setFeeTo(other.address)).to.be.reverted // UniswapV2: FORBIDDEN
     await factory.setFeeTo(wallet.address)
     expect(await factory.feeTo()).to.eq(wallet.address)
+  })
+
+  it('setFeeToSetter', async () => {
+    await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.reverted // UniswapV2: FORBIDDEN
+    await factory.setFeeToSetter(other.address)
+    expect(await factory.feeToSetter()).to.eq(other.address)
+    await expect(factory.setFeeToSetter(wallet.address)).to.be.reverted // UniswapV2: FORBIDDEN
   })
 })

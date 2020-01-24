@@ -78,7 +78,7 @@ describe('UniswapV2Exchange', () => {
     for (let testCase of testCases) {
       await addLiquidity(testCase[1], testCase[2])
       await token0.transfer(exchange.address, testCase[0])
-      await expect(exchange.swap(token0.address, testCase[3].add(1), wallet.address, overrides)).to.be.reverted // UniswapV2: K_VIOLATED
+      await expect(exchange.swap(token0.address, testCase[3].add(1), wallet.address, overrides)).to.be.reverted // UniswapV2: K
       await exchange.swap(token0.address, testCase[3], wallet.address, overrides)
       const totalSupply = await exchange.totalSupply()
       await exchange.transfer(exchange.address, totalSupply)
@@ -160,14 +160,13 @@ describe('UniswapV2Exchange', () => {
 
     const expectedLiquidity = expandTo18Decimals(3)
     await exchange.transfer(exchange.address, expectedLiquidity)
-    // this test is bugged, it catches the token{0,1} transfers before the lp transfers
     await expect(exchange.burn(wallet.address, overrides))
-      // .to.emit(exchange, 'Transfer')
-      // .withArgs(exchange.address, AddressZero, expectedLiquidity)
-      .to.emit(exchange, 'Burn')
-      .withArgs(wallet.address, token0Amount, token1Amount, wallet.address)
+      .to.emit(exchange, 'Transfer')
+      .withArgs(exchange.address, AddressZero, expectedLiquidity)
       .to.emit(exchange, 'Sync')
       .withArgs(0, 0)
+      .to.emit(exchange, 'Burn')
+      .withArgs(wallet.address, token0Amount, token1Amount, wallet.address)
 
     expect(await exchange.balanceOf(wallet.address)).to.eq(0)
     expect(await exchange.totalSupply()).to.eq(0)

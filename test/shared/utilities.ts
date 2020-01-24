@@ -35,14 +35,14 @@ function getDomainSeparator(name: string, tokenAddress: string) {
 
 export function getCreate2Address(
   factoryAddress: string,
-  token0Address: string,
-  token1Address: string,
+  [tokenA, tokenB]: [string, string],
   bytecode: string
 ): string {
+  const [token0, token1] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA]
   const create2Inputs = [
     '0xff',
     factoryAddress,
-    keccak256(solidityPack(['address', 'address'], [token0Address, token1Address])),
+    keccak256(solidityPack(['address', 'address'], [token0, token1])),
     keccak256(bytecode)
   ]
   const sanitizedInputs = `0x${create2Inputs.map(i => i.slice(2)).join('')}`
@@ -57,7 +57,7 @@ export async function getApprovalDigest(
     value: BigNumber
   },
   nonce: BigNumber,
-  expiration: BigNumber
+  deadline: BigNumber
 ): Promise<string> {
   const name = await token.name()
   const DOMAIN_SEPARATOR = getDomainSeparator(name, token.address)
@@ -71,7 +71,7 @@ export async function getApprovalDigest(
         keccak256(
           defaultAbiCoder.encode(
             ['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-            [PERMIT_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, expiration]
+            [PERMIT_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, deadline]
           )
         )
       ]
