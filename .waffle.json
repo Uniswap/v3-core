@@ -1,6 +1,19 @@
 {
   "solcVersion": "./node_modules/solc",
+  "outputType": "all",
   "compilerOptions": {
+    "outputSelection": {
+      "*": {
+        "*": [
+          "evm.bytecode.object",
+          "evm.deployedBytecode.object",
+          "abi",
+          "evm.bytecode.sourceMap",
+          "evm.deployedBytecode.sourceMap"
+        ],
+        "": ["ast"]
+      }
+    },
     "evmVersion": "istanbul",
     "optimizer": {
       "enabled": true,
