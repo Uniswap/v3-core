@@ -95,15 +95,15 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
 
     // mint liquidity
     function mint(address to) external lock returns (uint liquidity) {
-        uint _totalSupply = totalSupply; // gas savings
-        uint112 _reserve0 = reserve0;    // gas savings
-        uint112 _reserve1 = reserve1;    // gas savings
+        uint112 _reserve0 = reserve0; // gas savings
+        uint112 _reserve1 = reserve1; // gas savings
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
         uint amount0 = balance0.sub(_reserve0);
         uint amount1 = balance1.sub(_reserve1);
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
+        uint _totalSupply = totalSupply; // gas savings
         liquidity = _totalSupply == 0
             ? Math.sqrt(amount0.mul(amount1))
             : Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
@@ -117,16 +117,16 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
 
     // burn liquidity
     function burn(address to) external lock returns (uint amount0, uint amount1) {
-        uint _totalSupply = totalSupply; // gas savings
-        uint112 _reserve0 = reserve0;    // gas savings
-        uint112 _reserve1 = reserve1;    // gas savings
-        address _token0 = token0;        // gas savings
-        address _token1 = token1;        // gas savings
+        uint112 _reserve0 = reserve0; // gas savings
+        uint112 _reserve1 = reserve1; // gas savings
+        address _token0 = token0;     // gas savings
+        address _token1 = token1;     // gas savings
         uint balance0 = IERC20(_token0).balanceOf(address(this));
         uint balance1 = IERC20(_token1).balanceOf(address(this));
         uint liquidity = balanceOf[address(this)];
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
+        uint _totalSupply = totalSupply; // gas savings
         amount0 = liquidity.mul(balance0) / _totalSupply; // use balances instead of reserves to address force sends
         amount1 = liquidity.mul(balance1) / _totalSupply; // use balances instead of reserves to address force sends
         require(amount0 > 0 && amount1 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');

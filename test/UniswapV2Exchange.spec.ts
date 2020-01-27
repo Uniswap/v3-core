@@ -19,14 +19,16 @@ describe('UniswapV2Exchange', () => {
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
     gasLimit: 9999999
   })
-  const [wallet] = provider.getWallets()
+  const [wallet, other] = provider.getWallets()
   const loadFixture = createFixtureLoader(provider, [wallet])
 
+  let factory: Contract
   let token0: Contract
   let token1: Contract
   let exchange: Contract
   beforeEach(async () => {
     const fixture = await loadFixture(exchangeFixture)
+    factory = fixture.factory
     token0 = fixture.token0
     token1 = fixture.token1
     exchange = fixture.exchange
@@ -78,7 +80,9 @@ describe('UniswapV2Exchange', () => {
     for (let testCase of testCases) {
       await addLiquidity(testCase[1], testCase[2])
       await token0.transfer(exchange.address, testCase[0])
-      await expect(exchange.swap(token0.address, testCase[3].add(1), wallet.address, overrides)).to.be.reverted // UniswapV2: K
+      await expect(exchange.swap(token0.address, testCase[3].add(1), wallet.address, overrides)).to.be.revertedWith(
+        'UniswapV2: K'
+      )
       await exchange.swap(token0.address, testCase[3], wallet.address, overrides)
       const totalSupply = await exchange.totalSupply()
       await exchange.transfer(exchange.address, totalSupply)
@@ -206,5 +210,43 @@ describe('UniswapV2Exchange', () => {
         .mul(10)
     )
     expect((await exchange.getReserves())[2]).to.eq(blockTimestamp + 10)
+  })
+
+  it('feeTo:off', async () => {
+    const token0Amount = expandTo18Decimals(1000)
+    const token1Amount = expandTo18Decimals(1000)
+    await addLiquidity(token0Amount, token1Amount)
+
+    const swapAmount = expandTo18Decimals(1)
+    const expectedOutputAmount = bigNumberify('996006981039903216')
+    await token1.transfer(exchange.address, swapAmount)
+    await exchange.swap(token1.address, expectedOutputAmount, wallet.address, overrides)
+
+    const expectedLiquidity = expandTo18Decimals(1000)
+    await exchange.transfer(exchange.address, expectedLiquidity)
+    await exchange.burn(wallet.address, overrides)
+    expect(await exchange.totalSupply()).to.eq(0)
+  })
+
+  it('feeTo:on', async () => {
+    await factory.setFeeTo(other.address)
+
+    const token0Amount = expandTo18Decimals(1000)
+    const token1Amount = expandTo18Decimals(1000)
+    await addLiquidity(token0Amount, token1Amount)
+
+    const swapAmount = expandTo18Decimals(1)
+    const expectedOutputAmount = bigNumberify('996006981039903216')
+    await token1.transfer(exchange.address, swapAmount)
+    await exchange.swap(token1.address, expectedOutputAmount, wallet.address, overrides)
+
+    const expectedLiquidity = expandTo18Decimals(1000)
+    await exchange.transfer(exchange.address, expectedLiquidity)
+    await exchange.burn(wallet.address, overrides)
+    expect(await exchange.totalSupply()).to.eq('299700614071741')
+    expect(await exchange.balanceOf(other.address)).to.eq('299700614071741')
+
+    expect(await token0.balanceOf(exchange.address)).to.eq('299402020436935')
+    expect(await token1.balanceOf(exchange.address)).to.eq('300000224775562')
   })
 })
