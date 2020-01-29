@@ -25,7 +25,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
         require(tokenA != tokenB, 'UniswapV2: IDENTICAL_ADDRESSES');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
-        require(getExchange[token0][token1] == address(0), 'UniswapV2: EXCHANGE_EXISTS');
+        require(getExchange[token0][token1] == address(0), 'UniswapV2: EXCHANGE_EXISTS'); // single check is sufficient
         bytes memory exchangeBytecode = type(UniswapV2Exchange).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
@@ -33,7 +33,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
         }
         IUniswapV2Exchange(exchange).initialize(token0, token1);
         getExchange[token0][token1] = exchange;
-        getExchange[token1][token0] = exchange;
+        getExchange[token1][token0] = exchange; // populate mapping in the reverse direction
         allExchanges.push(exchange);
         emit ExchangeCreated(token0, token1, exchange, allExchanges.length);
     }
