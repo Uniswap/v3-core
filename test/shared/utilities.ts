@@ -93,3 +93,7 @@ export async function mineBlock(provider: Web3Provider, seconds: number): Promis
     )
   })
 }
+
+export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {
+  return [reserve1.mul(bigNumberify(2).pow(112)).div(reserve0), reserve0.mul(bigNumberify(2).pow(112)).div(reserve1)]
+}
