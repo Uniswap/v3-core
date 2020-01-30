@@ -4,9 +4,9 @@ interface IUniswapV2Exchange {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
+    function name() external pure returns (string memory);
+    function symbol() external pure returns (string memory);
+    function decimals() external pure returns (uint8);
     function totalSupply() external view returns (uint);
     function balanceOf(address owner) external view returns (uint);
     function allowance(address owner, address spender) external view returns (uint);
@@ -26,7 +26,7 @@ interface IUniswapV2Exchange {
     event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut, address indexed to);
     event Sync(uint112 reserve0, uint112 reserve1);
 
-    function selector() external view returns (bytes4);
+    function selector() external pure returns (bytes4);
     function factory() external view returns (address);
     function token0() external view returns (address);
     function token1() external view returns (address);
