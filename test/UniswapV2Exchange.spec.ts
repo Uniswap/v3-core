@@ -146,13 +146,13 @@ describe('UniswapV2Exchange', () => {
     await addLiquidity(token0Amount, token1Amount)
 
     // ensure that setting price{0,1}CumulativeLast for the first time doesn't affect our gas math
-    await mineBlock(provider, 1)
+    await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
     await exchange.sync(overrides)
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('453305446940074565')
     await token0.transfer(exchange.address, swapAmount)
-    await mineBlock(provider, 1)
+    await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
     const gasCost = await exchange.estimate.swap(token0.address, expectedOutputAmount, wallet.address, overrides)
     console.log(`Gas required for swap: ${gasCost}`)
   })
@@ -188,33 +188,31 @@ describe('UniswapV2Exchange', () => {
     await addLiquidity(token0Amount, token1Amount)
 
     const blockTimestamp = (await exchange.getReserves())[2]
-    expect(await exchange.price0CumulativeLast()).to.eq(0)
-    expect(await exchange.price1CumulativeLast()).to.eq(0)
-
-    await mineBlock(provider, 1)
+    await mineBlock(provider, blockTimestamp + 1)
     await exchange.sync(overrides)
+
     const initialPrice = encodePrice(token0Amount, token1Amount)
     expect(await exchange.price0CumulativeLast()).to.eq(initialPrice[0])
     expect(await exchange.price1CumulativeLast()).to.eq(initialPrice[1])
     expect((await exchange.getReserves())[2]).to.eq(blockTimestamp + 1)
 
-    await mineBlock(provider, 9)
-    await exchange.sync(overrides)
+    const swapAmount = expandTo18Decimals(3)
+    await token0.transfer(exchange.address, swapAmount)
+    await mineBlock(provider, blockTimestamp + 10)
+    // swap to a new price eagerly instead of syncing
+    await exchange.swap(token0.address, expandTo18Decimals(1), wallet.address, overrides) // make the price nice
+
     expect(await exchange.price0CumulativeLast()).to.eq(initialPrice[0].mul(10))
     expect(await exchange.price1CumulativeLast()).to.eq(initialPrice[1].mul(10))
     expect((await exchange.getReserves())[2]).to.eq(blockTimestamp + 10)
 
-    // intentionally getting less out than i can to make the price nice
-    const swapAmount = expandTo18Decimals(3)
-    await token0.transfer(exchange.address, swapAmount)
-    await exchange.swap(token0.address, expandTo18Decimals(1), wallet.address, overrides)
-    const newPrice = encodePrice(expandTo18Decimals(6), expandTo18Decimals(2))
-
-    await mineBlock(provider, 10)
+    await mineBlock(provider, blockTimestamp + 20)
     await exchange.sync(overrides)
 
+    const newPrice = encodePrice(expandTo18Decimals(6), expandTo18Decimals(2))
     expect(await exchange.price0CumulativeLast()).to.eq(initialPrice[0].mul(10).add(newPrice[0].mul(10)))
     expect(await exchange.price1CumulativeLast()).to.eq(initialPrice[1].mul(10).add(newPrice[1].mul(10)))
+    expect((await exchange.getReserves())[2]).to.eq(blockTimestamp + 20)
   })
 
   it('feeTo:off', async () => {
