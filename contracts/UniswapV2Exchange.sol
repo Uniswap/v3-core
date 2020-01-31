@@ -79,9 +79,9 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
         address feeTo = IUniswapV2Factory(factory).feeTo();
         feeOn = feeTo != address(0);
+        uint _kLast = kLast; // gas savings
         if (feeOn) {
-            uint _kLast = kLast; // gas savings
-            if (_kLast > 0) {
+            if (_kLast != 0) {
                 uint rootK = Math.sqrt(uint(_reserve0).mul(_reserve1));
                 uint rootKLast = Math.sqrt(_kLast);
                 if (rootK > rootKLast) {
@@ -91,6 +91,8 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
                     if (liquidity > 0) _mint(feeTo, liquidity);
                 }
             }
+        } else if (_kLast != 0) {
+            kLast = 0;
         }
     }
 
