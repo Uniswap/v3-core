@@ -171,6 +171,11 @@ describe('UniswapV2Exchange', () => {
     await expect(exchange.burn(wallet.address, overrides))
       .to.emit(exchange, 'Transfer')
       .withArgs(exchange.address, AddressZero, expectedLiquidity)
+      // commented out because of this bug: https://github.com/EthWorks/Waffle/issues/100
+      // .to.emit(token0, 'Transfer')
+      // .withArgs(exchange.address, wallet.address, token0Amount)
+      // .to.emit(token1, 'Transfer')
+      // .withArgs(exchange.address, wallet.address, token1Amount)
       .to.emit(exchange, 'Sync')
       .withArgs(0, 0)
       .to.emit(exchange, 'Burn')
