@@ -13,6 +13,7 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
+    uint public constant THRESHOLD = 10**6;
     bytes32 public DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
@@ -39,12 +40,16 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
 
     function _mint(address to, uint value) internal {
         totalSupply = totalSupply.add(value);
-        balanceOf[to] = balanceOf[to].add(value);
+        uint balance = balanceOf[to].add(value);
+        require(balance >= THRESHOLD, 'UniswapV2: THRESHOLD');
+        balanceOf[to] = balance;
         emit Transfer(address(0), to, value);
     }
 
     function _burn(address from, uint value) internal {
-        balanceOf[from] = balanceOf[from].sub(value);
+        uint balance = balanceOf[from].sub(value);
+        require(balance == 0 || balance >= THRESHOLD, 'UniswapV2: THRESHOLD');
+        balanceOf[from] = balance;
         totalSupply = totalSupply.sub(value);
         emit Transfer(from, address(0), value);
     }
@@ -55,8 +60,12 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
     }
 
     function _transfer(address from, address to, uint value) private {
-        balanceOf[from] = balanceOf[from].sub(value);
-        balanceOf[to] = balanceOf[to].add(value);
+        uint balanceFrom = balanceOf[from].sub(value);
+        uint balanceTo = balanceOf[to].add(value);
+        require(balanceFrom == 0 || balanceFrom >= THRESHOLD, 'UniswapV2: THRESHOLD');
+        require(balanceTo >= THRESHOLD, 'UniswapV2: THRESHOLD');
+        balanceOf[from] = balanceFrom;
+        balanceOf[to] = balanceTo;
         emit Transfer(from, to, value);
     }
 
