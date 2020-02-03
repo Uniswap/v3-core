@@ -25,12 +25,14 @@ contract UniswapV2Exchange is IUniswapV2Exchange, UniswapV2ERC20 {
     uint public price1CumulativeLast;
     uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
-    bool private unlocked = true;
+    uint private constant UNLOCKED = 1; // toggle between 1 and 2 (not 0) to save on the gas refund counter
+    uint private constant LOCKED = 2;   // toggle between 1 and 2 (not 0) to save on the gas refund counter
+    uint private lockState = UNLOCKED;
     modifier lock() {
-        require(unlocked, 'UniswapV2: LOCKED');
-        unlocked = false;
+        require(lockState == UNLOCKED, 'UniswapV2: LOCKED');
+        lockState = LOCKED;
         _;
-        unlocked = true;
+        lockState = UNLOCKED;
     }
 
     function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
