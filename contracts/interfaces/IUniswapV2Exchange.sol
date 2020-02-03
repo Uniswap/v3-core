@@ -15,6 +15,7 @@ interface IUniswapV2Exchange {
     function transfer(address to, uint value) external returns (bool);
     function transferFrom(address from, address to, uint value) external returns (bool);
 
+    function MINIMUM_TOTAL_SUPPLY() external pure returns (uint);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
     function PERMIT_TYPEHASH() external pure returns (bytes32);
     function nonces(address owner) external view returns (uint);
