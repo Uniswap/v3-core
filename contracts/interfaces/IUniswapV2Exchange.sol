@@ -15,7 +15,6 @@ interface IUniswapV2Exchange {
     function transfer(address to, uint value) external returns (bool);
     function transferFrom(address from, address to, uint value) external returns (bool);
 
-    function MINIMUM_TOTAL_SUPPLY() external pure returns (uint);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
     function PERMIT_TYPEHASH() external pure returns (bytes32);
     function nonces(address owner) external view returns (uint);
@@ -27,7 +26,7 @@ interface IUniswapV2Exchange {
     event Swap(address indexed sender, address indexed tokenIn, uint amountIn, uint amountOut, address indexed to);
     event Sync(uint112 reserve0, uint112 reserve1);
 
-    function selector() external pure returns (bytes4);
+    function MINIMUM_LIQUIDITY() external pure returns (uint);
     function factory() external view returns (address);
     function token0() external view returns (address);
     function token1() external view returns (address);

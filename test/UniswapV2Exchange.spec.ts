@@ -7,6 +7,8 @@ import { expandTo18Decimals, mineBlock, encodePrice } from './shared/utilities'
 import { exchangeFixture } from './shared/fixtures'
 import { AddressZero } from 'ethers/constants'
 
+const MINIMUM_LIQUIDITY = bigNumberify(10).pow(3)
+
 chai.use(solidity)
 
 const overrides = {
@@ -43,14 +45,17 @@ describe('UniswapV2Exchange', () => {
     const expectedLiquidity = expandTo18Decimals(2)
     await expect(exchange.mint(wallet.address, overrides))
       .to.emit(exchange, 'Transfer')
-      .withArgs(AddressZero, wallet.address, expectedLiquidity)
+      .withArgs(AddressZero, AddressZero, MINIMUM_LIQUIDITY)
+      // commented out because of this bug: https://github.com/EthWorks/Waffle/issues/100
+      // .to.emit(exchange, 'Transfer')
+      // .withArgs(AddressZero, wallet.address, expectedLiquidity)
       .to.emit(exchange, 'Sync')
       .withArgs(token0Amount, token1Amount)
       .to.emit(exchange, 'Mint')
       .withArgs(wallet.address, token0Amount, token1Amount)
 
     expect(await exchange.totalSupply()).to.eq(expectedLiquidity)
-    expect(await exchange.balanceOf(wallet.address)).to.eq(expectedLiquidity)
+    expect(await exchange.balanceOf(wallet.address)).to.eq(expectedLiquidity.sub(MINIMUM_LIQUIDITY))
     expect(await token0.balanceOf(exchange.address)).to.eq(token0Amount)
     expect(await token1.balanceOf(exchange.address)).to.eq(token1Amount)
     const reserves = await exchange.getReserves()
@@ -63,31 +68,26 @@ describe('UniswapV2Exchange', () => {
     await token1.transfer(exchange.address, token1Amount)
     await exchange.mint(wallet.address, overrides)
   }
+  const testCases: BigNumber[][] = [
+    [1, 5, 10, '1662497915624478906'],
+    [1, 10, 5, '453305446940074565'],
 
-  it('getInputPrice', async () => {
-    const testCases: BigNumber[][] = [
-      [1, 5, 10, '1662497915624478906'],
-      [1, 10, 5, '453305446940074565'],
+    [2, 5, 10, '2851015155847869602'],
+    [2, 10, 5, '831248957812239453'],
 
-      [2, 5, 10, '2851015155847869602'],
-      [2, 10, 5, '831248957812239453'],
-
-      [1, 10, 10, '906610893880149131'],
-      [1, 100, 100, '987158034397061298'],
-      [1, 1000, 1000, '996006981039903216']
-    ].map(a => a.map((n, i) => (i === 3 ? bigNumberify(n) : expandTo18Decimals(n as number))))
-
-    for (let testCase of testCases) {
+    [1, 10, 10, '906610893880149131'],
+    [1, 100, 100, '987158034397061298'],
+    [1, 1000, 1000, '996006981039903216']
+  ].map(a => a.map((n, i) => (i === 3 ? bigNumberify(n) : expandTo18Decimals(n as number))))
+  testCases.forEach((testCase, i) => {
+    it(`getInputPrice:${i}`, async () => {
       await addLiquidity(testCase[1], testCase[2])
       await token0.transfer(exchange.address, testCase[0])
       await expect(exchange.swap(token0.address, testCase[3].add(1), wallet.address, overrides)).to.be.revertedWith(
         'UniswapV2: K'
       )
       await exchange.swap(token0.address, testCase[3], wallet.address, overrides)
-      const totalSupply = await exchange.totalSupply()
-      await exchange.transfer(exchange.address, totalSupply)
-      await exchange.burn(wallet.address, overrides)
-    }
+    })
   })
 
   it('swap:token0', async () => {
@@ -167,28 +167,28 @@ describe('UniswapV2Exchange', () => {
     await addLiquidity(token0Amount, token1Amount)
 
     const expectedLiquidity = expandTo18Decimals(3)
-    await exchange.transfer(exchange.address, expectedLiquidity)
+    await exchange.transfer(exchange.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
     await expect(exchange.burn(wallet.address, overrides))
       .to.emit(exchange, 'Transfer')
-      .withArgs(exchange.address, AddressZero, expectedLiquidity)
+      .withArgs(exchange.address, AddressZero, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
       // commented out because of this bug: https://github.com/EthWorks/Waffle/issues/100
       // .to.emit(token0, 'Transfer')
       // .withArgs(exchange.address, wallet.address, token0Amount)
       // .to.emit(token1, 'Transfer')
       // .withArgs(exchange.address, wallet.address, token1Amount)
       .to.emit(exchange, 'Sync')
-      .withArgs(0, 0)
+      .withArgs(1000, 1000)
       .to.emit(exchange, 'Burn')
-      .withArgs(wallet.address, token0Amount, token1Amount, wallet.address)
+      .withArgs(wallet.address, token0Amount.sub(1000), token1Amount.sub(1000), wallet.address)
 
     expect(await exchange.balanceOf(wallet.address)).to.eq(0)
-    expect(await exchange.totalSupply()).to.eq(0)
-    expect(await token0.balanceOf(exchange.address)).to.eq(0)
-    expect(await token1.balanceOf(exchange.address)).to.eq(0)
+    expect(await exchange.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
+    expect(await token0.balanceOf(exchange.address)).to.eq(1000)
+    expect(await token1.balanceOf(exchange.address)).to.eq(1000)
     const totalSupplyToken0 = await token0.totalSupply()
     const totalSupplyToken1 = await token1.totalSupply()
-    expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0)
-    expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1)
+    expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(1000))
+    expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(1000))
   })
 
   it('price{0,1}CumulativeLast', async () => {
@@ -235,9 +235,9 @@ describe('UniswapV2Exchange', () => {
     await exchange.swap(token1.address, expectedOutputAmount, wallet.address, overrides)
 
     const expectedLiquidity = expandTo18Decimals(1000)
-    await exchange.transfer(exchange.address, expectedLiquidity)
+    await exchange.transfer(exchange.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
     await exchange.burn(wallet.address, overrides)
-    expect(await exchange.totalSupply()).to.eq(0)
+    expect(await exchange.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
   })
 
   it('feeTo:on', async () => {
@@ -253,12 +253,14 @@ describe('UniswapV2Exchange', () => {
     await exchange.swap(token1.address, expectedOutputAmount, wallet.address, overrides)
 
     const expectedLiquidity = expandTo18Decimals(1000)
-    await exchange.transfer(exchange.address, expectedLiquidity)
+    await exchange.transfer(exchange.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
     await exchange.burn(wallet.address, overrides)
-    expect(await exchange.totalSupply()).to.eq('249750499251388')
+    expect(await exchange.totalSupply()).to.eq(MINIMUM_LIQUIDITY.add('249750499251388'))
     expect(await exchange.balanceOf(other.address)).to.eq('249750499251388')
 
-    expect(await token0.balanceOf(exchange.address)).to.eq('249501683697446')
-    expect(await token1.balanceOf(exchange.address)).to.eq('250000187312968')
+    // using 1000 here instead of the symbolic MINIMUM_LIQUIDITY because the amounts only happen to be equal...
+    // ...because the initial liquidity amounts were equal
+    expect(await token0.balanceOf(exchange.address)).to.eq(bigNumberify(1000).add('249501683697445'))
+    expect(await token1.balanceOf(exchange.address)).to.eq(bigNumberify(1000).add('250000187312969'))
   })
 })
