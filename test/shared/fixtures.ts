@@ -12,8 +12,12 @@ interface FactoryFixture {
   factory: Contract
 }
 
+const overrides = {
+  gasLimit: 9999999
+}
+
 export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
-  const factory = await deployContract(wallet, UniswapV2Factory, [wallet.address])
+  const factory = await deployContract(wallet, UniswapV2Factory, [wallet.address], overrides)
   return { factory }
 }
 
@@ -26,10 +30,10 @@ interface ExchangeFixture extends FactoryFixture {
 export async function exchangeFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<ExchangeFixture> {
   const { factory } = await factoryFixture(provider, [wallet])
 
-  const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
-  const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
+  const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
+  const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
 
-  await factory.createExchange(tokenA.address, tokenB.address)
+  await factory.createExchange(tokenA.address, tokenB.address, overrides)
   const exchangeAddress = await factory.getExchange(tokenA.address, tokenB.address)
   const exchange = new Contract(exchangeAddress, JSON.stringify(UniswapV2Exchange.abi), provider).connect(wallet)
 
