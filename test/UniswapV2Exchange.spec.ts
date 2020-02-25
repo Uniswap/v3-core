@@ -48,7 +48,7 @@ describe('UniswapV2Exchange', () => {
       .withArgs(AddressZero, AddressZero, MINIMUM_LIQUIDITY)
       // commented out because of this bug: https://github.com/EthWorks/Waffle/issues/100
       // .to.emit(exchange, 'Transfer')
-      // .withArgs(AddressZero, wallet.address, expectedLiquidity)
+      // .withArgs(AddressZero, wallet.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
       .to.emit(exchange, 'Sync')
       .withArgs(token0Amount, token1Amount)
       .to.emit(exchange, 'Mint')
@@ -192,9 +192,9 @@ describe('UniswapV2Exchange', () => {
       .withArgs(exchange.address, AddressZero, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
       // commented out because of this bug: https://github.com/EthWorks/Waffle/issues/100
       // .to.emit(token0, 'Transfer')
-      // .withArgs(exchange.address, wallet.address, token0Amount)
+      // .withArgs(exchange.address, wallet.address, token0Amount.sub(1000))
       // .to.emit(token1, 'Transfer')
-      // .withArgs(exchange.address, wallet.address, token1Amount)
+      // .withArgs(exchange.address, wallet.address, token1Amount.sub(1000))
       .to.emit(exchange, 'Sync')
       .withArgs(1000, 1000)
       .to.emit(exchange, 'Burn')
