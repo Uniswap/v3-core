@@ -174,9 +174,9 @@ describe('UniswapV2Exchange', () => {
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('453305446940074565')
-    await token0.transfer(exchange.address, swapAmount)
+    await token1.transfer(exchange.address, swapAmount)
     await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
-    const gasCost = await exchange.estimate.swap(0, expectedOutputAmount, wallet.address, '0x', overrides)
+    const gasCost = await exchange.estimate.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
     console.log(`Gas required for swap: ${gasCost}`)
   })
 
