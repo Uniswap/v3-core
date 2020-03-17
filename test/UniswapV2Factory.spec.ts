@@ -7,7 +7,7 @@ import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 import { getCreate2Address } from './shared/utilities'
 import { factoryFixture } from './shared/fixtures'
 
-import UniswapV2Exchange from '../build/UniswapV2Exchange.json'
+import UniswapV2Pair from '../build/UniswapV2Pair.json'
 
 chai.use(solidity)
 
@@ -31,43 +31,43 @@ describe('UniswapV2Factory', () => {
     factory = fixture.factory
   })
 
-  it('feeTo, feeToSetter, allExchanges, allExchangesLength', async () => {
+  it('feeTo, feeToSetter, allPairsLength', async () => {
     expect(await factory.feeTo()).to.eq(AddressZero)
     expect(await factory.feeToSetter()).to.eq(wallet.address)
-    expect(await factory.allExchangesLength()).to.eq(0)
+    expect(await factory.allPairsLength()).to.eq(0)
   })
 
-  async function createExchange(tokens: [string, string]) {
-    const bytecode = `0x${UniswapV2Exchange.evm.bytecode.object}`
+  async function createPair(tokens: [string, string]) {
+    const bytecode = `0x${UniswapV2Pair.evm.bytecode.object}`
     const create2Address = getCreate2Address(factory.address, tokens, bytecode)
-    await expect(factory.createExchange(...tokens))
-      .to.emit(factory, 'ExchangeCreated')
+    await expect(factory.createPair(...tokens))
+      .to.emit(factory, 'PairCreated')
       .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, bigNumberify(1))
 
-    await expect(factory.createExchange(...tokens)).to.be.reverted // UniswapV2: EXCHANGE_EXISTS
-    await expect(factory.createExchange(...tokens.slice().reverse())).to.be.reverted // UniswapV2: EXCHANGE_EXISTS
-    expect(await factory.getExchange(...tokens)).to.eq(create2Address)
-    expect(await factory.getExchange(...tokens.slice().reverse())).to.eq(create2Address)
-    expect(await factory.allExchanges(0)).to.eq(create2Address)
-    expect(await factory.allExchangesLength()).to.eq(1)
+    await expect(factory.createPair(...tokens)).to.be.reverted // UniswapV2: PAIR_EXISTS
+    await expect(factory.createPair(...tokens.slice().reverse())).to.be.reverted // UniswapV2: PAIR_EXISTS
+    expect(await factory.getPair(...tokens)).to.eq(create2Address)
+    expect(await factory.getPair(...tokens.slice().reverse())).to.eq(create2Address)
+    expect(await factory.allPairs(0)).to.eq(create2Address)
+    expect(await factory.allPairsLength()).to.eq(1)
 
-    const exchange = new Contract(create2Address, JSON.stringify(UniswapV2Exchange.abi), provider)
-    expect(await exchange.factory()).to.eq(factory.address)
-    expect(await exchange.token0()).to.eq(TEST_ADDRESSES[0])
-    expect(await exchange.token1()).to.eq(TEST_ADDRESSES[1])
+    const pair = new Contract(create2Address, JSON.stringify(UniswapV2Pair.abi), provider)
+    expect(await pair.factory()).to.eq(factory.address)
+    expect(await pair.token0()).to.eq(TEST_ADDRESSES[0])
+    expect(await pair.token1()).to.eq(TEST_ADDRESSES[1])
   }
 
-  it('createExchange', async () => {
-    await createExchange(TEST_ADDRESSES)
+  it('createPair', async () => {
+    await createPair(TEST_ADDRESSES)
   })
 
-  it('createExchange:reverse', async () => {
-    await createExchange(TEST_ADDRESSES.slice().reverse() as [string, string])
+  it('createPair:reverse', async () => {
+    await createPair(TEST_ADDRESSES.slice().reverse() as [string, string])
   })
 
-  it('createExchange:gas', async () => {
-    const gasCost = await factory.estimate.createExchange(...TEST_ADDRESSES)
-    console.log(`Gas required for createExchange: ${gasCost}`)
+  it('createPair:gas', async () => {
+    const gasCost = await factory.estimate.createPair(...TEST_ADDRESSES)
+    console.log(`Gas required for createPair: ${gasCost}`)
   })
 
   it('setFeeTo', async () => {

@@ -18,7 +18,7 @@
         {
           "indexed": false,
           "internalType": "address",
-          "name": "exchange",
+          "name": "pair",
           "type": "address"
         },
         {
@@ -28,7 +28,7 @@
           "type": "uint256"
         }
       ],
-      "name": "ExchangeCreated",
+      "name": "PairCreated",
       "type": "event"
     },
     {
@@ -40,11 +40,11 @@
           "type": "uint256"
         }
       ],
-      "name": "allExchanges",
+      "name": "allPairs",
       "outputs": [
         {
           "internalType": "address",
-          "name": "exchange",
+          "name": "pair",
           "type": "address"
         }
       ],
@@ -55,7 +55,7 @@
     {
       "constant": true,
       "inputs": [],
-      "name": "allExchangesLength",
+      "name": "allPairsLength",
       "outputs": [
         {
           "internalType": "uint256",
@@ -81,11 +81,11 @@
           "type": "address"
         }
       ],
-      "name": "createExchange",
+      "name": "createPair",
       "outputs": [
         {
           "internalType": "address",
-          "name": "exchange",
+          "name": "pair",
           "type": "address"
         }
       ],
@@ -137,11 +137,11 @@
           "type": "address"
         }
       ],
-      "name": "getExchange",
+      "name": "getPair",
       "outputs": [
         {
           "internalType": "address",
-          "name": "exchange",
+          "name": "pair",
           "type": "address"
         }
       ],
@@ -213,7 +213,7 @@
         {
           "indexed": false,
           "internalType": "address",
-          "name": "exchange",
+          "name": "pair",
           "type": "address"
         },
         {
@@ -223,7 +223,7 @@
           "type": "uint256"
         }
       ],
-      "name": "ExchangeCreated",
+      "name": "PairCreated",
       "type": "event"
     },
     {
@@ -235,11 +235,11 @@
           "type": "uint256"
         }
       ],
-      "name": "allExchanges",
+      "name": "allPairs",
       "outputs": [
         {
           "internalType": "address",
-          "name": "exchange",
+          "name": "pair",
           "type": "address"
         }
       ],
@@ -250,7 +250,7 @@
     {
       "constant": true,
       "inputs": [],
-      "name": "allExchangesLength",
+      "name": "allPairsLength",
       "outputs": [
         {
           "internalType": "uint256",
@@ -276,11 +276,11 @@
           "type": "address"
         }
       ],
-      "name": "createExchange",
+      "name": "createPair",
       "outputs": [
         {
           "internalType": "address",
-          "name": "exchange",
+          "name": "pair",
           "type": "address"
         }
       ],
@@ -332,11 +332,11 @@
           "type": "address"
         }
       ],
-      "name": "getExchange",
+      "name": "getPair",
       "outputs": [
         {
           "internalType": "address",
-          "name": "exchange",
+          "name": "pair",
           "type": "address"
         }
       ],
