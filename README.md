@@ -1,29 +1,25 @@
-## The contents of this GitHub repo are confidential until this disclaimer is removed and the repo is made public
-
-# UniswapV2
+# Uniswap V2
 
 [![Actions Status](https://github.com/Uniswap/uniswap-v2-core/workflows/CI/badge.svg)](https://github.com/Uniswap/uniswap-v2-core/actions)
 
-## Local Development
+In-depth documentation on Uniswap V2 is available at [uniswap.org](https://uniswap.org/docs).
+
+# Local Development
 
 The following assumes the use of `node@>=10`.
 
-### Clone Repository
+## Clone Repository
 
-```
-git clone https://github.com/Uniswap/uniswap-v2-core.git
-cd uniswap-v2-core
-```
+`git clone https://github.com/Uniswap/uniswap-v2-core.git`
 
-### Install Dependencies
+## Install Dependencies
 
-```
-yarn
-```
+`yarn`
 
-### Compile Contracts and Run Tests
+## Compile Contracts
 
-```
-yarn compile
-yarn test
-```
+`yarn compile`
+
+## Run Tests
+
+`yarn test`
