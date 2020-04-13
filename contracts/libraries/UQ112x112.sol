@@ -2,7 +2,7 @@ pragma solidity =0.5.16;
 
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
 
-// range: [0, 2**112 - 1]
+// range: [0, 2**112 - 1] (theoretical upper bound of 2**112 - (1 / 2**112) does not apply in this setting)
 // resolution: 1 / 2**112
 
 library UQ112x112 {
