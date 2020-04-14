@@ -67,7 +67,7 @@ describe('UniswapV2Factory', () => {
 
   it('createPair:gas', async () => {
     const gasCost = await factory.estimate.createPair(...TEST_ADDRESSES)
-    console.log(`Gas required for createPair: ${gasCost}`)
+    expect(gasCost).to.eq(2513232)
   })
 
   it('setFeeTo', async () => {
