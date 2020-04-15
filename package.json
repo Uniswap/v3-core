@@ -30,7 +30,7 @@
     "pretest": "yarn compile",
     "test": "mocha",
     "check-compile-output": "./scripts/check-compile-output.sh",
-    "prepare": "yarn compile"
+    "prepublishOnly": "yarn compile"
   },
   "license": "GPL-3.0-or-later"
 }
