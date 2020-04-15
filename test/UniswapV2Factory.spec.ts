@@ -67,19 +67,19 @@ describe('UniswapV2Factory', () => {
 
   it('createPair:gas', async () => {
     const gasCost = await factory.estimate.createPair(...TEST_ADDRESSES)
-    expect(gasCost).to.eq(2513232)
+    expect(gasCost).to.eq(2512920)
   })
 
   it('setFeeTo', async () => {
-    await expect(factory.connect(other).setFeeTo(other.address)).to.be.reverted // UniswapV2: FORBIDDEN
+    await expect(factory.connect(other).setFeeTo(other.address)).to.be.revertedWith('UniswapV2: FORBIDDEN')
     await factory.setFeeTo(wallet.address)
     expect(await factory.feeTo()).to.eq(wallet.address)
   })
 
   it('setFeeToSetter', async () => {
-    await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.reverted // UniswapV2: FORBIDDEN
+    await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.revertedWith('UniswapV2: FORBIDDEN')
     await factory.setFeeToSetter(other.address)
     expect(await factory.feeToSetter()).to.eq(other.address)
-    await expect(factory.setFeeToSetter(wallet.address)).to.be.reverted // UniswapV2: FORBIDDEN
+    await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith('UniswapV2: FORBIDDEN')
   })
 })

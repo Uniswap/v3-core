@@ -1,4 +1,10 @@
 {
+  "name": "@uniswap/v2-core",
+  "version": "1.0.0-beta.0",
+  "files": [
+    "contracts",
+    "build"
+  ],
   "engines": {
     "node": ">=10"
   },
@@ -6,7 +12,7 @@
     "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
-    "ethereum-waffle": "^2.3.1",
+    "ethereum-waffle": "^2.4.1",
     "ethereumjs-util": "^6.2.0",
     "mocha": "^6.2.2",
     "prettier": "^1.19.1",
@@ -22,7 +28,8 @@
     "compile": "waffle .waffle.json",
     "pretest": "yarn compile",
     "test": "mocha",
-    "check-compile-output": "./scripts/check-compile-output.sh"
+    "check-compile-output": "./scripts/check-compile-output.sh",
+    "prepare": "yarn compile"
   },
   "license": "GPL-3.0-or-later"
 }

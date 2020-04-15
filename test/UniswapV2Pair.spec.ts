@@ -177,7 +177,7 @@ describe('UniswapV2Pair', () => {
     await token1.transfer(pair.address, swapAmount)
     await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
     const gasCost = await pair.estimate.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
-    expect(gasCost).to.eq(79378)
+    expect(gasCost).to.eq(79136)
   })
 
   it('burn', async () => {
