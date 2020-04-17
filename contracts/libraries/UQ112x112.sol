@@ -6,11 +6,11 @@ pragma solidity =0.5.16;
 // resolution: 1 / 2**112
 
 library UQ112x112 {
-    uint224 constant Q112 = 2**112;
+    uint224 constant Q112_RESOLUTION = 112;
 
     // encode a uint112 as a UQ112x112
     function encode(uint112 y) internal pure returns (uint224 z) {
-        z = uint224(y) * Q112; // never overflows
+        z = uint224(y) << Q112_RESOLUTION; // store the 112 bits of y in in the first 112 bits of a uint224
     }
 
     // divide a UQ112x112 by a uint112, returning a UQ112x112
