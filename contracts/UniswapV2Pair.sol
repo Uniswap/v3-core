@@ -21,7 +21,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     string private constant TOKEN_NAME_PREFIX = 'UniswapV2: ';
     string private constant TOKEN_SYMBOL_PREFIX = 'u-';
     string private constant TOKEN_SYMBOL_SUFFIX = '-v2';
-    string private constant TOKEN_SEPARATOR = '/';
+    string private constant TOKEN_SEPARATOR = hex'f09fa684';
 
     address public factory;
     address public token0;

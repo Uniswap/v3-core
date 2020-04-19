@@ -1,11 +1,11 @@
-import chai, { expect } from 'chai'
-import { Contract } from 'ethers'
-import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
-import { BigNumber, bigNumberify } from 'ethers/utils'
+import chai, {expect} from 'chai'
+import {Contract} from 'ethers'
+import {solidity, MockProvider, createFixtureLoader} from 'ethereum-waffle'
+import {BigNumber, bigNumberify} from 'ethers/utils'
 
-import { expandTo18Decimals, mineBlock, encodePrice } from './shared/utilities'
-import { pairFixture } from './shared/fixtures'
-import { AddressZero } from 'ethers/constants'
+import {expandTo18Decimals, mineBlock, encodePrice} from './shared/utilities'
+import {pairFixture} from './shared/fixtures'
+import {AddressZero} from 'ethers/constants'
 
 const MINIMUM_LIQUIDITY = bigNumberify(10).pow(3)
 
@@ -67,6 +67,7 @@ describe('UniswapV2Pair', () => {
     await token1.transfer(pair.address, token1Amount)
     await pair.mint(wallet.address, overrides)
   }
+
   const swapTestCases: BigNumber[][] = [
     [1, 5, 10, '1662497915624478906'],
     [1, 10, 5, '453305446940074565'],
@@ -281,4 +282,23 @@ describe('UniswapV2Pair', () => {
     expect(await token0.balanceOf(pair.address)).to.eq(bigNumberify(1000).add('249501683697445'))
     expect(await token1.balanceOf(pair.address)).to.eq(bigNumberify(1000).add('250000187312969'))
   })
+
+  describe('name/symbol', () => {
+    let token0Address: string
+    let token1Address: string
+    beforeEach(() => {
+      token0Address = token0.address.toLowerCase().substring(2)
+      token1Address = token1.address.toLowerCase().substring(2)
+    })
+
+    it('name', async () => {
+      expect(await pair.name())
+        .to.eq(`UniswapV2: ${token0Address}🦄${token1Address}`)
+    })
+
+    it('symbol', async () => {
+      expect(await pair.symbol()).to.eq(`u-${token0Address.substr(0, 6)}🦄${token1Address.substr(0, 6)}-v2`)
+    })
+  })
+
 })
