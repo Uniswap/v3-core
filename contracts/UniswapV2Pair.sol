@@ -7,21 +7,13 @@ import './libraries/UQ112x112.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV2Factory.sol';
 import './interfaces/IUniswapV2Callee.sol';
-import './libraries/TokenNamer.sol';
-import './libraries/strings.sol';
 
 contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     using SafeMath  for uint;
     using UQ112x112 for uint224;
-    using strings for *;
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = 0xa9059cbb; // transfer(address,uint256)
-
-    string private constant TOKEN_NAME_PREFIX = 'UniswapV2: ';
-    string private constant TOKEN_SYMBOL_PREFIX = 'u-';
-    string private constant TOKEN_SYMBOL_SUFFIX = '-v2';
-    string private constant TOKEN_SEPARATOR = hex'f09fa684';
 
     address public factory;
     address public token0;
@@ -60,23 +52,12 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     }
 
     // called once by the factory at time of deployment
-    function initialize(address _token0, address _token1) external {
+    function initialize(address _token0, address _token1, string calldata name_, string calldata symbol_) external {
         require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
         token0 = _token0;
         token1 = _token1;
-
-        name = TOKEN_NAME_PREFIX.toSlice()
-            .concat(TokenNamer.tokenName(_token0).toSlice()).toSlice()
-            .concat(TOKEN_SEPARATOR.toSlice()).toSlice()
-            .concat(TokenNamer.tokenName(_token1).toSlice()).toSlice()
-            .toString();
-
-        symbol = TOKEN_SYMBOL_PREFIX.toSlice()
-            .concat(TokenNamer.tokenSymbol(_token0).toSlice()).toSlice()
-            .concat(TOKEN_SEPARATOR.toSlice()).toSlice()
-            .concat(TokenNamer.tokenSymbol(_token1).toSlice()).toSlice()
-            .concat(TOKEN_SYMBOL_SUFFIX.toSlice()).toSlice()
-            .toString();
+        name = name_;
+        symbol = symbol_;
     }
 
     // update reserves and, on the first call per block, price accumulators

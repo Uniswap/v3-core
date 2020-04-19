@@ -379,6 +379,16 @@
           "internalType": "address",
           "name": "",
           "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
       "name": "initialize",
@@ -1100,6 +1110,16 @@
           "internalType": "address",
           "name": "",
           "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
       "name": "initialize",
