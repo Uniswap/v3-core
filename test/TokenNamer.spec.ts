@@ -53,7 +53,7 @@ describe('TokenNamer', () => {
 
   async function getSymbol(tokenAddress: string): Promise<string> {
     const tx = await tokenNamer.tokenSymbol(tokenAddress)
-    const receipt = await tx.wait()
+    await tx.wait()
     return tokenNamer.symbol()
   }
 
