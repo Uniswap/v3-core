@@ -1,8 +1,8 @@
-import chai, {expect} from 'chai'
-import {Contract} from 'ethers'
-import {solidity, MockProvider, deployContract} from 'ethereum-waffle'
-import {formatBytes32String} from 'ethers/utils'
-import {AddressZero} from 'ethers/constants'
+import chai, { expect } from 'chai'
+import { Contract } from 'ethers'
+import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
+import { formatBytes32String } from 'ethers/utils'
+import { AddressZero } from 'ethers/constants'
 
 import TokenNamerTest from '../build/TokenNamerTest.json'
 import FakeCompliantERC20 from '../build/FakeCompliantERC20.json'
@@ -28,13 +28,17 @@ describe('TokenNamer', () => {
     tokenNamer = await deployContract(wallet, TokenNamerTest, [], overrides)
   })
 
-  function deployCompliant({name, symbol}: { name: string, symbol: string }): Promise<Contract> {
+  function deployCompliant({ name, symbol }: { name: string; symbol: string }): Promise<Contract> {
     return deployContract(wallet, FakeCompliantERC20, [name, symbol], overrides)
   }
 
-  function deployNoncompliant({name, symbol}: { name: string, symbol: string }): Promise<Contract> {
-    return deployContract(wallet, FakeNoncompliantERC20, [
-      formatBytes32String(name), formatBytes32String(symbol)], overrides)
+  function deployNoncompliant({ name, symbol }: { name: string; symbol: string }): Promise<Contract> {
+    return deployContract(
+      wallet,
+      FakeNoncompliantERC20,
+      [formatBytes32String(name), formatBytes32String(symbol)],
+      overrides
+    )
   }
 
   function deployOptional(): Promise<Contract> {
@@ -59,11 +63,11 @@ describe('TokenNamer', () => {
 
   describe('#tokenName', () => {
     it('works with compliant', async () => {
-      const token = await deployCompliant({name: 'token name', symbol: 'tn'})
+      const token = await deployCompliant({ name: 'token name', symbol: 'tn' })
       expect(await getName(token.address)).to.eq('token name')
     })
     it('works with noncompliant', async () => {
-      const token = await deployNoncompliant({name: 'token name', symbol: 'tn'})
+      const token = await deployNoncompliant({ name: 'token name', symbol: 'tn' })
       expect(await getName(token.address)).to.eq('token name')
     })
     it('works with optional', async () => {
@@ -78,11 +82,11 @@ describe('TokenNamer', () => {
 
   describe('#tokenSymbol', () => {
     it('works with compliant', async () => {
-      const token = await deployCompliant({name: 'token name', symbol: 'tn'})
+      const token = await deployCompliant({ name: 'token name', symbol: 'tn' })
       expect(await getSymbol(token.address)).to.eq('tn')
     })
     it('works with noncompliant', async () => {
-      const token = await deployNoncompliant({name: 'token name', symbol: 'tn'})
+      const token = await deployNoncompliant({ name: 'token name', symbol: 'tn' })
       expect(await getSymbol(token.address)).to.eq('tn')
     })
     it('works with optional', async () => {
@@ -94,5 +98,4 @@ describe('TokenNamer', () => {
       expect(await getSymbol(AddressZero)).to.eq(AddressZero.substr(2, 6))
     })
   })
-
 })

@@ -1,11 +1,11 @@
-import chai, {expect} from 'chai'
-import {Contract} from 'ethers'
-import {solidity, MockProvider, createFixtureLoader} from 'ethereum-waffle'
-import {BigNumber, bigNumberify} from 'ethers/utils'
+import chai, { expect } from 'chai'
+import { Contract } from 'ethers'
+import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
+import { BigNumber, bigNumberify } from 'ethers/utils'
 
-import {expandTo18Decimals, mineBlock, encodePrice} from './shared/utilities'
-import {pairFixture} from './shared/fixtures'
-import {AddressZero} from 'ethers/constants'
+import { expandTo18Decimals, mineBlock, encodePrice } from './shared/utilities'
+import { pairFixture } from './shared/fixtures'
+import { AddressZero } from 'ethers/constants'
 
 const MINIMUM_LIQUIDITY = bigNumberify(10).pow(3)
 
@@ -292,13 +292,11 @@ describe('UniswapV2Pair', () => {
     })
 
     it('name', async () => {
-      expect(await pair.name())
-        .to.eq(`UniswapV2: ${token0Address}🦄${token1Address}`)
+      expect(await pair.name()).to.eq(`UniswapV2: ${token0Address}🦄${token1Address}`)
     })
 
     it('symbol', async () => {
       expect(await pair.symbol()).to.eq(`u-${token0Address.substr(0, 6)}🦄${token1Address.substr(0, 6)}-v2`)
     })
   })
-
 })
