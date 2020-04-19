@@ -41,7 +41,7 @@ library TokenNamer {
     }
 
     // uses a heuristic to produce a token symbol from the address
-    // the heuristic returns the first 6 hex
+    // the heuristic returns the first 6 hex of the address string in lower case
     function addressToSymbol(address token) pure internal returns (string memory) {
         return AddressUtil.toAsciiString(token, 6);
     }
@@ -66,7 +66,7 @@ library TokenNamer {
 
 
     // uses a heuristic to produce a token symbol from the address
-    // the heuristic returns the first 6 hex
+    // the heuristic returns the entire hex address as a string
     function addressToName(address token) pure internal returns (string memory) {
         return AddressUtil.toAsciiString(token, 40);
     }
