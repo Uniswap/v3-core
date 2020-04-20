@@ -1,26 +1,8 @@
-pragma solidity >=0.5.0;
+pragma solidity >=0.6.2;
 
-interface IUniswapV2Pair {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
+import "./IUniswapV2ERC20.sol";
 
-    function name() external pure returns (string memory);
-    function symbol() external pure returns (string memory);
-    function decimals() external pure returns (uint8);
-    function totalSupply() external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
-
-    function approve(address spender, uint value) external returns (bool);
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
-
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-    function PERMIT_TYPEHASH() external pure returns (bytes32);
-    function nonces(address owner) external view returns (uint);
-
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
-
+interface IUniswapV2Pair is IUniswapV2ERC20 {
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
     event Swap(
@@ -47,6 +29,4 @@ interface IUniswapV2Pair {
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
     function skim(address to) external;
     function sync() external;
-
-    function initialize(address, address) external;
 }
