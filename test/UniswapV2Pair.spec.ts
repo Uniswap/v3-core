@@ -289,15 +289,23 @@ describe('UniswapV2Pair', () => {
     beforeEach(async () => {
       token0Address = token0.address.toUpperCase().substring(2)
       token1Address = token1.address.toUpperCase().substring(2)
-      await factory.setPairNameAndSymbol(token0.address, token1.address)
+      await factory.setPairSymbol(token0.address, token1.address)
     })
 
     it('name', async () => {
-      expect(await pair.name()).to.eq(`UniswapV2: ${token0Address}🦄${token1Address}`)
+      expect(await pair.name()).to.eq(`Uniswap V2`)
     })
 
     it('symbol', async () => {
-      expect(await pair.symbol()).to.eq(`u-${token0Address.substr(0, 6)}🦄${token1Address.substr(0, 6)}-v2`)
+      expect(await pair.symbol()).to.eq(`🦄${token0Address.substr(0, 6)}:${token1Address.substr(0, 6)}`)
+    })
+
+    it('updated name/symbol', async () => {
+      await token0.updateSymbol('DAI')
+      await token1.updateSymbol('WETH')
+      await factory.setPairSymbol(token0.address, token1.address)
+      expect(await pair.symbol()).to.eq(`🦄DAI:WETH`)
+      expect(await pair.name()).to.eq(`Uniswap V2`)
     })
   })
 })

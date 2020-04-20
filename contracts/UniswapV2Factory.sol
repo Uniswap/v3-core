@@ -36,13 +36,12 @@ contract UniswapV2Factory is IUniswapV2Factory {
         emit PairCreated(token0, token1, pair, allPairs.length);
     }
 
-    function setPairNameAndSymbol(address tokenA, address tokenB) external {
+    function setPairSymbol(address tokenA, address tokenB) external {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         address pair = getPair[token0][token1];
         require(pair != address(0), 'UniswapV2: PAIR_NOT_EXISTS'); // single check is sufficient
 
-        IUniswapV2Pair(pair).initializeNameAndSymbol(
-            PairNamer.pairName(token0, token1),
+        IUniswapV2Pair(pair).initializeSymbol(
             PairNamer.pairSymbol(token0, token1)
         );
     }

@@ -15,5 +15,5 @@ interface IUniswapV2Factory {
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
 
-    function setPairNameAndSymbol(address tokenA, address tokenB) external;
+    function setPairSymbol(address tokenA, address tokenB) external;
 }

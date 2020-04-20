@@ -2,9 +2,8 @@ pragma solidity >=0.5.0;
 
 import './AddressUtil.sol';
 
-// produces token symbols and names from inconsistent ERC20 symbol and name implementations
-// these implementations may return bytes32 or strings, or may be absent completely. this library will always
-// produce a string symbol and name to represent the token.
+// produces token symbols from inconsistent or absent ERC20 symbol implementations that can return string or bytes32
+// this library will always produce a string symbol to represent the token
 library TokenNamer {
     function bytes32ToString(bytes memory x) pure internal returns (string memory) {
         bytes memory bytesString = new bytes(32);
@@ -63,31 +62,4 @@ library TokenNamer {
         }
         return addressToSymbol(token);
     }
-
-
-    // uses a heuristic to produce a token symbol from the address
-    // the heuristic returns the entire hex address as a string
-    function addressToName(address token) pure internal returns (string memory) {
-        return AddressUtil.toAsciiString(token, 40);
-    }
-
-    // attempts to extract the token symbol. if it does not implement symbol, returns a name derived from the token
-    // address.
-    function tokenName(address token) internal view returns (string memory) {
-        // 0x06fdde03 = bytes4(keccak256("name()"))
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encodeWithSelector(0x06fdde03)
-        );
-        if (!success || data.length == 0) {
-            return addressToName(token);
-        }
-        if (data.length == 32) {
-            return bytes32ToString(data);
-        }
-        if (data.length > 64) {
-            return parseStringData(data);
-        }
-        return addressToName(token);
-    }
-
 }

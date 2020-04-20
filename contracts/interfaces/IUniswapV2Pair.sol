@@ -49,5 +49,5 @@ interface IUniswapV2Pair {
     function sync() external;
 
     function initialize(address, address) external;
-    function initializeNameAndSymbol(string calldata, string calldata) external;
+    function initializeSymbol(string calldata) external;
 }

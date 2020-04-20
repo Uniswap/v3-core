@@ -4,10 +4,6 @@ import '../libraries/TokenNamer.sol';
 
 // used for testing the logic of token naming
 contract TokenNamerTest {
-    function tokenName(address token) public view returns (string memory) {
-        return TokenNamer.tokenName(token);
-    }
-
     function tokenSymbol(address token) public view returns (string memory)  {
         return TokenNamer.tokenSymbol(token);
     }
