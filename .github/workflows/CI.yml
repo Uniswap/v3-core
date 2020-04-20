@@ -33,8 +33,5 @@ jobs:
             ${{ matrix.os }}-yarn-
 
       - run: yarn
-
       - run: yarn lint
-      - run: yarn compile
       - run: yarn test
-      - run: yarn check-compile-output
