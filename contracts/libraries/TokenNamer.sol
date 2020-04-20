@@ -47,10 +47,10 @@ library TokenNamer {
     }
 
     // attempts to extract the token symbol. if it does not implement symbol, returns a symbol derived from the address
-    function tokenSymbol(address token) internal returns (string memory) {
-        //abi.encodeWithSelector(SELECTOR)
-        (bool success, bytes memory data) = token.call(
-            abi.encodeWithSelector(bytes4(keccak256("symbol()")))
+    function tokenSymbol(address token) internal view returns (string memory) {
+        // 0x95d89b41 = bytes4(keccak256("symbol()"))
+        (bool success, bytes memory data) = token.staticcall(
+            abi.encodeWithSelector(0x95d89b41)
         );
         if (!success || data.length == 0) {
             return addressToSymbol(token);
@@ -73,9 +73,10 @@ library TokenNamer {
 
     // attempts to extract the token symbol. if it does not implement symbol, returns a name derived from the token
     // address.
-    function tokenName(address token) internal returns (string memory) {
-        (bool success, bytes memory data) = token.call(
-            abi.encodeWithSelector(bytes4(keccak256("name()")))
+    function tokenName(address token) internal view returns (string memory) {
+        // 0x06fdde03 = bytes4(keccak256("name()"))
+        (bool success, bytes memory data) = token.staticcall(
+            abi.encodeWithSelector(0x06fdde03)
         );
         if (!success || data.length == 0) {
             return addressToName(token);

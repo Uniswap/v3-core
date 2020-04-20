@@ -50,15 +50,11 @@ describe('TokenNamer', () => {
   }
 
   async function getName(tokenAddress: string): Promise<string> {
-    const tx = await tokenNamer.tokenName(tokenAddress)
-    await tx.wait()
-    return tokenNamer.name()
+    return tokenNamer.tokenName(tokenAddress)
   }
 
   async function getSymbol(tokenAddress: string): Promise<string> {
-    const tx = await tokenNamer.tokenSymbol(tokenAddress)
-    await tx.wait()
-    return tokenNamer.symbol()
+    return tokenNamer.tokenSymbol(tokenAddress)
   }
 
   it('is deployed', () => {
