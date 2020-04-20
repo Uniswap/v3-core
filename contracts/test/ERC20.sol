@@ -7,7 +7,7 @@ contract ERC20 is UniswapV2ERC20 {
         _mint(msg.sender, _totalSupply);
     }
 
-    // for tests, allow updating the name and symbol
+    // for tests, allow updating the symbol
     function updateSymbol(string calldata symbol_) external {
         symbol = symbol_;
     }
