@@ -52,7 +52,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         token1 = token1_;
     }
 
-    function initializeSymbol(string calldata symbol_) external {
+    function initializeSymbol(string calldata symbol_) external override {
         require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
         symbol = symbol_;
     }

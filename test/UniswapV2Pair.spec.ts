@@ -283,29 +283,37 @@ describe('UniswapV2Pair', () => {
     expect(await token1.balanceOf(pair.address)).to.eq(bigNumberify(1000).add('250000187312969'))
   })
 
-  describe('name/symbol', () => {
-    let token0Address: string
-    let token1Address: string
+  describe('symbol', () => {
+    let token0AddressSymbol: string
+    let token1AddressSymbol: string
     beforeEach(async () => {
-      token0Address = token0.address.toUpperCase().substring(2)
-      token1Address = token1.address.toUpperCase().substring(2)
-      await factory.setPairSymbol(token0.address, token1.address)
+      token0AddressSymbol = token0.address.toUpperCase().substr(2, 6)
+      token1AddressSymbol = token1.address.toUpperCase().substr(2, 6)
     })
 
-    it('name', async () => {
+    async function getPairName(token0Name: string, token1Name: string): Promise<string> {
+      await token0.updateSymbol(token0Name)
+      await token1.updateSymbol(token1Name)
+      await factory.setPairSymbol(token0.address, token1.address)
+      return pair.symbol()
+    }
+
+    afterEach('check name is constant', async () => {
       expect(await pair.name()).to.eq(`Uniswap V2`)
     })
 
-    it('symbol', async () => {
-      expect(await pair.symbol()).to.eq(`🦄${token0Address.substr(0, 6)}:${token1Address.substr(0, 6)}`)
+    it('both tokens have symbols', async () => {
+      expect(await getPairName('TKN0', 'TKN1')).to.eq(`🦄TKN0:TKN1`)
     })
 
-    it('updated name/symbol', async () => {
-      await token0.updateSymbol('DAI')
-      await token1.updateSymbol('WETH')
-      await factory.setPairSymbol(token0.address, token1.address)
-      expect(await pair.symbol()).to.eq(`🦄DAI:WETH`)
-      expect(await pair.name()).to.eq(`Uniswap V2`)
+    it('token0 has empty symbol', async () => {
+      expect(await getPairName('', 'TKN')).to.eq(`🦄${token0AddressSymbol}:TKN`)
+    })
+    it('token1 has empty symbol', async () => {
+      expect(await getPairName('TKN', '')).to.eq(`🦄TKN:${token1AddressSymbol}`)
+    })
+    it('both have empty symbol', async () => {
+      expect(await getPairName('', '')).to.eq(`🦄${token0AddressSymbol}:${token1AddressSymbol}`)
     })
   })
 })

@@ -51,15 +51,25 @@ library TokenNamer {
         (bool success, bytes memory data) = token.staticcall(
             abi.encodeWithSelector(0x95d89b41)
         );
+        // if not implemented, or returns empty data, fallback to address
         if (!success || data.length == 0) {
             return addressToSymbol(token);
         }
+        // bytes32 data always has length 32
         if (data.length == 32) {
-            return bytes32ToString(data);
+            // if the data does not represent an empty string, use it
+            string memory result = bytes32ToString(data);
+            if (bytes(result).length > 0) {
+                return result;
+            }
+        } else if (data.length > 64) {
+            // if string is not empty, use it
+            string memory result = parseStringData(data);
+            if (bytes(result).length > 0) {
+                return result;
+            }
         }
-        if (data.length > 64) {
-            return parseStringData(data);
-        }
+        // fallback to 6 uppercase hex of address
         return addressToSymbol(token);
     }
 }

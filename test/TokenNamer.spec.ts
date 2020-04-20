@@ -72,7 +72,7 @@ describe('TokenNamer', () => {
     })
     it('works with empty bytes32', async () => {
       const token = await deployNoncompliant({ name: '', symbol: '' })
-      expect(await getSymbol(token.address)).to.eq('')
+      expect(await getSymbol(token.address)).to.eq(token.address.substr(2, 6).toUpperCase())
     })
     it('works with noncompliant full bytes32', async () => {
       const token = await deployNoncompliant({ name: fullBytes32Name, symbol: fullBytes32Symbol })
