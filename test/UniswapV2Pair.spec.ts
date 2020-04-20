@@ -287,8 +287,8 @@ describe('UniswapV2Pair', () => {
     let token0Address: string
     let token1Address: string
     beforeEach(() => {
-      token0Address = token0.address.toLowerCase().substring(2)
-      token1Address = token1.address.toLowerCase().substring(2)
+      token0Address = token0.address.toUpperCase().substring(2)
+      token1Address = token1.address.toUpperCase().substring(2)
     })
 
     it('name', async () => {

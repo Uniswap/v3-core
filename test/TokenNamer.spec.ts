@@ -80,7 +80,7 @@ describe('TokenNamer', () => {
     })
     it('works with optional', async () => {
       const token = await deployOptional()
-      expect(await getName(token.address)).to.eq(token.address.substr(2).toLowerCase())
+      expect(await getName(token.address)).to.eq(token.address.substr(2).toUpperCase())
     })
     it('works with non-code address', async () => {
       expect(await getName(AddressZero)).to.eq(AddressZero.substr(2))
@@ -106,7 +106,7 @@ describe('TokenNamer', () => {
     })
     it('works with optional', async () => {
       const token = await deployOptional()
-      expect(await getSymbol(token.address)).to.eq(token.address.substr(2, 6).toLowerCase())
+      expect(await getSymbol(token.address)).to.eq(token.address.substr(2, 6).toUpperCase())
     })
     it('works with non-code address', async () => {
       expect(await getSymbol(AddressZero)).to.eq(AddressZero.substr(2, 6))

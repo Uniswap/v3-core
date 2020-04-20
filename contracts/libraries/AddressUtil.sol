@@ -21,11 +21,12 @@ library AddressUtil {
 
     // hi and lo are only 4 bits and between 0 and 16
     // this method converts those values to the unicode/ascii code point for the hex representation
+    // uses upper case for the characters
     function char(uint8 b) pure private returns (byte c) {
         if (b < 10) {
             return byte(b + 0x30);
         } else {
-            return byte(b + 0x57);
+            return byte(b + 0x37);
         }
     }
 }
