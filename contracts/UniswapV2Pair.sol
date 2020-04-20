@@ -13,7 +13,6 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     using UQ112x112 for uint224;
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;
-    bytes4 private constant SELECTOR = 0xa9059cbb; // transfer(address,uint256)
 
     address public factory;
     address public token0;
@@ -42,12 +41,12 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     }
 
     function _safeTransfer(address token, address to, uint value) private {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
+        // 0xa9059cbb = transfer(address,uint256)
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV2: TRANSFER_FAILED');
     }
 
     constructor() public {
-        require(SELECTOR == IERC20(0).transfer.selector);
         factory = msg.sender;
     }
 
