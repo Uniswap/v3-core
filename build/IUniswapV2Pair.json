@@ -379,7 +379,17 @@
           "internalType": "address",
           "name": "",
           "type": "address"
-        },
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
         {
           "internalType": "string",
           "name": "",
@@ -391,7 +401,7 @@
           "type": "string"
         }
       ],
-      "name": "initialize",
+      "name": "initializeNameAndSymbol",
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
@@ -1110,7 +1120,17 @@
           "internalType": "address",
           "name": "",
           "type": "address"
-        },
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
         {
           "internalType": "string",
           "name": "",
@@ -1122,7 +1142,7 @@
           "type": "string"
         }
       ],
-      "name": "initialize",
+      "name": "initializeNameAndSymbol",
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",

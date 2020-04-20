@@ -286,9 +286,10 @@ describe('UniswapV2Pair', () => {
   describe('name/symbol', () => {
     let token0Address: string
     let token1Address: string
-    beforeEach(() => {
+    beforeEach(async () => {
       token0Address = token0.address.toUpperCase().substring(2)
       token1Address = token1.address.toUpperCase().substring(2)
+      await factory.setPairNameAndSymbol(token0.address, token1.address)
     })
 
     it('name', async () => {

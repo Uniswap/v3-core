@@ -48,5 +48,6 @@ interface IUniswapV2Pair {
     function skim(address to) external;
     function sync() external;
 
-    function initialize(address, address, string calldata, string calldata) external;
+    function initialize(address, address) external;
+    function initializeNameAndSymbol(string calldata, string calldata) external;
 }
