@@ -66,29 +66,36 @@ describe('TokenNamer', () => {
       const token = await deployCompliant({ name: 'token name', symbol: 'tn' })
       expect(await getSymbol(token.address)).to.eq('tn')
     })
+
     it('works with noncompliant', async () => {
       const token = await deployNoncompliant({ name: 'token name', symbol: 'tn' })
       expect(await getSymbol(token.address)).to.eq('tn')
     })
-    it('works with empty bytes32', async () => {
+
+    it('falls back to address with empty bytes32', async () => {
       const token = await deployNoncompliant({ name: '', symbol: '' })
       expect(await getSymbol(token.address)).to.eq(token.address.substr(2, 6).toUpperCase())
     })
+
     it('works with noncompliant full bytes32', async () => {
       const token = await deployNoncompliant({ name: fullBytes32Name, symbol: fullBytes32Symbol })
       expect(await getSymbol(token.address)).to.eq(fullBytes32Symbol)
     })
+
     it('works with optional', async () => {
       const token = await deployOptional()
       expect(await getSymbol(token.address)).to.eq(token.address.substr(2, 6).toUpperCase())
     })
+
     it('works with non-code address', async () => {
       expect(await getSymbol(AddressZero)).to.eq(AddressZero.substr(2, 6))
     })
+
     it('works with really long strings', async () => {
       const token = await deployCompliant({ name: 'token name'.repeat(32), symbol: 'tn'.repeat(32) })
       expect(await getSymbol(token.address)).to.eq('tn'.repeat(32))
     })
+
     it('falls back to address with empty strings', async () => {
       const token = await deployCompliant({ name: '', symbol: '' })
       expect(await getSymbol(token.address)).to.eq(token.address.substr(2, 6).toUpperCase())
