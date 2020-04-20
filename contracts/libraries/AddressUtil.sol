@@ -1,23 +1,31 @@
 pragma solidity >=0.5.0;
 
 library AddressUtil {
-    function toAsciiString(address x, uint len) pure internal returns (string memory) {
+    // converts an address to the hex string, extracting only
+    function toAsciiString(address addr, uint len) pure internal returns (string memory) {
+        require(len % 2 == 0, "AddressUtil: MULTIPLE_OF_TWO");
         bytes memory s = new bytes(len);
+        uint addrNum = uint(addr);
         for (uint i = 0; i < len / 2; i++) {
-            byte b = byte(uint8(uint(x) / (2 ** (8 * (19 - i)))));
-            byte hi = byte(uint8(b) / 16);
-            byte lo = byte(uint8(b) - 16 * uint8(hi));
+            // shift right and truncate all but the least significant byte to extract the byte at position 19-i
+            uint8 b = uint8(addrNum >> (8 * (19 - i)));
+            // first hex character is the most significant 4 bits
+            uint8 hi = b >> 4;
+            // second hex character is the least significant 4 bits
+            uint8 lo = b - (hi << 4);
             s[2 * i] = char(hi);
             s[2 * i + 1] = char(lo);
         }
         return string(s);
     }
 
-    function char(byte b) pure private returns (byte c) {
-        if (uint8(b) < 10) {
-            return byte(uint8(b) + 0x30);
+    // hi and lo are only 4 bits and between 0 and 16
+    // this method converts those values to the unicode/ascii code point for the hex representation
+    function char(uint8 b) pure private returns (byte c) {
+        if (b < 10) {
+            return byte(b + 0x30);
         } else {
-            return byte(uint8(b) + 0x57);
+            return byte(b + 0x57);
         }
     }
 }
