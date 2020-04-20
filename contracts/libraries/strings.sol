@@ -100,7 +100,7 @@ library strings {
             ret += 2;
             x /= 0x10000;
         }
-        if (uint(self) & 0xff == 0) {
+        if (x & 0xff == 0) {
             ret += 1;
         }
         return 32 - ret;
