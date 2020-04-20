@@ -29,7 +29,6 @@
     "compile": "waffle .waffle.json",
     "pretest": "yarn compile",
     "test": "mocha",
-    "check-compile-output": "./scripts/check-compile-output.sh",
     "prepublishOnly": "yarn test"
   },
   "license": "GPL-3.0-or-later"
