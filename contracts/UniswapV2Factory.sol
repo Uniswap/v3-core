@@ -5,6 +5,8 @@ import './UniswapV2Pair.sol';
 import './libraries/PairNamer.sol';
 
 contract UniswapV2Factory is IUniswapV2Factory {
+    string public constant PAIR_SYMBOL_SUFFIX = ' (V2)';
+
     address public override feeTo;
     address public override feeToSetter;
 
@@ -38,7 +40,7 @@ contract UniswapV2Factory is IUniswapV2Factory {
         address pair = getPair[token0][token1];
         require(pair != address(0), 'UniswapV2: PAIR_NOT_EXISTS'); // single check is sufficient
 
-        IUniswapV2Pair(pair).initializeSymbol(PairNamer.pairSymbol(token0, token1));
+        IUniswapV2Pair(pair).initializeSymbol(PairNamer.pairSymbol(token0, token1, PAIR_SYMBOL_SUFFIX));
     }
 
     function setFeeTo(address _feeTo) external override {

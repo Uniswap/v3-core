@@ -303,17 +303,17 @@ describe('UniswapV2Pair', () => {
     })
 
     it('both tokens have symbols', async () => {
-      expect(await getPairName('TKN0', 'TKN1')).to.eq(`🦄TKN0:TKN1`)
+      expect(await getPairName('TKN0', 'TKN1')).to.eq(`🦄TKN0:TKN1 (V2)`)
     })
 
     it('token0 has empty symbol', async () => {
-      expect(await getPairName('', 'TKN')).to.eq(`🦄${token0AddressSymbol}:TKN`)
+      expect(await getPairName('', 'TKN')).to.eq(`🦄${token0AddressSymbol}:TKN (V2)`)
     })
     it('token1 has empty symbol', async () => {
-      expect(await getPairName('TKN', '')).to.eq(`🦄TKN:${token1AddressSymbol}`)
+      expect(await getPairName('TKN', '')).to.eq(`🦄TKN:${token1AddressSymbol} (V2)`)
     })
     it('both have empty symbol', async () => {
-      expect(await getPairName('', '')).to.eq(`🦄${token0AddressSymbol}:${token1AddressSymbol}`)
+      expect(await getPairName('', '')).to.eq(`🦄${token0AddressSymbol}:${token1AddressSymbol} (V2)`)
     })
   })
 })
