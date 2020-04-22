@@ -1,14 +1,16 @@
 {
   "name": "@uniswap/v2-core",
-  "version": "1.0.0-beta.3",
-  "files": [
-    "contracts",
-    "build"
-  ],
+  "description": "Core contracts for the UniswapV2 protocol",
+  "version": "1.0.0-beta.4",
+  "homepage": "https://uniswap.org",
   "repository": {
     "type": "git",
     "url": "https://github.com/Uniswap/uniswap-v2-core"
   },
+  "files": [
+    "contracts",
+    "build"
+  ],
   "engines": {
     "node": ">=10"
   },
