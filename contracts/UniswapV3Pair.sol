@@ -8,6 +8,8 @@ import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
 
+// library TODO: sqrt() and reciprocal() methods on UQ112x112, and multiplication of two UQ112s
+
 contract UniswapV3Pair is IUniswapV3Pair, UniswapV3ERC20 {
     using SafeMath  for uint;
     using UQ112x112 for uint224;
@@ -19,6 +21,8 @@ contract UniswapV3Pair is IUniswapV3Pair, UniswapV3ERC20 {
     address public token0;
     address public token1;
 
+    uint public lpFee; // in bps
+
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
     uint32  private blockTimestampLast; // uses single storage slot, accessible via getReserves
@@ -27,7 +31,20 @@ contract UniswapV3Pair is IUniswapV3Pair, UniswapV3ERC20 {
     uint public price1CumulativeLast;
     uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
+    int16 public currentTick; // the current tick for the token0 price. when odd, current price is between ticks
+
     uint private unlocked = 1;
+
+    struct LimitPool {
+        uint112 quantity0; // quantity of token0 available
+        uint112 quantity1; // quantity of token1 available
+        uint32 cycle; // number of times the tick has been crossed entirely
+                          // index is even if pool is initially selling token0, odd if is initially selling token1
+    }
+    
+    mapping (int16 => LimitPool) limitPools; // mapping from tick indexes to limit pools
+    mapping (bytes32 => uint112) limitOrders; // mapping from sha3(user, tick index, cycle) to order
+
     modifier lock() {
         require(unlocked == 1, 'UniswapV3: LOCKED');
         unlocked = 0;
@@ -155,35 +172,184 @@ contract UniswapV3Pair is IUniswapV3Pair, UniswapV3ERC20 {
         emit Burn(msg.sender, amount0, amount1, to);
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
-        require(amount0Out > 0 || amount1Out > 0, 'UniswapV3: INSUFFICIENT_OUTPUT_AMOUNT');
-        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV3: INSUFFICIENT_LIQUIDITY');
+    function getTradeToRatio(uint y0, uint x0, uint224 price) internal returns uint {
+        // todo: fix this
+        // simplification of https://www.wolframalpha.com/input/?i=solve+%28x0+-+x0*%281-g%29*y%2F%28y0+%2B+%281-g%29*y%29%29%2F%28y0+%2B+y%29+%3D+p+for+y
+        uint numerator = (price.sqrt().mul(Math.sqrt(y0)).mul(Math.sqrt(price.mul(y0).mul(lpFee).mul(lpFee).div(10000) + price.mul(4 * x0).mul(10000 - lpFee))).truncate();
+        uint denominator = price.mul(10000 - lpFee).div(10000).mul(2).truncate()
+        return numerator / denominator;
+    }
 
-        uint balance0;
-        uint balance1;
-        { // scope for _token{0,1}, avoids stack too deep errors
-        address _token0 = token0;
-        address _token1 = token1;
-        require(to != _token0 && to != _token1, 'UniswapV3: INVALID_TO');
-        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
-        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
+    function swap0for1(uint amount0In, bytes calldata data) external lock {
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves();
+        uint _currentTick = currentTick;
+
+        uint totalAmountOut = 0;
+
+        while (amountInLeft > 0) {
+            uint224 price = getTickPrice(_currentTick);
+
+            if (currentTick % 2 == 0) {                
+                // we are in limit order mode
+                LimitPool storage pool = limitPools[currentTick];
+
+                // compute how much would need to be traded to fill the limit order
+                uint maxAmountToBuy = pool.quantity1.sub(pool.quantity1.mul(lpFee).div(20000)); // half of fee is paid in token1
+                uint maxAmount = price.reciprocal().mul(maxAmountToBuy).div((20000 - lpFee).mul(20000)).truncate();
+
+                uint amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
+
+                // execute the sell of amountToTrade
+                uint adjustedAmountToTrade = amountToTrade.sub(amountToTrade.mul(lpFee).div(20000));
+                uint adjustedAmountOut = price.mul(adjustedAmountToTrade).div();
+                totalAmountOut += amountOut;
+                pool.amount1 -= amountOut; // TODO: handle rounding errors around 0
+                pool.amount0 += amountToTrade;
+
+                amountInLeft = amountInLeft - amountToTrade;
+
+                if (amountInLeft == 0) {
+                    // new cycle
+                    pool = LimitPool(0, 0, pool.cycle + 1);
+                }
+            } else {
+                // we are in Uniswap mode
+                // compute how much would need to be traded to get to the next tick down
+                uint maxAmount = getTradeToRatio(_reserve0, _reserve1, 30, lowerTick);
+            
+                uint amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
+
+                // execute the sell of amountToTrade
+                uint adjustedAmountToTrade = amountToTrade.mul(10000 - lpFee).div(10000);
+                uint amountOut = adjustedAmountToTrade.mul(_reserve1).div(_reserve0 + adjustedAmountToTrade);
+                _reserve0 -= amountOut;
+                _reserve1 += amountToTrade;
+
+                amountInLeft = amountInLeft - amountToTrade;
+            }
+            if (amountInLeft == 0) {
+                currentTick -= 1;
+            }
+        }
+        currentTick = _currentTick;
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, amount0Out, amount1Out, data);
-        balance0 = IERC20(_token0).balanceOf(address(this));
-        balance1 = IERC20(_token1).balanceOf(address(this));
-        }
-        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
-        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
-        require(amount0In > 0 || amount1In > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
-        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
-        uint balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(3));
-        uint balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(3));
-        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(1000**2), 'UniswapV3: K');
+        // TODO: make safe or do v2 style
+        require(token0.transferFrom(msg.sender, amount0In), "UniswapV3: TRANSFERFROM_FAILED");
+        
+        // TODO: emit event, update oracle, etc
+    }
+
+    // // this low-level function should be called from a contract which performs important safety checks
+    // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
+    //     require(amount0Out > 0 || amount1Out > 0, 'UniswapV3: INSUFFICIENT_OUTPUT_AMOUNT');
+    //     (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
+    //     require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV3: INSUFFICIENT_LIQUIDITY');
+
+    //     uint balance0;
+    //     uint balance1;
+    //     { // scope for _token{0,1}, avoids stack too deep errors
+    //     address _token0 = token0;
+    //     address _token1 = token1;
+    //     require(to != _token0 && to != _token1, 'UniswapV3: INVALID_TO');
+    //     if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
+    //     if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
+    //     if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, amount0Out, amount1Out, data);
+    //     balance0 = IERC20(_token0).balanceOf(address(this));
+    //     balance1 = IERC20(_token1).balanceOf(address(this));
+    //     }
+    //     uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
+    //     uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
+    //     require(amount0In > 0 || amount1In > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
+    //     { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
+    //     uint balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(3));
+    //     uint balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(3));
+    //     require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(1000**2), 'UniswapV3: K');
+    //     }
+
+    //     _update(balance0, balance1, _reserve0, _reserve1);
+    //     emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
+    // }
+
+
+    function getTickPrice(int256 index) returns uint {
+        // returns a UQ112x112 representing the price of token0 in terms of token1, at the tick with that index
+        // odd tick indices (representing bands between ticks) 
+
+        index = index / uint(2);
+
+        if (index == 0) {
+            return UQ112x112.encode(1);
         }
 
-        _update(balance0, balance1, _reserve0, _reserve1);
-        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
+        // compute 1.01^abs(index)
+        // TODO: improve and fix this math
+        // adapted from https://ethereum.stackexchange.com/questions/10425/is-there-any-efficient-way-to-compute-the-exponentiation-of-a-fraction-and-an-in
+        uint224 price = 0;
+        uint N = 1;
+        uint B = 1;
+        uint q = 100;
+        uint precision = 50;
+        for (uint i = 0; i < precision; ++i){
+            price += k * N / B / q;
+            N  = N * (n-i);
+            B  = B * (i+1);
+            q = q * 100;
+        }
+
+        if (index < 0) {
+            return price.reciprocal();
+        }
+        return price;
+    }
+
+    // merge these two into one function? kinda unsafe
+    function placeOrder0(int16 tick, uint112 amount) external lock {
+        // place a limit sell order for token0
+        require(tick > currentTick, "UniswapV3: LIMIT_ORDER_PRICE_TOO_LOW");
+        LimitPool storage limitPool = limitPools[tick];
+        limitPool.quantity0 += amount;
+        limitOrders[sha3(msg.sender, tick, limitPool.cycle)] += amount;
+        
+        // TODO: make safe or do v2 style
+        require(token0.transferFrom(msg.sender, amount), "UniswapV3: TRANSFERFROM_FAILED");
+    }
+    
+    function placeOrder1(int16 tick, uint112 amount) external lock {
+        // place a limit sell order for token0
+        require(tick > currentTick, "UniswapV3: LIMIT_ORDER_PRICE_TOO_HIGH");
+        LimitPool storage limitPool = limitPools[tick];
+        limitPool.quantity1 += amount;
+        limitOrders[sha3(msg.sender, tick, limitPool.cycle)] += amount;
+        
+        // TODO: make safe or do v2 style
+        require(token1.transferFrom(msg.sender, amount), "UniswapV3: TRANSFERFROM_FAILED");
+    }
+
+    function cancel(int16 tick, uint cycle) external lock {
+        // cancel a limit order that has not yet filled
+        LimitPool limitPool = limitPools[tick];
+        require(limitPool.cycle == cycle, "UniswapV3: ORDER_FILLED");
+        require(tick != currentTick, "UniswapV3: ORDER_PENDING"); // TODO: allow someone to withdraw pro rata from a partial order
+        uint112 storage amount = limitOrders[sha3(msg.sender, tick, cycle)];
+        amount = 0;
+        if (cycle % 2 == 0) {
+            _safeTransfer(token0, recipient, amount);
+        } else {
+            _safeTransfer(token1, recipient, amount);
+        }
+    }
+
+    function complete(int16 tick, uint cycle, address recipient) {
+        // withdraw a completed limit order
+        LimitPool limitPool = limitPools[tick];
+        require(limitPool.cycle > cycle, "UniswapV3: ORDER_INCOMPLETE");
+        uint112 amount = limitOrders[sha3(msg.sender, tick, cycle)];
+        uint224 price = getTickPrice(currentTick);
+        if (cycle % 2 == 0) {
+            _safeTransfer(token1, recipient, UQ112x112.encode(amount).uqmul(price));
+        } else {
+            _safeTransfer(token0, recipient, UQ112x112.encode(amount).uqdiv(price));
+        }
     }
 
     // force balances to match reserves
