@@ -13,8 +13,6 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
 import './libraries/FixedPointExtra.sol';
 
-// library TODO: multiply two UQ112x112s, add two UQ112x112s
-
 contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     using SafeMath for uint;
     using SafeMath for uint112;
@@ -38,25 +36,45 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     uint public override price1CumulativeLast;
     uint public override kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
-    int16 public currentTick; // the current tick for the token0 price. when odd, current price is between ticks
+    uint112 private virtualSupply;  // current virtual supply;
+    uint64 private timeInitialized; // timestamp when pool was initialized
+
+    int16 public currentTick; // the current tick for the token0 price (rounded down)
 
     uint private unlocked = 1;
+    
+    struct VirtualPool {
+        int112 quantity0delta;               // quantity of virtual token0 that gets added or removed when price crosses this tick
+        uint32 secondsGrowthOutside;         // measures number of seconds spent while pool was on other side of this tick (from the current price)
+        FixedPoint.uq112x112 kGrowthOutside; // measures growth due to fees while pool was on the other side of this tick (from the current price)
+    }
+    
+    mapping (int16 => VirtualPool) virtualPools;  // mapping from tick indexes to virtual pools
 
-    struct LimitPool {
-        uint112 quantity0; // quantity of token0 available
-        uint112 quantity1; // quantity of token1 available
-        uint32 cycle; // number of times the tick has been crossed entirely
-                          // index is even if pool is initially selling token0, odd if is initially selling token1
+    struct UserBounds {
+        int16 lowerTick; // tick for the minimum token0 price, at which their liquidity is kicked out
+        int16 upperTick; // tick for the maximum token0 price, at which their liquidity is kicked out
+        uint224 invariant; // value of sqrt(k) when last updated
     }
 
-    mapping (int16 => LimitPool) limitPools; // mapping from tick indexes to limit pools
-    mapping (bytes32 => uint112) limitOrders; // mapping from keccak256(user, tick index, cycle) to order // TODO: how do I do this less awkwardly
+    mapping (address => UserBounds) userBounds;
+
+    struct UserBalances {
+        uint112 token0owed;
+        uint112 token1owed;
+        uint112 liquidity; // virtual liquidity shares when within the range
+    }
 
     modifier lock() {
         require(unlocked == 1, 'UniswapV3: LOCKED');
         unlocked = 0;
         _;
         unlocked = 1;
+    }
+
+    function getInvariant() public view returns (FixedPoint.uq112x112 memory k) {
+        uint112 rootK = uint112(Math.sqrt(uint256(reserve0) * uint256(reserve1)));
+        return FixedPoint.encode(rootK).div(virtualSupply);
     }
 
     function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
@@ -173,7 +191,6 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     }
 
     // TODO: implement swap1for0, or integrate it into this
-    // one difference is that swap1for0 will need to initialize cycle to 1 if it starts at 0
     function swap0for1(uint amount0In, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
         int16 _currentTick = currentTick;
@@ -185,48 +202,21 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         while (amountInLeft > 0) {
             FixedPoint.uq112x112 memory price = getTickPrice(_currentTick);
 
-            if (currentTick % 2 == 0) {
-                // we are in limit order mode
-                LimitPool memory pool = limitPools[currentTick];
+            // compute how much would need to be traded to get to the next tick down
+            uint112 maxAmount = getTradeToRatio(_reserve0, _reserve1, price);
+        
+            uint112 amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
 
-                // compute how much would need to be traded to fill the limit order
-                uint112 maxAmountToBuy = pool.quantity1 - (pool.quantity1 * lpFee / 20000); // half of fee is paid in token1
-                uint112 maxAmount = price.reciprocal().mul112(maxAmountToBuy).div(uint112((20000 - lpFee) * (20000))).decode();
+            // execute the sell of amountToTrade
+            uint112 adjustedAmountToTrade = amountToTrade * (10000 - lpFee) / 10000;
+            uint112 amountOut = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
+            _reserve0 -= amountOut;
+            _reserve1 += amountToTrade;
 
-                uint112 amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
-
-                // execute the sell of amountToTrade
-                uint112 adjustedAmountToTrade = uint112(amountToTrade - ((amountToTrade * lpFee) / 20000));
-                uint112 adjustedAmountOut = uint112(price.mul112(adjustedAmountToTrade - adjustedAmountToTrade * lpFee / 20000).decode());
-                totalAmountOut += adjustedAmountOut;
-                pool.quantity1 -= adjustedAmountOut; // TODO: handle rounding errors around 0
-                pool.quantity0 += amountToTrade;
-
-                amountInLeft = amountInLeft - amountToTrade;
-
-                if (amountInLeft == 0) {
-                    // new cycle
-                    limitPools[currentTick] = LimitPool(0, 0, pool.cycle + 1);
-                } else {
-                    limitPools[currentTick] = pool;
-                }
-            } else {
-                // we are in Uniswap mode
-                // compute how much would need to be traded to get to the next tick down
-                uint112 maxAmount = getTradeToRatio(_reserve0, _reserve1, price);
-
-                uint112 amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
-
-                // execute the sell of amountToTrade
-                uint112 adjustedAmountToTrade = amountToTrade * (10000 - lpFee) / 10000;
-                uint112 amountOut = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
-                _reserve0 -= amountOut;
-                _reserve1 += amountToTrade;
-
-                amountInLeft = amountInLeft - amountToTrade;
-            }
+            amountInLeft = amountInLeft - amountToTrade;
             if (amountInLeft == 0) {
                 currentTick -= 1;
+                // TODO: look up the virtual pool and kick liquidity in or out
             }
         }
         currentTick = _currentTick;
@@ -237,38 +227,6 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
 
         // TODO: emit event, update oracle, etc
     }
-
-    // // this low-level function should be called from a contract which performs important safety checks
-    // function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
-    //     require(amount0Out > 0 || amount1Out > 0, 'UniswapV3: INSUFFICIENT_OUTPUT_AMOUNT');
-    //     (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-    //     require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV3: INSUFFICIENT_LIQUIDITY');
-
-    //     uint balance0;
-    //     uint balance1;
-    //     { // scope for _token{0,1}, avoids stack too deep errors
-    //     address _token0 = token0;
-    //     address _token1 = token1;
-    //     require(to != _token0 && to != _token1, 'UniswapV3: INVALID_TO');
-    //     if (amount0Out > 0) TransferHelper.safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
-    //     if (amount1Out > 0) TransferHelper.safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
-    //     if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, amount0Out, amount1Out, data);
-    //     balance0 = IERC20(_token0).balanceOf(address(this));
-    //     balance1 = IERC20(_token1).balanceOf(address(this));
-    //     }
-    //     uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
-    //     uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
-    //     require(amount0In > 0 || amount1In > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
-    //     { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
-    //     uint balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(3));
-    //     uint balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(3));
-    //     require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(1000**2), 'UniswapV3: K');
-    //     }
-
-    //     _update(balance0, balance1, _reserve0, _reserve1);
-    //     emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
-    // }
-
 
     function getTickPrice(int16 index) public pure returns (FixedPoint.uq112x112 memory) {
         // returns a UQ112x112 representing the price of token0 in terms of token1, at the tick with that index
@@ -301,72 +259,4 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
 
         return price;
     }
-
-    // merge these two into one function? kinda unsafe
-    function placeOrder0(int16 tick, uint112 amount) external lock {
-        // place a limit sell order for token0
-        require(tick > currentTick, "UniswapV3: LIMIT_ORDER_PRICE_TOO_LOW");
-        LimitPool storage limitPool = limitPools[tick];
-        if (limitPool.cycle == 0) {
-            limitPool.cycle = 1;
-        }
-        limitPool.quantity0 += amount;
-        limitOrders[keccak256(abi.encodePacked(msg.sender, tick, limitPool.cycle))] += amount;
-
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount);
-    }
-
-    function placeOrder1(int16 tick, uint112 amount) external lock {
-        // place a limit sell order for token0
-        require(tick > currentTick, "UniswapV3: LIMIT_ORDER_PRICE_TOO_HIGH");
-        LimitPool storage limitPool = limitPools[tick];
-        limitPool.quantity1 += amount;
-        limitOrders[keccak256(abi.encodePacked(msg.sender, tick, limitPool.cycle))] += amount;
-
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount);
-    }
-
-    function cancel(int16 tick, uint cycle, address to) external lock {
-        // cancel a limit order that has not yet filled
-        LimitPool storage limitPool = limitPools[tick];
-        require(limitPool.cycle == cycle, "UniswapV3: ORDER_FILLED");
-        require(tick != currentTick, "UniswapV3: ORDER_PENDING"); // TODO: allow someone to withdraw pro rata from a partial order
-        bytes32 key = keccak256(abi.encodePacked(msg.sender, tick, cycle));
-        uint112 amount = limitOrders[key];
-        limitOrders[key] = 0;
-        if (cycle % 2 == 0) {
-            limitPool.quantity0 -= amount;
-            TransferHelper.safeTransfer(token0, to, amount);
-        } else {
-            limitPool.quantity1 -= amount;
-            TransferHelper.safeTransfer(token1, to, amount);
-        }
-    }
-
-    function complete(int16 tick, uint cycle, address to) external lock {
-        // withdraw a completed limit order
-        require(limitPools[tick].cycle > cycle, "UniswapV3: ORDER_INCOMPLETE");
-        bytes32 key = keccak256(abi.encodePacked(msg.sender, tick, cycle));
-        uint112 amount = limitOrders[key];
-        limitOrders[key] = 0;
-        FixedPoint.uq112x112 memory price = getTickPrice(currentTick);
-        if (cycle % 2 == 0) {
-            TransferHelper.safeTransfer(token1, to, price.mul112(amount).decode());
-        } else {
-            TransferHelper.safeTransfer(token0, to, price.reciprocal().mul112(amount).decode());
-        }
-    }
-
-    // // force balances to match reserves
-    // function skim(address to) external lock {
-    //     address _token0 = token0; // gas savings
-    //     address _token1 = token1; // gas savings
-    //     TransferHelper.safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0));
-    //     TransferHelper.safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1));
-    // }
-
-    // // force reserves to match balances
-    // function sync() external lock {
-    //     _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
-    // }
 }
