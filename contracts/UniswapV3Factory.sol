@@ -2,8 +2,10 @@ pragma solidity =0.6.6;
 
 import './interfaces/IUniswapV3Factory.sol';
 import './UniswapV3Pair.sol';
+import './libraries/PairNamer.sol';
 
 contract UniswapV3Factory is IUniswapV3Factory {
+    string public constant PAIR_SYMBOL_SUFFIX = ' (V2)';
     address public override feeTo;
     address public override feeToSetter;
 
@@ -30,6 +32,14 @@ contract UniswapV3Factory is IUniswapV3Factory {
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
         emit PairCreated(token0, token1, pair, allPairs.length);
+    }
+
+    function setPairSymbol(address tokenA, address tokenB) external override {
+        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        address pair = getPair[token0][token1];
+        require(pair != address(0), 'UniswapV2: PAIR_NOT_EXISTS'); // single check is sufficient
+
+        IUniswapV2Pair(pair).initializeSymbol(PairNamer.pairSymbol(token0, token1, PAIR_SYMBOL_SUFFIX));
     }
 
     function setFeeTo(address _feeTo) external override {

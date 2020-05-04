@@ -7,7 +7,7 @@ contract UniswapV3ERC20 is IUniswapV3ERC20 {
     using SafeMath for uint;
 
     string public constant override name = 'Uniswap V3';
-    string public constant override symbol = 'UNI-V3';
+    string public override symbol = 'UNI-V3';
     uint8 public constant override decimals = 18;
     uint public override totalSupply;
     mapping(address => uint) public override balanceOf;

@@ -67,6 +67,7 @@ describe('UniswapV3Pair', () => {
     await token1.transfer(pair.address, token1Amount)
     await pair.mint(wallet.address, overrides)
   }
+
   const swapTestCases: BigNumber[][] = [
     [1, 5, 10, '1662497915624478906'],
     [1, 10, 5, '453305446940074565'],
@@ -280,5 +281,39 @@ describe('UniswapV3Pair', () => {
     // ...because the initial liquidity amounts were equal
     expect(await token0.balanceOf(pair.address)).to.eq(bigNumberify(1000).add('249501683697445'))
     expect(await token1.balanceOf(pair.address)).to.eq(bigNumberify(1000).add('250000187312969'))
+  })
+
+  describe('symbol', () => {
+    let token0AddressSymbol: string
+    let token1AddressSymbol: string
+    beforeEach(async () => {
+      token0AddressSymbol = token0.address.toUpperCase().substr(2, 6)
+      token1AddressSymbol = token1.address.toUpperCase().substr(2, 6)
+    })
+
+    async function getPairName(token0Name: string, token1Name: string): Promise<string> {
+      await token0.updateSymbol(token0Name)
+      await token1.updateSymbol(token1Name)
+      await factory.setPairSymbol(token0.address, token1.address)
+      return pair.symbol()
+    }
+
+    afterEach('check name is constant', async () => {
+      expect(await pair.name()).to.eq(`Uniswap V2`)
+    })
+
+    it('both tokens have symbols', async () => {
+      expect(await getPairName('TKN0', 'TKN1')).to.eq(`🦄TKN0:TKN1 (V2)`)
+    })
+
+    it('token0 has empty symbol', async () => {
+      expect(await getPairName('', 'TKN')).to.eq(`🦄${token0AddressSymbol}:TKN (V2)`)
+    })
+    it('token1 has empty symbol', async () => {
+      expect(await getPairName('TKN', '')).to.eq(`🦄TKN:${token1AddressSymbol} (V2)`)
+    })
+    it('both have empty symbol', async () => {
+      expect(await getPairName('', '')).to.eq(`🦄${token0AddressSymbol}:${token1AddressSymbol} (V2)`)
+    })
   })
 })
