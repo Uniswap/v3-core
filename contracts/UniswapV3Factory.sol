@@ -3,7 +3,7 @@ pragma solidity =0.6.6;
 import './interfaces/IUniswapV3Factory.sol';
 import './UniswapV3Pair.sol';
 
-contract UniswapV3Factory {
+contract UniswapV3Factory is IUniswapV3Factory {
     address public override feeTo;
     address public override feeToSetter;
 

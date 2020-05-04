@@ -1,8 +1,13 @@
 {
   "name": "@uniswap/v3-core",
-  "description": "Core contracts for the UniswapV3 protocol",
-  "version": "1.0.0",
+  "description": "🎛 Core smart contracts of Uniswap V3",
+  "version": "1.0.0-beta.0",
   "homepage": "https://uniswap.org",
+  "keywords": [
+    "uniswap",
+    "core",
+    "v3"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/Uniswap/uniswap-v3-core"

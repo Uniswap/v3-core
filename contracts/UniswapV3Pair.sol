@@ -21,9 +21,9 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     bytes4 private constant TRANSFER_SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
     bytes4 private constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
 
-    address public factory;
-    address public token0;
-    address public token1;
+    address public immutable factory;
+    address public immutable token0;
+    address public immutable token1;
 
     uint112 public lpFee; // in bps
 
@@ -45,7 +45,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         uint32 cycle; // number of times the tick has been crossed entirely
                           // index is even if pool is initially selling token0, odd if is initially selling token1
     }
-    
+
     mapping (int16 => LimitPool) limitPools; // mapping from tick indexes to limit pools
     mapping (bytes32 => uint112) limitOrders; // mapping from keccak256(user, tick index, cycle) to order // TODO: how do I do this less awkwardly
 
@@ -84,15 +84,10 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     );
     event Sync(uint112 reserve0, uint112 reserve1);
 
-    constructor() public {
+    constructor(address token0_, address token1_) public {
         factory = msg.sender;
-    }
-
-    // called once by the factory at time of deployment
-    function initialize(address _token0, address _token1) external {
-        require(msg.sender == factory, 'UniswapV3: FORBIDDEN'); // sufficient check
-        token0 = _token0;
-        token1 = _token1;
+        token0 = token0_;
+        token1 = token1_;
     }
 
     // update reserves and, on the first call per block, price accumulators
@@ -202,7 +197,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         while (amountInLeft > 0) {
             FixedPoint.uq112x112 memory price = getTickPrice(_currentTick);
 
-            if (currentTick % 2 == 0) {                
+            if (currentTick % 2 == 0) {
                 // we are in limit order mode
                 LimitPool memory pool = limitPools[currentTick];
 
@@ -231,7 +226,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
                 // we are in Uniswap mode
                 // compute how much would need to be traded to get to the next tick down
                 uint112 maxAmount = getTradeToRatio(_reserve0, _reserve1, price);
-            
+
                 uint112 amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
 
                 // execute the sell of amountToTrade
@@ -251,7 +246,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         reserve1 = _reserve1;
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, totalAmountOut, data);
         _safeTransferFrom(token0, msg.sender, address(this), amount0In);
-        
+
         // TODO: emit event, update oracle, etc
     }
 
@@ -289,7 +284,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
 
     function getTickPrice(int16 index) public pure returns (FixedPoint.uq112x112 memory) {
         // returns a UQ112x112 representing the price of token0 in terms of token1, at the tick with that index
-        // odd tick indices (representing bands between ticks) 
+        // odd tick indices (representing bands between ticks)
 
         index = index / int16(2);
 
@@ -329,17 +324,17 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         }
         limitPool.quantity0 += amount;
         limitOrders[keccak256(abi.encodePacked(msg.sender, tick, limitPool.cycle))] += amount;
-        
+
         _safeTransferFrom(token0, msg.sender, address(this), amount);
     }
-    
+
     function placeOrder1(int16 tick, uint112 amount) external lock {
         // place a limit sell order for token0
         require(tick > currentTick, "UniswapV3: LIMIT_ORDER_PRICE_TOO_HIGH");
         LimitPool storage limitPool = limitPools[tick];
         limitPool.quantity1 += amount;
         limitOrders[keccak256(abi.encodePacked(msg.sender, tick, limitPool.cycle))] += amount;
-        
+
         _safeTransferFrom(token1, msg.sender, address(this), amount);
     }
 
