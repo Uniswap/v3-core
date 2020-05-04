@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './UniswapV3ERC20.sol';
@@ -12,7 +13,7 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
 import './libraries/FixedPointExtra.sol';
 
-// library TODO: sqrt() and reciprocal() methods on UQ112x112, and multiplication of two UQ112s
+// library TODO: multiply two UQ112x112s, add two UQ112x112s
 
 contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     using SafeMath for uint;
@@ -100,8 +101,8 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         uint _kLast = kLast; // gas savings
         if (feeOn) {
             if (_kLast != 0) {
-                uint rootK = Math.sqrt(uint(_reserve0).mul(_reserve1));
-                uint rootKLast = Math.sqrt(_kLast);
+                uint rootK = Babylonian.sqrt(uint(_reserve0).mul(_reserve1));
+                uint rootKLast = Babylonian.sqrt(_kLast);
                 if (rootK > rootKLast) {
                     uint numerator = totalSupply.mul(rootK.sub(rootKLast));
                     uint denominator = rootK.mul(5).add(rootKLast);
@@ -125,7 +126,7 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         if (_totalSupply == 0) {
-            liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
+            liquidity = Babylonian.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
            _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
         } else {
             liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
@@ -166,7 +167,7 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     function getTradeToRatio(uint112 y0, uint112 x0, FixedPoint.uq112x112 memory price) internal view returns (uint112) {
         // todo: clean up this monstrosity, which won't even compile because the stack is too deep
         // simplification of https://www.wolframalpha.com/input/?i=solve+%28x0+-+x0*%281-g%29*y%2F%28y0+%2B+%281-g%29*y%29%29%2F%28y0+%2B+y%29+%3D+p+for+y
-        // uint112 numerator = price.sqrt().mul112(uint112(Math.sqrt(y0))).mul112(uint112(Math.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(10000).add(price.mul112(4 * x0).mul112(10000 - lpFee)).decode()))).decode();
+        // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(10000).add(price.mul112(4 * x0).mul112(10000 - lpFee)).decode()))).decode();
         // uint112 denominator = price.mul112(10000 - lpFee).div(10000).mul112(2).decode();
         return uint112(1);
     }
