@@ -7,8 +7,8 @@ contract ERC20 is UniswapV3ERC20 {
         _mint(msg.sender, _totalSupply);
     }
 
-    // for tests, allow updating the symbol
-    function updateSymbol(string calldata symbol_) external {
-        symbol = symbol_;
+    // for tests, allow updating the name and symbol
+    function testSetNameAndSymbol(string calldata name_, string calldata symbol_) external {
+        _initialize(name_, symbol_);
     }
 }

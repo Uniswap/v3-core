@@ -14,6 +14,4 @@ interface IUniswapV3Factory {
 
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
-
-    function setPairSymbol(address tokenA, address tokenB) external;
 }

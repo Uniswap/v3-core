@@ -2,7 +2,7 @@ pragma solidity >=0.6.2;
 
 import "./IUniswapV3ERC20.sol";
 
-interface IUniswapV2Pair is IUniswapV3ERC20 {
+interface IUniswapV3Pair is IUniswapV3ERC20 {
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
     event Swap(
@@ -26,9 +26,7 @@ interface IUniswapV2Pair is IUniswapV3ERC20 {
 
     function mint(address to) external returns (uint liquidity);
     function burn(address to) external returns (uint amount0, uint amount1);
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-    function skim(address to) external;
-    function sync() external;
-
-    function initializeSymbol(string calldata) external;
+//    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+//    function skim(address to) external;
+//    function sync() external;
 }

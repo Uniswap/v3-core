@@ -1,6 +1,8 @@
 pragma solidity =0.6.6;
 pragma experimental ABIEncoderV2;
 
+import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
+
 import './interfaces/IUniswapV3Pair.sol';
 import './UniswapV3ERC20.sol';
 import './libraries/Math.sol';
@@ -11,19 +13,17 @@ import './interfaces/IUniswapV3Callee.sol';
 
 // library TODO: sqrt() and reciprocal() methods on UQ112x112, and multiplication of two UQ112s
 
-contract UniswapV3Pair is UniswapV3ERC20 {
+contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     using SafeMath for uint;
     using SafeMath for uint112;
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
 
-    uint public constant MINIMUM_LIQUIDITY = 10**3;
-    bytes4 private constant TRANSFER_SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
-    bytes4 private constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
+    uint public constant override MINIMUM_LIQUIDITY = 10**3;
 
-    address public immutable factory;
-    address public immutable token0;
-    address public immutable token1;
+    address public immutable override factory;
+    address public immutable override token0;
+    address public immutable override token1;
 
     uint112 public lpFee; // in bps
 
@@ -31,9 +31,9 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
     uint32  private blockTimestampLast; // uses single storage slot, accessible via getReserves
 
-    uint public price0CumulativeLast;
-    uint public price1CumulativeLast;
-    uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
+    uint public override price0CumulativeLast;
+    uint public override price1CumulativeLast;
+    uint public override kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
     int16 public currentTick; // the current tick for the token0 price. when odd, current price is between ticks
 
@@ -56,38 +56,23 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         unlocked = 1;
     }
 
-    function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
+    function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
         _reserve0 = reserve0;
         _reserve1 = reserve1;
         _blockTimestampLast = blockTimestampLast;
     }
 
-    function _safeTransfer(address token, address to, uint value) private {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(TRANSFER_SELECTOR, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV3: TRANSFER_FAILED');
-    }
-
-    function _safeTransferFrom(address token, address from, address to, uint value) private {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(TRANSFERFROM_SELECTOR, from, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV3: TRANSFERFROM_FAILED');
-    }
-
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
-    event Swap(
-        address indexed sender,
-        uint amount0In,
-        uint amount1In,
-        uint amount0Out,
-        uint amount1Out,
-        address indexed to
-    );
-    event Sync(uint112 reserve0, uint112 reserve1);
-
     constructor(address token0_, address token1_) public {
         factory = msg.sender;
         token0 = token0_;
         token1 = token1_;
+    }
+
+    // called once immediately after construction by the factory
+    function initialize(string calldata name_, string calldata symbol_) external {
+        require(msg.sender == factory, 'UniswapV3Pair: FACTORY');
+        name = name_;
+        symbol = symbol_;
     }
 
     // update reserves and, on the first call per block, price accumulators
@@ -128,7 +113,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function mint(address to) external lock returns (uint liquidity) {
+    function mint(address to) external override lock returns (uint liquidity) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
@@ -152,7 +137,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function burn(address to) external lock returns (uint amount0, uint amount1) {
+    function burn(address to) external override lock returns (uint amount0, uint amount1) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
@@ -166,8 +151,8 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
         require(amount0 > 0 && amount1 > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_BURNED');
         _burn(address(this), liquidity);
-        _safeTransfer(_token0, to, amount0);
-        _safeTransfer(_token1, to, amount1);
+        TransferHelper.safeTransfer(_token0, to, amount0);
+        TransferHelper.safeTransfer(_token1, to, amount1);
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
 
@@ -245,7 +230,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         reserve0 = _reserve0;
         reserve1 = _reserve1;
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, totalAmountOut, data);
-        _safeTransferFrom(token0, msg.sender, address(this), amount0In);
+        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0In);
 
         // TODO: emit event, update oracle, etc
     }
@@ -262,8 +247,8 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     //     address _token0 = token0;
     //     address _token1 = token1;
     //     require(to != _token0 && to != _token1, 'UniswapV3: INVALID_TO');
-    //     if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
-    //     if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
+    //     if (amount0Out > 0) TransferHelper.safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
+    //     if (amount1Out > 0) TransferHelper.safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
     //     if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, amount0Out, amount1Out, data);
     //     balance0 = IERC20(_token0).balanceOf(address(this));
     //     balance1 = IERC20(_token1).balanceOf(address(this));
@@ -325,7 +310,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         limitPool.quantity0 += amount;
         limitOrders[keccak256(abi.encodePacked(msg.sender, tick, limitPool.cycle))] += amount;
 
-        _safeTransferFrom(token0, msg.sender, address(this), amount);
+        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount);
     }
 
     function placeOrder1(int16 tick, uint112 amount) external lock {
@@ -335,7 +320,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         limitPool.quantity1 += amount;
         limitOrders[keccak256(abi.encodePacked(msg.sender, tick, limitPool.cycle))] += amount;
 
-        _safeTransferFrom(token1, msg.sender, address(this), amount);
+        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount);
     }
 
     function cancel(int16 tick, uint cycle, address to) external lock {
@@ -348,10 +333,10 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         limitOrders[key] = 0;
         if (cycle % 2 == 0) {
             limitPool.quantity0 -= amount;
-            _safeTransfer(token0, to, amount);
+            TransferHelper.safeTransfer(token0, to, amount);
         } else {
             limitPool.quantity1 -= amount;
-            _safeTransfer(token1, to, amount);
+            TransferHelper.safeTransfer(token1, to, amount);
         }
     }
 
@@ -363,9 +348,9 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         limitOrders[key] = 0;
         FixedPoint.uq112x112 memory price = getTickPrice(currentTick);
         if (cycle % 2 == 0) {
-            _safeTransfer(token1, to, price.mul112(amount).decode());
+            TransferHelper.safeTransfer(token1, to, price.mul112(amount).decode());
         } else {
-            _safeTransfer(token0, to, price.reciprocal().mul112(amount).decode());
+            TransferHelper.safeTransfer(token0, to, price.reciprocal().mul112(amount).decode());
         }
     }
 
@@ -373,8 +358,8 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     // function skim(address to) external lock {
     //     address _token0 = token0; // gas savings
     //     address _token1 = token1; // gas savings
-    //     _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0));
-    //     _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1));
+    //     TransferHelper.safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0));
+    //     TransferHelper.safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1));
     // }
 
     // // force reserves to match balances
