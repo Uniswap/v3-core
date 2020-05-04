@@ -20,7 +20,7 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@uniswap/lib": "^1.1.1"
+    "@uniswap/lib": "1.1.2"
   },
   "devDependencies": {
     "@types/chai": "^4.2.6",

@@ -2,14 +2,15 @@ pragma solidity =0.6.6;
 pragma experimental ABIEncoderV2;
 
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
+import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './UniswapV3ERC20.sol';
 import './libraries/Math.sol';
-import './libraries/FixedPoint.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
+import './libraries/FixedPointExtra.sol';
 
 // library TODO: sqrt() and reciprocal() methods on UQ112x112, and multiplication of two UQ112s
 
@@ -17,6 +18,7 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     using SafeMath for uint;
     using SafeMath for uint112;
     using FixedPoint for FixedPoint.uq112x112;
+    using FixedPointExtra for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
 
     uint public constant override MINIMUM_LIQUIDITY = 10**3;
