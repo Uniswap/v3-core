@@ -18,7 +18,8 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     using FixedPoint for FixedPoint.uq144x112;
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;
-    bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
+    bytes4 private constant TRANSFER_SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
+    bytes4 private constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
 
     address public factory;
     address public token0;
@@ -62,8 +63,13 @@ contract UniswapV3Pair is UniswapV3ERC20 {
     }
 
     function _safeTransfer(address token, address to, uint value) private {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(TRANSFER_SELECTOR, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV3: TRANSFER_FAILED');
+    }
+
+    function _safeTransferFrom(address token, address from, address to, uint value) private {
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(TRANSFERFROM_SELECTOR, from, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV3: TRANSFERFROM_FAILED');
     }
 
     event Mint(address indexed sender, uint amount0, uint amount1);
@@ -183,6 +189,8 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         return uint112(1);
     }
 
+    // TODO: implement swap1for0, or integrate it into this
+    // one difference is that swap1for0 will need to initialize cycle to 1 if it starts at 0
     function swap0for1(uint amount0In, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
         int16 _currentTick = currentTick;
@@ -216,6 +224,8 @@ contract UniswapV3Pair is UniswapV3ERC20 {
                 if (amountInLeft == 0) {
                     // new cycle
                     limitPools[currentTick] = LimitPool(0, 0, pool.cycle + 1);
+                } else {
+                    limitPools[currentTick] = pool;
                 }
             } else {
                 // we are in Uniswap mode
@@ -237,9 +247,10 @@ contract UniswapV3Pair is UniswapV3ERC20 {
             }
         }
         currentTick = _currentTick;
+        reserve0 = _reserve0;
+        reserve1 = _reserve1;
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, totalAmountOut, data);
-        // TODO: make safe or do v2 style
-        require(IERC20(token0).transferFrom(msg.sender, address(this), amount0In), "UniswapV3: TRANSFERFROM_FAILED");
+        _safeTransferFrom(token0, msg.sender, address(this), amount0In);
         
         // TODO: emit event, update oracle, etc
     }
@@ -313,11 +324,13 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         // place a limit sell order for token0
         require(tick > currentTick, "UniswapV3: LIMIT_ORDER_PRICE_TOO_LOW");
         LimitPool storage limitPool = limitPools[tick];
+        if (limitPool.cycle == 0) {
+            limitPool.cycle = 1;
+        }
         limitPool.quantity0 += amount;
         limitOrders[keccak256(abi.encodePacked(msg.sender, tick, limitPool.cycle))] += amount;
         
-        // TODO: make safe or do v2 style
-        require(IERC20(token0).transferFrom(msg.sender, address(this), amount), "UniswapV3: TRANSFERFROM_FAILED");
+        _safeTransferFrom(token0, msg.sender, address(this), amount);
     }
     
     function placeOrder1(int16 tick, uint112 amount) external lock {
@@ -327,8 +340,7 @@ contract UniswapV3Pair is UniswapV3ERC20 {
         limitPool.quantity1 += amount;
         limitOrders[keccak256(abi.encodePacked(msg.sender, tick, limitPool.cycle))] += amount;
         
-        // TODO: make safe or do v2 style
-        require(IERC20(token1).transferFrom(msg.sender, address(this), amount), "UniswapV3: TRANSFERFROM_FAILED");
+        _safeTransferFrom(token1, msg.sender, address(this), amount);
     }
 
     function cancel(int16 tick, uint cycle, address to) external lock {
