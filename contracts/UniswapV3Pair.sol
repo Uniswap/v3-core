@@ -39,22 +39,22 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     uint112 private virtualSupply;  // current virtual supply;
     uint64 private timeInitialized; // timestamp when pool was initialized
 
-    int16 public currentTick; // the current tick for the token0 price (rounded down)
+    uint16 public currentTick; // the current tick for the token0 price (rounded down)
 
     uint private unlocked = 1;
     
     struct VirtualPool {
-        int112 quantity0delta;               // quantity of virtual token0 that gets added or removed when price crosses this tick
+        int120 quantity0delta;               // quantity of virtual token0 that gets added or removed when price crosses this tick
         uint32 secondsGrowthOutside;         // measures number of seconds spent while pool was on other side of this tick (from the current price)
         FixedPoint.uq112x112 kGrowthOutside; // measures growth due to fees while pool was on the other side of this tick (from the current price)
     }
     
-    mapping (int16 => VirtualPool) virtualPools;  // mapping from tick indexes to virtual pools
+    mapping (uint16 => VirtualPool) virtualPools;  // mapping from tick indexes to virtual pools
 
     struct UserBounds {
-        int16 lowerTick; // tick for the minimum token0 price, at which their liquidity is kicked out
-        int16 upperTick; // tick for the maximum token0 price, at which their liquidity is kicked out
-        uint224 invariant; // value of sqrt(k) when last updated
+        uint16 lowerTick;                   // tick for the minimum token0 price, at which their liquidity is kicked out
+        uint16 upperTick;                   // tick for the maximum token0 price, at which their liquidity is kicked out
+        uint224 outOfBoundsInvariantStart; // product of the starting growth level for the upper and lower bounds, at the time this was initiated
     }
 
     mapping (address => UserBounds) userBounds;
@@ -65,6 +65,8 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         uint112 liquidity; // virtual liquidity shares when within the range
     }
 
+    mapping (address => UserBalances) userBalances;
+
     modifier lock() {
         require(unlocked == 1, 'UniswapV3: LOCKED');
         unlocked = 0;
@@ -72,15 +74,26 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         unlocked = 1;
     }
 
+    // returns sqrt(x*y)/shares
     function getInvariant() public view returns (FixedPoint.uq112x112 memory k) {
         uint112 rootK = uint112(Math.sqrt(uint256(reserve0) * uint256(reserve1)));
         return FixedPoint.encode(rootK).div(virtualSupply);
+    }
+
+    function getGrowthAbove(uint16 tickIndex) {
+
     }
 
     function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
         _reserve0 = reserve0;
         _reserve1 = reserve1;
         _blockTimestampLast = blockTimestampLast;
+    }
+
+    // 
+    function adjustedVirtualBalanceOf(address user) public override view returns (uint256 virtualBalance) {
+        virtualBalance = userBalances[user].liquidity;
+
     }
 
     constructor(address token0_, address token1_) public {
@@ -193,7 +206,7 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     // TODO: implement swap1for0, or integrate it into this
     function swap0for1(uint amount0In, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
-        int16 _currentTick = currentTick;
+        uint16 _currentTick = currentTick;
 
         uint112 totalAmountOut = 0;
 
@@ -228,18 +241,18 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         // TODO: emit event, update oracle, etc
     }
 
-    function getTickPrice(int16 index) public pure returns (FixedPoint.uq112x112 memory) {
+    function getTickPrice(uint16 index) public pure returns (FixedPoint.uq112x112 memory) {
         // returns a UQ112x112 representing the price of token0 in terms of token1, at the tick with that index
-        // odd tick indices (representing bands between ticks)
 
-        index = index / int16(2);
+        // TODO: fix this
+        int16 signedIndex = (int32(index) - 2**15);
 
         if (index == 0) {
             return FixedPoint.encode(1);
         }
 
         // compute 1.01^abs(index)
-        // TODO: improve and fix this math
+        // TODO: improve and fix this math, which is currently totally wrong
         // adapted from https://ethereum.stackexchange.com/questions/10425/is-there-any-efficient-way-to-compute-the-exponentiation-of-a-fraction-and-an-in
         FixedPoint.uq112x112 memory price = FixedPoint.encode(0);
         FixedPoint.uq112x112 memory N = FixedPoint.encode(1);
@@ -248,12 +261,12 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         uint precision = 50;
         for (uint i = 0; i < precision; ++i){
             price.add(N.div(B).div(q));
-            N  = N.mul112(uint112(index - int16(i)));
+            N  = N.mul112(uint112(signedIndex - int16(i)));
             B = B * uint112(i+1);
             q = q * 100;
         }
 
-        if (index < 0) {
+        if (signedIndex < 0) {
             return price.reciprocal();
         }
 
