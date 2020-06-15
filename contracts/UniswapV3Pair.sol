@@ -43,18 +43,23 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
 
     uint private unlocked = 1;
     
-    struct VirtualPool {
-        int120 quantity0delta;               // quantity of virtual token0 that gets added or removed when price crosses this tick
+    struct TickInfo {
         uint32 secondsGrowthOutside;         // measures number of seconds spent while pool was on other side of this tick (from the current price)
         FixedPoint.uq112x112 kGrowthOutside; // measures growth due to fees while pool was on the other side of this tick (from the current price)
     }
+
+    struct Delta {
+        uint112 sharesOut;                   // number of shares that should be kicked out when this tick is crossed 
+        uint112 tokensIn;                    // number of tokens that should be kicked in when this tick is crossed
+    }
     
-    mapping (uint16 => VirtualPool) virtualPools;  // mapping from tick indexes to virtual pools
+    mapping (uint16 => TickInfo) tickInfos;  // mapping from tick indexes to information about that tick
+    mapping (uint16 => Delta) deltas;        // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
     struct UserBounds {
-        uint16 lowerTick;                   // tick for the minimum token0 price, at which their liquidity is kicked out
-        uint16 upperTick;                   // tick for the maximum token0 price, at which their liquidity is kicked out
-        uint224 outOfBoundsInvariantStart; // product of the starting growth level for the upper and lower bounds, at the time this was initiated
+        uint16 lowerTick;                   // tick for the minimum token0 price, at which their liquidity is kicked out. 0 if no lower limit
+        uint16 upperTick;                   // tick for the maximum token0 price, at which their liquidity is kicked out. 0 if no lower limit
+        uint224 growthOutsideStart;         // product of the starting growth level for the upper and lower bounds, last time this was updated
     }
 
     mapping (address => UserBounds) userBounds;
@@ -76,12 +81,38 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
 
     // returns sqrt(x*y)/shares
     function getInvariant() public view returns (FixedPoint.uq112x112 memory k) {
-        uint112 rootK = uint112(Math.sqrt(uint256(reserve0) * uint256(reserve1)));
-        return FixedPoint.encode(rootK).div(virtualSupply);
+        uint112 rootXY = uint112(Math.sqrt(uint256(reserve0) * uint256(reserve1)));
+        return FixedPoint.encode(rootXY).div(virtualSupply);
     }
 
-    function getGrowthAbove(uint16 tickIndex) {
+    function getGrowthAbove(uint16 tickIndex, uint16 _currentTick, FixedPoint.uq112x112 _k) public view returns (FixedPoint.uq112x112 memory) {
+        kGrowthOutside = tickInfos[tickIndex].kGrowthOutside;
+        if (_currentTick >= tickIndex) {
+            // this range is currently active
+            return _k.uqdiv112(kGrowthOutside);
+        } else {
+            // this range is currently inactive
+            return kGrowthOutside;
+        }
+    }
 
+    function getGrowthBelow(uint16 tickIndex, uint16 _currentTick, FixedPoint.uq112x112 _k) public view returns (FixedPoint.uq112x112 memory) {
+        kGrowthOutside = tickInfos[tickIndex].kGrowthOutside;
+        if (_currentTick < tickIndex) {
+            // this range is currently active
+            return _k.uqdiv112(kGrowthOutside);
+        } else {
+            // this range is currently inactive
+            return kGrowthOutside;
+        }
+    }
+
+    function getGrowthOutside(uint16 _lowerTick, uint16 _upperTick) public view returns (FixedPoint.uq112x112 memory growth) {
+        FixedPoint.uq112x112 _k = getInvariant();
+        uint16 _currentTick = currentTick;
+        FixedPoint.uq112x112 growthAbove = getGrowthAbove(_upperTick, _currentTick, _k);
+        FixedPoint.uq112x112 growthBelow = getGrowthBelow(_lowerTick, _currentTick, _k);
+        return growthAbove.uqmul112(growthBelow);
     }
 
     function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
@@ -90,10 +121,12 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         _blockTimestampLast = blockTimestampLast;
     }
 
-    // 
-    function adjustedVirtualBalanceOf(address user) public override view returns (uint256 virtualBalance) {
-        virtualBalance = userBalances[user].liquidity;
-
+    // get number of virtual liquidity tokens that a user owns, adjusted to cancel out fee growth that occurred outside of their liquidity bounds
+    function adjustedVirtualBalanceOf(address user) public override view returns (uint112) {
+        UserBounds memory userBounds = userBounds[user];
+        FixedPoint.uq112x112 growthOutside = getGrowthOutside(userBounds.lowerTick, userBounds.upperTick);
+        FixedPoint.uq112x112 adjustmentFactor = growthOutsideStart.uqdiv112(userBounds.growthOutside);
+        return adjustmentFactor.mul112(virtualBalance);
     }
 
     constructor(address token0_, address token1_) public {
@@ -207,6 +240,7 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     function swap0for1(uint amount0In, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
         uint16 _currentTick = currentTick;
+        uint112 _virtualSupply = virtualSupply;
 
         uint112 totalAmountOut = 0;
 
@@ -228,8 +262,35 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
 
             amountInLeft = amountInLeft - amountToTrade;
             if (amountInLeft == 0) {
-                currentTick -= 1;
-                // TODO: look up the virtual pool and kick liquidity in or out
+                // shift past the tick
+
+                FixedPoint.uq112x112 memory k = Math.sqrt(uint(_reserve0) * uint(_reserve1)) / virtualSupply;
+                TickInfo memory _oldTickInfo = tickInfos[_currentTick];
+                FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.kGrowthOutside ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
+                Delta _delta = deltas[_currentTick];
+                
+                // kick out liquidity
+                uint112 tokensOut = (uint(reserve0) * uint(_delta.sharesOut)) / uint(_virtualSupply);
+                _reserve0 -= tokensOut;
+                _reserve1 -= (reserve1 * _delta.sharesOut) / _virtualSupply;
+                _virtualSupply -= _delta.sharesOut;
+                // kick in liquidity
+                uint112 sharesIn = uint112((uint(_virtualSupply) * uint(uint_delta.tokensIn)) / uint(_reserve0));
+                _virtualSupply += sharesIn;
+                _reserve0 += _delta.tokensIn;
+                _reserve1 += price.mul112(_delta.tokensIn);
+                // update the deltas
+                deltas[_currentTick] = Delta({
+                    sharesOut: sharesIn,
+                    tokensIn: tokensOut
+                });
+                // update tick info
+                tickInfos[_currentTick] = TickInfo({
+                    // TODO: the overflow trick may not work here... we may need to switch to uint40 for timestamp
+                    secondsGrowthOutside: uint32(block.timestamp % 2**32) - uint32(timeInitialized) - _oldTickInfo.secondsGrowthOutside,
+                    kGrowthOutside: k.uqdiv112(_oldKGrowthOutside)
+                });
+                _currentTick -= 1;
             }
         }
         currentTick = _currentTick;
