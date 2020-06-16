@@ -13,7 +13,7 @@ interface IUniswapV3Pair is IUniswapV3ERC20 {
         uint amount1Out,
         address indexed to
     );
-    event Sync(uint112 reserve0, uint112 reserve1);
+    event Give(address indexed from, uint liquidity);
 
     function MINIMUM_LIQUIDITY() external pure returns (uint);
     function factory() external view returns (address);
