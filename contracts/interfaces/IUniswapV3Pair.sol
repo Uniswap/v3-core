@@ -7,13 +7,13 @@ interface IUniswapV3Pair is IUniswapV3ERC20 {
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
     event Swap(
         address indexed sender,
-        uint amount0In,
-        uint amount1In,
-        uint amount0Out,
-        uint amount1Out,
+        bool tokenIn,
+        uint amountIn,
+        uint amountOut,
         address indexed to
     );
     event Give(address indexed from, uint liquidity);
+    event Shift(uint16 tick);
 
     function MINIMUM_LIQUIDITY() external pure returns (uint);
     function factory() external view returns (address);

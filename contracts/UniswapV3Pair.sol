@@ -48,18 +48,13 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         FixedPoint.uq112x112 kGrowthOutside; // measures growth due to fees while pool was on the other side of this tick (from the current price)
     }
 
-    struct Delta {
-        uint112 sharesOut;                   // number of shares that should be kicked out when this tick is crossed 
-        uint112 tokensIn;                    // number of tokens that should be kicked in when this tick is crossed
-    }
-    
     mapping (uint16 => TickInfo) tickInfos;  // mapping from tick indexes to information about that tick
-    mapping (uint16 => Delta) deltas;        // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+    mapping (uint16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
     struct UserBounds {
-        uint16 lowerTick;                   // tick for the minimum token0 price, at which their liquidity is kicked out. 0 if no lower limit
-        uint16 upperTick;                   // tick for the maximum token0 price, at which their liquidity is kicked out. 0 if no lower limit
-        uint224 growthOutsideStart;         // product of the starting growth level for the upper and lower bounds, last time this was updated
+        uint16 lowerTick;                           // tick for the minimum token0 price, at which their liquidity is kicked out. 0 if no lower limit
+        uint16 upperTick;                           // tick for the maximum token0 price, at which their liquidity is kicked out. 0 if no lower limit
+        FixedPoint.uq112x112 growthOutsideStart;    // product of the starting growth level for the upper and lower bounds, last time this was updated
     }
 
     mapping (address => UserBounds) userBounds;
@@ -81,7 +76,7 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
 
     // returns sqrt(x*y)/shares
     function getInvariant() public view returns (FixedPoint.uq112x112 memory k) {
-        uint112 rootXY = uint112(Math.sqrt(uint256(reserve0) * uint256(reserve1)));
+        uint112 rootXY = uint112(Babylonian.sqrt(uint256(reserve0) * uint256(reserve1)));
         return FixedPoint.encode(rootXY).div(virtualSupply);
     }
 
@@ -190,10 +185,11 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
         }
         require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
         _mint(to, liquidity);
-
         _reserve0 += amount0;
         _reserve1 += amount1;
         _update(_reserve0, _reserve1);
+        TransferHelper.safeTransferFrom(_token0, msg.sender, address(this), amount0);
+        TransferHelper.safeTransferFrom(_token1, msg.sender, address(this), amount1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
         emit Mint(msg.sender, amount0, amount1);
     }
@@ -206,16 +202,16 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
-        amount0 = liquidity.mul(uint(reserve0)) / _totalSupply; // using balances ensures pro-rata distribution
-        amount1 = liquidity.mul(uint(reserve1)) / _totalSupply; // using balances ensures pro-rata distribution
+        uint amount0 = liquidity.mul(uint(_reserve0)) / _totalSupply;
+        uint amount1 = liquidity.mul(uint(_reserve1)) / _totalSupply;
         require(amount0 > 0 && amount1 > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_BURNED');
         _burn(msg.sender, liquidity);
-        TransferHelper.safeTransfer(_token0, to, amount0);
-        TransferHelper.safeTransfer(_token1, to, amount1);
         _reserve0 -= amount0;
         _reserve1 -= amount1;
         _update(_reserve0, _reserve1);
-        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
+        TransferHelper.safeTransfer(_token0, to, amount0);
+        TransferHelper.safeTransfer(_token1, to, amount1);
+        if (feeOn) kLast = uint(_reserve0).mul(_reserve1); // reserve0 and reserve1 are up-to-date
         emit Burn(msg.sender, amount0, amount1, to);
     }
 
@@ -224,6 +220,89 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     function give(uint liquidity) {
         _burn(msg.sender, liquidity);
         emit Give(msg.sender, liquidity);
+    }
+
+    // provide bounded liquidity
+    function bind(uint liquidity, uint16 lowerTick, uint16 upperTick) external lock {
+        require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
+        require((lowerTick != 0 && upperTick == 0) || lowerTick < upperTick, "UniswapV3: BAD_TICKS");
+        UserBalance _userBalance = userBalances[msg.sender];
+        require(_userBalance.liquidity == 0, "UniswapV3: ALREADY_BOUND");
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
+        bool feeOn = _mintFee(_reserve0, _reserve1);
+        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+        require(_totalSupply > 0, 'UniswapV3: NO_UNBOUND_LIQUIDITY');
+        uint16 _currentTick = currentTick;
+        
+        // calculate what the token balances at lower ticks and upper ticks
+        // TODO: oh my god, the scope issues
+        uint112 lowerToken0Balance = 0;
+        uint112 upperToken0Balance = 0;
+        uint112 lowerToken1Balance = 0;
+        uint112 upperToken1Balance = 0;
+        uint112 sqrtXY = Babylonian.sqrt(reserve0 * reserve1);
+        if (lowerTick != 0) {
+            FixedPoint.uq112x112 memory lowerTickPrice = getTickPrice(lowerTick);
+            lowerToken0Balance = lowerTickPrice.reciprocal().sqrt().mul112(sqrtXY).decode();
+            lowerToken1Balance = upperToken0Balance.mul112(upperToken0Balance).decode();
+        }
+        if (upperTick != 0) {
+            FixedPoint.uq112x112 memory upperTickPrice = getTickPrice(lowerTick);
+            upperToken0Balance = upperTickPrice.reciprocal().sqrt().mul112(sqrtXY).decode();
+            upperToken1Balance = upperToken0Balance.mul112(upperToken0Balance).decode();
+        }
+        uint amount0;
+        uint amount1;
+
+        if (_currentTick < lowerTick) {
+            amount0 = 0;
+            amount1 = lowerToken1Balance - upperToken1Balance;
+            deltas[lowerTick] += lowerToken0Balance;
+            if (upperTick != 0) {
+                deltas[upperTick] -= upperToken0Balance;
+            }
+        } else if (currentTick < upperTick || upperTick == 0) {
+            uint virtualAmount0 = liquidity.mul(uint(_reserve0)) / _totalSupply;
+            uint virtualAmount1 = liquidity.mul(uint(_reserve1)) / _totalSupply;
+            amount0 = virtualAmount0 - lowerToken0Balance;
+            amount1 = virtualAmount1 - upperToken1Balance;
+            _reserve0 += virtualAmount0;
+            _reserve1 += virtualAmount1;
+            totalSupply = _totalSupply + liquidity;
+            if (lowerTick != 0) {
+                deltas[lowerTick] -= lowerToken0Balance;
+            }
+            if (upperTick != 0) {
+                deltas[upperTick] -= upperToken0Balance;
+            }
+        } else {
+            amountIn0 = upperToken1Balance - lowerToken1Balance;
+            amountIn1 = 0;
+            deltas[upperTick] += upperToken1Balance;
+            if (lowerTick != 0) {
+                deltas[lowerTick] -= lowerToken0Balance;
+            }
+        }
+        userBounds[msg.sender] = UserBounds({
+            lowerTick: lowerTick,
+            upperTick: upperTick,
+            growthOutsideStart: getGrowthOutside(lowerTick, upperTick) 
+        });
+        userBalances[msg.sender] = UserBalances({
+            token0Owed: lowerToken0Balance,
+            token1Owed: upperToken1Balance,
+            liquidity: liquidity
+        });
+        TransferHelper.safeTransferFrom(_token0, msg.sender, address(this), amount0);
+        TransferHelper.safeTransferFrom(_token1, msg.sender, address(this), amount1);
+        _update(_reserve0, _reserve1);
+        if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
+        emit Mint(msg.sender, amount0, amount1);
+    }
+
+    // Remove all bounded liquidity
+    function unbind() external lock {
+        // TODO
     }
 
     function getTradeToRatio(uint112 y0, uint112 x0, FixedPoint.uq112x112 memory price) internal view returns (uint112) {
@@ -235,14 +314,15 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
     }
 
     // TODO: implement swap1for0, or integrate it into this
-    function swap0for1(uint amount0In, address to, bytes calldata data) external lock {
+    function swap0for1(uint amountIn, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
         uint16 _currentTick = currentTick;
         uint112 _virtualSupply = virtualSupply;
 
         uint112 totalAmountOut = 0;
 
-        uint112 amountInLeft = uint112(amount0In);
+        uint112 amountInLeft = uint112(amountIn);
+        uint112 amountOut = 0;
 
         while (amountInLeft > 0) {
             FixedPoint.uq112x112 memory price = getTickPrice(_currentTick);
@@ -254,49 +334,47 @@ contract UniswapV3Pair is UniswapV3ERC20, IUniswapV3Pair {
 
             // execute the sell of amountToTrade
             uint112 adjustedAmountToTrade = amountToTrade * (10000 - lpFee) / 10000;
-            uint112 amountOut = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
-            _reserve0 -= amountOut;
+            uint112 amountOutStep = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
+
+            amountOut += amountOutStep;
+            _reserve0 -= amountOutStep;
             // TODO: handle overflow?
             _reserve1 += amountToTrade;
 
             amountInLeft = amountInLeft - amountToTrade;
             if (amountInLeft == 0) { // shift past the tick
-                FixedPoint.uq112x112 memory k = Math.sqrt(uint(_reserve0) * uint(_reserve1)) / virtualSupply;
+                FixedPoint.uq112x112 memory k = Babylonian.sqrt(uint(_reserve0) * uint(_reserve1)) / virtualSupply;
                 TickInfo memory _oldTickInfo = tickInfos[_currentTick];
                 FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.kGrowthOutside ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
-                Delta _delta = deltas[_currentTick];
-                // TODO: mint protocol fee (in some way that batches the updates across multiple ticks)
-                // kick out liquidity
-                uint112 tokensOut = (uint(reserve0) * uint(_delta.sharesOut)) / uint(_virtualSupply);
-                _reserve0 -= tokensOut;
-                _reserve1 -= (reserve1 * _delta.sharesOut) / _virtualSupply;
-                _virtualSupply -= _delta.sharesOut;
-                // kick in liquidity
-                uint112 sharesIn = uint112((uint(_virtualSupply) * uint(uint_delta.tokensIn)) / uint(_reserve0));
-                _virtualSupply += sharesIn;
-                _reserve0 += _delta.tokensIn;
-                _reserve1 += price.mul112(_delta.tokensIn);
-                // update the deltas
-                deltas[_currentTick] = Delta({
-                    sharesOut: sharesIn,
-                    tokensIn: tokensOut
-                });
+                // get delta of token0
+                int112 _delta = deltas[_currentTick];
+                // TODO: try to mint protocol fee in some way that batches the calls and updates across multiple ticks
+                feeOn = _mintFee();
+                // kick in/out liquidity
+                // TODO: fix this all to work with int112 delta!
+                _reserve0 += _delta;
+                _reserve1 += price.mul112(_delta);
+                uint112 shareDelta = uint112((uint(_virtualSupply) * delta) / uint(_reserve0));
+                _virtualSupply += shareDelta;
+                // update the delta
+                deltas[_currentTick] = -1 * _delta;
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // TODO: the overflow trick may not work here... we may need to switch to uint40 for timestamp
                     secondsGrowthOutside: uint32(block.timestamp % 2**32) - uint32(timeInitialized) - _oldTickInfo.secondsGrowthOutside,
                     kGrowthOutside: k.uqdiv112(_oldKGrowthOutside)
                 });
+                emit Shift(_currentTick);
+                if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
                 _currentTick -= 1;
             }
         }
         currentTick = _currentTick;
-        reserve0 = _reserve0;
-        reserve1 = _reserve1;
+        TransferHelper.safeTransfer(token1, msg.sender, amountOut);
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, totalAmountOut, data);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0In);
-        
-        // TODO: emit event, update oracle, etc
+        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amountIn);
+        _update(_reserve0, _reserve1);
+        emit Swap(msg.sender, 0, amountIn, amountOut, to);
     }
 
     function getTickPrice(uint16 index) public pure returns (FixedPoint.uq112x112 memory) {
