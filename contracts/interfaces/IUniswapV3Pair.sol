@@ -1,21 +1,18 @@
 pragma solidity >=0.6.2;
 
-import "./IUniswapV3ERC20.sol";
-
-interface IUniswapV3Pair is IUniswapV3ERC20 {
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+interface IUniswapV3Pair {
     event Swap(
         address indexed sender,
-        uint amount0In,
-        uint amount1In,
-        uint amount0Out,
-        uint amount1Out,
+        bool tokenIn,
+        uint amountIn,
+        uint amountOut,
         address indexed to
     );
-    event Sync(uint112 reserve0, uint112 reserve1);
+    event Shift(uint16 tick);
+    event Add(address indexed sender, uint112 liquidity, uint16 lowerTick, uint16 upperTick);
+    event Remove(address indexed sender, uint112 liquidity, uint16 lowerTick, uint16 upperTick);
 
-    function MINIMUM_LIQUIDITY() external pure returns (uint);
+    function MINIMUM_LIQUIDITY() external pure returns (uint112);
     function factory() external view returns (address);
     function token0() external view returns (address);
     function token1() external view returns (address);
@@ -24,9 +21,7 @@ interface IUniswapV3Pair is IUniswapV3ERC20 {
     function price1CumulativeLast() external view returns (uint);
     function kLast() external view returns (uint);
 
-    function mint(address to) external returns (uint liquidity);
-    function burn(address to) external returns (uint amount0, uint amount1);
-//    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-//    function skim(address to) external;
-//    function sync() external;
+    function initialAdd(uint112 amount0, uint112 amount1, uint16 startingTick) external returns (uint112 liquidity);
+    function add(uint112 liquidity, uint16 lowerTick, uint16 upperTick) external;
+    function remove(uint112 liquidity, uint16 lowerTick, uint16 upperTick) external;
 }

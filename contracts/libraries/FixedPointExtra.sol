@@ -20,4 +20,19 @@ library FixedPointExtra {
         require((z = self._x + y._x) >= self._x, 'FixedPointExtra: ADD_OVERFLOW');
         return FixedPoint.uq112x112(z);
     }
+
+    // multiply a UQ112x112 by a UQ112x112, returning a UQ112x112
+    function uqmul112(FixedPoint.uq112x112 memory self, FixedPoint.uq112x112 memory x) internal pure returns (FixedPoint.uq112x112 memory) {
+        // TODO: implement this
+        // silly hack to avoid linter error
+        return true ? self : x;
+    }
+
+    // divide a UQ112x112 by a UQ112x112, returning a UQ112x112
+    function uqdiv112(FixedPoint.uq112x112 memory self, FixedPoint.uq112x112 memory x) internal pure returns (FixedPoint.uq112x112 memory) {
+        // TODO: implement this
+        // silly hack to avoid linter error
+        return true ? self : x;
+    }
+
 }
