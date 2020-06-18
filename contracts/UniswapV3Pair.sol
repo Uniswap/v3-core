@@ -20,6 +20,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using FixedPoint for FixedPoint.uq144x112;
 
     uint112 public constant override MINIMUM_LIQUIDITY = uint112(10**3);
+    // TODO: upgrade solidity so we can use type(int16).max and .min 
+    int16 public constant MAX_TICK = int16(uint16(-1));
+    int16 public constant MIN_TICK = MAX_TICK + 1;
 
     address public immutable override factory;
     address public immutable override token0;
@@ -38,7 +41,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint112 private virtualSupply;  // current virtual supply;
     uint64 private timeInitialized; // timestamp when pool was initialized
 
-    uint16 public currentTick; // the current tick for the token0 price (rounded down)
+    int16 public currentTick; // the current tick for the token0 price (rounded down)
 
     uint private unlocked = 1;
     
@@ -47,8 +50,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 kGrowthOutside; // measures growth due to fees while pool was on the other side of this tick (from the current price)
     }
 
-    mapping (uint16 => TickInfo) tickInfos;  // mapping from tick indexes to information about that tick
-    mapping (uint16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+    mapping (int16 => TickInfo) tickInfos;  // mapping from tick indexes to information about that tick
+    mapping (int16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
     struct Position {
         uint112 token0Owed;
@@ -56,9 +59,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 liquidity; // virtual liquidity shares, normalized to this range
     }
 
-    // TODO: is this really the best way to map (address, uint16, uint16)
+    // TODO: is this really the best way to map (address, int16, int16)
     // user address, lower tick, upper tick
-    mapping (address => mapping (uint16 => mapping (uint16 => Position))) positions;
+    mapping (address => mapping (int16 => mapping (int16 => Position))) positions;
 
 
     modifier lock() {
@@ -74,7 +77,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return FixedPoint.encode(rootXY).div(virtualSupply);
     }
 
-    function getGrowthAbove(uint16 tickIndex, uint16 _currentTick, FixedPoint.uq112x112 memory _k) public view returns (FixedPoint.uq112x112 memory) {
+    function getGrowthAbove(int16 tickIndex, int16 _currentTick, FixedPoint.uq112x112 memory _k) public view returns (FixedPoint.uq112x112 memory) {
         TickInfo memory _tickInfo = tickInfos[tickIndex];
         if (_tickInfo.secondsGrowthOutside == 0) {
             return FixedPoint.encode(1);
@@ -89,7 +92,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function getGrowthBelow(uint16 tickIndex, uint16 _currentTick, FixedPoint.uq112x112 memory _k) public view returns (FixedPoint.uq112x112 memory) {
+    function getGrowthBelow(int16 tickIndex, int16 _currentTick, FixedPoint.uq112x112 memory _k) public view returns (FixedPoint.uq112x112 memory) {
         FixedPoint.uq112x112 memory kGrowthOutside = tickInfos[tickIndex].kGrowthOutside;
         if (_currentTick < tickIndex) {
             // this range is currently active
@@ -101,17 +104,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // gets the growth in K for within a particular range
-    function getGrowthInside(uint16 _lowerTick, uint16 _upperTick) public view returns (FixedPoint.uq112x112 memory growth) {
+    function getGrowthInside(int16 _lowerTick, int16 _upperTick) public view returns (FixedPoint.uq112x112 memory growth) {
         // TODO: simpler or more precise way to compute this?
         FixedPoint.uq112x112 memory _k = getInvariant();
 
-        uint16 _currentTick = currentTick;
+        int16 _currentTick = currentTick;
         FixedPoint.uq112x112 memory growthAbove = getGrowthAbove(_upperTick, _currentTick, _k);
         FixedPoint.uq112x112 memory growthBelow = getGrowthBelow(_lowerTick, _currentTick, _k);
         return growthAbove.uqmul112(growthBelow).reciprocal().uqmul112(_k);
     }
 
-    function normalizeToRange(uint112 liquidity, uint16 lowerTick, uint16 upperTick) internal view returns (uint112) {
+    function normalizeToRange(uint112 liquidity, int16 lowerTick, int16 upperTick) internal view returns (uint112) {
         FixedPoint.uq112x112 memory kGrowthRange = getGrowthInside(lowerTick, upperTick);
         return kGrowthRange.mul112(liquidity).decode();
     }
@@ -173,8 +176,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         balance1 = price.mul112(balance0).decode();
     }
 
-    function getBalancesAtTick(uint112 sqrtXY, uint16 tick) internal pure returns (uint112 balance0, uint112 balance1) {
-        if (tick == 0) {
+    function getBalancesAtTick(uint112 sqrtXY, int16 tick) internal pure returns (uint112 balance0, uint112 balance1) {
+        if (tick == MIN_TICK || tick == MAX_TICK) {
             return (0, 0);
         }
         FixedPoint.uq112x112 memory price = getTickPrice(tick);
@@ -182,14 +185,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function initialAdd(uint112 amount0, uint112 amount1, uint16 startingTick) external override lock returns (uint112 liquidity) {
+    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick) external override lock returns (uint112 liquidity) {
         require(virtualSupply == 0, "UniswapV3: ALREADY_INITIALIZED");
         FixedPoint.uq112x112 memory price = FixedPoint.encode(amount1).div(amount0);
         require(price._x > getTickPrice(startingTick)._x && price._x < getTickPrice(startingTick + 1)._x);
         bool feeOn = _mintFee(0, 0);
         liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(uint(MINIMUM_LIQUIDITY)));
-        positions[address(0)][0][0].liquidity = MINIMUM_LIQUIDITY;
-        positions[msg.sender][0][0] = Position({
+        positions[address(0)][MIN_TICK][MAX_TICK].liquidity = MINIMUM_LIQUIDITY;
+        positions[msg.sender][MIN_TICK][MAX_TICK] = Position({
             token0Owed: 0,
             token1Owed: 0,
             liquidity: liquidity
@@ -203,8 +206,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
-        emit Add(address(0), MINIMUM_LIQUIDITY, 0, 0);
-        emit Add(msg.sender, liquidity, 0, 0);
+        emit Add(address(0), MINIMUM_LIQUIDITY, MIN_TICK, MAX_TICK);
+        emit Add(msg.sender, liquidity, MIN_TICK, MAX_TICK);
     }
 
     // // this low-level function should be called from a contract which performs important safety checks
@@ -228,8 +231,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     //     emit Burn(msg.sender, amount0, amount1, to);
     // }
 
-    // add a specified amount of fully levered liquidity to a specified range
-    function add(uint112 liquidity, uint16 lowerTick, uint16 upperTick) external override lock {
+    // add a specified amount of liquidity to a specified range
+    // TODO: take as much as possible from the debt, and transferFrom the rest
+    function add(uint112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
         require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
         require(lowerTick < upperTick || upperTick == 0, "UniswapV3: BAD_TICKS");
         Position memory _position = positions[msg.sender][lowerTick][upperTick];
@@ -264,7 +268,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _reserve0 += virtualAmount0;
             _reserve1 += virtualAmount1;
             // yet ANOTHER adjusted liquidity amount (this one is equivalent to scaling up liquidity by _k)
-            virtualSupply = _virtualSupply + normalizeToRange(liquidity, 0, 0);
+            virtualSupply = _virtualSupply + normalizeToRange(liquidity, MIN_TICK, MAX_TICK);
             if (lowerTick != 0) {
                 deltas[lowerTick] -= int112(lowerToken0Balance);
             }
@@ -291,17 +295,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Add(msg.sender, liquidity, lowerTick, upperTick);
     }
 
-    // reinvest accumulated fees (which are unlevered) in levered liquidity
-    // technically this doesn't do anything that can't be done with remove() and add()
-    // but this gives significant gas savings (at least four transfers) on the common task of pinging to reinvest fees
-    function sync(uint16 lowerTick, uint16 upperTick) external override lock {
-        Position memory _position = positions[msg.sender][lowerTick][upperTick];
-
-        
-    }
-
     // remove some liquidity from a given range, paying back as many tokens as needed, and sending the rest to the user
-    function remove(uint112 liquidity, uint16 lowerTick, uint16 upperTick) external override lock {
+    function remove(uint112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
         // TODO
         emit Remove(msg.sender, liquidity, lowerTick, upperTick);
     }
@@ -317,7 +312,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // TODO: implement swap1for0, or integra4rte it into this
     function swap0for1(uint amountIn, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
-        uint16 _currentTick = currentTick;
+        int16 _currentTick = currentTick;
         uint112 _virtualSupply = virtualSupply;
 
         uint112 totalAmountOut = 0;
@@ -386,15 +381,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Swap(msg.sender, false, amountIn, amountOut, to);
     }
 
-    function getTickPrice(uint16 index) public pure returns (FixedPoint.uq112x112 memory) {
+    function getTickPrice(int16 index) public pure returns (FixedPoint.uq112x112 memory) {
         // returns a UQ112x112 representing the price of token0 in terms of token1, at the tick with that index
 
-        int signedIndex = int(index) - 2**15;
-        if (signedIndex == 0) {
+        if (index == 0) {
             return FixedPoint.encode(1);
         }
 
-        uint16 absIndex = signedIndex > 0 ? uint16(signedIndex) : uint16(-1 * signedIndex);
+        uint16 absIndex = index > 0 ? uint16(index) : uint16(-1 * index);
 
         // compute 1.01^abs(index)
         // TODO: improve and fix this math, which is currently totally wrong
@@ -411,7 +405,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             q = q * 100;
         }
 
-        if (signedIndex < 0) {
+        if (index < 0) {
             return price.reciprocal();
         }
 

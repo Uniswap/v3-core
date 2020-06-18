@@ -8,9 +8,9 @@ interface IUniswapV3Pair {
         uint amountOut,
         address indexed to
     );
-    event Shift(uint16 tick);
-    event Add(address indexed sender, uint112 liquidity, uint16 lowerTick, uint16 upperTick);
-    event Remove(address indexed sender, uint112 liquidity, uint16 lowerTick, uint16 upperTick);
+    event Shift(int16 tick);
+    event Add(address indexed sender, uint112 liquidity, int16 lowerTick, int16 upperTick);
+    event Remove(address indexed sender, uint112 liquidity, int16 lowerTick, int16 upperTick);
 
     function MINIMUM_LIQUIDITY() external pure returns (uint112);
     function factory() external view returns (address);
@@ -21,8 +21,8 @@ interface IUniswapV3Pair {
     function price1CumulativeLast() external view returns (uint);
     function kLast() external view returns (uint);
 
-    function initialAdd(uint112 amount0, uint112 amount1, uint16 startingTick) external returns (uint112 liquidity);
-    function add(uint112 liquidity, uint16 lowerTick, uint16 upperTick) external;
-    function remove(uint112 liquidity, uint16 lowerTick, uint16 upperTick) external;
-    function sync(uint16 lowerTick, uint16 upperTick) external;
+    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick) external returns (uint112 liquidity);
+    function add(uint112 liquidity, int16 lowerTick, int16 upperTick) external;
+    function remove(uint112 liquidity, int16 lowerTick, int16 upperTick) external;
+    function sync(int16 lowerTick, int16 upperTick) external;
 }
