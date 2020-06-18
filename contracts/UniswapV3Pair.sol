@@ -115,9 +115,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return growthAbove.uqmul112(growthBelow).reciprocal().uqmul112(_k);
     }
 
-    function normalizeToRange(uint112 liquidity, int16 lowerTick, int16 upperTick) internal view returns (uint112) {
+    function normalizeToRange(int112 liquidity, int16 lowerTick, int16 upperTick) internal view returns (int112) {
         FixedPoint.uq112x112 memory kGrowthRange = getGrowthInside(lowerTick, upperTick);
-        return kGrowthRange.mul112(liquidity).decode();
+        if (liquidity > 0) {
+            return int112(kGrowthRange.mul112(uint112(liquidity)).decode());
+        } else {
+            return -1 * int112(kGrowthRange.mul112(uint112(liquidity * -1)).decode());
+        }
     }
 
     function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
@@ -172,17 +176,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function getBalancesAtPrice(uint112 sqrtXY, FixedPoint.uq112x112 memory price) internal pure returns (uint112 balance0, uint112 balance1) {
-        balance0 = price.reciprocal().sqrt().mul112(sqrtXY).decode();
-        balance1 = price.mul112(balance0).decode();
+    function getBalancesAtPrice(int112 liquidity, FixedPoint.uq112x112 memory price) internal pure returns (int112 balance0, int112 balance1) {
+        balance0 = price.reciprocal().sqrt().smul112(liquidity);
+        balance1 = price.smul112(balance0);
     }
 
-    function getBalancesAtTick(uint112 sqrtXY, int16 tick) internal pure returns (uint112 balance0, uint112 balance1) {
+    function getBalancesAtTick(int112 liquidity, int16 tick) internal pure returns (int112 balance0, int112 balance1) {
         if (tick == MIN_TICK || tick == MAX_TICK) {
             return (0, 0);
         }
         FixedPoint.uq112x112 memory price = getTickPrice(tick);
-        return getBalancesAtPrice(sqrtXY, price);
+        return getBalancesAtPrice(liquidity, price);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
@@ -207,8 +211,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
-        emit Add(address(0), MINIMUM_LIQUIDITY, MIN_TICK, MAX_TICK);
-        emit Add(msg.sender, liquidity, MIN_TICK, MAX_TICK);
+        emit Edit(address(0), int112(MINIMUM_LIQUIDITY), MIN_TICK, MAX_TICK);
+        emit Edit(msg.sender, int112(liquidity), MIN_TICK, MAX_TICK);
     }
 
     // // this low-level function should be called from a contract which performs important safety checks
@@ -232,9 +236,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     //     emit Burn(msg.sender, amount0, amount1, to);
     // }
 
-    // add a specified amount of liquidity to a specified range
-    // TODO: take as much as possible from the debt, and transferFrom the rest?
-    function add(uint112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
+    // add or remove a specified amount of liquidity from a specified range
+    // TODO: this will not allow you to handle liquidity from fees; those may need a separate function
+    function edit(int112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
         require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         Position memory _position = positions[msg.sender][lowerTick][upperTick];
@@ -245,103 +249,52 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // TODO: oh my god, the scope issues        
         // normalized values to the range
-        uint112 adjustedLiquidity = normalizeToRange(liquidity, lowerTick, upperTick);
+        int112 adjustedLiquidity = normalizeToRange(liquidity, lowerTick, upperTick);
 
         // calculate how much the new shares are worth at lower ticks and upper ticks
-        (uint112 lowerToken0Balance, uint112 lowerToken1Balance) = getBalancesAtTick(adjustedLiquidity, lowerTick);
-        (uint112 upperToken0Balance, uint112 upperToken1Balance) = getBalancesAtTick(adjustedLiquidity, upperTick);
-        uint112 amount0;
-        uint112 amount1;
+        (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(adjustedLiquidity, lowerTick);
+        (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedLiquidity, upperTick);
+        int112 amount0;
+        int112 amount1;
 
         if (currentTick < lowerTick) {
             amount0 = 0;
             amount1 = lowerToken1Balance - upperToken1Balance;
-            deltas[lowerTick] += int112(lowerToken0Balance);
-            deltas[upperTick] -= int112(upperToken0Balance);
+            // TODO: figure out overflow here and elsewhere
+            deltas[lowerTick] += lowerToken0Balance;
+            deltas[upperTick] -= upperToken0Balance;
         } else if (currentTick < upperTick) {
             FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
-            (uint112 virtualAmount0, uint112 virtualAmount1) = getBalancesAtPrice(adjustedLiquidity, currentPrice);
+            (int112 virtualAmount0, int112 virtualAmount1) = getBalancesAtPrice(adjustedLiquidity, currentPrice);
             amount0 = virtualAmount0 - lowerToken0Balance;
             amount1 = virtualAmount1 - upperToken1Balance;
-            _reserve0 += virtualAmount0;
-            _reserve1 += virtualAmount1;
+            _reserve0.sadd(virtualAmount0);
+            _reserve1.sadd(virtualAmount1);
             // yet ANOTHER adjusted liquidity amount (this one is equivalent to scaling up liquidity by _k)
-            virtualSupply = _virtualSupply + normalizeToRange(liquidity, MIN_TICK, MAX_TICK);
-            deltas[lowerTick] -= int112(lowerToken0Balance);
-            deltas[upperTick] -= int112(upperToken0Balance);
+            virtualSupply.sadd(normalizeToRange(liquidity, MIN_TICK, MAX_TICK));
+            deltas[lowerTick] -= lowerToken0Balance;
+            deltas[upperTick] -= upperToken0Balance;
         } else {
             amount0 = upperToken1Balance - lowerToken1Balance;
             amount1 = 0;
-            deltas[upperTick] += int112(upperToken1Balance);
-            deltas[lowerTick] -= int112(lowerToken0Balance);
+            deltas[upperTick] += upperToken1Balance;
+            deltas[lowerTick] -= lowerToken0Balance;
         }
         positions[msg.sender][lowerTick][upperTick] = Position({
-            token0Owed: _position.token0Owed + lowerToken0Balance,
-            token1Owed: _position.token1Owed + upperToken1Balance,
-            liquidity: _position.liquidity + liquidity
+            token0Owed: _position.token0Owed.sadd(lowerToken0Balance),
+            token1Owed: _position.token1Owed.sadd(upperToken1Balance),
+            liquidity: _position.liquidity.sadd(liquidity)
         });
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
-        _update(_reserve0, _reserve1);
-        if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
-        emit Add(msg.sender, liquidity, lowerTick, upperTick);
-    }
-
-    // remove some liquidity from a given range, paying back as many tokens as needed, and sending the rest to the user
-    // TODO: deal with the excess liquidity from fees; this doesn't deal with that at all
-    function remove(uint112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
-        // TODO
-        require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_REMOVED');
-        require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
-        Position memory _position = positions[msg.sender][lowerTick][upperTick];
-        require(_position.liquidity > liquidity, "UniswapV3: INSUFFICIENT_LIQUIDITY");
-        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-        bool feeOn = _mintFee(_reserve0, _reserve1);
-        uint112 _virtualSupply = virtualSupply; // gas savings, must be defined here since virtualSupply can update in _mintFee
-        require(_virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
-
-        // TODO: oh my god, the scope issues        
-        // normalized values to the range
-        uint112 adjustedLiquidity = normalizeToRange(liquidity, lowerTick, upperTick);
-
-        // calculate how much the removed shares are worth at lower ticks and upper ticks
-        (uint112 lowerToken0Balance, uint112 lowerToken1Balance) = getBalancesAtTick(adjustedLiquidity, lowerTick);
-        (uint112 upperToken0Balance, uint112 upperToken1Balance) = getBalancesAtTick(adjustedLiquidity, upperTick);
-        uint112 amount0;
-        uint112 amount1;
-
-        if (currentTick < lowerTick) {
-            amount0 = 0;
-            amount1 = lowerToken1Balance - upperToken1Balance;
-            deltas[lowerTick] -= int112(lowerToken0Balance);
-            deltas[upperTick] += int112(upperToken0Balance);
-        } else if (currentTick < upperTick) {
-            FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
-            (uint112 virtualAmount0, uint112 virtualAmount1) = getBalancesAtPrice(adjustedLiquidity, currentPrice);
-            amount0 = virtualAmount0 - lowerToken0Balance;
-            amount1 = virtualAmount1 - upperToken1Balance;
-            _reserve0 -= virtualAmount0;
-            _reserve1 -= virtualAmount1;
-            // yet ANOTHER adjusted liquidity amount (this one is equivalent to scaling up liquidity by _k)
-            virtualSupply = _virtualSupply + normalizeToRange(liquidity, MIN_TICK, MAX_TICK);
-            deltas[lowerTick] -= int112(lowerToken0Balance);
-            deltas[upperTick] -= int112(upperToken0Balance);
+        if (liquidity > 0) {
+            TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint112(amount0));
+            TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint112(amount1));
         } else {
-            amount0 = upperToken1Balance - lowerToken1Balance;
-            amount1 = 0;
-            deltas[upperTick] -= int112(upperToken1Balance);
-            deltas[lowerTick] += int112(lowerToken0Balance);
+            TransferHelper.safeTransfer(token0, msg.sender, uint112(amount0));
+            TransferHelper.safeTransfer(token1, msg.sender, uint112(amount1));
         }
-        positions[msg.sender][lowerTick][upperTick] = Position({
-            token0Owed: _position.token0Owed.sub(lowerToken0Balance),
-            token1Owed: _position.token1Owed.sub(upperToken1Balance),
-            liquidity: _position.liquidity + liquidity
-        });
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
         _update(_reserve0, _reserve1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
-        emit Remove(msg.sender, liquidity, lowerTick, upperTick);
+        emit Edit(msg.sender, liquidity, lowerTick, upperTick);
     }
 
     function getTradeToRatio(uint112 y0, uint112 x0, FixedPoint.uq112x112 memory price, uint112 _lpFee) internal pure returns (uint112) {
