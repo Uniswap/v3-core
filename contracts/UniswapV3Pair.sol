@@ -101,14 +101,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // gets the growth in K for within a particular range
-    function getGrowthInside(uint16 _lowerTick, uint16 _upperTick, FixedPoint.uq112x112 memory _k) public view returns (FixedPoint.uq112x112 memory growth) {
+    function getGrowthInside(uint16 _lowerTick, uint16 _upperTick) public view returns (FixedPoint.uq112x112 memory growth) {
         // TODO: simpler or more precise way to compute this?
+        FixedPoint.uq112x112 memory _k = getInvariant();
+
         uint16 _currentTick = currentTick;
         FixedPoint.uq112x112 memory growthAbove = getGrowthAbove(_upperTick, _currentTick, _k);
         FixedPoint.uq112x112 memory growthBelow = getGrowthBelow(_lowerTick, _currentTick, _k);
         return growthAbove.uqmul112(growthBelow).reciprocal().uqmul112(_k);
     }
 
+    function normalizeToRange(uint112 liquidity, uint16 lowerTick, uint16 upperTick) internal view returns (uint112) {
+        FixedPoint.uq112x112 memory kGrowthRange = getGrowthInside(lowerTick, upperTick);
+        return kGrowthRange.mul112(liquidity).decode();
+    }
 
     function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
         _reserve0 = reserve0;
@@ -222,7 +228,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     //     emit Burn(msg.sender, amount0, amount1, to);
     // }
 
-    // add a specified amount of fully levered liquidity
+    // add a specified amount of fully levered liquidity to a specified range
     function add(uint112 liquidity, uint16 lowerTick, uint16 upperTick) external override lock {
         require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
         require(lowerTick < upperTick || upperTick == 0, "UniswapV3: BAD_TICKS");
@@ -231,14 +237,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint112 _virtualSupply = virtualSupply; // gas savings, must be defined here since virtualSupply can update in _mintFee
         require(_virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
-        
-        FixedPoint.uq112x112 memory _k = getInvariant();
-        FixedPoint.uq112x112 memory kGrowthRange = getGrowthInside(lowerTick, upperTick, _k);
 
         // TODO: oh my god, the scope issues        
 
         // normalized values to the range
-        uint112 adjustedLiquidity = kGrowthRange.mul112(liquidity).decode();
+        uint112 adjustedLiquidity = normalizeToRange(liquidity, lowerTick, upperTick);
 
         // calculate how much the new shares are worth at lower ticks and upper ticks
         (uint112 lowerToken0Balance, uint112 lowerToken1Balance) = getBalancesAtTick(adjustedLiquidity, lowerTick);
@@ -254,13 +257,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 deltas[upperTick] -= int112(upperToken0Balance);
             }
         } else if (currentTick < upperTick || upperTick == 0) {
-            (uint112 virtualAmount0, uint112 virtualAmount1) = getBalancesAtPrice(adjustedLiquidity, FixedPoint.encode(reserve1).div(reserve0));
+            FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
+            (uint112 virtualAmount0, uint112 virtualAmount1) = getBalancesAtPrice(adjustedLiquidity, currentPrice);
             amount0 = virtualAmount0 - lowerToken0Balance;
             amount1 = virtualAmount1 - upperToken1Balance;
             _reserve0 += virtualAmount0;
             _reserve1 += virtualAmount1;
-            // yet ANOTHER adjusted liquidity amount (this one is equivalent to scaling up adjustedLiquidity by _k)
-            virtualSupply = _virtualSupply + uint112((uint(virtualAmount0) * uint(_virtualSupply)) / uint(_reserve0));
+            // yet ANOTHER adjusted liquidity amount (this one is equivalent to scaling up liquidity by _k)
+            virtualSupply = _virtualSupply + normalizeToRange(liquidity, 0, 0);
             if (lowerTick != 0) {
                 deltas[lowerTick] -= int112(lowerToken0Balance);
             }
@@ -285,6 +289,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         _update(_reserve0, _reserve1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
         emit Add(msg.sender, liquidity, lowerTick, upperTick);
+    }
+
+    // reinvest accumulated fees (which are unlevered) in levered liquidity
+    // technically this doesn't do anything that can't be done with remove() and add()
+    // but this gives significant gas savings (at least four transfers) on the common task of pinging to reinvest fees
+    function sync(uint16 lowerTick, uint16 upperTick) external override lock {
+        Position memory _position = positions[msg.sender][lowerTick][upperTick];
+
+        
     }
 
     // remove some liquidity from a given range, paying back as many tokens as needed, and sending the rest to the user
