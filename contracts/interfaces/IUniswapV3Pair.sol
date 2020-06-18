@@ -24,5 +24,4 @@ interface IUniswapV3Pair {
     function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick) external returns (uint112 liquidity);
     function add(uint112 liquidity, int16 lowerTick, int16 upperTick) external;
     function remove(uint112 liquidity, int16 lowerTick, int16 upperTick) external;
-    function sync(int16 lowerTick, int16 upperTick) external;
 }
