@@ -235,7 +235,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // TODO: take as much as possible from the debt, and transferFrom the rest
     function add(uint112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
         require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
-        require(lowerTick < upperTick || upperTick == 0, "UniswapV3: BAD_TICKS");
+        require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         Position memory _position = positions[msg.sender][lowerTick][upperTick];
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         bool feeOn = _mintFee(_reserve0, _reserve1);
@@ -260,7 +260,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (upperTick != 0) {
                 deltas[upperTick] -= int112(upperToken0Balance);
             }
-        } else if (currentTick < upperTick || upperTick == 0) {
+        } else if (currentTick < upperTick) {
             FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
             (uint112 virtualAmount0, uint112 virtualAmount1) = getBalancesAtPrice(adjustedLiquidity, currentPrice);
             amount0 = virtualAmount0 - lowerToken0Balance;
