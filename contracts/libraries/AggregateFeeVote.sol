@@ -14,7 +14,14 @@ library AggregateFeeVote {
         // freshman sum
         return Aggregate({
             numerator: x.numerator + y.numerator,
-            denominator: y.denominator + y.denominator
+            denominator: x.denominator + y.denominator
+        });
+    }
+
+    function negate(Aggregate memory x) internal pure returns (Aggregate memory) {
+        return Aggregate({
+            numerator: -1 * x.numerator,
+            denominator: -1 * x.denominator
         });
     }
 

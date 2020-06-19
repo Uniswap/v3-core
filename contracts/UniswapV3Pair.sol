@@ -245,6 +245,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Edit(msg.sender, int112(liquidity), MIN_TICK, MAX_TICK);
     }
 
+    function updateFee(Aggregate memory delta) internal {
+        Aggregate memory _aggregateFeeVote = aggregateFeeVote;
+        _aggregateFeeVote = _aggregateFeeVote.add(delta);
+        lpFee = _aggregateFeeVote.averageFee();
+        aggregateFeeVote = _aggregateFeeVote;
+    }
+
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
         require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
@@ -302,10 +309,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // yet ANOTHER adjusted liquidity amount. this converts it into unbounded liquidity
             int112 deltaVirtualSupply = denormalizeToRange(adjustedNewLiquidity, MIN_TICK, MAX_TICK);
             virtualSupply.sadd(deltaVirtualSupply);
-            Aggregate memory _aggregateFeeVote = aggregateFeeVote;
-            _aggregateFeeVote = _aggregateFeeVote.add(deltaFeeVote);
-            lpFee = _aggregateFeeVote.averageFee();
-            aggregateFeeVote = aggregateFeeVote;
+            updateFee(deltaFeeVote);
         } else {
             amount0 += upperToken0Balance - lowerToken0Balance;
         }
@@ -377,6 +381,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 _reserve1 = _reserve1.sadd(price.smul112(_delta));
                 int112 shareDelta = int112(int(_virtualSupply) * int(_delta) / int(_reserve0));
                 _virtualSupply = _virtualSupply.sadd(shareDelta);
+                // kick in/out fee votes
+                Aggregate memory deltaFeeVote = deltaFeeVotes[_currentTick];
+                updateFee(deltaFeeVote.negate()); // negate because we're crossing the tick from right to left
+                
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // TODO: the overflow trick may not work here... we may need to switch to uint40 for timestamp
