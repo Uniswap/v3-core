@@ -20,4 +20,8 @@ library SafeMath112 {
     function sadd(uint112 x, int112 y) internal pure returns (uint112) {
         return (y >= 0) ? add(x, uint112(y)) : sub(x, uint112(-1 * y));
     }
+
+    function abs(int112 x) internal pure returns (uint112 y) {
+        return x > 0 ? uint112(x) : uint112(-1 * x);
+    }
 }
