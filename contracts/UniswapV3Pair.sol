@@ -243,7 +243,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount1 += lowerToken1Balance - upperToken1Balance;
             // TODO: figure out overflow here and elsewhere
             deltas[lowerTick] += lowerToken0Balance;
-            deltas[upperTick] -= upperToken1Balance;
+            deltas[upperTick] -= upperToken0Balance;
         } else if (currentTick < upperTick) {
             (int112 virtualAmount0, int112 virtualAmount1) = getBalancesAtPrice(adjustedNewLiquidity, currentPrice);
             amount0 += virtualAmount0 - lowerToken0Balance;
@@ -257,7 +257,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else {
             amount0 += upperToken1Balance - lowerToken1Balance;
             amount1 += 0;
-            deltas[upperTick] += upperToken1Balance;
+            deltas[upperTick] += upperToken0Balance;
             deltas[lowerTick] -= lowerToken0Balance;
         }
         uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).add(uint112(adjustedNewLiquidity));
