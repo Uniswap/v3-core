@@ -55,9 +55,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping (int16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
     struct Position {
-        uint112 token0Owed;
-        uint112 token1Owed;
         uint112 liquidity; // virtual liquidity shares, normalized to this range
+        uint112 lastAdjustedLiquidity; // adjusted liquidity shares the last time fees were collected on this
     }
 
     // TODO: is this really the best way to map (address, int16, int16)
@@ -198,9 +197,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(uint(MINIMUM_LIQUIDITY)));
         positions[address(0)][MIN_TICK][MAX_TICK].liquidity = MINIMUM_LIQUIDITY;
         positions[msg.sender][MIN_TICK][MAX_TICK] = Position({
-            token0Owed: 0,
-            token1Owed: 0,
-            liquidity: liquidity
+            liquidity: liquidity,
+            lastAdjustedLiquidity: liquidity
         });
         virtualSupply = liquidity + MINIMUM_LIQUIDITY;
         require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
@@ -235,23 +233,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, upperTick);
 
         // before moving on, withdraw any collected fees
-        // slightly optimized calculations using the ratio of the pre-existing liquidity to the new liquidity
-        FixedPoint.uq112x112 memory ratio = FixedPoint.encode(adjustedExistingLiquidity.abs()).div(adjustedNewLiquidity.abs());
-        uint112 token0OwedLimit = ratio.mul112(lowerToken0Balance.abs()).decode();
-        uint112 token1OwedLimit = ratio.mul112(upperToken1Balance.abs()).decode();
-        // excess amounts should be sent out (outgoing money means negative amounts)
-        int112 amount0 = -1 * int112(token0OwedLimit.sub(_position.token0Owed));
-        int112 amount1 = -1 * int112(token1OwedLimit.sub(_position.token1Owed));
-        require(amount0 <= 0 && amount1 <= 0, "UniswapV3: OVERFLOW");
+        FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
+        int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
+        (int112 amount0, int112 amount1) = getBalancesAtPrice(feeLiquidity, currentPrice);
+        amount0 *= -1;
+        amount1 *= -1;
 
         if (currentTick < lowerTick) {
             amount0 += 0;
             amount1 += lowerToken1Balance - upperToken1Balance;
             // TODO: figure out overflow here and elsewhere
             deltas[lowerTick] += lowerToken0Balance;
-            deltas[upperTick] -= upperToken0Balance;
+            deltas[upperTick] -= upperToken1Balance;
         } else if (currentTick < upperTick) {
-            FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
             (int112 virtualAmount0, int112 virtualAmount1) = getBalancesAtPrice(adjustedNewLiquidity, currentPrice);
             amount0 += virtualAmount0 - lowerToken0Balance;
             amount1 += virtualAmount1 - upperToken1Balance;
@@ -267,9 +261,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             deltas[upperTick] += upperToken1Balance;
             deltas[lowerTick] -= lowerToken0Balance;
         }
+        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).add(uint112(adjustedNewLiquidity));
         positions[msg.sender][lowerTick][upperTick] = Position({
-            token0Owed: _position.token0Owed.sadd(lowerToken0Balance),
-            token1Owed: _position.token1Owed.sadd(upperToken1Balance),
+            lastAdjustedLiquidity: totalAdjustedLiquidity,
             liquidity: _position.liquidity.sadd(liquidity)
         });
         if (liquidity > 0) {
