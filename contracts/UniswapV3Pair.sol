@@ -235,9 +235,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // before moving on, withdraw any collected fees
         FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
         int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
-        (int112 amount0, int112 amount1) = getBalancesAtPrice(feeLiquidity, currentPrice);
-        amount0 *= -1;
-        amount1 *= -1;
+        (int112 amount0, int112 amount1) = getBalancesAtPrice(-1 * feeLiquidity, currentPrice);
 
         if (currentTick < lowerTick) {
             amount0 += 0;
