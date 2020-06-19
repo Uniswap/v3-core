@@ -1,4 +1,6 @@
-pragma solidity >=0.5.0;
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+pragma solidity >=0.6.8;
 
 interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);

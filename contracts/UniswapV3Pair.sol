@@ -1,4 +1,6 @@
-pragma solidity =0.6.6;
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+pragma solidity >=0.6.8;
 pragma experimental ABIEncoderV2;
 
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
@@ -21,9 +23,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using FixedPoint for FixedPoint.uq144x112;
 
     uint112 public constant override MINIMUM_LIQUIDITY = uint112(10**3);
-    // TODO: upgrade solidity so we can use type(int16).max and .min 
-    int16 public constant MAX_TICK = int16(uint16(-1));
-    int16 public constant MIN_TICK = MAX_TICK + 1;
+    int16 public constant MAX_TICK = type(int16).max;
+    int16 public constant MIN_TICK = type(int16).min;
 
     address public immutable override factory;
     address public immutable override token0;
