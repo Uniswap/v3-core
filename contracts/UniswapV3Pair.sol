@@ -60,6 +60,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
 
 
+    // TODO: can something else be crammed into this
+    struct DeltaFeeVote {
+        uint112 deltaNumerator;
+        uint112 deltaDenominator;
+    }
+    mapping (int16 => DeltaFeeVote) deltaFeeVotes;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+    mapping (int16 => int112) deltaVotingShares;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+
     struct Position {
         uint112 liquidity; // virtual liquidity shares, normalized to this range
         uint112 lastAdjustedLiquidity; // adjusted liquidity shares the last time fees were collected on this
@@ -273,12 +281,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         deltas[upperTick] -= upperToken0Balance;
         
         uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
-        // since vote could change, remove all votes and add new ones
-        int16 deltaFeeVote = int16(_position.feeVote) * totalAdjustedLiquidity;
-        lpFee = uint16(totalFeeVote / virtualSupply);
-
+        // update votes. since vote could change, remove all votes and add new ones
+        int112 deltaNumerator = int16(feeVote) * int112(totalAdjustedLiquidity) - int16(_position.feeVote) * int112(_position.lastAdjustedLiquidity);
+        int112 deltaDenominator = int112(totalAdjustedLiquidity) - int112(_position.lastAdjustedLiquidity);
         if (currentTick < lowerTick) {
             amount1 += lowerToken1Balance - upperToken1Balance;
+            // TODO: figure out overflow here and elsewhere
         } else if (currentTick < upperTick) {
             (int112 virtualAmount0, int112 virtualAmount1) = getBalancesAtPrice(adjustedNewLiquidity, currentPrice);
             amount0 += virtualAmount0 - lowerToken0Balance;
