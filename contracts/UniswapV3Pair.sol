@@ -228,11 +228,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
             lastAdjustedLiquidity: liquidity,
             feeVote: feeVote
         });
-        virtualSupply = liquidity + MINIMUM_LIQUIDITY;
+        uint112 totalLiquidity = liquidity + MINIMUM_LIQUIDITY;
+        virtualSupply = totalLiquidity;
         
         // update fee
-        totalFeeVote = feeVote * liquidity;
-        lpFee = feeVote;
+        updateFee(Aggregate({
+            numerator: int112(feeVote * totalLiquidity),
+            denominator: int112(totalLiquidity)
+        }));
 
         uint112 _reserve0 = amount0;
         uint112 _reserve1 = amount1;
