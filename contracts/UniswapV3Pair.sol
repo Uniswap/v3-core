@@ -53,7 +53,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     mapping (int16 => TickInfo) tickInfos;  // mapping from tick indexes to information about that tick
-    mapping (int16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+    mapping (int16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed going from left to right (token0 price going up)
 
     struct Position {
         uint112 liquidity; // virtual liquidity shares, normalized to this range
@@ -250,11 +250,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // negative amount means the amount is sent out
         (int112 amount0, int112 amount1) = getBalancesAtPrice(-1 * feeLiquidity, currentPrice);
 
+        // TODO: figure out overflow here and elsewhere
+        deltas[lowerTick] += lowerToken0Balance;
+        deltas[upperTick] -= upperToken0Balance;
+
         if (currentTick < lowerTick) {
             amount1 += lowerToken1Balance - upperToken1Balance;
-            // TODO: figure out overflow here and elsewhere
-            deltas[lowerTick] += lowerToken0Balance;
-            deltas[upperTick] -= upperToken0Balance;
         } else if (currentTick < upperTick) {
             (int112 virtualAmount0, int112 virtualAmount1) = getBalancesAtPrice(adjustedNewLiquidity, currentPrice);
             amount0 += virtualAmount0 - lowerToken0Balance;
@@ -263,12 +264,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _reserve1.sadd(virtualAmount1);
             // yet ANOTHER adjusted liquidity amount. this converts it into unbounded liquidity
             virtualSupply.sadd(denormalizeToRange(adjustedNewLiquidity, MIN_TICK, MAX_TICK));
-            deltas[lowerTick] -= lowerToken0Balance;
-            deltas[upperTick] -= upperToken0Balance;
         } else {
             amount0 += upperToken1Balance - lowerToken1Balance;
-            deltas[upperTick] += upperToken0Balance;
-            deltas[lowerTick] -= lowerToken0Balance;
         }
         uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
         positions[msg.sender][lowerTick][upperTick] = Position({
@@ -295,7 +292,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint112(1);
     }
 
-    // TODO: implement swap1for0, or integra4rte it into this
+    // TODO: implement swap1for0, or integrate it into this
     function swap0for1(uint amountIn, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
         int16 _currentTick = currentTick;
@@ -330,7 +327,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 TickInfo memory _oldTickInfo = tickInfos[_currentTick];
                 FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.secondsGrowthOutside != 0 ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
                 // get delta of token0
-                int112 _delta = deltas[_currentTick];
+                int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
                 // TODO: try to mint protocol fee in some way that batches the calls and updates across multiple ticks
                 bool feeOn = _mintFee(_reserve0, _reserve1);
                 // kick in/out liquidity
@@ -346,8 +343,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     uint112 shareDelta = uint112((uint(_virtualSupply) * uint(-1 * _delta)) / uint(_reserve0));
                     _virtualSupply -= shareDelta;
                 }
-                // update the delta
-                deltas[_currentTick] = -1 * _delta;
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // TODO: the overflow trick may not work here... we may need to switch to uint40 for timestamp
