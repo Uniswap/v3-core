@@ -124,6 +124,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    // TODO: name and explain this better
+    function denormalizeToRange(int112 liquidity, int16 lowerTick, int16 upperTick) internal view returns (int112) {
+        FixedPoint.uq112x112 memory kGrowthRange = getGrowthInside(lowerTick, upperTick);
+        if (liquidity > 0) {
+            return int112(kGrowthRange.reciprocal().mul112(uint112(liquidity)).decode());
+        } else {
+            return -1 * int112(kGrowthRange.reciprocal().mul112(uint112(liquidity * -1)).decode());
+        }
+    }
+
     function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
         _reserve0 = reserve0;
         _reserve1 = reserve1;
@@ -251,8 +261,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount1 += virtualAmount1 - upperToken1Balance;
             _reserve0.sadd(virtualAmount0);
             _reserve1.sadd(virtualAmount1);
-            // yet ANOTHER adjusted liquidity amount (this one is equivalent to scaling up liquidity by _k)
-            virtualSupply.sadd(normalizeToRange(liquidity, MIN_TICK, MAX_TICK));
+            // yet ANOTHER adjusted liquidity amount. this converts it into unbounded liquidity
+            virtualSupply.sadd(denormalizeToRange(adjustedNewLiquidity, MIN_TICK, MAX_TICK));
             deltas[lowerTick] -= lowerToken0Balance;
             deltas[upperTick] -= upperToken0Balance;
         } else {
