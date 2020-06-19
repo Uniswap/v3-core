@@ -6,7 +6,6 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
-import './libraries/Math.sol';
 import './libraries/SafeMath.sol';
 import './libraries/SafeMath112.sol';
 import './interfaces/IUniswapV3Factory.sol';

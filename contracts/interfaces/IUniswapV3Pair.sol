@@ -21,5 +21,5 @@ interface IUniswapV3Pair {
     function kLast() external view returns (uint);
 
     function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick) external returns (uint112 liquidity);
-    function edit(int112 liquidity, int16 lowerTick, int16 upperTick) external;
+    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick) external;
 }
