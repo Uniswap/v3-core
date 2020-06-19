@@ -8,6 +8,7 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
+import { Aggregate, AggregateFeeVote } from './libraries/AggregateFeeVote.sol';
 import './libraries/SafeMath.sol';
 import './libraries/SafeMath112.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -18,6 +19,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint;
     using SafeMath112 for uint112;
     using SafeMath112 for int112;
+    using AggregateFeeVote for Aggregate;
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPointExtra for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
@@ -32,7 +34,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     address public immutable override token0;
     address public immutable override token1;
 
-    uint112 public lpFee; // in 100ths of a bp
+    uint16 public lpFee; // in 100ths of a bp
     uint112 public totalFeeVote;
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
@@ -58,14 +60,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping (int16 => TickInfo) tickInfos;  // mapping from tick indexes to information about that tick
     mapping (int16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed going from left to right (token0 price going up)
 
-
-
-    // TODO: can something else be crammed into this
-    struct DeltaFeeVote {
-        uint112 deltaNumerator;
-        uint112 deltaDenominator;
-    }
-    mapping (int16 => DeltaFeeVote) deltaFeeVotes;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+    Aggregate aggregateFeeVote;
+    mapping (int16 => Aggregate) deltaFeeVotes;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
     mapping (int16 => int112) deltaVotingShares;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
     struct Position {
@@ -269,6 +265,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, lowerTick);
         (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, upperTick);
 
+        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
+
         // before moving on, withdraw any collected fees
         // until fees are collected, they are like unlevered pool shares that do not earn fees outside the range
         FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
@@ -280,13 +278,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
         deltas[lowerTick] += lowerToken0Balance;
         deltas[upperTick] -= upperToken0Balance;
         
-        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
-        // update votes. since vote could change, remove all votes and add new ones
+        // update vote deltas. since vote could change, remove all votes and add new ones
         int112 deltaNumerator = int16(feeVote) * int112(totalAdjustedLiquidity) - int16(_position.feeVote) * int112(_position.lastAdjustedLiquidity);
         int112 deltaDenominator = int112(totalAdjustedLiquidity) - int112(_position.lastAdjustedLiquidity);
+
+
+        Aggregate memory deltaFeeVote = Aggregate({
+            numerator: deltaNumerator,
+            denominator: deltaDenominator
+        });
+
+        deltaFeeVotes[lowerTick] = deltaFeeVotes[lowerTick].add(deltaFeeVote);
+        deltaFeeVotes[upperTick] = deltaFeeVotes[upperTick].add(deltaFeeVote);
+
         if (currentTick < lowerTick) {
             amount1 += lowerToken1Balance - upperToken1Balance;
-            // TODO: figure out overflow here and elsewhere
         } else if (currentTick < upperTick) {
             (int112 virtualAmount0, int112 virtualAmount1) = getBalancesAtPrice(adjustedNewLiquidity, currentPrice);
             amount0 += virtualAmount0 - lowerToken0Balance;
@@ -296,9 +302,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // yet ANOTHER adjusted liquidity amount. this converts it into unbounded liquidity
             int112 deltaVirtualSupply = denormalizeToRange(adjustedNewLiquidity, MIN_TICK, MAX_TICK);
             virtualSupply.sadd(deltaVirtualSupply);
-            // since vote may have changed, withdraw all votes and add new votes
+            Aggregate memory _aggregateFeeVote = aggregateFeeVote;
+            _aggregateFeeVote = _aggregateFeeVote.add(deltaFeeVote);
+            lpFee = _aggregateFeeVote.averageFee();
+            aggregateFeeVote = aggregateFeeVote;
         } else {
-            amount0 += upperToken1Balance - lowerToken1Balance;
+            amount0 += upperToken0Balance - lowerToken0Balance;
         }
         positions[msg.sender][lowerTick][upperTick] = Position({
             lastAdjustedLiquidity: totalAdjustedLiquidity,
