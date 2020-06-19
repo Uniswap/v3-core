@@ -25,12 +25,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint112 public constant override MINIMUM_LIQUIDITY = uint112(10**3);
     int16 public constant MAX_TICK = type(int16).max;
     int16 public constant MIN_TICK = type(int16).min;
+    uint16 public constant MAX_FEEVOTE = 6000; // 60 bps
+    uint16 public constant MIN_FEEVOTE = 0; // 0 bps
 
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
 
-    uint112 public lpFee; // in bps
+    uint112 public lpFee; // in 100ths of a bp
+    uint112 public totalFeeVote;
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
@@ -55,9 +58,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping (int16 => TickInfo) tickInfos;  // mapping from tick indexes to information about that tick
     mapping (int16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed going from left to right (token0 price going up)
 
+
+
     struct Position {
         uint112 liquidity; // virtual liquidity shares, normalized to this range
         uint112 lastAdjustedLiquidity; // adjusted liquidity shares the last time fees were collected on this
+        uint16 feeVote; // vote for fee, in 1/100ths of a bp
     }
 
     // TODO: is this really the best way to map (address, int16, int16)
@@ -200,18 +206,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick) external override lock returns (uint112 liquidity) {
+    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick, uint16 feeVote) external override lock returns (uint112 liquidity) {
         require(virtualSupply == 0, "UniswapV3: ALREADY_INITIALIZED");
+        require(feeVote >= MIN_FEEVOTE && feeVote <= MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         FixedPoint.uq112x112 memory price = FixedPoint.encode(amount1).div(amount0);
         require(price._x > getTickPrice(startingTick)._x && price._x < getTickPrice(startingTick + 1)._x);
         bool feeOn = _mintFee(0, 0);
         liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(uint(MINIMUM_LIQUIDITY)));
-        positions[address(0)][MIN_TICK][MAX_TICK].liquidity = MINIMUM_LIQUIDITY;
+        require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
+        positions[address(0)][MIN_TICK][MAX_TICK] = Position({
+            liquidity: MINIMUM_LIQUIDITY,
+            lastAdjustedLiquidity: MINIMUM_LIQUIDITY,
+            feeVote: feeVote
+        });
         positions[msg.sender][MIN_TICK][MAX_TICK] = Position({
             liquidity: liquidity,
-            lastAdjustedLiquidity: liquidity
+            lastAdjustedLiquidity: liquidity,
+            feeVote: feeVote
         });
         virtualSupply = liquidity + MINIMUM_LIQUIDITY;
+        
+        // update fee
+        totalFeeVote = feeVote * liquidity;
+        lpFee = feeVote;
+
         uint112 _reserve0 = amount0;
         uint112 _reserve1 = amount1;
         _update(0, 0, _reserve0, _reserve1);
@@ -223,8 +241,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Edit(msg.sender, int112(liquidity), MIN_TICK, MAX_TICK);
     }
 
-    // add or remove a specified amount of liquidity from a specified range
-    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
+    // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
+    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
+        require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
+        require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         Position memory _position = positions[msg.sender][lowerTick][upperTick];
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
@@ -251,6 +271,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // TODO: figure out overflow here and elsewhere
         deltas[lowerTick] += lowerToken0Balance;
         deltas[upperTick] -= upperToken0Balance;
+        
+        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
+        // since vote could change, remove all votes and add new ones
+        int16 deltaFeeVote = int16(_position.feeVote) * totalAdjustedLiquidity;
+        lpFee = uint16(totalFeeVote / virtualSupply);
 
         if (currentTick < lowerTick) {
             amount1 += lowerToken1Balance - upperToken1Balance;
@@ -261,14 +286,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _reserve0.sadd(virtualAmount0);
             _reserve1.sadd(virtualAmount1);
             // yet ANOTHER adjusted liquidity amount. this converts it into unbounded liquidity
-            virtualSupply.sadd(denormalizeToRange(adjustedNewLiquidity, MIN_TICK, MAX_TICK));
+            int112 deltaVirtualSupply = denormalizeToRange(adjustedNewLiquidity, MIN_TICK, MAX_TICK);
+            virtualSupply.sadd(deltaVirtualSupply);
+            // since vote may have changed, withdraw all votes and add new votes
         } else {
             amount0 += upperToken1Balance - lowerToken1Balance;
         }
-        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
         positions[msg.sender][lowerTick][upperTick] = Position({
             lastAdjustedLiquidity: totalAdjustedLiquidity,
-            liquidity: _position.liquidity.sadd(liquidity)
+            liquidity: _position.liquidity.sadd(liquidity),
+            feeVote: feeVote
         });
         if (liquidity > 0) {
             TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint112(amount0));
@@ -284,8 +311,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function getTradeToRatio(uint112 y0, uint112 x0, FixedPoint.uq112x112 memory price, uint112 _lpFee) internal pure returns (uint112) {
         // todo: clean up this monstrosity, which won't even compile because the stack is too deep
         // simplification of https://www.wolframalpha.com/input/?i=solve+%28x0+-+x0*%281-g%29*y%2F%28y0+%2B+%281-g%29*y%29%29%2F%28y0+%2B+y%29+%3D+p+for+y
-        // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(10000).add(price.mul112(4 * x0).mul112(10000 - lpFee)).decode()))).decode();
-        // uint112 denominator = price.mul112(10000 - lpFee).div(10000).mul112(2).decode();
+        // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(1000000).add(price.mul112(4 * x0).mul112(1000000 - lpFee)).decode()))).decode();
+        // uint112 denominator = price.mul112(1000000 - lpFee).div(1000000).mul112(2).decode();
         return uint112(1);
     }
 
@@ -311,7 +338,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             uint112 amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
 
             // execute the sell of amountToTrade
-            uint112 adjustedAmountToTrade = amountToTrade * (10000 - _lpFee) / 10000;
+            uint112 adjustedAmountToTrade = amountToTrade * (1000000 - _lpFee) / 1000000;
             uint112 amountOutStep = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
 
             amountOut += amountOutStep;

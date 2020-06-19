@@ -22,6 +22,6 @@ interface IUniswapV3Pair {
     function price1CumulativeLast() external view returns (uint);
     function kLast() external view returns (uint);
 
-    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick) external returns (uint112 liquidity);
-    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick) external;
+    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick, uint16 feeVote) external returns (uint112 liquidity);
+    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external;
 }
