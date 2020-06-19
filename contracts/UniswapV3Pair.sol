@@ -217,7 +217,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // add or remove a specified amount of liquidity from a specified range
-    // TODO: this will not allow you to handle liquidity from fees; those may need a separate function
     function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
         require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
