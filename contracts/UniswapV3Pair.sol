@@ -234,12 +234,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, upperTick);
 
         // before moving on, withdraw any collected fees
+        // until fees are collected, they are like unlevered pool shares that do not earn fees outside the range
         FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
         int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
+        // negative amount means the amount is sent out
         (int112 amount0, int112 amount1) = getBalancesAtPrice(-1 * feeLiquidity, currentPrice);
 
         if (currentTick < lowerTick) {
-            amount0 += 0;
             amount1 += lowerToken1Balance - upperToken1Balance;
             // TODO: figure out overflow here and elsewhere
             deltas[lowerTick] += lowerToken0Balance;
@@ -256,11 +257,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             deltas[upperTick] -= upperToken0Balance;
         } else {
             amount0 += upperToken1Balance - lowerToken1Balance;
-            amount1 += 0;
             deltas[upperTick] += upperToken0Balance;
             deltas[lowerTick] -= lowerToken0Balance;
         }
-        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).add(uint112(adjustedNewLiquidity));
+        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
         positions[msg.sender][lowerTick][upperTick] = Position({
             lastAdjustedLiquidity: totalAdjustedLiquidity,
             liquidity: _position.liquidity.sadd(liquidity)
