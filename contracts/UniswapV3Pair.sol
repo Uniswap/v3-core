@@ -196,7 +196,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(price._x > getTickPrice(startingTick)._x && price._x < getTickPrice(startingTick + 1)._x);
         bool feeOn = _mintFee(0, 0);
         liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(MINIMUM_LIQUIDITY));
-        require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
         positions[address(0)][MIN_TICK][MAX_TICK] = Position({
             liquidity: MINIMUM_LIQUIDITY,
             lastAdjustedLiquidity: MINIMUM_LIQUIDITY,
@@ -224,15 +223,27 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit SetPosition(msg.sender, int112(liquidity), MIN_TICK, MAX_TICK, feeVote);
     }
 
+    // called when adding or removing liquidity that is within range
+    function updateVirtualLiquidity(int112 liquidity, Aggregate memory deltaFeeVote) internal returns (int112 virtualAmount0, int112 virtualAmount1) {
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
+        (virtualAmount0, virtualAmount1) = getBalancesAtPrice(liquidity, FixedPoint.encode(reserve1).div(reserve0));
+        bool feeOn = _mintFee(_reserve0, _reserve1);
+        uint112 _virtualSupply = virtualSupply; // gas savings, must be defined here since virtualSupply can update in _mintFee
+        // price doesn't change, so no need to update oracle
+        virtualSupply = _virtualSupply.sadd(int112(int(virtualAmount0) * int(_virtualSupply) / int(reserve0)));
+        _reserve0 = _reserve0.sadd(virtualAmount0);
+        _reserve1 = _reserve1.sadd(virtualAmount1);
+        (reserve0, reserve1) = (_reserve0, _reserve1);
+        if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
+        aggregateFeeVote = aggregateFeeVote.add(deltaFeeVote);
+    }
+
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         Position memory _position = positions[msg.sender][lowerTick][upperTick];
-        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-        bool feeOn = _mintFee(_reserve0, _reserve1);
-        uint112 _virtualSupply = virtualSupply; // gas savings, must be defined here since virtualSupply can update in _mintFee
-        require(_virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
+        require(virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
         // adjust liquidity values based on fees accumulated in the range
         FixedPoint.uq112x112 memory adjustmentFactor = getGrowthInside(lowerTick, upperTick);
         int112 adjustedExistingLiquidity = adjustmentFactor.smul112(int112(_position.liquidity));
@@ -264,14 +275,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (currentTick < lowerTick) {
             amount1 = amount1.add(lowerToken1Balance.sub(upperToken1Balance));
         } else if (currentTick < upperTick) {
-            (int112 virtualAmount0, int112 virtualAmount1) = getBalancesAtPrice(adjustedNewLiquidity, currentPrice);
+            (int112 virtualAmount0, int112 virtualAmount1) = updateVirtualLiquidity(adjustedNewLiquidity, deltaFeeVote);
             amount0 += virtualAmount0 - lowerToken0Balance;
             amount1 += virtualAmount1 - upperToken1Balance;
-            // price doesn't change, so no need to update oracle
-            virtualSupply = _virtualSupply.sadd(int112(int(virtualAmount0) * int(_virtualSupply) / int(reserve0)));
-            reserve0 = _reserve0.sadd(virtualAmount0);
-            reserve1 = _reserve1.sadd(virtualAmount1);
-            aggregateFeeVote = aggregateFeeVote.add(deltaFeeVote);
         } else {
             amount0 = amount0.add(upperToken0Balance.sub(lowerToken0Balance));
         }
@@ -285,7 +291,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else {
             TransferHelper.safeTransfer(token1, msg.sender, uint112(-amount1));
         }
-        if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
         emit SetPosition(msg.sender, liquidity, lowerTick, upperTick, feeVote);
     }
 
