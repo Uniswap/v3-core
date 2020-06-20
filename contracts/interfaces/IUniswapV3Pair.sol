@@ -11,7 +11,7 @@ interface IUniswapV3Pair {
         address indexed to
     );
     event Shift(int16 tick);
-    event Edit(address indexed sender, int112 liquidity, int16 lowerTick, int16 upperTick);
+    event SetPosition(address indexed sender, int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote);
 
     function MINIMUM_LIQUIDITY() external pure returns (uint112);
     function factory() external view returns (address);
