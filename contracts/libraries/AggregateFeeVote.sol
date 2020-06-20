@@ -9,7 +9,9 @@ struct Aggregate {
     int112 denominator;
 }
 
-library AggregateFeeVote {    
+using AggregateFunctions for Aggregate;
+
+library AggregateFunctions {    
     function add(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory) {
         // freshman sum
         return Aggregate({

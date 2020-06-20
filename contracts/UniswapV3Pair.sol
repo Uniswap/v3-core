@@ -8,7 +8,7 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
-import { Aggregate, AggregateFeeVote } from './libraries/AggregateFeeVote.sol';
+import { Aggregate, AggregateFunctions } from './libraries/AggregateFeeVote.sol';
 import './libraries/SafeMath.sol';
 import './libraries/SafeMath112.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -19,7 +19,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint;
     using SafeMath112 for uint112;
     using SafeMath112 for int112;
-    using AggregateFeeVote for Aggregate;
+    using AggregateFunctions for Aggregate;
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPointExtra for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
@@ -228,14 +228,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
             lastAdjustedLiquidity: liquidity,
             feeVote: feeVote
         });
-        uint112 totalLiquidity = liquidity + MINIMUM_LIQUIDITY;
-        virtualSupply = totalLiquidity;
+        virtualSupply = liquidity + MINIMUM_LIQUIDITY;
         
         // update fee
-        updateFee(Aggregate({
-            numerator: int112(feeVote * totalLiquidity),
-            denominator: int112(totalLiquidity)
-        }));
+        totalFeeVote = feeVote * liquidity;
+        lpFee = feeVote;
 
         uint112 _reserve0 = amount0;
         uint112 _reserve1 = amount1;
