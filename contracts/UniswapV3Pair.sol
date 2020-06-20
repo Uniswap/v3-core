@@ -299,7 +299,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // simplification of https://www.wolframalpha.com/input/?i=solve+%28x0+-+x0*%281-g%29*y%2F%28y0+%2B+%281-g%29*y%29%29%2F%28y0+%2B+y%29+%3D+p+for+y
         // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(1000000).add(price.mul112(4 * x0).mul112(1000000 - lpFee)).decode()))).decode();
         // uint112 denominator = price.mul112(1000000 - lpFee).div(1000000).mul112(2).decode();
-        return uint112(1);
+
+        // this is just a dummy function that uses all the variables to silence the linter
+        return price.mul112(y0 + x0 + _lpFee).decode();
     }
 
     // TODO: implement swap1for0, or integrate it into this
@@ -308,33 +310,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (uint112 _oldReserve0, uint112 _oldReserve1) = (_reserve0, _reserve1);
         int16 _currentTick = currentTick;
         uint112 _virtualSupply = virtualSupply;
-
         uint112 totalAmountOut = 0;
-
         uint112 amountInLeft = uint112(amountIn);
         uint112 amountOut = 0;
         uint112 _lpFee = getLpFee();
-
         while (amountInLeft > 0) {
             FixedPoint.uq112x112 memory price = getTickPrice(_currentTick);
-
             // compute how much would need to be traded to get to the next tick down
             uint112 maxAmount = getTradeToRatio(_reserve0, _reserve1, price, _lpFee);
-        
-            uint112 amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
-
+            uint112 amountInStep = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
             // execute the sell of amountToTrade
-            uint112 adjustedAmountToTrade = amountToTrade * (1000000 - _lpFee) / 1000000;
+            uint112 adjustedAmountToTrade = amountInStep * (1000000 - _lpFee) / 1000000;
             uint112 amountOutStep = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
-
-            amountOut += amountOutStep;
-            _reserve0 -= amountOutStep;
-            // TODO: handle overflow?
-            _reserve1 += amountToTrade;
-
-            amountInLeft = amountInLeft - amountToTrade;
+            amountOut = amountOut.add(amountOutStep);
+            _reserve0 = _reserve0.add(amountInStep);
+            _reserve1 = _reserve1.sub(amountOutStep);
+            amountInLeft = amountInLeft.sub(amountInStep);
             if (amountInLeft == 0) { // shift past the tick
-                FixedPoint.uq112x112 memory k = FixedPoint.encode(uint112(Babylonian.sqrt(uint(_reserve0) * uint(_reserve1)))).div(virtualSupply);
+                FixedPoint.uq112x112 memory k = FixedPoint.encode(uint112(Babylonian.sqrt(uint(_reserve0) * uint(_reserve1)))).div(_virtualSupply);
                 TickInfo memory _oldTickInfo = tickInfos[_currentTick];
                 FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.secondsGrowthOutside != 0 ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
                 // get delta of token0
@@ -347,17 +340,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 int112 shareDelta = int112(int(_virtualSupply) * int(_delta) / int(_reserve0));
                 _virtualSupply = _virtualSupply.sadd(shareDelta);
                 // kick in/out fee votes
-                Aggregate memory deltaFeeVote = deltaFeeVotes[_currentTick];
-                aggregateFeeVote = aggregateFeeVote.sub(deltaFeeVote); // sub because we're crossing the tick from right to left
+                aggregateFeeVote = aggregateFeeVote.sub(deltaFeeVotes[_currentTick]); // sub because we're crossing the tick from right to left
+                _lpFee = getLpFee();
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // TODO: the overflow trick may not work here... we may need to switch to uint40 for timestamp
                     secondsGrowthOutside: uint32(block.timestamp % 2**32) - uint32(timeInitialized) - _oldTickInfo.secondsGrowthOutside,
                     kGrowthOutside: k.uqdiv112(_oldKGrowthOutside)
                 });
+                _currentTick -= 1;
                 emit Shift(_currentTick);
                 if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
-                _currentTick -= 1;
             }
         }
         currentTick = _currentTick;

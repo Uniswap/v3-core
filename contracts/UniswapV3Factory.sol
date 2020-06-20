@@ -8,7 +8,6 @@ import './interfaces/IUniswapV3Factory.sol';
 import './UniswapV3Pair.sol';
 
 contract UniswapV3Factory is IUniswapV3Factory {
-    string public constant PAIR_SYMBOL_SUFFIX = ' (V2)';
     address public override feeTo;
     address public override feeToSetter;
 
