@@ -9,6 +9,7 @@ import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import { Aggregate, AggregateFunctions } from './libraries/AggregateFeeVote.sol';
+import { Position, PositionFunctions } from './libraries/Position.sol';
 import './libraries/SafeMath.sol';
 import './libraries/SafeMath112.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -20,6 +21,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath112 for uint112;
     using SafeMath112 for int112;
     using AggregateFunctions for Aggregate;
+    using PositionFunctions for Position;
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPointExtra for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
@@ -62,12 +64,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     Aggregate aggregateFeeVote;
     mapping (int16 => Aggregate) deltaFeeVotes;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
     mapping (int16 => int112) deltaVotingShares;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
-
-    struct Position {
-        uint112 liquidity; // virtual liquidity shares, normalized to this range
-        uint112 lastAdjustedLiquidity; // adjusted liquidity shares the last time fees were collected on this
-        uint16 feeVote; // vote for fee, in 1/100ths of a bp
-    }
 
     // TODO: is this really the best way to map (address, int16, int16)
     // user address, lower tick, upper tick
@@ -242,24 +238,29 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int112 adjustedExistingLiquidity = adjustmentFactor.smul112(int112(_position.liquidity));
         int112 adjustedNewLiquidity = adjustmentFactor.smul112(liquidity);
         uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
-        // calculate how much the new shares are worth at lower ticks and upper ticks
-        (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, lowerTick);
-        (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, upperTick);
+        // update position
+        Position memory newPosition = Position({
+            lastAdjustedLiquidity: totalAdjustedLiquidity,
+            liquidity: _position.liquidity.sadd(liquidity),
+            feeVote: feeVote
+        });
+        positions[msg.sender][lowerTick][upperTick] = newPosition;
         // before moving on, withdraw any collected fees
         // until fees are collected, they are like unlevered pool shares that do not earn fees outside the range
         FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
         int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
         // negative amount means the amount is sent out
         (int112 amount0, int112 amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
-        deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
-        deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
         // update vote deltas. since adjusted liquidity and vote could change, remove all votes and add new ones
-        Aggregate memory deltaFeeVote = Aggregate({
-            numerator: int112(feeVote) * int112(totalAdjustedLiquidity) - int112(_position.feeVote) * int112(_position.lastAdjustedLiquidity),
-            denominator: int112(totalAdjustedLiquidity) - int112(_position.lastAdjustedLiquidity)
-        });
+        Aggregate memory deltaFeeVote = newPosition.totalFeeVote().sub(_position.totalFeeVote());
         deltaFeeVotes[lowerTick] = deltaFeeVotes[lowerTick].add(deltaFeeVote);
         deltaFeeVotes[upperTick] = deltaFeeVotes[upperTick].sub(deltaFeeVote);
+        // calculate how much the newly added/removed shares are worth at lower ticks and upper ticks
+        (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, lowerTick);
+        (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, upperTick);
+        // update token0 deltas
+        deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
+        deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
         if (currentTick < lowerTick) {
             amount1 = amount1.add(lowerToken1Balance.sub(upperToken1Balance));
         } else if (currentTick < upperTick) {
@@ -274,17 +275,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else {
             amount0 = amount0.add(upperToken0Balance.sub(lowerToken0Balance));
         }
-        positions[msg.sender][lowerTick][upperTick] = Position({
-            lastAdjustedLiquidity: totalAdjustedLiquidity,
-            liquidity: _position.liquidity.sadd(liquidity),
-            feeVote: feeVote
-        });
-        if (liquidity > 0) {
+        if (amount0 >= 0) {
             TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint112(amount0));
+        } else {
+            TransferHelper.safeTransfer(token0, msg.sender, uint112(-amount0));
+        }
+        if (amount1 >= 0) {
             TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint112(amount1));
         } else {
-            TransferHelper.safeTransfer(token0, msg.sender, uint112(amount0));
-            TransferHelper.safeTransfer(token1, msg.sender, uint112(amount1));
+            TransferHelper.safeTransfer(token1, msg.sender, uint112(-amount1));
         }
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
         emit SetPosition(msg.sender, liquidity, lowerTick, upperTick, feeVote);
