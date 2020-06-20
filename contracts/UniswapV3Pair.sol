@@ -331,18 +331,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // TODO: try to mint protocol fee in some way that batches the calls and updates across multiple ticks
                 bool feeOn = _mintFee(_reserve0, _reserve1);
                 // kick in/out liquidity
-                // TODO: fix this all to work with int112 delta!
-                if (_delta > 0) {
-                    _reserve0 += uint112(uint112(_delta));
-                    _reserve1 += price.mul112(uint112(_delta)).decode();
-                    uint112 shareDelta = uint112((uint(_virtualSupply) * uint112(_delta)) / uint(_reserve0));
-                    _virtualSupply += shareDelta;
-                } else {
-                    _reserve0 -= uint112(-1 * _delta);
-                    _reserve1 -= price.mul112(uint112(-1 * _delta)).decode();
-                    uint112 shareDelta = uint112((uint(_virtualSupply) * uint(-1 * _delta)) / uint(_reserve0));
-                    _virtualSupply -= shareDelta;
-                }
+                _reserve0 = _reserve0.sadd(_delta);
+                _reserve1 = _reserve1.sadd(price.smul112(_delta));
+                int112 shareDelta = int112(int(_virtualSupply) * int(_delta) / int(_reserve0));
+                _virtualSupply = _virtualSupply.sadd(shareDelta);
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // TODO: the overflow trick may not work here... we may need to switch to uint40 for timestamp
