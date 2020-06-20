@@ -47,7 +47,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint public override kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
     uint112 private virtualSupply;  // current virtual supply;
-    uint64 private timeInitialized; // timestamp when pool was initialized
+    uint32 timeInitialized; // timestamp when pool was initialized
 
     int16 public currentTick; // the current tick for the token0 price (rounded down)
 
@@ -188,7 +188,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return getBalancesAtPrice(liquidity, price);
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
     function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick, uint16 feeVote) external override lock returns (uint112 liquidity) {
         require(virtualSupply == 0, "UniswapV3: ALREADY_INITIALIZED");
         require(feeVote >= MIN_FEEVOTE && feeVote <= MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
@@ -219,6 +218,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
+        timeInitialized = uint32(block.timestamp % 2**32);
         emit SetPosition(address(0), int112(MINIMUM_LIQUIDITY), MIN_TICK, MAX_TICK, feeVote);
         emit SetPosition(msg.sender, int112(liquidity), MIN_TICK, MAX_TICK, feeVote);
     }
@@ -300,7 +300,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(1000000).add(price.mul112(4 * x0).mul112(1000000 - lpFee)).decode()))).decode();
         // uint112 denominator = price.mul112(1000000 - lpFee).div(1000000).mul112(2).decode();
 
-        // this is just a dummy function that uses all the variables to silence the linter
+        // this is just a dummy expression that uses all the variables to silence the linter
         return price.mul112(y0 + x0 + _lpFee).decode();
     }
 
@@ -309,7 +309,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
         (uint112 _oldReserve0, uint112 _oldReserve1) = (_reserve0, _reserve1);
         int16 _currentTick = currentTick;
-        uint112 _virtualSupply = virtualSupply;
         uint112 totalAmountOut = 0;
         uint112 amountInLeft = uint112(amountIn);
         uint112 amountOut = 0;
@@ -327,24 +326,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _reserve1 = _reserve1.sub(amountOutStep);
             amountInLeft = amountInLeft.sub(amountInStep);
             if (amountInLeft == 0) { // shift past the tick
-                FixedPoint.uq112x112 memory k = FixedPoint.encode(uint112(Babylonian.sqrt(uint(_reserve0) * uint(_reserve1)))).div(_virtualSupply);
+                // TODO: batch all updates
+                bool feeOn = _mintFee(_reserve0, _reserve1);
+                FixedPoint.uq112x112 memory k = FixedPoint.encode(uint112(Babylonian.sqrt(uint(_reserve0) * uint(_reserve1)))).div(virtualSupply);
                 TickInfo memory _oldTickInfo = tickInfos[_currentTick];
                 FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.secondsGrowthOutside != 0 ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
-                // get delta of token0
-                int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
-                // TODO: try to mint protocol fee in some way that batches the calls and updates across multiple ticks
-                bool feeOn = _mintFee(_reserve0, _reserve1);
                 // kick in/out liquidity
+                int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
                 _reserve0 = _reserve0.sadd(_delta);
                 _reserve1 = _reserve1.sadd(price.smul112(_delta));
-                int112 shareDelta = int112(int(_virtualSupply) * int(_delta) / int(_reserve0));
-                _virtualSupply = _virtualSupply.sadd(shareDelta);
+                int112 shareDelta = int112(int(virtualSupply) * int(_delta) / int(_reserve0));
+                virtualSupply = virtualSupply.sadd(shareDelta);
                 // kick in/out fee votes
                 aggregateFeeVote = aggregateFeeVote.sub(deltaFeeVotes[_currentTick]); // sub because we're crossing the tick from right to left
                 _lpFee = getLpFee();
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
-                    // TODO: the overflow trick may not work here... we may need to switch to uint40 for timestamp
+                    // overflow is desired
                     secondsGrowthOutside: uint32(block.timestamp % 2**32) - uint32(timeInitialized) - _oldTickInfo.secondsGrowthOutside,
                     kGrowthOutside: k.uqdiv112(_oldKGrowthOutside)
                 });
