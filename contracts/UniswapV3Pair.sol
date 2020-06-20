@@ -8,6 +8,8 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
+import { Aggregate, AggregateFunctions } from './libraries/AggregateFeeVote.sol';
+import { Position, PositionFunctions } from './libraries/Position.sol';
 import './libraries/SafeMath.sol';
 import './libraries/SafeMath112.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -18,6 +20,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint;
     using SafeMath112 for uint112;
     using SafeMath112 for int112;
+    using AggregateFunctions for Aggregate;
+    using PositionFunctions for Position;
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPointExtra for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
@@ -25,12 +29,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint112 public constant override MINIMUM_LIQUIDITY = uint112(10**3);
     int16 public constant MAX_TICK = type(int16).max;
     int16 public constant MIN_TICK = type(int16).min;
+    uint16 public constant MAX_FEEVOTE = 6000; // 60 bps
+    uint16 public constant MIN_FEEVOTE = 0; // 0 bps
 
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
 
-    uint112 public lpFee; // in bps
+    uint112 public totalFeeVote;
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
@@ -55,21 +61,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping (int16 => TickInfo) tickInfos;  // mapping from tick indexes to information about that tick
     mapping (int16 => int112) deltas;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed going from left to right (token0 price going up)
 
-    struct Position {
-        uint112 liquidity; // virtual liquidity shares, normalized to this range
-        uint112 lastAdjustedLiquidity; // adjusted liquidity shares the last time fees were collected on this
-    }
+    Aggregate aggregateFeeVote;
+    mapping (int16 => Aggregate) deltaFeeVotes;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+    mapping (int16 => int112) deltaVotingShares;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
     // TODO: is this really the best way to map (address, int16, int16)
     // user address, lower tick, upper tick
     mapping (address => mapping (int16 => mapping (int16 => Position))) positions;
-
 
     modifier lock() {
         require(unlocked == 1, 'UniswapV3: LOCKED');
         unlocked = 0;
         _;
         unlocked = 1;
+    }
+
+    // get LP fee in 100ths of a bp
+    function getLpFee() public view returns (uint16) {
+        return aggregateFeeVote.averageFee();
     }
 
     // returns sqrt(x*y)/shares
@@ -108,30 +117,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function getGrowthInside(int16 _lowerTick, int16 _upperTick) public view returns (FixedPoint.uq112x112 memory growth) {
         // TODO: simpler or more precise way to compute this?
         FixedPoint.uq112x112 memory _k = getInvariant();
-
         int16 _currentTick = currentTick;
         FixedPoint.uq112x112 memory growthAbove = getGrowthAbove(_upperTick, _currentTick, _k);
         FixedPoint.uq112x112 memory growthBelow = getGrowthBelow(_lowerTick, _currentTick, _k);
         return growthAbove.uqmul112(growthBelow).reciprocal().uqmul112(_k);
-    }
-
-    function normalizeToRange(int112 liquidity, int16 lowerTick, int16 upperTick) internal view returns (int112) {
-        FixedPoint.uq112x112 memory kGrowthRange = getGrowthInside(lowerTick, upperTick);
-        if (liquidity > 0) {
-            return int112(kGrowthRange.mul112(uint112(liquidity)).decode());
-        } else {
-            return -1 * int112(kGrowthRange.mul112(uint112(liquidity * -1)).decode());
-        }
-    }
-
-    // TODO: name and explain this better
-    function denormalizeToRange(int112 liquidity, int16 lowerTick, int16 upperTick) internal view returns (int112) {
-        FixedPoint.uq112x112 memory kGrowthRange = getGrowthInside(lowerTick, upperTick);
-        if (liquidity > 0) {
-            return int112(kGrowthRange.reciprocal().mul112(uint112(liquidity)).decode());
-        } else {
-            return -1 * int112(kGrowthRange.reciprocal().mul112(uint112(liquidity * -1)).decode());
-        }
     }
 
     function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
@@ -160,7 +149,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         blockTimestampLast = blockTimestamp;
     }
 
-    // TODO: 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
         address feeTo = IUniswapV3Factory(factory).feeTo();
@@ -193,6 +181,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function getBalancesAtTick(int112 liquidity, int16 tick) internal pure returns (int112 balance0, int112 balance1) {
         if (tick == MIN_TICK || tick == MAX_TICK) {
+            // TODO: reason about this
             return (0, 0);
         }
         FixedPoint.uq112x112 memory price = getTickPrice(tick);
@@ -200,18 +189,29 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick) external override lock returns (uint112 liquidity) {
+    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick, uint16 feeVote) external override lock returns (uint112 liquidity) {
         require(virtualSupply == 0, "UniswapV3: ALREADY_INITIALIZED");
+        require(feeVote >= MIN_FEEVOTE && feeVote <= MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         FixedPoint.uq112x112 memory price = FixedPoint.encode(amount1).div(amount0);
         require(price._x > getTickPrice(startingTick)._x && price._x < getTickPrice(startingTick + 1)._x);
         bool feeOn = _mintFee(0, 0);
-        liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(uint(MINIMUM_LIQUIDITY)));
-        positions[address(0)][MIN_TICK][MAX_TICK].liquidity = MINIMUM_LIQUIDITY;
+        liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(MINIMUM_LIQUIDITY));
+        positions[address(0)][MIN_TICK][MAX_TICK] = Position({
+            liquidity: MINIMUM_LIQUIDITY,
+            lastAdjustedLiquidity: MINIMUM_LIQUIDITY,
+            feeVote: feeVote
+        });
         positions[msg.sender][MIN_TICK][MAX_TICK] = Position({
             liquidity: liquidity,
-            lastAdjustedLiquidity: liquidity
+            lastAdjustedLiquidity: liquidity,
+            feeVote: feeVote
         });
-        virtualSupply = liquidity + MINIMUM_LIQUIDITY;
+        uint112 totalLiquidity = liquidity + MINIMUM_LIQUIDITY;
+        virtualSupply = totalLiquidity;
+        aggregateFeeVote = Aggregate({
+            numerator: int112(feeVote).mul(int112(totalLiquidity)),
+            denominator: int112(totalLiquidity)
+        });
         uint112 _reserve0 = amount0;
         uint112 _reserve1 = amount1;
         _update(0, 0, _reserve0, _reserve1);
@@ -219,73 +219,86 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
-        emit Edit(address(0), int112(MINIMUM_LIQUIDITY), MIN_TICK, MAX_TICK);
-        emit Edit(msg.sender, int112(liquidity), MIN_TICK, MAX_TICK);
+        emit SetPosition(address(0), int112(MINIMUM_LIQUIDITY), MIN_TICK, MAX_TICK, feeVote);
+        emit SetPosition(msg.sender, int112(liquidity), MIN_TICK, MAX_TICK, feeVote);
     }
 
-    // add or remove a specified amount of liquidity from a specified range
-    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
-        require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
-        Position memory _position = positions[msg.sender][lowerTick][upperTick];
+    // called when adding or removing liquidity that is within range
+    function updateVirtualLiquidity(int112 liquidity, Aggregate memory deltaFeeVote) internal returns (int112 virtualAmount0, int112 virtualAmount1) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
+        (virtualAmount0, virtualAmount1) = getBalancesAtPrice(liquidity, FixedPoint.encode(reserve1).div(reserve0));
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint112 _virtualSupply = virtualSupply; // gas savings, must be defined here since virtualSupply can update in _mintFee
-        require(_virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
+        // price doesn't change, so no need to update oracle
+        virtualSupply = _virtualSupply.sadd(int112(int(virtualAmount0) * int(_virtualSupply) / int(reserve0)));
+        _reserve0 = _reserve0.sadd(virtualAmount0);
+        _reserve1 = _reserve1.sadd(virtualAmount1);
+        (reserve0, reserve1) = (_reserve0, _reserve1);
+        if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
+        aggregateFeeVote = aggregateFeeVote.add(deltaFeeVote);
+    }
 
-        // normalized values to the range
-        // this can definitely be optimized
-        int112 adjustedExistingLiquidity = normalizeToRange(int112(_position.liquidity), lowerTick, upperTick);
-        int112 adjustedNewLiquidity = normalizeToRange(liquidity, lowerTick, upperTick);
-
-        // calculate how much the new shares are worth at lower ticks and upper ticks
-        (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, lowerTick);
-        (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, upperTick);
-
+    // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
+    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
+        require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
+        require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
+        Position memory _position = positions[msg.sender][lowerTick][upperTick];
+        require(virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
+        // adjust liquidity values based on fees accumulated in the range
+        FixedPoint.uq112x112 memory adjustmentFactor = getGrowthInside(lowerTick, upperTick);
+        int112 adjustedExistingLiquidity = adjustmentFactor.smul112(int112(_position.liquidity));
+        int112 adjustedNewLiquidity = adjustmentFactor.smul112(liquidity);
+        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
+        // update position
+        Position memory newPosition = Position({
+            lastAdjustedLiquidity: totalAdjustedLiquidity,
+            liquidity: _position.liquidity.sadd(liquidity),
+            feeVote: feeVote
+        });
+        positions[msg.sender][lowerTick][upperTick] = newPosition;
         // before moving on, withdraw any collected fees
         // until fees are collected, they are like unlevered pool shares that do not earn fees outside the range
         FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
         int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
         // negative amount means the amount is sent out
-        (int112 amount0, int112 amount1) = getBalancesAtPrice(-1 * feeLiquidity, currentPrice);
-
-        // TODO: figure out overflow here and elsewhere
-        deltas[lowerTick] += lowerToken0Balance;
-        deltas[upperTick] -= upperToken0Balance;
-
+        (int112 amount0, int112 amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
+        // update vote deltas. since adjusted liquidity and vote could change, remove all votes and add new ones
+        Aggregate memory deltaFeeVote = newPosition.totalFeeVote().sub(_position.totalFeeVote());
+        deltaFeeVotes[lowerTick] = deltaFeeVotes[lowerTick].add(deltaFeeVote);
+        deltaFeeVotes[upperTick] = deltaFeeVotes[upperTick].sub(deltaFeeVote);
+        // calculate how much the newly added/removed shares are worth at lower ticks and upper ticks
+        (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, lowerTick);
+        (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, upperTick);
+        // update token0 deltas
+        deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
+        deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
         if (currentTick < lowerTick) {
-            amount1 += lowerToken1Balance - upperToken1Balance;
+            amount1 = amount1.add(lowerToken1Balance.sub(upperToken1Balance));
         } else if (currentTick < upperTick) {
-            (int112 virtualAmount0, int112 virtualAmount1) = getBalancesAtPrice(adjustedNewLiquidity, currentPrice);
+            (int112 virtualAmount0, int112 virtualAmount1) = updateVirtualLiquidity(adjustedNewLiquidity, deltaFeeVote);
             amount0 += virtualAmount0 - lowerToken0Balance;
             amount1 += virtualAmount1 - upperToken1Balance;
-            _reserve0.sadd(virtualAmount0);
-            _reserve1.sadd(virtualAmount1);
-            // yet ANOTHER adjusted liquidity amount. this converts it into unbounded liquidity
-            virtualSupply.sadd(denormalizeToRange(adjustedNewLiquidity, MIN_TICK, MAX_TICK));
         } else {
-            amount0 += upperToken1Balance - lowerToken1Balance;
+            amount0 = amount0.add(upperToken0Balance.sub(lowerToken0Balance));
         }
-        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
-        positions[msg.sender][lowerTick][upperTick] = Position({
-            lastAdjustedLiquidity: totalAdjustedLiquidity,
-            liquidity: _position.liquidity.sadd(liquidity)
-        });
-        if (liquidity > 0) {
+        if (amount0 >= 0) {
             TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint112(amount0));
+        } else {
+            TransferHelper.safeTransfer(token0, msg.sender, uint112(-amount0));
+        }
+        if (amount1 >= 0) {
             TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint112(amount1));
         } else {
-            TransferHelper.safeTransfer(token0, msg.sender, uint112(amount0));
-            TransferHelper.safeTransfer(token1, msg.sender, uint112(amount1));
+            TransferHelper.safeTransfer(token1, msg.sender, uint112(-amount1));
         }
-        if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
-        emit Edit(msg.sender, liquidity, lowerTick, upperTick);
+        emit SetPosition(msg.sender, liquidity, lowerTick, upperTick, feeVote);
     }
 
     function getTradeToRatio(uint112 y0, uint112 x0, FixedPoint.uq112x112 memory price, uint112 _lpFee) internal pure returns (uint112) {
         // todo: clean up this monstrosity, which won't even compile because the stack is too deep
         // simplification of https://www.wolframalpha.com/input/?i=solve+%28x0+-+x0*%281-g%29*y%2F%28y0+%2B+%281-g%29*y%29%29%2F%28y0+%2B+y%29+%3D+p+for+y
-        // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(10000).add(price.mul112(4 * x0).mul112(10000 - lpFee)).decode()))).decode();
-        // uint112 denominator = price.mul112(10000 - lpFee).div(10000).mul112(2).decode();
+        // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(1000000).add(price.mul112(4 * x0).mul112(1000000 - lpFee)).decode()))).decode();
+        // uint112 denominator = price.mul112(1000000 - lpFee).div(1000000).mul112(2).decode();
         return uint112(1);
     }
 
@@ -300,7 +313,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         uint112 amountInLeft = uint112(amountIn);
         uint112 amountOut = 0;
-        uint112 _lpFee = lpFee;
+        uint112 _lpFee = getLpFee();
 
         while (amountInLeft > 0) {
             FixedPoint.uq112x112 memory price = getTickPrice(_currentTick);
@@ -311,7 +324,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             uint112 amountToTrade = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
 
             // execute the sell of amountToTrade
-            uint112 adjustedAmountToTrade = amountToTrade * (10000 - _lpFee) / 10000;
+            uint112 adjustedAmountToTrade = amountToTrade * (1000000 - _lpFee) / 1000000;
             uint112 amountOutStep = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
 
             amountOut += amountOutStep;
@@ -333,6 +346,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 _reserve1 = _reserve1.sadd(price.smul112(_delta));
                 int112 shareDelta = int112(int(_virtualSupply) * int(_delta) / int(_reserve0));
                 _virtualSupply = _virtualSupply.sadd(shareDelta);
+                // kick in/out fee votes
+                Aggregate memory deltaFeeVote = deltaFeeVotes[_currentTick];
+                aggregateFeeVote = aggregateFeeVote.sub(deltaFeeVote); // sub because we're crossing the tick from right to left
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // TODO: the overflow trick may not work here... we may need to switch to uint40 for timestamp
@@ -359,7 +375,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             return FixedPoint.encode(1);
         }
 
-        uint16 absIndex = index > 0 ? uint16(index) : uint16(-1 * index);
+        uint16 absIndex = index > 0 ? uint16(index) : uint16(-index);
 
         // compute 1.01^abs(index)
         // TODO: improve and fix this math, which is currently totally wrong

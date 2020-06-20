@@ -30,10 +30,6 @@ contract UniswapV3Factory is IUniswapV3Factory {
         require(getPair[token0][token1] == address(0), 'UniswapV3: PAIR_EXISTS'); // single check is sufficient
         // salt is empty bytes32 since token0 and token1 are already included in the init code hash
         pair = address(new UniswapV3Pair{salt: bytes32(0)}(token0, token1));
-        UniswapV3Pair(pair).initialize(
-            PairNamer.pairName(token0, token1, 'UniswapV3-LP:', ''),
-            PairNamer.pairSymbol(token0, token1, PAIR_SYMBOL_SUFFIX)
-        );
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
