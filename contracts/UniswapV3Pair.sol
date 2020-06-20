@@ -147,16 +147,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // update reserves and, on the first call per block, price accumulators
-    function _update(uint112 _reserve0, uint112 _reserve1) private {
+    function _update(uint112 _oldReserve0, uint112 _oldReserve1, uint112 _newReserve0, uint112 _newReserve1) private {
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
-        if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
+        if (timeElapsed > 0 && _oldReserve0 != 0 && _oldReserve1 != 0) {
             // + overflow is desired
-            price0CumulativeLast += FixedPoint.encode(_reserve1).div(_reserve0).mul(timeElapsed).decode144();
-            price1CumulativeLast += FixedPoint.encode(_reserve0).div(_reserve1).mul(timeElapsed).decode144();
+            price0CumulativeLast += FixedPoint.encode(_oldReserve1).div(_oldReserve0).mul(timeElapsed).decode144();
+            price1CumulativeLast += FixedPoint.encode(_oldReserve0).div(_oldReserve1).mul(timeElapsed).decode144();
         }
-        reserve0 = _reserve0;
-        reserve1 = _reserve1;
+        reserve0 = _newReserve0;
+        reserve1 = _newReserve1;
         blockTimestampLast = blockTimestamp;
     }
 
@@ -214,8 +214,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         virtualSupply = liquidity + MINIMUM_LIQUIDITY;
         uint112 _reserve0 = amount0;
         uint112 _reserve1 = amount1;
+        _update(0, 0, _reserve0, _reserve1);
         currentTick = startingTick;
-        _update(_reserve0, _reserve1);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
@@ -277,7 +277,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(token0, msg.sender, uint112(amount0));
             TransferHelper.safeTransfer(token1, msg.sender, uint112(amount1));
         }
-        _update(_reserve0, _reserve1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
         emit Edit(msg.sender, liquidity, lowerTick, upperTick);
     }
@@ -293,6 +292,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // TODO: implement swap1for0, or integrate it into this
     function swap0for1(uint amountIn, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
+        (uint112 _oldReserve0, uint112 _oldReserve1) = (_reserve0, _reserve1);
         int16 _currentTick = currentTick;
         uint112 _virtualSupply = virtualSupply;
 
@@ -348,7 +348,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(token1, msg.sender, amountOut);
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, totalAmountOut, data);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amountIn);
-        _update(_reserve0, _reserve1);
+        _update(_oldReserve0, _oldReserve1, _reserve0, _reserve1);
         emit Swap(msg.sender, false, amountIn, amountOut, to);
     }
 
