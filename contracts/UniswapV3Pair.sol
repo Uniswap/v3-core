@@ -212,7 +212,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             lastAdjustedLiquidity: liquidity
         });
         virtualSupply = liquidity + MINIMUM_LIQUIDITY;
-        require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
         uint112 _reserve0 = amount0;
         uint112 _reserve1 = amount1;
         currentTick = startingTick;
@@ -226,7 +225,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // add or remove a specified amount of liquidity from a specified range
     function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick) external override lock {
-        require(liquidity > 0, 'UniswapV3: INSUFFICIENT_LIQUIDITY_MINTED');
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         Position memory _position = positions[msg.sender][lowerTick][upperTick];
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
