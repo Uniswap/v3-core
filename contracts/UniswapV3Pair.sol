@@ -47,12 +47,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint public override kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
     uint112 private virtualSupply;  // current virtual supply;
-    uint32 timeInitialized; // timestamp when pool was initialized
 
     int16 public currentTick; // the current tick for the token0 price (rounded down)
 
     uint private unlocked = 1;
     
+    // these only have relative meaning, not absolute—their value depends on when the tick is initialized
     struct TickInfo {
         uint32 secondsGrowthOutside;         // measures number of seconds spent while pool was on other side of this tick (from the current price)
         FixedPoint.uq112x112 kGrowthOutside; // measures growth due to fees while pool was on the other side of this tick (from the current price)
@@ -63,7 +63,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     Aggregate aggregateFeeVote;
     mapping (int16 => Aggregate) deltaFeeVotes;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
-    mapping (int16 => int112) deltaVotingShares;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+    mapping (int16 => int112) deltaVotingShares;      // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
     // TODO: is this really the best way to map (address, int16, int16)
     // user address, lower tick, upper tick
@@ -88,10 +88,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function getGrowthAbove(int16 tickIndex, int16 _currentTick, FixedPoint.uq112x112 memory _k) public view returns (FixedPoint.uq112x112 memory) {
-        TickInfo memory _tickInfo = tickInfos[tickIndex];
-        if (_tickInfo.secondsGrowthOutside == 0) {
-            return FixedPoint.encode(1);
-        }
         FixedPoint.uq112x112 memory kGrowthOutside = tickInfos[tickIndex].kGrowthOutside;
         if (_currentTick >= tickIndex) {
             // this range is currently active
@@ -181,7 +177,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function getBalancesAtTick(int112 liquidity, int16 tick) internal pure returns (int112 balance0, int112 balance1) {
         if (tick == MIN_TICK || tick == MAX_TICK) {
-            // TODO: reason about this
+            // this is a lie—one of them should be near infinite—but I think an innocuous lie since that one is never checked
             return (0, 0);
         }
         FixedPoint.uq112x112 memory price = getTickPrice(tick);
@@ -218,7 +214,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
         if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
-        timeInitialized = uint32(block.timestamp % 2**32);
         emit SetPosition(address(0), int112(MINIMUM_LIQUIDITY), MIN_TICK, MAX_TICK, feeVote);
         emit SetPosition(msg.sender, int112(liquidity), MIN_TICK, MAX_TICK, feeVote);
     }
@@ -238,12 +233,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
         aggregateFeeVote = aggregateFeeVote.add(deltaFeeVote);
     }
 
+    function _initializeTick(int16 tickIndex) internal {
+        if (tickInfos[tickIndex].kGrowthOutside._x == 0) {
+            tickInfos[tickIndex] = TickInfo({
+                secondsGrowthOutside: 0,
+                kGrowthOutside: FixedPoint.encode(1)
+            });
+        }
+    }
+
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         Position memory _position = positions[msg.sender][lowerTick][upperTick];
         require(virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
+        // initialize tickInfos if they don't exist yet
+        _initializeTick(lowerTick);
+        _initializeTick(upperTick);
         // adjust liquidity values based on fees accumulated in the range
         FixedPoint.uq112x112 memory adjustmentFactor = getGrowthInside(lowerTick, upperTick);
         int112 adjustedExistingLiquidity = adjustmentFactor.smul112(int112(_position.liquidity));
@@ -314,6 +321,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 amountOut = 0;
         uint112 _lpFee = getLpFee();
         while (amountInLeft > 0) {
+            // TODO: skip ticks until we reach an initialized one?
             FixedPoint.uq112x112 memory price = getTickPrice(_currentTick);
             // compute how much would need to be traded to get to the next tick down
             uint112 maxAmount = getTradeToRatio(_reserve0, _reserve1, price, _lpFee);
@@ -330,7 +338,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 bool feeOn = _mintFee(_reserve0, _reserve1);
                 FixedPoint.uq112x112 memory k = FixedPoint.encode(uint112(Babylonian.sqrt(uint(_reserve0) * uint(_reserve1)))).div(virtualSupply);
                 TickInfo memory _oldTickInfo = tickInfos[_currentTick];
-                FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.secondsGrowthOutside != 0 ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
+                FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.kGrowthOutside._x != 0 ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
                 // kick in/out liquidity
                 int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
                 _reserve0 = _reserve0.sadd(_delta);
@@ -343,7 +351,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // overflow is desired
-                    secondsGrowthOutside: uint32(block.timestamp % 2**32) - uint32(timeInitialized) - _oldTickInfo.secondsGrowthOutside,
+                    secondsGrowthOutside: uint32(block.timestamp % 2**32) - _oldTickInfo.secondsGrowthOutside,
                     kGrowthOutside: k.uqdiv112(_oldKGrowthOutside)
                 });
                 _currentTick -= 1;
