@@ -63,22 +63,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     Aggregate aggregateFeeVote;
     mapping (int16 => Aggregate) deltaFeeVotes;       // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
-    mapping (int16 => int112) deltaVotingShares;      // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
-    // TODO: is this really the best way to map (address, int16, int16)
-    // user address, lower tick, upper tick
-    mapping (address => mapping (int16 => mapping (int16 => Position))) positions;
+    // TODO: is this really the best way to map (address, int16, int16) to position
+    // keccak256(abi.encodePacked(address, int16, int16))
+    mapping (bytes32 => Position) positions;
 
     modifier lock() {
         require(unlocked == 1, 'UniswapV3: LOCKED');
         unlocked = 0;
         _;
         unlocked = 1;
-    }
-
-    // get LP fee in 100ths of a bp
-    function getLpFee() public view returns (uint16) {
-        return aggregateFeeVote.averageFee();
     }
 
     // returns sqrt(x*y)/shares
@@ -110,6 +104,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // gets the growth in K for within a particular range
+    // this only has relative meaning, not absolute—under some circumstances, it can even be less than 1
     function getGrowthInside(int16 _lowerTick, int16 _upperTick) public view returns (FixedPoint.uq112x112 memory growth) {
         // TODO: simpler or more precise way to compute this?
         FixedPoint.uq112x112 memory _k = getInvariant();
@@ -160,7 +155,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     uint denominator = rootK.mul(5).add(rootKLast);
                     uint112 liquidity = uint112(numerator / denominator);
                     if (liquidity > 0) {
-                        positions[feeTo][0][0].liquidity += liquidity;
+                        positions[keccak256(abi.encodePacked(feeTo, int16(0), int16(0)))].liquidity += liquidity;
                         virtualSupply = _virtualSupply + liquidity;
                     }
                 }
@@ -191,12 +186,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(price._x > getTickPrice(startingTick)._x && price._x < getTickPrice(startingTick + 1)._x);
         bool feeOn = _mintFee(0, 0);
         liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(MINIMUM_LIQUIDITY));
-        positions[address(0)][MIN_TICK][MAX_TICK] = Position({
+        positions[keccak256(abi.encodePacked(address(0), MIN_TICK, MAX_TICK))] = Position({
             liquidity: MINIMUM_LIQUIDITY,
             lastAdjustedLiquidity: MINIMUM_LIQUIDITY,
             feeVote: feeVote
         });
-        positions[msg.sender][MIN_TICK][MAX_TICK] = Position({
+        positions[keccak256(abi.encodePacked(msg.sender, MIN_TICK, MAX_TICK))] = Position({
             liquidity: liquidity,
             lastAdjustedLiquidity: liquidity,
             feeVote: feeVote
@@ -246,7 +241,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
-        Position memory _position = positions[msg.sender][lowerTick][upperTick];
+        bytes32 positionKey = keccak256(abi.encodePacked(msg.sender, lowerTick, upperTick));
+        Position memory _position = positions[positionKey];
         require(virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
         // initialize tickInfos if they don't exist yet
         _initializeTick(lowerTick);
@@ -262,7 +258,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidity: _position.liquidity.sadd(liquidity),
             feeVote: feeVote
         });
-        positions[msg.sender][lowerTick][upperTick] = newPosition;
+        positions[positionKey] = newPosition;
         // before moving on, withdraw any collected fees
         // until fees are collected, they are like unlevered pool shares that do not earn fees outside the range
         FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
@@ -280,13 +276,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
         deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
         if (currentTick < lowerTick) {
-            amount1 = amount1.add(lowerToken1Balance.sub(upperToken1Balance));
+            amount1 = amount1.add(upperToken1Balance.sub(lowerToken1Balance));
         } else if (currentTick < upperTick) {
             (int112 virtualAmount0, int112 virtualAmount1) = updateVirtualLiquidity(adjustedNewLiquidity, deltaFeeVote);
-            amount0 += virtualAmount0 - lowerToken0Balance;
-            amount1 += virtualAmount1 - upperToken1Balance;
+            amount0 = amount0.add(virtualAmount0.sub(upperToken0Balance));
+            amount1 = amount1.add(virtualAmount1.sub(lowerToken1Balance));
         } else {
-            amount0 = amount0.add(upperToken0Balance.sub(lowerToken0Balance));
+            amount0 = amount0.add(lowerToken0Balance.sub(upperToken0Balance));
         }
         if (amount0 >= 0) {
             TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint112(amount0));
@@ -319,9 +315,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 totalAmountOut = 0;
         uint112 amountInLeft = uint112(amountIn);
         uint112 amountOut = 0;
-        uint112 _lpFee = getLpFee();
+        Aggregate memory _aggregateFeeVote = aggregateFeeVote;
+        uint112 _lpFee = _aggregateFeeVote.averageFee();
         while (amountInLeft > 0) {
-            // TODO: skip ticks until we reach an initialized one?
             FixedPoint.uq112x112 memory price = getTickPrice(_currentTick);
             // compute how much would need to be traded to get to the next tick down
             uint112 maxAmount = getTradeToRatio(_reserve0, _reserve1, price, _lpFee);
@@ -333,11 +329,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _reserve0 = _reserve0.add(amountInStep);
             _reserve1 = _reserve1.sub(amountOutStep);
             amountInLeft = amountInLeft.sub(amountInStep);
-            if (amountInLeft == 0) { // shift past the tick
-                // TODO: batch all updates
+            if (amountInLeft > 0) { // shift past the tick
+                TickInfo memory _oldTickInfo = tickInfos[_currentTick];
+                if (_oldTickInfo.kGrowthOutside._x == 0) {
+                    _currentTick -= 1;
+                    emit Shift(_currentTick);
+                    continue;
+                }
+                // TODO (eventually): batch all updates, including from mintFee
                 bool feeOn = _mintFee(_reserve0, _reserve1);
                 FixedPoint.uq112x112 memory k = FixedPoint.encode(uint112(Babylonian.sqrt(uint(_reserve0) * uint(_reserve1)))).div(virtualSupply);
-                TickInfo memory _oldTickInfo = tickInfos[_currentTick];
                 FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.kGrowthOutside._x != 0 ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
                 // kick in/out liquidity
                 int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
@@ -346,8 +347,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 int112 shareDelta = int112(int(virtualSupply) * int(_delta) / int(_reserve0));
                 virtualSupply = virtualSupply.sadd(shareDelta);
                 // kick in/out fee votes
-                aggregateFeeVote = aggregateFeeVote.sub(deltaFeeVotes[_currentTick]); // sub because we're crossing the tick from right to left
-                _lpFee = getLpFee();
+                _aggregateFeeVote = _aggregateFeeVote.sub(deltaFeeVotes[_currentTick]); // sub because we're crossing the tick from right to left
+                _lpFee = _aggregateFeeVote.averageFee();
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // overflow is desired
