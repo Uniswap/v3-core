@@ -228,22 +228,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         aggregateFeeVote = aggregateFeeVote.add(deltaFeeVote);
     }
 
-    function _getOrInitializeTick(int16 tickIndex, int16 _currentTick) internal returns (TickInfo memory tickInfo) {
-        tickInfo = tickInfos[tickIndex];
-        if (tickInfo.kGrowthOutside._x == 0) {
+    function _getOrInitializeTick(int16 tickIndex, int16 _currentTick) internal {
+        if (tickInfos[tickIndex].kGrowthOutside._x == 0) {
             // by convention, we assume that all growth before tick was initialized happened _below_ a tick
             if (tickIndex <= _currentTick) {
-                tickInfo = TickInfo({
+                tickInfos[tickIndex] = TickInfo({
                     secondsGrowthOutside: uint32(now % 2**32),
-                    kGrowthOutside: getInvariant();
+                    kGrowthOutside: getInvariant()
                 });
-                tickInfos[tickIndex] = tickInfo;
             } else {
                 tickInfos[tickIndex] = TickInfo({
                     secondsGrowthOutside: 0,
                     kGrowthOutside: FixedPoint.encode(1)
                 });
-                tickInfos[tickIndex] = tickInfo;
             }
         }
     }
