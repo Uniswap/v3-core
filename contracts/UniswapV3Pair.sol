@@ -342,7 +342,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 TickInfo memory _oldTickInfo = tickInfos[_currentTick];
                 if (_oldTickInfo.kGrowthOutside._x == 0) {
                     _currentTick -= 1;
-                    emit Shift(_currentTick);
                     continue;
                 }
                 // TODO (eventually): batch all updates, including from mintFee
@@ -365,11 +364,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     kGrowthOutside: k.uqdiv112(_oldKGrowthOutside)
                 });
                 _currentTick -= 1;
-                emit Shift(_currentTick);
                 if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
             }
         }
         currentTick = _currentTick;
+        // TODO: record new fees or something?
+        emit Shift(_currentTick);
         TransferHelper.safeTransfer(token1, msg.sender, amountOut);
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, totalAmountOut, data);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amountIn);
