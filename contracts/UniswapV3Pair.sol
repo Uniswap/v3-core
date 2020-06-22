@@ -104,7 +104,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // gets the growth in K for within a particular range
-    // this only has relative meaning, not absolute—under some circumstances, it can even be less than 1
+    // this only has relative meaning, not absolute
     function getGrowthInside(int16 _lowerTick, int16 _upperTick) public view returns (FixedPoint.uq112x112 memory growth) {
         // TODO: simpler or more precise way to compute this?
         FixedPoint.uq112x112 memory _k = getInvariant();
@@ -228,12 +228,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
         aggregateFeeVote = aggregateFeeVote.add(deltaFeeVote);
     }
 
-    function _initializeTick(int16 tickIndex) internal {
-        if (tickInfos[tickIndex].kGrowthOutside._x == 0) {
-            tickInfos[tickIndex] = TickInfo({
-                secondsGrowthOutside: 0,
-                kGrowthOutside: FixedPoint.encode(1)
-            });
+    function _getOrInitializeTick(int16 tickIndex, int16 _currentTick) internal returns (TickInfo memory tickInfo) {
+        tickInfo = tickInfos[tickIndex];
+        if (tickInfo.kGrowthOutside._x == 0) {
+            // by convention, we assume that all growth before tick was initialized happened _below_ a tick
+            if (tickIndex <= _currentTick) {
+                tickInfo = TickInfo({
+                    secondsGrowthOutside: uint32(now % 2**32),
+                    kGrowthOutside: getInvariant();
+                });
+                tickInfos[tickIndex] = tickInfo;
+            } else {
+                tickInfos[tickIndex] = TickInfo({
+                    secondsGrowthOutside: 0,
+                    kGrowthOutside: FixedPoint.encode(1)
+                });
+                tickInfos[tickIndex] = tickInfo;
+            }
         }
     }
 
@@ -242,11 +253,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         bytes32 positionKey = keccak256(abi.encodePacked(msg.sender, lowerTick, upperTick));
-        Position memory _position = positions[positionKey];
         require(virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
+        Position memory _position = positions[positionKey];
+        int16 _currentTick = currentTick;
         // initialize tickInfos if they don't exist yet
-        _initializeTick(lowerTick);
-        _initializeTick(upperTick);
+        _getOrInitializeTick(lowerTick, _currentTick);
+        _getOrInitializeTick(upperTick, _currentTick);
         // adjust liquidity values based on fees accumulated in the range
         FixedPoint.uq112x112 memory adjustmentFactor = getGrowthInside(lowerTick, upperTick);
         int112 adjustedExistingLiquidity = adjustmentFactor.smul112(int112(_position.liquidity));
