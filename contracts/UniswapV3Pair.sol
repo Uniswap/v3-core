@@ -300,8 +300,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function getTradeToRatio(uint112 y0, uint112 x0, FixedPoint.uq112x112 memory price, uint112 _lpFee) internal pure returns (uint112) {
         // todo: clean up this monstrosity, which won't even compile because the stack is too deep
         // simplification of https://www.wolframalpha.com/input/?i=solve+%28x0+-+x0*%281-g%29*y%2F%28y0+%2B+%281-g%29*y%29%29%2F%28y0+%2B+y%29+%3D+p+for+y
-        // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(lpFee).mul112(lpFee).div(1000000).add(price.mul112(4 * x0).mul112(1000000 - lpFee)).decode()))).decode();
-        // uint112 denominator = price.mul112(1000000 - lpFee).div(1000000).mul112(2).decode();
+        // uint112 numerator = price.sqrt().mul112(uint112(Babylonian.sqrt(y0))).mul112(uint112(Babylonian.sqrt(price.mul112(y0).mul112(_lpFee).mul112(_lpFee).div(1000000).add(price.mul112(4 * x0).mul112(1000000 - _lpFee)).decode()))).decode();
+        // uint112 denominator = price.mul112(1000000 - _lpFee).div(1000000).mul112(2).decode();
 
         // this is just a dummy expression that uses all the variables to silence the linter
         return price.mul112(y0 + x0 + _lpFee).decode();
