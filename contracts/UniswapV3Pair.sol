@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
+import '@uniswap/lib/contracts/libraries/TickMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import { Aggregate, AggregateFunctions } from './libraries/AggregateFeeVote.sol';
@@ -175,7 +176,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // this is a lie—one of them should be near infinite—but I think an innocuous lie since that one is never checked
             return (0, 0);
         }
-        FixedPoint.uq112x112 memory price = getTickPrice(tick);
+        FixedPoint.uq112x112 memory price = TickMath.getPrice(tick);
         return getBalancesAtPrice(liquidity, price);
     }
 
@@ -183,7 +184,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(virtualSupply == 0, "UniswapV3: ALREADY_INITIALIZED");
         require(feeVote >= MIN_FEEVOTE && feeVote <= MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         FixedPoint.uq112x112 memory price = FixedPoint.encode(amount1).div(amount0);
-        require(price._x > getTickPrice(startingTick)._x && price._x < getTickPrice(startingTick + 1)._x);
+        require(price._x > TickMath.getPrice(startingTick)._x && price._x < TickMath.getPrice(startingTick + 1)._x);
         bool feeOn = _mintFee(0, 0);
         liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(MINIMUM_LIQUIDITY));
         positions[keccak256(abi.encodePacked(address(0), MIN_TICK, MAX_TICK))] = Position({
@@ -327,7 +328,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Aggregate memory _aggregateFeeVote = aggregateFeeVote;
         uint112 _lpFee = _aggregateFeeVote.averageFee();
         while (amountInLeft > 0) {
-            FixedPoint.uq112x112 memory price = getTickPrice(_currentTick);
+            FixedPoint.uq112x112 memory price = TickMath.getPrice(_currentTick);
             // compute how much would need to be traded to get to the next tick down
             uint112 maxAmount = getTradeToRatio(_reserve0, _reserve1, price, _lpFee);
             uint112 amountInStep = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
@@ -375,36 +376,5 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amountIn);
         _update(_oldReserve0, _oldReserve1, _reserve0, _reserve1);
         emit Swap(msg.sender, false, amountIn, amountOut, to);
-    }
-
-    function getTickPrice(int16 index) public pure returns (FixedPoint.uq112x112 memory) {
-        // returns a UQ112x112 representing the price of token0 in terms of token1, at the tick with that index
-
-        if (index == 0) {
-            return FixedPoint.encode(1);
-        }
-
-        uint16 absIndex = index > 0 ? uint16(index) : uint16(-index);
-
-        // compute 1.01^abs(index)
-        // TODO: improve and fix this math, which is currently totally wrong
-        // adapted from https://ethereum.stackexchange.com/questions/10425/is-there-any-efficient-way-to-compute-the-exponentiation-of-a-fraction-and-an-in
-        FixedPoint.uq112x112 memory price = FixedPoint.encode(0);
-        FixedPoint.uq112x112 memory N = FixedPoint.encode(1);
-        uint112 B = 1;
-        uint112 q = 100;
-        uint precision = 50;
-        for (uint i = 0; i < precision; ++i){
-            price.add(N.div(B).div(q));
-            N  = N.mul112(uint112(absIndex - uint112(i)));
-            B = B * uint112(i+1);
-            q = q * 100;
-        }
-
-        if (index < 0) {
-            return price.reciprocal();
-        }
-
-        return price;
     }
 }
