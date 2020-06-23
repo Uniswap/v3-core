@@ -133,12 +133,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.12.35.tgz#1e61b226c14380f4384f70cfe49a65c2c553ad2b"
   integrity sha512-ASYsaKecA7TUsDrqIGPNk3JeEox0z/0XR/WsJJ8BIX/9+SkMSImQXKWfU/yBrSyc7ZSE/NPqLu36Nur0miCFfQ==
 
-"@uniswap/lib@1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-1.2.0.tgz#1b5b97e5938c1a92fca8227135def57e75fc7a76"
-  integrity sha512-3JEENDb7dj9CoEKZ156N7+/of07lFKbLuxejMH5t01FPkwdg9OXUflrakS7s7Kp45noJ7LQwxh9ZZU+wIIpBPQ==
-  dependencies:
-    abdk-libraries-solidity "^2.3.0"
+"@uniswap/lib@1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-1.1.2.tgz#9262c75432e99bf5af665d612a58680de933b28e"
+  integrity sha512-FTV/3/qqAz28avfhh4vkupu96qcnLS6tw5G1W6JuOb8foEdNN/279rnuvAXoQM4oBubZmpJXlRZazR2+XTkaww==
 
 "@web3-js/scrypt-shim@^0.1.0":
   version "0.1.0"

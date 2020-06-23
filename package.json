@@ -20,7 +20,8 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@uniswap/lib": "1.2.0"
+    "@uniswap/lib": "1.1.2",
+    "abdk-libraries-solidity": "^2.3.0"
   },
   "devDependencies": {
     "@types/chai": "^4.2.6",
