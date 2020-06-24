@@ -3,6 +3,7 @@
 pragma solidity >=0.6.8;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import 'abdk-libraries-solidity/ABDKMathQuad.sol';
 
 // TODO(moodysalem): Move into @uniswap/lib
 library FixedPointExtra {
@@ -47,6 +48,20 @@ library FixedPointExtra {
         // TODO: implement this
         // silly hack to avoid linter error
         return true ? self : x;
+    }
+
+    // convert a fixed point to a quad
+    function toQuad(FixedPoint.uq112x112 memory self) internal pure returns (bytes16) {
+        return ABDKMathQuad.from128x128(self._x << 16);
+    }
+
+    // convert a quad to a fixed point, throws on overflow/underflow
+    function fromQuad(bytes16 quad) internal pure returns (FixedPoint.uq112x112 memory) {
+        int256 result = ABDKMathQuad.to128x128(quad);
+        require(result < type(uint240).max, 'FixedPointExtra: OVERFLOW_UQ112x112');
+        require(result > type(uint16).max, 'FixedPointExtra: UNDERFLOW_UQ112x112');
+        uint224 converted = uint224(result >> 16);
+        return FixedPoint.uq112x112(converted);
     }
 
 }
