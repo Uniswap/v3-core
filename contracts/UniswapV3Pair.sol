@@ -6,12 +6,11 @@ pragma experimental ABIEncoderV2;
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
-
+import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import { Aggregate, AggregateFunctions } from './libraries/AggregateFeeVote.sol';
 import { Position, PositionFunctions } from './libraries/Position.sol';
-import './libraries/SafeMath.sol';
 import './libraries/SafeMath112.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
