@@ -4,7 +4,7 @@ import { deployContract } from 'ethereum-waffle'
 
 import { expandTo18Decimals } from './utilities'
 
-import ERC20 from '../../build/ERC20.json'
+import ERC20 from '../../build/TestERC20.json'
 import UniswapV3Factory from '../../build/UniswapV3Factory.json'
 import UniswapV3Pair from '../../build/UniswapV3Pair.json'
 

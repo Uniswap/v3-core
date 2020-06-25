@@ -278,6 +278,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (int112 amount0, int112 amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
         // update vote deltas. since adjusted liquidity and vote could change, remove all votes and add new ones
         Aggregate memory deltaFeeVote = newPosition.totalFeeVote().sub(_position.totalFeeVote());
+        /* stack too deep
         deltaFeeVotes[lowerTick] = deltaFeeVotes[lowerTick].add(deltaFeeVote);
         deltaFeeVotes[upperTick] = deltaFeeVotes[upperTick].sub(deltaFeeVote);
         // calculate how much the newly added/removed shares are worth at lower ticks and upper ticks
@@ -305,7 +306,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else {
             TransferHelper.safeTransfer(token1, msg.sender, uint112(-amount1));
         }
-        emit SetPosition(msg.sender, liquidity, lowerTick, upperTick, feeVote);
+        emit SetPosition(msg.sender, liquidity, lowerTick, upperTick, feeVote);*/
     }
 
 
@@ -320,6 +321,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 amountOut = 0;
         Aggregate memory _aggregateFeeVote = aggregateFeeVote;
         uint112 _lpFee = _aggregateFeeVote.averageFee();
+        /* stack too deep
         while (amountInLeft > 0) {
             FixedPoint.uq112x112 memory price = TickMath.getPrice(_currentTick);
             // compute how much would need to be traded to get to the next tick down
@@ -368,6 +370,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, totalAmountOut, data);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amountIn);
         _update(_oldReserve0, _oldReserve1, _reserve0, _reserve1);
-        emit Swap(msg.sender, false, amountIn, amountOut, to);
+        emit Swap(msg.sender, false, amountIn, amountOut, to);*/
     }
 }
