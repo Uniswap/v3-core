@@ -26,6 +26,17 @@ describe('UniswapV3ERC20', () => {
       it('0 all', async () => {
         expect(await priceMath.getTradeToRatio(0, 0, 0, [0])).to.eq(0)
       })
+
+      it('throws if wrong direction', async () => {
+        // no amount in will move the ratio of reserve in/reserve out from 1:50 to 1:75
+        await expect(
+          priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
+            expandTo18Decimals(1)
+              .mul(bigNumberify(2).pow(112))
+              .div(expandTo18Decimals(75))
+          ])
+        ).to.be.revertedWith('revert')
+      })
     })
 
     describe('1:100 to 1:50 at 30bps', () => {
