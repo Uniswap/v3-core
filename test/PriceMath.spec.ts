@@ -8,7 +8,7 @@ import { expandTo18Decimals } from './shared/utilities'
 
 chai.use(solidity)
 
-describe('UniswapV3ERC20', () => {
+describe('PriceMath', () => {
   const provider = new MockProvider({
     hardfork: 'istanbul',
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
