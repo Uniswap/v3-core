@@ -188,12 +188,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         liquidity = uint112(Babylonian.sqrt(uint256(amount0).mul(uint256(amount1))).sub(MINIMUM_LIQUIDITY));
         positions[keccak256(abi.encodePacked(address(0), MIN_TICK, MAX_TICK))] = Position({
             liquidity: MINIMUM_LIQUIDITY,
-            lastAdjustedLiquidity: MINIMUM_LIQUIDITY,
+            lastNormalizedLiquidity: MINIMUM_LIQUIDITY,
             feeVote: feeVote
         });
         positions[keccak256(abi.encodePacked(msg.sender, MIN_TICK, MAX_TICK))] = Position({
             liquidity: liquidity,
-            lastAdjustedLiquidity: liquidity,
+            lastNormalizedLiquidity: liquidity,
             feeVote: feeVote
         });
         uint112 totalLiquidity = liquidity + MINIMUM_LIQUIDITY;
@@ -228,7 +228,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         aggregateFeeVote = aggregateFeeVote.add(deltaFeeVote);
     }
 
-    function _getOrInitializeTick(int16 tickIndex, int16 _currentTick) internal {
+    function _initializeTick(int16 tickIndex, int16 _currentTick) internal {
         if (tickInfos[tickIndex].kGrowthOutside._x == 0) {
             // by convention, we assume that all growth before tick was initialized happened _below_ a tick
             if (tickIndex <= _currentTick) {
@@ -246,6 +246,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
+    // also sync a position and return accumulated fees from it to user as tokens
+    // liquidityDelta is sqrt(xy), where x and y are the tokens deposited or withdrawn (so does not incorporate fees)
     function setPosition(int112 liquidityDelta, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
@@ -254,52 +256,37 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Position memory _position = positions[positionKey];
         int16 _currentTick = currentTick;
         // initialize tickInfos if they don't exist yet
-        _getOrInitializeTick(lowerTick, _currentTick);
-        _getOrInitializeTick(upperTick, _currentTick);
-        // adjust liquidity values based on fees accumulated in the range
-        FixedPoint.uq112x112 memory adjustmentFactor = getGrowthInside(lowerTick, upperTick);
-        int112 adjustedExistingLiquidity = adjustmentFactor.smul112(int112(_position.liquidity));
-        int112 adjustedNewLiquidity = adjustmentFactor.smul112(liquidityDelta);
-        uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
-        (int112 amount0, int112 amount1) = (0, 0);
-        // before moving on, compound fees if in range and collect them if not
-        // until fees are compounded or collected, they are like unlevered pool shares that do not earn fees outside the range
-        if (_currentTick >= _currentTick && _currentTick < upperTick) {
-            // TODO: compound fees
-        } else {
-            // outside of range, so get the liquidity 
-            FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
-            int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
-            // negative amount means the amount is sent out
-            (amount0, amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
-            liquidityDelta -= adjustmentFactor.reciprocal().smul112(liquidityDelta);
-        }
+        _initializeTick(lowerTick, _currentTick);
+        _initializeTick(upperTick, _currentTick);
+        // before moving on, rebate any collected fees to user
+        // note that unlevered liquidity wrapper can automatically recompound by setting liquidityDelta to their accumulated fees
+        FixedPoint.uq112x112 memory kGrowthInside = getGrowthInside(lowerTick, upperTick);
+        int112 adjustedExistingLiquidity = kGrowthInside.smul112(int112(_position.lastNormalizedLiquidity));
         FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
-        int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
-        // negative amount means the amount is sent out
-        (amount0, amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
-        // update vote deltas. since adjusted liquidity and vote could change, remove all votes and add new ones
+        int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.liquidity);
+        (int112 amount0, int112 amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
         // update position
+        uint112 endingLiquidity = _position.liquidity.sadd(liquidityDelta);
         Position memory newPosition = Position({
-            lastAdjustedLiquidity: totalAdjustedLiquidity,
-            liquidity: _position.liquidity.sadd(liquidityDelta),
+            liquidity: endingLiquidity,
+            lastNormalizedLiquidity: kGrowthInside.reciprocal().mul112(endingLiquidity).decode(),
             feeVote: feeVote
         });
         positions[positionKey] = newPosition;
+        // calculate how much the newly added/removed shares are worth at lower ticks and upper ticks
+        (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(liquidityDelta, lowerTick);
+        (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(liquidityDelta, upperTick);
+        // update token0 deltas
+        deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
+        deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
         // update fee votes
         Aggregate memory deltaFeeVote = newPosition.totalFeeVote().sub(_position.totalFeeVote());
         deltaFeeVotes[lowerTick] = deltaFeeVotes[lowerTick].add(deltaFeeVote);
         deltaFeeVotes[upperTick] = deltaFeeVotes[upperTick].sub(deltaFeeVote);
-        // calculate how much the newly added/removed shares are worth at lower ticks and upper ticks
-        (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, lowerTick);
-        (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(adjustedNewLiquidity, upperTick);
-        // update token0 deltas
-        deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
-        deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
         if (_currentTick < lowerTick) {
             amount1 = amount1.add(upperToken1Balance.sub(lowerToken1Balance));
         } else if (_currentTick < upperTick) {
-            (int112 virtualAmount0, int112 virtualAmount1) = updateVirtualLiquidity(adjustedNewLiquidity, deltaFeeVote);
+            (int112 virtualAmount0, int112 virtualAmount1) = updateVirtualLiquidity(liquidityDelta, deltaFeeVote);
             amount0 = amount0.add(virtualAmount0.sub(upperToken0Balance));
             amount1 = amount1.add(virtualAmount1.sub(lowerToken1Balance));
         } else {
@@ -331,6 +318,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // TODO: implement swap1for0, or integrate it into this
     function swap0for1(uint amountIn, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
+        require(_reserve0 > 0 && _reserve1 > 0, "UniswapV3: NOT_INITIALIZED");
         (uint112 _oldReserve0, uint112 _oldReserve1) = (_reserve0, _reserve1);
         int16 _currentTick = currentTick;
         uint112 totalAmountOut = 0;
