@@ -246,7 +246,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
-    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
+    function setPosition(int112 liquidityDelta, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         bytes32 positionKey = keccak256(abi.encodePacked(msg.sender, lowerTick, upperTick));
@@ -259,22 +259,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // adjust liquidity values based on fees accumulated in the range
         FixedPoint.uq112x112 memory adjustmentFactor = getGrowthInside(lowerTick, upperTick);
         int112 adjustedExistingLiquidity = adjustmentFactor.smul112(int112(_position.liquidity));
-        int112 adjustedNewLiquidity = adjustmentFactor.smul112(liquidity);
+        int112 adjustedNewLiquidity = adjustmentFactor.smul112(liquidityDelta);
         uint112 totalAdjustedLiquidity = uint112(adjustedExistingLiquidity).sadd(adjustedNewLiquidity);
-        // update position
-        Position memory newPosition = Position({
-            lastAdjustedLiquidity: totalAdjustedLiquidity,
-            liquidity: _position.liquidity.sadd(liquidity),
-            feeVote: feeVote
-        });
-        positions[positionKey] = newPosition;
-        // before moving on, withdraw any collected fees
-        // until fees are collected, they are like unlevered pool shares that do not earn fees outside the range
+        (int112 amount0, int112 amount1) = (0, 0);
+        // before moving on, compound fees if in range and collect them if not
+        // until fees are compounded or collected, they are like unlevered pool shares that do not earn fees outside the range
+        if (_currentTick >= _currentTick && _currentTick < upperTick) {
+            // TODO: compound fees
+        } else {
+            // outside of range, so get the liquidity 
+            FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
+            int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
+            // negative amount means the amount is sent out
+            (amount0, amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
+            liquidityDelta -= adjustmentFactor.reciprocal().smul112(liquidityDelta);
+        }
         FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
         int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.lastAdjustedLiquidity);
         // negative amount means the amount is sent out
-        (int112 amount0, int112 amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
+        (amount0, amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
         // update vote deltas. since adjusted liquidity and vote could change, remove all votes and add new ones
+        // update position
+        Position memory newPosition = Position({
+            lastAdjustedLiquidity: totalAdjustedLiquidity,
+            liquidity: _position.liquidity.sadd(liquidityDelta),
+            feeVote: feeVote
+        });
+        positions[positionKey] = newPosition;
+        // update fee votes
         Aggregate memory deltaFeeVote = newPosition.totalFeeVote().sub(_position.totalFeeVote());
         deltaFeeVotes[lowerTick] = deltaFeeVotes[lowerTick].add(deltaFeeVote);
         deltaFeeVotes[upperTick] = deltaFeeVotes[upperTick].sub(deltaFeeVote);
@@ -284,9 +296,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // update token0 deltas
         deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
         deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
-        if (currentTick < lowerTick) {
+        if (_currentTick < lowerTick) {
             amount1 = amount1.add(upperToken1Balance.sub(lowerToken1Balance));
-        } else if (currentTick < upperTick) {
+        } else if (_currentTick < upperTick) {
             (int112 virtualAmount0, int112 virtualAmount1) = updateVirtualLiquidity(adjustedNewLiquidity, deltaFeeVote);
             amount0 = amount0.add(virtualAmount0.sub(upperToken0Balance));
             amount1 = amount1.add(virtualAmount1.sub(lowerToken1Balance));
@@ -303,7 +315,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else {
             TransferHelper.safeTransfer(token1, msg.sender, uint112(-amount1));
         }
-        emit SetPosition(msg.sender, liquidity, lowerTick, upperTick, feeVote);
+        emit SetPosition(msg.sender, liquidityDelta, lowerTick, upperTick, feeVote);
     }
 
     function getTradeToRatio(uint112 y0, uint112 x0, FixedPoint.uq112x112 memory price, uint112 _lpFee) internal pure returns (uint112) {
