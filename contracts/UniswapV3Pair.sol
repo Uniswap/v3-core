@@ -247,9 +247,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
+    // add or remove a specified amount of virtual liquidity from a specified range, and/or change feeVote for that range
     // also sync a position and return accumulated fees from it to user as tokens
-    // liquidityDelta is sqrt(xy), where x and y are the tokens deposited or withdrawn (so does not incorporate fees)
+    // liquidityDelta is sqrt(xy), so does not incorporate fees
     function setPosition(int112 liquidityDelta, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
