@@ -251,31 +251,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(xy), so does not incorporate fees
     function setPosition(int112 liquidityDelta, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
+        int112 amount0;
+        int112 amount1;
+        Aggregate memory deltaFeeVote;
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
+        { // scope to help with compilation
         bytes32 positionKey = keccak256(abi.encodePacked(msg.sender, lowerTick, upperTick));
         require(virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
         Position memory _position = positions[positionKey];
-        int16 _currentTick = currentTick;
         // initialize tickInfos if they don't exist yet
-        _initializeTick(lowerTick, _currentTick);
-        _initializeTick(upperTick, _currentTick);
-        /* stack too deep
+        _initializeTick(lowerTick, currentTick);
+        _initializeTick(upperTick, currentTick);
         // before moving on, rebate any collected fees to user
         // note that unlevered liquidity wrapper can automatically recompound by setting liquidityDelta to their accumulated fees
         FixedPoint.uq112x112 memory kGrowthInside = getGrowthInside(lowerTick, upperTick);
-        int112 adjustedExistingLiquidity = kGrowthInside.smul112(int112(_position.lastNormalizedLiquidity));
-        FixedPoint.uq112x112 memory currentPrice = FixedPoint.encode(reserve1).div(reserve0);
-        int112 feeLiquidity = adjustedExistingLiquidity - int112(_position.liquidity);
-        (int112 amount0, int112 amount1) = getBalancesAtPrice(-feeLiquidity, currentPrice);
+        { // scope to help with compilation
+        int112 feeLiquidity = kGrowthInside.smul112(int112(_position.lastNormalizedLiquidity)) - int112(_position.liquidity);
+        (amount0, amount1) = getBalancesAtPrice(-feeLiquidity, FixedPoint.encode(reserve1).div(reserve0));
+        }
         // update position
-        uint112 endingLiquidity = _position.liquidity.sadd(liquidityDelta);
         Position memory newPosition = Position({
-            liquidity: endingLiquidity,
-            lastNormalizedLiquidity: kGrowthInside.reciprocal().mul112(endingLiquidity).decode(),
+            liquidity: _position.liquidity.sadd(liquidityDelta),
+            lastNormalizedLiquidity: kGrowthInside.reciprocal().mul112(_position.liquidity.sadd(liquidityDelta)).decode(),
             feeVote: feeVote
         });
         positions[positionKey] = newPosition;
+        deltaFeeVote = newPosition.totalFeeVote().sub(_position.totalFeeVote());
+        }
         // calculate how much the newly added/removed shares are worth at lower ticks and upper ticks
         (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(liquidityDelta, lowerTick);
         (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(liquidityDelta, upperTick);
@@ -283,12 +286,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
         deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
         // update fee votes
-        Aggregate memory deltaFeeVote = newPosition.totalFeeVote().sub(_position.totalFeeVote());
         deltaFeeVotes[lowerTick] = deltaFeeVotes[lowerTick].add(deltaFeeVote);
         deltaFeeVotes[upperTick] = deltaFeeVotes[upperTick].sub(deltaFeeVote);
-        if (_currentTick < lowerTick) {
+        if (currentTick < lowerTick) {
             amount1 = amount1.add(upperToken1Balance.sub(lowerToken1Balance));
-        } else if (_currentTick < upperTick) {
+        } else if (currentTick < upperTick) {
             (int112 virtualAmount0, int112 virtualAmount1) = updateVirtualLiquidity(liquidityDelta, deltaFeeVote);
             amount0 = amount0.add(virtualAmount0.sub(upperToken0Balance));
             amount1 = amount1.add(virtualAmount1.sub(lowerToken1Balance));
@@ -305,7 +307,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else {
             TransferHelper.safeTransfer(token1, msg.sender, uint112(-amount1));
         }
-        emit SetPosition(msg.sender, liquidityDelta, lowerTick, upperTick, feeVote); */
+        emit SetPosition(msg.sender, liquidityDelta, lowerTick, upperTick, feeVote);
     }
 
 
@@ -316,24 +318,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(_reserve0 > 0 && _reserve1 > 0, "UniswapV3: NOT_INITIALIZED");
         (uint112 _oldReserve0, uint112 _oldReserve1) = (_reserve0, _reserve1);
         int16 _currentTick = currentTick;
-        uint112 totalAmountOut = 0;
         uint112 amountInLeft = uint112(amountIn);
         uint112 amountOut = 0;
         Aggregate memory _aggregateFeeVote = aggregateFeeVote;
-        uint112 _lpFee = _aggregateFeeVote.averageFee();
-        /* stack too deep
         while (amountInLeft > 0) {
             FixedPoint.uq112x112 memory price = TickMath.getPrice(_currentTick);
             // compute how much would need to be traded to get to the next tick down
-            uint112 maxAmount = PriceMath.getTradeToRatio(_reserve0, _reserve1, _lpFee, price);
+            { // scope
+            uint112 maxAmount = PriceMath.getTradeToRatio(_reserve0, _reserve1, aggregateFeeVote.averageFee(), price);
             uint112 amountInStep = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
             // execute the sell of amountToTrade
-            uint112 adjustedAmountToTrade = amountInStep * (1000000 - _lpFee) / 1000000;
+            uint112 adjustedAmountToTrade = amountInStep * (1000000 - _aggregateFeeVote.averageFee()) / 1000000;
             uint112 amountOutStep = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
             amountOut = amountOut.add(amountOutStep);
             _reserve0 = _reserve0.add(amountInStep);
             _reserve1 = _reserve1.sub(amountOutStep);
             amountInLeft = amountInLeft.sub(amountInStep);
+            }
             if (amountInLeft > 0) { // shift past the tick
                 TickInfo memory _oldTickInfo = tickInfos[_currentTick];
                 if (_oldTickInfo.kGrowthOutside._x == 0) {
@@ -342,22 +343,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 }
                 // TODO (eventually): batch all updates, including from mintFee
                 bool feeOn = _mintFee(_reserve0, _reserve1);
-                FixedPoint.uq112x112 memory k = FixedPoint.encode(uint112(Babylonian.sqrt(uint(_reserve0) * uint(_reserve1)))).div(virtualSupply);
                 FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.kGrowthOutside._x != 0 ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
                 // kick in/out liquidity
                 int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
                 _reserve0 = _reserve0.sadd(_delta);
                 _reserve1 = _reserve1.sadd(price.smul112(_delta));
-                int112 shareDelta = int112(int(virtualSupply) * int(_delta) / int(_reserve0));
-                virtualSupply = virtualSupply.sadd(shareDelta);
+                virtualSupply = virtualSupply.sadd(int112(int(virtualSupply) * int(_delta) / int(_reserve0)));
                 // kick in/out fee votes
                 _aggregateFeeVote = _aggregateFeeVote.sub(deltaFeeVotes[_currentTick]); // sub because we're crossing the tick from right to left
-                _lpFee = _aggregateFeeVote.averageFee();
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // overflow is desired
                     secondsGrowthOutside: uint32(block.timestamp % 2**32) - _oldTickInfo.secondsGrowthOutside,
-                    kGrowthOutside: k.uqdiv112(_oldKGrowthOutside)
+                    kGrowthOutside: getInvariant().uqdiv112(_oldKGrowthOutside)
                 });
                 _currentTick -= 1;
                 if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
@@ -367,9 +365,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // TODO: record new fees or something?
         emit Shift(_currentTick);
         TransferHelper.safeTransfer(token1, msg.sender, amountOut);
-        if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, totalAmountOut, data);
+        if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, amountOut, data);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amountIn);
         _update(_oldReserve0, _oldReserve1, _reserve0, _reserve1);
-        emit Swap(msg.sender, false, amountIn, amountOut, to);*/
+        emit Swap(msg.sender, false, amountIn, amountOut, to);
     }
 }
