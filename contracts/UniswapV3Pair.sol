@@ -254,7 +254,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Aggregate memory deltaFeeVote;
         require(feeVote > MIN_FEEVOTE && feeVote < MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
-        { // scope to allow compilation
+        { // scope to help with compilation
         bytes32 positionKey = keccak256(abi.encodePacked(msg.sender, lowerTick, upperTick));
         require(virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
         Position memory _position = positions[positionKey];
