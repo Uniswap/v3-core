@@ -1,7 +1,5 @@
 import chai, { expect } from 'chai'
-import { Contract } from 'ethers'
-import { AddressZero } from 'ethers/constants'
-import { bigNumberify } from 'ethers/utils'
+import { Contract, BigNumber, constants } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 
 import { getCreate2Address } from './shared/utilities'
@@ -18,12 +16,15 @@ const TEST_ADDRESSES: [string, string] = [
 
 describe('UniswapV3Factory', () => {
   const provider = new MockProvider({
-    hardfork: 'istanbul',
-    mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-    gasLimit: 9999999
+    ganacheOptions: {
+      hardfork: 'istanbul',
+      mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
+      gasLimit: 9999999,
+      allowUnlimitedContractSize: true
+    }
   })
   const [wallet, other] = provider.getWallets()
-  const loadFixture = createFixtureLoader(provider, [wallet, other])
+  const loadFixture = createFixtureLoader([wallet, other], provider)
 
   let factory: Contract
   beforeEach(async () => {
@@ -32,7 +33,7 @@ describe('UniswapV3Factory', () => {
   })
 
   it('feeTo, feeToSetter, allPairsLength', async () => {
-    expect(await factory.feeTo()).to.eq(AddressZero)
+    expect(await factory.feeTo()).to.eq(constants.AddressZero)
     expect(await factory.feeToSetter()).to.eq(wallet.address)
     expect(await factory.allPairsLength()).to.eq(0)
   })
@@ -42,7 +43,7 @@ describe('UniswapV3Factory', () => {
     const create2Address = getCreate2Address(factory.address, tokens, bytecode)
     await expect(factory.createPair(...tokens))
       .to.emit(factory, 'PairCreated')
-      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, bigNumberify(1))
+      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, BigNumber.from(1))
 
     await expect(factory.createPair(...tokens)).to.be.revertedWith('UniswapV3: PAIR_EXISTS')
     await expect(factory.createPair(...tokens.slice().reverse())).to.be.revertedWith('UniswapV3: PAIR_EXISTS')

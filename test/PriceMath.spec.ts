@@ -1,6 +1,5 @@
 import chai, { expect } from 'chai'
-import { Contract } from 'ethers'
-import { bigNumberify } from 'ethers/utils'
+import { Contract, BigNumber } from 'ethers'
 import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 
 import PriceMathTest from '../build/PriceMathTest.json'
@@ -10,9 +9,11 @@ chai.use(solidity)
 
 describe('PriceMath', () => {
   const provider = new MockProvider({
-    hardfork: 'istanbul',
-    mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-    gasLimit: 9999999
+    ganacheOptions: {
+      hardfork: 'istanbul',
+      mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
+      gasLimit: 9999999
+    }
   })
   const [wallet] = provider.getWallets()
 
@@ -32,7 +33,7 @@ describe('PriceMath', () => {
         await expect(
           priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
             expandTo18Decimals(1)
-              .mul(bigNumberify(2).pow(112))
+              .mul(BigNumber.from(2).pow(112))
               .div(expandTo18Decimals(75))
           ])
         ).to.be.revertedWith('revert')
@@ -44,26 +45,26 @@ describe('PriceMath', () => {
         expect(
           await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 3000, [
             expandTo18Decimals(1)
-              .mul(bigNumberify(2).pow(112))
+              .mul(BigNumber.from(2).pow(112))
               .div(expandTo18Decimals(50))
           ])
         ).to.eq('415459942199694131')
       })
       it('verify result', () => {
-        const amountWithoutFee = bigNumberify('415459942199694131')
+        const amountWithoutFee = BigNumber.from('415459942199694131')
           .mul(997)
           .div(1000)
         const reserveInAfter = expandTo18Decimals(1).add(amountWithoutFee)
         const reserveOutAfter = expandTo18Decimals(1)
           .mul(expandTo18Decimals(100))
           .div(reserveInAfter)
-        const ratioAfter = reserveInAfter.mul(bigNumberify(2).pow(112)).div(reserveOutAfter)
+        const ratioAfter = reserveInAfter.mul(BigNumber.from(2).pow(112)).div(reserveOutAfter)
 
         const targetRatio = expandTo18Decimals(1)
-          .mul(bigNumberify(2).pow(112))
+          .mul(BigNumber.from(2).pow(112))
           .div(expandTo18Decimals(50))
         // a difference of lte 2^56 in a uq112x112 is <= 2^-56
-        expect(ratioAfter.sub(targetRatio).abs()).to.be.lte(bigNumberify(2).pow(56))
+        expect(ratioAfter.sub(targetRatio).abs()).to.be.lte(BigNumber.from(2).pow(56))
       })
     })
 
@@ -71,7 +72,7 @@ describe('PriceMath', () => {
       expect(
         await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 6000, [
           expandTo18Decimals(1)
-            .mul(bigNumberify(2).pow(112))
+            .mul(BigNumber.from(2).pow(112))
             .div(expandTo18Decimals(50))
         ])
       ).to.eq('416713845445769666')
@@ -81,7 +82,7 @@ describe('PriceMath', () => {
       expect(
         await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 4500, [
           expandTo18Decimals(1)
-            .mul(bigNumberify(2).pow(112))
+            .mul(BigNumber.from(2).pow(112))
             .div(expandTo18Decimals(75))
         ])
       ).to.eq('155399837648670546')
