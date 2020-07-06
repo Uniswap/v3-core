@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
-
 import 'abdk-libraries-solidity/ABDKMathQuad.sol';
 
 // calculates prices, encoded as uq112x112 fixed points, corresponding to reserves ratios of 1.01**tick
@@ -18,12 +17,12 @@ library TickMath {
     // 1.01**tick <= 2**112 - 1
     // tick <= log_1.01(2**112 - 1)
     // tick = floor(log_1.01(2**112 - 1)) = 7802
-    int16 public constant MAX_TICK =  7802;
+    int16 public constant MAX_TICK = 7802;
     // log_2(1.01) represented in 128-bit floating point
     // ABDKMathQuad.log_2(ABDKMathQuad.from64x64(int128(101 << 64) / 100));
-    bytes16 public constant TICK_MULTIPLIER = 0x3ff8d664ecee35b77e6334057c6a534f;
+    bytes16 private constant TICK_MULTIPLIER = 0x3ff8d664ecee35b77e6334057c6a534f;
     // 1 represented in uq112x122 fixed point
-    uint224 public constant ONE = 1 << 112;
+    uint224 private constant ONE = 1 << 112;
 
     // given a tick index, return the corresponding price as a uq112x112 fixed point
     function getPrice(int16 tick) internal pure returns (FixedPoint.uq112x112 memory) {
