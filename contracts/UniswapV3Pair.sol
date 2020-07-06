@@ -184,7 +184,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     uint denominator = rootK.mul(5).add(rootKLast);
                     uint112 liquidity = uint112(numerator / denominator);
                     if (liquidity > 0) {
-                        positions[getPositionKey(feeTo, 0, 0)].liquidity += liquidity;
+                        Position storage position = getPosition(feeTo, 0, 0);
+                        position.liquidity = position.liquidity + liquidity;
                         virtualSupply = _virtualSupply + liquidity;
                     }
                 }
@@ -260,12 +261,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function getPositionKey(address owner, int16 lowerTick, int16 upperTick)
+    // helper functions for getting/setting position structs
+    function getPositionKey(address owner, int16 lowerTick, int16 upperTick) private pure returns (bytes32) {
+        return keccak256(abi.encodePacked(owner, lowerTick, upperTick));
+    }
+    function getPosition(address owner, int16 lowerTick, int16 upperTick)
         private
-        pure
-        returns (bytes32 positionKey)
+        view
+        returns (Position storage position)
     {
-        positionKey = keccak256(abi.encodePacked(owner, lowerTick, upperTick));
+        position = positions[getPositionKey(owner, lowerTick, upperTick)];
+    }
+    function setPosition(address owner, int16 lowerTick, int16 upperTick, Position memory position) private {
+        positions[getPositionKey(owner, lowerTick, upperTick)] = position;
     }
 
     // add or remove a specified amount of virtual liquidity from a specified range, and/or change feeVote for that range
@@ -279,8 +287,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(lowerTick < upperTick, "UniswapV3: BAD_TICKS");
         { // scope to help with compilation
         require(virtualSupply > 0, 'UniswapV3: NOT_INITIALIZED');
-        bytes32 positionKey = getPositionKey(msg.sender, lowerTick, upperTick);
-        Position storage position = positions[positionKey];
+        Position storage position = getPosition(msg.sender, lowerTick, upperTick);
         // initialize tickInfos if they don't exist yet
         _initializeTick(lowerTick);
         _initializeTick(upperTick);
@@ -292,13 +299,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (amount0, amount1) = getBalancesAtPrice(-feeLiquidity, FixedPoint.encode(reserve1).div(reserve0));
         }
         // update position
+        Aggregate memory oldFeeVote = PositionFunctions.totalFeeVote(position);
         Position memory newPosition = Position({
             liquidity: position.liquidity.sadd(liquidityDelta),
             lastNormalizedLiquidity: kGrowthInside.reciprocal().mul112(position.liquidity.sadd(liquidityDelta)).decode(),
             feeVote: feeVote
         });
-        deltaFeeVote = newPosition.totalFeeVote().sub(position.totalFeeVote());
-        positions[positionKey] = newPosition;
+        setPosition(msg.sender, lowerTick, upperTick, newPosition);
+        deltaFeeVote = PositionFunctions.totalFeeVote(newPosition).sub(oldFeeVote);
         }
         // calculate how much the newly added/removed shares are worth at lower ticks and upper ticks
         (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(liquidityDelta, lowerTick);
