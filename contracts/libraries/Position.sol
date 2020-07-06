@@ -4,12 +4,6 @@ pragma solidity >=0.6.8;
 
 import { Aggregate } from "./AggregateFeeVote.sol";
 
-// functions for positions
-
-// For example, if there has been, 
-
-// liquidity stays constant. 
-
 struct Position {
     // liquidity is adjusted virtual liquidity tokens (sqrt(xy)), not counting fees since last sync
     // these units do not increase over time with accumulated fees. it is always sqrt(xy)
