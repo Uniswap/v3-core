@@ -25,7 +25,7 @@ describe('PriceMath', () => {
   describe('#getTradeToRatio', () => {
     describe('edge cases', () => {
       it('0 all', async () => {
-        expect(await priceMath.getTradeToRatio(0, 0, 0, [0])).to.eq(0)
+        await expect(priceMath.getTradeToRatio(0, 0, 0, [0])).to.be.revertedWith('PriceMath: NONZERO')
       })
 
       it('throws if wrong direction', async () => {
@@ -36,19 +36,21 @@ describe('PriceMath', () => {
               .mul(BigNumber.from(2).pow(112))
               .div(expandTo18Decimals(75))
           ])
-        ).to.be.revertedWith('revert')
+        ).to.be.revertedWith('PriceMath: DIRECTION')
       })
     })
 
     describe('1:100 to 1:50 at 30bps', () => {
-      it('returns 415459942199694131', async () => {
+      it('returns 414835953198742784', async () => {
         expect(
           await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 3000, [
             expandTo18Decimals(1)
               .mul(BigNumber.from(2).pow(112))
               .div(expandTo18Decimals(50))
           ])
-        ).to.eq('415459942199694131')
+          // close but not exact
+          // https://www.wolframalpha.com/input/?i=solve+%28x0+%2B+x%29+%2F+%28%28y0+*+x0%29+%2F+%28x0+%2B+x+*+%281-f%29%29%29+%3D+p+for+x+where+x0+%3D+1e18+and+y0+%3D+1e20+and+f+%3D+0.003+and+p+%3D+1%2F50
+        ).to.eq('414835953198742810')
       })
       it('verify result', () => {
         const amountWithoutFee = BigNumber.from('415459942199694131')
@@ -75,7 +77,7 @@ describe('PriceMath', () => {
             .mul(BigNumber.from(2).pow(112))
             .div(expandTo18Decimals(50))
         ])
-      ).to.eq('416713845445769666')
+      ).to.eq('415460493085696914')
     })
 
     it('1:100 to 1:75 at 45bps', async () => {
@@ -85,7 +87,7 @@ describe('PriceMath', () => {
             .mul(BigNumber.from(2).pow(112))
             .div(expandTo18Decimals(75))
         ])
-      ).to.eq('155399837648670546')
+      ).to.eq('155049452346487536')
     })
   })
 })
