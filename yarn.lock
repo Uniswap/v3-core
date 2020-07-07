@@ -529,7 +529,7 @@
     typedarray-to-buffer "^3.1.5"
     yaeti "^0.0.6"
 
-abdk-libraries-solidity@^2.3.0:
+abdk-libraries-solidity@2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/abdk-libraries-solidity/-/abdk-libraries-solidity-2.3.0.tgz#67720075ee63824089760952b5c810e677bf35a2"
   integrity sha512-mSxoRD1S22cj6vpYOCWcaf0MMEG2ZqphQeRy2PEzemmUr0Om2sVBYbpQOHl0diA+4AUGERAGcjS3Z6MvcjRIow==

@@ -20,11 +20,11 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^3.1.0",
     "@uniswap/lib": "1.1.2",
-    "abdk-libraries-solidity": "^2.3.0"
+    "abdk-libraries-solidity": "2.3.0"
   },
   "devDependencies": {
+    "@openzeppelin/contracts": "^3.1.0",
     "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
