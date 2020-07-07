@@ -2,17 +2,19 @@
 
 pragma solidity >=0.6.8;
 
-import "./SafeMath112.sol";
+import "./SafeMath.sol";
+
+import "../UniswapV3Pair.sol";
 
 // functions for aggregate fee votes
 
-struct Aggregate {
-    int112 numerator;
-    int112 denominator;
-}
+library FeeVoting {
+    struct Aggregate {
+        int112 numerator;
+        int112 denominator;
+    }
 
-library AggregateFunctions {
-    using SafeMath112 for int112;
+    using SafeMathInt112 for int112;
 
     function add(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory) {
         // freshman sum
@@ -23,10 +25,17 @@ library AggregateFunctions {
     }
 
     function sub(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory) {
-        // freshman... difference
+        // freshman...difference
         return Aggregate({
             numerator: x.numerator.sub(y.numerator),
             denominator: x.denominator.sub(y.denominator)
+        });
+    }
+
+    function totalFeeVote(UniswapV3Pair.Position memory position) pure internal returns (Aggregate memory) {
+        return Aggregate({
+            numerator: int112(position.feeVote) * int112(position.liquidity),
+            denominator: int112(position.liquidity)
         });
     }
 
