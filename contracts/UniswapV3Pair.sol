@@ -53,7 +53,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // seconds spent while pool was on other side of this tick (from the current price)
         uint32 secondsGrowthOutside;
         // growth due to fees while pool was on the other side of this tick (from the current price)
-        FixedPoint.uq112x112 kGrowthOutside;
+        FixedPoint.uq112x112 growthOutside;
     }
     mapping (int16 => TickInfo) tickInfos; // mapping from tick indexes to information about that tick
     mapping (int16 => int112) deltas;      // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed going from left to right (token0 price going up)
@@ -85,37 +85,37 @@ contract UniswapV3Pair is IUniswapV3Pair {
         _blockTimestampLast = blockTimestampLast;
     }
 
-    // returns sqrt(reserve0 * reserve1) / virtual supply
-    function getRootKOverShares() public view returns (FixedPoint.uq112x112 memory rootKOverShares) {
+    // returns g = sqrt(reserve0 * reserve1) / virtual supply
+    function getG() public view returns (FixedPoint.uq112x112 memory g) {
         uint rootK = Babylonian.sqrt(uint(reserve0) * reserve1);
-        rootKOverShares = FixedPoint.encode(uint112(rootK)).div(virtualSupply);
+        g = FixedPoint.encode(uint112(rootK)).div(virtualSupply);
     }
 
-    function getGrowthBelow(int16 tickIndex, FixedPoint.uq112x112 memory rootKOverShares)
+    function getGrowthBelow(int16 tickIndex, FixedPoint.uq112x112 memory g)
         public
         view
         returns (FixedPoint.uq112x112 memory growthBelow)
     {
-        growthBelow = tickInfos[tickIndex].kGrowthOutside;
+        growthBelow = tickInfos[tickIndex].growthOutside;
         // the range is currently active
         if (currentTick < tickIndex) {
-            growthBelow = rootKOverShares.uqdiv112(growthBelow);
+            growthBelow = g.uqdiv112(growthBelow);
         }
     }
 
-    function getGrowthAbove(int16 tickIndex, FixedPoint.uq112x112 memory rootKOverShares)
+    function getGrowthAbove(int16 tickIndex, FixedPoint.uq112x112 memory g)
         public
         view
         returns (FixedPoint.uq112x112 memory growthAbove)
     {
-        growthAbove = tickInfos[tickIndex].kGrowthOutside;
+        growthAbove = tickInfos[tickIndex].growthOutside;
         // this range is currently active
         if (currentTick >= tickIndex) {
-            return rootKOverShares.uqdiv112(growthAbove);
+            return g.uqdiv112(growthAbove);
         }
     }
 
-    // gets the growth in rootKOverShares within a particular range
+    // gets the growth in g within a particular range
     // this only has relative meaning, not absolute
     // TODO: simpler or more precise way to compute this?
     function getGrowthInside(int16 lowerTick, int16 upperTick)
@@ -123,10 +123,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (FixedPoint.uq112x112 memory growth)
     {
-        FixedPoint.uq112x112 memory rootKOverShares = getRootKOverShares();
-        FixedPoint.uq112x112 memory growthBelow = getGrowthBelow(lowerTick, rootKOverShares);
-        FixedPoint.uq112x112 memory growthAbove = getGrowthAbove(upperTick, rootKOverShares);
-        growth = growthAbove.uqmul112(growthBelow).reciprocal().uqmul112(rootKOverShares);
+        FixedPoint.uq112x112 memory g = getG();
+        FixedPoint.uq112x112 memory growthBelow = getGrowthBelow(lowerTick, g);
+        FixedPoint.uq112x112 memory growthAbove = getGrowthAbove(upperTick, g);
+        growth = growthAbove.uqmul112(growthBelow).reciprocal().uqmul112(g);
     }
 
     // given an amount of liquidity and a price, return the value of that liquidity at the price
@@ -245,17 +245,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _initializeTick(int16 tickIndex) private {
-        if (tickInfos[tickIndex].kGrowthOutside._x == 0) {
+        if (tickInfos[tickIndex].growthOutside._x == 0) {
             // by convention, we assume that all growth before tick was initialized happened _below_ a tick
             if (tickIndex <= currentTick) {
                 tickInfos[tickIndex] = TickInfo({
                     secondsGrowthOutside: uint32(now % 2**32),
-                    kGrowthOutside: getRootKOverShares()
+                    growthOutside: getG()
                 });
             } else {
                 tickInfos[tickIndex] = TickInfo({
                     secondsGrowthOutside: 0,
-                    kGrowthOutside: FixedPoint.encode(1)
+                    growthOutside: FixedPoint.encode(1)
                 });
             }
         }
@@ -293,16 +293,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         _initializeTick(upperTick);
         // before moving on, rebate any collected fees to user
         // note that unlevered liquidity wrapper can automatically recompound by setting liquidityDelta to their accumulated fees
-        FixedPoint.uq112x112 memory kGrowthInside = getGrowthInside(lowerTick, upperTick);
+        FixedPoint.uq112x112 memory growthInside = getGrowthInside(lowerTick, upperTick);
         { // scope to help with compilation
-        int112 feeLiquidity = kGrowthInside.smul112(int112(position.lastNormalizedLiquidity)) - int112(position.liquidity);
+        int112 feeLiquidity = growthInside.smul112(int112(position.lastNormalizedLiquidity)) - int112(position.liquidity);
         (amount0, amount1) = getBalancesAtPrice(-feeLiquidity, FixedPoint.encode(reserve1).div(reserve0));
         }
         // update position
         Aggregate memory oldFeeVote = PositionFunctions.totalFeeVote(position);
         Position memory newPosition = Position({
             liquidity: position.liquidity.sadd(liquidityDelta),
-            lastNormalizedLiquidity: kGrowthInside.reciprocal().mul112(position.liquidity.sadd(liquidityDelta)).decode(),
+            lastNormalizedLiquidity: growthInside.reciprocal().mul112(position.liquidity.sadd(liquidityDelta)).decode(),
             feeVote: feeVote
         });
         setPosition(msg.sender, lowerTick, upperTick, newPosition);
@@ -364,13 +364,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
             if (amountInLeft > 0) { // shift past the tick
                 TickInfo memory _oldTickInfo = tickInfos[_currentTick];
-                if (_oldTickInfo.kGrowthOutside._x == 0) {
+                if (_oldTickInfo.growthOutside._x == 0) {
                     _currentTick -= 1;
                     continue;
                 }
                 // TODO (eventually): batch all updates, including from mintFee
                 bool feeOn = _mintFee(_reserve0, _reserve1);
-                FixedPoint.uq112x112 memory _oldKGrowthOutside = _oldTickInfo.kGrowthOutside._x != 0 ? _oldTickInfo.kGrowthOutside : FixedPoint.encode(uint112(1));
+                FixedPoint.uq112x112 memory _oldGrowthOutside = _oldTickInfo.growthOutside._x != 0 ? _oldTickInfo.growthOutside : FixedPoint.encode(uint112(1));
                 // kick in/out liquidity
                 int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
                 _reserve0 = _reserve0.sadd(_delta);
@@ -382,7 +382,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tickInfos[_currentTick] = TickInfo({
                     // overflow is desired
                     secondsGrowthOutside: uint32(block.timestamp % 2**32) - _oldTickInfo.secondsGrowthOutside,
-                    kGrowthOutside: getRootKOverShares().uqdiv112(_oldKGrowthOutside)
+                    growthOutside: getG().uqdiv112(_oldGrowthOutside)
                 });
                 _currentTick -= 1;
                 if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
