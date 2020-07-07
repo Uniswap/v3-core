@@ -53,13 +53,12 @@ describe('PriceMath', () => {
         ).to.eq('414835953198742810')
       })
       it('verify result', () => {
-        const amountWithoutFee = BigNumber.from('415459942199694131')
-          .mul(997)
-          .div(1000)
-        const reserveInAfter = expandTo18Decimals(1).add(amountWithoutFee)
+        const amountIn = BigNumber.from('414835953198742810')
+        const amountInWithoutFee = amountIn.mul(997).div(1000)
+        const reserveInAfter = expandTo18Decimals(1).add(amountIn)
         const reserveOutAfter = expandTo18Decimals(1)
           .mul(expandTo18Decimals(100))
-          .div(reserveInAfter)
+          .div(expandTo18Decimals(1).add(amountInWithoutFee))
         const ratioAfter = reserveInAfter.mul(BigNumber.from(2).pow(112)).div(reserveOutAfter)
 
         const targetRatio = expandTo18Decimals(1)
