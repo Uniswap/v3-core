@@ -104,8 +104,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (FixedPoint.uq112x112 memory growthBelow)
     {
         growthBelow = tickInfos[tickIndex].growthOutside;
-        // the range is currently active
-        if (currentTick < tickIndex) {
+        // the passed tick is above the current price, so account for that
+        if (tickIndex > currentTick) {
             growthBelow = g.uqdiv112(growthBelow);
         }
     }
@@ -116,8 +116,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (FixedPoint.uq112x112 memory growthAbove)
     {
         growthAbove = tickInfos[tickIndex].growthOutside;
-        // this range is currently active
-        if (currentTick >= tickIndex) {
+        // the passed tick is below the current price, so account for that
+        if (tickIndex <= currentTick) {
             return g.uqdiv112(growthAbove);
         }
     }
@@ -163,16 +163,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // update reserves and, on the first call per block, price accumulators
-    function _update(uint112 _oldReserve0, uint112 _oldReserve1, uint112 _newReserve0, uint112 _newReserve1) private {
-        uint32 blockTimestamp = uint32(block.timestamp % 2**32);
+    function _update(uint112 reserve0New, uint112 reserve1New) private {
+        uint32 blockTimestamp = uint32(block.timestamp);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
-        if (timeElapsed > 0 && _oldReserve0 != 0 && _oldReserve1 != 0) {
+        if (timeElapsed > 0 && reserve0 != 0 && reserve1 != 0) {
             // + overflow is desired
-            price0CumulativeLast += FixedPoint.encode(_oldReserve1).div(_oldReserve0).mul(timeElapsed).decode144();
-            price1CumulativeLast += FixedPoint.encode(_oldReserve0).div(_oldReserve1).mul(timeElapsed).decode144();
+            price0CumulativeLast += FixedPoint.encode(reserve1).div(reserve0).mul(timeElapsed)._x;
+            price1CumulativeLast += FixedPoint.encode(reserve0).div(reserve1).mul(timeElapsed)._x;
         }
-        reserve0 = _newReserve0;
-        reserve1 = _newReserve1;
+        reserve0 = reserve0New;
+        reserve1 = reserve1New;
         blockTimestampLast = blockTimestamp;
     }
 
@@ -202,36 +202,39 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick, uint16 feeVote) external override lock returns (uint112 liquidity) {
+    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick, uint16 feeVote)
+        external
+        override
+        lock
+        returns (uint112 liquidity)
+    {
         require(virtualSupply == 0, "UniswapV3: ALREADY_INITIALIZED");
         require(feeVote >= MIN_FEEVOTE && feeVote <= MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
+
         FixedPoint.uq112x112 memory price = FixedPoint.encode(amount1).div(amount0);
         require(price._x > TickMath.getPrice(startingTick)._x && price._x < TickMath.getPrice(startingTick + 1)._x);
+        currentTick = startingTick;
+
         bool feeOn = _mintFee(0, 0);
         liquidity = uint112(Babylonian.sqrt(uint(amount0) * amount1).sub(MINIMUM_LIQUIDITY));
         setPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, Position({
             liquidity: MINIMUM_LIQUIDITY,
             lastNormalizedLiquidity: MINIMUM_LIQUIDITY,
-            feeVote: feeVote
+            feeVote: 0
         }));
-        setPosition(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, Position({
+        Position memory position = Position({
             liquidity: liquidity,
             lastNormalizedLiquidity: liquidity,
             feeVote: feeVote
-        }));
-        uint112 totalLiquidity = liquidity + MINIMUM_LIQUIDITY;
-        virtualSupply = totalLiquidity;
-        aggregateFeeVote = FeeVoting.Aggregate({
-            numerator: int112(feeVote).mul(int112(totalLiquidity)),
-            denominator: int112(totalLiquidity)
         });
-        uint112 _reserve0 = amount0;
-        uint112 _reserve1 = amount1;
-        _update(0, 0, _reserve0, _reserve1);
-        currentTick = startingTick;
+        setPosition(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, position);
+        virtualSupply = liquidity + MINIMUM_LIQUIDITY;
+        // note that this doesn't include weight controlled by the burned MINIMUM_LIQUIDITY
+        aggregateFeeVote = FeeVoting.totalFeeVote(position);
+        _update(amount0, amount1);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
-        if (feeOn) kLast = uint(_reserve0).mul(_reserve1);
+        if (feeOn) kLast = uint(reserve0) * reserve1; // reserve0 and reserve1 are up-to-date
         emit SetPosition(address(0), int112(MINIMUM_LIQUIDITY), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
         emit SetPosition(msg.sender, int112(liquidity), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
     }
@@ -256,10 +259,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function _initializeTick(int16 tickIndex) private {
         if (tickInfos[tickIndex].growthOutside._x == 0) {
-            // by convention, we assume that all growth before tick was initialized happened _below_ a tick
+            // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tickIndex <= currentTick) {
                 tickInfos[tickIndex] = TickInfo({
-                    secondsGrowthOutside: uint32(now % 2**32),
+                    secondsGrowthOutside: uint32(block.timestamp),
                     growthOutside: getG()
                 });
             } else {
@@ -288,8 +291,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // add or remove a specified amount of virtual liquidity from a specified range, and/or change feeVote for that range
     // also sync a position and return accumulated fees from it to user as tokens
-    // liquidityDelta is sqrt(xy), so does not incorporate fees
-    function setPosition(int112 liquidityDelta, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock {
+    // liquidityDelta is sqrt(reserve0 * reserve1), so does not incorporate fees
+    function setPosition(int112 liquidityDelta, int16 lowerTick, int16 upperTick, uint16 feeVote) external override lock
+    {
         int112 amount0;
         int112 amount1;
         FeeVoting.Aggregate memory deltaFeeVote;
@@ -353,7 +357,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function swap0for1(uint amountIn, address to, bytes calldata data) external lock {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
         require(_reserve0 > 0 && _reserve1 > 0, "UniswapV3: NOT_INITIALIZED");
-        (uint112 _oldReserve0, uint112 _oldReserve1) = (_reserve0, _reserve1);
         int16 _currentTick = currentTick;
         uint112 amountInLeft = uint112(amountIn);
         uint112 amountOut = 0;
@@ -382,7 +385,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 bool feeOn = _mintFee(_reserve0, _reserve1);
                 FixedPoint.uq112x112 memory _oldGrowthOutside = _oldTickInfo.growthOutside._x != 0 ?
                     _oldTickInfo.growthOutside :
-                    FixedPoint.encode(uint112(1));
+                    FixedPoint.encode(1);
                 // kick in/out liquidity
                 int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
                 _reserve0 = _reserve0.add(_delta);
@@ -394,7 +397,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // update tick info
                 tickInfos[_currentTick] = TickInfo({
                     // overflow is desired
-                    secondsGrowthOutside: uint32(block.timestamp % 2**32) - _oldTickInfo.secondsGrowthOutside,
+                    secondsGrowthOutside: uint32(block.timestamp) - _oldTickInfo.secondsGrowthOutside,
                     growthOutside: getG().uqdiv112(_oldGrowthOutside)
                 });
                 _currentTick -= 1;
@@ -407,7 +410,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(token1, msg.sender, amountOut);
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, amountOut, data);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amountIn);
-        _update(_oldReserve0, _oldReserve1, _reserve0, _reserve1);
+        _update(_reserve0, _reserve1);
         emit Swap(msg.sender, false, amountIn, amountOut, to);
     }
 }
