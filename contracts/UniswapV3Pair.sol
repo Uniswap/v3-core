@@ -55,7 +55,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping (int16 => TickInfo) tickInfos; // mapping from tick indexes to information about that tick
     mapping (int16 => int112) deltas;      // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed going from left to right (token0 price going up)
 
-    uint112 public totalFeeVote;
     FeeVoting.Aggregate aggregateFeeVote;
     mapping (int16 => FeeVoting.Aggregate) deltaFeeVotes; // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
 
@@ -71,7 +70,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint16 feeVote; // this provider's vote for fee, in 1/100ths of a bp
     }
     // TODO: is this the best way to map (address, int16, int16) to position?
-    mapping (bytes32 => Position) positions;
+    mapping (bytes32 => Position) public positions;
 
     uint private unlocked = 1;
     modifier lock() {
@@ -212,7 +211,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(feeVote >= MIN_FEEVOTE && feeVote <= MAX_FEEVOTE, "UniswapV3: INVALID_FEE_VOTE");
 
         FixedPoint.uq112x112 memory price = FixedPoint.encode(amount1).div(amount0);
-        require(price._x > TickMath.getPrice(startingTick)._x && price._x < TickMath.getPrice(startingTick + 1)._x);
+        require(TickMath.getPrice(startingTick)._x <= price._x, "UniswapV3: INVALID_STARTING_TICK");
+        require(price._x < TickMath.getPrice(startingTick + 1)._x, "UniswapV3: INVALID_STARTING_TICK");
         currentTick = startingTick;
 
         bool feeOn = _mintFee(0, 0);

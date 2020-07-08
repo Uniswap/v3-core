@@ -1,5 +1,14 @@
 import { BigNumber, utils, constants, providers } from 'ethers'
 
+export const MIN_TICK = -7802
+export const MAX_TICK = 7802
+
+export const MINIMUM_LIQUIDITY = 10 ** 3
+
+export const OVERRIDES = {
+  gasLimit: 9999999
+}
+
 export function expandTo18Decimals(n: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
 }
@@ -32,4 +41,8 @@ export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {
     reserve1.mul(BigNumber.from(2).pow(112)).div(reserve0),
     reserve0.mul(BigNumber.from(2).pow(112)).div(reserve1)
   ]
+}
+
+export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
+  return utils.keccak256(utils.solidityPack(['address', 'int16', 'int16'], [address, lowerTick, upperTick]))
 }
