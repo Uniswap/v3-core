@@ -46,23 +46,22 @@ describe.only('UniswapV3Pair', () => {
     expect(await pair.token1()).to.eq(token1.address)
   })
 
+  const expectedVirtualSupply = expandTo18Decimals(2)
+  const initialAddToken0Amount = expandTo18Decimals(2)
+  const initialAddToken1Amount = expandTo18Decimals(2)
   it('initialAdd', async () => {
-    const token0Amount = expandTo18Decimals(2)
-    const token1Amount = expandTo18Decimals(2)
-
-    const expectedVirtualSupply = expandTo18Decimals(2)
     const expectedLiquidity = expectedVirtualSupply.sub(MINIMUM_LIQUIDITY)
     const expectedTick = 0
 
     await token0.approve(pair.address, constants.MaxUint256)
     await token1.approve(pair.address, constants.MaxUint256)
-    await pair.initialAdd(token0Amount, token1Amount, 0, 0, OVERRIDES)
+    await pair.initialAdd(initialAddToken0Amount, initialAddToken1Amount, 0, 0, OVERRIDES)
 
     expect(await pair.currentTick()).to.eq(expectedTick)
     expect(await pair.virtualSupply()).to.eq(expectedVirtualSupply)
 
-    expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
-    expect(await token1.balanceOf(pair.address)).to.eq(token1Amount)
+    expect(await token0.balanceOf(pair.address)).to.eq(initialAddToken0Amount)
+    expect(await token1.balanceOf(pair.address)).to.eq(initialAddToken1Amount)
 
     const burntPosition = await pair.positions(getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK))
     expect(burntPosition.liquidity).to.eq(MINIMUM_LIQUIDITY)
@@ -73,6 +72,33 @@ describe.only('UniswapV3Pair', () => {
     expect(position.liquidity).to.eq(expectedLiquidity)
     expect(position.lastNormalizedLiquidity).to.eq(expectedLiquidity)
     expect(position.feeVote).to.eq(0)
+  })
+
+  describe('post-initialAdd', () => {
+    beforeEach(async () => {
+      const token0Amount = expandTo18Decimals(2)
+      const token1Amount = expandTo18Decimals(2)
+
+      await token0.approve(pair.address, token0Amount)
+      await token1.approve(pair.address, token1Amount)
+      await pair.initialAdd(token0Amount, token1Amount, 0, 0, OVERRIDES)
+    })
+
+    it('setPosition to the right of the current price', async () => {
+      const liquidityDelta = 1000
+      const lowerTick = 2
+      const upperTick = 4
+
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+
+      // lower: (990, 1009)
+      // upper: (980, 1019)
+      await pair.setPosition(liquidityDelta, lowerTick, upperTick, 0, OVERRIDES)
+
+      expect(await token0.balanceOf(pair.address)).to.eq(initialAddToken0Amount.add(10))
+      expect(await token1.balanceOf(pair.address)).to.eq(initialAddToken1Amount)
+    })
   })
 
   async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {
