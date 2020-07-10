@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-
-pragma solidity >=0.6.8;
+pragma solidity >=0.5.0;
 
 interface IUniswapV3Factory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
