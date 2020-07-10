@@ -25,8 +25,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using FixedPointExtra for FixedPoint.uq112x112;
 
     uint112 public constant override MINIMUM_LIQUIDITY = 10**3;
-    uint16 public constant MAX_FEEVOTE = 6000; // 60 bps
-    uint16 public constant MIN_FEEVOTE =    0; // 0 bps
+    uint16 public constant MAX_FEEVOTE = 6000; // 6000 pips / 60 bips
+    uint16 public constant MIN_FEEVOTE =    0; //    0 pips / 0  bips
 
     address public immutable override factory;
     address public immutable override token0;
@@ -54,13 +54,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // growth due to fees while pool was on the other side of this tick (from the current price)
         FixedPoint.uq112x112 growthOutside;
     }
-    mapping (int16 => TickInfo) tickInfos; // mapping from tick indexes to information about that tick
-    // mapping from tick indexes to amount of token0 added/removed (depending on sign) when ticks are crossed
-    // from left to right (as the token0 price goes up)
-    mapping (int16 => int112) deltas;
+    mapping (int16 => TickInfo) tickInfo;
+    // amount of token0 added or removed (depending on sign) when ticks are crossed from left to right,
+    // i.e. as the (reserve1 / reserve0) price goes up
+    mapping (int16 => int112) token0Delta;
 
     FeeVoting.Aggregate aggregateFeeVote;
-    mapping (int16 => FeeVoting.Aggregate) deltaFeeVotes; // mapping from tick indexes to amount of token0 kicked in or out when tick is crossed
+    mapping (int16 => FeeVoting.Aggregate) feeVoteDelta;
 
     struct Position {
         // liquidity is adjusted virtual liquidity tokens (sqrt(reserve0 * reserve1)), not counting fees since last sync
@@ -71,7 +71,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // lastNormalizedLiquidity is smaller than liquidity if any fees have previously been earned in the range
         // and gets even smaller when pinged if any fees were earned in the range
         uint112 lastNormalizedLiquidity;
-        uint16 feeVote; // this provider's vote for fee, in 1/100ths of a bp
+        uint16 feeVote; // this provider's vote for fee, in pips
     }
     // TODO: is this the best way to map (address, int16, int16) to position?
     mapping (bytes32 => Position) public positions;
@@ -106,7 +106,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (FixedPoint.uq112x112 memory growthBelow)
     {
-        growthBelow = tickInfos[tickIndex].growthOutside;
+        growthBelow = tickInfo[tickIndex].growthOutside;
         // the passed tick is above the current price, so account for that
         if (tickIndex > tickCurrent) {
             growthBelow = g.uqdiv112(growthBelow);
@@ -118,7 +118,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (FixedPoint.uq112x112 memory growthAbove)
     {
-        growthAbove = tickInfos[tickIndex].growthOutside;
+        growthAbove = tickInfo[tickIndex].growthOutside;
         // the passed tick is below the current price, so account for that
         if (tickIndex <= tickCurrent) {
             return g.uqdiv112(growthAbove);
@@ -259,15 +259,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _initializeTick(int16 tickIndex) private {
-        if (tickInfos[tickIndex].growthOutside._x == 0) {
+        if (tickInfo[tickIndex].growthOutside._x == 0) {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tickIndex <= tickCurrent) {
-                tickInfos[tickIndex] = TickInfo({
+                tickInfo[tickIndex] = TickInfo({
                     secondsGrowthOutside: uint32(block.timestamp),
                     growthOutside: getG()
                 });
             } else {
-                tickInfos[tickIndex] = TickInfo({
+                tickInfo[tickIndex] = TickInfo({
                     secondsGrowthOutside: 0,
                     growthOutside: FixedPoint.encode(1)
                 });
@@ -303,7 +303,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int112 amount0;
         int112 amount1;
         FeeVoting.Aggregate memory deltaFeeVote;
-        // initialize tickInfos if they don't exist yet
+        // initialize tickInfo if they don't exist yet
         _initializeTick(lowerTick);
         _initializeTick(upperTick);
         { // scope to help with compilation
@@ -331,15 +331,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (int112 lowerToken0Balance, int112 lowerToken1Balance) = getBalancesAtTick(liquidityDelta, lowerTick);
         (int112 upperToken0Balance, int112 upperToken1Balance) = getBalancesAtTick(liquidityDelta, upperTick);
 
-        // update token0 deltas
+        // update token0Delta
         // regardless of the current price...
         //...when the lower tick is crossed from left to right an additional `lowerToken0Balance` should be added...
-        deltas[lowerTick] = deltas[lowerTick].add(lowerToken0Balance);
+        token0Delta[lowerTick] = token0Delta[lowerTick].add(lowerToken0Balance);
         //...and when the upper tick is crossed from left to right `upperToken0Balance` should be removed
-        deltas[upperTick] = deltas[upperTick].sub(upperToken0Balance);
+        token0Delta[upperTick] = token0Delta[upperTick].sub(upperToken0Balance);
         // update fee votes
-        deltaFeeVotes[lowerTick] = FeeVoting.add(deltaFeeVotes[lowerTick], deltaFeeVote);
-        deltaFeeVotes[upperTick] = FeeVoting.sub(deltaFeeVotes[upperTick], deltaFeeVote);
+        feeVoteDelta[lowerTick] = FeeVoting.add(feeVoteDelta[lowerTick], deltaFeeVote);
+        feeVoteDelta[upperTick] = FeeVoting.sub(feeVoteDelta[upperTick], deltaFeeVote);
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
@@ -398,7 +398,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amountInLeft = amountInLeft.sub(amountInStep);
             }
             if (amountInLeft > 0) { // shift past the tick
-                TickInfo memory _oldTickInfo = tickInfos[_currentTick];
+                TickInfo memory _oldTickInfo = tickInfo[_currentTick];
                 if (_oldTickInfo.growthOutside._x == 0) {
                     _currentTick -= 1;
                     continue;
@@ -409,15 +409,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     _oldTickInfo.growthOutside :
                     FixedPoint.encode(1);
                 // kick in/out liquidity
-                int112 _delta = deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
+                int112 _delta = token0Delta[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
                 _reserve0 = _reserve0.add(_delta);
                 _reserve1 = _reserve1.add(price.smul112(_delta));
                 liquidityCurrent = liquidityCurrent.add(int112(int(liquidityCurrent) * int(_delta) / int(_reserve0)));
                 // kick in/out fee votes
                 // sub because we're crossing the tick from right to left
-                _aggregateFeeVote = FeeVoting.sub(_aggregateFeeVote, deltaFeeVotes[_currentTick]);
+                _aggregateFeeVote = FeeVoting.sub(_aggregateFeeVote, feeVoteDelta[_currentTick]);
                 // update tick info
-                tickInfos[_currentTick] = TickInfo({
+                tickInfo[_currentTick] = TickInfo({
                     // overflow is desired
                     secondsGrowthOutside: uint32(block.timestamp) - _oldTickInfo.secondsGrowthOutside,
                     growthOutside: getG().uqdiv112(_oldGrowthOutside)
