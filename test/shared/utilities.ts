@@ -3,7 +3,7 @@ import { BigNumber, utils, constants, providers } from 'ethers'
 export const MIN_TICK = -7802
 export const MAX_TICK = 7802
 
-export const MINIMUM_LIQUIDITY = 10 ** 3
+export const LIQUIDITY_MIN = 10 ** 3
 
 export const OVERRIDES = {
   gasLimit: 9999999

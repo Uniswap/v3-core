@@ -2,25 +2,22 @@
 pragma solidity >=0.5.0;
 
 interface IUniswapV3Pair {
-    event Swap(
-        address indexed sender,
-        bool tokenIn,
-        uint amountIn,
-        uint amountOut,
-        address indexed to
-    );
-    event Shift(int16 tick);
-    event SetPosition(address indexed sender, int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote);
+    function LIQUIDITY_MIN() external pure returns (uint112);
+    function FEE_VOTE_MAX() external pure returns (uint16);
 
-    function MINIMUM_LIQUIDITY() external pure returns (uint112);
     function factory() external view returns (address);
     function token0() external view returns (address);
     function token1() external view returns (address);
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+
+    function reserve0() external view returns (uint112);
+    function reserve1() external view returns (uint112);
+    function blockTimestampLast() external view returns (uint32);
+
+    function tickCurrent() external view returns (int16);
+    function liquidityCurrent() external view returns (uint112);
+
     function price0CumulativeLast() external view returns (uint);
     function price1CumulativeLast() external view returns (uint);
-    function kLast() external view returns (uint);
 
-    function initialAdd(uint112 amount0, uint112 amount1, int16 startingTick, uint16 feeVote) external returns (uint112 liquidity);
-    function setPosition(int112 liquidity, int16 lowerTick, int16 upperTick, uint16 feeVote) external;
+    function kLast() external view returns (uint224);
 }

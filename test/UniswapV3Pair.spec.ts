@@ -10,7 +10,7 @@ import {
   getPositionKey,
   MAX_TICK,
   MIN_TICK,
-  MINIMUM_LIQUIDITY
+  LIQUIDITY_MIN
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
 
@@ -47,41 +47,41 @@ describe.only('UniswapV3Pair', () => {
   })
 
   const expectedLiquidity = expandTo18Decimals(2)
-  const initialAddToken0Amount = expandTo18Decimals(2)
-  const initialAddToken1Amount = expandTo18Decimals(2)
-  it('initialAdd', async () => {
-    const expectedUserLiquidity = expectedLiquidity.sub(MINIMUM_LIQUIDITY)
+  const initializeToken0Amount = expandTo18Decimals(2)
+  const initializeToken1Amount = expandTo18Decimals(2)
+  it('initialize', async () => {
+    const expectedUserLiquidity = expectedLiquidity.sub(LIQUIDITY_MIN)
     const expectedTick = 0
 
     await token0.approve(pair.address, constants.MaxUint256)
     await token1.approve(pair.address, constants.MaxUint256)
-    await pair.initialAdd(initialAddToken0Amount, initialAddToken1Amount, 0, 0, OVERRIDES)
+    await pair.initialize(initializeToken0Amount, initializeToken1Amount, 0, 0, OVERRIDES)
 
     expect(await pair.tickCurrent()).to.eq(expectedTick)
     expect(await pair.liquidityCurrent()).to.eq(expectedLiquidity)
 
-    expect(await token0.balanceOf(pair.address)).to.eq(initialAddToken0Amount)
-    expect(await token1.balanceOf(pair.address)).to.eq(initialAddToken1Amount)
+    expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
+    expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
 
     const burntPosition = await pair.positions(getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK))
-    expect(burntPosition.liquidity).to.eq(MINIMUM_LIQUIDITY)
-    expect(burntPosition.lastNormalizedLiquidity).to.eq(MINIMUM_LIQUIDITY)
+    expect(burntPosition.liquidity).to.eq(LIQUIDITY_MIN)
+    expect(burntPosition.liquidityScalar).to.eq(LIQUIDITY_MIN)
     expect(burntPosition.feeVote).to.eq(0)
 
     const position = await pair.positions(getPositionKey(wallet.address, MIN_TICK, MAX_TICK))
     expect(position.liquidity).to.eq(expectedUserLiquidity)
-    expect(position.lastNormalizedLiquidity).to.eq(expectedUserLiquidity)
+    expect(position.liquidityScalar).to.eq(expectedUserLiquidity)
     expect(position.feeVote).to.eq(0)
   })
 
-  describe('post-initialAdd', () => {
+  describe('post-initialize', () => {
     beforeEach(async () => {
       const token0Amount = expandTo18Decimals(2)
       const token1Amount = expandTo18Decimals(2)
 
       await token0.approve(pair.address, token0Amount)
       await token1.approve(pair.address, token1Amount)
-      await pair.initialAdd(token0Amount, token1Amount, 0, 0, OVERRIDES)
+      await pair.initialize(token0Amount, token1Amount, 0, 0, OVERRIDES)
     })
 
     it('setPosition to the right of the current price', async () => {
@@ -94,10 +94,10 @@ describe.only('UniswapV3Pair', () => {
 
       // lower: (990, 1009)
       // upper: (980, 1019)
-      await pair.setPosition(liquidityDelta, lowerTick, upperTick, 0, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, liquidityDelta, 0, OVERRIDES)
 
-      expect(await token0.balanceOf(pair.address)).to.eq(initialAddToken0Amount.add(10))
-      expect(await token1.balanceOf(pair.address)).to.eq(initialAddToken1Amount)
+      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
+      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
     })
 
     it('setPosition to the left of the current price', async () => {
@@ -110,10 +110,10 @@ describe.only('UniswapV3Pair', () => {
 
       // lower: (1020, 980)
       // upper: (1009, 989)
-      await pair.setPosition(liquidityDelta, lowerTick, upperTick, 0, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, liquidityDelta, 0, OVERRIDES)
 
-      expect(await token0.balanceOf(pair.address)).to.eq(initialAddToken0Amount)
-      expect(await token1.balanceOf(pair.address)).to.eq(initialAddToken1Amount.add(9))
+      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
+      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(9))
     })
 
     it('setPosition within the current price', async () => {
@@ -126,10 +126,10 @@ describe.only('UniswapV3Pair', () => {
 
       // lower: (1009, 989)
       // upper: (990, 1009)
-      await pair.setPosition(liquidityDelta, lowerTick, upperTick, 0, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, liquidityDelta, 0, OVERRIDES)
 
-      expect(await token0.balanceOf(pair.address)).to.eq(initialAddToken0Amount.add(10))
-      expect(await token1.balanceOf(pair.address)).to.eq(initialAddToken1Amount.add(11))
+      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
+      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
     })
   })
 
@@ -258,10 +258,10 @@ describe.only('UniswapV3Pair', () => {
     await addLiquidity(token0Amount, token1Amount)
 
     const expectedLiquidity = expandTo18Decimals(3)
-    await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+    await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
     await expect(pair.burn(wallet.address, OVERRIDES))
       .to.emit(pair, 'Transfer')
-      .withArgs(pair.address, constants.AddressZero, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+      .withArgs(pair.address, constants.AddressZero, expectedLiquidity.sub(LIQUIDITY_MIN))
       .to.emit(token0, 'Transfer')
       .withArgs(pair.address, wallet.address, token0Amount.sub(1000))
       .to.emit(token1, 'Transfer')
@@ -272,7 +272,7 @@ describe.only('UniswapV3Pair', () => {
       .withArgs(wallet.address, token0Amount.sub(1000), token1Amount.sub(1000), wallet.address)
 
     expect(await pair.balanceOf(wallet.address)).to.eq(0)
-    expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
+    expect(await pair.totalSupply()).to.eq(LIQUIDITY_MIN)
     expect(await token0.balanceOf(pair.address)).to.eq(1000)
     expect(await token1.balanceOf(pair.address)).to.eq(1000)
     const totalSupplyToken0 = await token0.totalSupply()
@@ -325,9 +325,9 @@ describe.only('UniswapV3Pair', () => {
     await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES)
 
     const expectedLiquidity = expandTo18Decimals(1000)
-    await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+    await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
     await pair.burn(wallet.address, OVERRIDES)
-    expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
+    expect(await pair.totalSupply()).to.eq(LIQUIDITY_MIN)
   })
 
   it.skip('feeTo:on', async () => {
@@ -343,12 +343,12 @@ describe.only('UniswapV3Pair', () => {
     await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES)
 
     const expectedLiquidity = expandTo18Decimals(1000)
-    await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+    await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
     await pair.burn(wallet.address, OVERRIDES)
-    expect(await pair.totalSupply()).to.eq(BigNumber.from('249750499251388').add(MINIMUM_LIQUIDITY))
+    expect(await pair.totalSupply()).to.eq(BigNumber.from('249750499251388').add(LIQUIDITY_MIN))
     expect(await pair.balanceOf(other.address)).to.eq('249750499251388')
 
-    // using 1000 here instead of the symbolic MINIMUM_LIQUIDITY because the amounts only happen to be equal...
+    // using 1000 here instead of the symbolic LIQUIDITY_MIN because the amounts only happen to be equal...
     // ...because the initial liquidity amounts were equal
     expect(await token0.balanceOf(pair.address)).to.eq(BigNumber.from(1000).add('249501683697445'))
     expect(await token1.balanceOf(pair.address)).to.eq(BigNumber.from(1000).add('250000187312969'))
