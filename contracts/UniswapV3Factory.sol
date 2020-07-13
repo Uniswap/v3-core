@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.6.11;
 
-import '@uniswap/lib/contracts/libraries/PairNamer.sol';
-
 import './interfaces/IUniswapV3Factory.sol';
 import './UniswapV3Pair.sol';
 
@@ -26,7 +24,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'UniswapV3: ZERO_ADDRESS');
         require(getPair[token0][token1] == address(0), 'UniswapV3: PAIR_EXISTS'); // single check is sufficient
-        // salt is empty bytes32 since token0 and token1 are already included in the init code hash
+        // CREATE2 salt is 0 since token0 and token1 are included as constructor arguments
         pair = address(new UniswapV3Pair{salt: bytes32(0)}(token0, token1));
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
