@@ -1,62 +1,80 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-// a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
-// and OpenZeppelin (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/SignedSafeMath.sol)
+// a library for performing overflow-safe math, courtesy of:
+// DappHub (https://github.com/dapphub/ds-math)
+// OpenZeppelin (https://github.com/OpenZeppelin/openzeppelin-contracts)
 
 library SafeMath {
     function add(uint x, uint y) internal pure returns (uint z) {
         require((z = x + y) >= x, "ds-math-add-overflow");
     }
+
     function sub(uint x, uint y) internal pure returns (uint z) {
         require((z = x - y) <= x, "ds-math-sub-underflow");
     }
+
     function mul(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z = x * y) / y == x, "ds-math-mul-overflow");
     }
-}
 
-library SafeMathUint112 {
-    function add(uint112 x, uint112 y) internal pure returns (uint112 z) {
-        require((z = x + y) >= x, 'SafeMath: ADD_OVERFLOW');
+    function iadd(int a, int b) internal pure returns (int) {
+        int c = a + b;
+        require((b >= 0 && c >= a) || (b < 0 && c < a), "SignedSafeMath: addition overflow");
+
+        return c;
     }
 
-    function sub(uint112 x, uint112 y) internal pure returns (uint112 z) {
-        require((z = x - y) <= x, 'SafeMath: SUB_UNDERFLOW');
+    function isub(int a, int b) internal pure returns (int) {
+        int c = a - b;
+        require((b >= 0 && c <= a) || (b < 0 && c > a), "SignedSafeMath: subtraction overflow");
+
+        return c;
     }
 
-    function mul(uint112 x, uint112 y) internal pure returns (uint112 z) {
-        require(y == 0 || (z = x * y) / y == x, 'SafeMath: MUL_OVERFLOW');
+    int constant private _INT256_MIN = -2**255;
+    function imul(int a, int b) internal pure returns (int) {
+        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+        // benefit is lost if 'b' is also tested.
+        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+        if (a == 0) {
+            return 0;
+        }
+
+        require(!(a == -1 && b == _INT256_MIN), "SignedSafeMath: multiplication overflow");
+
+        int c = a * b;
+        require(c / a == b, "SignedSafeMath: multiplication overflow");
+
+        return c;
     }
 
-    // add an int112 to a uint112
-    // revert on overflow or if result would be negative
-    // TODO: rename?
-    function add(uint112 x, int112 y) internal pure returns (uint112) {
-        return (y >= 0) ? add(x, uint112(y)) : sub(x, uint112(-1 * y));
-    }
-}
-
-library SafeMathInt112 {
-    function abs(int112 x) internal pure returns (uint112 y) {
-        return x > 0 ? uint112(x) : uint112(-1 * x);
+    // TODO check that this is gas efficient as compared to requiring `y <= type(uint112).max`
+    function toUint112(uint y) internal pure returns (uint112 z) {
+        require((z = uint112(y)) == y, "downcast-overflow");
     }
 
-    function add(int112 a, int112 b) internal pure returns (int112 c) {
-        c = a + b;
-        require((b >= 0 && c >= a) || (b < 0 && c < a), "SignedSafeMath: ADD_OVERFLOW");
+    // TODO check that this is gas efficient as compared to requiring `y <= type(int112).max`
+    function toInt112(uint y) internal pure returns (int112 z) {
+        require((z = int112(y)) >= 0 && uint(z) == y, "downcast-overflow");
     }
 
-    function sub(int112 a, int112 b) internal pure returns (int112 c) {
-        c = a - b;
-        require((b >= 0 && c <= a) || (b < 0 && c > a), "SignedSafeMath: SUB_OVERFLOW");
+    // TODO check that this is gas efficient as compared to requiring `y <= type(int128).max`
+    function toInt128(uint y) internal pure returns (int128 z) {
+        require((z = int128(y)) >= 0 && uint(z) == y, "downcast-overflow");
     }
 
-    // TODO: this is our own implementation and needs to be checked
-    function mul(int112 a, int112 b) internal pure returns (int112 c) {
-        int _c = int(a) * int(b);
-        require(_c < type(int112).max && _c > type(int112).min, "SignedSafeMath: MUL_OVERFLOW");
-        c = int112(_c);
+    // TODO check that this is gas efficient as compared to requiring `y <= type(int128).max`
+    function itoInt112(int y) internal pure returns (int112 z) {
+        require((z = int112(y)) == y, "downcast-overflow");
     }
 
+    // TODO check that this is gas efficient as compared to requiring `y <= type(int128).max`
+    function itoInt128(int y) internal pure returns (int128 z) {
+        require((z = int128(y)) == y, "downcast-overflow");
+    }
+
+    function addi(uint x, int y) internal pure returns (uint z) {
+        z = y < 0 ? sub(x, uint(-y)) : add(x, uint(y));
+    }
 }

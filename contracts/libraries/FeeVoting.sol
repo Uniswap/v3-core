@@ -9,36 +9,39 @@ import "../UniswapV3Pair.sol";
 
 library FeeVoting {
     struct Aggregate {
-        int112 numerator;
-        int112 denominator;
+        int128 numerator;
+        int128 denominator;
     }
 
-    using SafeMathInt112 for int112;
+    using SafeMath for uint;
+    using SafeMath for uint112;
+    using SafeMath for  int;
+    using SafeMath for  int128;
 
-    function add(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory) {
+    function add(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory z) {
         // freshman sum
-        return Aggregate({
-            numerator: x.numerator.add(y.numerator),
-            denominator: x.denominator.add(y.denominator)
+        z = Aggregate({
+            numerator: (int(x.numerator) + y.numerator).itoInt128(),
+            denominator: (int(x.denominator) + y.denominator).itoInt128()
         });
     }
 
     function sub(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory) {
         // freshman...difference
         return Aggregate({
-            numerator: x.numerator.sub(y.numerator),
-            denominator: x.denominator.sub(y.denominator)
+            numerator: x.numerator.isub(y.numerator).itoInt128(),
+            denominator: x.denominator.isub(y.denominator).itoInt128()
         });
     }
 
-    function totalFeeVote(UniswapV3Pair.Position memory position) pure internal returns (Aggregate memory) {
+    function totalFeeVote(UniswapV3Pair.Position memory position) internal pure returns (Aggregate memory) {
         return Aggregate({
-            numerator: int112(position.feeVote) * int112(position.liquidity),
-            denominator: int112(position.liquidity)
+            numerator: position.liquidity.mul(position.feeVote).toInt128(),
+            denominator: position.feeVote == 0 ? 0 : uint(position.liquidity).toInt128()
         });
     }
 
-    function averageFee(Aggregate memory x) internal pure returns (uint16) {
-        return uint16(x.numerator / x.denominator);
+    function averageFee(Aggregate memory y) internal pure returns (uint16 z) {
+        z = y.denominator == 0 ? 0 : uint16(y.numerator / y.denominator);
     }
 }
