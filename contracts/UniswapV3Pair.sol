@@ -280,7 +280,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         (amount0, amount1) = getValueAtPrice(FixedPoint.encode(reserve1).div(reserve0), liquidity);
 
-        liquidityCurrent = liquidityCurrent.add(int112(int(amount0) * int(liquidityCurrent) / int(reserve0)));
+        liquidityCurrent = liquidityCurrent.add(int112(int(liquidityCurrent) * int(amount0) / int(reserve0)));
         // the price doesn't change, so no need to update the oracle
         reserve0 = reserve0.add(amount0);
         reserve1 = reserve1.add(amount1);
@@ -370,62 +370,68 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // TODO: implement swap1for0, or integrate it into this
     // move from right to left (token 1 is becoming more valuable)
-    function swap0for1(uint amountIn, address to, bytes calldata data) external lock {
-        uint112 _reserve0 = reserve0;
-        uint112 _reserve1 = reserve1;
-        require(_reserve0 > 0 && _reserve1 > 0, 'UniswapV3: NOT_INITIALIZED');
-        int16 _currentTick = tickCurrent;
-        uint112 amountInLeft = uint112(amountIn);
-        uint112 amountOut = 0;
-        FeeVoting.Aggregate memory _feeVoteAggregate = feeVoteAggregate;
-        while (amountInLeft > 0) {
-            FixedPoint.uq112x112 memory price = TickMath.getPrice(_currentTick);
-            // compute how much would need to be traded to get to the next tick down
-            { // scope
-            uint112 maxAmount = PriceMath.getTradeToRatio(_reserve0, _reserve1, FeeVoting.averageFee(feeVoteAggregate), price);
-            uint112 amountInStep = (amountInLeft > maxAmount) ? maxAmount : amountInLeft;
-            // execute the sell of amountToTrade
-            uint112 adjustedAmountToTrade = amountInStep * (1000000 - FeeVoting.averageFee(_feeVoteAggregate)) / 1000000;
-            uint112 amountOutStep = (adjustedAmountToTrade * _reserve1) / (_reserve0 + adjustedAmountToTrade);
-            amountOut = amountOut.add(amountOutStep);
-            _reserve0 = _reserve0.add(amountInStep);
-            _reserve1 = _reserve1.sub(amountOutStep);
-            amountInLeft = amountInLeft.sub(amountInStep);
+    function swap0For1(uint112 amount0In, address to, bytes calldata data) external lock {
+        require(reserve0 > 0 && reserve1 > 0, 'UniswapV3: NO_LIQUIDITY');
+        uint112 amount0InInitial = amount0In;
+        uint112 amount1Out;
+
+        while (amount0In > 0) {
+            FixedPoint.uq112x112 memory price = TickMath.getPrice(tickCurrent);
+
+            // if the price is already at a tick boundary, shift it downward
+            if ((uint224(reserve1) << 112) / reserve0 == price._x) {
+                tickCurrent -= 1;
+                continue;
             }
-            if (amountInLeft > 0) { // shift past the tick
-                TickInfo memory _oldTickInfo = tickInfos[_currentTick];
-                if (_oldTickInfo.growthOutside._x == 0) {
-                    _currentTick -= 1;
+
+            {
+            // compute how much token0 is required to push the price down to the next tick
+            uint112 amount0InRequiredForShift = PriceMath.getTradeToRatio(
+                reserve0, reserve1, FeeVoting.averageFee(feeVoteAggregate), price.reciprocal()
+            );
+            uint112 amount0InStep = amount0In > amount0InRequiredForShift ? amount0InRequiredForShift : amount0In;
+            // adjust the step amount by the current fee
+            uint112 amount0InAdjusted = uint112(
+                amount0InStep *
+                (PriceMath.LP_FEE_BASE - FeeVoting.averageFee(feeVoteAggregate)) /
+                PriceMath.LP_FEE_BASE
+            );
+            uint112 amount1OutStep = (reserve1 * amount0InAdjusted) / (reserve0 + amount0InAdjusted);
+            reserve0 = reserve0.add(amount0InStep);
+            reserve1 = reserve1.sub(amount1OutStep);
+            amount0In = amount0In.sub(amount0InStep);
+            amount1Out = amount1Out.add(amount1OutStep);
+            }
+
+            // if a positive input amount still remains, we have to shift down to the next tick
+            if (amount0In > 0) {
+                TickInfo storage tickInfo = tickInfos[tickCurrent];
+                if (tickInfo.growthOutside._x == 0) {
+                    tickCurrent -= 1;
                     continue;
                 }
                 // TODO (eventually): batch all updates, including from mintFee
-                bool feeOn = _mintFee(_reserve0, _reserve1);
-                FixedPoint.uq112x112 memory _oldGrowthOutside = _oldTickInfo.growthOutside._x != 0 ?
-                    _oldTickInfo.growthOutside :
-                    FixedPoint.encode(1);
+                bool feeOn = _mintFee(reserve0, reserve1);
                 // kick in/out liquidity
-                int112 _delta = token0Deltas[_currentTick] * -1; // * -1 because we're crossing the tick from right to left 
-                _reserve0 = _reserve0.add(_delta);
-                _reserve1 = _reserve1.add(price.smul112(_delta));
-                liquidityCurrent = liquidityCurrent.add(int112(int(liquidityCurrent) * int(_delta) / int(_reserve0)));
+                int112 token0Delta = -token0Deltas[tickCurrent] * -1; // - because we're crossing from right to left 
+                reserve0 = reserve0.add(token0Delta);
+                reserve1 = reserve1.add(price.smul112(token0Delta));
+                liquidityCurrent = liquidityCurrent.add(int112(int(liquidityCurrent) * token0Delta / int(reserve0)));
                 // kick in/out fee votes
                 // sub because we're crossing the tick from right to left
-                _feeVoteAggregate = FeeVoting.sub(_feeVoteAggregate, feeVoteDeltas[_currentTick]);
+                feeVoteAggregate = FeeVoting.sub(feeVoteAggregate, feeVoteDeltas[tickCurrent]);
                 // update tick info
-                tickInfos[_currentTick] = TickInfo({
-                    // overflow is desired
-                    secondsGrowthOutside: uint32(block.timestamp) - _oldTickInfo.secondsGrowthOutside,
-                    growthOutside: getG().uqdiv112(_oldGrowthOutside)
-                });
-                _currentTick -= 1;
-                if (feeOn) kLast = uint224(_reserve0) * _reserve1;
+                // overflow is desired
+                tickInfo.secondsGrowthOutside = uint32(block.timestamp) - tickInfo.secondsGrowthOutside;
+                tickInfo.growthOutside = getG().uqdiv112(tickInfo.growthOutside);
+                tickCurrent -= 1;
+                if (feeOn) kLast = uint224(reserve0) * reserve1;
             }
         }
-        tickCurrent = _currentTick;
         // TODO: record new fees or something?
-        TransferHelper.safeTransfer(token1, msg.sender, amountOut);
-        if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, amountOut, data);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amountIn);
-        _update(_reserve0, _reserve1);
+        TransferHelper.safeTransfer(token1, msg.sender, amount1Out);
+        if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, amount1Out, data);
+        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0InInitial);
+        _update(reserve0, reserve1);
     }
 }

@@ -74,14 +74,15 @@ describe.only('UniswapV3Pair', () => {
     expect(position.feeVote).to.eq(0)
   })
 
+  async function initialize(tokenAmount: BigNumber, feeVote = 0): Promise<void> {
+    await token0.approve(pair.address, tokenAmount)
+    await token1.approve(pair.address, tokenAmount)
+    await pair.initialize(tokenAmount, tokenAmount, 0, feeVote, OVERRIDES)
+  }
   describe('post-initialize', () => {
     beforeEach(async () => {
-      const token0Amount = expandTo18Decimals(2)
-      const token1Amount = expandTo18Decimals(2)
-
-      await token0.approve(pair.address, token0Amount)
-      await token1.approve(pair.address, token1Amount)
-      await pair.initialize(token0Amount, token1Amount, 0, 0, OVERRIDES)
+      const tokenAmount = expandTo18Decimals(2)
+      await initialize(tokenAmount)
     })
 
     it('setPosition to the right of the current price', async () => {
@@ -131,6 +132,46 @@ describe.only('UniswapV3Pair', () => {
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
     })
+  })
+
+  it('swap0for1 with fee = 0', async () => {
+    const tokenAmount = expandTo18Decimals(2)
+    await initialize(tokenAmount, 0)
+
+    const amount0In = 1000
+
+    await token0.approve(pair.address, constants.MaxUint256)
+
+    const token0BalanceBefore = await token0.balanceOf(wallet.address)
+    const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+    await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
+
+    const token0BalanceAfter = await token0.balanceOf(wallet.address)
+    const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+    expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
+    expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(999)
+  })
+
+  it('swap0for1 with fee = .3%', async () => {
+    const tokenAmount = expandTo18Decimals(2)
+    await initialize(tokenAmount, 3000)
+
+    const amount0In = 1000
+
+    await token0.approve(pair.address, constants.MaxUint256)
+
+    const token0BalanceBefore = await token0.balanceOf(wallet.address)
+    const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+    await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
+
+    const token0BalanceAfter = await token0.balanceOf(wallet.address)
+    const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+    expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
+    expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(996)
   })
 
   async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {
