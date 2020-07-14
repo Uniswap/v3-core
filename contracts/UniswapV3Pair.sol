@@ -117,7 +117,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (FixedPoint.uq112x112 memory growthBelow)
     {
         growthBelow = tickInfos[tick].growthOutside;
-        // tick is above currentTick, meaning growth below  _in addition_ to growthOutside has occurred, so account for it
+        // tick is above currentTick, meaning growth outside is not sufficient
         if (tick > tickCurrent) {
             growthBelow = g.uqdiv112(growthBelow);
         }
@@ -129,7 +129,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (FixedPoint.uq112x112 memory growthAbove)
     {
         growthAbove = tickInfos[tick].growthOutside;
-        // tick is at or below currentTick, meaning growth in addition to growthOutside has occurred, so account for it
+        // tick is at or below currentTick, meaning growth outside is not sufficient
         if (tick <= tickCurrent) {
             growthAbove = g.uqdiv112(growthAbove);
         }
