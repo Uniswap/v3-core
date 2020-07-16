@@ -15,7 +15,6 @@ library FixedPointExtra {
     }
 
     // multiply a UQ112x112 by a UQ112x112, returning a UQ112x112
-
     function muluq(FixedPoint.uq112x112 memory self, FixedPoint.uq112x112 memory other)
         internal
         pure
