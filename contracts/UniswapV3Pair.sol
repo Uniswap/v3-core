@@ -22,8 +22,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for  int;
     using SafeMath for  int112;
     using FixedPoint for FixedPoint.uq112x112;
-    using FixedPoint for FixedPoint.uq144x112;
-    using FixedPointExtra for FixedPoint.uq112x112;
 
     uint112 public constant override LIQUIDITY_MIN = 10**3;
     uint16 public constant override FEE_VOTE_MAX = 6000; // 6000 pips / 60 bips / 0.60%
@@ -42,8 +40,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // TODO what size uint should this be?
     uint112 public override liquidityCurrent; // the amount of liquidity at the current tick
 
-    uint public override price0CumulativeLast; // cumulative (reserve1 / reserve0) oracle price
-    uint public override price1CumulativeLast; // cumulative (reserve0 / reserve1) oracle price
+    FixedPoint.uq144x112 public price0CumulativeLast; // cumulative (reserve1 / reserve0) oracle price
+    FixedPoint.uq144x112 public price1CumulativeLast; // cumulative (reserve0 / reserve1) oracle price
 
     uint224 public override kLast; // (reserve0 * reserve1), as of immediately after the most recent liquidity event
     
@@ -122,7 +120,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         growthBelow = tickInfos[tick].growthOutside;
         // tick is above currentTick, meaning growth outside is not sufficient
         if (tick > tickCurrent) {
-            growthBelow = g.uqdiv112(growthBelow);
+            growthBelow = FixedPointExtra.divuq(g, growthBelow);
         }
     }
 
@@ -134,7 +132,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         growthAbove = tickInfos[tick].growthOutside;
         // tick is at or below currentTick, meaning growth outside is not sufficient
         if (tick <= tickCurrent) {
-            growthAbove = g.uqdiv112(growthAbove);
+            growthAbove = FixedPointExtra.divuq(g, growthAbove);
         }
     }
 
@@ -151,7 +149,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory g = getG();
         FixedPoint.uq112x112 memory growthBelow = _getGrowthBelow(tickLower, g);
         FixedPoint.uq112x112 memory growthAbove = _getGrowthAbove(tickUpper, g);
-        growthInside = growthAbove.uqmul112(growthBelow).reciprocal().uqmul112(g);
+        growthInside = FixedPointExtra.muluq(FixedPointExtra.muluq(growthAbove, growthBelow).reciprocal(), g);
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
@@ -161,8 +159,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         pure
         returns (int112 amount0, int112 amount1)
     {
-        amount0 = price.reciprocal().sqrt().muli(liquidity);
-        amount1 = price.muli(amount0);
+        amount0 = FixedPointExtra.muli(price.reciprocal().sqrt(), liquidity).itoInt112();
+        amount1 = FixedPointExtra.muli(price, amount0).itoInt112();
     }
 
     constructor(address _token0, address _token1) public {
@@ -177,8 +175,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && reserve0 != 0 && reserve1 != 0) {
             // overflow is desired
-            price0CumulativeLast += FixedPoint.fraction(reserve1, reserve0).mul(timeElapsed)._x;
-            price1CumulativeLast += FixedPoint.fraction(reserve0, reserve1).mul(timeElapsed)._x;
+            price0CumulativeLast = FixedPoint.uq144x112(
+                price0CumulativeLast._x + FixedPoint.fraction(reserve1, reserve0).mul(timeElapsed)._x
+            );
+            price1CumulativeLast = FixedPoint.uq144x112(
+                price1CumulativeLast._x + FixedPoint.fraction(reserve0, reserve1).mul(timeElapsed)._x
+            );
         }
         reserve0 = reserve0Next;
         reserve1 = reserve1Next;
@@ -309,7 +311,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // rebate any collected fees to user (recompound by setting liquidityDelta to accumulated fees)
         FixedPoint.uq112x112 memory growthInside = getGrowthInside(tickLower, tickUpper);
-        uint feeLiquidity = uint(growthInside.mul(position.liquidityScalar).decode144()).sub(position.liquidity);
+        uint feeLiquidity = uint(FixedPoint.decode144(growthInside.mul(position.liquidityScalar)))
+            .sub(position.liquidity);
         // credit the user for the value of their fee liquidity at the current price
         (amount0, amount1) = getValueAtPrice(FixedPoint.fraction(reserve1, reserve0), -feeLiquidity.toInt112());
 
@@ -317,7 +320,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // update position
         position.liquidity = position.liquidity.addi(liquidityDelta).toUint112();
-        position.liquidityScalar = uint(growthInside.reciprocal().mul(position.liquidity).decode144()).toUint112();
+        position.liquidityScalar = uint(FixedPoint.decode144(growthInside.reciprocal().mul(position.liquidity)))
+            .toUint112();
         position.feeVote = feeVote;
 
         feeVoteDelta = FeeVoting.sub(FeeVoting.totalFeeVote(position), feeVoteLast);
@@ -410,7 +414,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // kick in/out liquidity
                 int112 token0Delta = -token0Deltas[tickCurrent]; // - because we're crossing from right to left
                 reserve0 = reserve0.addi(token0Delta).toUint112();
-                reserve1 = reserve1.addi(price.muli(token0Delta)).toUint112();
+                reserve1 = reserve1.addi(FixedPointExtra.muli(price, token0Delta)).toUint112();
                 liquidityCurrent = liquidityCurrent.addi(token0Delta.imul(liquidityCurrent) / reserve0).toUint112();
                 // kick in/out fee votes
                 // sub because we're crossing the tick from right to left
@@ -418,7 +422,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // update tick info
                 // overflow is desired
                 tickInfo.secondsGrowthOutside = uint32(block.timestamp) - tickInfo.secondsGrowthOutside;
-                tickInfo.growthOutside = getG().uqdiv112(tickInfo.growthOutside);
+                tickInfo.growthOutside = FixedPointExtra.divuq(getG(), tickInfo.growthOutside);
                 tickCurrent -= 1;
                 if (feeOn) kLast = uint224(reserve0) * reserve1;
             }

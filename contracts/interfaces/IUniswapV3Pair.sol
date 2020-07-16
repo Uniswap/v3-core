@@ -16,8 +16,5 @@ interface IUniswapV3Pair {
     function tickCurrent() external view returns (int16);
     function liquidityCurrent() external view returns (uint112);
 
-    function price0CumulativeLast() external view returns (uint);
-    function price1CumulativeLast() external view returns (uint);
-
     function kLast() external view returns (uint224);
 }
