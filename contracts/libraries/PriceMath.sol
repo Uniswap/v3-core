@@ -3,10 +3,11 @@ pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import 'abdk-libraries-solidity/ABDKMathQuad.sol';
-import './FixedPointExtra.sol';
 
 library PriceMath {
+    using FixedPoint for FixedPoint.uq112x112;
     using ABDKMathQuad for bytes16;
+
     //    //ABDKMathQuad.fromUInt(1);
     //    bytes16 public constant QUAD_ONE = bytes16(0);
     //    //ABDKMathQuad.fromUInt(2);
@@ -16,7 +17,15 @@ library PriceMath {
 
     uint public constant LP_FEE_BASE = 1000000;
 
-    function getTradeToRatioInner(bytes16 reserveIn, bytes16 reserveOut, bytes16 fee, bytes16 inOutRatio) private pure returns (bytes16) {
+    function toQuad(FixedPoint.uq112x112 memory self) private pure returns (bytes16) {
+        return ABDKMathQuad.from128x128(int256(self._x) << 16);
+    }
+
+    function getTradeToRatioInner(bytes16 reserveIn, bytes16 reserveOut, bytes16 fee, bytes16 inOutRatio)
+        private
+        pure
+        returns (bytes16)
+    {
         // left =
         //	sqrt(
         //		(
@@ -27,10 +36,13 @@ library PriceMath {
         //			/
         //		((fee - 1) ^ 2)
         //	)
-        bytes16 left =
-        reserveIn.mul(fee.mul(fee).mul(reserveIn).sub(ABDKMathQuad.fromUInt(4).mul(fee).mul(inOutRatio).mul(reserveOut)).add(ABDKMathQuad.fromUInt(4).mul(inOutRatio).mul(reserveOut)))
-        .div(fee.sub(ABDKMathQuad.fromUInt(1)).mul(fee.sub(ABDKMathQuad.fromUInt(1))))
-        .sqrt();
+        bytes16 left = reserveIn.mul(
+                fee.mul(fee).mul(reserveIn)
+                .sub(ABDKMathQuad.fromUInt(4).mul(fee).mul(inOutRatio).mul(reserveOut))
+                .add(ABDKMathQuad.fromUInt(4).mul(inOutRatio).mul(reserveOut))
+            )
+            .div(fee.sub(ABDKMathQuad.fromUInt(1)).mul(fee.sub(ABDKMathQuad.fromUInt(1))))
+            .sqrt();
         // right =
         // (
         //		((fee - 2) * reserveIn)
@@ -72,13 +84,22 @@ library PriceMath {
     //		(fee - 1)
     //	)
     //) / 2
-    function getTradeToRatio(uint112 reserveIn, uint112 reserveOut, uint112 lpFee, FixedPoint.uq112x112 memory inOutRatio) internal pure returns (uint112 amountIn) {
+    function getTradeToRatio(
+        uint112 reserveIn,
+        uint112 reserveOut,
+        uint112 lpFee,
+        FixedPoint.uq112x112 memory inOutRatio
+    )
+        internal
+        pure
+        returns (uint112 amountIn)
+    {
         require(reserveIn > 0 && reserveOut > 0, 'PriceMath: NONZERO');
-        require((uint224(reserveIn) << 112) / reserveOut < inOutRatio._x, 'PriceMath: DIRECTION');
+        require(FixedPoint.fraction(reserveIn, reserveOut)._x <= inOutRatio._x, 'PriceMath: DIRECTION');
         bytes16 fee = ABDKMathQuad.div(ABDKMathQuad.fromUInt(lpFee), ABDKMathQuad.fromUInt(LP_FEE_BASE));
         bytes16 quadReserveIn = ABDKMathQuad.fromUInt(reserveIn);
         bytes16 quadReserveOut = ABDKMathQuad.fromUInt(reserveOut);
-        bytes16 quadInOutRatio = FixedPointExtra.toQuad(inOutRatio);
+        bytes16 quadInOutRatio = toQuad(inOutRatio);
 
         uint result = ABDKMathQuad.toUInt(getTradeToRatioInner(quadReserveIn, quadReserveOut, fee, quadInOutRatio));
         require(result <= type(uint112).max, 'PriceMath: AMOUNT_OVERFLOW_UINT112');

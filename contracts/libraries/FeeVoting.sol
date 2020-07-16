@@ -5,18 +5,16 @@ import "./SafeMath.sol";
 
 import "../UniswapV3Pair.sol";
 
-// functions for aggregate fee votes
-
 library FeeVoting {
-    struct Aggregate {
-        int128 numerator;
-        int128 denominator;
-    }
-
     using SafeMath for uint;
     using SafeMath for uint112;
     using SafeMath for  int;
     using SafeMath for  int128;
+
+    struct Aggregate {
+        int128 numerator;
+        int128 denominator;
+    }
 
     function add(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory z) {
         // freshman sum
