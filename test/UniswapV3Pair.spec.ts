@@ -58,7 +58,7 @@ describe.only('UniswapV3Pair', () => {
     await pair.initialize(initializeToken0Amount, initializeToken1Amount, 0, 0, OVERRIDES)
 
     expect(await pair.tickCurrent()).to.eq(expectedTick)
-    expect(await pair.liquidityCurrent()).to.eq(expectedLiquidity)
+    expect(await pair.liquidityVirtual()).to.eq(expectedLiquidity)
 
     expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
     expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)

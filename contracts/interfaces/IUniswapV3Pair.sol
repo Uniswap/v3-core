@@ -9,12 +9,12 @@ interface IUniswapV3Pair {
     function token0() external view returns (address);
     function token1() external view returns (address);
 
-    function reserve0() external view returns (uint112);
-    function reserve1() external view returns (uint112);
+    function reserve0Virtual() external view returns (uint112);
+    function reserve1Virtual() external view returns (uint112);
     function blockTimestampLast() external view returns (uint32);
 
     function tickCurrent() external view returns (int16);
-    function liquidityCurrent() external view returns (uint112);
+    function liquidityVirtual() external view returns (uint112);
 
     function kLast() external view returns (uint224);
 }
