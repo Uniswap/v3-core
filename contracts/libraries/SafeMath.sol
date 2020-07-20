@@ -77,4 +77,8 @@ library SafeMath {
     function addi(uint x, int y) internal pure returns (uint z) {
         z = y < 0 ? sub(x, uint(-y)) : add(x, uint(y));
     }
+
+    function subi(uint x, int y) internal pure returns (uint z) {
+        z = y < 0 ? add(x, uint(-y)) : sub(x, uint(y));
+    }
 }

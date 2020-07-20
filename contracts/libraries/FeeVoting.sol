@@ -16,30 +16,30 @@ library FeeVoting {
         int128 denominator;
     }
 
-    function add(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory z) {
+    function add(Aggregate memory self, Aggregate memory y) internal pure returns (Aggregate memory z) {
         // freshman sum
         z = Aggregate({
-            numerator: (int(x.numerator) + y.numerator).itoInt128(),
-            denominator: (int(x.denominator) + y.denominator).itoInt128()
+            numerator: (int(self.numerator) + y.numerator).itoInt128(),
+            denominator: (int(self.denominator) + y.denominator).itoInt128()
         });
     }
 
-    function sub(Aggregate memory x, Aggregate memory y) internal pure returns (Aggregate memory) {
+    function sub(Aggregate memory self, Aggregate memory y) internal pure returns (Aggregate memory z) {
         // freshman...difference
-        return Aggregate({
-            numerator: x.numerator.isub(y.numerator).itoInt128(),
-            denominator: x.denominator.isub(y.denominator).itoInt128()
+        z = Aggregate({
+            numerator: self.numerator.isub(y.numerator).itoInt128(),
+            denominator: self.denominator.isub(y.denominator).itoInt128()
         });
     }
 
-    function totalFeeVote(UniswapV3Pair.Position memory position) internal pure returns (Aggregate memory) {
-        return Aggregate({
+    function totalFeeVote(UniswapV3Pair.Position memory position) internal pure returns (Aggregate memory z) {
+        z = Aggregate({
             numerator: position.liquidity.mul(position.feeVote).toInt128(),
-            denominator: position.feeVote == 0 ? 0 : uint(position.liquidity).toInt128()
+            denominator: position.feeVote == 0 ? 0 : position.liquidity
         });
     }
 
-    function averageFee(Aggregate memory y) internal pure returns (uint16 z) {
-        z = y.denominator == 0 ? 0 : uint16(y.numerator / y.denominator);
+    function averageFee(Aggregate memory self) internal pure returns (uint16 z) {
+        z = self.denominator == 0 ? 0 : uint16(self.numerator / self.denominator);
     }
 }

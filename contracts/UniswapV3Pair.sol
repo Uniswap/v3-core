@@ -23,22 +23,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for  int112;
     using FixedPoint for FixedPoint.uq112x112;
 
+    // TODO: size
     uint112 public constant override LIQUIDITY_MIN = 10**3;
-    uint16 public constant override FEE_VOTE_MAX = 6000; // 6000 pips / 60 bips / 0.60%
+    uint16  public constant override FEE_VOTE_MAX  =  6000; // 6000 pips / 60 bips / 0.60%
 
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
 
     // ⬇ single storage slot ⬇
+    // TODO: size
     uint112 public override reserve0Virtual;
+    // TODO: size
     uint112 public override reserve1Virtual;
     uint32  public override blockTimestampLast;
     // ⬆ single storage slot ⬆
 
     // the first price tick _at_ or _below_ the current (reserve1Virtual / reserve0Virtual) price
     int16 public override tickCurrent;
-    // TODO what size uint should this be?
+    // TODO: size
     uint112 public override liquidityVirtual; // the amount of virtual liquidity active for the current tick
 
     FixedPoint.uq144x112 public price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
@@ -50,22 +53,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
     struct TickInfo {
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        uint32 secondsGrowthOutside;
+        uint32               secondsGrowthOutside;
         // fee growth on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         FixedPoint.uq112x112 growthOutside;
 
-        // amount of token0 added or removed (depending on sign) when ticks are crossed from left to right,
+        // amount of token0 added when ticks are crossed from left to right,
         // i.e. as the (reserve1Virtual / reserve0Virtual) price goes up
-        // TODO what size int (uint?) should this be?
-        int112 token0VirtualDelta;
+        // TODO: size
+        int112               token0VirtualDelta;
 
-        // TODO check overflow on this
-        FeeVoting.Aggregate feeVoteDelta;
+        // fee vote delta added when ticks are crossed from left to right,
+        // i.e. as the (reserve1Virtual / reserve0Virtual) price goes up
+        FeeVoting.Aggregate  feeVoteDelta;
     }
     mapping (int16 => TickInfo) public tickInfos;
 
-    // TODO check overflow on this
     FeeVoting.Aggregate public feeVoteAggregate;
 
     struct Position {
@@ -78,7 +81,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // will be smaller than liquidity if any fees have been earned in range.
         uint112 liquidityScalar;
         // vote for the total swap fee, in pips
-        uint16 feeVote;
+        uint16  feeVote;
     }
     // TODO: is this the best way to map (address, int16, int16) to a struct?
     mapping (bytes32 => Position) public positions;
@@ -311,15 +314,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         {
         // get existing position
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper);
+        FeeVoting.Aggregate memory feeVoteLast = FeeVoting.totalFeeVote(position);
 
         // rebate any collected fees to user (recompound by setting liquidityDelta to accumulated fees)
         FixedPoint.uq112x112 memory growthInside = getGrowthInside(tickLower, tickUpper);
         uint feeLiquidity = uint(FixedPoint.decode144(growthInside.mul(position.liquidityScalar)))
             .sub(position.liquidity);
         // credit the user for the value of their fee liquidity at the current price
-        (amount0, amount1) = getValueAtPrice(FixedPoint.fraction(reserve1Virtual, reserve0Virtual), -feeLiquidity.toInt112());
-
-        FeeVoting.Aggregate memory feeVoteLast = FeeVoting.totalFeeVote(position);
+        (amount0, amount1) = getValueAtPrice(
+            FixedPoint.fraction(reserve1Virtual, reserve0Virtual), -(feeLiquidity.toInt112())
+        );
 
         // update position
         position.liquidity = position.liquidity.addi(liquidityDelta).toUint112();
@@ -417,15 +421,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // TODO (eventually): batch all updates, including from mintFee
                 bool feeOn = _mintFee(reserve0Virtual, reserve1Virtual);
                 // kick in/out liquidity
-                int112 token0VirtualDelta = -tickInfo.token0VirtualDelta; // - because we're crossing from right to left
+                int112 token0VirtualDelta = tickInfo.token0VirtualDelta;
                 int112 token1VirtualDelta = FixedPointExtra.muli(price, token0VirtualDelta).itoInt112();
-                reserve0Virtual = reserve0Virtual.addi(token0VirtualDelta).toUint112();
-                reserve1Virtual = reserve1Virtual.addi(token1VirtualDelta).toUint112();
-                liquidityVirtual = liquidityVirtual
-                    .addi(token0VirtualDelta.imul(liquidityVirtual) / reserve0Virtual)
-                .toUint112();
+                int112 liquidityVirtualDelta = (token0VirtualDelta.imul(liquidityVirtual) / reserve0Virtual)
+                    .itoInt112();
+                // subi because we're moving from right to left
+                reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
+                reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
+                liquidityVirtual = liquidityVirtual.subi(liquidityVirtualDelta).toUint112();
                 // kick in/out fee votes
-                // sub because we're crossing the tick from right to left
+                // subi because we're moving from right to left
                 feeVoteAggregate = FeeVoting.sub(feeVoteAggregate, tickInfo.feeVoteDelta);
                 // update tick info
                 // overflow is desired
