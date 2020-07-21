@@ -31,7 +31,7 @@ library TickMath {
         }
 
         require(tick >= MIN_TICK, 'TickMath: UNDERFLOW_UQ112x112'); // too small for a uq112x112
-        require(tick <= MAX_TICK, 'TickMath: OVERFLOW_UQ112x112'); // too large for a uq112x112
+        require(tick <= MAX_TICK, 'TickMath: OVERFLOW_UQ112x112');  // too large for a uq112x112
 
         // 2**(log_2(1.01) * tick)
         // (2**log_2(1.01))**tick
