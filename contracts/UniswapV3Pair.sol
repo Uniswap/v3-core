@@ -94,19 +94,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         unlocked = 1;
     }
 
-    // helper functions for getting/setting position structs
-    function getPositionKey(address owner, int16 tickLower, int16 tickUpper) public pure returns (bytes32 positionKey) {
-        assert(tickLower >= TickMath.MIN_TICK);
-        assert(tickUpper <= TickMath.MAX_TICK);
-        positionKey = keccak256(abi.encodePacked(owner, tickLower, tickUpper));
-    }
-
     function _getPosition(address owner, int16 tickLower, int16 tickUpper)
         private
         view
         returns (Position storage position)
     {
-        position = positions[getPositionKey(owner, tickLower, tickUpper)];
+        assert(tickLower >= TickMath.MIN_TICK);
+        assert(tickUpper < TickMath.MAX_TICK);
+        position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
     // get fee growth (sqrt(reserve0Virtual * reserve1Virtual) / liquidity)
