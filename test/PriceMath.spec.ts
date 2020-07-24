@@ -38,6 +38,16 @@ describe('PriceMath', () => {
           ])
         ).to.be.revertedWith('PriceMath: DIRECTION')
       })
+
+      it('returns 0 if price is equal', async () => {
+        expect(
+          await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
+            expandTo18Decimals(1)
+              .mul(BigNumber.from(2).pow(112))
+              .div(expandTo18Decimals(50))
+          ])
+        ).to.eq('0')
+      })
     })
 
     describe('1:100 to 1:50 at 30bps', () => {

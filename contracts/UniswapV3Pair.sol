@@ -100,7 +100,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (Position storage position)
     {
         assert(tickLower >= TickMath.MIN_TICK);
-        assert(tickUpper < TickMath.MAX_TICK);
+        assert(tickUpper <= TickMath.MAX_TICK);
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
@@ -118,7 +118,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (FixedPoint.uq112x112 memory growthBelow)
     {
         growthBelow = tickInfos[tick].growthOutside;
-        // tick is above currentTick, meaning growth outside is not sufficient
+        // tick is above currentTick, meaning growth outside represents growth above, not below, so adjust
         if (tick > tickCurrent) {
             growthBelow = FixedPointExtra.divuq(g, growthBelow);
         }
@@ -130,7 +130,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (FixedPoint.uq112x112 memory growthAbove)
     {
         growthAbove = tickInfos[tick].growthOutside;
-        // tick is at or below currentTick, meaning growth outside is not sufficient
+        // tick is at or below currentTick, meaning growth outside represents growth below, not above, so adjust
         if (tick <= tickCurrent) {
             growthAbove = FixedPointExtra.divuq(g, growthAbove);
         }
@@ -149,7 +149,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory g = getG();
         FixedPoint.uq112x112 memory growthBelow = _getGrowthBelow(tickLower, g);
         FixedPoint.uq112x112 memory growthAbove = _getGrowthAbove(tickUpper, g);
-        growthInside = FixedPointExtra.muluq(FixedPointExtra.muluq(growthAbove, growthBelow).reciprocal(), g);
+        growthInside = FixedPointExtra.divuq(g, FixedPointExtra.muluq(growthBelow, growthAbove));
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
@@ -256,10 +256,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickInfo = tickInfos[tick];
         if (tickInfo.growthOutside._x == 0) {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
+            // TODO what if tick is the min tick?
             if (tick <= tickCurrent) {
                 tickInfo.secondsGrowthOutside = uint32(block.timestamp);
                 tickInfo.growthOutside = getG();
-            } else {
+            }
+            // TODO what if tick is the max tick?
+            else {
                 tickInfo.secondsGrowthOutside = 0;
                 tickInfo.growthOutside = FixedPoint.encode(1);
             }
@@ -373,34 +376,38 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 amount1Out;
 
         while (amount0InRemaining > 0) {
+            assert(tickCurrent >= TickMath.MIN_TICK);
             FixedPoint.uq112x112 memory price = TickMath.getPrice(tickCurrent);
 
-            {
             // compute how much token0 is required to push the price down to the next tick
             uint112 amount0InRequiredForShift = PriceMath.getTradeToRatio(
                 reserve0Virtual, reserve1Virtual, FeeVoting.averageFee(feeVoteCurrent), price.reciprocal()
             );
-            uint112 amount0InStep = amount0InRemaining > amount0InRequiredForShift ?
-                amount0InRequiredForShift :
-                amount0InRemaining;
-            // adjust the step amount by the current fee
-            uint112 amount0InAdjusted = uint112(
-                uint(amount0InStep) *
-                (PriceMath.LP_FEE_BASE - FeeVoting.averageFee(feeVoteCurrent)) /
-                PriceMath.LP_FEE_BASE
-            );
-            uint112 amount1OutStep = (
-                (uint(reserve1Virtual) * amount0InAdjusted) / (uint(reserve0Virtual) + amount0InAdjusted)
-            ).toUint112();
-            reserve0Virtual = (uint(reserve0Virtual) + amount0InStep).toUint112();
-            reserve1Virtual = reserve1Virtual.sub(amount1OutStep).toUint112();
-            amount0InRemaining = amount0InRemaining.sub(amount0InStep).toUint112();
-            amount1Out = (uint(amount1Out) + amount1OutStep).toUint112();
+
+            // if that amount is 0, we can simply skip the trading logic within the current tick
+            if (amount0InRequiredForShift > 0) {
+                uint112 amount0InStep = amount0InRemaining > amount0InRequiredForShift ?
+                    amount0InRequiredForShift :
+                    amount0InRemaining;
+                // adjust the step amount by the current fee
+                uint112 amount0InAdjusted = uint112(
+                    uint(amount0InStep) *
+                    (PriceMath.LP_FEE_BASE - FeeVoting.averageFee(feeVoteCurrent)) /
+                    PriceMath.LP_FEE_BASE
+                );
+                uint112 amount1OutStep = (
+                    (uint(reserve1Virtual) * amount0InAdjusted) / (uint(reserve0Virtual) + amount0InAdjusted)
+                ).toUint112();
+                reserve0Virtual = (uint(reserve0Virtual) + amount0InStep).toUint112();
+                reserve1Virtual = reserve1Virtual.sub(amount1OutStep).toUint112();
+                amount0InRemaining = amount0InRemaining.sub(amount0InStep).toUint112();
+                amount1Out = (uint(amount1Out) + amount1OutStep).toUint112();
             }
 
             // if a positive input amount still remains, we have to shift down to the next tick
             if (amount0InRemaining > 0) {
                 TickInfo storage tickInfo = tickInfos[tickCurrent];
+                // if the current tick is uninitialized, we can short-circuit the tick transition logic
                 if (tickInfo.growthOutside._x == 0) {
                     tickCurrent -= 1;
                     continue;
@@ -424,8 +431,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // overflow is desired
                 tickInfo.secondsGrowthOutside = uint32(block.timestamp) - tickInfo.secondsGrowthOutside;
                 tickInfo.growthOutside = FixedPointExtra.divuq(getG(), tickInfo.growthOutside);
-                tickCurrent -= 1;
+
                 if (feeOn) kLast = uint224(reserve0Virtual) * reserve1Virtual;
+
+                tickCurrent -= 1;
             }
         }
         // TODO: record new fees or something?

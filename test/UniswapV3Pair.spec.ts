@@ -16,7 +16,7 @@ import { pairFixture } from './shared/fixtures'
 
 chai.use(solidity)
 
-describe.only('UniswapV3Pair', () => {
+describe('UniswapV3Pair', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',

@@ -31,7 +31,6 @@ library FixedPointExtra {
         pure
         returns (FixedPoint.uq112x112 memory)
     {
-        require(other._x != 0, 'FixedPointExtra: DIV_BY_ZERO');
-        return FixedPoint.uq112x112(uint224(((uint(self._x) << 32) / other._x) << 80));
+        return muluq(self, FixedPoint.reciprocal(other));
     }
 }
