@@ -1,4 +1,6 @@
 import { BigNumber, utils, constants, providers } from 'ethers'
+import { Decimal } from 'decimal.js'
+import { assert } from 'chai'
 
 export const MIN_TICK = -7802
 export const MAX_TICK = 7802
@@ -45,4 +47,21 @@ export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {
 
 export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
   return utils.keccak256(utils.solidityPack(['address', 'int16', 'int16'], [address, lowerTick, upperTick]))
+}
+
+const LN101 = Decimal.ln('1.01')
+export function getExpectedTick(reserve0: BigNumber, reserve1: BigNumber): number {
+  if (reserve0.isZero() && reserve1.isZero()) return 0
+  assert(!reserve1.isZero())
+
+  const price = new Decimal(reserve1.toString()).div(new Decimal(reserve0.toString()))
+  // log_1.01(price) = ln(price) / ln(1.01) by the base change rule
+  const rawTick = Decimal.ln(price).div(LN101)
+  const tick = rawTick.floor().toNumber()
+
+  // verify
+  assert(new Decimal('1.01').pow(tick).lte(price))
+  assert(new Decimal('1.01').pow(tick + 1).gt(price))
+
+  return tick
 }

@@ -10,7 +10,8 @@ import {
   getPositionKey,
   MAX_TICK,
   MIN_TICK,
-  LIQUIDITY_MIN
+  LIQUIDITY_MIN,
+  getExpectedTick
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
 
@@ -38,6 +39,15 @@ describe('UniswapV3Pair', () => {
     token1 = fixture.token1
     factory = fixture.factory
     pair = fixture.pair
+  })
+
+  afterEach(async () => {
+    // ensure that the tick always matches the price given by virtual reserves
+    const reserve0Virtual = await pair.reserve0Virtual()
+    const reserve1Virtual = await pair.reserve1Virtual()
+    const expectedTick = getExpectedTick(reserve0Virtual, reserve1Virtual)
+    const tickCurrent = await pair.tickCurrent()
+    expect(tickCurrent).to.eq(expectedTick)
   })
 
   it('factory, token0, token1', async () => {
@@ -79,7 +89,7 @@ describe('UniswapV3Pair', () => {
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote, OVERRIDES)
   }
-  describe('post-initialize', () => {
+  describe('post-initialize (0 fee)', () => {
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
       await initialize(tokenAmount)
@@ -91,8 +101,6 @@ describe('UniswapV3Pair', () => {
       const upperTick = 4
 
       await token0.approve(pair.address, constants.MaxUint256)
-      await token1.approve(pair.address, constants.MaxUint256)
-
       // lower: (990, 1009)
       // upper: (980, 1019)
       await pair.setPosition(lowerTick, upperTick, liquidityDelta, 0, OVERRIDES)
@@ -106,9 +114,7 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -4
       const upperTick = -2
 
-      await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-
       // lower: (1020, 980)
       // upper: (1009, 989)
       await pair.setPosition(lowerTick, upperTick, liquidityDelta, 0, OVERRIDES)
@@ -124,7 +130,6 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-
       // lower: (1009, 989)
       // upper: (990, 1009)
       await pair.setPosition(lowerTick, upperTick, liquidityDelta, 0, OVERRIDES)
@@ -132,46 +137,84 @@ describe('UniswapV3Pair', () => {
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
     })
+
+    it('swap0for1', async () => {
+      const amount0In = 1000
+
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+      await token0.approve(pair.address, constants.MaxUint256)
+      await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
+
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
+      expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(999)
+
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(-1)
+    })
   })
 
-  it('swap0for1 with fee = 0', async () => {
-    const tokenAmount = expandTo18Decimals(2)
-    await initialize(tokenAmount, 0)
+  describe('post-initialize (.3% fee)', () => {
+    beforeEach(async () => {
+      const tokenAmount = expandTo18Decimals(2)
+      await initialize(tokenAmount, 3000)
+    })
 
-    const amount0In = 1000
+    it('swap0for1 with fee = .3%', async () => {
+      const amount0In = 1000
 
-    await token0.approve(pair.address, constants.MaxUint256)
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
-    const token0BalanceBefore = await token0.balanceOf(wallet.address)
-    const token1BalanceBefore = await token1.balanceOf(wallet.address)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
 
-    await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
 
-    const token0BalanceAfter = await token0.balanceOf(wallet.address)
-    const token1BalanceAfter = await token1.balanceOf(wallet.address)
+      expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
+      expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(996)
 
-    expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
-    expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(999)
-  })
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(-1)
+    })
 
-  it('swap0for1 with fee = .3%', async () => {
-    const tokenAmount = expandTo18Decimals(2)
-    await initialize(tokenAmount, 3000)
+    it('swap0for1 to tick -10', async () => {
+      const amount0In = expandTo18Decimals(1).div(10)
 
-    const amount0In = 1000
+      await token0.approve(pair.address, constants.MaxUint256)
+      await expect(pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES))
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair.address, wallet.address, '094959953735437430')
 
-    await token0.approve(pair.address, constants.MaxUint256)
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(-10)
+    })
 
-    const token0BalanceBefore = await token0.balanceOf(wallet.address)
-    const token1BalanceBefore = await token1.balanceOf(wallet.address)
+    it('swap0for1 to tick -10 with intermediate liquidity', async () => {
+      const amount0In = expandTo18Decimals(1).div(10)
 
-    await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
+      // add liquidity between -3 and -2 (to the left of the current price)
+      const liquidityDelta = expandTo18Decimals(1)
+      const lowerTick = -3
+      const upperTick = -2
+      await token1.approve(pair.address, constants.MaxUint256)
+      // lower: (1015037437733209910, 985185336841573394)
+      // upper: (1009999999999999995, 990099009900990094)
+      await pair.setPosition(lowerTick, upperTick, liquidityDelta, 0, OVERRIDES)
 
-    const token0BalanceAfter = await token0.balanceOf(wallet.address)
-    const token1BalanceAfter = await token1.balanceOf(wallet.address)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await expect(pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES))
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair.address, wallet.address, '095292372649584247')
 
-    expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
-    expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(996)
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(-10)
+    })
   })
 
   async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {
