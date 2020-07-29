@@ -7,7 +7,7 @@ import TickMathTest from '../build/TickMathTest.json'
 chai.use(solidity)
 
 const overrides = {
-  gasLimit: 9999999,
+  gasLimit: 9999999
 }
 
 const Q112 = BigNumber.from(2).pow(112)
@@ -17,7 +17,7 @@ describe('TickMath', () => {
     ganacheOptions: {
       hardfork: 'istanbul',
       mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-      gasLimit: 9999999,
+      gasLimit: 9999999
     }
   })
   const [wallet] = provider.getWallets()
@@ -48,7 +48,10 @@ describe('TickMath', () => {
       absDiff.lte(expected.mul(allowedDiffBips).div(10000)),
       `${actual.toString()} differs from ${expected.toString()} by >${allowedDiffBips.toString()}bips. 
       abs diff: ${absDiff.toString()}
-      diff bips: ${absDiff.mul(10000).div(expected).toString()}`
+      diff bips: ${absDiff
+        .mul(10000)
+        .div(expected)
+        .toString()}`
     ).to.be.true
   }
 
@@ -167,7 +170,7 @@ describe('TickMath', () => {
       [50]: 6273,
       [500]: 6300,
       [1000]: 6301,
-      [7802]: 6402,
+      [7802]: 6402
     }
 
     for (let tick in tickGasPrices) {
