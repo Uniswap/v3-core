@@ -11,7 +11,8 @@ import {
   MAX_TICK,
   MIN_TICK,
   LIQUIDITY_MIN,
-  getExpectedTick
+  getExpectedTick,
+  FeeVote
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
 
@@ -68,28 +69,28 @@ describe('UniswapV3Pair', () => {
     await pair.initialize(initializeToken0Amount, initializeToken1Amount, 0, 0, OVERRIDES)
 
     expect(await pair.tickCurrent()).to.eq(expectedTick)
-    expect(await pair.liquidityVirtual()).to.eq(expectedLiquidity)
+    expect(await pair.getLiquidityVirtual()).to.eq(expectedLiquidity)
 
     expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
     expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
 
-    const burntPosition = await pair.positions(getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK))
+    const burntPosition = await pair.positions(
+      getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK, FeeVote.FeeVote0)
+    )
     expect(burntPosition.liquidity).to.eq(LIQUIDITY_MIN)
     expect(burntPosition.liquidityScalar).to.eq(LIQUIDITY_MIN)
-    expect(burntPosition.feeVote).to.eq(0)
 
-    const position = await pair.positions(getPositionKey(wallet.address, MIN_TICK, MAX_TICK))
+    const position = await pair.positions(getPositionKey(wallet.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
     expect(position.liquidity).to.eq(expectedUserLiquidity)
     expect(position.liquidityScalar).to.eq(expectedUserLiquidity)
-    expect(position.feeVote).to.eq(0)
   })
 
-  async function initialize(tokenAmount: BigNumber, feeVote = 0): Promise<void> {
+  async function initialize(tokenAmount: BigNumber, feeVote = FeeVote.FeeVote0): Promise<void> {
     await token0.approve(pair.address, tokenAmount)
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote, OVERRIDES)
   }
-  describe('post-initialize (0 fee)', () => {
+  describe('post-initialize (fee vote 0 - 0.10%)', () => {
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
       await initialize(tokenAmount)
@@ -151,20 +152,20 @@ describe('UniswapV3Pair', () => {
       const token1BalanceAfter = await token1.balanceOf(wallet.address)
 
       expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
-      expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(999)
+      expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(998)
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-1)
     })
   })
 
-  describe('post-initialize (.3% fee)', () => {
+  describe('post-initialize (fee vote 1 - 0.30%)', () => {
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
-      await initialize(tokenAmount, 3000)
+      await initialize(tokenAmount, FeeVote.FeeVote1)
     })
 
-    it('swap0for1 with fee = .3%', async () => {
+    it('swap0for1', async () => {
       const amount0In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
