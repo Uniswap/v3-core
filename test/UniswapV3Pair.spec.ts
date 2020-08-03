@@ -216,28 +216,6 @@ describe('UniswapV3Pair', () => {
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
     })
-
-    // TODO why does this fail?
-    it.skip('swap0for1 to tick -10 with intermediate liquidity', async () => {
-      const amount0In = expandTo18Decimals(1).div(10)
-
-      // add liquidity between -3 and -2 (to the left of the current price)
-      const liquidityDelta = expandTo18Decimals(1)
-      const lowerTick = -3
-      const upperTick = -2
-      await token1.approve(pair.address, constants.MaxUint256)
-      // lower: (1015037437733209910, 985185336841573394)
-      // upper: (1009999999999999995, 990099009900990094)
-      await pair.setPosition(lowerTick, upperTick, liquidityDelta, FeeVote.FeeVote0, OVERRIDES)
-
-      await token0.approve(pair.address, constants.MaxUint256)
-      await expect(pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES))
-        .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '095292372649584247')
-
-      const tickCurrent = await pair.tickCurrent()
-      expect(tickCurrent).to.eq(-10)
-    })
   })
 
   async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {

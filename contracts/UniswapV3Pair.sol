@@ -280,7 +280,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // if it's possible this position accrued any fees, rebate them
         if (position.liquidityAdjusted > 0) {
-            // TODO is this precise/correct?
+            // TODO is this correct/precise?
             int112 liquidityFee =
                 uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)))
                 .sub(position.liquidity)
@@ -290,11 +290,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 address feeTo = IUniswapV3Factory(factory).feeTo();
                 bool feeOn = feeTo != address(0);
                 if (feeOn && msg.sender != feeTo) {
+                    // TODO do the right thing here
                     int112 liquidityProtocol = liquidityFee / 6;
-                    if (liquidityProtocol > 0) {
-                        liquidityFee -= liquidityProtocol;
-                        // TODO do the right thing here
-                    }
+                    liquidityFee -= liquidityProtocol;
                 }
 
                 (amount0, amount1) = getValueAtPrice(price, -liquidityFee);
@@ -410,18 +408,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     continue;
                 }
 
-                // kick in/out reserves
+                // calculate the amount of reserves + liquidity to kick in/out
                 int112 token0VirtualDelta =
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote0)] +
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote1)] +
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote2)] +
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote3)];
                 int112 token1VirtualDelta = FixedPointExtra.muli(price, token0VirtualDelta).itoInt112();
-                // subi because we're moving from right to left
-                reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
-                reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
-
-                // kick in/out liquidity
                 uint112 virtualSupply = getVirtualSupply();
                 int112[4] memory virtualSupplyDeltas = [
                     (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote0)].imul(virtualSupply) / reserve0Virtual)
@@ -433,7 +426,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote3)].imul(virtualSupply) / reserve0Virtual)
                         .itoInt112()
                 ];
+
                 // subi because we're moving from right to left
+                reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
+                reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
                 virtualSupplies = [
                     virtualSupplies[uint8(FeeVote.FeeVote0)].subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote0)])
                         .toUint112(),
