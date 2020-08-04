@@ -9,9 +9,9 @@ import './SafeMath.sol';
 library FixedPointExtra {
     // multiply a UQ112x112 by an int and decode, returning an int
     // reverts on overflow
-    function muli(FixedPoint.uq112x112 memory self, int y) internal pure returns (int) {
-        uint144 z = FixedPoint.decode144(FixedPoint.mul(self, uint(y < 0 ? -y : y)));
-        return y < 0 ? -int(z) : z;
+    function muli(FixedPoint.uq112x112 memory self, int other) internal pure returns (int) {
+        uint144 z = FixedPoint.decode144(FixedPoint.mul(self, uint(other < 0 ? -other : other)));
+        return other < 0 ? -int(z) : z;
     }
 
     // multiply a UQ112x112 by a UQ112x112, returning a UQ112x112

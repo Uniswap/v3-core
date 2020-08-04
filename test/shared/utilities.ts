@@ -11,6 +11,13 @@ export const OVERRIDES = {
   gasLimit: 9999999
 }
 
+export enum FeeVote {
+  FeeVote0 = 0,
+  FeeVote1 = 1,
+  FeeVote2 = 2,
+  FeeVote3 = 3
+}
+
 export function expandTo18Decimals(n: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
 }
@@ -45,8 +52,10 @@ export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {
   ]
 }
 
-export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
-  return utils.keccak256(utils.solidityPack(['address', 'int16', 'int16'], [address, lowerTick, upperTick]))
+export function getPositionKey(address: string, lowerTick: number, upperTick: number, feeVote: FeeVote): string {
+  return utils.keccak256(
+    utils.solidityPack(['address', 'int16', 'int16', 'uint8'], [address, lowerTick, upperTick, feeVote])
+  )
 }
 
 const LN101 = Decimal.ln('1.01')

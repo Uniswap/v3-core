@@ -15,7 +15,7 @@ library PriceMath {
     //    //ABDKMathQuad.fromUInt(4);
     //    bytes16 public constant QUAD_FOUR = bytes16(0);
 
-    uint public constant LP_FEE_BASE = 1000000;
+    uint24 public constant LP_FEE_BASE = 1000000; // 1000000 pips, or 10000 bips, or 100%
 
     function toQuad(FixedPoint.uq112x112 memory self) private pure returns (bytes16) {
         return ABDKMathQuad.from128x128(int256(self._x) << 16);
@@ -87,7 +87,7 @@ library PriceMath {
     function getTradeToRatio(
         uint112 reserveIn,
         uint112 reserveOut,
-        uint112 lpFee,
+        uint16 lpFee,
         FixedPoint.uq112x112 memory inOutRatio
     )
         internal

@@ -8,7 +8,7 @@ import '../libraries/PriceMath.sol';
 
 contract PriceMathTest {
     function getTradeToRatio(
-        uint112 reserveIn, uint112 reserveOut, uint112 lpFee, FixedPoint.uq112x112 memory inOutRatio
+        uint112 reserveIn, uint112 reserveOut, uint16 lpFee, FixedPoint.uq112x112 memory inOutRatio
     ) public pure returns (uint112 amountIn) {
         return PriceMath.getTradeToRatio(reserveIn, reserveOut, lpFee, inOutRatio);
     }
