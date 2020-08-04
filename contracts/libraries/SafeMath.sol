@@ -60,18 +60,8 @@ library SafeMath {
     }
 
     // TODO check that this is gas efficient as compared to requiring `y <= type(int128).max`
-    function toInt128(uint y) internal pure returns (int128 z) {
-        require((z = int128(y)) >= 0 && uint(z) == y, "downcast-overflow");
-    }
-
-    // TODO check that this is gas efficient as compared to requiring `y <= type(int128).max`
     function itoInt112(int y) internal pure returns (int112 z) {
         require((z = int112(y)) == y, "downcast-overflow");
-    }
-
-    // TODO check that this is gas efficient as compared to requiring `y <= type(int128).max`
-    function itoInt128(int y) internal pure returns (int128 z) {
-        require((z = int128(y)) == y, "downcast-overflow");
     }
 
     function addi(uint x, int y) internal pure returns (uint z) {

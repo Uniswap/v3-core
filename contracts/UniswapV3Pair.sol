@@ -46,7 +46,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // stored to avoid computing log_1.01(reserve1Virtual / reserve0Virtual) on-chain
     int16 public override tickCurrent;
 
-    // the amount of virtual supply active for the current tick, for each fee vote
+    // the amount of virtual supply active within the current tick, for each fee vote
     uint112[4] public override virtualSupplies;
 
     FixedPoint.uq144x112 public price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
@@ -78,7 +78,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping (bytes32 => Position) public positions;
 
-    uint private unlocked = 1;
+    uint public unlocked = 1;
     modifier lock() {
         require(unlocked == 1, 'UniswapV3: LOCKED');
         unlocked = 0;
@@ -199,6 +199,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 blockTimestamp = uint32(block.timestamp); // truncation is desired
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0) {
+            // TODO it's possible we'll have to just short-circuit if either of these are true
+            assert(reserve0Virtual != 0);
+            assert(reserve1Virtual != 0);
             // overflow is desired
             price0CumulativeLast = FixedPoint.uq144x112(
                 price0CumulativeLast._x + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x
@@ -217,7 +220,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // ensure the tick witness is correct
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(amount1, amount0);
-        require(TickMath.getPrice(tick)._x     <= price._x, 'UniswapV3: STARTING_TICK_TOO_LARGE');
+        require(TickMath.getPrice(tick    )._x <= price._x, 'UniswapV3: STARTING_TICK_TOO_LARGE');
         require(TickMath.getPrice(tick + 1)._x >  price._x, 'UniswapV3: STARTING_TICK_TOO_SMALL');
         tickCurrent = tick;
 
@@ -239,7 +242,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position.liquidity = liquidity;
         position.liquidityAdjusted = liquidity;
 
-        // initialize the price accumulators
+        // ensure the oracle is initialized properly
         reserve0Virtual = amount0;
         reserve1Virtual = amount1;
         blockTimestampLast = uint32(block.timestamp);
@@ -262,7 +265,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
     function setPosition(int16 tickLower, int16 tickUpper, int112 liquidityDelta, FeeVote feeVote) external lock {
-        require(getVirtualSupply() > 0, 'UniswapV3: ALREADY_INITIALIZED');
+        require(getVirtualSupply() > 0, 'UniswapV3: NOT_INITIALIZED');
         require(tickLower <  tickUpper,         'UniswapV3: TICKS');
         require(tickLower >= TickMath.MIN_TICK, 'UniswapV3: LOWER_TICK');
         require(tickUpper <= TickMath.MAX_TICK, 'UniswapV3: UPPER_TICK');
@@ -278,24 +281,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-        // if it's possible this position accrued any fees, rebate them
+        // if it's possible this position accrued any fees, rebate them automatically
         if (position.liquidityAdjusted > 0) {
             // TODO is this correct/precise?
-            int112 liquidityFee =
-                uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)))
-                .sub(position.liquidity)
-                .toInt112();
+            uint liquidityFee =
+                uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
 
             if (liquidityFee > 0) {
                 address feeTo = IUniswapV3Factory(factory).feeTo();
                 bool feeOn = feeTo != address(0);
+                // TODO actually issue liquidityProtocol to feeTo
                 if (feeOn && msg.sender != feeTo) {
-                    // TODO do the right thing here
-                    int112 liquidityProtocol = liquidityFee / 6;
+                    uint liquidityProtocol = liquidityFee / 6;
                     liquidityFee -= liquidityProtocol;
                 }
 
-                (amount0, amount1) = getValueAtPrice(price, -liquidityFee);
+                (amount0, amount1) = getValueAtPrice(price, -(liquidityFee.toInt112()));
             }
         }
 
@@ -316,8 +317,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tickInfoLower.token0VirtualDeltas[uint8(feeVote)] =
                 tickInfoLower.token0VirtualDeltas[uint8(feeVote)].iadd(amount0Lower).itoInt112();
         }
+        // regardless of current price, when upper tick is crossed from left to right amount0Upper should be removed
         if (tickUpper < TickMath.MAX_TICK) {
-            // regardless of current price, when upper tick is crossed from left to right amount0Upper should be removed
             tickInfoUpper.token0VirtualDeltas[uint8(feeVote)] =
                 tickInfoUpper.token0VirtualDeltas[uint8(feeVote)].isub(amount0Upper).itoInt112();
         }
@@ -430,16 +431,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // subi because we're moving from right to left
                 reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
                 reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
-                virtualSupplies = [
-                    virtualSupplies[uint8(FeeVote.FeeVote0)].subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote0)])
-                        .toUint112(),
-                    virtualSupplies[uint8(FeeVote.FeeVote1)].subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote1)])
-                        .toUint112(),
-                    virtualSupplies[uint8(FeeVote.FeeVote2)].subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote2)])
-                        .toUint112(),
-                    virtualSupplies[uint8(FeeVote.FeeVote3)].subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote3)])
-                        .toUint112()
-                ];
+                virtualSupplies[uint8(FeeVote.FeeVote0)] = virtualSupplies[uint8(FeeVote.FeeVote0)]
+                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote0)]).toUint112();
+                virtualSupplies[uint8(FeeVote.FeeVote1)] = virtualSupplies[uint8(FeeVote.FeeVote1)]
+                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote1)]).toUint112();
+                virtualSupplies[uint8(FeeVote.FeeVote2)] = virtualSupplies[uint8(FeeVote.FeeVote2)]
+                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote2)]).toUint112();
+                virtualSupplies[uint8(FeeVote.FeeVote3)] = virtualSupplies[uint8(FeeVote.FeeVote3)]
+                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote3)]).toUint112();
 
                 // update tick info
                 // overflow is desired
