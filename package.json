@@ -39,6 +39,7 @@
   },
   "scripts": {
     "lint": "yarn prettier ./test/*.ts --check",
+    "lint:fix": "yarn prettier ./test/*.ts --write",
     "precompile": "rimraf ./build/",
     "compile": "waffle",
     "pretest": "yarn compile",
