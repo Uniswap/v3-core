@@ -95,7 +95,9 @@ library PriceMath {
         returns (uint112 amountIn)
     {
         require(reserveIn > 0 && reserveOut > 0, 'PriceMath: NONZERO');
-        require(FixedPoint.fraction(reserveIn, reserveOut)._x <= inOutRatio._x, 'PriceMath: DIRECTION');
+        FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
+        if (reserveRatio._x == inOutRatio._x) return 0; // short-circuit if the ratios are equal
+        require(reserveRatio._x < inOutRatio._x, 'PriceMath: DIRECTION');
         bytes16 fee = ABDKMathQuad.div(ABDKMathQuad.fromUInt(lpFee), ABDKMathQuad.fromUInt(LP_FEE_BASE));
         bytes16 quadReserveIn = ABDKMathQuad.fromUInt(reserveIn);
         bytes16 quadReserveOut = ABDKMathQuad.fromUInt(reserveOut);
