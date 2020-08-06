@@ -104,7 +104,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       // lower: (990, 1009)
       // upper: (980, 1019)
-      await pair.setPosition(lowerTick, upperTick, liquidityDelta, FeeVote.FeeVote0, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
@@ -118,7 +118,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1020, 980)
       // upper: (1009, 989)
-      await pair.setPosition(lowerTick, upperTick, liquidityDelta, FeeVote.FeeVote0, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(9))
@@ -133,7 +133,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1009, 989)
       // upper: (990, 1009)
-      await pair.setPosition(lowerTick, upperTick, liquidityDelta, FeeVote.FeeVote0, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
@@ -206,7 +206,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1015037437733209910, 985185336841573394)
       // upper: (1009999999999999995, 990099009900990094)
-      await pair.setPosition(lowerTick, upperTick, liquidityDelta, FeeVote.FeeVote1, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote1, liquidityDelta, OVERRIDES)
 
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES))

@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 interface IUniswapV3Pair {
     function LIQUIDITY_MIN() external pure returns (uint112);
+    function TOKEN_MIN() external pure returns (uint8);
 
     function factory() external view returns (address);
     function token0() external view returns (address);
