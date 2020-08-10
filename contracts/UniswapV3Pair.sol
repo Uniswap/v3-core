@@ -198,21 +198,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // update reserves and, on the first interaction per block, price accumulators
     function _update() private {
-        uint32 blockTimestamp = uint32(block.timestamp); // truncation is desired
-        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
-        if (timeElapsed > 0) {
-            // TODO these may not be necessary, or we may have to short-circuit if either are true
-            assert(reserve0Virtual != 0);
-            assert(reserve1Virtual != 0);
-            // overflow is desired
-            price0CumulativeLast = FixedPoint.uq144x112(
-                price0CumulativeLast._x + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x
-            );
-            price1CumulativeLast = FixedPoint.uq144x112(
-                price1CumulativeLast._x + FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x
-            );
-            blockTimestampLast = blockTimestamp;
-        }
+        blockTimestampLast = uint32(block.timestamp); // truncation is desired
+        (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
     }
 
     // the reason this can't _just_ burn but needs to mint is because otherwise it would incentivize bad starting prices
@@ -480,12 +467,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // Helper for reading the cumulative price as of the current block
-    function getCumulativePrices() external view returns (
+    function getCumulativePrices() public view returns (
         FixedPoint.uq144x112 memory price0Cumulative,
-        FixedPoint.uq144x112 memory price1Cumulative,
-        uint32 blockTimestamp
+        FixedPoint.uq144x112 memory price1Cumulative
     ) {
-        blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        uint32 blockTimestamp = uint32(block.timestamp);
 
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
