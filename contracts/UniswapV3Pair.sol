@@ -52,8 +52,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[4] public override virtualSupplies;
 
-    FixedPoint.uq144x112 public price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
-    FixedPoint.uq144x112 public price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
+    FixedPoint.uq144x112 private price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
+    FixedPoint.uq144x112 private price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
     
     struct TickInfo {
         // fee growth on the _other_ side of this tick (relative to the current tick)
@@ -477,5 +477,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(token1, to, amount1Out); // optimistically transfer tokens
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, amount1Out, data);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0In); // this is different than v2
+    }
+
+    // Helper for reading the cumulative price as of the current block
+    function getCumulativePrices() external view returns (
+        FixedPoint.uq144x112 memory price0Cumulative,
+        FixedPoint.uq144x112 memory price1Cumulative,
+        uint32 blockTimestamp
+    ) {
+        blockTimestamp = uint32(block.timestamp % 2 ** 32);
+
+        if (blockTimestampLast != blockTimestamp) {
+            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+            price0Cumulative = FixedPoint.uq144x112(
+                price0CumulativeLast._x + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x
+            );
+
+            price1Cumulative = FixedPoint.uq144x112(
+                price1CumulativeLast._x + FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x
+            );
+        }
     }
 }

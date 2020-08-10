@@ -1,6 +1,7 @@
 import chai, { expect } from 'chai'
 import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 import { Contract, BigNumber, BigNumberish } from 'ethers'
+import { bnify2 } from './shared/utilities'
 
 import TickMathTest from '../build/TickMathTest.json'
 
@@ -26,15 +27,6 @@ describe('TickMath', () => {
   before('deploy TickMathTest', async () => {
     tickMath = await deployContract(wallet, TickMathTest, [], overrides)
   })
-
-  // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-  function bnify2(a: BigNumberish | [BigNumberish]): BigNumber {
-    if (Array.isArray(a)) {
-      return BigNumber.from(a[0])
-    } else {
-      return BigNumber.from(a)
-    }
-  }
 
   // checks that an actual number is within allowedDiffBips of an expected number
   async function checkApproximatelyEquals(
