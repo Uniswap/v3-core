@@ -381,13 +381,13 @@ describe('UniswapV3Pair', () => {
     await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
 
     // check the price now
-    const priceBefore = await pair.getCumulativePrices();
+    const priceBefore = await pair.getCumulativePrices()
 
     // 10 seconds pass
     await mineBlock(provider, blockTimestamp + 10)
 
     // the cumulative price should be greater as more time elapses
-    const priceAfter = await pair.getCumulativePrices();
+    const priceAfter = await pair.getCumulativePrices()
     expect(bnify2(priceAfter[0]).gt(bnify2(priceBefore[0]))).to.be.true
     expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
   })
