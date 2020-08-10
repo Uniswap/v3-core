@@ -327,6 +327,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // amount1Upper :> amount1Lower
         (int112 amount0Lower, int112 amount1Lower) = getValueAtPrice(TickMath.getPrice(tickLower), liquidityDelta);
         (int112 amount0Upper, int112 amount1Upper) = getValueAtPrice(TickMath.getPrice(tickUpper), liquidityDelta);
+        assert(amount0Lower > amount0Upper);
+        assert(amount1Upper > amount1Lower);
 
         // regardless of current price, when lower tick is crossed from left to right, amount0Lower should be added
         if (tickLower > TickMath.MIN_TICK) {

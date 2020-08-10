@@ -108,6 +108,9 @@ describe('UniswapV3Pair', () => {
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
+
+      // // The same liquidity can also be removed
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, -1 * liquidityDelta, OVERRIDES)
     })
 
     it('setPosition to the left of the current price', async () => {
