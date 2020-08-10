@@ -96,10 +96,34 @@ describe('UniswapV3Pair', () => {
       await initialize(tokenAmount)
     })
 
+    describe.only('Set position with with positive delta', async () => {
+      let balanceBefore0: BigNumber
+      let balanceBefore1: BigNumber
+      let balanceAfter0: BigNumber
+      let balanceAfter1: BigNumber
+
+      beforeEach(async () => {
+        balanceBefore0 = await token0.balanceOf(wallet.address)
+        balanceBefore1 = await token1.balanceOf(wallet.address)
+      })
+
+      afterEach(async () => {
+        // balances should be less after setting the position with positive liquidity
+        balanceAfter0 = await token0.balanceOf(wallet.address)
+        balanceAfter1 = await token1.balanceOf(wallet.address)
+
+        expect(balanceAfter0).to.lt(balanceBefore0)
+        expect(balanceAfter1).to.lt(balanceBefore1)
+      })
+
+    // This fails because no transfer happens from the sender
     it('setPosition to the right of the current price', async () => {
       const liquidityDelta = 1000
       const lowerTick = 2
       const upperTick = 4
+
+      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
+      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
 
       await token0.approve(pair.address, constants.MaxUint256)
       // lower: (990, 1009)
@@ -110,6 +134,7 @@ describe('UniswapV3Pair', () => {
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
     })
 
+    // This fails because no transfer happens from the sender
     it('setPosition to the left of the current price', async () => {
       const liquidityDelta = 1000
       const lowerTick = -4
@@ -131,12 +156,14 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
+
       // lower: (1009, 989)
       // upper: (990, 1009)
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
+    })
     })
 
     it('swap0for1', async () => {
