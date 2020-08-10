@@ -275,6 +275,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    function getLiquidityFee(int16 tickLower, int16 tickUpper, FeeVote feeVote) public view returns (int112 amount0, int112 amount1) {
+        TickInfo storage tickInfoLower = tickInfos[tickLower];
+        TickInfo storage tickInfoUpper = tickInfos[tickUpper];
+        FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
+
+        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+
+        Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
+        uint liquidityFee =
+            uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
+
+        (amount0, amount1) = getValueAtPrice(price, liquidityFee.toInt112());
+    }
+
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
