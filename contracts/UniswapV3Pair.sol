@@ -109,20 +109,26 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // find the median fee vote, and return the fee in pips
+    // NB: This is not exactly the median though. The median is the value for which
+    // 50% is crossed, but since there's 2, the median should be the (m1+m2)/2
     function getFee() public view returns (uint16 fee) {
-        FeeVote feeVote = FeeVote.FeeVote0;
-        uint112 virtualSupplyCumulative = virtualSupplies[uint8(feeVote)];
+        uint112 virtualSupplyCumulative = virtualSupplies[0];
         uint112 virtualSupply = getVirtualSupply();
-        while (virtualSupplyCumulative < (virtualSupply / 2)) {
-            feeVote =
-                feeVote == FeeVote.FeeVote0 ? FeeVote.FeeVote1 :
-                feeVote == FeeVote.FeeVote1 ? FeeVote.FeeVote2 : FeeVote.FeeVote3;
-            virtualSupplyCumulative += virtualSupplies[uint8(feeVote)];
+        fee = 1000;
+
+        if (virtualSupplyCumulative < virtualSupply / 2) {
+            virtualSupplyCumulative += virtualSupplies[1];
+            fee = 3000;
         }
-        fee =
-            feeVote == FeeVote.FeeVote0 ? 1000 :
-            feeVote == FeeVote.FeeVote1 ? 3000 :
-            feeVote == FeeVote.FeeVote2 ? 5000 : 10000;
+
+        if (virtualSupplyCumulative < virtualSupply / 2) {
+            virtualSupplyCumulative += virtualSupplies[2];
+            fee = 5000;
+        }
+
+        if (virtualSupplyCumulative < virtualSupply / 2) {
+            fee = 10000;
+        }
     }
 
     // get fee growth (sqrt(reserve0Virtual * reserve1Virtual) / virtualSupply)
