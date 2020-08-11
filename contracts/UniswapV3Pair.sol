@@ -296,7 +296,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // this condition is a heuristic for whether the position _could_ have unaccrued fees
         if (position.liquidityAdjusted > 0) {
-            // TODO is this calculation correct/precise?
+            // TODO is this calculation correct/precise/safe?
             uint liquidityFee =
                 uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
 
@@ -400,14 +400,32 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // get the current fee
             uint16 fee = getFee();
             // compute the amount of token0 required s.t. the price is ~the lower bound for the current tick
-            // TODO adjust this amount (or amount1OutStep) so that we're guaranteed the ratio is as close (or equal)
-            // to the lower bound _without_ exceeding it as possible
+            // TODO we want to guarantee that this number is as small as possible, but s.t. it results in a
+            // `amount1OutStep` value which causes us to _reach or overshoot_ the target price
             uint112 amount0InRequiredForShift = PriceMath.getTradeToRatio(
                 reserve0Virtual, reserve1Virtual, fee, price.reciprocal()
             );
 
-            // only trade as much as we need to
+            // given `amount0InRequiredForShift`, calculate the exact output amount s.t. the price
+            // is exactly as close to the price boundary as it can be
+            // calculate dummy reserve values representing the exact target price
+            uint reserve0Target = 1 << 112 << 32;
+            uint reserve1Target = price._x << 32;
+            uint112 reserve0VirtualNext = (uint(reserve0Virtual) + amount0InRequiredForShift).toUint112();
+            uint112 amount1OutTarget =
+                reserve1Virtual.sub(reserve1Target * reserve0VirtualNext / reserve0Target).toUint112();
+            FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(
+                reserve1Virtual - amount1OutTarget, reserve0VirtualNext
+            );
+            assert(priceNext._x <= price._x);
+            if (priceNext._x < price._x) {
+                amount1OutTarget = amount1OutTarget.sub(1).toUint112();
+            }
+            priceNext = FixedPoint.fraction(reserve1Virtual - amount1OutTarget, reserve0VirtualNext);
+            assert(priceNext._x >= price._x);
+
             {
+            // only trade as much as we need to
             uint112 amount0InStep = amount0InRemaining > amount0InRequiredForShift ?
                 amount0InRequiredForShift :
                 amount0InRemaining;
@@ -419,6 +437,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             uint112 amount1OutStep = (
                 uint(reserve1Virtual) * amount0InAdjusted / (uint(reserve0Virtual) + amount0InAdjusted)
             ).toUint112();
+            if (amount0InStep == amount0InRequiredForShift) {
+                // this fails sometimes because PriceMath.getTradeToRatio doesnt always overshoot
+                assert(amount1OutStep >= amount1OutTarget);
+            } else {
+                assert(amount1OutStep < amount1OutTarget);
+            }
+
             reserve0Virtual = (uint(reserve0Virtual) + amount0InStep).toUint112();
             reserve1Virtual = reserve1Virtual.sub(amount1OutStep).toUint112();
             amount0InRemaining = amount0InRemaining.sub(amount0InStep).toUint112();
