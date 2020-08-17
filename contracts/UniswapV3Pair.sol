@@ -227,8 +227,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // ensure the tick witness is correct
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(amount1, amount0);
-        require(TickMath.getPrice(tick    )._x <= price._x, 'UniswapV3: STARTING_TICK_TOO_LARGE');
-        require(TickMath.getPrice(tick + 1)._x >  price._x, 'UniswapV3: STARTING_TICK_TOO_SMALL');
+        require(TickMath.getRatioAtTick(tick    )._x <= price._x, 'UniswapV3: STARTING_TICK_TOO_LARGE');
+        require(TickMath.getRatioAtTick(tick + 1)._x >  price._x, 'UniswapV3: STARTING_TICK_TOO_SMALL');
 
         // ensure that at a minimum amount of liquidity will be generated
         liquidity = uint112(Babylonian.sqrt(uint(amount0) * amount1));
@@ -325,8 +325,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // calculate how much the specified liquidity delta is worth at the lower and upper ticks
         // amount0Lower :> amount0Upper
         // amount1Upper :> amount1Lower
-        (int112 amount0Lower, int112 amount1Lower) = getValueAtPrice(TickMath.getPrice(tickLower), liquidityDelta);
-        (int112 amount0Upper, int112 amount1Upper) = getValueAtPrice(TickMath.getPrice(tickUpper), liquidityDelta);
+        (int112 amount0Lower, int112 amount1Lower) =
+            getValueAtPrice(TickMath.getRatioAtTick(tickLower), liquidityDelta);
+        (int112 amount0Upper, int112 amount1Upper) =
+            getValueAtPrice(TickMath.getRatioAtTick(tickUpper), liquidityDelta);
 
         // regardless of current price, when lower tick is crossed from left to right, amount0Lower should be added
         if (tickLower > TickMath.MIN_TICK) {
@@ -396,13 +398,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: INSUFFICIENT_LIQUIDITY');
 
             // get the inclusive lower bound price for the current tick
-            FixedPoint.uq112x112 memory price = TickMath.getPrice(tickCurrent);
+            FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tickCurrent);
             // get the current fee
             uint16 fee = getFee();
             // compute the amount of token0 required s.t. the price is ~the lower bound for the current tick
             // TODO adjust this amount (or amount1OutStep) so that we're guaranteed the ratio is as close (or equal)
             // to the lower bound _without_ exceeding it as possible
-            uint112 amount0InRequiredForShift = PriceMath.getTradeToRatio(
+            uint112 amount0InRequiredForShift = PriceMath.getInputToRatio(
                 reserve0Virtual, reserve1Virtual, fee, price.reciprocal()
             );
 

@@ -25,7 +25,7 @@ library TickMath {
     uint224 private constant ONE = 1 << 112;
 
     // given a tick index, return the corresponding price as a uq112x112 fixed point
-    function getPrice(int16 tick) internal pure returns (FixedPoint.uq112x112 memory) {
+    function getRatioAtTick(int16 tick) internal pure returns (FixedPoint.uq112x112 memory) {
         if (tick == 0) {
             return FixedPoint.uq112x112(ONE);
         }

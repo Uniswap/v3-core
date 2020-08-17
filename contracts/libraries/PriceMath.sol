@@ -21,7 +21,7 @@ library PriceMath {
         return ABDKMathQuad.from128x128(int256(self._x) << 16);
     }
 
-    function getTradeToRatioInner(bytes16 reserveIn, bytes16 reserveOut, bytes16 fee, bytes16 inOutRatio)
+    function getInputToRatioInner(bytes16 reserveIn, bytes16 reserveOut, bytes16 fee, bytes16 inOutRatio)
         private
         pure
         returns (bytes16)
@@ -84,7 +84,7 @@ library PriceMath {
     //		(fee - 1)
     //	)
     //) / 2
-    function getTradeToRatio(
+    function getInputToRatio(
         uint112 reserveIn,
         uint112 reserveOut,
         uint16 lpFee,
@@ -103,7 +103,7 @@ library PriceMath {
         bytes16 quadReserveOut = ABDKMathQuad.fromUInt(reserveOut);
         bytes16 quadInOutRatio = toQuad(inOutRatio);
 
-        uint result = ABDKMathQuad.toUInt(getTradeToRatioInner(quadReserveIn, quadReserveOut, fee, quadInOutRatio));
+        uint result = ABDKMathQuad.toUInt(getInputToRatioInner(quadReserveIn, quadReserveOut, fee, quadInOutRatio));
         require(result <= type(uint112).max, 'PriceMath: AMOUNT_OVERFLOW_UINT112');
         return uint112(result);
     }
