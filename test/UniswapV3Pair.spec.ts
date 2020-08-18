@@ -368,7 +368,7 @@ describe('UniswapV3Pair', () => {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(1000))
   })
 
-  describe.only('Oracle', () => {
+  describe('Oracle', () => {
     it('`_update` is idempotent', async () => {
       const contract = await deployContract(wallet, CumulativePriceTest, [], OVERRIDES)
       // this call should succeed, the assertions are done inside
@@ -386,11 +386,11 @@ describe('UniswapV3Pair', () => {
 
       // make a swap to force the call to `_update`
       await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
-      
+
       // check the price now
       const priceBefore = await pair.getCumulativePrices()
 
-      const blockTimestamp = (await provider.getBlock('latest')).timestamp;
+      const blockTimestamp = (await provider.getBlock('latest')).timestamp
       await mineBlock(provider, blockTimestamp + 1000)
 
       // the cumulative price should be greater as more time elapses
