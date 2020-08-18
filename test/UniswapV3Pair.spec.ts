@@ -96,7 +96,7 @@ describe('UniswapV3Pair', () => {
       await initialize(tokenAmount)
     })
 
-    it('setPosition to the right of the current price', async () => {
+    it.only('setPosition to the right of the current price', async () => {
       const liquidityDelta = 1000
       const lowerTick = 2
       const upperTick = 4
@@ -108,6 +108,13 @@ describe('UniswapV3Pair', () => {
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
+
+      // Swapping here costs >7m gas & moves us 140 ticks to the left! Super expensive.
+      // Is this because we're moving to the left while all liquidity is on the right?
+      const tx = await pair.swap0For1(expandTo18Decimals(2), wallet.address, "0x", OVERRIDES);
+      const receipt = await tx.wait();
+      expect(receipt.gasUsed).to.equal(BigNumber.from("0x70f9cb"))
+      expect(await pair.tickCurrent()).to.equal(-140)
     })
 
     it('setPosition to the left of the current price', async () => {
