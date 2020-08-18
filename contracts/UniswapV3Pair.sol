@@ -52,8 +52,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[4] public override virtualSupplies;
 
-    FixedPoint.uq144x112 private price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
-    FixedPoint.uq144x112 private price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
+    FixedPoint.uq144x112 internal price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
+    FixedPoint.uq144x112 internal price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
     
     struct TickInfo {
         // fee growth on the _other_ side of this tick (relative to the current tick)
@@ -197,9 +197,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // update reserves and, on the first interaction per block, price accumulators
-    function _update() private {
-        blockTimestampLast = uint32(block.timestamp); // truncation is desired
-        (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
+    function _update() internal {
+        uint32 blockTimestamp = uint32(block.timestamp); // truncation is desired
+        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        if (timeElapsed > 0) {
+            (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
+            blockTimestampLast = blockTimestamp;
+        }
     }
 
     // the reason this can't _just_ burn but needs to mint is because otherwise it would incentivize bad starting prices

@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai'
 import { Contract, constants, BigNumber } from 'ethers'
-import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
+import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
 
 import {
   expandTo18Decimals,
@@ -15,6 +15,8 @@ import {
   FeeVote
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
+
+import CumulativePriceTest from '../build/CumulativePriceTest.json'
 
 chai.use(solidity)
 
@@ -366,30 +368,36 @@ describe('UniswapV3Pair', () => {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(1000))
   })
 
-  it('getCumulativePrices', async () => {
-    const token0Amount = expandTo18Decimals(3)
-    const token1Amount = expandTo18Decimals(3)
+  describe.only('Oracle', () => {
+    it('`_update` is idempotent', async () => {
+      const contract = await deployContract(wallet, CumulativePriceTest, [], OVERRIDES)
+      // this call should succeed, the assertions are done inside
+      // the contract
+      await contract.testUpdateMultipleTransactionsSameBlock(OVERRIDES)
+    })
 
-    await token0.approve(pair.address, constants.MaxUint256)
-    await token1.approve(pair.address, constants.MaxUint256)
-    await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+    it('getCumulativePrices', async () => {
+      const token0Amount = expandTo18Decimals(3)
+      const token1Amount = expandTo18Decimals(3)
 
-    // get the current timestamp
-    const blockTimestamp = (await pair.getCumulativePrices())[2]
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
 
-    // make a swap to force the call to `_update`
-    await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
+      // make a swap to force the call to `_update`
+      await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
+      
+      // check the price now
+      const priceBefore = await pair.getCumulativePrices()
 
-    // check the price now
-    const priceBefore = await pair.getCumulativePrices()
+      const blockTimestamp = (await provider.getBlock('latest')).timestamp;
+      await mineBlock(provider, blockTimestamp + 1000)
 
-    // 10 seconds pass
-    await mineBlock(provider, blockTimestamp + 10)
-
-    // the cumulative price should be greater as more time elapses
-    const priceAfter = await pair.getCumulativePrices()
-    expect(bnify2(priceAfter[0]).gt(bnify2(priceBefore[0]))).to.be.true
-    expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
+      // the cumulative price should be greater as more time elapses
+      const priceAfter = await pair.getCumulativePrices()
+      expect(bnify2(priceAfter[0]).gt(bnify2(priceBefore[0]))).to.be.true
+      expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
+    })
   })
 
   it.skip('feeTo:off', async () => {
