@@ -1,13 +1,11 @@
-import chai, { expect } from 'chai'
+import { expect } from 'chai'
 import { Contract, BigNumber, constants } from 'ethers'
-import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
+import { waffle } from '@nomiclabs/buidler'
 
 import { getCreate2Address } from './shared/utilities'
 import { factoryFixture } from './shared/fixtures'
 
 import UniswapV3Pair from '../build/UniswapV3Pair.json'
-
-chai.use(solidity)
 
 const TEST_ADDRESSES: [string, string] = [
   '0x1000000000000000000000000000000000000000',
@@ -15,20 +13,12 @@ const TEST_ADDRESSES: [string, string] = [
 ]
 
 describe('UniswapV3Factory', () => {
-  const provider = new MockProvider({
-    ganacheOptions: {
-      hardfork: 'istanbul',
-      mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-      gasLimit: 9999999,
-      allowUnlimitedContractSize: true,
-    },
-  })
+  const provider = waffle.provider
   const [wallet, other] = provider.getWallets()
-  const loadFixture = createFixtureLoader([wallet, other], provider)
 
   let factory: Contract
   beforeEach(async () => {
-    const fixture = await loadFixture(factoryFixture)
+    const fixture = await waffle.loadFixture(factoryFixture)
     factory = fixture.factory
   })
 
@@ -39,8 +29,7 @@ describe('UniswapV3Factory', () => {
   })
 
   async function createPair(tokens: [string, string]) {
-    const bytecode = `0x${UniswapV3Pair.evm.bytecode.object}`
-    const create2Address = getCreate2Address(factory.address, tokens, bytecode)
+    const create2Address = getCreate2Address(factory.address, tokens, UniswapV3Pair.bytecode)
     await expect(factory.createPair(...tokens))
       .to.emit(factory, 'PairCreated')
       .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, BigNumber.from(1))

@@ -1,12 +1,11 @@
-import chai, { expect } from 'chai'
+import { expect } from 'chai'
 import { Contract, constants, BigNumber } from 'ethers'
-import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
+import { waffle } from '@nomiclabs/buidler'
 
 import {
   expandTo18Decimals,
   mineBlock,
   bnify2,
-  OVERRIDES,
   getPositionKey,
   MAX_TICK,
   MIN_TICK,
@@ -18,26 +17,17 @@ import { pairFixture } from './shared/fixtures'
 
 import CumulativePriceTest from '../build/CumulativePriceTest.json'
 
-chai.use(solidity)
-
 describe('UniswapV3Pair', () => {
-  const provider = new MockProvider({
-    ganacheOptions: {
-      hardfork: 'istanbul',
-      mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-      gasLimit: 9999999,
-      allowUnlimitedContractSize: true,
-    },
-  })
+  const provider = waffle.provider
+
   const [wallet, other] = provider.getWallets()
-  const loadFixture = createFixtureLoader([wallet], provider)
 
   let token0: Contract
   let token1: Contract
   let factory: Contract
   let pair: Contract
   beforeEach(async () => {
-    const fixture = await loadFixture(pairFixture)
+    const fixture = await waffle.loadFixture(pairFixture)
     token0 = fixture.token0
     token1 = fixture.token1
     factory = fixture.factory
@@ -68,7 +58,7 @@ describe('UniswapV3Pair', () => {
 
     await token0.approve(pair.address, constants.MaxUint256)
     await token1.approve(pair.address, constants.MaxUint256)
-    await pair.initialize(initializeToken0Amount, initializeToken1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+    await pair.initialize(initializeToken0Amount, initializeToken1Amount, 0, FeeVote.FeeVote0)
 
     expect(await pair.tickCurrent()).to.eq(expectedTick)
     expect(await pair.getVirtualSupply()).to.eq(expectedLiquidity)
@@ -90,7 +80,7 @@ describe('UniswapV3Pair', () => {
   async function initialize(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
     await token0.approve(pair.address, tokenAmount)
     await token1.approve(pair.address, tokenAmount)
-    await pair.initialize(tokenAmount, tokenAmount, 0, feeVote, OVERRIDES)
+    await pair.initialize(tokenAmount, tokenAmount, 0, feeVote)
   }
   // TODO: Test rest of categories in a loop to reduce code duplication
   describe('post-initialize (fee vote 1 - 0.10%)', () => {
@@ -114,10 +104,10 @@ describe('UniswapV3Pair', () => {
         await token1.approve(pair.address, constants.MaxUint256)
 
         // the LP provides some liquidity in specified tick range
-        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
         // make a swap so that G grows
-        await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x', OVERRIDES)
+        await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x')
         ;[amount0, amount1] = await pair.getLiquidityFee(lowerTick, upperTick, fee)
       })
 
@@ -126,7 +116,7 @@ describe('UniswapV3Pair', () => {
         const liquidityDelta = expandTo18Decimals(1)
 
         // get the liquidity fee post trade
-        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
         // this is token0 & token1 balance if the liquidity fee was 0 (we got these
         // values by commenting out the `(amount0, amount1) = getValueAtPrice` line)
@@ -141,7 +131,7 @@ describe('UniswapV3Pair', () => {
       it('setPosition with 0 liquidity claims fees', async () => {
         const token0Before = await token0.balanceOf(wallet.address)
         const token1Before = await token1.balanceOf(wallet.address)
-        await pair.setPosition(lowerTick, upperTick, fee, 0, OVERRIDES)
+        await pair.setPosition(lowerTick, upperTick, fee, 0)
         expect(await token0.balanceOf(wallet.address)).to.eq(token0Before.add(amount0))
         expect(await token1.balanceOf(wallet.address)).to.eq(token1Before.add(amount1))
       })
@@ -155,7 +145,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       // lower: (990, 1009)
       // upper: (980, 1019)
-      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
@@ -169,7 +159,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1020, 980)
       // upper: (1009, 989)
-      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(9))
@@ -184,7 +174,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1009, 989)
       // upper: (990, 1009)
-      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
@@ -195,9 +185,9 @@ describe('UniswapV3Pair', () => {
       const upperTick = 2
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, expandTo18Decimals(1000), OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, expandTo18Decimals(1000))
       await expect(
-        pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, expandTo18Decimals(-1001), OVERRIDES)
+        pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, expandTo18Decimals(-1001))
       ).to.be.revertedWith('ds-math-sub-underflow')
     })
 
@@ -208,7 +198,7 @@ describe('UniswapV3Pair', () => {
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
+      await pair.swap0For1(amount0In, wallet.address, '0x')
 
       const token0BalanceAfter = await token0.balanceOf(wallet.address)
       const token1BalanceAfter = await token1.balanceOf(wallet.address)
@@ -236,7 +226,7 @@ describe('UniswapV3Pair', () => {
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
+      await pair.swap0For1(amount0In, wallet.address, '0x')
 
       const token0BalanceAfter = await token0.balanceOf(wallet.address)
       const token1BalanceAfter = await token1.balanceOf(wallet.address)
@@ -252,7 +242,7 @@ describe('UniswapV3Pair', () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      await expect(pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES))
+      await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
         .withArgs(pair.address, wallet.address, '094959953735437430')
 
@@ -270,10 +260,10 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1015037437733209910, 985185336841573394)
       // upper: (1009999999999999995, 990099009900990094)
-      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      await expect(pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES))
+      await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
         .withArgs(pair.address, wallet.address, '095292372649584247')
 
@@ -285,7 +275,7 @@ describe('UniswapV3Pair', () => {
   async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {
     await token0.transfer(pair.address, token0Amount)
     await token1.transfer(pair.address, token1Amount)
-    await pair.mint(wallet.address, OVERRIDES)
+    await pair.mint(wallet.address)
   }
 
   const swapTestCases: BigNumber[][] = [
@@ -304,10 +294,8 @@ describe('UniswapV3Pair', () => {
       const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
       await addLiquidity(token0Amount, token1Amount)
       await token0.transfer(pair.address, swapAmount)
-      await expect(pair.swap(0, expectedOutputAmount.add(1), wallet.address, '0x', OVERRIDES)).to.be.revertedWith(
-        'UniswapV3: K'
-      )
-      await pair.swap(0, expectedOutputAmount, wallet.address, '0x', OVERRIDES)
+      await expect(pair.swap(0, expectedOutputAmount.add(1), wallet.address, '0x')).to.be.revertedWith('UniswapV3: K')
+      await pair.swap(0, expectedOutputAmount, wallet.address, '0x')
     })
   })
 
@@ -322,10 +310,8 @@ describe('UniswapV3Pair', () => {
       const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase
       await addLiquidity(token0Amount, token1Amount)
       await token0.transfer(pair.address, inputAmount)
-      await expect(pair.swap(outputAmount.add(1), 0, wallet.address, '0x', OVERRIDES)).to.be.revertedWith(
-        'UniswapV3: K'
-      )
-      await pair.swap(outputAmount, 0, wallet.address, '0x', OVERRIDES)
+      await expect(pair.swap(outputAmount.add(1), 0, wallet.address, '0x')).to.be.revertedWith('UniswapV3: K')
+      await pair.swap(outputAmount, 0, wallet.address, '0x')
     })
   })
 
@@ -337,7 +323,7 @@ describe('UniswapV3Pair', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = BigNumber.from('1662497915624478906')
     await token0.transfer(pair.address, swapAmount)
-    await expect(pair.swap(0, expectedOutputAmount, wallet.address, '0x', OVERRIDES))
+    await expect(pair.swap(0, expectedOutputAmount, wallet.address, '0x'))
       .to.emit(token1, 'Transfer')
       .withArgs(pair.address, wallet.address, expectedOutputAmount)
       .to.emit(pair, 'Sync')
@@ -364,7 +350,7 @@ describe('UniswapV3Pair', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = BigNumber.from('453305446940074565')
     await token1.transfer(pair.address, swapAmount)
-    await expect(pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES))
+    await expect(pair.swap(expectedOutputAmount, 0, wallet.address, '0x'))
       .to.emit(token0, 'Transfer')
       .withArgs(pair.address, wallet.address, expectedOutputAmount)
       .to.emit(pair, 'Sync')
@@ -390,13 +376,13 @@ describe('UniswapV3Pair', () => {
 
     // ensure that setting price{0,1}CumulativeLast for the first time doesn't affect our gas math
     await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
-    await pair.sync(OVERRIDES)
+    await pair.sync()
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = BigNumber.from('453305446940074565')
     await token1.transfer(pair.address, swapAmount)
     await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
-    const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES)
+    const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x')
     const receipt = await tx.wait()
     expect(receipt.gasUsed).to.eq(71770)
   })
@@ -408,7 +394,7 @@ describe('UniswapV3Pair', () => {
 
     const expectedLiquidity = expandTo18Decimals(3)
     await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
-    await expect(pair.burn(wallet.address, OVERRIDES))
+    await expect(pair.burn(wallet.address))
       .to.emit(pair, 'Transfer')
       .withArgs(pair.address, constants.AddressZero, expectedLiquidity.sub(LIQUIDITY_MIN))
       .to.emit(token0, 'Transfer')
@@ -432,10 +418,10 @@ describe('UniswapV3Pair', () => {
 
   describe('Oracle', () => {
     it('`_update` is idempotent', async () => {
-      const contract = await deployContract(wallet, CumulativePriceTest, [], OVERRIDES)
+      const contract = await waffle.deployContract(wallet, CumulativePriceTest, [])
       // this call should succeed, the assertions are done inside
       // the contract
-      await contract.testUpdateMultipleTransactionsSameBlock(OVERRIDES)
+      await contract.testUpdateMultipleTransactionsSameBlock()
     })
 
     it('getCumulativePrices', async () => {
@@ -444,10 +430,10 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0)
 
       // make a swap to force the call to `_update`
-      await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
+      await pair.swap0For1(1000, wallet.address, '0x')
 
       // check the price now
       const priceBefore = await pair.getCumulativePrices()
@@ -470,11 +456,11 @@ describe('UniswapV3Pair', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = BigNumber.from('996006981039903216')
     await token1.transfer(pair.address, swapAmount)
-    await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES)
+    await pair.swap(expectedOutputAmount, 0, wallet.address, '0x')
 
     const expectedLiquidity = expandTo18Decimals(1000)
     await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
-    await pair.burn(wallet.address, OVERRIDES)
+    await pair.burn(wallet.address)
     expect(await pair.totalSupply()).to.eq(LIQUIDITY_MIN)
   })
 
@@ -488,11 +474,11 @@ describe('UniswapV3Pair', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = BigNumber.from('996006981039903216')
     await token1.transfer(pair.address, swapAmount)
-    await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES)
+    await pair.swap(expectedOutputAmount, 0, wallet.address, '0x')
 
     const expectedLiquidity = expandTo18Decimals(1000)
     await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
-    await pair.burn(wallet.address, OVERRIDES)
+    await pair.burn(wallet.address)
     expect(await pair.totalSupply()).to.eq(BigNumber.from('249750499251388').add(LIQUIDITY_MIN))
     expect(await pair.balanceOf(other.address)).to.eq('249750499251388')
 
