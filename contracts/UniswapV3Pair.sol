@@ -442,7 +442,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote1)] +
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote2)] +
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote3)];
+                // TODO we have to do this in an overflow-safe way 
+                // TODO this should always move the price _down_ (if it has to move at all), because that's the
+                // direction we're moving...floor division should ensure that this is the case with positive deltas,
+                // but not with negative
                 int112 token1VirtualDelta = FixedPointExtra.muli(price, token0VirtualDelta).itoInt112();
+                // TODO i think we could squeeze out a tiny bit more precision under certain circumstances by doing:
+                // a) summing total negative and positive token0VirtualDeltas
+                // b) calculating the total negative and positive virtualSupply delta
+                // c) allocating these deltas proportionally across virtualSupplies
+                // (where the sign of the delta determines which total to use and the value determines proportion)
+                // note: this may be overkill/unnecessary
                 uint112 virtualSupply = getVirtualSupply();
                 int112[4] memory virtualSupplyDeltas = [
                     (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote0)].imul(virtualSupply) / reserve0Virtual)
