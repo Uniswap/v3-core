@@ -40,6 +40,12 @@ describe.only('FixedPointExtra', () => {
       )
     })
 
+    it('short circuits for zero', async () => {
+      expect((await fixedPointExtra.muluq([Q112.mul(35).div(10)], [BigNumber.from(0)]))[0]).to.eq('0')
+      expect((await fixedPointExtra.muluq([BigNumber.from(0)], [Q112.mul(22).div(10)]))[0]).to.eq('0')
+      expect(await fixedPointExtra.muluqGasUsed([BigNumber.from(0)], [Q112.mul(22).div(10)])).to.eq('231')
+    })
+
     it('throws for underflow', async () => {
       await expect(fixedPointExtra.muluq([BigNumber.from(1)], [BigNumber.from(1)])).to.be.revertedWith(
         'FixedPointExtra: MULTIPLICATION_UNDERFLOW'
