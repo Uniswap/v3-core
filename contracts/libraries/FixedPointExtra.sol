@@ -23,19 +23,31 @@ library FixedPointExtra {
         pure
         returns (FixedPoint.uq112x112 memory)
     {
-        uint224 upper_self = self._x >> 112; // * 2^0
-        uint224 lower_self = self._x & LOWER_MASK; // * 2^-112
-        uint224 upper_other = other._x >> 112; // * 2^0
-        uint224 lower_other = other._x & LOWER_MASK; // * 2^-112
+        if (self._x == 0 || other._x == 0) {
+            return FixedPoint.uq112x112(0);
+        }
+        uint112 upper_self = uint112(self._x >> 112); // * 2^0
+        uint112 lower_self = uint112(self._x & LOWER_MASK); // * 2^-112
+        uint112 upper_other = uint112(other._x >> 112); // * 2^0
+        uint112 lower_other = uint112(other._x & LOWER_MASK); // * 2^-112
 
         // partial products
-        uint224 uppers = upper_self * upper_other; // * 2^0
-        uint224 lowers = lower_self * lower_other; // * 2^-224
-        uint224 uppers_lowero = upper_self * lower_other; // * 2^-112
-        uint224 uppero_lowers = upper_other * lower_self; // * 2^-112
+        uint224 uppers = uint224(upper_self) * upper_other; // * 2^0
+        uint224 lowers = uint224(lower_self) * lower_other; // * 2^-224
+        uint224 uppers_lowero = uint224(upper_self) * lower_other; // * 2^-112
+        uint224 uppero_lowers = uint224(upper_other) * lower_self; // * 2^-112
 
+        // so the bit shift does not overflow
+        require(uppers <= uint112(-1), "FixedPointExtra: MULTIPLICATION_OVERFLOW");
+
+        // this cannot exceed 256 bits, all values are 224 bits
         uint sum = uint(uppers << 112) + uppers_lowero + uppero_lowers + (lowers >> 112);
+
+        // between 224 bits and 256 bits
         require(sum <= uint224(-1), "FixedPointExtra: MULTIPLICATION_OVERFLOW");
+
+        // the multiplication results in a number too small to be represented in Q112.112
+        require(sum > 0, "FixedPointExtra: MULTIPLICATION_UNDERFLOW");
         return FixedPoint.uq112x112(uint224(sum));
     }
 

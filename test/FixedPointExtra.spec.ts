@@ -12,7 +12,7 @@ const overrides = {
 
 const Q112 = BigNumber.from(2).pow(112)
 
-describe('FixedPointExtra', () => {
+describe.only('FixedPointExtra', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',
@@ -40,8 +40,20 @@ describe('FixedPointExtra', () => {
       )
     })
 
+    it('throws for underflow', async () => {
+      await expect(fixedPointExtra.muluq([BigNumber.from(1)], [BigNumber.from(1)])).to.be.revertedWith(
+        'FixedPointExtra: MULTIPLICATION_UNDERFLOW'
+      )
+    })
+
+    it('throws for overflow', async () => {
+      await expect(
+        fixedPointExtra.muluq([Q112.mul(BigNumber.from(2).pow(56))], [Q112.mul(BigNumber.from(2).pow(56))])
+      ).to.be.revertedWith('FixedPointExtra: MULTIPLICATION_OVERFLOW')
+    })
+
     it('gas', async () => {
-      expect(await fixedPointExtra.muluqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).to.eq('446')
+      expect(await fixedPointExtra.muluqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).to.eq('686')
     })
   })
 
@@ -59,7 +71,7 @@ describe('FixedPointExtra', () => {
     })
 
     it('gas', async () => {
-      expect(await fixedPointExtra.divuqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).to.eq('800')
+      expect(await fixedPointExtra.divuqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).to.eq('1040')
     })
   })
 })
