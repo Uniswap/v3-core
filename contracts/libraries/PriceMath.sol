@@ -72,7 +72,7 @@ library PriceMath {
     //		(
     //			reserveIn
     //				*
-    //			(fee ^ 2 * reserveIn - 4 * fee * inOutRatio * reserveOut + 4 * reserveInOut * reserveOut)
+    //			(fee ^ 2 * reserveIn - 4 * fee * reserveInOut * reserveOut + 4 * reserveInOut * reserveOut)
     //		)
     //			/
     //		((fee - 1) ^ 2)
