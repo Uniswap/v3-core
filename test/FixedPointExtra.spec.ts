@@ -12,7 +12,7 @@ const overrides = {
 
 const Q112 = BigNumber.from(2).pow(112)
 
-describe.only('FixedPointExtra', () => {
+describe('FixedPointExtra', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',
