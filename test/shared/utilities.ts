@@ -17,7 +17,7 @@ export enum FeeVote {
   FeeVote2 = 2,
   FeeVote3 = 3,
   FeeVote4 = 4,
-  FeeVote5 = 5
+  FeeVote5 = 5,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
