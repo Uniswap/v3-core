@@ -12,7 +12,7 @@ import {
   MIN_TICK,
   LIQUIDITY_MIN,
   getExpectedTick,
-  FeeVote
+  FeeVote,
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
 
@@ -24,8 +24,8 @@ describe('UniswapV3Pair', () => {
       hardfork: 'istanbul',
       mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
       gasLimit: 9999999,
-      allowUnlimitedContractSize: true
-    }
+      allowUnlimitedContractSize: true,
+    },
   })
   const [wallet, other] = provider.getWallets()
   const loadFixture = createFixtureLoader([wallet], provider)
@@ -233,8 +233,8 @@ describe('UniswapV3Pair', () => {
 
     [1, 10, 10, '906610893880149131'],
     [1, 100, 100, '987158034397061298'],
-    [1, 1000, 1000, '996006981039903216']
-  ].map(a => a.map(n => (typeof n === 'string' ? BigNumber.from(n) : expandTo18Decimals(n))))
+    [1, 1000, 1000, '996006981039903216'],
+  ].map((a) => a.map((n) => (typeof n === 'string' ? BigNumber.from(n) : expandTo18Decimals(n))))
   swapTestCases.forEach((swapTestCase, i) => {
     it.skip(`getInputPrice:${i}`, async () => {
       const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
@@ -251,8 +251,8 @@ describe('UniswapV3Pair', () => {
     ['997000000000000000', 5, 10, 1], // given amountIn, amountOut = floor(amountIn * .997)
     ['997000000000000000', 10, 5, 1],
     ['997000000000000000', 5, 5, 1],
-    [1, 5, 5, '1003009027081243732'] // given amountOut, amountIn = ceiling(amountOut / .997)
-  ].map(a => a.map(n => (typeof n === 'string' ? BigNumber.from(n) : expandTo18Decimals(n))))
+    [1, 5, 5, '1003009027081243732'], // given amountOut, amountIn = ceiling(amountOut / .997)
+  ].map((a) => a.map((n) => (typeof n === 'string' ? BigNumber.from(n) : expandTo18Decimals(n))))
   optimisticTestCases.forEach((optimisticTestCase, i) => {
     it.skip(`optimistic:${i}`, async () => {
       const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase
