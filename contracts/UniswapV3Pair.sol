@@ -23,11 +23,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     using FixedPoint for FixedPoint.uq112x112;
 
+    // Number of FeeVotes
+    uint8 constant FEES = 6;
+
     enum FeeVote {
-        FeeVote0, //  .10%
-        FeeVote1, //  .30%
-        FeeVote2, //  .50%
-        FeeVote3  // 1.00%
+        FeeVote0, //  .05%
+        FeeVote1, //  .10%
+        FeeVote2, //  .30%
+        FeeVote3, //  .60%
+        FeeVote4, // 1.00%
+        FeeVote5  // 2.00%
     }
 
     uint112 public constant override LIQUIDITY_MIN = 1000;
@@ -50,7 +55,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int16 public override tickCurrent;
 
     // the amount of virtual supply active within the current tick, for each fee vote
-    uint112[4] public override virtualSupplies;
+    uint112[FEES] public override virtualSupplies;
 
     FixedPoint.uq144x112 public price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
     FixedPoint.uq144x112 public price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
@@ -65,7 +70,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // amount of token0 added when ticks are crossed from left to right
         // (i.e. as the (reserve1Virtual / reserve0Virtual) price goes up), for each fee vote
-        int112[4]            token0VirtualDeltas;
+        int112[FEES]            token0VirtualDeltas;
     }
     mapping (int16 => TickInfo) public tickInfos;
 
@@ -105,7 +110,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             virtualSupplies[uint8(FeeVote.FeeVote0)] +
             virtualSupplies[uint8(FeeVote.FeeVote1)] +
             virtualSupplies[uint8(FeeVote.FeeVote2)] +
-            virtualSupplies[uint8(FeeVote.FeeVote3)];
+            virtualSupplies[uint8(FeeVote.FeeVote3)] +
+            virtualSupplies[uint8(FeeVote.FeeVote4)] +
+            virtualSupplies[uint8(FeeVote.FeeVote5)];
     }
 
     // find the median fee vote, and return the fee in pips
@@ -116,13 +123,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         while (virtualSupplyCumulative < (virtualSupply / 2)) {
             feeVote =
                 feeVote == FeeVote.FeeVote0 ? FeeVote.FeeVote1 :
-                feeVote == FeeVote.FeeVote1 ? FeeVote.FeeVote2 : FeeVote.FeeVote3;
+                feeVote == FeeVote.FeeVote1 ? FeeVote.FeeVote2 :
+                feeVote == FeeVote.FeeVote2 ? FeeVote.FeeVote3 :
+                feeVote == FeeVote.FeeVote3 ? FeeVote.FeeVote4 : FeeVote.FeeVote5;
             virtualSupplyCumulative += virtualSupplies[uint8(feeVote)];
         }
         fee =
-            feeVote == FeeVote.FeeVote0 ? 1000 :
-            feeVote == FeeVote.FeeVote1 ? 3000 :
-            feeVote == FeeVote.FeeVote2 ? 5000 : 10000;
+            feeVote == FeeVote.FeeVote0 ? 500 :
+            feeVote == FeeVote.FeeVote1 ? 1000 :
+            feeVote == FeeVote.FeeVote2 ? 3000 :
+            feeVote == FeeVote.FeeVote3 ? 6000 :
+            feeVote == FeeVote.FeeVote4 ? 10000 : 20000;
     }
 
     // get fee growth (sqrt(reserve0Virtual * reserve1Virtual) / virtualSupply)
@@ -441,7 +452,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote0)] +
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote1)] +
                     tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote2)] +
-                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote3)];
+                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote3)] +
+                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote4)] +
+                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote5)];
                 // TODO we have to do this in an overflow-safe way 
                 // TODO this should always move the price _down_ (if it has to move at all), because that's the
                 // direction we're moving...floor division should ensure that this is the case with positive deltas,
@@ -454,7 +467,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // (where the sign of the delta determines which total to use and the value determines proportion)
                 // note: this may be overkill/unnecessary
                 uint112 virtualSupply = getVirtualSupply();
-                int112[4] memory virtualSupplyDeltas = [
+                int112[FEES] memory virtualSupplyDeltas = [
                     (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote0)].imul(virtualSupply) / reserve0Virtual)
                         .itoInt112(),
                     (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote1)].imul(virtualSupply) / reserve0Virtual)
@@ -462,6 +475,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote2)].imul(virtualSupply) / reserve0Virtual)
                         .itoInt112(),
                     (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote3)].imul(virtualSupply) / reserve0Virtual)
+                        .itoInt112(),
+                    (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote4)].imul(virtualSupply) / reserve0Virtual)
+                        .itoInt112(),
+                    (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote5)].imul(virtualSupply) / reserve0Virtual)
                         .itoInt112()
                 ];
 
@@ -476,6 +493,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote2)]).toUint112();
                 virtualSupplies[uint8(FeeVote.FeeVote3)] = virtualSupplies[uint8(FeeVote.FeeVote3)]
                     .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote3)]).toUint112();
+                virtualSupplies[uint8(FeeVote.FeeVote4)] = virtualSupplies[uint8(FeeVote.FeeVote4)]
+                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote4)]).toUint112();
+                virtualSupplies[uint8(FeeVote.FeeVote5)] = virtualSupplies[uint8(FeeVote.FeeVote5)]
+                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote5)]).toUint112();
 
                 // update tick info
                 // overflow is desired
