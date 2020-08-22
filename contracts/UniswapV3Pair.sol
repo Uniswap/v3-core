@@ -303,21 +303,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if the position in fact does have accrued fees, handle them
             if (liquidityFee > 0) {
+                {
                 address feeTo = IUniswapV3Factory(factory).feeTo();
-                bool feeOn = feeTo != address(0);
-                // take the protocol fee if it's on and te sender isn't feeTo
-                if (feeOn && msg.sender != feeTo) {
+                // take the protocol fee if it's on and the sender isn't feeTo
+                if (feeTo != address(0) && msg.sender != feeTo) {
                     // TODO figure out how we want to actually issue liquidityProtocol to feeTo
                     uint liquidityProtocol = liquidityFee / 6;
                     liquidityFee -= liquidityProtocol;
+                }
                 }
 
                 // credit the caller for the value of the fee liquidity
                 (amount0, amount1) = getValueAtPrice(price, -(liquidityFee.toInt112()));
 
                 // update virtual supply
-                int112 virtualSupplyDiff = (-amount0.imul(virtualSupply) / reserve0Virtual).itoInt112();
-                virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)].addi(virtualSupplyDiff).toUint112();
+                virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)].addi((-amount0.imul(virtualSupply) / reserve0Virtual).itoInt112()).toUint112();
 
                 // update reserves (the price doesn't change, so no need to update the oracle or current tick)
                 reserve0Virtual = reserve0Virtual.addi(-amount0).toUint112();
@@ -366,9 +366,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount1 = amount1.iadd(amount1Current.isub(amount1Lower)).itoInt112();
 
             // update virtual supply
-            int112 virtualSupplyDiff = (amount0Current.imul(virtualSupply) / reserve0Virtual).itoInt112();
-            virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)].addi(virtualSupplyDiff).toUint112();
-
+            virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)].addi((amount0Current.imul(virtualSupply) / reserve0Virtual).itoInt112()).toUint112();
+            
             // update reserves (the price doesn't change, so no need to update the oracle or current tick)
             reserve0Virtual = reserve0Virtual.addi(amount0Current).toUint112();
             reserve1Virtual = reserve1Virtual.addi(amount1Current).toUint112();
