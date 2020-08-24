@@ -3,7 +3,7 @@ import { Contract, BigNumber, constants } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 
 import { getCreate2Address } from './shared/utilities'
-import { factoryFixture, FactoryFixture } from './shared/fixtures'
+import { factoryFixture } from './shared/fixtures'
 
 import UniswapV3Pair from '../build/UniswapV3Pair.json'
 
@@ -11,7 +11,7 @@ chai.use(solidity)
 
 const TEST_ADDRESSES: [string, string] = [
   '0x1000000000000000000000000000000000000000',
-  '0x2000000000000000000000000000000000000000',
+  '0x2000000000000000000000000000000000000000'
 ]
 
 describe('UniswapV3Factory', () => {
@@ -20,15 +20,15 @@ describe('UniswapV3Factory', () => {
       hardfork: 'istanbul',
       mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
       gasLimit: 9999999,
-      allowUnlimitedContractSize: true,
-    },
+      allowUnlimitedContractSize: true
+    }
   })
   const [wallet, other] = provider.getWallets()
   const loadFixture = createFixtureLoader([wallet, other], provider)
 
   let factory: Contract
   beforeEach(async () => {
-    const fixture = (await loadFixture(factoryFixture as any)) as FactoryFixture
+    const fixture = await loadFixture(factoryFixture)
     factory = fixture.factory
   })
 

@@ -7,7 +7,7 @@ import ERC20 from '../../build/TestERC20.json'
 import UniswapV3Factory from '../../build/UniswapV3Factory.json'
 import UniswapV3Pair from '../../build/UniswapV3Pair.json'
 
-export interface FactoryFixture {
+interface FactoryFixture {
   factory: Contract
 }
 
@@ -16,7 +16,7 @@ export async function factoryFixture([wallet]: Wallet[]): Promise<FactoryFixture
   return { factory }
 }
 
-export interface PairFixture extends FactoryFixture {
+interface PairFixture extends FactoryFixture {
   token0: Contract
   token1: Contract
   pair: Contract
