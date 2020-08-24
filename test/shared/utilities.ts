@@ -1,4 +1,4 @@
-import { BigNumber, utils, constants, providers } from 'ethers'
+import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers'
 import { Decimal } from 'decimal.js'
 import { assert } from 'chai'
 
@@ -16,6 +16,8 @@ export enum FeeVote {
   FeeVote1 = 1,
   FeeVote2 = 2,
   FeeVote3 = 3,
+  FeeVote4 = 4,
+  FeeVote5 = 5,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -73,4 +75,13 @@ export function getExpectedTick(reserve0: BigNumber, reserve1: BigNumber): numbe
   assert(new Decimal('1.01').pow(tick + 1).gt(price))
 
   return tick
+}
+
+// handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
+export function bnify2(a: BigNumberish | [BigNumberish]): BigNumber {
+  if (Array.isArray(a)) {
+    return BigNumber.from(a[0])
+  } else {
+    return BigNumber.from(a)
+  }
 }
