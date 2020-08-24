@@ -291,13 +291,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (amount0, amount1) = getValueAtPrice(price, liquidityFee.toInt112());
     }
 
-    function updateReservesAndVirtualSupply(int112 liquidityDelta, uint8 feeVote) internal returns (int112 amount0, int112 amount1) {
+    function updateReservesAndVirtualSupply(int112 liquidityDelta, FeeVote feeVote)
+        internal
+        returns (int112 amount0, int112 amount1)
+    {
         uint112 virtualSupply = getVirtualSupply();
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         (amount0, amount1) = getValueAtPrice(price, liquidityDelta);
 
         // update virtual supply
-        virtualSupplies[feeVote] = virtualSupplies[feeVote].addi((amount0.imul(virtualSupply) / reserve0Virtual).itoInt112()).toUint112();
+        virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)]
+            .addi(amount0.imul(virtualSupply) / reserve0Virtual).toUint112();
         
         // update reserves (the price doesn't change, so no need to update the oracle or current tick)
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
@@ -313,8 +317,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function setPosition(int16 tickLower, int16 tickUpper, FeeVote feeVote, int112 liquidityDelta)
         external lock returns (int112 amount0, int112 amount1)
     {
-        uint112 virtualSupply = getVirtualSupply();
-        require(virtualSupply > 0,         'UniswapV3: NOT_INITIALIZED'); // sufficient check
+        require(getVirtualSupply() > 0,         'UniswapV3: NOT_INITIALIZED'); // sufficient check
         require(tickLower >= TickMath.MIN_TICK, 'UniswapV3: LOWER_TICK');
         require(tickUpper <= TickMath.MAX_TICK, 'UniswapV3: UPPER_TICK');
         require(tickLower <  tickUpper,         'UniswapV3: TICKS');
@@ -334,17 +337,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if the position in fact does have accrued fees, handle them
             if (liquidityFee > 0) {
-                {
                 address feeTo = IUniswapV3Factory(factory).feeTo();
-                // take the protocol fee if it's on and the sender isn't feeTo
+                // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
                 if (feeTo != address(0) && msg.sender != feeTo) {
                     // TODO figure out how we want to actually issue liquidityProtocol to feeTo
                     uint liquidityProtocol = liquidityFee / 6;
                     liquidityFee -= liquidityProtocol;
                 }
-                }
 
-                updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), uint8(feeVote));
+                // credit the caller for the value of the fee liquidity
+                (amount0, amount1) = updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), feeVote);
             }
         }
 
@@ -381,7 +383,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the current price is inside the passed range
         else if (tickCurrent < tickUpper) {
             {
-            (int112 amount0Current, int112 amount1Current) = updateReservesAndVirtualSupply(liquidityDelta, uint8(feeVote));
+            (int112 amount0Current, int112 amount1Current) = updateReservesAndVirtualSupply(liquidityDelta, feeVote);
 
             // charge the user whatever is required to cover their position
             amount0 = amount0.iadd(amount0Current.isub(amount0Upper)).itoInt112();
@@ -393,7 +395,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         else {
             amount1 = amount1.iadd(amount1Upper.isub(amount1Lower)).itoInt112();
         }
-        
+
         if (amount0 > 0) {
             TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint(amount0));
         } else if (amount0 < 0) {
