@@ -77,10 +77,9 @@ export function getExpectedTick(reserve0: BigNumber, reserve1: BigNumber): numbe
 
 // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
 export function bnify2(a: BigNumberish | [BigNumberish]): BigNumber {
-    if (Array.isArray(a)) {
-        return BigNumber.from(a[0])
-    } else {
-        return BigNumber.from(a)
-    }
+  if (Array.isArray(a)) {
+    return BigNumber.from(a[0])
+  } else {
+    return BigNumber.from(a)
+  }
 }
-
