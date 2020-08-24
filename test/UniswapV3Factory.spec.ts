@@ -28,7 +28,7 @@ describe('UniswapV3Factory', () => {
 
   let factory: Contract
   beforeEach(async () => {
-    const fixture = await loadFixture(factoryFixture as any) as FactoryFixture
+    const fixture = (await loadFixture(factoryFixture as any)) as FactoryFixture
     factory = fixture.factory
   })
 
