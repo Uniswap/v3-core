@@ -230,7 +230,7 @@ describe('UniswapV3Pair', () => {
     })
 
     it('setPosition with 0 liquidityDelta within the current price after swap must collect fees', async () => {
-      let liquidityDelta = 1000
+      let liquidityDelta = expandTo18Decimals(100)
       const lowerTick = -2
       const upperTick = 2
 
@@ -240,8 +240,7 @@ describe('UniswapV3Pair', () => {
       // upper: (990, 1009)
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
 
-      liquidityDelta = 0
-      const amount0In = 1000000
+      const amount0In = expandTo18Decimals(1)
       const g0 = await pair.getG()
       await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
       const g1 = await pair.getG()
@@ -253,8 +252,6 @@ describe('UniswapV3Pair', () => {
       const token0BalanceBeforeWallet = await token0.balanceOf(wallet.address)
       const token1BalanceBeforeWallet = await token1.balanceOf(wallet.address)
 
-      // lower: (1009, 989)
-      // upper: (990, 1009)
       const g2 = await pair.getG();
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0, OVERRIDES)
       const g3 = await pair.getG();
