@@ -11,7 +11,6 @@ export interface FactoryFixture {
   factory: Contract
 }
 
-
 export async function factoryFixture([wallet]: Wallet[]): Promise<FactoryFixture> {
   const factory = await deployContract(wallet, UniswapV3Factory, [wallet.address], OVERRIDES)
   return { factory }

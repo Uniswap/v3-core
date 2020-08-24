@@ -35,7 +35,7 @@ describe('UniswapV3Pair', () => {
   let factory: Contract
   let pair: Contract
   beforeEach(async () => {
-    const fixture = await loadFixture(pairFixture as any) as PairFixture
+    const fixture = (await loadFixture(pairFixture as any)) as PairFixture
     token0 = fixture.token0
     token1 = fixture.token1
     factory = fixture.factory
@@ -139,11 +139,11 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1009, 989)
       // upper: (990, 1009)
-      const g1 = await pair.getG();
+      const g1 = await pair.getG()
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
-      const g2 = await pair.getG();
+      const g2 = await pair.getG()
 
-      expect(g1[0]._hex).to.eq(g2[0]._hex);
+      expect(g1[0]._hex).to.eq(g2[0]._hex)
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
     })
@@ -184,7 +184,7 @@ describe('UniswapV3Pair', () => {
       await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
       const g1 = await pair.getG()
 
-      expect(g0[0]).to.not.eq(g1[0]);
+      expect(g0[0]).to.not.eq(g1[0])
 
       const token0BalanceBeforePair = await token0.balanceOf(pair.address)
       const token1BalanceBeforePair = await token1.balanceOf(pair.address)
@@ -193,26 +193,30 @@ describe('UniswapV3Pair', () => {
 
       // lower: (1009, 989)
       // upper: (990, 1009)
-      const g2 = await pair.getG();
+      const g2 = await pair.getG()
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0, OVERRIDES)
-      const g3 = await pair.getG();
+      const g3 = await pair.getG()
 
-      console.log(token0BalanceBeforeWallet.toString(),
-                  token1BalanceBeforeWallet.toString(),
-                  token0BalanceBeforePair.toString(), 
-                  token1BalanceBeforePair.toString())
+      console.log(
+        token0BalanceBeforeWallet.toString(),
+        token1BalanceBeforeWallet.toString(),
+        token0BalanceBeforePair.toString(),
+        token1BalanceBeforePair.toString()
+      )
 
       const token0BalanceAfterWallet = await token0.balanceOf(wallet.address)
       const token1BalanceAfterWallet = await token1.balanceOf(wallet.address)
       const token0BalanceAfterPair = await token0.balanceOf(pair.address)
       const token1BalanceAfterPair = await token1.balanceOf(pair.address)
 
-      console.log(token0BalanceAfterWallet.toString(),
-                  token1BalanceAfterWallet.toString(),
-                  token0BalanceAfterPair.toString(), 
-                  token1BalanceAfterPair.toString())
+      console.log(
+        token0BalanceAfterWallet.toString(),
+        token1BalanceAfterWallet.toString(),
+        token0BalanceAfterPair.toString(),
+        token1BalanceAfterPair.toString()
+      )
 
-      expect(g2[0]).to.eq(g3[0]);
+      expect(g2[0]).to.eq(g3[0])
 
       expect(token0BalanceAfterWallet).to.not.eq(token0BalanceBeforeWallet)
       expect(token1BalanceAfterWallet).to.not.eq(token1BalanceBeforeWallet)
