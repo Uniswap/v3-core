@@ -3,7 +3,7 @@ import { Contract, BigNumber, constants } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 
 import { getCreate2Address } from './shared/utilities'
-import { factoryFixture } from './shared/fixtures'
+import { factoryFixture, FactoryFixture } from './shared/fixtures'
 
 import UniswapV3Pair from '../build/UniswapV3Pair.json'
 
@@ -28,7 +28,7 @@ describe('UniswapV3Factory', () => {
 
   let factory: Contract
   beforeEach(async () => {
-    const fixture = await loadFixture(factoryFixture)
+    const fixture = await loadFixture(factoryFixture as any) as FactoryFixture
     factory = fixture.factory
   })
 

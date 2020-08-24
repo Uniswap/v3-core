@@ -275,6 +275,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    function updateReservesAndVirtualSupply(int112 liquidityDelta, uint8 feeVote) internal returns (int112 amount0, int112 amount1) {
+        uint112 virtualSupply = getVirtualSupply();
+        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+        (amount0, amount1) = getValueAtPrice(price, liquidityDelta);
+
+        // update virtual supply
+        virtualSupplies[feeVote] = virtualSupplies[feeVote].addi((amount0.imul(virtualSupply) / reserve0Virtual).itoInt112()).toUint112();
+        
+        // update reserves (the price doesn't change, so no need to update the oracle or current tick)
+        reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
+        reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
+
+        require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
+        require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
+    }
+
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
@@ -290,7 +306,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TickInfo storage tickInfoLower = _initializeTick(tickLower); // initialize tick idempotently
         TickInfo storage tickInfoUpper = _initializeTick(tickUpper); // initialize tick idempotently
 
-        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         {
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
@@ -313,15 +328,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 }
                 }
 
-                // credit the caller for the value of the fee liquidity
-                (amount0, amount1) = getValueAtPrice(price, -(liquidityFee.toInt112()));
-
-                // update virtual supply
-                virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)].addi((-amount0.imul(virtualSupply) / reserve0Virtual).itoInt112()).toUint112();
-
-                // update reserves (the price doesn't change, so no need to update the oracle or current tick)
-                reserve0Virtual = reserve0Virtual.addi(-amount0).toUint112();
-                reserve1Virtual = reserve1Virtual.addi(-amount1).toUint112();
+                updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), uint8(feeVote));
             }
         }
 
@@ -357,23 +364,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
         // the current price is inside the passed range
         else if (tickCurrent < tickUpper) {
-            // value the liquidity delta at the current price
             {
-            (int112 amount0Current, int112 amount1Current) = getValueAtPrice(price, liquidityDelta);
+            (int112 amount0Current, int112 amount1Current) = updateReservesAndVirtualSupply(liquidityDelta, uint8(feeVote));
 
             // charge the user whatever is required to cover their position
             amount0 = amount0.iadd(amount0Current.isub(amount0Upper)).itoInt112();
             amount1 = amount1.iadd(amount1Current.isub(amount1Lower)).itoInt112();
-
-            // update virtual supply
-            virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)].addi((amount0Current.imul(virtualSupply) / reserve0Virtual).itoInt112()).toUint112();
-            
-            // update reserves (the price doesn't change, so no need to update the oracle or current tick)
-            reserve0Virtual = reserve0Virtual.addi(amount0Current).toUint112();
-            reserve1Virtual = reserve1Virtual.addi(amount1Current).toUint112();
-
-            require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
-            require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
             }
         }
         // the current price is above the passed range, so the liquidity can only become in range by crossing from right
