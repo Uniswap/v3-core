@@ -7,16 +7,17 @@ import ERC20 from '../../build/TestERC20.json'
 import UniswapV3Factory from '../../build/UniswapV3Factory.json'
 import UniswapV3Pair from '../../build/UniswapV3Pair.json'
 
-interface FactoryFixture {
+export interface FactoryFixture {
   factory: Contract
 }
+
 
 export async function factoryFixture([wallet]: Wallet[]): Promise<FactoryFixture> {
   const factory = await deployContract(wallet, UniswapV3Factory, [wallet.address], OVERRIDES)
   return { factory }
 }
 
-interface PairFixture extends FactoryFixture {
+export interface PairFixture extends FactoryFixture {
   token0: Contract
   token1: Contract
   pair: Contract
