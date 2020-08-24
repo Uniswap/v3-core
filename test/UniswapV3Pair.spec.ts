@@ -1,11 +1,11 @@
 import chai, { expect } from 'chai'
 import { Contract, constants, BigNumber } from 'ethers'
-import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
+import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
 
 import {
   expandTo18Decimals,
   mineBlock,
-  encodePrice,
+  bnify2,
   OVERRIDES,
   getPositionKey,
   MAX_TICK,
@@ -15,6 +15,8 @@ import {
   FeeVote,
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
+
+import CumulativePriceTest from '../build/CumulativePriceTest.json'
 
 chai.use(solidity)
 
@@ -366,37 +368,36 @@ describe('UniswapV3Pair', () => {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(1000))
   })
 
-  it.skip('price{0,1}CumulativeLast', async () => {
-    const token0Amount = expandTo18Decimals(3)
-    const token1Amount = expandTo18Decimals(3)
-    await addLiquidity(token0Amount, token1Amount)
+  describe('Oracle', () => {
+    it('`_update` is idempotent', async () => {
+      const contract = await deployContract(wallet, CumulativePriceTest, [], OVERRIDES)
+      // this call should succeed, the assertions are done inside
+      // the contract
+      await contract.testUpdateMultipleTransactionsSameBlock(OVERRIDES)
+    })
 
-    const blockTimestamp = (await pair.getReserves())[2]
-    await mineBlock(provider, blockTimestamp + 1)
-    await pair.sync(OVERRIDES)
+    it('getCumulativePrices', async () => {
+      const token0Amount = expandTo18Decimals(3)
+      const token1Amount = expandTo18Decimals(3)
 
-    const initialPrice = encodePrice(token0Amount, token1Amount)
-    expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0])
-    expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1])
-    expect((await pair.getReserves())[2]).to.eq(blockTimestamp + 1)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
 
-    const swapAmount = expandTo18Decimals(3)
-    await token0.transfer(pair.address, swapAmount)
-    await mineBlock(provider, blockTimestamp + 10)
-    // swap to a new price eagerly instead of syncing
-    await pair.swap(0, expandTo18Decimals(1), wallet.address, '0x', OVERRIDES) // make the price nice
+      // make a swap to force the call to `_update`
+      await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
 
-    expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0].mul(10))
-    expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1].mul(10))
-    expect((await pair.getReserves())[2]).to.eq(blockTimestamp + 10)
+      // check the price now
+      const priceBefore = await pair.getCumulativePrices()
 
-    await mineBlock(provider, blockTimestamp + 20)
-    await pair.sync(OVERRIDES)
+      const blockTimestamp = (await provider.getBlock('latest')).timestamp
+      await mineBlock(provider, blockTimestamp + 1000)
 
-    const newPrice = encodePrice(expandTo18Decimals(6), expandTo18Decimals(2))
-    expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0].mul(10).add(newPrice[0].mul(10)))
-    expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1].mul(10).add(newPrice[1].mul(10)))
-    expect((await pair.getReserves())[2]).to.eq(blockTimestamp + 20)
+      // the cumulative price should be greater as more time elapses
+      const priceAfter = await pair.getCumulativePrices()
+      expect(bnify2(priceAfter[0]).gt(bnify2(priceBefore[0]))).to.be.true
+      expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
+    })
   })
 
   it.skip('feeTo:off', async () => {

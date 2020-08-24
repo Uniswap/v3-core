@@ -1,4 +1,4 @@
-import { BigNumber, utils, constants, providers } from 'ethers'
+import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers'
 import { Decimal } from 'decimal.js'
 import { assert } from 'chai'
 
@@ -74,3 +74,13 @@ export function getExpectedTick(reserve0: BigNumber, reserve1: BigNumber): numbe
 
   return tick
 }
+
+// handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
+export function bnify2(a: BigNumberish | [BigNumberish]): BigNumber {
+    if (Array.isArray(a)) {
+        return BigNumber.from(a[0])
+    } else {
+        return BigNumber.from(a)
+    }
+}
+

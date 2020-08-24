@@ -52,8 +52,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[4] public override virtualSupplies;
 
-    FixedPoint.uq144x112 public price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
-    FixedPoint.uq144x112 public price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
+    FixedPoint.uq144x112 internal price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
+    FixedPoint.uq144x112 internal price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
     
     struct TickInfo {
         // fee growth on the _other_ side of this tick (relative to the current tick)
@@ -197,20 +197,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // update reserves and, on the first interaction per block, price accumulators
-    function _update() private {
+    function _update() internal {
         uint32 blockTimestamp = uint32(block.timestamp); // truncation is desired
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0) {
-            // TODO these may not be necessary, or we may have to short-circuit if either are true
-            assert(reserve0Virtual != 0);
-            assert(reserve1Virtual != 0);
-            // overflow is desired
-            price0CumulativeLast = FixedPoint.uq144x112(
-                price0CumulativeLast._x + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x
-            );
-            price1CumulativeLast = FixedPoint.uq144x112(
-                price1CumulativeLast._x + FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x
-            );
+            (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
             blockTimestampLast = blockTimestamp;
         }
     }
@@ -489,5 +480,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(token1, to, amount1Out); // optimistically transfer tokens
         if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, amount1Out, data);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0In); // this is different than v2
+    }
+
+    // Helper for reading the cumulative price as of the current block
+    function getCumulativePrices() public view returns (
+        FixedPoint.uq144x112 memory price0Cumulative,
+        FixedPoint.uq144x112 memory price1Cumulative
+    ) {
+        uint32 blockTimestamp = uint32(block.timestamp);
+
+        if (blockTimestampLast != blockTimestamp) {
+            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+            price0Cumulative = FixedPoint.uq144x112(
+                price0CumulativeLast._x + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x
+            );
+
+            price1Cumulative = FixedPoint.uq144x112(
+                price1CumulativeLast._x + FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x
+            );
+        }
     }
 }
