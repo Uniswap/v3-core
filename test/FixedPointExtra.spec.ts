@@ -7,7 +7,7 @@ import FixedPointExtraTest from '../build/FixedPointExtraTest.json'
 chai.use(solidity)
 
 const overrides = {
-  gasLimit: 9999999
+  gasLimit: 9999999,
 }
 
 const Q112 = BigNumber.from(2).pow(112)
@@ -17,8 +17,8 @@ describe('FixedPointExtra', () => {
     ganacheOptions: {
       hardfork: 'istanbul',
       mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-      gasLimit: 9999999
-    }
+      gasLimit: 9999999,
+    },
   })
   const [wallet] = provider.getWallets()
 
@@ -34,9 +34,7 @@ describe('FixedPointExtra', () => {
 
     it('3.5 x 2.2 == 7.7', async () => {
       expect((await fixedPointExtra.muluq([Q112.mul(35).div(10)], [Q112.mul(22).div(10)]))[0]).to.eq(
-        Q112.mul(77)
-          .div(10)
-          .sub(1) // off by 1 * 2^-112
+        Q112.mul(77).div(10).sub(1) // off by 1 * 2^-112
       )
     })
 
@@ -70,9 +68,7 @@ describe('FixedPointExtra', () => {
 
     it('3.5 / 2.2 == ~1.5909090909', async () => {
       expect((await fixedPointExtra.divuq([Q112.mul(35).div(10)], [Q112.mul(22).div(10)]))[0]).to.eq(
-        Q112.mul(35)
-          .div(22)
-          .sub(3) // off by 3 * 2^-112
+        Q112.mul(35).div(22).sub(3) // off by 3 * 2^-112
       )
     })
 

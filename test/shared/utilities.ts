@@ -8,14 +8,14 @@ export const MAX_TICK = 7802
 export const LIQUIDITY_MIN = 10 ** 3
 
 export const OVERRIDES = {
-  gasLimit: 9999999
+  gasLimit: 9999999,
 }
 
 export enum FeeVote {
   FeeVote0 = 0,
   FeeVote1 = 1,
   FeeVote2 = 2,
-  FeeVote3 = 3
+  FeeVote3 = 3,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -35,9 +35,9 @@ export function getCreate2Address(
     // salt
     constants.HashZero,
     // init code. bytecode + constructor arguments
-    utils.keccak256(bytecode + constructorArgumentsEncoded.substr(2))
+    utils.keccak256(bytecode + constructorArgumentsEncoded.substr(2)),
   ]
-  const sanitizedInputs = `0x${create2Inputs.map(i => i.slice(2)).join('')}`
+  const sanitizedInputs = `0x${create2Inputs.map((i) => i.slice(2)).join('')}`
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
@@ -48,7 +48,7 @@ export async function mineBlock(provider: providers.Web3Provider, timestamp: num
 export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {
   return [
     reserve1.mul(BigNumber.from(2).pow(112)).div(reserve0),
-    reserve0.mul(BigNumber.from(2).pow(112)).div(reserve1)
+    reserve0.mul(BigNumber.from(2).pow(112)).div(reserve1),
   ]
 }
 
