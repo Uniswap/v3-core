@@ -52,11 +52,15 @@ library FixedPointExtra {
     }
 
     // divide a UQ112x112 by a UQ112x112, returning a UQ112x112
+    // TODO improve the precision of this? would be great to avoid hard-coding
     function divuq(FixedPoint.uq112x112 memory self, FixedPoint.uq112x112 memory other)
         internal
         pure
         returns (FixedPoint.uq112x112 memory)
     {
+        if (self._x == other._x) {
+            return FixedPoint.uq112x112(1 << 112);
+        }
         return muluq(self, FixedPoint.reciprocal(other));
     }
 }
