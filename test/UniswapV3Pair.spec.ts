@@ -509,4 +509,61 @@ describe('UniswapV3Pair', () => {
       expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
     })
   })
+
+  describe('feeTo', () => {
+    let token0FeesWithoutFeeTo: BigNumber
+    let token1FeesWithoutFeeTo: BigNumber
+
+    it('off', async () => {
+      const token0Amount = expandTo18Decimals(1000)
+      const token1Amount = expandTo18Decimals(1000)
+
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+
+      const swapAmount = expandTo18Decimals(1)
+      await pair.swap0For1(swapAmount, wallet.address, '0x', OVERRIDES)
+
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0, OVERRIDES)
+
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      token0FeesWithoutFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
+      token1FeesWithoutFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
+    })
+
+    it('on', async () => {
+      const token0Amount = expandTo18Decimals(1000)
+      const token1Amount = expandTo18Decimals(1000)
+
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+
+      await factory.setFeeTo(other.address)
+
+      const swapAmount = expandTo18Decimals(1)
+      await pair.swap0For1(swapAmount, wallet.address, '0x', OVERRIDES)
+
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0, OVERRIDES)
+
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      expect(token0BalanceAfter.sub(token0BalanceBefore).lt(token0FeesWithoutFeeTo)).to.be.true
+      expect(token1BalanceAfter.sub(token1BalanceBefore).lt(token1FeesWithoutFeeTo)).to.be.true
+
+      const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
+      expect(position.liquidity.gt(0)).to.be.true
+      // TODO there's lots more to check here
+    })
+  })
 })
