@@ -73,7 +73,7 @@ describe('FixedPointExtra', () => {
     })
 
     it('gas', async () => {
-      expect(await fixedPointExtra.divuqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).to.eq('1040')
+      expect(await fixedPointExtra.divuqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).to.eq('1102')
     })
   })
 })

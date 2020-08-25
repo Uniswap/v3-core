@@ -87,7 +87,7 @@ describe('UniswapV3Pair', () => {
     expect(position.liquidityAdjusted).to.eq(expectedUserLiquidity)
   })
 
-  async function initialize(tokenAmount: BigNumber, feeVote = FeeVote.FeeVote0): Promise<void> {
+  async function initialize(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
     await token0.approve(pair.address, tokenAmount)
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote, OVERRIDES)
@@ -98,7 +98,53 @@ describe('UniswapV3Pair', () => {
 
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
-      await initialize(tokenAmount)
+      await initialize(tokenAmount, fee)
+    })
+
+    describe('with fees', async () => {
+      const lowerTick = -1
+      const upperTick = 4
+      const liquidityDelta = expandTo18Decimals(1000)
+      let amount0: BigNumber
+      let amount1: BigNumber
+
+      beforeEach(async () => {
+        // approve max
+        await token0.approve(pair.address, constants.MaxUint256)
+        await token1.approve(pair.address, constants.MaxUint256)
+
+        // the LP provides some liquidity in specified tick range
+        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+
+        // make a swap so that G grows
+        await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x', OVERRIDES)
+        ;[amount0, amount1] = await pair.getLiquidityFee(lowerTick, upperTick, fee)
+      })
+
+      // The LP adds more to their previously set position
+      it('further adds to the position, compounding with the fees', async () => {
+        const liquidityDelta = expandTo18Decimals(1)
+
+        // get the liquidity fee post trade
+        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+
+        // this is token0 & token1 balance if the liquidity fee was 0 (we got these
+        // values by commenting out the `(amount0, amount1) = getValueAtPrice` line)
+        const balance0WithoutFees = BigNumber.from('9976274350446348266538')
+        const balance1WithoutFees = BigNumber.from('9995028242330516174969')
+        // check that the LP's fees were contributed towards their liquidity provision
+        // implicitly, by discounting them on the amount of tokens they need to deposit
+        expect(await token0.balanceOf(wallet.address)).to.eq(balance0WithoutFees.add(amount0))
+        expect(await token1.balanceOf(wallet.address)).to.eq(balance1WithoutFees.add(amount1))
+      })
+
+      it('setPosition with 0 liquidity claims fees', async () => {
+        const token0Before = await token0.balanceOf(wallet.address)
+        const token1Before = await token1.balanceOf(wallet.address)
+        await pair.setPosition(lowerTick, upperTick, fee, 0, OVERRIDES)
+        expect(await token0.balanceOf(wallet.address)).to.eq(token0Before.add(amount0))
+        expect(await token1.balanceOf(wallet.address)).to.eq(token1Before.add(amount1))
+      })
     })
 
     it('setPosition to the right of the current price', async () => {
@@ -142,6 +188,17 @@ describe('UniswapV3Pair', () => {
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
+    })
+
+    it('cannot remove more than the entire position', async () => {
+      const lowerTick = -2
+      const upperTick = 2
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, expandTo18Decimals(1000), OVERRIDES)
+      await expect(
+        pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, expandTo18Decimals(-1001), OVERRIDES)
+      ).to.be.revertedWith('ds-math-sub-underflow')
     })
 
     it('swap0for1', async () => {
