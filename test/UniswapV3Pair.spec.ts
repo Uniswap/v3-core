@@ -179,8 +179,7 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      // lower: (1009, 989)
-      // upper: (990, 1009)
+
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
 
       const amount0In = expandTo18Decimals(1)
@@ -188,7 +187,7 @@ describe('UniswapV3Pair', () => {
       await pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES)
       const g1 = await pair.getG()
 
-      expect(g0[0]).to.not.eq(g1[0])
+      expect(g0[0].lt(g1[0])).to.be.true
 
       const token0BalanceBeforePair = await token0.balanceOf(pair.address)
       const token1BalanceBeforePair = await token1.balanceOf(pair.address)
@@ -199,12 +198,12 @@ describe('UniswapV3Pair', () => {
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0, OVERRIDES)
       const g3 = await pair.getG()
 
+      expect(g2[0]).to.eq(g3[0])
+
       const token0BalanceAfterWallet = await token0.balanceOf(wallet.address)
       const token1BalanceAfterWallet = await token1.balanceOf(wallet.address)
       const token0BalanceAfterPair = await token0.balanceOf(pair.address)
       const token1BalanceAfterPair = await token1.balanceOf(pair.address)
-
-      expect(g2[0]).to.eq(g3[0])
 
       expect(token0BalanceAfterWallet).to.not.eq(token0BalanceBeforeWallet)
       expect(token1BalanceAfterWallet).to.not.eq(token1BalanceBeforeWallet)
@@ -454,43 +453,61 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  it.skip('feeTo:off', async () => {
-    const token0Amount = expandTo18Decimals(1000)
-    const token1Amount = expandTo18Decimals(1000)
-    await addLiquidity(token0Amount, token1Amount)
+  describe('feeTo', () => {
+    let token0FeesWithoutFeeTo: BigNumber
+    let token1FeesWithoutFeeTo: BigNumber
 
-    const swapAmount = expandTo18Decimals(1)
-    const expectedOutputAmount = BigNumber.from('996006981039903216')
-    await token1.transfer(pair.address, swapAmount)
-    await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES)
+    it('off', async () => {
+      const token0Amount = expandTo18Decimals(1000)
+      const token1Amount = expandTo18Decimals(1000)
 
-    const expectedLiquidity = expandTo18Decimals(1000)
-    await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
-    await pair.burn(wallet.address, OVERRIDES)
-    expect(await pair.totalSupply()).to.eq(LIQUIDITY_MIN)
-  })
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
 
-  it.skip('feeTo:on', async () => {
-    await factory.setFeeTo(other.address)
+      const swapAmount = expandTo18Decimals(1)
+      await pair.swap0For1(swapAmount, wallet.address, '0x', OVERRIDES)
 
-    const token0Amount = expandTo18Decimals(1000)
-    const token1Amount = expandTo18Decimals(1000)
-    await addLiquidity(token0Amount, token1Amount)
+      // const position = await pair.positions(getPositionKey(wallet.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
-    const swapAmount = expandTo18Decimals(1)
-    const expectedOutputAmount = BigNumber.from('996006981039903216')
-    await token1.transfer(pair.address, swapAmount)
-    await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES)
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0, OVERRIDES)
 
-    const expectedLiquidity = expandTo18Decimals(1000)
-    await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
-    await pair.burn(wallet.address, OVERRIDES)
-    expect(await pair.totalSupply()).to.eq(BigNumber.from('249750499251388').add(LIQUIDITY_MIN))
-    expect(await pair.balanceOf(other.address)).to.eq('249750499251388')
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
 
-    // using 1000 here instead of the symbolic LIQUIDITY_MIN because the amounts only happen to be equal...
-    // ...because the initial liquidity amounts were equal
-    expect(await token0.balanceOf(pair.address)).to.eq(BigNumber.from(1000).add('249501683697445'))
-    expect(await token1.balanceOf(pair.address)).to.eq(BigNumber.from(1000).add('250000187312969'))
+      token0FeesWithoutFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
+      token1FeesWithoutFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
+    })
+
+    it('on', async () => {
+      const token0Amount = expandTo18Decimals(1000)
+      const token1Amount = expandTo18Decimals(1000)
+
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+
+      await factory.setFeeTo(other.address)
+
+      const swapAmount = expandTo18Decimals(1)
+      await pair.swap0For1(swapAmount, wallet.address, '0x', OVERRIDES)
+
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0, OVERRIDES)
+
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      expect(token0BalanceAfter.sub(token0BalanceBefore).lt(token0FeesWithoutFeeTo)).to.be.true
+      expect(token1BalanceAfter.sub(token1BalanceBefore).lt(token1FeesWithoutFeeTo)).to.be.true
+
+      const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
+      expect(position.liquidity.gt(0)).to.be.true
+      // TODO there's lots more to check here
+    })
   })
 })
