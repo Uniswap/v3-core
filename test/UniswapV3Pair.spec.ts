@@ -1,11 +1,11 @@
 import chai, { expect } from 'chai'
 import { Contract, constants, BigNumber } from 'ethers'
-import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
+import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
 
 import {
   expandTo18Decimals,
   mineBlock,
-  encodePrice,
+  bnify2,
   OVERRIDES,
   getPositionKey,
   MAX_TICK,
@@ -15,6 +15,8 @@ import {
   FeeVote,
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
+
+import CumulativePriceTest from '../build/CumulativePriceTest.json'
 
 chai.use(solidity)
 
@@ -90,7 +92,10 @@ describe('UniswapV3Pair', () => {
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote, OVERRIDES)
   }
-  describe('post-initialize (fee vote 0 - 0.10%)', () => {
+  // TODO: Test rest of categories in a loop to reduce code duplication
+  describe('post-initialize (fee vote 1 - 0.10%)', () => {
+    const fee = FeeVote.FeeVote1
+
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
       await initialize(tokenAmount)
@@ -150,7 +155,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       // lower: (990, 1009)
       // upper: (980, 1019)
-      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
@@ -164,7 +169,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1020, 980)
       // upper: (1009, 989)
-      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(9))
@@ -179,7 +184,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1009, 989)
       // upper: (990, 1009)
-      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
 
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
@@ -216,10 +221,12 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('post-initialize (fee vote 1 - 0.30%)', () => {
+  describe('post-initialize (fee vote 2 - 0.30%)', () => {
+    const fee = FeeVote.FeeVote2
+
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
-      await initialize(tokenAmount, FeeVote.FeeVote1)
+      await initialize(tokenAmount, fee)
     })
 
     it('swap0for1', async () => {
@@ -263,7 +270,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       // lower: (1015037437733209910, 985185336841573394)
       // upper: (1009999999999999995, 990099009900990094)
-      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote1, liquidityDelta, OVERRIDES)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
 
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES))
@@ -423,37 +430,36 @@ describe('UniswapV3Pair', () => {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(1000))
   })
 
-  it.skip('price{0,1}CumulativeLast', async () => {
-    const token0Amount = expandTo18Decimals(3)
-    const token1Amount = expandTo18Decimals(3)
-    await addLiquidity(token0Amount, token1Amount)
+  describe('Oracle', () => {
+    it('`_update` is idempotent', async () => {
+      const contract = await deployContract(wallet, CumulativePriceTest, [], OVERRIDES)
+      // this call should succeed, the assertions are done inside
+      // the contract
+      await contract.testUpdateMultipleTransactionsSameBlock(OVERRIDES)
+    })
 
-    const blockTimestamp = (await pair.getReserves())[2]
-    await mineBlock(provider, blockTimestamp + 1)
-    await pair.sync(OVERRIDES)
+    it('getCumulativePrices', async () => {
+      const token0Amount = expandTo18Decimals(3)
+      const token1Amount = expandTo18Decimals(3)
 
-    const initialPrice = encodePrice(token0Amount, token1Amount)
-    expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0])
-    expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1])
-    expect((await pair.getReserves())[2]).to.eq(blockTimestamp + 1)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
 
-    const swapAmount = expandTo18Decimals(3)
-    await token0.transfer(pair.address, swapAmount)
-    await mineBlock(provider, blockTimestamp + 10)
-    // swap to a new price eagerly instead of syncing
-    await pair.swap(0, expandTo18Decimals(1), wallet.address, '0x', OVERRIDES) // make the price nice
+      // make a swap to force the call to `_update`
+      await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
 
-    expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0].mul(10))
-    expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1].mul(10))
-    expect((await pair.getReserves())[2]).to.eq(blockTimestamp + 10)
+      // check the price now
+      const priceBefore = await pair.getCumulativePrices()
 
-    await mineBlock(provider, blockTimestamp + 20)
-    await pair.sync(OVERRIDES)
+      const blockTimestamp = (await provider.getBlock('latest')).timestamp
+      await mineBlock(provider, blockTimestamp + 1000)
 
-    const newPrice = encodePrice(expandTo18Decimals(6), expandTo18Decimals(2))
-    expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0].mul(10).add(newPrice[0].mul(10)))
-    expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1].mul(10).add(newPrice[1].mul(10)))
-    expect((await pair.getReserves())[2]).to.eq(blockTimestamp + 20)
+      // the cumulative price should be greater as more time elapses
+      const priceAfter = await pair.getCumulativePrices()
+      expect(bnify2(priceAfter[0]).gt(bnify2(priceBefore[0]))).to.be.true
+      expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
+    })
   })
 
   it.skip('feeTo:off', async () => {

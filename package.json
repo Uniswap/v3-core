@@ -31,15 +31,13 @@
     "chai": "^4.2.0",
     "ethereum-waffle": "^3.0.0",
     "mocha": "^6.2.2",
-    "prettier": "^1.19.1",
+    "prettier": "^2.0.5",
     "rimraf": "^3.0.0",
     "solc": "0.6.11",
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3"
   },
   "scripts": {
-    "lint": "yarn prettier ./test/*.ts --check",
-    "lint:fix": "yarn prettier ./test/*.ts --write",
     "precompile": "rimraf ./build/",
     "compile": "waffle",
     "pretest": "yarn compile",
