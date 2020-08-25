@@ -340,20 +340,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 address feeTo = IUniswapV3Factory(factory).feeTo();
                 // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
                 if (feeTo != address(0) && msg.sender != feeTo) {
-                    // TODO ensure this is correct
                     uint liquidityProtocol = liquidityFee / 6;
                     if (liquidityProtocol > 0) {
+                        // TODO figure out how we want to actually issue liquidityProtocol to feeTo
                         liquidityFee -= liquidityProtocol;
-                        // accrue existing feeTo position, and add liquidityProtocol
-                        Position storage positionProtocol =
-                            _getPosition(feeTo, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
-                        positionProtocol.liquidity =
-                            uint(FixedPoint.decode144(growthInside.mul(positionProtocol.liquidityAdjusted)))
-                            .sub(positionProtocol.liquidity)
-                            .add(liquidityProtocol)
-                            .toUint112();
-                        positionProtocol.liquidityAdjusted =
-                            uint(FixedPoint.decode144(growthInside.reciprocal().mul(position.liquidity))).toUint112();
                     }
                 }
 
