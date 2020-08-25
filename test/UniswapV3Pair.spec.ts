@@ -558,8 +558,14 @@ describe('UniswapV3Pair', () => {
       const token0BalanceAfter = await token0.balanceOf(wallet.address)
       const token1BalanceAfter = await token1.balanceOf(wallet.address)
 
-      expect(token0BalanceAfter.sub(token0BalanceBefore).lt(token0FeesWithoutFeeTo)).to.be.true
-      expect(token1BalanceAfter.sub(token1BalanceBefore).lt(token1FeesWithoutFeeTo)).to.be.true
+      const token0FeesWithFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
+      const token1FeesWithFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
+
+      const token0ExpectedProtocolFees = token0FeesWithoutFeeTo.sub(token0FeesWithoutFeeTo.div(6)).add(1) // off by 1
+      const token1ExpectedProtocolFees = token1FeesWithoutFeeTo.sub(token1FeesWithoutFeeTo.div(6))
+
+      expect(token0FeesWithFeeTo).to.be.eq(token0ExpectedProtocolFees)
+      expect(token1FeesWithFeeTo).to.be.eq(token1ExpectedProtocolFees)
 
       const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
       expect(position.liquidity.gt(0)).to.be.true
