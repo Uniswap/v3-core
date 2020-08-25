@@ -87,7 +87,7 @@ describe('UniswapV3Pair', () => {
     expect(position.liquidityAdjusted).to.eq(expectedUserLiquidity)
   })
 
-  async function initialize(tokenAmount: BigNumber, feeVote = FeeVote.FeeVote0): Promise<void> {
+  async function initialize(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
     await token0.approve(pair.address, tokenAmount)
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote, OVERRIDES)
@@ -98,7 +98,7 @@ describe('UniswapV3Pair', () => {
 
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
-      await initialize(tokenAmount)
+      await initialize(tokenAmount, fee)
     })
 
     describe('with fees', async () => {
@@ -114,11 +114,11 @@ describe('UniswapV3Pair', () => {
         await token1.approve(pair.address, constants.MaxUint256)
 
         // the LP provides some liquidity in specified tick range
-        await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
+        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
 
         // make a swap so that G grows
         await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x', OVERRIDES)
-        ;[amount0, amount1] = await pair.getLiquidityFee(lowerTick, upperTick, FeeVote.FeeVote0)
+        ;[amount0, amount1] = await pair.getLiquidityFee(lowerTick, upperTick, fee)
       })
 
       // The LP adds more to their previously set position
@@ -126,7 +126,7 @@ describe('UniswapV3Pair', () => {
         const liquidityDelta = expandTo18Decimals(1)
 
         // get the liquidity fee post trade
-        await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta, OVERRIDES)
+        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
 
         // this is token0 & token1 balance if the liquidity fee was 0 (we got these
         // values by commenting out the `(amount0, amount1) = getValueAtPrice` line)
@@ -141,7 +141,7 @@ describe('UniswapV3Pair', () => {
       it('setPosition with 0 liquidity claims fees', async () => {
         const token0Before = await token0.balanceOf(wallet.address)
         const token1Before = await token1.balanceOf(wallet.address)
-        await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0, OVERRIDES)
+        await pair.setPosition(lowerTick, upperTick, fee, 0, OVERRIDES)
         expect(await token0.balanceOf(wallet.address)).to.eq(token0Before.add(amount0))
         expect(await token1.balanceOf(wallet.address)).to.eq(token1Before.add(amount1))
       })
