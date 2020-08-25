@@ -343,7 +343,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-
         // check if this condition has accrued any untracked fees
         // TODO is this calculation correct/precise?
         // TODO technically this can overflow
@@ -357,8 +356,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (feeTo != address(0) && msg.sender != feeTo) {
                 uint liquidityProtocol = liquidityFee / 6;
                 if (liquidityProtocol > 0) {
-                    // TODO figure out how we want to actually issue liquidityProtocol to feeTo
                     liquidityFee -= liquidityProtocol;
+                    // TODO figure out if this is correct
+                    // accrue existing feeTo position, and add liquidityProtocol
+                    Position storage positionProtocol =
+                        _getPosition(feeTo, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
+                    FixedPoint.uq112x112 memory g = getG();
+                    positionProtocol.liquidity =
+                        uint(FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)))
+                    .sub(positionProtocol.liquidity)
+                    .add(liquidityProtocol)
+                    .toUint112();
+                    positionProtocol.liquidityAdjusted =
+                        uint(FixedPoint.decode144(g.reciprocal().mul(position.liquidity))).toUint112();
                 }
             }
 
