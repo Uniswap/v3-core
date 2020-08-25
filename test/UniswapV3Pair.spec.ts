@@ -530,7 +530,6 @@ describe('UniswapV3Pair', () => {
       const swapAmount = expandTo18Decimals(1)
       await pair.swap0For1(swapAmount, wallet.address, '0x', OVERRIDES)
 
-      // const position = await pair.positions(getPositionKey(wallet.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
