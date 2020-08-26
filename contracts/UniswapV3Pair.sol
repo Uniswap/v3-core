@@ -304,10 +304,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         virtualSupplies[uint8(feeVote)] =
             virtualSupplies[uint8(feeVote)].addi(amount0.imul(virtualSupply) / reserve0Virtual).toUint112();
         
-        // update reserves (the price doesn't change, so no need to update the oracle or current tick)
-        // TODO i believe this can only push the price _down_
+        // update reserves (the price doesn't change, so no need to update the oracle/current tick)
+        // TODO: the price _can_ change because of rounding error
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
+
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         if (amount0 > 0) {
             assert(priceNext._x <= price._x);
