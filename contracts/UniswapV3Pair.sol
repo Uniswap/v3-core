@@ -129,10 +129,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             virtualSupplyCumulative += virtualSupplies[uint8(feeVote)];
         }
         fee =
-            feeVote == FeeVote.FeeVote0 ? 500 :
-            feeVote == FeeVote.FeeVote1 ? 1000 :
-            feeVote == FeeVote.FeeVote2 ? 3000 :
-            feeVote == FeeVote.FeeVote3 ? 6000 :
+            feeVote == FeeVote.FeeVote0 ?   500 :
+            feeVote == FeeVote.FeeVote1 ?  1000 :
+            feeVote == FeeVote.FeeVote2 ?  3000 :
+            feeVote == FeeVote.FeeVote3 ?  6000 :
             feeVote == FeeVote.FeeVote4 ? 10000 : 20000;
     }
 
@@ -282,12 +282,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TickInfo storage tickInfoUpper = tickInfos[tickUpper];
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         uint liquidityFee =
-            uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
+            0;
 
+        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         (amount0, amount1) = getValueAtPrice(price, liquidityFee.toInt112());
     }
 
@@ -300,12 +301,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (amount0, amount1) = getValueAtPrice(price, liquidityDelta);
 
         // update virtual supply
-        virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)]
-            .addi(amount0.imul(virtualSupply) / reserve0Virtual).toUint112();
+        virtualSupplies[uint8(feeVote)] =
+            virtualSupplies[uint8(feeVote)].addi(amount0.imul(virtualSupply) / reserve0Virtual).toUint112();
         
         // update reserves (the price doesn't change, so no need to update the oracle or current tick)
+        // TODO i believe this can only push the price _down_
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
+        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+        if (amount0 > 0) {
+            assert(priceNext._x <= price._x);
+        } else if (amount0 < 0) {
+            assert(priceNext._x >= price._x);
+        }
 
         require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
         require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
@@ -333,7 +341,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (position.liquidityAdjusted > 0) {
             // TODO is this calculation correct/precise?
             uint liquidityFee =
-                uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
+                FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
+                FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
+                0;
 
             // if the position in fact does have accrued fees, handle them
             if (liquidityFee > 0) {
@@ -354,8 +364,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // update position
         position.liquidity = position.liquidity.addi(liquidityDelta).toUint112();
-        position.liquidityAdjusted =
-            uint(FixedPoint.decode144(growthInside.reciprocal().mul(position.liquidity))).toUint112();
+        position.liquidityAdjusted = uint(FixedPoint.encode(position.liquidity)._x / growthInside._x).toUint112();
         }
 
         // calculate how much the specified liquidity delta is worth at the lower and upper ticks
