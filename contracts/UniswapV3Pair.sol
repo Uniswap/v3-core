@@ -281,28 +281,33 @@ contract UniswapV3Pair is IUniswapV3Pair {
         internal
         returns (int112 amount0, int112 amount1)
     {
-        uint112 virtualSupply = getVirtualSupply();
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         (amount0, amount1) = getValueAtPrice(price, liquidityDelta);
 
-        // update virtual supply
-        virtualSupplies[uint8(feeVote)] =
-            virtualSupplies[uint8(feeVote)].addi(amount0.imul(virtualSupply) / reserve0Virtual).toUint112();
-        
+        // checkpoint rootK
+        uint112 rootKLast = uint112(Babylonian.sqrt(uint(reserve0Virtual) * reserve1Virtual));
+
         // update reserves (the price doesn't change, so no need to update the oracle/current tick)
         // TODO: the price _can_ change because of rounding error
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
 
+        require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
+        require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
+
+        // update virtual supply
+        // TODO i believe this consistently results in a smaller g
+        uint112 virtualSupply = getVirtualSupply();
+        uint112 rootK = uint112(Babylonian.sqrt(uint(reserve0Virtual) * reserve1Virtual));
+        virtualSupplies[uint8(feeVote)] =
+            virtualSupplies[uint8(feeVote)].addi((int(rootK) - rootKLast) * virtualSupply / rootKLast).toUint112();
+        
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         if (amount0 > 0) {
             assert(priceNext._x <= price._x);
         } else if (amount0 < 0) {
             assert(priceNext._x >= price._x);
         }
-
-        require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
-        require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
     }
 
     function getLiquidityFee(int16 tickLower, int16 tickUpper, FeeVote feeVote) public view returns (int112 amount0, int112 amount1) {
