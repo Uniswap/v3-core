@@ -316,7 +316,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 rootK = uint112(Babylonian.sqrt(uint(reserve0Virtual) * reserve1Virtual));
         virtualSupplies[uint8(feeVote)] =
             virtualSupplies[uint8(feeVote)].addi((int(rootK) - rootKLast) * virtualSupply / rootKLast).toUint112();
-        
+
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         if (amount0 > 0) {
             assert(priceNext._x <= price._x);
@@ -343,29 +343,28 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-        // this condition is a heuristic for whether the position _could_ have unaccrued fees
-        if (position.liquidityAdjusted > 0) {
-            // TODO is this calculation correct/precise?
-            uint liquidityFee =
-                FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
-                FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
-                0;
 
-            // if the position in fact does have accrued fees, handle them
-            if (liquidityFee > 0) {
-                address feeTo = IUniswapV3Factory(factory).feeTo();
-                // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
-                if (feeTo != address(0) && msg.sender != feeTo) {
-                    uint liquidityProtocol = liquidityFee / 6;
-                    if (liquidityProtocol > 0) {
-                        // TODO figure out how we want to actually issue liquidityProtocol to feeTo
-                        liquidityFee -= liquidityProtocol;
-                    }
+        // check if this condition has accrued any untracked fees
+        // TODO is this calculation correct/precise?
+        // TODO technically this can overflow
+        uint liquidityFee =
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
+            0;
+        if (liquidityFee > 0) {
+            address feeTo = IUniswapV3Factory(factory).feeTo();
+            // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
+            if (feeTo != address(0) && msg.sender != feeTo) {
+                uint liquidityProtocol = liquidityFee / 6;
+                if (liquidityProtocol > 0) {
+                    // TODO figure out how we want to actually issue liquidityProtocol to feeTo
+                    liquidityFee -= liquidityProtocol;
                 }
-
-                // credit the caller for the value of the fee liquidity
-                (amount0, amount1) = updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), feeVote);
             }
+
+            // credit the caller for the value of the fee liquidity
+            // TODO technically this can overflow
+            (amount0, amount1) = updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), feeVote);
         }
 
         // update position
