@@ -129,10 +129,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             virtualSupplyCumulative += virtualSupplies[uint8(feeVote)];
         }
         fee =
-            feeVote == FeeVote.FeeVote0 ? 500 :
-            feeVote == FeeVote.FeeVote1 ? 1000 :
-            feeVote == FeeVote.FeeVote2 ? 3000 :
-            feeVote == FeeVote.FeeVote3 ? 6000 :
+            feeVote == FeeVote.FeeVote0 ?   500 :
+            feeVote == FeeVote.FeeVote1 ?  1000 :
+            feeVote == FeeVote.FeeVote2 ?  3000 :
+            feeVote == FeeVote.FeeVote3 ?  6000 :
             feeVote == FeeVote.FeeVote4 ? 10000 : 20000;
     }
 
@@ -281,33 +281,48 @@ contract UniswapV3Pair is IUniswapV3Pair {
         internal
         returns (int112 amount0, int112 amount1)
     {
-        uint112 virtualSupply = getVirtualSupply();
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         (amount0, amount1) = getValueAtPrice(price, liquidityDelta);
 
-        // update virtual supply
-        virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)]
-            .addi(amount0.imul(virtualSupply) / reserve0Virtual).toUint112();
-        
-        // update reserves (the price doesn't change, so no need to update the oracle or current tick)
+        // checkpoint rootK
+        uint112 rootKLast = uint112(Babylonian.sqrt(uint(reserve0Virtual) * reserve1Virtual));
+
+        // update reserves (the price doesn't change, so no need to update the oracle/current tick)
+        // TODO: the price _can_ change because of rounding error
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
 
         require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
         require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
+
+        // update virtual supply
+        // TODO i believe this consistently results in a smaller g
+        uint112 virtualSupply = getVirtualSupply();
+        uint112 rootK = uint112(Babylonian.sqrt(uint(reserve0Virtual) * reserve1Virtual));
+        virtualSupplies[uint8(feeVote)] =
+            virtualSupplies[uint8(feeVote)].addi((int(rootK) - rootKLast) * virtualSupply / rootKLast).toUint112();
+        
+        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+        if (amount0 > 0) {
+            assert(priceNext._x <= price._x);
+        } else if (amount0 < 0) {
+            assert(priceNext._x >= price._x);
+        }
     }
 
     function getLiquidityFee(int16 tickLower, int16 tickUpper, FeeVote feeVote) public view returns (int112 amount0, int112 amount1) {
         TickInfo storage tickInfoLower = tickInfos[tickLower];
         TickInfo storage tickInfoUpper = tickInfos[tickUpper];
+        
+        Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-
-        Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         uint liquidityFee =
-            uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
+            0;
 
+        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         (amount0, amount1) = getValueAtPrice(price, liquidityFee.toInt112());
     }
 
@@ -329,44 +344,45 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-        // this condition is a heuristic for whether the position _could_ have unaccrued fees
-        if (position.liquidityAdjusted > 0) {
-            // TODO is this calculation correct/precise?
-            uint liquidityFee =
-                uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
 
-            // if the position in fact does have accrued fees, handle them
-            if (liquidityFee > 0) {
-                address feeTo = IUniswapV3Factory(factory).feeTo();
-                // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
-                if (feeTo != address(0) && msg.sender != feeTo) {
-                    uint liquidityProtocol = liquidityFee / 6;
-                    if (liquidityProtocol > 0) {
-                        liquidityFee -= liquidityProtocol;
-                        // TODO figure out if this is correct
-                        // accrue existing feeTo position, and add liquidityProtocol
-                        Position storage positionProtocol =
-                            _getPosition(feeTo, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
-                        FixedPoint.uq112x112 memory g = getG();
-                        positionProtocol.liquidity =
-                            uint(FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)))
-                            .sub(positionProtocol.liquidity)
-                            .add(liquidityProtocol)
-                            .toUint112();
-                        positionProtocol.liquidityAdjusted =
-                            uint(FixedPoint.decode144(g.reciprocal().mul(position.liquidity))).toUint112();
-                    }
+        // check if this condition has accrued any untracked fees
+        // TODO is this calculation correct/precise?
+        // TODO technically this can overflow
+        uint liquidityFee =
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
+            0;
+        if (liquidityFee > 0) {
+            address feeTo = IUniswapV3Factory(factory).feeTo();
+            // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
+            if (feeTo != address(0) && msg.sender != feeTo) {
+                uint liquidityProtocol = liquidityFee / 6;
+                if (liquidityProtocol > 0) {
+                    // TODO figure out how we want to actually issue liquidityProtocol to feeTo
+                    liquidityFee -= liquidityProtocol;
+                    // TODO figure out if this is correct
+                    // accrue existing feeTo position, and add liquidityProtocol
+                    Position storage positionProtocol =
+                        _getPosition(feeTo, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
+                    FixedPoint.uq112x112 memory g = getG();
+                    positionProtocol.liquidity =
+                        uint(FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)))
+                        .sub(positionProtocol.liquidity)
+                        .add(liquidityProtocol)
+                        .toUint112();
+                    positionProtocol.liquidityAdjusted =
+                        uint(FixedPoint.decode144(g.reciprocal().mul(position.liquidity))).toUint112();
                 }
-
-                // credit the caller for the value of the fee liquidity
-                (amount0, amount1) = updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), feeVote);
             }
+
+            // credit the caller for the value of the fee liquidity
+            // TODO technically this can overflow
+            (amount0, amount1) = updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), feeVote);
         }
 
         // update position
         position.liquidity = position.liquidity.addi(liquidityDelta).toUint112();
-        position.liquidityAdjusted =
-            uint(FixedPoint.decode144(growthInside.reciprocal().mul(position.liquidity))).toUint112();
+        position.liquidityAdjusted = uint(FixedPoint.encode(position.liquidity)._x / growthInside._x).toUint112();
         }
 
         // calculate how much the specified liquidity delta is worth at the lower and upper ticks
