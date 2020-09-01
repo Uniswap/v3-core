@@ -531,17 +531,19 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('feeTo', () => {
+    const token0Amount = expandTo18Decimals(1000)
+    const token1Amount = expandTo18Decimals(1000)
+
     let token0FeesWithoutFeeTo: BigNumber
     let token1FeesWithoutFeeTo: BigNumber
 
-    it('off', async () => {
-      const token0Amount = expandTo18Decimals(1000)
-      const token1Amount = expandTo18Decimals(1000)
-
+    beforeEach(async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+    })
 
+    const claimFee = async () => {
       const swapAmount = expandTo18Decimals(1)
       await pair.swap0For1(swapAmount, wallet.address, '0x', OVERRIDES)
 
@@ -552,31 +554,26 @@ describe('UniswapV3Pair', () => {
 
       const token0BalanceAfter = await token0.balanceOf(wallet.address)
       const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      return {
+        token0BalanceBefore,
+        token0BalanceAfter,
+        token1BalanceBefore,
+        token1BalanceAfter,
+      }
+    }
+
+    it('off', async () => {
+      const { token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter } = await claimFee()
 
       token0FeesWithoutFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
       token1FeesWithoutFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
     })
 
     it('on', async () => {
-      const token0Amount = expandTo18Decimals(1000)
-      const token1Amount = expandTo18Decimals(1000)
-
-      await token0.approve(pair.address, constants.MaxUint256)
-      await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
-
       await factory.setFeeTo(other.address)
 
-      const swapAmount = expandTo18Decimals(1)
-      await pair.swap0For1(swapAmount, wallet.address, '0x', OVERRIDES)
-
-      const token0BalanceBefore = await token0.balanceOf(wallet.address)
-      const token1BalanceBefore = await token1.balanceOf(wallet.address)
-
-      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0, OVERRIDES)
-
-      const token0BalanceAfter = await token0.balanceOf(wallet.address)
-      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+      const { token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter } = await claimFee()
 
       const token0FeesWithFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
       const token1FeesWithFeeTo = token1BalanceAfter.sub(token1BalanceBefore)

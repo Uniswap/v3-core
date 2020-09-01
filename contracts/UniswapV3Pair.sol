@@ -356,6 +356,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (feeTo != address(0) && msg.sender != feeTo) {
                 uint liquidityProtocol = liquidityFee / 6;
                 if (liquidityProtocol > 0) {
+                    // 1/6 of the user's liquidityFee gets allocated as liquidity between
+                    // MIN/MAX for `feeTo`.
                     liquidityFee -= liquidityProtocol;
                     Position storage positionProtocol =
                         _getPosition(feeTo, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
