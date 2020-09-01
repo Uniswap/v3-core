@@ -54,6 +54,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // stored to avoid computing log_1.01(reserve1Virtual / reserve0Virtual) on-chain
     int16 public override tickCurrent;
 
+    // the current fee (gets set by the first trade or setPosition in a block)
+    uint16 public feeCurrent;
+
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[FEES] public override virtualSupplies;
 
@@ -207,12 +210,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tick.growthOutside = FixedPoint.encode(1);
     }
 
-    // update reserves and, on the first interaction per block, price accumulators
+    // on the first interaction (swap or setPosition) per block, update the price accumulators and fix
+    // the fee
     function _update() internal {
         uint32 blockTimestamp = uint32(block.timestamp); // truncation is desired
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0) {
             (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
+            feeCurrent = getFee();
             blockTimestampLast = blockTimestamp;
         }
     }
@@ -245,11 +250,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         reserve1Virtual = amount1;
         blockTimestampLast = uint32(block.timestamp);
 
-        // initialize tick
-        tickCurrent = tick;
-
         // initialize virtualSupplies (note that this votes indelibly with the burned liquidity)
         virtualSupplies[uint8(feeVote)] = liquidity;
+
+        // initialize tick and fee
+        tickCurrent = tick;
+        feeCurrent = getFee();
 
         // set the permanent LIQUIDITY_MIN position
         Position storage position = _getPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
@@ -295,12 +301,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
     function setPosition(int16 tickLower, int16 tickUpper, FeeVote feeVote, int112 liquidityDelta)
-        external lock returns (int112 amount0, int112 amount1)
+        public lock returns (int112 amount0, int112 amount1)
     {
         require(getVirtualSupply() > 0,         'UniswapV3: NOT_INITIALIZED'); // sufficient check
         require(tickLower >= TickMath.MIN_TICK, 'UniswapV3: LOWER_TICK');
         require(tickUpper <= TickMath.MAX_TICK, 'UniswapV3: UPPER_TICK');
         require(tickLower <  tickUpper,         'UniswapV3: TICKS');
+        _update();
 
         TickInfo storage tickInfoLower = _initializeTick(tickLower); // initialize tick idempotently
         TickInfo storage tickInfoUpper = _initializeTick(tickUpper); // initialize tick idempotently
@@ -401,9 +408,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // TODO: implement swap1for0, or integrate it into this
     // move from right to left (token 1 is becoming more valuable)
-    function swap0For1(uint112 amount0In, address to, bytes calldata data) external lock returns (uint112 amount1Out) {
+    function swap0For1(uint112 amount0In, address to, bytes memory data) public lock returns (uint112 amount1Out) {
         require(amount0In > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
         _update(); // update the oracle
+        // get the current fee before the trade is executed
+        uint16 fee = feeCurrent;
 
         uint112 amount0InRemaining = amount0In;
         while (amount0InRemaining > 0) {
@@ -415,8 +424,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // get the inclusive lower bound price for the current tick
             FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tickCurrent);
-            // get the current fee
-            uint16 fee = getFee();
             // compute the amount of token0 required s.t. the price is ~the lower bound for the current tick
             // TODO adjust this amount (or amount1OutStep) so that we're guaranteed the ratio is as close (or equal)
             // to the lower bound _without_ exceeding it as possible

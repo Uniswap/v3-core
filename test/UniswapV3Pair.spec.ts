@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import { Contract, constants, BigNumber } from 'ethers'
 import { waffle } from '@nomiclabs/buidler'
+const { deployContract } = waffle
 
 import {
   expandTo18Decimals,
@@ -15,7 +16,7 @@ import {
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
 
-import CumulativePriceTest from '../build/CumulativePriceTest.json'
+import SameBlockTest from '../build/SameBlockTest.json'
 
 describe('UniswapV3Pair', () => {
   const provider = waffle.provider
@@ -75,6 +76,37 @@ describe('UniswapV3Pair', () => {
     const position = await pair.positions(getPositionKey(wallet.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
     expect(position.liquidity).to.eq(expectedUserLiquidity)
     expect(position.liquidityAdjusted).to.eq(expectedUserLiquidity)
+  })
+
+  it('fee is fixed inside a block', async () => {
+    const tokenAmount = expandTo18Decimals(2)
+    const lowerTick = -1
+    const upperTick = 4
+    const liquidityDelta = expandTo18Decimals(1000)
+
+    const pair = await deployContract(wallet, SameBlockTest, [token0.address, token1.address])
+    await token0.approve(pair.address, constants.MaxUint256)
+    await token1.approve(pair.address, constants.MaxUint256)
+
+    // pre-initialization currentFee = 0
+    expect(await pair.feeCurrent()).to.eq(0)
+
+    await pair.initialize(tokenAmount, tokenAmount, 0, FeeVote.FeeVote1)
+    // afterwards, it'll be 1000 points, since the median is at FeeVote1
+    expect(await pair.feeCurrent()).to.eq(1000)
+
+    // this setPosition will not change the value since there has been no other trade
+    await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote3, liquidityDelta)
+    expect(await pair.feeCurrent()).to.eq(1000)
+
+    // This set position will use the last action's virtual supplies to calculate
+    // the fee, which will bump it to FeeVote0, even though we voted for a lower fee tier
+    await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta.mul(4))
+    expect(await pair.feeCurrent()).to.eq(6000)
+
+    // This ensures that we are safe against flashloans trying to update the value
+    // with multiple txs inside the same block
+    await pair.testFeeConstantInsideABlock(500)
   })
 
   async function initialize(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
@@ -418,7 +450,8 @@ describe('UniswapV3Pair', () => {
 
   describe('Oracle', () => {
     it('`_update` is idempotent', async () => {
-      const contract = await waffle.deployContract(wallet, CumulativePriceTest, [])
+      const zero = '0x0000000000000000000000000000000000000000'
+      const contract = await waffle.deployContract(wallet, SameBlockTest, [zero, zero])
       // this call should succeed, the assertions are done inside
       // the contract
       await contract.testUpdateMultipleTransactionsSameBlock()
