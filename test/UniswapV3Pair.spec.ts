@@ -556,20 +556,15 @@ describe('UniswapV3Pair', () => {
       const token1BalanceAfter = await token1.balanceOf(wallet.address)
 
       return {
-          token0BalanceBefore,
-          token0BalanceAfter,
-          token1BalanceBefore,
-          token1BalanceAfter,
+        token0BalanceBefore,
+        token0BalanceAfter,
+        token1BalanceBefore,
+        token1BalanceAfter,
       }
     }
 
     it('off', async () => {
-      const {
-          token0BalanceBefore,
-          token0BalanceAfter,
-          token1BalanceBefore,
-          token1BalanceAfter,
-      } = await claimFee()
+      const { token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter } = await claimFee()
 
       token0FeesWithoutFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
       token1FeesWithoutFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
@@ -578,12 +573,7 @@ describe('UniswapV3Pair', () => {
     it('on', async () => {
       await factory.setFeeTo(other.address)
 
-      const {
-          token0BalanceBefore,
-          token0BalanceAfter,
-          token1BalanceBefore,
-          token1BalanceAfter,
-      } = await claimFee()
+      const { token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter } = await claimFee()
 
       const token0FeesWithFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
       const token1FeesWithFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
