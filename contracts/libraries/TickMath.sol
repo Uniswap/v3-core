@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import 'abdk-libraries-solidity/ABDKMathQuad.sol';
+import './UniswapMath.sol';
 
 // calculates prices, encoded as uq112x112 fixed points, corresponding to reserves ratios of 1.01**tick
 library TickMath {
@@ -25,20 +26,27 @@ library TickMath {
     uint224 private constant ONE = 1 << 112;
 
     // given a tick index, return the corresponding price as a uq112x112 fixed point
+    // function getRatioAtTick(int16 tick) internal pure returns (FixedPoint.uq112x112 memory) {
+    //     if (tick == 0) {
+    //         return FixedPoint.uq112x112(ONE);
+    //     }
+
+    //     require(tick >= MIN_TICK, 'TickMath: UNDERFLOW_UQ112x112'); // too small for a uq112x112
+    //     require(tick <= MAX_TICK, 'TickMath: OVERFLOW_UQ112x112');  // too large for a uq112x112
+
+    //     // 2**(log_2(1.01) * tick)
+    //     // (2**log_2(1.01))**tick
+    //     // 1.01**tick
+    //     bytes16 result = ABDKMathQuad.pow_2(ABDKMathQuad.mul(TICK_MULTIPLIER, ABDKMathQuad.fromInt(tick)));
+
+    //     int256 converted = ABDKMathQuad.to128x128(result);
+    //     return FixedPoint.uq112x112(uint224(converted >> 16));
+    // }
+
+    // TODO temporary
     function getRatioAtTick(int16 tick) internal pure returns (FixedPoint.uq112x112 memory) {
-        if (tick == 0) {
-            return FixedPoint.uq112x112(ONE);
-        }
-
-        require(tick >= MIN_TICK, 'TickMath: UNDERFLOW_UQ112x112'); // too small for a uq112x112
-        require(tick <= MAX_TICK, 'TickMath: OVERFLOW_UQ112x112');  // too large for a uq112x112
-
-        // 2**(log_2(1.01) * tick)
-        // (2**log_2(1.01))**tick
-        // 1.01**tick
-        bytes16 result = ABDKMathQuad.pow_2(ABDKMathQuad.mul(TICK_MULTIPLIER, ABDKMathQuad.fromInt(tick)));
-
-        int256 converted = ABDKMathQuad.to128x128(result);
-        return FixedPoint.uq112x112(uint224(converted >> 16));
+        uint ratioAtTick = UniswapMath.getRatioAtTick(tick) >> 16;
+        require(ratioAtTick <= type(uint224).max && ratioAtTick > 0, 'TickMath: TODO');
+        return FixedPoint.uq112x112(uint224(ratioAtTick));
     }
 }

@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import 'abdk-libraries-solidity/ABDKMathQuad.sol';
+import './UniswapMath.sol';
 
 library PriceMath {
     using FixedPoint for FixedPoint.uq112x112;
@@ -84,6 +85,31 @@ library PriceMath {
     //		(fee - 1)
     //	)
     //) / 2
+    // function getInputToRatio(
+    //     uint112 reserveIn,
+    //     uint112 reserveOut,
+    //     uint16 lpFee,
+    //     FixedPoint.uq112x112 memory inOutRatio
+    // )
+    //     internal
+    //     pure
+    //     returns (uint112 amountIn)
+    // {
+    //     require(reserveIn > 0 && reserveOut > 0, 'PriceMath: NONZERO');
+    //     FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
+    //     if (reserveRatio._x == inOutRatio._x) return 0; // short-circuit if the ratios are equal
+    //     require(reserveRatio._x < inOutRatio._x, 'PriceMath: DIRECTION');
+    //     bytes16 fee = ABDKMathQuad.div(ABDKMathQuad.fromUInt(lpFee), ABDKMathQuad.fromUInt(LP_FEE_BASE));
+    //     bytes16 quadReserveIn = ABDKMathQuad.fromUInt(reserveIn);
+    //     bytes16 quadReserveOut = ABDKMathQuad.fromUInt(reserveOut);
+    //     bytes16 quadInOutRatio = toQuad(inOutRatio);
+
+    //     uint result = ABDKMathQuad.toUInt(getInputToRatioInner(quadReserveIn, quadReserveOut, fee, quadInOutRatio));
+    //     require(result <= type(uint112).max, 'PriceMath: AMOUNT_OVERFLOW_UINT112');
+    //     return uint112(result);
+    // }
+
+    // TODO temporary
     function getInputToRatio(
         uint112 reserveIn,
         uint112 reserveOut,
@@ -94,17 +120,12 @@ library PriceMath {
         pure
         returns (uint112 amountIn)
     {
-        require(reserveIn > 0 && reserveOut > 0, 'PriceMath: NONZERO');
         FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
-        if (reserveRatio._x == inOutRatio._x) return 0; // short-circuit if the ratios are equal
+        if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the ratios are equal
         require(reserveRatio._x < inOutRatio._x, 'PriceMath: DIRECTION');
-        bytes16 fee = ABDKMathQuad.div(ABDKMathQuad.fromUInt(lpFee), ABDKMathQuad.fromUInt(LP_FEE_BASE));
-        bytes16 quadReserveIn = ABDKMathQuad.fromUInt(reserveIn);
-        bytes16 quadReserveOut = ABDKMathQuad.fromUInt(reserveOut);
-        bytes16 quadInOutRatio = toQuad(inOutRatio);
 
-        uint result = ABDKMathQuad.toUInt(getInputToRatioInner(quadReserveIn, quadReserveOut, fee, quadInOutRatio));
-        require(result <= type(uint112).max, 'PriceMath: AMOUNT_OVERFLOW_UINT112');
-        return uint112(result);
+        uint inputToRatio = UniswapMath.getInputToRatio(reserveIn, reserveOut, lpFee, inOutRatio._x);
+        require(inputToRatio >> 112 <= type(uint112).max, 'PriceMath: TODO');
+        return uint112(inputToRatio >> 112);
     }
 }
