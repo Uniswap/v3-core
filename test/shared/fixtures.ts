@@ -1,6 +1,6 @@
 import { Contract, Signer, providers } from 'ethers'
-import { waffle } from "@nomiclabs/buidler";
-const { loadFixture, deployContract } = waffle;
+import { waffle } from '@nomiclabs/buidler'
+const { loadFixture, deployContract } = waffle
 
 import { expandTo18Decimals } from './utilities'
 
