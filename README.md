@@ -1,6 +1,7 @@
 # Uniswap V3
 
-[![Actions Status](https://github.com/Uniswap/uniswap-v3-core/workflows/CI/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions)
+![Tests](https://github.com/Uniswap/uniswap-v3-core/workflows/Tests/badge.svg)
+![Lint](https://github.com/Uniswap/uniswap-v3-core/workflows/Lint/badge.svg)
 
 # Local Development
 
