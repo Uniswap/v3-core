@@ -25,16 +25,16 @@ describe('PriceMath', () => {
   describe('#getTradeToRatio', () => {
     describe('edge cases', () => {
       it('0 all', async () => {
-        await expect(priceMath.getTradeToRatio(0, 0, 0, [0])).to.be.revertedWith('PriceMath: NONZERO')
+        await expect(priceMath.getTradeToRatio(0, 0, 0, [0])).to.be.revertedWith('FixedPoint: DIV_BY_ZERO')
       })
 
-      it('throws if wrong direction', async () => {
+      it('returns 0 if wrong direction', async () => {
         // no amount in will move the ratio of reserve in/reserve out from 1:50 to 1:75
-        await expect(
-          priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
+        expect(
+          await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
             expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
           ])
-        ).to.be.revertedWith('PriceMath: DIRECTION')
+        ).to.eq('0')
       })
 
       it('returns 0 if price is equal', async () => {
