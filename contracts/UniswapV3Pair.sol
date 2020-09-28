@@ -108,14 +108,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // sum the virtual supply across all fee votes to get the total
     function getVirtualSupply() public view returns (uint112 virtualSupply) {
-        // add up virtual supply for indices 0 through NUM_FEE_OPTIONS - 1
-        virtualSupply =
-            virtualSupplies[0] +
-            virtualSupplies[1] +
-            virtualSupplies[2] +
-            virtualSupplies[3] +
-            virtualSupplies[4] +
-            virtualSupplies[5];
+        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
+            virtualSupply += virtualSupplies[i];
+        }
     }
 
     // find the median fee vote, and return the fee in pips
