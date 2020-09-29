@@ -141,7 +141,7 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe.only('#setPosition', () => {
+  describe('#setPosition', () => {
     it('fails if not initialized', async () => {
       await expect(pair.setPosition(-1, 1, 0, 0)).to.be.revertedWith('UniswapV3: NOT_INITIALIZED')
     })
