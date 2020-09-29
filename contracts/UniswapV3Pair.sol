@@ -246,13 +246,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Position storage position = _getPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
         position.liquidity         = LIQUIDITY_MIN;
         position.liquidityAdjusted = LIQUIDITY_MIN;
+        emit PositionSet(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, int112(LIQUIDITY_MIN));
 
         // set the user's position if necessary
         if (liquidity > LIQUIDITY_MIN) {
             position = _getPosition(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
             position.liquidity         = liquidity - LIQUIDITY_MIN;
             position.liquidityAdjusted = liquidity - LIQUIDITY_MIN;
+            emit PositionSet(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, int112(liquidity) - int112(LIQUIDITY_MIN));
         }
+
+        emit Initialized(amount0, amount1, tick, feeVote);
     }
 
     function _initializeTick(int16 tick) private returns (TickInfo storage tickInfo) {
@@ -282,7 +286,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (amount0, amount1) = getValueAtPrice(price, liquidityFee.toInt112());
     }
 
-    // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
+    // add or remove a specified amount of liquidity from a specified range + fee vote
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
     function setPosition(int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta)
