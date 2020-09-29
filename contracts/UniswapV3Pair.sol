@@ -24,13 +24,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using FixedPoint for FixedPoint.uq112x112;
 
     // Number of fee options
-    uint8 constant NUM_FEE_OPTIONS = 6;
+    uint8 public constant NUM_FEE_OPTIONS = 6;
 
     // list of fee options expressed as pips
     // uint24 since the maximum value is 1_000_000 which exceeds 2^16
     // options are 0.05%, 0.10%, 0.30%, 0.60%, 1.00%, 2.00%
     // ideally this would be a constant array, but constant arrays are not supported in solidity
-    function FEE_OPTIONS() private pure returns (uint24[NUM_FEE_OPTIONS] memory) {
+    function FEE_OPTIONS() public pure returns (uint24[NUM_FEE_OPTIONS] memory) {
         return [
             uint24(500), 1000, 3000, 6000, 10000, 20000
         ];

@@ -72,6 +72,25 @@ describe('UniswapV3Pair', () => {
     expect(secondsOutside).to.eq(0)
   })
 
+  it('liquidity min', async () => {
+    expect(await pair.LIQUIDITY_MIN()).to.eq(1000)
+  })
+
+  it('token min', async () => {
+    expect(await pair.TOKEN_MIN()).to.eq(101)
+  })
+
+  it('fee options', async () => {
+    const options = await pair.FEE_OPTIONS()
+    expect(options[0]).to.eq(500)
+    expect(options[1]).to.eq(1000)
+    expect(options[2]).to.eq(3000)
+    expect(options[3]).to.eq(6000)
+    expect(options[4]).to.eq(10000)
+    expect(options[5]).to.eq(20000)
+    expect(options.length).to.eq(await pair.NUM_FEE_OPTIONS())
+  })
+
   describe('#initialize', () => {
     it('fails if already initialized', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
