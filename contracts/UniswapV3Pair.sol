@@ -178,6 +178,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
+    // note: this is imprecise (potentially by >1 bit?) because it uses reciprocal and sqrt
+    // note: this may not return in the _exact_ ratio of the passed price (amount1 accurate to < 1 bit given amonut0)
     function getValueAtPrice(FixedPoint.uq112x112 memory price, int112 liquidity)
         public
         pure
@@ -277,16 +279,51 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TickInfo storage tickInfoUpper = tickInfos[tickUpper];
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         uint liquidityFee =
-            uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
+            0;
 
+        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         (amount0, amount1) = getValueAtPrice(price, liquidityFee.toInt112());
     }
 
-    // add or remove a specified amount of liquidity from a specified range + fee vote
+    // note: this function can cause the price to change
+    function updateReservesAndVirtualSupply(int112 liquidityDelta, uint24 feeVote)
+        internal
+        returns (int112 amount0, int112 amount1)
+    {
+        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+        (amount0, amount1) = getValueAtPrice(price, liquidityDelta);
+
+        // checkpoint rootK
+        uint112 rootKLast = uint112(Babylonian.sqrt(uint(reserve0Virtual) * reserve1Virtual));
+
+        // update reserves (the price doesn't change, so no need to update the oracle/current tick)
+        // TODO: the price _can_ change because of rounding error
+        reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
+        reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
+
+        require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
+        require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
+
+        // update virtual supply
+        // TODO i believe this consistently results in a smaller g
+        uint112 virtualSupply = getVirtualSupply();
+        uint112 rootK = uint112(Babylonian.sqrt(uint(reserve0Virtual) * reserve1Virtual));
+        virtualSupplies[feeVote] =
+            virtualSupplies[feeVote].addi((int(rootK) - rootKLast) * virtualSupply / rootKLast).toUint112();
+
+        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+        if (amount0 > 0) {
+            assert(priceNext._x <= price._x);
+        } else if (amount0 < 0) {
+            assert(priceNext._x >= price._x);
+        }
+    }
+
+    // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
     function setPosition(int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta)
@@ -300,37 +337,39 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TickInfo storage tickInfoLower = _initializeTick(tickLower); // initialize tick idempotently
         TickInfo storage tickInfoUpper = _initializeTick(tickUpper); // initialize tick idempotently
 
-        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         {
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-        // this condition is a heuristic for whether the position _could_ have unaccrued fees
-        if (position.liquidityAdjusted > 0) {
-            // TODO is this calculation correct/precise?
-            uint liquidityFee =
-                uint(FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted))).sub(position.liquidity);
 
-            // if the position in fact does have accrued fees, handle them
-            if (liquidityFee > 0) {
-                address feeTo = IUniswapV3Factory(factory).feeTo();
-                bool feeOn = feeTo != address(0);
-                // take the protocol fee if it's on and te sender isn't feeTo
-                if (feeOn && msg.sender != feeTo) {
+        // check if this condition has accrued any untracked fees
+        // to account for rounding errors, we have to short-circuit the calculation if the untracked fees are too low
+        // TODO is this calculation correct/precise?
+        // TODO technically this can overflow
+        // TODO optimize this to save gas
+        uint liquidityFee =
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
+            FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
+            0;
+        if (liquidityFee > 0) {
+            address feeTo = IUniswapV3Factory(factory).feeTo();
+            // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
+            if (feeTo != address(0) && msg.sender != feeTo) {
+                uint liquidityProtocol = liquidityFee / 6;
+                if (liquidityProtocol > 0) {
                     // TODO figure out how we want to actually issue liquidityProtocol to feeTo
-                    uint liquidityProtocol = liquidityFee / 6;
                     liquidityFee -= liquidityProtocol;
                 }
-
-                // credit the caller for the value of the fee liquidity
-                (amount0, amount1) = getValueAtPrice(price, -(liquidityFee.toInt112()));
             }
+
+            // credit the caller for the value of the fee liquidity
+            // TODO technically this can overflow
+            (amount0, amount1) = updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), feeVote);
         }
 
         // update position
         position.liquidity = position.liquidity.addi(liquidityDelta).toUint112();
-        position.liquidityAdjusted =
-            uint(FixedPoint.decode144(growthInside.reciprocal().mul(position.liquidity))).toUint112();
+        position.liquidityAdjusted = uint(FixedPoint.encode(position.liquidity)._x / growthInside._x).toUint112();
         }
 
         // calculate how much the specified liquidity delta is worth at the lower and upper ticks
@@ -359,22 +398,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
         // the current price is inside the passed range
         else if (tickCurrent < tickUpper) {
-            // value the liquidity delta at the current price
             {
-            (int112 amount0Current, int112 amount1Current) = getValueAtPrice(price, liquidityDelta);
+            (int112 amount0Current, int112 amount1Current) = updateReservesAndVirtualSupply(liquidityDelta, feeVote);
 
             // charge the user whatever is required to cover their position
             amount0 = amount0.iadd(amount0Current.isub(amount0Upper)).itoInt112();
             amount1 = amount1.iadd(amount1Current.isub(amount1Lower)).itoInt112();
-
-            // update reserves (the price doesn't change, so no need to update the oracle or current tick)
-            reserve0Virtual = reserve0Virtual.addi(amount0Current).toUint112();
-            reserve1Virtual = reserve1Virtual.addi(amount1Current).toUint112();
-            require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
-            require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
             }
-            // update liquidity
-            virtualSupplies[feeVote] = virtualSupplies[feeVote].addi(liquidityDelta).toUint112();
         }
         // the current price is above the passed range, so the liquidity can only become in range by crossing from right
         // to left, at which point we'll need _more_ token1 (it's becoming more valuable) so the user must provide it
