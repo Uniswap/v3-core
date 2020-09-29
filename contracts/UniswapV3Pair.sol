@@ -462,6 +462,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 uint112 virtualSupply = getVirtualSupply();
                 for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                     int112 virtualSupplyDelta = (tickInfo.token0VirtualDeltas[i].imul(virtualSupply) / reserve0Virtual).itoInt112();
+                    // TODO are these SSTOREs optimized/packed?
                     virtualSupplies[i] = virtualSupplies[i].subi(virtualSupplyDelta).toUint112();
                 }
 
