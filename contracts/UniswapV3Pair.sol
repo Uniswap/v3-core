@@ -444,14 +444,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 }
 
                 // calculate the amount of reserves + liquidity to kick in/out
-                int112 token0VirtualDelta =
-                    tickInfo.token0VirtualDeltas[0] +
-                    tickInfo.token0VirtualDeltas[1] +
-                    tickInfo.token0VirtualDeltas[2] +
-                    tickInfo.token0VirtualDeltas[3] +
-                    tickInfo.token0VirtualDeltas[4] +
-                    tickInfo.token0VirtualDeltas[5];
-                // TODO we have to do this in an overflow-safe way 
+                int112 token0VirtualDelta;
+                for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
+                    token0VirtualDelta += tickInfo.token0VirtualDeltas[i];
+                }
+                // TODO we have to do this in an overflow-safe way
                 // TODO this should always move the price _down_ (if it has to move at all), because that's the
                 // direction we're moving...floor division should ensure that this is the case with positive deltas,
                 // but not with negative
@@ -463,36 +460,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // (where the sign of the delta determines which total to use and the value determines proportion)
                 // note: this may be overkill/unnecessary
                 uint112 virtualSupply = getVirtualSupply();
-                int112[NUM_FEE_OPTIONS] memory virtualSupplyDeltas = [
-                    (tickInfo.token0VirtualDeltas[0].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[1].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[2].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[3].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[4].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[5].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112()
-                ];
+                for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
+                    int112 virtualSupplyDelta = (tickInfo.token0VirtualDeltas[i].imul(virtualSupply) / reserve0Virtual).itoInt112();
+                    virtualSupplies[i] = virtualSupplies[i].subi(virtualSupplyDelta).toUint112();
+                }
 
                 // subi because we're moving from right to left
                 reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
                 reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
-                virtualSupplies[0] = virtualSupplies[0]
-                    .subi(virtualSupplyDeltas[0]).toUint112();
-                virtualSupplies[1] = virtualSupplies[1]
-                    .subi(virtualSupplyDeltas[1]).toUint112();
-                virtualSupplies[2] = virtualSupplies[2]
-                    .subi(virtualSupplyDeltas[2]).toUint112();
-                virtualSupplies[3] = virtualSupplies[3]
-                    .subi(virtualSupplyDeltas[3]).toUint112();
-                virtualSupplies[4] = virtualSupplies[4]
-                    .subi(virtualSupplyDeltas[4]).toUint112();
-                virtualSupplies[5] = virtualSupplies[5]
-                    .subi(virtualSupplyDeltas[5]).toUint112();
 
                 // update tick info
                 // overflow is desired
