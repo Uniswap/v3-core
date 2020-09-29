@@ -23,19 +23,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     using FixedPoint for FixedPoint.uq112x112;
 
-    // Number of FeeVotes
-    uint8 constant FEES = 6;
+    // Number of fee options
+    uint8 constant NUM_FEE_OPTIONS = 6;
 
-    enum FeeVote {
-        FeeVote0, //  .05%
-        FeeVote1, //  .10%
-        FeeVote2, //  .30%
-        FeeVote3, //  .60%
-        FeeVote4, // 1.00%
-        FeeVote5  // 2.00%
+    // list of fee options expressed as pips
+    // uint24 since the maximum value is 1_000_000 which exceeds 2^16
+    // options are 0.05%, 0.10%, 0.30%, 0.60%, 1.00%, 2.00%
+    // ideally this would be a constant array, but constant arrays are not supported in solidity
+    function FEE_OPTIONS() private pure returns (uint24[NUM_FEE_OPTIONS] memory) {
+        return [
+            uint24(500), 1000, 3000, 6000, 10000, 20000
+        ];
     }
 
     uint112 public constant override LIQUIDITY_MIN = 1000;
+
     // TODO could this be 100, or does it need to be 102, or higher?
     // TODO this could potentially affect how many ticks we need to support
     uint8   public constant override TOKEN_MIN     = 101;
@@ -55,7 +57,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int16 public override tickCurrent;
 
     // the amount of virtual supply active within the current tick, for each fee vote
-    uint112[FEES] public override virtualSupplies;
+    uint112[NUM_FEE_OPTIONS] public override virtualSupplies;
 
     FixedPoint.uq144x112 internal price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
     FixedPoint.uq144x112 internal price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
@@ -70,7 +72,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // amount of token0 added when ticks are crossed from left to right
         // (i.e. as the (reserve1Virtual / reserve0Virtual) price goes up), for each fee vote
-        int112[FEES]            token0VirtualDeltas;
+        int112[NUM_FEE_OPTIONS]            token0VirtualDeltas;
     }
     mapping (int16 => TickInfo) public tickInfos;
 
@@ -94,7 +96,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         unlocked = 1;
     }
 
-    function _getPosition(address owner, int16 tickLower, int16 tickUpper, FeeVote feeVote)
+    function _getPosition(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote)
         private
         view
         returns (Position storage position)
@@ -106,34 +108,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // sum the virtual supply across all fee votes to get the total
     function getVirtualSupply() public view returns (uint112 virtualSupply) {
-        virtualSupply =
-            virtualSupplies[uint8(FeeVote.FeeVote0)] +
-            virtualSupplies[uint8(FeeVote.FeeVote1)] +
-            virtualSupplies[uint8(FeeVote.FeeVote2)] +
-            virtualSupplies[uint8(FeeVote.FeeVote3)] +
-            virtualSupplies[uint8(FeeVote.FeeVote4)] +
-            virtualSupplies[uint8(FeeVote.FeeVote5)];
+        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
+            virtualSupply += virtualSupplies[i];
+        }
     }
 
     // find the median fee vote, and return the fee in pips
-    function getFee() public view returns (uint16 fee) {
-        FeeVote feeVote = FeeVote.FeeVote0;
-        uint112 virtualSupplyCumulative = virtualSupplies[uint8(feeVote)];
+    function getFee() public view returns (uint24 fee) {
+        uint112 virtualSupplyCumulative = 0;
         uint112 virtualSupply = getVirtualSupply();
-        while (virtualSupplyCumulative < (virtualSupply / 2)) {
-            feeVote =
-                feeVote == FeeVote.FeeVote0 ? FeeVote.FeeVote1 :
-                feeVote == FeeVote.FeeVote1 ? FeeVote.FeeVote2 :
-                feeVote == FeeVote.FeeVote2 ? FeeVote.FeeVote3 :
-                feeVote == FeeVote.FeeVote3 ? FeeVote.FeeVote4 : FeeVote.FeeVote5;
-            virtualSupplyCumulative += virtualSupplies[uint8(feeVote)];
+        uint24[NUM_FEE_OPTIONS] memory feeOptions = FEE_OPTIONS();
+        for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {
+            virtualSupplyCumulative += virtualSupplies[feeVoteIndex];
+            if (virtualSupplyCumulative >= (virtualSupply / 2)) {
+                return feeOptions[feeVoteIndex];
+            }
         }
-        fee =
-            feeVote == FeeVote.FeeVote0 ? 500 :
-            feeVote == FeeVote.FeeVote1 ? 1000 :
-            feeVote == FeeVote.FeeVote2 ? 3000 :
-            feeVote == FeeVote.FeeVote3 ? 6000 :
-            feeVote == FeeVote.FeeVote4 ? 10000 : 20000;
+        return feeOptions[NUM_FEE_OPTIONS - 1];
     }
 
     // get fee growth (sqrt(reserve0Virtual * reserve1Virtual) / virtualSupply)
@@ -218,7 +209,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // the reason this can't _just_ burn but needs to mint is because otherwise it would incentivize bad starting prices
-    function initialize(uint112 amount0, uint112 amount1, int16 tick, FeeVote feeVote)
+    function initialize(uint112 amount0, uint112 amount1, int16 tick, uint8 feeVote)
         external lock returns (uint112 liquidity)
     {
         require(getVirtualSupply() == 0,   'UniswapV3: ALREADY_INITIALIZED'); // sufficient check
@@ -249,7 +240,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickCurrent = tick;
 
         // initialize virtualSupplies (note that this votes indelibly with the burned liquidity)
-        virtualSupplies[uint8(feeVote)] = liquidity;
+        virtualSupplies[feeVote] = liquidity;
 
         // set the permanent LIQUIDITY_MIN position
         Position storage position = _getPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
@@ -277,7 +268,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function getLiquidityFee(int16 tickLower, int16 tickUpper, FeeVote feeVote) public view returns (int112 amount0, int112 amount1) {
+    function getLiquidityFee(int16 tickLower, int16 tickUpper, uint8 feeVote) public view returns (int112 amount0, int112 amount1) {
         TickInfo storage tickInfoLower = tickInfos[tickLower];
         TickInfo storage tickInfoUpper = tickInfos[tickUpper];
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
@@ -294,7 +285,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
-    function setPosition(int16 tickLower, int16 tickUpper, FeeVote feeVote, int112 liquidityDelta)
+    function setPosition(int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta)
         external lock returns (int112 amount0, int112 amount1)
     {
         require(getVirtualSupply() > 0,         'UniswapV3: NOT_INITIALIZED'); // sufficient check
@@ -348,13 +339,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // regardless of current price, when lower tick is crossed from left to right, amount0Lower should be added
         if (tickLower > TickMath.MIN_TICK) {
-            tickInfoLower.token0VirtualDeltas[uint8(feeVote)] =
-                tickInfoLower.token0VirtualDeltas[uint8(feeVote)].iadd(amount0Lower).itoInt112();
+            tickInfoLower.token0VirtualDeltas[feeVote] =
+                tickInfoLower.token0VirtualDeltas[feeVote].iadd(amount0Lower).itoInt112();
         }
         // regardless of current price, when upper tick is crossed from left to right amount0Upper should be removed
         if (tickUpper < TickMath.MAX_TICK) {
-            tickInfoUpper.token0VirtualDeltas[uint8(feeVote)] =
-                tickInfoUpper.token0VirtualDeltas[uint8(feeVote)].isub(amount0Upper).itoInt112();
+            tickInfoUpper.token0VirtualDeltas[feeVote] =
+                tickInfoUpper.token0VirtualDeltas[feeVote].isub(amount0Upper).itoInt112();
         }
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
@@ -379,7 +370,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
             }
             // update liquidity
-            virtualSupplies[uint8(feeVote)] = virtualSupplies[uint8(feeVote)].addi(liquidityDelta).toUint112();
+            virtualSupplies[feeVote] = virtualSupplies[feeVote].addi(liquidityDelta).toUint112();
         }
         // the current price is above the passed range, so the liquidity can only become in range by crossing from right
         // to left, at which point we'll need _more_ token1 (it's becoming more valuable) so the user must provide it
@@ -416,7 +407,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // get the inclusive lower bound price for the current tick
             FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tickCurrent);
             // get the current fee
-            uint16 fee = getFee();
+            uint24 fee = getFee();
             // compute the amount of token0 required s.t. the price is ~the lower bound for the current tick
             // TODO adjust this amount (or amount1OutStep) so that we're guaranteed the ratio is as close (or equal)
             // to the lower bound _without_ exceeding it as possible
@@ -453,14 +444,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 }
 
                 // calculate the amount of reserves + liquidity to kick in/out
-                int112 token0VirtualDelta =
-                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote0)] +
-                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote1)] +
-                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote2)] +
-                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote3)] +
-                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote4)] +
-                    tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote5)];
-                // TODO we have to do this in an overflow-safe way 
+                int112 token0VirtualDelta;
+                for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
+                    token0VirtualDelta += tickInfo.token0VirtualDeltas[i];
+                }
+                // TODO we have to do this in an overflow-safe way
                 // TODO this should always move the price _down_ (if it has to move at all), because that's the
                 // direction we're moving...floor division should ensure that this is the case with positive deltas,
                 // but not with negative
@@ -472,36 +460,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // (where the sign of the delta determines which total to use and the value determines proportion)
                 // note: this may be overkill/unnecessary
                 uint112 virtualSupply = getVirtualSupply();
-                int112[FEES] memory virtualSupplyDeltas = [
-                    (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote0)].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote1)].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote2)].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote3)].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote4)].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112(),
-                    (tickInfo.token0VirtualDeltas[uint8(FeeVote.FeeVote5)].imul(virtualSupply) / reserve0Virtual)
-                        .itoInt112()
-                ];
+                for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
+                    int112 virtualSupplyDelta = (tickInfo.token0VirtualDeltas[i].imul(virtualSupply) / reserve0Virtual).itoInt112();
+                    // TODO are these SSTOREs optimized/packed?
+                    virtualSupplies[i] = virtualSupplies[i].subi(virtualSupplyDelta).toUint112();
+                }
 
                 // subi because we're moving from right to left
                 reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
                 reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
-                virtualSupplies[uint8(FeeVote.FeeVote0)] = virtualSupplies[uint8(FeeVote.FeeVote0)]
-                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote0)]).toUint112();
-                virtualSupplies[uint8(FeeVote.FeeVote1)] = virtualSupplies[uint8(FeeVote.FeeVote1)]
-                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote1)]).toUint112();
-                virtualSupplies[uint8(FeeVote.FeeVote2)] = virtualSupplies[uint8(FeeVote.FeeVote2)]
-                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote2)]).toUint112();
-                virtualSupplies[uint8(FeeVote.FeeVote3)] = virtualSupplies[uint8(FeeVote.FeeVote3)]
-                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote3)]).toUint112();
-                virtualSupplies[uint8(FeeVote.FeeVote4)] = virtualSupplies[uint8(FeeVote.FeeVote4)]
-                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote4)]).toUint112();
-                virtualSupplies[uint8(FeeVote.FeeVote5)] = virtualSupplies[uint8(FeeVote.FeeVote5)]
-                    .subi(virtualSupplyDeltas[uint8(FeeVote.FeeVote5)]).toUint112();
 
                 // update tick info
                 // overflow is desired
