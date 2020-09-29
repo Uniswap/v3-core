@@ -360,17 +360,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // 1/6 of the user's liquidityFee gets allocated as liquidity between
                     // MIN/MAX for `feeTo`.
                     liquidityFee -= liquidityProtocol;
+
+                    // TODO is all of the below correct
+                    // note: this accumulates protocol fees under the user's fee vote
                     Position storage positionProtocol =
                         _getPosition(feeTo, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
                     FixedPoint.uq112x112 memory g = getG();
 
-                    // TODO figure out if this is correct
-                    // accrue existing feeTo position (if possible) and add new protocol liquidity
-                    positionProtocol.liquidity = uint(
+                    // calculate protocol fee liquidity
+                    uint liquidityFeeProtocol =
                         FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) > positionProtocol.liquidity ?
-                        FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) :
-                        positionProtocol.liquidity
-                    )
+                        FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) - positionProtocol.liquidity :
+                        0;
+                    // update the reserves to account for the new liquidity
+                    updateReservesAndVirtualSupply(liquidityFeeProtocol.toInt112(), feeVote);
+
+                    // accrue existing feeTo position (if possible) and add new protocol liquidity
+                    // TODO all the same caveats as above apply
+                    positionProtocol.liquidity = positionProtocol.liquidity
+                        .add(liquidityFeeProtocol)
                         .add(liquidityProtocol)
                         .toUint112();
                     positionProtocol.liquidityAdjusted =
