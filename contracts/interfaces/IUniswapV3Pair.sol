@@ -15,4 +15,7 @@ interface IUniswapV3Pair {
 
     function tickCurrent() external view returns (int16);
     function virtualSupplies(uint) external view returns (uint112);
+
+    event Initialized(uint amount0, uint amount1, int16 tick, uint8 feeVote);
+    event PositionSet(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta);
 }

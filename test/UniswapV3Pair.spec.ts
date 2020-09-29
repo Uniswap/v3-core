@@ -1,22 +1,22 @@
 import chai, { expect } from 'chai'
-import { Contract, constants, BigNumber } from 'ethers'
-import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
-
-import {
-  expandTo18Decimals,
-  mineBlock,
-  bnify2,
-  OVERRIDES,
-  getPositionKey,
-  MAX_TICK,
-  MIN_TICK,
-  LIQUIDITY_MIN,
-  getExpectedTick,
-  FeeVote,
-} from './shared/utilities'
-import { pairFixture } from './shared/fixtures'
+import { createFixtureLoader, deployContract, MockProvider, solidity } from 'ethereum-waffle'
+import { BigNumber, constants, Contract } from 'ethers'
 
 import CumulativePriceTest from '../build/CumulativePriceTest.json'
+import { pairFixture } from './shared/fixtures'
+
+import {
+  bnify2,
+  expandTo18Decimals,
+  FeeVote,
+  getExpectedTick,
+  getPositionKey,
+  LIQUIDITY_MIN,
+  MAX_TICK,
+  MIN_TICK,
+  mineBlock,
+  OVERRIDES,
+} from './shared/utilities'
 
 chai.use(solidity)
 
@@ -36,7 +36,7 @@ describe('UniswapV3Pair', () => {
   let token1: Contract
   let factory: Contract
   let pair: Contract
-  beforeEach(async () => {
+  beforeEach('load fixture', async () => {
     const fixture = await loadFixture(pairFixture)
     token0 = fixture.token0
     token1 = fixture.token1
@@ -44,7 +44,8 @@ describe('UniswapV3Pair', () => {
     pair = fixture.pair
   })
 
-  afterEach(async () => {
+  // this invariant should always hold true.
+  afterEach('check tick matches price', async () => {
     // ensure that the tick always matches the price given by virtual reserves
     const reserve0Virtual = await pair.reserve0Virtual()
     const reserve1Virtual = await pair.reserve1Virtual()
@@ -59,35 +60,225 @@ describe('UniswapV3Pair', () => {
     expect(await pair.token1()).to.eq(token1.address)
   })
 
-  const expectedLiquidity = expandTo18Decimals(2)
-  const initializeToken0Amount = expandTo18Decimals(2)
-  const initializeToken1Amount = expandTo18Decimals(2)
-  it('initialize', async () => {
-    const expectedUserLiquidity = expectedLiquidity.sub(LIQUIDITY_MIN)
-    const expectedTick = 0
-
-    await token0.approve(pair.address, constants.MaxUint256)
-    await token1.approve(pair.address, constants.MaxUint256)
-    await pair.initialize(initializeToken0Amount, initializeToken1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
-
-    expect(await pair.tickCurrent()).to.eq(expectedTick)
-    expect(await pair.getVirtualSupply()).to.eq(expectedLiquidity)
-
-    expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
-    expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
-
-    const burntPosition = await pair.positions(
-      getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK, FeeVote.FeeVote0)
-    )
-    expect(burntPosition.liquidity).to.eq(LIQUIDITY_MIN)
-    expect(burntPosition.liquidityAdjusted).to.eq(LIQUIDITY_MIN)
-
-    const position = await pair.positions(getPositionKey(wallet.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
-    expect(position.liquidity).to.eq(expectedUserLiquidity)
-    expect(position.liquidityAdjusted).to.eq(expectedUserLiquidity)
+  it('min tick is initialized', async () => {
+    const [growthOutside, secondsOutside] = await pair.tickInfos(MIN_TICK)
+    expect(growthOutside[0]).to.eq(BigNumber.from(2).pow(112))
+    expect(secondsOutside).to.eq(0)
   })
 
-  async function initialize(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
+  it('max tick is initialized', async () => {
+    const [growthOutside, secondsOutside] = await pair.tickInfos(MAX_TICK)
+    expect(growthOutside[0]).to.eq(BigNumber.from(2).pow(112))
+    expect(secondsOutside).to.eq(0)
+  })
+
+  it('liquidity min', async () => {
+    expect(await pair.LIQUIDITY_MIN()).to.eq(1000)
+  })
+
+  it('token min', async () => {
+    expect(await pair.TOKEN_MIN()).to.eq(101)
+  })
+
+  it('fee options', async () => {
+    const options = await pair.FEE_OPTIONS()
+    expect(options[0]).to.eq(500)
+    expect(options[1]).to.eq(1000)
+    expect(options[2]).to.eq(3000)
+    expect(options[3]).to.eq(6000)
+    expect(options[4]).to.eq(10000)
+    expect(options[5]).to.eq(20000)
+    expect(options.length).to.eq(await pair.NUM_FEE_OPTIONS())
+  })
+
+  describe('#initialize', () => {
+    it('fails if already initialized', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(expandTo18Decimals(1), expandTo18Decimals(1), 0, FeeVote.FeeVote0, OVERRIDES)
+      await expect(
+        pair.initialize(expandTo18Decimals(1), expandTo18Decimals(1), 0, FeeVote.FeeVote0, OVERRIDES)
+      ).to.be.revertedWith('UniswapV3: ALREADY_INITIALIZED')
+    })
+    it('fails if amount0 too small', async () => {
+      await expect(pair.initialize(100, 101, 1, FeeVote.FeeVote0, OVERRIDES)).to.be.revertedWith(
+        'UniswapV3: AMOUNT_0_TOO_SMALL'
+      )
+    })
+    it('fails if amount1 too small', async () => {
+      await expect(pair.initialize(101, 100, -1, FeeVote.FeeVote0, OVERRIDES)).to.be.revertedWith(
+        'UniswapV3: AMOUNT_1_TOO_SMALL'
+      )
+    })
+    it('fails if amounts are not within tick price bounds', async () => {
+      await expect(
+        pair.initialize(expandTo18Decimals(1), expandTo18Decimals(1), -1, FeeVote.FeeVote0, OVERRIDES)
+      ).to.be.revertedWith('UniswapV3: STARTING_TICK_TOO_SMALL')
+      await expect(
+        pair.initialize(expandTo18Decimals(1), expandTo18Decimals(1), 1, FeeVote.FeeVote0, OVERRIDES)
+      ).to.be.revertedWith('UniswapV3: STARTING_TICK_TOO_LARGE')
+    })
+    it('fails if liquidity amount is too small', async () => {
+      await expect(pair.initialize(500, 500, 0, FeeVote.FeeVote0, OVERRIDES)).to.be.revertedWith(
+        'UniswapV3: LIQUIDITY_TOO_SMALL'
+      )
+    })
+    it('fails if cannot transfer from user', async () => {
+      await expect(pair.initialize(1000, 1000, 0, FeeVote.FeeVote0, OVERRIDES)).to.be.revertedWith(
+        'TransferHelper: TRANSFER_FROM_FAILED'
+      )
+    })
+    it('sets initial variables', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(2000, 1000, -70, FeeVote.FeeVote1, OVERRIDES)
+      expect(await pair.reserve0Virtual()).to.eq(2000)
+      expect(await pair.reserve1Virtual()).to.eq(1000)
+      expect(await pair.blockTimestampLast()).to.not.eq(0)
+      expect(await pair.tickCurrent()).to.eq(-70)
+      expect(await pair.virtualSupplies(FeeVote.FeeVote1)).to.eq(1414)
+    })
+    it('creates a position for address 0 for min liquidity', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(2000, 1000, -70, FeeVote.FeeVote1, OVERRIDES)
+      const [liquidity, liquidityAdjusted] = await pair.positions(
+        getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK, FeeVote.FeeVote1)
+      )
+      expect(liquidity).to.eq(1000)
+      expect(liquidityAdjusted).to.eq(1000)
+    })
+    it('creates a position for sender address for remaining liquidity', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(2000, 1000, -70, FeeVote.FeeVote1, OVERRIDES)
+      const [liquidity, liquidityAdjusted] = await pair.positions(
+        getPositionKey(wallet.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote1)
+      )
+      expect(liquidity).to.eq(414)
+      expect(liquidityAdjusted).to.eq(414)
+    })
+    it('emits an Initialized event with the call arguments', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.initialize(2000, 1000, -70, FeeVote.FeeVote1, OVERRIDES))
+        .to.emit(pair, 'Initialized')
+        .withArgs(2000, 1000, -70, FeeVote.FeeVote1)
+    })
+    it('emits a PositionSet event with the zero address', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.initialize(2000, 1000, -70, FeeVote.FeeVote1, OVERRIDES))
+        .to.emit(pair, 'PositionSet')
+        .withArgs(constants.AddressZero, MIN_TICK, MAX_TICK, FeeVote.FeeVote1, 1000)
+    })
+    it('emits a PositionSet event with the sender address for remaining liquidity', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.initialize(2000, 1000, -70, FeeVote.FeeVote1, OVERRIDES))
+        .to.emit(pair, 'PositionSet')
+        .withArgs(wallet.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote1, 414)
+    })
+    it('transfers the token', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.initialize(2000, 1000, -70, FeeVote.FeeVote1, OVERRIDES))
+        .to.emit(token0, 'Transfer')
+        .withArgs(wallet.address, pair.address, 2000)
+        .to.emit(token1, 'Transfer')
+        .withArgs(wallet.address, pair.address, 1000)
+      expect(await token0.balanceOf(pair.address)).to.eq(2000)
+      expect(await token1.balanceOf(pair.address)).to.eq(1000)
+    })
+  })
+
+  describe('#setPosition', () => {
+    it('fails if not initialized', async () => {
+      await expect(pair.setPosition(-1, 1, 0, 0)).to.be.revertedWith('UniswapV3: NOT_INITIALIZED')
+    })
+    describe('after initialization', () => {
+      beforeEach('initialize the pair at price of 10:1 with fee vote 1', async () => {
+        await token0.approve(pair.address, 10000)
+        await token1.approve(pair.address, 1000)
+        // 316227 supply minted
+        await pair.initialize(10000, 1000, -232, 1, OVERRIDES)
+      })
+
+      describe('failure cases', () => {
+        it('fails if tickLower less than min tick', async () => {
+          await expect(pair.setPosition(-7804, 1, 0, 0)).to.be.revertedWith('UniswapV3: LOWER_TICK')
+        })
+        it('fails if tickUpper greater than max tick', async () => {
+          await expect(pair.setPosition(-1, 7804, 0, 0)).to.be.revertedWith('UniswapV3: UPPER_TICK')
+        })
+        it('fails if tickLower greater than tickUpper', async () => {
+          await expect(pair.setPosition(1, 0, 0, 0)).to.be.revertedWith('UniswapV3: TICKS')
+        })
+        it('fails if cannot transfer', async () => {
+          await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)).to.be.revertedWith(
+            'TransferHelper: TRANSFER_FROM_FAILED'
+          )
+        })
+      })
+
+      describe('success cases', () => {
+        beforeEach('approve the max uint', async () => {
+          await token0.approve(pair.address, constants.MaxUint256)
+          await token1.approve(pair.address, constants.MaxUint256)
+        })
+
+        describe('below current price', () => {
+          it('transfers token0 only', async () => {
+            await expect(pair.setPosition(-231, 0, 0, 10000))
+              .to.emit(token0, 'Transfer')
+              .withArgs(wallet.address, pair.address, 21558)
+            expect(await token0.balanceOf(pair.address)).to.eq(31558)
+            expect(await token1.balanceOf(pair.address)).to.eq(1000)
+          })
+        })
+
+        describe('including current price', () => {
+          it('price within range: transfers current price of both tokens', async () => {
+            await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
+              .to.emit(token0, 'Transfer')
+              .withArgs(wallet.address, pair.address, 316)
+              .to.emit(token1, 'Transfer')
+              .withArgs(wallet.address, pair.address, 31)
+            expect(await token0.balanceOf(pair.address)).to.eq(10316)
+            expect(await token1.balanceOf(pair.address)).to.eq(1031)
+          })
+
+          it.skip('initializes tickUpper', async () => {
+            await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
+            const [[growthOutside], secondsOutside] = await pair.tickInfos(MIN_TICK + 1)
+            expect(growthOutside).to.eq(0)
+            expect(secondsOutside).to.eq(0)
+          })
+
+          it.skip('initializes tickLower', async () => {
+            await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
+            const [[growthOutside], secondsOutside] = await pair.tickInfos(MAX_TICK - 1)
+            expect(growthOutside).to.eq(0)
+            expect(secondsOutside).to.eq(0)
+          })
+        })
+
+        describe('above current price', () => {
+          it('transfers token1 only', async () => {
+            await expect(pair.setPosition(-500, -233, 0, 10000))
+              .to.emit(token1, 'Transfer')
+              .withArgs(wallet.address, pair.address, 2306)
+            expect(await token0.balanceOf(pair.address)).to.eq(10000)
+            expect(await token1.balanceOf(pair.address)).to.eq(3306)
+          })
+        })
+      })
+    })
+  })
+
+  const initializeToken0Amount = expandTo18Decimals(2)
+  const initializeToken1Amount = expandTo18Decimals(2)
+  async function initializeAtZeroTick(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
     await token0.approve(pair.address, tokenAmount)
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote, OVERRIDES)
@@ -98,7 +289,7 @@ describe('UniswapV3Pair', () => {
 
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
-      await initialize(tokenAmount, fee)
+      await initializeAtZeroTick(tokenAmount, fee)
     })
 
     describe('with fees', async () => {
@@ -294,7 +485,7 @@ describe('UniswapV3Pair', () => {
 
     beforeEach(async () => {
       const tokenAmount = expandTo18Decimals(2)
-      await initialize(tokenAmount, fee)
+      await initializeAtZeroTick(tokenAmount, fee)
     })
 
     it('swap0for1', async () => {
