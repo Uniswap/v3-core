@@ -187,6 +187,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
+    // note: this is imprecise (potentially by >1 bit?) because it uses reciprocal and sqrt
+    // note: this may not return in the _exact_ ratio of the passed price (amount1 accurate to < 1 bit given amonut0)
     function getValueAtPrice(FixedPoint.uq112x112 memory price, int112 liquidity)
         public
         pure
@@ -277,6 +279,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    // TODO this is only used once in a test, should be removed, is meant to copy the logic in setPosition
     function getLiquidityFee(int16 tickLower, int16 tickUpper, FeeVote feeVote) public view returns (int112 amount0, int112 amount1) {
         TickInfo storage tickInfoLower = tickInfos[tickLower];
         TickInfo storage tickInfoUpper = tickInfos[tickUpper];
@@ -292,6 +295,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (amount0, amount1) = getValueAtPrice(price, liquidityFee.toInt112());
     }
 
+    // note: this function can cause the price to change
     function updateReservesAndVirtualSupply(int112 liquidityDelta, FeeVote feeVote)
         internal
         returns (int112 amount0, int112 amount1)
@@ -345,8 +349,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
 
         // check if this condition has accrued any untracked fees
+        // to account for rounding errors, we have to short-circuit the calculation if the untracked fees are too low
         // TODO is this calculation correct/precise?
         // TODO technically this can overflow
+        // TODO optimize this to save gas
         uint liquidityFee =
             FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity ?
             FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity :
