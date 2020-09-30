@@ -38,7 +38,10 @@ export function getCreate2Address(
   bytecode: string
 ): string {
   const [token0, token1] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA]
-  const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(['address', 'address'], [token0, token1])
+  const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
+    ['address', 'address', 'address'],
+    [factoryAddress, token0, token1]
+  )
   const create2Inputs = [
     '0xff',
     factoryAddress,
@@ -49,10 +52,6 @@ export function getCreate2Address(
   ]
   const sanitizedInputs = `0x${create2Inputs.map((i) => i.slice(2)).join('')}`
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
-}
-
-export async function mineBlock(provider: providers.Web3Provider, timestamp: number): Promise<void> {
-  return provider.send('evm_mine', [timestamp])
 }
 
 export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {

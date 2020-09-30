@@ -1,13 +1,13 @@
 import chai, { expect } from 'chai'
 import { createFixtureLoader, deployContract, MockProvider, solidity } from 'ethereum-waffle'
 import { BigNumber, constants, Contract } from 'ethers'
+import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 
-import CumulativePriceTest from '../build/CumulativePriceTest.json'
 import UniswapV3PairTest from '../build/UniswapV3PairTest.json'
+
 import { pairFixture } from './shared/fixtures'
 
 import {
-  bnify2,
   expandTo18Decimals,
   FEES,
   FeeVote,
@@ -15,7 +15,6 @@ import {
   getPositionKey,
   MAX_TICK,
   MIN_TICK,
-  mineBlock,
   OVERRIDES,
 } from './shared/utilities'
 
@@ -542,35 +541,74 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('Oracle', () => {
-    it('`_update` is idempotent', async () => {
-      const contract = await deployContract(wallet, CumulativePriceTest, [], OVERRIDES)
-      // this call should succeed, the assertions are done inside
-      // the contract
-      await contract.testUpdateMultipleTransactionsSameBlock(OVERRIDES)
+  describe('#getCumulativePrices', () => {
+    let pair: Contract
+    beforeEach('deploy mock pair', async () => {
+      pair = await deployContract(
+        wallet,
+        MockTimeUniswapV3Pair,
+        [factory.address, token0.address, token1.address],
+        OVERRIDES
+      )
     })
-
-    it('getCumulativePrices', async () => {
-      const token0Amount = expandTo18Decimals(3)
-      const token1Amount = expandTo18Decimals(3)
-
+    beforeEach('set pair time to 100', async () => {
+      await pair.setTime(100)
+    })
+    beforeEach('initialize pair', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
-
-      // make a swap to force the call to `_update`
-      await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
-
-      // check the price now
-      const priceBefore = await pair.getCumulativePrices()
-
-      const blockTimestamp = (await provider.getBlock('latest')).timestamp
-      await mineBlock(provider, blockTimestamp + 1000)
-
-      // the cumulative price should be greater as more time elapses
-      const priceAfter = await pair.getCumulativePrices()
-      expect(bnify2(priceAfter[0]).gt(bnify2(priceBefore[0]))).to.be.true
-      expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
+      await pair.initialize(expandTo18Decimals(2), expandTo18Decimals(2), 0, 0, OVERRIDES)
+    })
+    it('current time is 100', async () => {
+      expect(await pair.time()).to.eq(100)
+    })
+    it('current block timestamp is 100', async () => {
+      expect(await pair.blockTimestampLast()).to.eq(100)
+    })
+    it('cumulative prices are initially 0', async () => {
+      const [[price0], [price1]] = await pair.getCumulativePrices()
+      expect(price0).to.eq(0)
+      expect(price1).to.eq(0)
+    })
+    it('swap without time change does not affect cumulative price', async () => {
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      const [[price0], [price1]] = await pair.getCumulativePrices()
+      expect(price0).to.eq(0)
+      expect(price1).to.eq(0)
+    })
+    it('swap after time change updates cumulative price', async () => {
+      await pair.setTime(200)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      const [[price0], [price1]] = await pair.getCumulativePrices()
+      expect(price0).to.eq(BigNumber.from(2).pow(112).mul(100))
+      expect(price1).to.eq(BigNumber.from(2).pow(112).mul(100))
+    })
+    it('second swap after time change does not affect cumulative price', async () => {
+      await pair.setTime(200)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      const [[price0], [price1]] = await pair.getCumulativePrices()
+      expect(price0).to.eq(BigNumber.from(2).pow(112).mul(100))
+      expect(price1).to.eq(BigNumber.from(2).pow(112).mul(100))
+    })
+    it('third swap after time change adds to cumulative', async () => {
+      await pair.setTime(200)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      await pair.setTime(300)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      const [[price0], [price1]] = await pair.getCumulativePrices()
+      expect(price0).to.eq('1038459371706965474302360366349228200')
+      expect(price1).to.eq('1038459371706965577109838165338815200')
+    })
+    it('counterfactually computes the cumulative price', async () => {
+      await pair.setTime(200)
+      const [[price0_1], [price1_1]] = await pair.getCumulativePrices()
+      expect(price0_1).to.eq(BigNumber.from(2).pow(112).mul(100))
+      expect(price1_1).to.eq(BigNumber.from(2).pow(112).mul(100))
+      await pair.setTime(300)
+      const [[price0_2], [price1_2]] = await pair.getCumulativePrices()
+      expect(price0_2).to.eq(BigNumber.from(2).pow(112).mul(200))
+      expect(price1_2).to.eq(BigNumber.from(2).pow(112).mul(200))
     })
   })
 
