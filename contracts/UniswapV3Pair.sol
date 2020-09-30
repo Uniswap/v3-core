@@ -361,33 +361,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // MIN/MAX for `feeTo`.
                     liquidityFee -= liquidityProtocol;
 
-                    // TODO is all of the below correct
-                    // note: this accumulates protocol fees under the user's fee vote
+                    // TODO ensure all of the below is correct
+                    // note: this accumulates protocol fees under the user's current fee vote
                     Position storage positionProtocol =
                         _getPosition(feeTo, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
-                    FixedPoint.uq112x112 memory g = getG();
+                    FixedPoint.uq112x112 memory g = getG(); // shortcut for _getGrowthInside
 
-                    // calculate protocol fee liquidity
-                    uint liquidityFeeProtocol =
+                    // accrue any newly earned fee liquidity from the existing protocol position
+                    liquidityProtocol = liquidityProtocol.add(
                         FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) > positionProtocol.liquidity ?
                         FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) - positionProtocol.liquidity :
-                        0;
-                    // update the reserves to account for the new liquidity
-                    updateReservesAndVirtualSupply(liquidityFeeProtocol.toInt112(), feeVote);
+                        0
+                    );
+                    // update the reserves to account for the this new liquidity
+                    updateReservesAndVirtualSupply(liquidityProtocol.toInt112(), feeVote);
 
-                    // accrue existing feeTo position (if possible) and add new protocol liquidity
+                    // update the position
                     // TODO all the same caveats as above apply
-                    positionProtocol.liquidity = positionProtocol.liquidity
-                        .add(liquidityFeeProtocol)
-                        .add(liquidityProtocol)
-                        .toUint112();
+                    positionProtocol.liquidity = positionProtocol.liquidity.add(liquidityProtocol).toUint112();
                     positionProtocol.liquidityAdjusted =
                         uint(FixedPoint.encode(positionProtocol.liquidity)._x / g._x).toUint112();
                 }
             }
 
             // credit the caller for the value of the fee liquidity
-            // TODO technically this can overflow
             (amount0, amount1) = updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), feeVote);
         }
 
