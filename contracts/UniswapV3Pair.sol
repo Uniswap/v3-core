@@ -24,7 +24,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using FixedPoint for FixedPoint.uq112x112;
 
     // Number of fee options
-    uint8 public constant NUM_FEE_OPTIONS = 6;
+    uint8 public constant override NUM_FEE_OPTIONS = 6;
 
     // list of fee options expressed as pips
     // uint24 since the maximum value is 1_000_000 which exceeds 2^16
@@ -59,8 +59,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[NUM_FEE_OPTIONS] public override virtualSupplies;
 
-    FixedPoint.uq144x112 internal price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
-    FixedPoint.uq144x112 internal price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
+    uint256 public override price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
+    uint256 public override price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
     
     struct TickInfo {
         // fee growth on the _other_ side of this tick (relative to the current tick)
@@ -107,14 +107,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // sum the virtual supply across all fee votes to get the total
-    function getVirtualSupply() public view returns (uint112 virtualSupply) {
+    function getVirtualSupply() public override view returns (uint112 virtualSupply) {
         for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
             virtualSupply += virtualSupplies[i];
         }
     }
 
     // find the median fee vote, and return the fee in pips
-    function getFee() public view returns (uint24 fee) {
+    function getFee() public override view returns (uint24 fee) {
         uint112 virtualSupplyCumulative = 0;
         uint112 virtualSupply = getVirtualSupply();
         uint24[NUM_FEE_OPTIONS] memory feeOptions = FEE_OPTIONS();
@@ -189,8 +189,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         amount1 = FixedPointExtra.muli(price, amount0).itoInt112();
     }
 
-    constructor(address _token0, address _token1) public {
-        factory = msg.sender;
+    constructor(address _factory, address _token0, address _token1) public {
+        factory = _factory;
         token0 = _token0;
         token1 = _token1;
         // initialize min and max ticks
@@ -200,9 +200,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tick.growthOutside = FixedPoint.encode(1);
     }
 
+    // returns the block timestamp % 2**32.
+    // the timestamp is truncated to 32 bits because the pair only ever uses it for relative timestamp computations.
+    // overridden for tests.
+    function _blockTimestamp() internal virtual view returns (uint32) {
+        return uint32(block.timestamp); // truncation is desired
+    }
+
     // update reserves and, on the first interaction per block, price accumulators
-    function _update() internal {
-        uint32 blockTimestamp = uint32(block.timestamp); // truncation is desired
+    function _update() private {
+        uint32 blockTimestamp = _blockTimestamp();
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0) {
             (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
@@ -236,7 +243,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // initialize reserves and oracle timestamp
         reserve0Virtual = amount0;
         reserve1Virtual = amount1;
-        blockTimestampLast = uint32(block.timestamp);
+        blockTimestampLast = _blockTimestamp();
 
         // initialize tick
         tickCurrent = tick;
@@ -267,7 +274,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
                 tickInfo.growthOutside = getG();
-                tickInfo.secondsOutside = uint32(block.timestamp);
+                tickInfo.secondsOutside = _blockTimestamp();
             } else {
                 tickInfo.growthOutside = FixedPoint.encode(1);
             }
@@ -528,7 +535,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // update tick info
                 // overflow is desired
                 tickInfo.growthOutside = FixedPointExtra.divuq(getG(), tickInfo.growthOutside);
-                tickInfo.secondsOutside = uint32(block.timestamp) - tickInfo.secondsOutside;
+                tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside;
 
                 tickCurrent -= 1;
             }
@@ -540,21 +547,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // Helper for reading the cumulative price as of the current block
-    function getCumulativePrices() public view returns (
-        FixedPoint.uq144x112 memory price0Cumulative,
-        FixedPoint.uq144x112 memory price1Cumulative
+    function getCumulativePrices() public override view returns (
+        uint256 price0Cumulative,
+        uint256 price1Cumulative
     ) {
-        uint32 blockTimestamp = uint32(block.timestamp);
+        uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            price0Cumulative = FixedPoint.uq144x112(
-                price0CumulativeLast._x + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x
-            );
-
-            price1Cumulative = FixedPoint.uq144x112(
-                price1CumulativeLast._x + FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x
-            );
+            price0Cumulative = price0CumulativeLast + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x;
+            price1Cumulative = price1CumulativeLast + FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x;
+        } else {
+            price0Cumulative = price0CumulativeLast;
+            price1Cumulative = price1CumulativeLast;
         }
     }
 }

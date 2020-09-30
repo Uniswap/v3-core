@@ -1,20 +1,18 @@
 import chai, { expect } from 'chai'
 import { createFixtureLoader, deployContract, MockProvider, solidity } from 'ethereum-waffle'
 import { BigNumber, constants, Contract } from 'ethers'
+import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 
-import CumulativePriceTest from '../build/CumulativePriceTest.json'
 import { pairFixture } from './shared/fixtures'
 
 import {
-  bnify2,
   expandTo18Decimals,
+  FEES,
   FeeVote,
   getExpectedTick,
   getPositionKey,
-  LIQUIDITY_MIN,
   MAX_TICK,
   MIN_TICK,
-  mineBlock,
   OVERRIDES,
 } from './shared/utilities'
 
@@ -29,19 +27,22 @@ describe('UniswapV3Pair', () => {
       allowUnlimitedContractSize: true,
     },
   })
-  const [wallet, other] = provider.getWallets()
+  const [wallet] = provider.getWallets()
   const loadFixture = createFixtureLoader([wallet], provider)
 
   let token0: Contract
   let token1: Contract
   let factory: Contract
   let pair: Contract
+  let pairTest: Contract
+
   beforeEach('load fixture', async () => {
     const fixture = await loadFixture(pairFixture)
     token0 = fixture.token0
     token1 = fixture.token1
     factory = fixture.factory
     pair = fixture.pair
+    pairTest = fixture.pairTest
   })
 
   // this invariant should always hold true.
@@ -541,183 +542,139 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  async function addLiquidity(token0Amount: BigNumber, token1Amount: BigNumber) {
-    await token0.transfer(pair.address, token0Amount)
-    await token1.transfer(pair.address, token1Amount)
-    await pair.mint(wallet.address, OVERRIDES)
-  }
-
-  const swapTestCases: BigNumber[][] = [
-    [1, 5, 10, '1662497915624478906'],
-    [1, 10, 5, '453305446940074565'],
-
-    [2, 5, 10, '2851015155847869602'],
-    [2, 10, 5, '831248957812239453'],
-
-    [1, 10, 10, '906610893880149131'],
-    [1, 100, 100, '987158034397061298'],
-    [1, 1000, 1000, '996006981039903216'],
-  ].map((a) => a.map((n) => (typeof n === 'string' ? BigNumber.from(n) : expandTo18Decimals(n))))
-  swapTestCases.forEach((swapTestCase, i) => {
-    it.skip(`getInputPrice:${i}`, async () => {
-      const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
-      await addLiquidity(token0Amount, token1Amount)
-      await token0.transfer(pair.address, swapAmount)
-      await expect(pair.swap(0, expectedOutputAmount.add(1), wallet.address, '0x', OVERRIDES)).to.be.revertedWith(
-        'UniswapV3: K'
+  describe('#getCumulativePrices', () => {
+    let pair: Contract
+    beforeEach('deploy mock pair', async () => {
+      pair = await deployContract(
+        wallet,
+        MockTimeUniswapV3Pair,
+        [factory.address, token0.address, token1.address],
+        OVERRIDES
       )
-      await pair.swap(0, expectedOutputAmount, wallet.address, '0x', OVERRIDES)
     })
-  })
-
-  const optimisticTestCases: BigNumber[][] = [
-    ['997000000000000000', 5, 10, 1], // given amountIn, amountOut = floor(amountIn * .997)
-    ['997000000000000000', 10, 5, 1],
-    ['997000000000000000', 5, 5, 1],
-    [1, 5, 5, '1003009027081243732'], // given amountOut, amountIn = ceiling(amountOut / .997)
-  ].map((a) => a.map((n) => (typeof n === 'string' ? BigNumber.from(n) : expandTo18Decimals(n))))
-  optimisticTestCases.forEach((optimisticTestCase, i) => {
-    it.skip(`optimistic:${i}`, async () => {
-      const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase
-      await addLiquidity(token0Amount, token1Amount)
-      await token0.transfer(pair.address, inputAmount)
-      await expect(pair.swap(outputAmount.add(1), 0, wallet.address, '0x', OVERRIDES)).to.be.revertedWith(
-        'UniswapV3: K'
-      )
-      await pair.swap(outputAmount, 0, wallet.address, '0x', OVERRIDES)
+    beforeEach('set pair time to 100', async () => {
+      await pair.setTime(100)
     })
-  })
-
-  it.skip('swap:token0', async () => {
-    const token0Amount = expandTo18Decimals(5)
-    const token1Amount = expandTo18Decimals(10)
-    await addLiquidity(token0Amount, token1Amount)
-
-    const swapAmount = expandTo18Decimals(1)
-    const expectedOutputAmount = BigNumber.from('1662497915624478906')
-    await token0.transfer(pair.address, swapAmount)
-    await expect(pair.swap(0, expectedOutputAmount, wallet.address, '0x', OVERRIDES))
-      .to.emit(token1, 'Transfer')
-      .withArgs(pair.address, wallet.address, expectedOutputAmount)
-      .to.emit(pair, 'Sync')
-      .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
-      .to.emit(pair, 'Swap')
-      .withArgs(wallet.address, swapAmount, 0, 0, expectedOutputAmount, wallet.address)
-
-    const reserves = await pair.getReserves()
-    expect(reserves[0]).to.eq(token0Amount.add(swapAmount))
-    expect(reserves[1]).to.eq(token1Amount.sub(expectedOutputAmount))
-    expect(await token0.balanceOf(pair.address)).to.eq(token0Amount.add(swapAmount))
-    expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.sub(expectedOutputAmount))
-    const totalSupplyToken0 = await token0.totalSupply()
-    const totalSupplyToken1 = await token1.totalSupply()
-    expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
-    expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
-  })
-
-  it.skip('swap:token1', async () => {
-    const token0Amount = expandTo18Decimals(5)
-    const token1Amount = expandTo18Decimals(10)
-    await addLiquidity(token0Amount, token1Amount)
-
-    const swapAmount = expandTo18Decimals(1)
-    const expectedOutputAmount = BigNumber.from('453305446940074565')
-    await token1.transfer(pair.address, swapAmount)
-    await expect(pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES))
-      .to.emit(token0, 'Transfer')
-      .withArgs(pair.address, wallet.address, expectedOutputAmount)
-      .to.emit(pair, 'Sync')
-      .withArgs(token0Amount.sub(expectedOutputAmount), token1Amount.add(swapAmount))
-      .to.emit(pair, 'Swap')
-      .withArgs(wallet.address, 0, swapAmount, expectedOutputAmount, 0, wallet.address)
-
-    const reserves = await pair.getReserves()
-    expect(reserves[0]).to.eq(token0Amount.sub(expectedOutputAmount))
-    expect(reserves[1]).to.eq(token1Amount.add(swapAmount))
-    expect(await token0.balanceOf(pair.address)).to.eq(token0Amount.sub(expectedOutputAmount))
-    expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.add(swapAmount))
-    const totalSupplyToken0 = await token0.totalSupply()
-    const totalSupplyToken1 = await token1.totalSupply()
-    expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).add(expectedOutputAmount))
-    expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
-  })
-
-  it.skip('swap:gas', async () => {
-    const token0Amount = expandTo18Decimals(5)
-    const token1Amount = expandTo18Decimals(10)
-    await addLiquidity(token0Amount, token1Amount)
-
-    // ensure that setting price{0,1}CumulativeLast for the first time doesn't affect our gas math
-    await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
-    await pair.sync(OVERRIDES)
-
-    const swapAmount = expandTo18Decimals(1)
-    const expectedOutputAmount = BigNumber.from('453305446940074565')
-    await token1.transfer(pair.address, swapAmount)
-    await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
-    const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', OVERRIDES)
-    const receipt = await tx.wait()
-    expect(receipt.gasUsed).to.eq(71770)
-  })
-
-  it.skip('burn', async () => {
-    const token0Amount = expandTo18Decimals(3)
-    const token1Amount = expandTo18Decimals(3)
-    await addLiquidity(token0Amount, token1Amount)
-
-    const expectedLiquidity = expandTo18Decimals(3)
-    await pair.transfer(pair.address, expectedLiquidity.sub(LIQUIDITY_MIN))
-    await expect(pair.burn(wallet.address, OVERRIDES))
-      .to.emit(pair, 'Transfer')
-      .withArgs(pair.address, constants.AddressZero, expectedLiquidity.sub(LIQUIDITY_MIN))
-      .to.emit(token0, 'Transfer')
-      .withArgs(pair.address, wallet.address, token0Amount.sub(1000))
-      .to.emit(token1, 'Transfer')
-      .withArgs(pair.address, wallet.address, token1Amount.sub(1000))
-      .to.emit(pair, 'Sync')
-      .withArgs(1000, 1000)
-      .to.emit(pair, 'Burn')
-      .withArgs(wallet.address, token0Amount.sub(1000), token1Amount.sub(1000), wallet.address)
-
-    expect(await pair.balanceOf(wallet.address)).to.eq(0)
-    expect(await pair.totalSupply()).to.eq(LIQUIDITY_MIN)
-    expect(await token0.balanceOf(pair.address)).to.eq(1000)
-    expect(await token1.balanceOf(pair.address)).to.eq(1000)
-    const totalSupplyToken0 = await token0.totalSupply()
-    const totalSupplyToken1 = await token1.totalSupply()
-    expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(1000))
-    expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(1000))
-  })
-
-  describe('Oracle', () => {
-    it('`_update` is idempotent', async () => {
-      const contract = await deployContract(wallet, CumulativePriceTest, [], OVERRIDES)
-      // this call should succeed, the assertions are done inside
-      // the contract
-      await contract.testUpdateMultipleTransactionsSameBlock(OVERRIDES)
-    })
-
-    it('getCumulativePrices', async () => {
-      const token0Amount = expandTo18Decimals(3)
-      const token1Amount = expandTo18Decimals(3)
-
+    beforeEach('initialize pair', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+      await pair.initialize(expandTo18Decimals(2), expandTo18Decimals(2), 0, 0, OVERRIDES)
+    })
+    it('current time is 100', async () => {
+      expect(await pair.time()).to.eq(100)
+    })
+    it('current block timestamp is 100', async () => {
+      expect(await pair.blockTimestampLast()).to.eq(100)
+    })
+    it('cumulative prices are initially 0', async () => {
+      const [price0, price1] = await pair.getCumulativePrices()
+      expect(price0).to.eq(0)
+      expect(price1).to.eq(0)
+    })
+    it('swap without time change does not affect cumulative price', async () => {
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      const [price0, price1] = await pair.getCumulativePrices()
+      expect(price0).to.eq(0)
+      expect(price1).to.eq(0)
+    })
+    it('swap after time change updates cumulative price', async () => {
+      await pair.setTime(200)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      const [price0, price1] = await pair.getCumulativePrices()
+      expect(price0).to.eq(BigNumber.from(2).pow(112).mul(100))
+      expect(price1).to.eq(BigNumber.from(2).pow(112).mul(100))
+    })
+    it('second swap after time change does not affect cumulative price', async () => {
+      await pair.setTime(200)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      const [price0, price1] = await pair.getCumulativePrices()
+      expect(price0).to.eq(BigNumber.from(2).pow(112).mul(100))
+      expect(price1).to.eq(BigNumber.from(2).pow(112).mul(100))
+    })
+    it('third swap after time change adds to cumulative', async () => {
+      await pair.setTime(200)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      await pair.setTime(300)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
+      const [price0, price1] = await pair.getCumulativePrices()
+      expect(price0).to.eq('1038459371706965474302360366349228200')
+      expect(price1).to.eq('1038459371706965577109838165338815200')
+    })
+    it('counterfactually computes the cumulative price', async () => {
+      await pair.setTime(200)
+      const [price0_1, price1_1] = await pair.getCumulativePrices()
+      expect(price0_1).to.eq(BigNumber.from(2).pow(112).mul(100))
+      expect(price1_1).to.eq(BigNumber.from(2).pow(112).mul(100))
+      await pair.setTime(300)
+      const [price0_2, price1_2] = await pair.getCumulativePrices()
+      expect(price0_2).to.eq(BigNumber.from(2).pow(112).mul(200))
+      expect(price1_2).to.eq(BigNumber.from(2).pow(112).mul(200))
+    })
+  })
 
-      // make a swap to force the call to `_update`
-      await pair.swap0For1(1000, wallet.address, '0x', OVERRIDES)
+  describe('#getVirtualSupply', () => {
+    it('returns 0 before initialization', async () => {
+      expect(await pair.getVirtualSupply()).to.eq(0)
+    })
+    it('returns initial liquidity', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
+    })
+    it('returns in supply in range', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(-1, 1, FeeVote.FeeVote4, expandTo18Decimals(3))
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(5))
+    })
+    it('excludes supply at tick above current tick', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(1, 2, FeeVote.FeeVote4, expandTo18Decimals(3))
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
+    })
+    it('excludes supply at tick below current tick', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(-2, -1, FeeVote.FeeVote4, expandTo18Decimals(3))
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
+    })
+    it('gas cost', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      expect(await pairTest.getGasCostOfGetVirtualSupply()).to.eq(8815)
+    })
+  })
 
-      // check the price now
-      const priceBefore = await pair.getCumulativePrices()
-
-      const blockTimestamp = (await provider.getBlock('latest')).timestamp
-      await mineBlock(provider, blockTimestamp + 1000)
-
-      // the cumulative price should be greater as more time elapses
-      const priceAfter = await pair.getCumulativePrices()
-      expect(bnify2(priceAfter[0]).gt(bnify2(priceBefore[0]))).to.be.true
-      expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
+  describe('#getFee', () => {
+    it('returns fee vote 0 when not initialized', async () => {
+      expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote0])
+    })
+    describe('returns only vote when initialized', () => {
+      for (const vote of [FeeVote.FeeVote0, FeeVote.FeeVote1, FeeVote.FeeVote4, FeeVote.FeeVote5]) {
+        it(`vote: ${FeeVote[vote]}`, async () => {
+          await initializeAtZeroTick(expandTo18Decimals(2), vote)
+          expect(await pair.getFee()).to.eq(FEES[vote])
+        })
+      }
+    })
+    it('median computation', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote2)
+      const liquidity = await pair.virtualSupplies(FeeVote.FeeVote2)
+      expect(liquidity).to.eq(expandTo18Decimals(2))
+      expect(await pair.getVirtualSupply()).to.eq(liquidity)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(-1, 1, FeeVote.FeeVote4, liquidity.add(2))
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(4).add(2))
+      expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote4])
+    })
+    it('gas cost uninitialized', async () => {
+      expect(await pairTest.getGasCostOfGetFee()).to.eq(10387)
+    })
+    it('gas cost initialized to vote 5', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote5)
+      expect(await pairTest.getGasCostOfGetFee()).to.eq(14809)
     })
   })
 
