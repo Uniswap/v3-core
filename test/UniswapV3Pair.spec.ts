@@ -27,7 +27,7 @@ describe('UniswapV3Pair', () => {
       allowUnlimitedContractSize: true,
     },
   })
-  const [wallet] = provider.getWallets()
+  const [wallet, other] = provider.getWallets()
   const loadFixture = createFixtureLoader([wallet], provider)
 
   let token0: Contract
