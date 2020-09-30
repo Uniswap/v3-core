@@ -699,14 +699,14 @@ describe('UniswapV3Pair', () => {
       expect(price1).to.eq(0)
     })
     it('swap without time change does not affect cumulative price', async () => {
-      await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x', OVERRIDES)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
       const [[price0], [price1]] = await pair.getCumulativePrices()
       expect(price0).to.eq(0)
       expect(price1).to.eq(0)
     })
     it('swap after time change updates cumulative price', async () => {
       await pair.setTime(200)
-      await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x', OVERRIDES)
+      await pair.swap0For1(100, wallet.address, '0x', OVERRIDES)
       const [[price0], [price1]] = await pair.getCumulativePrices()
       expect(price0).to.eq(BigNumber.from(2).pow(112).mul(100))
       expect(price1).to.eq(BigNumber.from(2).pow(112).mul(100))
