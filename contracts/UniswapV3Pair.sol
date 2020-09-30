@@ -24,7 +24,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using FixedPoint for FixedPoint.uq112x112;
 
     // Number of fee options
-    uint8 public constant NUM_FEE_OPTIONS = 6;
+    uint8 public constant override NUM_FEE_OPTIONS = 6;
 
     // list of fee options expressed as pips
     // uint24 since the maximum value is 1_000_000 which exceeds 2^16
@@ -114,7 +114,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // find the median fee vote, and return the fee in pips
-    function getFee() public view returns (uint24 fee) {
+    function getFee() public override view returns (uint24 fee) {
         uint112 virtualSupplyCumulative = 0;
         uint112 virtualSupply = getVirtualSupply();
         uint24[NUM_FEE_OPTIONS] memory feeOptions = FEE_OPTIONS();

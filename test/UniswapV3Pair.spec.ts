@@ -3,11 +3,13 @@ import { createFixtureLoader, deployContract, MockProvider, solidity } from 'eth
 import { BigNumber, constants, Contract } from 'ethers'
 
 import CumulativePriceTest from '../build/CumulativePriceTest.json'
+import UniswapV3PairTest from '../build/UniswapV3PairTest.json'
 import { pairFixture } from './shared/fixtures'
 
 import {
   bnify2,
   expandTo18Decimals,
+  FEES,
   FeeVote,
   getExpectedTick,
   getPositionKey,
@@ -569,6 +571,16 @@ describe('UniswapV3Pair', () => {
       const priceAfter = await pair.getCumulativePrices()
       expect(bnify2(priceAfter[0]).gt(bnify2(priceBefore[0]))).to.be.true
       expect(bnify2(priceAfter[1]).gt(bnify2(priceBefore[1]))).to.be.true
+    })
+  })
+
+  describe('#getFee', () => {
+    it('returns fee vote 0 when not initialized', async () => {
+      expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote0])
+    })
+    it('gas', async () => {
+      const test = await deployContract(wallet, UniswapV3PairTest, [pair.address], OVERRIDES)
+      expect(await test.getGasCostOfGetFee()).to.eq(10475)
     })
   })
 })
