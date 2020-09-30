@@ -22,8 +22,11 @@ interface IUniswapV3Pair {
     function blockTimestampLast() external view returns (uint32);
     function tickCurrent() external view returns (int16);
     function virtualSupplies(uint) external view returns (uint112);
+    function price0CumulativeLast() external view returns (uint256);
+    function price1CumulativeLast() external view returns (uint256);
 
     // derived state
     function getFee() external view returns (uint24 fee);
     function getVirtualSupply() external view returns (uint112 virtualSupply);
+    function getCumulativePrices() external view returns (uint256 price0Cumulative, uint256 price1Cumulative);
 }

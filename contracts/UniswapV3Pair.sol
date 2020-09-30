@@ -59,8 +59,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[NUM_FEE_OPTIONS] public override virtualSupplies;
 
-    FixedPoint.uq144x112 private price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
-    FixedPoint.uq144x112 private price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
+    uint256 public override price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
+    uint256 public override price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
     
     struct TickInfo {
         // fee growth on the _other_ side of this tick (relative to the current tick)
@@ -526,20 +526,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // Helper for reading the cumulative price as of the current block
-    function getCumulativePrices() public view returns (
-        FixedPoint.uq144x112 memory price0Cumulative,
-        FixedPoint.uq144x112 memory price1Cumulative
+    function getCumulativePrices() public override view returns (
+        uint256 price0Cumulative,
+        uint256 price1Cumulative
     ) {
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            price0Cumulative = FixedPoint.uq144x112(
-                price0CumulativeLast._x + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x
-            );
-            price1Cumulative = FixedPoint.uq144x112(
-                price1CumulativeLast._x + FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x
-            );
+            price0Cumulative = price0CumulativeLast + FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x;
+            price1Cumulative = price1CumulativeLast + FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x;
         } else {
             price0Cumulative = price0CumulativeLast;
             price1Cumulative = price1CumulativeLast;
