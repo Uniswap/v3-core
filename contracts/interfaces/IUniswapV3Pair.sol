@@ -25,4 +25,5 @@ interface IUniswapV3Pair {
 
     // derived state
     function getFee() external view returns (uint24 fee);
+    function getVirtualSupply() external view returns (uint112 virtualSupply);
 }

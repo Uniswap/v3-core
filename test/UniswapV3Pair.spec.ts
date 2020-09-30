@@ -29,7 +29,7 @@ describe('UniswapV3Pair', () => {
       allowUnlimitedContractSize: true,
     },
   })
-  const [wallet, other] = provider.getWallets()
+  const [wallet] = provider.getWallets()
   const loadFixture = createFixtureLoader([wallet], provider)
 
   let token0: Contract
@@ -616,9 +616,33 @@ describe('UniswapV3Pair', () => {
     it('returns fee vote 0 when not initialized', async () => {
       expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote0])
     })
-    it('gas', async () => {
+    describe('returns only vote when initialized', () => {
+      for (const vote of [FeeVote.FeeVote0, FeeVote.FeeVote1, FeeVote.FeeVote4, FeeVote.FeeVote5]) {
+        it(`vote: ${FeeVote[vote]}`, async () => {
+          await initializeAtZeroTick(initializeToken0Amount, vote)
+          expect(await pair.getFee()).to.eq(FEES[vote])
+        })
+      }
+    })
+    it('median computation', async () => {
+      await initializeAtZeroTick(initializeToken0Amount, FeeVote.FeeVote2)
+      const liquidity = await pair.virtualSupplies(FeeVote.FeeVote2)
+      expect(liquidity).to.eq(expandTo18Decimals(2))
+      expect(await pair.getVirtualSupply()).to.eq(liquidity)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(-1, 1, FeeVote.FeeVote4, liquidity.add(2))
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(4).add(2))
+      expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote4])
+    })
+    it('gas cost uninitialized', async () => {
       const test = await deployContract(wallet, UniswapV3PairTest, [pair.address], OVERRIDES)
       expect(await test.getGasCostOfGetFee()).to.eq(10475)
+    })
+    it('gas cost initialized to vote 5', async () => {
+      await initializeAtZeroTick(initializeToken0Amount, FeeVote.FeeVote5)
+      const test = await deployContract(wallet, UniswapV3PairTest, [pair.address], OVERRIDES)
+      expect(await test.getGasCostOfGetFee()).to.eq(14897)
     })
   })
 })

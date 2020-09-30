@@ -107,7 +107,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // sum the virtual supply across all fee votes to get the total
-    function getVirtualSupply() public view returns (uint112 virtualSupply) {
+    function getVirtualSupply() public override view returns (uint112 virtualSupply) {
         for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
             virtualSupply += virtualSupplies[i];
         }
