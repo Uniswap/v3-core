@@ -27,7 +27,7 @@ describe('UniswapV3Pair', () => {
       allowUnlimitedContractSize: true,
     },
   })
-  const [wallet] = provider.getWallets()
+  const [wallet, other] = provider.getWallets()
   const loadFixture = createFixtureLoader([wallet], provider)
 
   let token0: Contract
@@ -675,6 +675,66 @@ describe('UniswapV3Pair', () => {
     it('gas cost initialized to vote 5', async () => {
       await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote5)
       expect(await pairTest.getGasCostOfGetFee()).to.eq(14809)
+    })
+  })
+
+  describe('feeTo', () => {
+    const token0Amount = expandTo18Decimals(1000)
+    const token1Amount = expandTo18Decimals(1000)
+
+    let token0FeesWithoutFeeTo: BigNumber
+    let token1FeesWithoutFeeTo: BigNumber
+
+    beforeEach(async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0, OVERRIDES)
+    })
+
+    const claimFee = async () => {
+      const swapAmount = expandTo18Decimals(1)
+      await pair.swap0For1(swapAmount, wallet.address, '0x', OVERRIDES)
+
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0, OVERRIDES)
+
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      return {
+        token0BalanceBefore,
+        token0BalanceAfter,
+        token1BalanceBefore,
+        token1BalanceAfter,
+      }
+    }
+
+    it('off', async () => {
+      const { token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter } = await claimFee()
+
+      token0FeesWithoutFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
+      token1FeesWithoutFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
+    })
+
+    it('on', async () => {
+      await factory.setFeeTo(other.address)
+
+      const { token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter } = await claimFee()
+
+      const token0FeesWithFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
+      const token1FeesWithFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
+
+      const token0ExpectedProtocolFees = token0FeesWithoutFeeTo.sub(token0FeesWithoutFeeTo.div(6)).add(1) // off by 1
+      const token1ExpectedProtocolFees = token1FeesWithoutFeeTo.sub(token1FeesWithoutFeeTo.div(6))
+
+      expect(token0FeesWithFeeTo).to.be.eq(token0ExpectedProtocolFees)
+      expect(token1FeesWithFeeTo).to.be.eq(token1ExpectedProtocolFees)
+
+      const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
+      expect(position.liquidity.gt(0)).to.be.true
+      // TODO there's lots more to check here
     })
   })
 })

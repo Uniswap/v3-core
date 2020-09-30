@@ -364,13 +364,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (feeTo != address(0) && msg.sender != feeTo) {
                 uint liquidityProtocol = liquidityFee / 6;
                 if (liquidityProtocol > 0) {
-                    // TODO figure out how we want to actually issue liquidityProtocol to feeTo
+                    // 1/6 of the user's liquidityFee gets allocated as liquidity between
+                    // MIN/MAX for `feeTo`.
                     liquidityFee -= liquidityProtocol;
+
+                    // TODO ensure all of the below is correct
+                    // note: this accumulates protocol fees under the user's current fee vote
+                    Position storage positionProtocol =
+                        _getPosition(feeTo, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
+                    FixedPoint.uq112x112 memory g = getG(); // shortcut for _getGrowthInside
+
+                    // accrue any newly earned fee liquidity from the existing protocol position
+                    liquidityProtocol = liquidityProtocol.add(
+                        FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) > positionProtocol.liquidity ?
+                        FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) - positionProtocol.liquidity :
+                        0
+                    );
+                    // update the reserves to account for the this new liquidity
+                    updateReservesAndVirtualSupply(liquidityProtocol.toInt112(), feeVote);
+
+                    // update the position
+                    // TODO all the same caveats as above apply
+                    positionProtocol.liquidity = positionProtocol.liquidity.add(liquidityProtocol).toUint112();
+                    positionProtocol.liquidityAdjusted =
+                        uint(FixedPoint.encode(positionProtocol.liquidity)._x / g._x).toUint112();
                 }
             }
 
             // credit the caller for the value of the fee liquidity
-            // TODO technically this can overflow
             (amount0, amount1) = updateReservesAndVirtualSupply(-(liquidityFee.toInt112()), feeVote);
         }
 
