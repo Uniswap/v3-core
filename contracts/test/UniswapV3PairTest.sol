@@ -14,4 +14,10 @@ contract UniswapV3PairTest {
         pair.getFee();
         return gasBefore - gasleft();
     }
+
+    function getGasCostOfGetVirtualSupply() public view returns (uint) {
+        uint gasBefore = gasleft();
+        pair.getVirtualSupply();
+        return gasBefore - gasleft();
+    }
 }

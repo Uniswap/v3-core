@@ -3,8 +3,6 @@ import { createFixtureLoader, deployContract, MockProvider, solidity } from 'eth
 import { BigNumber, constants, Contract } from 'ethers'
 import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 
-import UniswapV3PairTest from '../build/UniswapV3PairTest.json'
-
 import { pairFixture } from './shared/fixtures'
 
 import {
@@ -36,12 +34,15 @@ describe('UniswapV3Pair', () => {
   let token1: Contract
   let factory: Contract
   let pair: Contract
+  let pairTest: Contract
+
   beforeEach('load fixture', async () => {
     const fixture = await loadFixture(pairFixture)
     token0 = fixture.token0
     token1 = fixture.token1
     factory = fixture.factory
     pair = fixture.pair
+    pairTest = fixture.pairTest
   })
 
   // this invariant should always hold true.
@@ -612,6 +613,39 @@ describe('UniswapV3Pair', () => {
     })
   })
 
+  describe('#getVirtualSupply', () => {
+    it('returns 0 before initialization', async () => {
+      expect(await pair.getVirtualSupply()).to.eq(0)
+    })
+    it('returns initial liquidity', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
+    })
+    it('returns in supply in range', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(-1, 1, FeeVote.FeeVote4, expandTo18Decimals(3))
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(5))
+    })
+    it('excludes supply at tick above current tick', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(1, 2, FeeVote.FeeVote4, expandTo18Decimals(3))
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
+    })
+    it('excludes supply at tick below current tick', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(-2, -1, FeeVote.FeeVote4, expandTo18Decimals(3))
+      expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
+    })
+    it('gas cost', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      expect(await pairTest.getGasCostOfGetVirtualSupply()).to.eq(8837)
+    })
+  })
+
   describe('#getFee', () => {
     it('returns fee vote 0 when not initialized', async () => {
       expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote0])
@@ -619,13 +653,13 @@ describe('UniswapV3Pair', () => {
     describe('returns only vote when initialized', () => {
       for (const vote of [FeeVote.FeeVote0, FeeVote.FeeVote1, FeeVote.FeeVote4, FeeVote.FeeVote5]) {
         it(`vote: ${FeeVote[vote]}`, async () => {
-          await initializeAtZeroTick(initializeToken0Amount, vote)
+          await initializeAtZeroTick(expandTo18Decimals(2), vote)
           expect(await pair.getFee()).to.eq(FEES[vote])
         })
       }
     })
     it('median computation', async () => {
-      await initializeAtZeroTick(initializeToken0Amount, FeeVote.FeeVote2)
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote2)
       const liquidity = await pair.virtualSupplies(FeeVote.FeeVote2)
       expect(liquidity).to.eq(expandTo18Decimals(2))
       expect(await pair.getVirtualSupply()).to.eq(liquidity)
@@ -636,13 +670,11 @@ describe('UniswapV3Pair', () => {
       expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote4])
     })
     it('gas cost uninitialized', async () => {
-      const test = await deployContract(wallet, UniswapV3PairTest, [pair.address], OVERRIDES)
-      expect(await test.getGasCostOfGetFee()).to.eq(10475)
+      expect(await pairTest.getGasCostOfGetFee()).to.eq(10475)
     })
     it('gas cost initialized to vote 5', async () => {
-      await initializeAtZeroTick(initializeToken0Amount, FeeVote.FeeVote5)
-      const test = await deployContract(wallet, UniswapV3PairTest, [pair.address], OVERRIDES)
-      expect(await test.getGasCostOfGetFee()).to.eq(14897)
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote5)
+      expect(await pairTest.getGasCostOfGetFee()).to.eq(14897)
     })
   })
 })
