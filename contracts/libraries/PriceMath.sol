@@ -13,7 +13,7 @@ library PriceMath {
     function getInputToRatio(
         uint112 reserveIn,
         uint112 reserveOut,
-        uint16 lpFee,
+        uint24 lpFee,
         FixedPoint.uq112x112 memory inOutRatio
     )
         internal
