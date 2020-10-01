@@ -43,7 +43,7 @@ library UniswapMath {
      */
     function getInputToRatio (
         uint112 reserveIn, uint112 reserveOut,
-        uint16 lpFee, uint224 inOutRatio)
+        uint24 lpFee, uint224 inOutRatio)
     internal pure returns (uint256 amountIn) {
         // g2y2 = g^2 * y^2 * 1e6 (max value: ~2^236)
         uint256 g2y2 = (uint256 (lpFee) * uint256 (lpFee) * uint256 (reserveIn) * uint256 (reserveIn) + 999999) / 1e6;
