@@ -108,19 +108,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // sum the virtual supply across all fee votes to get the total
     function getVirtualSupply() public override view returns (uint112 virtualSupply) {
-        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-            virtualSupply += virtualSupplies[i];
-        }
+        virtualSupply = virtualSupplies[0] + virtualSupplies[1] + virtualSupplies[2] + virtualSupplies[3] + virtualSupplies[4] + virtualSupplies[5];
     }
 
     // find the median fee vote, and return the fee in pips
     function getFee() public override view returns (uint24 fee) {
-        uint112 virtualSupplyCumulative = 0;
-        uint112 virtualSupply = getVirtualSupply();
+        uint112 virtualSupplyCumulative;
+        // load all virtual supplies into memory
+        uint112[NUM_FEE_OPTIONS] memory virtualSupplies_ = [
+            virtualSupplies[0], virtualSupplies[1], virtualSupplies[2], virtualSupplies[3], virtualSupplies[4], virtualSupplies[5]
+        ];
+        uint112 threshold = (virtualSupplies_[0] + virtualSupplies_[1] + virtualSupplies_[2] + virtualSupplies_[3] + virtualSupplies_[4] + virtualSupplies_[5]) / 2;
         uint24[NUM_FEE_OPTIONS] memory feeOptions = FEE_OPTIONS();
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {
-            virtualSupplyCumulative += virtualSupplies[feeVoteIndex];
-            if (virtualSupplyCumulative >= (virtualSupply / 2)) {
+            virtualSupplyCumulative += virtualSupplies_[feeVoteIndex];
+            if (virtualSupplyCumulative >= threshold) {
                 return feeOptions[feeVoteIndex];
             }
         }

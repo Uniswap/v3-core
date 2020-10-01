@@ -640,9 +640,19 @@ describe('UniswapV3Pair', () => {
       await pair.setPosition(-2, -1, FeeVote.FeeVote4, expandTo18Decimals(3))
       expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
     })
-    it('gas cost', async () => {
+    it('gas cost uninitialized', async () => {
+      expect(await pairTest.getGasCostOfGetVirtualSupply()).to.eq(5291)
+    })
+    it('gas cost one vote', async () => {
       await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
-      expect(await pairTest.getGasCostOfGetVirtualSupply()).to.eq(8815)
+      expect(await pairTest.getGasCostOfGetVirtualSupply()).to.eq(5291)
+    })
+    it('gas cost two votes', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(-1, 1, FeeVote.FeeVote4, expandTo18Decimals(1))
+      expect(await pairTest.getGasCostOfGetVirtualSupply()).to.eq(5291)
     })
   })
 
@@ -670,11 +680,18 @@ describe('UniswapV3Pair', () => {
       expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote4])
     })
     it('gas cost uninitialized', async () => {
-      expect(await pairTest.getGasCostOfGetFee()).to.eq(10387)
+      expect(await pairTest.getGasCostOfGetFee()).to.eq(6226)
+    })
+    it('gas cost multiple votes median in middle', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(-1, 1, FeeVote.FeeVote4, expandTo18Decimals(2))
+      expect(await pairTest.getGasCostOfGetFee()).to.eq(6730)
     })
     it('gas cost initialized to vote 5', async () => {
       await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote5)
-      expect(await pairTest.getGasCostOfGetFee()).to.eq(14809)
+      expect(await pairTest.getGasCostOfGetFee()).to.eq(6896)
     })
   })
 
