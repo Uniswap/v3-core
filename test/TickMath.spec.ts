@@ -131,17 +131,17 @@ describe('TickMath', () => {
     await expect(tickMath.getPrice(-7803)).to.be.revertedWith('')
   })
 
-  describe.skip('gas', () => {
+  describe('gas', () => {
     const tickGasPrices: { [tick: number]: number } = {
-      [-7802]: 6404,
-      [-1000]: 6483,
-      [-500]: 6482,
-      [-50]: 6511,
-      [0]: 202,
-      [50]: 6273,
-      [500]: 6300,
-      [1000]: 6301,
-      [7802]: 6402,
+      [-7802]: 913,
+      [-1000]: 844,
+      [-500]: 844,
+      [-50]: 775,
+      [0]: 690,
+      [50]: 795,
+      [500]: 864,
+      [1000]: 864,
+      [7802]: 933,
     }
 
     for (let tick in tickGasPrices) {
