@@ -341,7 +341,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
     function setPosition(int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta)
-        public lock returns (int112 amount0, int112 amount1)
+        external lock returns (int112 amount0, int112 amount1)
     {
         require(getVirtualSupply() > 0,         'UniswapV3: NOT_INITIALIZED'); // sufficient check
         require(tickLower >= TickMath.MIN_TICK, 'UniswapV3: LOWER_TICK');
@@ -462,7 +462,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // TODO: implement swap1for0, or integrate it into this
     // move from right to left (token 1 is becoming more valuable)
-    function swap0For1(uint112 amount0In, address to, bytes memory data) public lock returns (uint112 amount1Out) {
+    function swap0For1(uint112 amount0In, address to, bytes calldata data) external lock returns (uint112 amount1Out) {
         require(amount0In > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
         _update(); // update the oracle
         // get the current fee before the trade is executed
