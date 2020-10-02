@@ -38,7 +38,7 @@ export async function pairFixture([wallet]: Signer[], provider: providers.Web3Pr
   const token0Address = (await pair.token0()).address
   const [token0, token1] = tokenA.address === token0Address ? [tokenA, tokenB] : [tokenB, tokenA]
 
-  const pairTest = await deployContract(wallet, UniswapV3PairTest, [pair.address], OVERRIDES)
+  const pairTest = await deployContract(wallet, UniswapV3PairTest, [pair.address])
 
   return { factory, token0, token1, pair, pairTest }
 }

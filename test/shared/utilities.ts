@@ -7,10 +7,6 @@ export const MAX_TICK = 7802
 
 export const LIQUIDITY_MIN = 10 ** 3
 
-export const OVERRIDES = {
-  gasLimit: 9999999,
-}
-
 export enum FeeVote {
   FeeVote0 = 0,
   FeeVote1 = 1,
