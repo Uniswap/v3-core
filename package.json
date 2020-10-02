@@ -21,29 +21,29 @@
   },
   "dependencies": {
     "@uniswap/lib": "1.1.2",
-    "abdk-libraries-solidity": "2.3.0",
     "decimal.js": "^10.2.0"
   },
   "devDependencies": {
+    "@nomiclabs/buidler": "^1.4.3",
+    "@nomiclabs/buidler-ethers": "^2.0.0",
+    "@nomiclabs/buidler-waffle": "^2.0.0",
     "@openzeppelin/contracts": "^3.1.0",
     "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
-    "ethereum-waffle": "^3.0.0",
+    "ethereum-waffle": "^3.0.2",
+    "ethers": "^5.0.8",
     "mocha": "^6.2.2",
-    "prettier": "^1.19.1",
-    "rimraf": "^3.0.0",
-    "solc": "0.6.11",
+    "prettier": "^2.0.5",
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3"
   },
   "scripts": {
     "lint": "yarn prettier ./test/*.ts --check",
     "lint:fix": "yarn prettier ./test/*.ts --write",
-    "precompile": "rimraf ./build/",
-    "compile": "waffle",
+    "compile": "buidler compile",
     "pretest": "yarn compile",
-    "test": "mocha",
+    "test": "buidler test",
     "prepublishOnly": "yarn test"
   }
 }

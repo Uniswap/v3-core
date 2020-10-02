@@ -1,13 +1,14 @@
 import chai, { expect } from 'chai'
 import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 import { Contract, BigNumber, BigNumberish } from 'ethers'
+import { bnify2 } from './shared/utilities'
 
 import TickMathTest from '../build/TickMathTest.json'
 
 chai.use(solidity)
 
 const overrides = {
-  gasLimit: 9999999
+  gasLimit: 9999999,
 }
 
 const Q112 = BigNumber.from(2).pow(112)
@@ -17,8 +18,8 @@ describe('TickMath', () => {
     ganacheOptions: {
       hardfork: 'istanbul',
       mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-      gasLimit: 9999999
-    }
+      gasLimit: 9999999,
+    },
   })
   const [wallet] = provider.getWallets()
 
@@ -26,15 +27,6 @@ describe('TickMath', () => {
   before('deploy TickMathTest', async () => {
     tickMath = await deployContract(wallet, TickMathTest, [], overrides)
   })
-
-  // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-  function bnify2(a: BigNumberish | [BigNumberish]): BigNumber {
-    if (Array.isArray(a)) {
-      return BigNumber.from(a[0])
-    } else {
-      return BigNumber.from(a)
-    }
-  }
 
   // checks that an actual number is within allowedDiffBips of an expected number
   async function checkApproximatelyEquals(
@@ -48,10 +40,7 @@ describe('TickMath', () => {
       absDiff.lte(expected.mul(allowedDiffBips).div(10000)),
       `${actual.toString()} differs from ${expected.toString()} by >${allowedDiffBips.toString()}bips. 
       abs diff: ${absDiff.toString()}
-      diff bips: ${absDiff
-        .mul(10000)
-        .div(expected)
-        .toString()}`
+      diff bips: ${absDiff.mul(10000).div(expected).toString()}`
     ).to.be.true
   }
 
@@ -136,41 +125,23 @@ describe('TickMath', () => {
   })
 
   it('tick too large', async () => {
-    let threw = false
-    try {
-      await tickMath.getPrice(7803)
-    } catch (error) {
-      expect(error.message).to.contain('TickMath: OVERFLOW_UQ112x112')
-      threw = true
-    }
-    expect(threw).to.eq(true)
+    await expect(tickMath.getPrice(7803)).to.be.revertedWith('')
   })
   it('tick too small', async () => {
-    let threw = false
-    try {
-      await tickMath.getPrice(-7803)
-    } catch (error) {
-      expect(error.message).to.contain('TickMath: UNDERFLOW_UQ112x112')
-      threw = true
-    }
-    expect(threw).to.eq(true)
+    await expect(tickMath.getPrice(-7803)).to.be.revertedWith('')
   })
 
-  it('multiplier calculation', async () => {
-    expect(await tickMath.tickMultiplier()).to.eq('0x3ff8d664ecee35b77e6334057c6a534f')
-  })
-
-  describe.skip('gas', () => {
+  describe('gas', () => {
     const tickGasPrices: { [tick: number]: number } = {
-      [-7802]: 6404,
-      [-1000]: 6483,
-      [-500]: 6482,
-      [-50]: 6511,
-      [0]: 202,
-      [50]: 6273,
-      [500]: 6300,
-      [1000]: 6301,
-      [7802]: 6402
+      [-7802]: 913,
+      [-1000]: 844,
+      [-500]: 844,
+      [-50]: 775,
+      [0]: 690,
+      [50]: 795,
+      [500]: 864,
+      [1000]: 864,
+      [7802]: 933,
     }
 
     for (let tick in tickGasPrices) {
