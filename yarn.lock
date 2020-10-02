@@ -757,10 +757,12 @@
     typedarray-to-buffer "^3.1.5"
     yaeti "^0.0.6"
 
-abdk-libraries-solidity@2.3.0:
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/abdk-libraries-solidity/-/abdk-libraries-solidity-2.3.0.tgz#67720075ee63824089760952b5c810e677bf35a2"
-  integrity sha512-mSxoRD1S22cj6vpYOCWcaf0MMEG2ZqphQeRy2PEzemmUr0Om2sVBYbpQOHl0diA+4AUGERAGcjS3Z6MvcjRIow==
+abort-controller@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/abort-controller/-/abort-controller-3.0.0.tgz#eaf54d53b62bae4138e809ca225c8439a6efb392"
+  integrity sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==
+  dependencies:
+    event-target-shim "^5.0.0"
 
 abort-controller@^3.0.0:
   version "3.0.0"

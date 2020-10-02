@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
@@ -14,9 +15,5 @@ contract TickMathTest {
         TickMath.getRatioAtTick(tick);
         uint gasAfter = gasleft();
         return (gasBefore - gasAfter);
-    }
-
-    function tickMultiplier() public pure returns (bytes16) {
-        return ABDKMathQuad.log_2(ABDKMathQuad.from64x64(int128(101 << 64) / 100));
     }
 }

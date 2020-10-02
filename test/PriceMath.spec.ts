@@ -22,34 +22,42 @@ describe('PriceMath', () => {
     priceMath = await deployContract(wallet, PriceMathTest, [])
   })
 
-  describe('#getTradeToRatio', () => {
+  describe('#getInputToRatio', () => {
     describe('edge cases', () => {
       it('0 all', async () => {
-        await expect(priceMath.getTradeToRatio(0, 0, 0, [0])).to.be.revertedWith('PriceMath: NONZERO')
+        await expect(priceMath.getInputToRatio(0, 0, 0, [0])).to.be.revertedWith('FixedPoint: DIV_BY_ZERO')
       })
 
-      it('throws if wrong direction', async () => {
+      it('returns 0 if wrong direction', async () => {
         // no amount in will move the ratio of reserve in/reserve out from 1:50 to 1:75
-        await expect(
-          priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
+        expect(
+          await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
             expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
           ])
-        ).to.be.revertedWith('PriceMath: DIRECTION')
+        ).to.eq('0')
       })
 
       it('returns 0 if price is equal', async () => {
         expect(
-          await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
+          await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
             expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
           ])
         ).to.eq('0')
+      })
+
+      it('gas: returns 0 if price is equal', async () => {
+        expect(
+          await priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
+            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
+          ])
+        ).to.eq(501)
       })
     })
 
     describe('1:100 to 1:50 at 30bps', () => {
       it('returns 414835953198742784', async () => {
         expect(
-          await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 3000, [
+          await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 3000, [
             expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
           ])
           // close but not exact
@@ -73,7 +81,7 @@ describe('PriceMath', () => {
 
     it('1:100 to 1:50 at 60bps', async () => {
       expect(
-        await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 6000, [
+        await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 6000, [
           expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
         ])
       ).to.eq('415460493085696914')
@@ -81,10 +89,18 @@ describe('PriceMath', () => {
 
     it('1:100 to 1:75 at 45bps', async () => {
       expect(
-        await priceMath.getTradeToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 4500, [
+        await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 4500, [
           expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
         ])
       ).to.eq('155049452346487536')
+    })
+
+    it('gas: 1:100 to 1:75 at 45bps', async () => {
+      expect(
+        await priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 4500, [
+          expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
+        ])
+      ).to.eq(2152)
     })
   })
 })

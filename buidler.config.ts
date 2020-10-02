@@ -8,7 +8,7 @@ export default {
     version: '0.6.11',
     optimizer: {
       enabled: true,
-      runs: 5,
+      runs: 200,
     },
   },
   paths: {
