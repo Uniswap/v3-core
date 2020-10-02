@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@uniswap/lib": "1.1.2",
-    "abdk-libraries-solidity": "2.3.0",
     "decimal.js": "^10.2.0"
   },
   "devDependencies": {

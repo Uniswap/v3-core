@@ -15,8 +15,4 @@ contract TickMathTest {
         uint gasAfter = gasleft();
         return (gasBefore - gasAfter);
     }
-
-    function tickMultiplier() public pure returns (bytes16) {
-        return ABDKMathQuad.log_2(ABDKMathQuad.from64x64(int128(101 << 64) / 100));
-    }
 }

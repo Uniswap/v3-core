@@ -131,10 +131,6 @@ describe('TickMath', () => {
     await expect(tickMath.getPrice(-7803)).to.be.revertedWith('')
   })
 
-  it('multiplier calculation', async () => {
-    expect(await tickMath.tickMultiplier()).to.eq('0x3ff8d664ecee35b77e6334057c6a534f')
-  })
-
   describe.skip('gas', () => {
     const tickGasPrices: { [tick: number]: number } = {
       [-7802]: 6404,
