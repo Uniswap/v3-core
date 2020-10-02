@@ -497,7 +497,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             priceNext = FixedPoint.fraction(reserve1Virtual - amount1OutTarget, reserve0VirtualNext);
             assert(priceNext._x >= price._x);
 
-            {
             // only trade as much as we need to
             {
             uint144 reserve0Target = uint144(price._x > type(uint144).max ? 1 << 112 >> 80 : 1 << 112);
