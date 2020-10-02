@@ -57,7 +57,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int16 public override tickCurrent;
 
     // the current fee (gets set by the first trade or setPosition in a block)
-    uint16 public feeCurrent;
+    uint24 public feeCurrent;
 
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[NUM_FEE_OPTIONS] public override virtualSupplies;
