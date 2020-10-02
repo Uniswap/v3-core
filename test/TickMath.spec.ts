@@ -125,41 +125,23 @@ describe('TickMath', () => {
   })
 
   it('tick too large', async () => {
-    let threw = false
-    try {
-      await tickMath.getPrice(7803)
-    } catch (error) {
-      expect(error.message).to.contain('TickMath: OVERFLOW_UQ112x112')
-      threw = true
-    }
-    expect(threw).to.eq(true)
+    await expect(tickMath.getPrice(7803)).to.be.revertedWith('')
   })
   it('tick too small', async () => {
-    let threw = false
-    try {
-      await tickMath.getPrice(-7803)
-    } catch (error) {
-      expect(error.message).to.contain('TickMath: UNDERFLOW_UQ112x112')
-      threw = true
-    }
-    expect(threw).to.eq(true)
+    await expect(tickMath.getPrice(-7803)).to.be.revertedWith('')
   })
 
-  it('multiplier calculation', async () => {
-    expect(await tickMath.tickMultiplier()).to.eq('0x3ff8d664ecee35b77e6334057c6a534f')
-  })
-
-  describe.skip('gas', () => {
+  describe('gas', () => {
     const tickGasPrices: { [tick: number]: number } = {
-      [-7802]: 6404,
-      [-1000]: 6483,
-      [-500]: 6482,
-      [-50]: 6511,
-      [0]: 202,
-      [50]: 6273,
-      [500]: 6300,
-      [1000]: 6301,
-      [7802]: 6402,
+      [-7802]: 913,
+      [-1000]: 844,
+      [-500]: 844,
+      [-50]: 775,
+      [0]: 690,
+      [50]: 795,
+      [500]: 864,
+      [1000]: 864,
+      [7802]: 933,
     }
 
     for (let tick in tickGasPrices) {

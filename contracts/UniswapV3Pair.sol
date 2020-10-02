@@ -481,6 +481,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // only trade as much as we need to
             {
+            uint144 reserve0Target = uint144(price._x > type(uint144).max ? 1 << 112 >> 80 : 1 << 112);
+            uint144 reserve1Target = uint144(price._x > type(uint144).max ? price._x >> 80 : price._x);
+            uint112 reserve0VirtualNext = (uint(reserve0Virtual) + amount0InRequiredForShift).toUint112();
+            uint112 amount1OutMaximum =
+                reserve1Virtual.sub(reserve1Target * reserve0VirtualNext / reserve0Target).toUint112();
+
             uint112 amount0InStep = amount0InRemaining > amount0InRequiredForShift ?
                 amount0InRequiredForShift :
                 amount0InRemaining;
@@ -492,6 +498,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             uint112 amount1OutStep = (
                 uint(reserve1Virtual) * amount0InAdjusted / (uint(reserve0Virtual) + amount0InAdjusted)
             ).toUint112();
+            amount1OutStep = amount1OutStep > amount1OutMaximum ? amount1OutMaximum : amount1OutStep;
             reserve0Virtual = (uint(reserve0Virtual) + amount0InStep).toUint112();
             reserve1Virtual = reserve1Virtual.sub(amount1OutStep).toUint112();
             amount0InRemaining = amount0InRemaining.sub(amount0InStep).toUint112();

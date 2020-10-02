@@ -288,7 +288,7 @@ describe('UniswapV3Pair', () => {
   describe('post-initialize (fee vote 1 - 0.10%)', () => {
     const fee = FeeVote.FeeVote1
 
-    beforeEach(async () => {
+    beforeEach('initialize at zero tick with 2 liquidity tokens', async () => {
       const tokenAmount = expandTo18Decimals(2)
       await initializeAtZeroTick(tokenAmount, fee)
     })
@@ -300,15 +300,16 @@ describe('UniswapV3Pair', () => {
       let amount0: BigNumber
       let amount1: BigNumber
 
-      beforeEach(async () => {
+      beforeEach('provide 1 liquidity in the range -1 to 4', async () => {
         // approve max
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
 
         // the LP provides some liquidity in specified tick range
         await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta, OVERRIDES)
+      })
 
-        // make a swap so that G grows
+      beforeEach('swap in 2 token0 so G grows', async () => {
         await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x', OVERRIDES)
         ;[amount0, amount1] = await pair.getLiquidityFee(lowerTick, upperTick, fee)
       })
@@ -323,7 +324,7 @@ describe('UniswapV3Pair', () => {
         // this is token0 & token1 balance if the liquidity fee was 0 (we got these
         // values by commenting out the `(amount0, amount1) = getValueAtPrice` line)
         const balance0WithoutFees = BigNumber.from('9976274350446348266538')
-        const balance1WithoutFees = BigNumber.from('9995028242330516174969')
+        const balance1WithoutFees = BigNumber.from('9995028242330516174961')
         // check that the LP's fees were contributed towards their liquidity provision
         // implicitly, by discounting them on the amount of tokens they need to deposit
         expect(await token0.balanceOf(wallet.address)).to.eq(balance0WithoutFees.add(amount0))
@@ -514,7 +515,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x', OVERRIDES))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '094959953735437430')
+        .withArgs(pair.address, wallet.address, '94959953735437429')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
