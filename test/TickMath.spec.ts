@@ -129,7 +129,7 @@ describe('TickMath', () => {
     await expect(tickMath.getPrice(-7803)).to.be.revertedWith('')
   })
 
-  it('all tick values', async () => {
+  it.skip('all tick values', async () => {
     const promises: Promise<[BigNumber]>[] = []
     for (let tick = -7802; tick < 7803; tick++) {
       promises.push(tickMath.getPrice(tick))
