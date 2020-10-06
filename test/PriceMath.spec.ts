@@ -1,11 +1,9 @@
-import chai, { expect } from 'chai'
 import { Contract, BigNumber } from 'ethers'
-import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
+import { MockProvider, deployContract } from 'ethereum-waffle'
 
 import PriceMathTest from '../build/PriceMathTest.json'
+import { expect } from './shared/expect'
 import { expandTo18Decimals } from './shared/utilities'
-
-chai.use(solidity)
 
 describe('PriceMath', () => {
   const provider = new MockProvider({
@@ -47,10 +45,12 @@ describe('PriceMath', () => {
 
       it('gas: returns 0 if price is equal', async () => {
         expect(
-          await priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
-            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
-          ])
-        ).to.eq(501)
+          (
+            await priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
+              expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
+            ])
+          ).toNumber()
+        ).toMatchSnapshot()
       })
     })
 
@@ -97,10 +97,12 @@ describe('PriceMath', () => {
 
     it('gas: 1:100 to 1:75 at 45bps', async () => {
       expect(
-        await priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 4500, [
-          expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
-        ])
-      ).to.eq(2152)
+        (
+          await priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 4500, [
+            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
+          ])
+        ).toNumber()
+      ).toMatchSnapshot()
     })
   })
 })

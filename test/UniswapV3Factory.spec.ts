@@ -1,4 +1,4 @@
-import { expect } from 'chai'
+import { expect } from './shared/expect'
 import { Contract, BigNumber, constants } from 'ethers'
 import { waffle } from '@nomiclabs/buidler'
 
@@ -58,7 +58,7 @@ describe('UniswapV3Factory', () => {
   it.skip('createPair:gas', async () => {
     const tx = await factory.createPair(...TEST_ADDRESSES)
     const receipt = await tx.wait()
-    expect(receipt.gasUsed).to.eq(3271998)
+    expect(receipt.gasUsed.toString()).toMatchSnapshot()
   })
 
   it('setFeeTo', async () => {

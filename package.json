@@ -34,6 +34,7 @@
     "ethereum-waffle": "^3.0.2",
     "ethers": "^5.0.8",
     "mocha": "^6.2.2",
+    "mocha-chai-jest-snapshot": "^1.1.0",
     "prettier": "^2.0.5",
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3"

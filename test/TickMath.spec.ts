@@ -1,11 +1,9 @@
-import chai, { expect } from 'chai'
-import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
+import { MockProvider, deployContract } from 'ethereum-waffle'
 import { Contract, BigNumber, BigNumberish } from 'ethers'
+import { expect } from './shared/expect'
 import { bnify2 } from './shared/utilities'
 
 import TickMathTest from '../build/TickMathTest.json'
-
-chai.use(solidity)
 
 const overrides = {
   gasLimit: 9999999,
@@ -131,24 +129,22 @@ describe('TickMath', () => {
     await expect(tickMath.getPrice(-7803)).to.be.revertedWith('')
   })
 
-  describe('gas', () => {
-    const tickGasPrices: { [tick: number]: number } = {
-      [-7802]: 913,
-      [-1000]: 844,
-      [-500]: 844,
-      [-50]: 775,
-      [0]: 690,
-      [50]: 795,
-      [500]: 864,
-      [1000]: 864,
-      [7802]: 933,
+  it('all tick values', async () => {
+    const promises: Promise<[BigNumber]>[] = []
+    for (let tick = -7802; tick < 7803; tick++) {
+      promises.push(tickMath.getPrice(tick))
     }
+    expect((await Promise.all(promises)).map(([x], i) => [i - 7802, x.toString()])).toMatchSnapshot()
+  }).timeout(300000)
 
-    for (let tick in tickGasPrices) {
-      it(`tick ${tick} uses ${tickGasPrices[tick]} gas`, async () => {
-        const amount = await tickMath.getGasUsed(tick)
-        expect(amount.toString()).to.eq(BigNumber.from(tickGasPrices[tick]))
-      }).retries(5)
+  describe('gas', () => {
+    const ticks = [-7802, -1000, -500, -50, 0, 50, 500, 1000, 7802]
+
+    for (let tick of ticks) {
+      it(`tick ${tick}`, async () => {
+        const gasUsed = await tickMath.getGasUsed(tick)
+        expect(gasUsed.toNumber()).toMatchSnapshot()
+      })
     }
   })
 })
