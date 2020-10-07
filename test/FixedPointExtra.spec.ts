@@ -1,10 +1,9 @@
-import chai, { expect } from 'chai'
-import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
+import { MockProvider, deployContract } from 'ethereum-waffle'
 import { Contract, BigNumber } from 'ethers'
 
 import FixedPointExtraTest from '../build/FixedPointExtraTest.json'
-
-chai.use(solidity)
+import { expect } from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
 
 const overrides = {
   gasLimit: 9999999,
@@ -57,7 +56,7 @@ describe('FixedPointExtra', () => {
     })
 
     it('gas', async () => {
-      expect(await fixedPointExtra.muluqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).to.eq('686')
+      await snapshotGasCost(fixedPointExtra.muluqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)]))
     })
   })
 
@@ -73,7 +72,7 @@ describe('FixedPointExtra', () => {
     })
 
     it('gas', async () => {
-      expect(await fixedPointExtra.divuqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).to.eq('1102')
+      await snapshotGasCost(fixedPointExtra.divuqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)]))
     })
   })
 })
