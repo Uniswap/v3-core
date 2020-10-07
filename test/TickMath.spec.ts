@@ -1,6 +1,7 @@
 import { MockProvider, deployContract } from 'ethereum-waffle'
 import { Contract, BigNumber, BigNumberish } from 'ethers'
 import { expect } from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
 import { bnify2 } from './shared/utilities'
 
 import TickMathTest from '../build/TickMathTest.json'
@@ -142,8 +143,7 @@ describe('TickMath', () => {
 
     for (let tick of ticks) {
       it(`tick ${tick}`, async () => {
-        const gasUsed = await tickMath.getGasUsed(tick)
-        expect(gasUsed.toNumber()).toMatchSnapshot()
+        await snapshotGasCost(tickMath.getGasUsed(tick))
       })
     }
   })

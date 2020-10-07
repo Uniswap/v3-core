@@ -1,6 +1,7 @@
 import { expect } from './shared/expect'
 import { Contract, BigNumber, constants } from 'ethers'
 import { waffle } from '@nomiclabs/buidler'
+import snapshotGasCost from './shared/snapshotGasCost'
 
 import { getCreate2Address } from './shared/utilities'
 import { factoryFixture } from './shared/fixtures'
@@ -56,9 +57,7 @@ describe('UniswapV3Factory', () => {
   })
 
   it.skip('createPair:gas', async () => {
-    const tx = await factory.createPair(...TEST_ADDRESSES)
-    const receipt = await tx.wait()
-    expect(receipt.gasUsed.toString()).toMatchSnapshot()
+    await snapshotGasCost(factory.createPair(...TEST_ADDRESSES))
   })
 
   it('setFeeTo', async () => {

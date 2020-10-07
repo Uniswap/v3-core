@@ -3,6 +3,7 @@ import { MockProvider, deployContract } from 'ethereum-waffle'
 
 import PriceMathTest from '../build/PriceMathTest.json'
 import { expect } from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
 import { expandTo18Decimals } from './shared/utilities'
 
 describe('PriceMath', () => {
@@ -44,13 +45,11 @@ describe('PriceMath', () => {
       })
 
       it('gas: returns 0 if price is equal', async () => {
-        expect(
-          (
-            await priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
-              expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
-            ])
-          ).toNumber()
-        ).toMatchSnapshot()
+        await snapshotGasCost(
+          priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
+            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
+          ])
+        )
       })
     })
 
@@ -96,13 +95,11 @@ describe('PriceMath', () => {
     })
 
     it('gas: 1:100 to 1:75 at 45bps', async () => {
-      expect(
-        (
-          await priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 4500, [
-            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
-          ])
-        ).toNumber()
-      ).toMatchSnapshot()
+      await snapshotGasCost(
+        priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 4500, [
+          expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
+        ])
+      )
     })
   })
 })

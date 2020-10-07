@@ -3,6 +3,7 @@ import { Contract, BigNumber } from 'ethers'
 
 import FixedPointExtraTest from '../build/FixedPointExtraTest.json'
 import { expect } from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
 
 const overrides = {
   gasLimit: 9999999,
@@ -55,9 +56,7 @@ describe('FixedPointExtra', () => {
     })
 
     it('gas', async () => {
-      expect(
-        (await fixedPointExtra.muluqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).toNumber()
-      ).toMatchSnapshot()
+      await snapshotGasCost(fixedPointExtra.muluqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)]))
     })
   })
 
@@ -73,9 +72,7 @@ describe('FixedPointExtra', () => {
     })
 
     it('gas', async () => {
-      expect(
-        (await fixedPointExtra.divuqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)])).toNumber()
-      ).toMatchSnapshot()
+      await snapshotGasCost(fixedPointExtra.divuqGasUsed([Q112.mul(35).div(10)], [Q112.mul(22).div(10)]))
     })
   })
 })
