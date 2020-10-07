@@ -57,6 +57,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int16 public override tickCurrent;
 
     // the current fee (gets set by the first trade or setPosition in a block)
+    // this is stored to protect liquidity providers from add/remove liquidity sandwiching attacks
     uint24 public feeCurrent;
 
     // the amount of virtual supply active within the current tick, for each fee vote
@@ -478,6 +479,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // get the inclusive lower bound price for the current tick
             FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tickCurrent);
+
+            // adjust the fee we will use if the current fee is greater than the stored fee to protect liquidity providers
+            uint24 currentFee = getFee();
+            if (fee < currentFee) fee = currentFee;
+
             // compute the amount of token0 required s.t. the price is ~the lower bound for the current tick
             // TODO adjust this amount (or amount1OutStep) so that we're guaranteed the ratio is as close (or equal)
             // to the lower bound _without_ exceeding it as possible
