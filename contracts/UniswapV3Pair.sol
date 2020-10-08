@@ -56,9 +56,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // stored to avoid computing log_1.01(reserve1Virtual / reserve0Virtual) on-chain
     int16 public override tickCurrent;
 
-    // the current fee (gets set by the first trade or setPosition in a block)
-    // this is stored to protect liquidity providers from add/remove liquidity sandwiching attacks
-    uint24 public feeCurrent;
+    // the current fee (gets set by the first swap or setPosition/initialize in a block)
+    // this is stored to protect liquidity providers from add/swap/remove sandwiching attacks
+    uint24 public feeLast;
 
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[NUM_FEE_OPTIONS] public override virtualSupplies;
@@ -219,7 +219,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0) {
             (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
-            feeCurrent = getFee();
+            feeLast = getFee();
             blockTimestampLast = blockTimestamp;
         }
     }
@@ -257,7 +257,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // initialize tick and fee
         tickCurrent = tick;
-        feeCurrent = getFee();
+        feeLast = getFee();
 
         // set the permanent LIQUIDITY_MIN position
         Position storage position = _getPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
@@ -465,9 +465,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // move from right to left (token 1 is becoming more valuable)
     function swap0For1(uint112 amount0In, address to, bytes calldata data) external lock returns (uint112 amount1Out) {
         require(amount0In > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
-        _update(); // update the oracle
-        // get the current fee before the trade is executed
-        uint24 fee = feeCurrent;
+        _update(); // update the oracle and feeLast
+
+        // use the fee from the previous block as the floor
+        uint24 fee = feeLast;
 
         uint112 amount0InRemaining = amount0In;
         while (amount0InRemaining > 0) {

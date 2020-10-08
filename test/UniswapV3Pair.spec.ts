@@ -4,7 +4,7 @@ import { expect } from './shared/expect'
 import { deployContract } from 'ethereum-waffle'
 import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 
-import { pairFixture } from './shared/fixtures'
+import { TEST_PAIR_START_TIME, pairFixture } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
@@ -29,12 +29,7 @@ describe('UniswapV3Pair', () => {
   let pairTest: Contract
 
   beforeEach('load fixture', async () => {
-    const fixture = await waffle.loadFixture(pairFixture)
-    token0 = fixture.token0
-    token1 = fixture.token1
-    factory = fixture.factory
-    pair = fixture.pair
-    pairTest = fixture.pairTest
+    ;({ token0, token1, factory, pair, pairTest } = await waffle.loadFixture(pairFixture))
   })
 
   // this invariant should always hold true.
@@ -47,7 +42,7 @@ describe('UniswapV3Pair', () => {
     expect(tickCurrent).to.eq(expectedTick)
   })
 
-  it('factory, token0, token1', async () => {
+  it('constructor initializes immutables', async () => {
     expect(await pair.factory()).to.eq(factory.address)
     expect(await pair.token0()).to.eq(token0.address)
     expect(await pair.token1()).to.eq(token1.address)
@@ -121,8 +116,9 @@ describe('UniswapV3Pair', () => {
       await pair.initialize(2000, 1000, -70, FeeVote.FeeVote1)
       expect(await pair.reserve0Virtual()).to.eq(2000)
       expect(await pair.reserve1Virtual()).to.eq(1000)
-      expect(await pair.blockTimestampLast()).to.not.eq(0)
+      expect(await pair.blockTimestampLast()).to.eq(TEST_PAIR_START_TIME)
       expect(await pair.tickCurrent()).to.eq(-70)
+      expect(await pair.feeLast()).to.eq(FEES[FeeVote.FeeVote1])
       expect(await pair.virtualSupplies(FeeVote.FeeVote1)).to.eq(1414)
     })
     it('creates a position for address 0 for min liquidity', async () => {
@@ -417,6 +413,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
 
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, liquidityDelta)
+      await pair.setTime(TEST_PAIR_START_TIME + 1) // so the swap uses the new fee
 
       const amount0In = expandTo18Decimals(1)
       const g0 = await pair.getG()

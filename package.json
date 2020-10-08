@@ -40,10 +40,7 @@
     "typescript": "^3.7.3"
   },
   "scripts": {
-    "lint": "yarn prettier ./test/*.ts --check",
-    "lint:fix": "yarn prettier ./test/*.ts --write",
     "compile": "buidler compile",
-    "pretest": "yarn compile",
     "test": "buidler test",
     "prepublishOnly": "yarn test"
   }

@@ -4,10 +4,10 @@ const { loadFixture, deployContract } = waffle
 
 import { expandTo18Decimals } from './utilities'
 
-import ERC20 from '../../build/TestERC20.json'
+import TestERC20 from '../../build/TestERC20.json'
 import UniswapV3Factory from '../../build/UniswapV3Factory.json'
-import UniswapV3Pair from '../../build/UniswapV3Pair.json'
 import UniswapV3PairTest from '../../build/UniswapV3PairTest.json'
+import MockTimeUniswapV3Pair from '../../build/MockTimeUniswapV3Pair.json'
 
 interface FactoryFixture {
   factory: Contract
@@ -18,27 +18,38 @@ export async function factoryFixture([wallet]: Signer[]): Promise<FactoryFixture
   return { factory }
 }
 
-interface PairFixture extends FactoryFixture {
+interface TokensFixture {
   token0: Contract
   token1: Contract
+}
+
+export async function tokensFixture([wallet]: Signer[]): Promise<TokensFixture> {
+  const tokenA = await deployContract(wallet, TestERC20, [expandTo18Decimals(10_000)])
+  const tokenB = await deployContract(wallet, TestERC20, [expandTo18Decimals(10_000)])
+
+  const [token0, token1] =
+    tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
+
+  return { token0, token1 }
+}
+
+type TokensAndFactoryFixture = FactoryFixture & TokensFixture
+
+interface PairFixture extends TokensAndFactoryFixture {
   pair: Contract
   pairTest: Contract
 }
 
-export async function pairFixture([wallet]: Signer[], provider: providers.Web3Provider): Promise<PairFixture> {
+// Monday, October 5, 2020 9:00:00 AM GMT-05:00
+export const TEST_PAIR_START_TIME = 1601906400
+
+export async function pairFixture([wallet]: Signer[]): Promise<PairFixture> {
   const { factory } = await loadFixture(factoryFixture)
+  const { token0, token1 } = await loadFixture(tokensFixture)
 
-  const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
-  const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)])
-
-  await factory.createPair(tokenA.address, tokenB.address)
-  const pairAddress = await factory.getPair(tokenA.address, tokenB.address)
-  const pair = new Contract(pairAddress, JSON.stringify(UniswapV3Pair.abi), provider).connect(wallet)
-
-  const token0Address = await pair.token0()
-  const [token0, token1] = tokenA.address === token0Address ? [tokenA, tokenB] : [tokenB, tokenA]
-
+  const pair = await deployContract(wallet, MockTimeUniswapV3Pair, [factory.address, token0.address, token1.address])
+  await pair.setTime(TEST_PAIR_START_TIME)
   const pairTest = await deployContract(wallet, UniswapV3PairTest, [pair.address])
 
-  return { factory, token0, token1, pair, pairTest }
+  return { token0, token1, pair, pairTest, factory }
 }
