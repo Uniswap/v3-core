@@ -41,6 +41,7 @@
   },
   "scripts": {
     "compile": "buidler compile",
+    "pretest": "yarn compile",
     "test": "buidler test",
     "prepublishOnly": "yarn test"
   }
