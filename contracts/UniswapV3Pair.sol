@@ -461,17 +461,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct SwapParams {
+        // whether the swap is from token 0 to 1, or 1 for 0
         bool zeroForOne;
+        // how much is being swapped in
         uint112 amountIn;
+        // the recipient address
         address to;
+        // any data that should be sent to the address with the call
         bytes data;
     }
 
     struct StepComputations {
         // price for the tick
         FixedPoint.uq112x112 price;
+        // how much is being swapped in in this step
         uint112 amountIn;
-        // amount out for the current step
+        // how much is being swapped out in the current step
         uint112 amountOut;
     }
 
@@ -486,12 +491,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         while (amountInRemaining > 0) {
             // TODO these conditions almost certainly need to be tweaked/put in a different place
             assert(tickCurrent >= TickMath.MIN_TICK);
+            assert(tickCurrent <= TickMath.MAX_TICK);
             // ensure that there is enough liquidity to guarantee we can get a price within the next tick
             require(
                 reserve0Virtual >= TOKEN_MIN && reserve1Virtual >= TOKEN_MIN,
                 'UniswapV3: INSUFFICIENT_LIQUIDITY'
             );
-
 
             // get the inclusive lower bound price for the current tick
             StepComputations memory step;
@@ -575,7 +580,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
                         reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
                     } else {
-                        // TODO
+                        // TODO: addi?
+                        reserve0Virtual = reserve0Virtual.addi(token0VirtualDelta).toUint112();
+                        reserve1Virtual = reserve1Virtual.addi(token1VirtualDelta).toUint112();
                     }
 
                     // update tick info
