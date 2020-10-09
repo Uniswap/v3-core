@@ -596,7 +596,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut); // optimistically transfer tokens
         if (params.data.length > 0) IUniswapV3Callee(params.to).uniswapV3Call(msg.sender, 0, amountOut, params.data);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), params.amountIn); // this is different than v2
+        TransferHelper.safeTransferFrom(params.zeroForOne ? token0 : token1, msg.sender, address(this), params.amountIn); // this is different than v2
     }
 
     // move from right to left (token 1 is becoming more valuable)

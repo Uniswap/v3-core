@@ -35,11 +35,12 @@ describe('UniswapV3Pair', () => {
   // this invariant should always hold true.
   afterEach('check tick matches price', async () => {
     // ensure that the tick always matches the price given by virtual reserves
-    const reserve0Virtual = await pair.reserve0Virtual()
-    const reserve1Virtual = await pair.reserve1Virtual()
-    const expectedTick = getExpectedTick(reserve0Virtual, reserve1Virtual)
-    const tickCurrent = await pair.tickCurrent()
-    expect(tickCurrent).to.eq(expectedTick)
+    const [reserve0Virtual, reserve1Virtual, tickCurrent] = await Promise.all([
+      pair.reserve0Virtual(),
+      pair.reserve1Virtual(),
+      pair.tickCurrent(),
+    ])
+    expect(tickCurrent, 'tick matches current ratio invariant').to.eq(getExpectedTick(reserve0Virtual, reserve1Virtual))
   })
 
   it('constructor initializes immutables', async () => {
@@ -385,7 +386,7 @@ describe('UniswapV3Pair', () => {
       ).to.be.revertedWith('ds-math-sub-underflow')
     })
 
-    it('swap0for1', async () => {
+    it('swap0For1', async () => {
       const amount0In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
@@ -402,6 +403,36 @@ describe('UniswapV3Pair', () => {
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-1)
+    })
+
+    it('swap0For1 gas', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await snapshotGasCost(pair.swap0For1(1000, wallet.address, '0x'))
+    })
+
+    it.only('swap1For0', async () => {
+      const amount1In = 1000
+
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.swap1For0(amount1In, wallet.address, '0x')
+
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(998)
+      expect(token1BalanceBefore.sub(token1BalanceAfter), 'input amount decreased by amount in').to.eq(amount1In)
+      expect(await Promise.all([pair.reserve0Virtual(), pair.reserve1Virtual(), pair.tickCurrent()])).to.eq([0, 0, 0])
+
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent, 'current tick has gone up 1').to.eq(1)
+    })
+
+    it.only('swap1For0 gas', async () => {
+      await token1.approve(pair.address, constants.MaxUint256)
+      await snapshotGasCost(pair.swap1For0(1000, wallet.address, '0x'))
     })
 
     it('setPosition with 0 liquidityDelta within the current price after swap must collect fees', async () => {
@@ -471,7 +502,7 @@ describe('UniswapV3Pair', () => {
       await initializeAtZeroTick(tokenAmount, fee)
     })
 
-    it('swap0for1', async () => {
+    it('swap0For1', async () => {
       const amount0In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
@@ -490,7 +521,7 @@ describe('UniswapV3Pair', () => {
       expect(tickCurrent).to.eq(-1)
     })
 
-    it('swap0for1 to tick -10', async () => {
+    it('swap0For1 to tick -10', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       await token0.approve(pair.address, constants.MaxUint256)
@@ -502,7 +533,7 @@ describe('UniswapV3Pair', () => {
       expect(tickCurrent).to.eq(-10)
     })
 
-    it('swap0for1 to tick -10 with intermediate liquidity', async () => {
+    it('swap0For1 to tick -10 with intermediate liquidity', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       // add liquidity between -3 and -2 (to the left of the current price)

@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers'
+import { BigNumber, BigNumberish, utils, constants } from 'ethers'
 import { Decimal } from 'decimal.js'
 import { assert } from 'chai'
 
@@ -66,7 +66,6 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 const LN101 = Decimal.ln('1.01')
 export function getExpectedTick(reserve0: BigNumber, reserve1: BigNumber): number {
   if (reserve0.isZero() && reserve1.isZero()) return 0
-  assert(!reserve1.isZero())
 
   const price = new Decimal(reserve1.toString()).div(new Decimal(reserve0.toString()))
   // log_1.01(price) = ln(price) / ln(1.01) by the base change rule
