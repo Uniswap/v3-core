@@ -1,3 +1,5 @@
+# ⚠️ STRICTLY CONFIDENTIAL RESEARCH ⚠️
+
 # Uniswap V3
 
 [![Tests](https://github.com/Uniswap/uniswap-v3-core/workflows/Tests/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions?query=workflow%3ATests)
