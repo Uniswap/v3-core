@@ -500,19 +500,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // get the inclusive lower bound price for the current tick
             StepComputations memory step;
-            step.price = params.zeroForOne ? TickMath.getRatioAtTick(tickCurrent).reciprocal() : TickMath.getRatioAtTick(tickCurrent - 1);
+            step.price = TickMath.getRatioAtTick(tickCurrent);
 
             // adjust the fee we will use if the current fee is greater than the stored fee to protect liquidity providers
             uint24 currentFee = getFee();
             if (fee < currentFee) fee = currentFee;
 
-            uint112 amountInRequiredForShift;
             (uint112 reserveInVirtual, uint112 reserveOutVirtual) = params.zeroForOne ? (reserve0Virtual, reserve1Virtual) : (reserve1Virtual, reserve0Virtual);
             // compute the amount of token0 required s.t. the price is ~the lower bound for the current tick
             // TODO adjust this amount (or amountOutStep) so that we're guaranteed the ratio is as close (or equal)
             // to the lower bound _without_ exceeding it as possible
-            amountInRequiredForShift = PriceMath.getInputToRatio(
-                reserveInVirtual, reserveOutVirtual, fee, step.price
+            uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
+                reserveInVirtual, reserveOutVirtual, fee, params.zeroForOne ? step.price.reciprocal() : step.price
             );
 
             // only trade as much as we need to
@@ -536,10 +535,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ).toUint112();
                 step.amountOut = step.amountOut > amountOutMaximum ? amountOutMaximum : step.amountOut;
                 if (params.zeroForOne) {
-                    reserve0Virtual = (uint(reserveInVirtual) + step.amountIn).toUint112();
+                    reserve0Virtual = (uint(reserve0Virtual) + step.amountIn).toUint112();
                     reserve1Virtual = reserve1Virtual.sub(step.amountOut).toUint112();
                 } else {
-                    reserve1Virtual = (uint(reserveInVirtual) + step.amountIn).toUint112();
+                    reserve1Virtual = (uint(reserve1Virtual) + step.amountIn).toUint112();
                     reserve0Virtual = reserve0Virtual.sub(step.amountOut).toUint112();
                 }
                 amountInRemaining = amountInRemaining.sub(step.amountIn).toUint112();
@@ -602,13 +601,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // move from right to left (token 1 is becoming more valuable)
     function swap0For1(uint112 amount0In, address to, bytes calldata data) external returns (uint112 amount1Out) {
-        SwapParams memory params = SwapParams({zeroForOne:true, amountIn:amount0In, to:to, data:data});
+        SwapParams memory params = SwapParams({ zeroForOne: true, amountIn: amount0In, to: to, data: data });
         return _swap(params);
     }
 
     // move from left to right (token 0 is becoming more valuable)
     function swap1For0(uint112 amount1In, address to, bytes calldata data) external returns (uint112 amount0Out) {
-        SwapParams memory params = SwapParams({zeroForOne: false, amountIn:amount1In, to:to, data:data});
+        SwapParams memory params = SwapParams({ zeroForOne: false, amountIn: amount1In, to: to, data: data });
         return _swap(params);
     }
 
