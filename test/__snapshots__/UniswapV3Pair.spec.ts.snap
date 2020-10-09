@@ -11,3 +11,11 @@ exports[`UniswapV3Pair #getVirtualSupply gas cost one vote 1`] = `5291`;
 exports[`UniswapV3Pair #getVirtualSupply gas cost two votes 1`] = `5291`;
 
 exports[`UniswapV3Pair #getVirtualSupply gas cost uninitialized 1`] = `5291`;
+
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `104472`;
+
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `1498201`;
+
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `90788`;
+
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `1465169`;

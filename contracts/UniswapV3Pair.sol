@@ -357,7 +357,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
         FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
 
-
         // check if this condition has accrued any untracked fees
         // to account for rounding errors, we have to short-circuit the calculation if the untracked fees are too low
         // TODO is this calculation correct/precise?
@@ -461,111 +460,157 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    // TODO: implement swap1for0, or integrate it into this
-    // move from right to left (token 1 is becoming more valuable)
-    function swap0For1(uint112 amount0In, address to, bytes calldata data) external lock returns (uint112 amount1Out) {
-        require(amount0In > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
+    struct SwapParams {
+        // whether the swap is from token 0 to 1, or 1 for 0
+        bool zeroForOne;
+        // how much is being swapped in
+        uint112 amountIn;
+        // the recipient address
+        address to;
+        // any data that should be sent to the address with the call
+        bytes data;
+    }
+
+    struct StepComputations {
+        // price for the tick
+        FixedPoint.uq112x112 nextPrice;
+        // how much is being swapped in in this step
+        uint112 amountIn;
+        // how much is being swapped out in the current step
+        uint112 amountOut;
+    }
+
+    function _swap(SwapParams memory params) internal lock returns (uint112 amountOut) {
+        require(params.amountIn > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
         _update(); // update the oracle and feeLast
 
         // use the fee from the previous block as the floor
         uint24 fee = feeLast;
+        int16 tick = tickCurrent;
 
-        uint112 amount0InRemaining = amount0In;
-        while (amount0InRemaining > 0) {
+        uint112 amountInRemaining = params.amountIn;
+        while (amountInRemaining > 0) {
             // TODO these conditions almost certainly need to be tweaked/put in a different place
-            assert(tickCurrent >= TickMath.MIN_TICK);
+            assert(tick >= TickMath.MIN_TICK);
+            assert(tick <= TickMath.MAX_TICK);
             // ensure that there is enough liquidity to guarantee we can get a price within the next tick
-            require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: INSUFFICIENT_LIQUIDITY');
-            require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: INSUFFICIENT_LIQUIDITY');
+            require(
+                reserve0Virtual >= TOKEN_MIN && reserve1Virtual >= TOKEN_MIN,
+                'UniswapV3: INSUFFICIENT_LIQUIDITY'
+            );
 
             // get the inclusive lower bound price for the current tick
-            FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tickCurrent);
+            StepComputations memory step;
+            step.nextPrice = params.zeroForOne ? TickMath.getRatioAtTick(tick) : TickMath.getRatioAtTick(tick + 1);
 
             // adjust the fee we will use if the current fee is greater than the stored fee to protect liquidity providers
             uint24 currentFee = getFee();
             if (fee < currentFee) fee = currentFee;
 
+            (uint112 reserveInVirtual, uint112 reserveOutVirtual) = params.zeroForOne ? (reserve0Virtual, reserve1Virtual) : (reserve1Virtual, reserve0Virtual);
             // compute the amount of token0 required s.t. the price is ~the lower bound for the current tick
-            // TODO adjust this amount (or amount1OutStep) so that we're guaranteed the ratio is as close (or equal)
+            // TODO adjust this amount (or amountOutStep) so that we're guaranteed the ratio is as close (or equal)
             // to the lower bound _without_ exceeding it as possible
-            uint112 amount0InRequiredForShift = PriceMath.getInputToRatio(
-                reserve0Virtual, reserve1Virtual, fee, price.reciprocal()
+            uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
+                reserveInVirtual, reserveOutVirtual, fee, params.zeroForOne ? step.nextPrice.reciprocal() : step.nextPrice
             );
 
             // only trade as much as we need to
-            {
-            uint144 reserve0Target = uint144(price._x > type(uint144).max ? 1 << 112 >> 80 : 1 << 112);
-            uint144 reserve1Target = uint144(price._x > type(uint144).max ? price._x >> 80 : price._x);
-            uint112 reserve0VirtualNext = (uint(reserve0Virtual) + amount0InRequiredForShift).toUint112();
-            uint112 amount1OutMaximum =
-                reserve1Virtual.sub(reserve1Target * reserve0VirtualNext / reserve0Target).toUint112();
+            if (amountInRequiredForShift > 0) {
+                uint144 reserveInTarget = uint144(step.nextPrice._x > type(uint144).max ? 1 << 112 >> 80 : 1 << 112);
+                uint144 reserveOutTarget = uint144(step.nextPrice._x > type(uint144).max ? step.nextPrice._x >> 80 : step.nextPrice._x);
+                uint112 reserveInVirtualNext = (uint(reserveInVirtual) + amountInRequiredForShift).toUint112();
+                uint112 amountOutMaximum =
+                    reserveOutVirtual.sub(reserveOutTarget * reserveInVirtualNext / reserveInTarget).toUint112();
 
-            uint112 amount0InStep = amount0InRemaining > amount0InRequiredForShift ?
-                amount0InRequiredForShift :
-                amount0InRemaining;
-            // adjust the step amount by the current fee
-            uint112 amount0InAdjusted = uint112(
-                uint(amount0InStep) * (PriceMath.LP_FEE_BASE - fee) / PriceMath.LP_FEE_BASE
-            );
-            // calculate the output amount
-            uint112 amount1OutStep = (
-                uint(reserve1Virtual) * amount0InAdjusted / (uint(reserve0Virtual) + amount0InAdjusted)
-            ).toUint112();
-            amount1OutStep = amount1OutStep > amount1OutMaximum ? amount1OutMaximum : amount1OutStep;
-            reserve0Virtual = (uint(reserve0Virtual) + amount0InStep).toUint112();
-            reserve1Virtual = reserve1Virtual.sub(amount1OutStep).toUint112();
-            amount0InRemaining = amount0InRemaining.sub(amount0InStep).toUint112();
-            amount1Out = (uint(amount1Out) + amount1OutStep).toUint112();
+                step.amountIn = amountInRemaining > amountInRequiredForShift ?
+                    amountInRequiredForShift :
+                    amountInRemaining;
+                // adjust the step amount by the current fee
+                uint112 amountInAdjusted = uint112(
+                    uint(step.amountIn) * (PriceMath.LP_FEE_BASE - fee) / PriceMath.LP_FEE_BASE
+                );
+                // calculate the output amount
+                step.amountOut = (
+                    uint(reserveOutVirtual) * amountInAdjusted / (uint(reserveInVirtual) + amountInAdjusted)
+                ).toUint112();
+                step.amountOut = step.amountOut > amountOutMaximum ? amountOutMaximum : step.amountOut;
+                if (params.zeroForOne) {
+                    reserve0Virtual = (uint(reserve0Virtual) + step.amountIn).toUint112();
+                    reserve1Virtual = reserve1Virtual.sub(step.amountOut).toUint112();
+                } else {
+                    reserve1Virtual = (uint(reserve1Virtual) + step.amountIn).toUint112();
+                    reserve0Virtual = reserve0Virtual.sub(step.amountOut).toUint112();
+                }
+                amountInRemaining = amountInRemaining.sub(step.amountIn).toUint112();
+                amountOut = (uint(amountOut) + step.amountOut).toUint112();
             }
 
             // if a positive input amount still remains, we have to shift down to the next tick
-            if (amount0InRemaining > 0) {
-                TickInfo storage tickInfo = tickInfos[tickCurrent];
-                // if the current tick is uninitialized, we can short-circuit the tick transition logic
-                if (tickInfo.growthOutside._x == 0) {
-                    tickCurrent -= 1;
-                    continue;
+            if (amountInRemaining > 0) {
+                TickInfo storage tickInfo = tickInfos[tick];
+
+                // if the tick is initialized, we must update it
+                if (tickInfo.growthOutside._x != 0) {
+                    // calculate the amount of reserves + liquidity to kick in/out
+                    int112 token0VirtualDelta;
+                    for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
+                        token0VirtualDelta += tickInfo.token0VirtualDeltas[i];
+                    }
+                    // TODO we have to do this in an overflow-safe way
+                    // TODO this should always move the price _down_ (if it has to move at all), because that's the
+                    // direction we're moving...floor division should ensure that this is the case with positive deltas,
+                    // but not with negative
+                    int112 token1VirtualDelta = FixedPointExtra.muli(step.nextPrice, token0VirtualDelta).itoInt112();
+                    // TODO i think we could squeeze out a tiny bit more precision under certain circumstances by doing:
+                    // a) summing total negative and positive token0VirtualDeltas
+                    // b) calculating the total negative and positive virtualSupply delta
+                    // c) allocating these deltas proportionally across virtualSupplies
+                    // (where the sign of the delta determines which total to use and the value determines proportion)
+                    // note: this may be overkill/unnecessary
+                    uint112 virtualSupply = getVirtualSupply();
+                    for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
+                        int112 virtualSupplyDelta = (tickInfo.token0VirtualDeltas[i].imul(virtualSupply) / reserveInVirtual).itoInt112();
+                        // TODO are these SSTOREs optimized/packed?
+                        virtualSupplies[i] = virtualSupplies[i].subi(virtualSupplyDelta).toUint112();
+                    }
+
+                    // subi because we're moving from right to left
+                    if (params.zeroForOne) {
+                        reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
+                        reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
+                    } else {
+                        // TODO: addi?
+                        reserve0Virtual = reserve0Virtual.addi(token0VirtualDelta).toUint112();
+                        reserve1Virtual = reserve1Virtual.addi(token1VirtualDelta).toUint112();
+                    }
+
+                    // update tick info
+                    // overflow is desired
+                    tickInfo.growthOutside = FixedPointExtra.divuq(getG(), tickInfo.growthOutside);
+                    tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside;
                 }
 
-                // calculate the amount of reserves + liquidity to kick in/out
-                int112 token0VirtualDelta;
-                for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-                    token0VirtualDelta += tickInfo.token0VirtualDeltas[i];
-                }
-                // TODO we have to do this in an overflow-safe way
-                // TODO this should always move the price _down_ (if it has to move at all), because that's the
-                // direction we're moving...floor division should ensure that this is the case with positive deltas,
-                // but not with negative
-                int112 token1VirtualDelta = FixedPointExtra.muli(price, token0VirtualDelta).itoInt112();
-                // TODO i think we could squeeze out a tiny bit more precision under certain circumstances by doing:
-                // a) summing total negative and positive token0VirtualDeltas
-                // b) calculating the total negative and positive virtualSupply delta
-                // c) allocating these deltas proportionally across virtualSupplies
-                // (where the sign of the delta determines which total to use and the value determines proportion)
-                // note: this may be overkill/unnecessary
-                uint112 virtualSupply = getVirtualSupply();
-                for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-                    int112 virtualSupplyDelta = (tickInfo.token0VirtualDeltas[i].imul(virtualSupply) / reserve0Virtual).itoInt112();
-                    // TODO are these SSTOREs optimized/packed?
-                    virtualSupplies[i] = virtualSupplies[i].subi(virtualSupplyDelta).toUint112();
-                }
-
-                // subi because we're moving from right to left
-                reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
-                reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
-
-                // update tick info
-                // overflow is desired
-                tickInfo.growthOutside = FixedPointExtra.divuq(getG(), tickInfo.growthOutside);
-                tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside;
-
-                tickCurrent -= 1;
+                tick += params.zeroForOne ? int16(-1) : int16(1);
             }
         }
 
-        TransferHelper.safeTransfer(token1, to, amount1Out); // optimistically transfer tokens
-        if (data.length > 0) IUniswapV3Callee(to).uniswapV3Call(msg.sender, 0, amount1Out, data);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0In); // this is different than v2
+        tickCurrent = tick;
+        TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut); // optimistically transfer tokens
+        if (params.data.length > 0) IUniswapV3Callee(params.to).uniswapV3Call(msg.sender, 0, amountOut, params.data);
+        TransferHelper.safeTransferFrom(params.zeroForOne ? token0 : token1, msg.sender, address(this), params.amountIn); // this is different than v2
+    }
+
+    // move from right to left (token 1 is becoming more valuable)
+    function swap0For1(uint112 amount0In, address to, bytes calldata data) external returns (uint112 amount1Out) {
+        SwapParams memory params = SwapParams({ zeroForOne: true, amountIn: amount0In, to: to, data: data });
+        return _swap(params);
+    }
+
+    // move from left to right (token 0 is becoming more valuable)
+    function swap1For0(uint112 amount1In, address to, bytes calldata data) external returns (uint112 amount0Out) {
+        SwapParams memory params = SwapParams({ zeroForOne: false, amountIn: amount1In, to: to, data: data });
+        return _swap(params);
     }
 
     // Helper for reading the cumulative price as of the current block
