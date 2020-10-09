@@ -486,12 +486,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // use the fee from the previous block as the floor
         uint24 fee = feeLast;
+        int16 tick = tickCurrent;
 
         uint112 amountInRemaining = params.amountIn;
         while (amountInRemaining > 0) {
             // TODO these conditions almost certainly need to be tweaked/put in a different place
-            assert(tickCurrent >= TickMath.MIN_TICK);
-            assert(tickCurrent <= TickMath.MAX_TICK);
+            assert(tick >= TickMath.MIN_TICK);
+            assert(tick <= TickMath.MAX_TICK);
             // ensure that there is enough liquidity to guarantee we can get a price within the next tick
             require(
                 reserve0Virtual >= TOKEN_MIN && reserve1Virtual >= TOKEN_MIN,
@@ -500,7 +501,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // get the inclusive lower bound price for the current tick
             StepComputations memory step;
-            step.nextPrice = params.zeroForOne ? TickMath.getRatioAtTick(tickCurrent) : TickMath.getRatioAtTick(tickCurrent + 1);
+            step.nextPrice = params.zeroForOne ? TickMath.getRatioAtTick(tick) : TickMath.getRatioAtTick(tick + 1);
 
             // adjust the fee we will use if the current fee is greater than the stored fee to protect liquidity providers
             uint24 currentFee = getFee();
@@ -547,7 +548,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if a positive input amount still remains, we have to shift down to the next tick
             if (amountInRemaining > 0) {
-                TickInfo storage tickInfo = tickInfos[tickCurrent];
+                TickInfo storage tickInfo = tickInfos[tick];
 
                 // if the tick is initialized, we must update it
                 if (tickInfo.growthOutside._x != 0) {
@@ -590,10 +591,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside;
                 }
 
-                tickCurrent += params.zeroForOne ? int16(-1) : int16(1);
+                tick += params.zeroForOne ? int16(-1) : int16(1);
             }
         }
 
+        tickCurrent = tick;
         TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut); // optimistically transfer tokens
         if (params.data.length > 0) IUniswapV3Callee(params.to).uniswapV3Call(msg.sender, 0, amountOut, params.data);
         TransferHelper.safeTransferFrom(params.zeroForOne ? token0 : token1, msg.sender, address(this), params.amountIn); // this is different than v2
