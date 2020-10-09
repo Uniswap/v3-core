@@ -416,7 +416,7 @@ describe('UniswapV3Pair', () => {
     it('swap0For1 gas large swap', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swap0For1(expandTo18Decimals(1), wallet.address, '0x'))
-    })
+    }).timeout(300000)
 
     it('swap1For0', async () => {
       const amount1In = 1000
@@ -447,7 +447,7 @@ describe('UniswapV3Pair', () => {
     it('swap1For0 gas large swap', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swap1For0(expandTo18Decimals(1), wallet.address, '0x'))
-    })
+    }).timeout(300000)
 
     it('setPosition with 0 liquidityDelta within the current price after swap must collect fees', async () => {
       let liquidityDelta = expandTo18Decimals(100)

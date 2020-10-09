@@ -130,13 +130,15 @@ describe('TickMath', () => {
     await expect(tickMath.getPrice(-7803)).to.be.revertedWith('')
   })
 
-  it.skip('all tick values', async () => {
-    const promises: Promise<[BigNumber]>[] = []
-    for (let tick = -7802; tick < 7803; tick++) {
-      promises.push(tickMath.getPrice(tick))
-    }
-    expect((await Promise.all(promises)).map(([x], i) => [i - 7802, x.toString()])).toMatchSnapshot()
-  }).timeout(300000)
+  if (process.env.UPDATE_SNAPSHOT) {
+    it('all tick values', async () => {
+      const promises: Promise<[BigNumber]>[] = []
+      for (let tick = -7802; tick < 7803; tick++) {
+        promises.push(tickMath.getPrice(tick))
+      }
+      expect((await Promise.all(promises)).map(([x], i) => [i - 7802, x.toString()])).toMatchSnapshot()
+    }).timeout(300000)
+  }
 
   describe('gas', () => {
     const ticks = [-7802, -1000, -500, -50, 0, 50, 500, 1000, 7802]
