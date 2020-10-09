@@ -473,7 +473,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     struct StepComputations {
         // price for the tick
-        FixedPoint.uq112x112 price;
+        FixedPoint.uq112x112 nextPrice;
         // how much is being swapped in in this step
         uint112 amountIn;
         // how much is being swapped out in the current step
@@ -500,7 +500,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // get the inclusive lower bound price for the current tick
             StepComputations memory step;
-            step.price = TickMath.getRatioAtTick(tickCurrent);
+            step.nextPrice = params.zeroForOne ? TickMath.getRatioAtTick(tickCurrent) : TickMath.getRatioAtTick(tickCurrent + 1);
 
             // adjust the fee we will use if the current fee is greater than the stored fee to protect liquidity providers
             uint24 currentFee = getFee();
@@ -511,13 +511,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // TODO adjust this amount (or amountOutStep) so that we're guaranteed the ratio is as close (or equal)
             // to the lower bound _without_ exceeding it as possible
             uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
-                reserveInVirtual, reserveOutVirtual, fee, params.zeroForOne ? step.price.reciprocal() : step.price
+                reserveInVirtual, reserveOutVirtual, fee, params.zeroForOne ? step.nextPrice.reciprocal() : step.nextPrice
             );
 
             // only trade as much as we need to
-            {
-                uint144 reserveInTarget = uint144(step.price._x > type(uint144).max ? 1 << 112 >> 80 : 1 << 112);
-                uint144 reserveOutTarget = uint144(step.price._x > type(uint144).max ? step.price._x >> 80 : step.price._x);
+            if (amountInRequiredForShift > 0) {
+                uint144 reserveInTarget = uint144(step.nextPrice._x > type(uint144).max ? 1 << 112 >> 80 : 1 << 112);
+                uint144 reserveOutTarget = uint144(step.nextPrice._x > type(uint144).max ? step.nextPrice._x >> 80 : step.nextPrice._x);
                 uint112 reserveInVirtualNext = (uint(reserveInVirtual) + amountInRequiredForShift).toUint112();
                 uint112 amountOutMaximum =
                     reserveOutVirtual.sub(reserveOutTarget * reserveInVirtualNext / reserveInTarget).toUint112();
@@ -560,7 +560,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // TODO this should always move the price _down_ (if it has to move at all), because that's the
                     // direction we're moving...floor division should ensure that this is the case with positive deltas,
                     // but not with negative
-                    int112 token1VirtualDelta = FixedPointExtra.muli(step.price, token0VirtualDelta).itoInt112();
+                    int112 token1VirtualDelta = FixedPointExtra.muli(step.nextPrice, token0VirtualDelta).itoInt112();
                     // TODO i think we could squeeze out a tiny bit more precision under certain circumstances by doing:
                     // a) summing total negative and positive token0VirtualDeltas
                     // b) calculating the total negative and positive virtualSupply delta

@@ -401,8 +401,11 @@ describe('UniswapV3Pair', () => {
       expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
       expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(998)
 
-      const tickCurrent = await pair.tickCurrent()
-      expect(tickCurrent).to.eq(-1)
+      expect(await Promise.all([pair.reserve0Virtual(), pair.reserve1Virtual(), pair.tickCurrent()])).to.deep.eq([
+        expandTo18Decimals(2).add(amount0In),
+        expandTo18Decimals(2).sub(998),
+        -1,
+      ])
     })
 
     it('swap0For1 gas', async () => {
@@ -410,7 +413,7 @@ describe('UniswapV3Pair', () => {
       await snapshotGasCost(pair.swap0For1(1000, wallet.address, '0x'))
     })
 
-    it.only('swap1For0', async () => {
+    it('swap1For0', async () => {
       const amount1In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
@@ -424,13 +427,14 @@ describe('UniswapV3Pair', () => {
 
       expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(998)
       expect(token1BalanceBefore.sub(token1BalanceAfter), 'input amount decreased by amount in').to.eq(amount1In)
-      expect(await Promise.all([pair.reserve0Virtual(), pair.reserve1Virtual(), pair.tickCurrent()])).to.eq([0, 0, 0])
-
-      const tickCurrent = await pair.tickCurrent()
-      expect(tickCurrent, 'current tick has gone up 1').to.eq(1)
+      expect(await Promise.all([pair.reserve0Virtual(), pair.reserve1Virtual(), pair.tickCurrent()])).to.deep.eq([
+        expandTo18Decimals(2).sub(998),
+        expandTo18Decimals(2).add(amount1In),
+        0,
+      ])
     })
 
-    it.only('swap1For0 gas', async () => {
+    it('swap1For0 gas', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swap1For0(1000, wallet.address, '0x'))
     })
