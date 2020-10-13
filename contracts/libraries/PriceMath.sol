@@ -6,7 +6,7 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 library PriceMath {
     using FixedPoint for FixedPoint.uq112x112;
 
-    uint16 public constant LP_FEE_BASE = 10_000; // i.e. 100%
+    uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
 
     function getInputToRatio(
         uint112 reserveIn,
@@ -39,11 +39,12 @@ library PriceMath {
         uint112 reserveIn, uint112 reserveOut,
         uint16 lpFee, uint224 inOutRatio)
     internal pure returns (uint256 amountIn) {
+        uint256 feePips = uint256(lpFee * 100);
         // g2y2 = g^2 * y^2 * 1e6 (max value: ~2^236)
-        uint256 g2y2 = (uint256 (lpFee) * uint256 (lpFee) * uint256 (reserveIn) * uint256 (reserveIn) + 999999) / 1e6;
+        uint256 g2y2 = (feePips * feePips * uint256 (reserveIn) * uint256 (reserveIn) + 999999) / 1e6;
 
         // xyr4g1 = 4 * x * y * (1 - g) * 1e6 (max value: ~2^246)
-        uint256 xy41g = 4 * uint256 (reserveIn) * uint256 (reserveOut) * (1e6 - uint256 (lpFee));
+        uint256 xy41g = 4 * uint256 (reserveIn) * uint256 (reserveOut) * (1e6 - feePips);
 
         // xyr41g = 4 * x * y * r * (1 - g) * 1e6 (max value: ~2^246)
         uint256 xyr41g = mulshift (xy41g, uint256 (inOutRatio), 112);
@@ -53,7 +54,7 @@ library PriceMath {
         uint256 sr = (sqrt (g2y2 + xyr41g) + 999) / 1000;
 
         // y2g = y(2 - g) * 2^128
-        uint256 y2g = uint256 (reserveIn) * (2e6 - uint256 (lpFee)) * 0x10c6f7a0b5ed8d36b4c7f3493858;
+        uint256 y2g = uint256 (reserveIn) * (2e6 - feePips) * 0x10c6f7a0b5ed8d36b4c7f3493858;
 
         // Make sure numerator is non-negative
         require (sr >= y2g);
@@ -62,7 +63,7 @@ library PriceMath {
         uint256 num = sr - y2g;
 
         // den = 2 * (1 - g) * 1e6
-        uint256 den = 2 * (1e6 - uint256 (lpFee));
+        uint256 den = 2 * (1e6 - feePips);
 
         return ((num + den - 1) / den * 1e6 + 0xffff) >> 16;
     }
