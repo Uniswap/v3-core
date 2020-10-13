@@ -71,12 +71,12 @@ describe('UniswapV3Pair', () => {
 
   it('fee options', async () => {
     const options = await pair.FEE_OPTIONS()
-    expect(options[0]).to.eq(500)
-    expect(options[1]).to.eq(1000)
-    expect(options[2]).to.eq(3000)
-    expect(options[3]).to.eq(6000)
-    expect(options[4]).to.eq(10000)
-    expect(options[5]).to.eq(20000)
+    expect(options[0]).to.eq(5)
+    expect(options[1]).to.eq(10)
+    expect(options[2]).to.eq(30)
+    expect(options[3]).to.eq(60)
+    expect(options[4]).to.eq(100)
+    expect(options[5]).to.eq(200)
     expect(options.length).to.eq(await pair.NUM_FEE_OPTIONS())
   })
 

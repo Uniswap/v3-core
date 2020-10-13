@@ -6,12 +6,12 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 library PriceMath {
     using FixedPoint for FixedPoint.uq112x112;
 
-    uint24 public constant LP_FEE_BASE = 1000000; // 1000000 pips, or 10000 bips, or 100%
+    uint16 public constant LP_FEE_BASE = 10_000; // i.e. 100%
 
     function getInputToRatio(
         uint112 reserveIn,
         uint112 reserveOut,
-        uint24 lpFee,
+        uint16 lpFee,
         FixedPoint.uq112x112 memory inOutRatio
     )
         internal
@@ -37,7 +37,7 @@ library PriceMath {
      */
     function getInputToRatioUQ128x128 (
         uint112 reserveIn, uint112 reserveOut,
-        uint24 lpFee, uint224 inOutRatio)
+        uint16 lpFee, uint224 inOutRatio)
     internal pure returns (uint256 amountIn) {
         // g2y2 = g^2 * y^2 * 1e6 (max value: ~2^236)
         uint256 g2y2 = (uint256 (lpFee) * uint256 (lpFee) * uint256 (reserveIn) * uint256 (reserveIn) + 999999) / 1e6;

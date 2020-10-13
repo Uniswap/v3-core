@@ -27,12 +27,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint8 public constant override NUM_FEE_OPTIONS = 6;
 
     // list of fee options expressed as pips
-    // uint24 since the maximum value is 1_000_000 which exceeds 2^16
+    // uint16 because the maximum value is 10_000
     // options are 0.05%, 0.10%, 0.30%, 0.60%, 1.00%, 2.00%
     // ideally this would be a constant array, but constant arrays are not supported in solidity
-    function FEE_OPTIONS() public pure returns (uint24[NUM_FEE_OPTIONS] memory) {
+    function FEE_OPTIONS() public pure returns (uint16[NUM_FEE_OPTIONS] memory) {
         return [
-            uint24(500), 1000, 3000, 6000, 10000, 20000
+            uint16(5), 10, 30, 60, 100, 200
         ];
     }
 
@@ -58,14 +58,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // the current fee (gets set by the first swap or setPosition/initialize in a block)
     // this is stored to protect liquidity providers from add/swap/remove sandwiching attacks
-    uint24 public feeLast;
+    uint16 public feeLast;
 
     // the amount of virtual supply active within the current tick, for each fee vote
     uint112[NUM_FEE_OPTIONS] public override virtualSupplies;
 
     uint256 public override price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
     uint256 public override price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
-    
+
     struct TickInfo {
         // fee growth on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
@@ -116,14 +116,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // find the median fee vote, and return the fee in pips
-    function getFee() public override view returns (uint24 fee) {
+    function getFee() public override view returns (uint16 fee) {
         uint112 virtualSupplyCumulative;
         // load all virtual supplies into memory
         uint112[NUM_FEE_OPTIONS] memory virtualSupplies_ = [
             virtualSupplies[0], virtualSupplies[1], virtualSupplies[2], virtualSupplies[3], virtualSupplies[4], virtualSupplies[5]
         ];
         uint112 threshold = (virtualSupplies_[0] + virtualSupplies_[1] + virtualSupplies_[2] + virtualSupplies_[3] + virtualSupplies_[4] + virtualSupplies_[5]) / 2;
-        uint24[NUM_FEE_OPTIONS] memory feeOptions = FEE_OPTIONS();
+        uint16[NUM_FEE_OPTIONS] memory feeOptions = FEE_OPTIONS();
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {
             virtualSupplyCumulative += virtualSupplies_[feeVoteIndex];
             if (virtualSupplyCumulative >= threshold) {
@@ -305,7 +305,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // note: this function can cause the price to change
-    function updateReservesAndVirtualSupply(int112 liquidityDelta, uint24 feeVote)
+    function updateReservesAndVirtualSupply(int112 liquidityDelta, uint16 feeVote)
         internal
         returns (int112 amount0, int112 amount1)
     {
@@ -485,7 +485,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         _update(); // update the oracle and feeLast
 
         // use the fee from the previous block as the floor
-        uint24 fee = feeLast;
+        uint16 fee = feeLast;
         int16 tick = tickCurrent;
 
         uint112 amountInRemaining = params.amountIn;
@@ -504,7 +504,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             step.nextPrice = params.zeroForOne ? TickMath.getRatioAtTick(tick) : TickMath.getRatioAtTick(tick + 1);
 
             // adjust the fee we will use if the current fee is greater than the stored fee to protect liquidity providers
-            uint24 currentFee = getFee();
+            uint16 currentFee = getFee();
             if (fee < currentFee) fee = currentFee;
 
             (uint112 reserveInVirtual, uint112 reserveOutVirtual) = params.zeroForOne ? (reserve0Virtual, reserve1Virtual) : (reserve1Virtual, reserve0Virtual);
