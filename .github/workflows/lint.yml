@@ -24,7 +24,7 @@ jobs:
         run: yarn
 
       - name: Run linters
-        uses: wearerequired/lint-action@v1
+        uses: wearerequired/lint-action@feature/pull_request_target
         with:
           github_token: ${{ secrets.github_token }}
           prettier: true
