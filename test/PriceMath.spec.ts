@@ -1,10 +1,10 @@
-import { Contract, BigNumber } from 'ethers'
-import { MockProvider, deployContract } from 'ethereum-waffle'
+import {Contract, BigNumber} from 'ethers'
+import {MockProvider, deployContract} from 'ethereum-waffle'
 
 import PriceMathTest from '../build/PriceMathTest.json'
-import { expect } from './shared/expect'
+import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import { expandTo18Decimals } from './shared/utilities'
+import {expandTo18Decimals} from './shared/utilities'
 
 describe('PriceMath', () => {
   const provider = new MockProvider({

@@ -1,10 +1,10 @@
-import { Contract, constants, BigNumber } from 'ethers'
-import { waffle } from '@nomiclabs/buidler'
-import { expect } from './shared/expect'
-import { deployContract } from 'ethereum-waffle'
+import {Contract, constants, BigNumber} from 'ethers'
+import {waffle} from '@nomiclabs/buidler'
+import {expect} from './shared/expect'
+import {deployContract} from 'ethereum-waffle'
 import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 
-import { TEST_PAIR_START_TIME, pairFixture } from './shared/fixtures'
+import {TEST_PAIR_START_TIME, pairFixture} from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
@@ -29,7 +29,7 @@ describe('UniswapV3Pair', () => {
   let pairTest: Contract
 
   beforeEach('load fixture', async () => {
-    ;({ token0, token1, factory, pair, pairTest } = await waffle.loadFixture(pairFixture))
+    ;({token0, token1, factory, pair, pairTest} = await waffle.loadFixture(pairFixture))
   })
 
   // this invariant should always hold true.
@@ -751,7 +751,7 @@ describe('UniswapV3Pair', () => {
     }
 
     it('off', async () => {
-      const { token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter } = await claimFee()
+      const {token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter} = await claimFee()
 
       token0FeesWithoutFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
       token1FeesWithoutFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
@@ -760,7 +760,7 @@ describe('UniswapV3Pair', () => {
     it('on', async () => {
       await factory.setFeeTo(other.address)
 
-      const { token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter } = await claimFee()
+      const {token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter} = await claimFee()
 
       const token0FeesWithFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
       const token1FeesWithFeeTo = token1BalanceAfter.sub(token1BalanceBefore)

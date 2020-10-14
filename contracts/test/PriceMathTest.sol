@@ -8,15 +8,21 @@ import '../libraries/PriceMath.sol';
 
 contract PriceMathTest {
     function getInputToRatio(
-        uint112 reserveIn, uint112 reserveOut, uint16 lpFee, FixedPoint.uq112x112 memory inOutRatio
+        uint112 reserveIn,
+        uint112 reserveOut,
+        uint16 lpFee,
+        FixedPoint.uq112x112 memory inOutRatio
     ) public pure returns (uint112 amountIn) {
         return PriceMath.getInputToRatio(reserveIn, reserveOut, lpFee, inOutRatio);
     }
 
     function getGasCostOfGetInputToRatio(
-        uint112 reserveIn, uint112 reserveOut, uint16 lpFee, FixedPoint.uq112x112 memory inOutRatio
-    ) public view returns (uint) {
-        uint gasBefore = gasleft();
+        uint112 reserveIn,
+        uint112 reserveOut,
+        uint16 lpFee,
+        FixedPoint.uq112x112 memory inOutRatio
+    ) public view returns (uint256) {
+        uint256 gasBefore = gasleft();
         PriceMath.getInputToRatio(reserveIn, reserveOut, lpFee, inOutRatio);
         return gasBefore - gasleft();
     }

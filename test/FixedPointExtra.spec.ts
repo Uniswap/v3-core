@@ -1,8 +1,8 @@
-import { MockProvider, deployContract } from 'ethereum-waffle'
-import { Contract, BigNumber } from 'ethers'
+import {MockProvider, deployContract} from 'ethereum-waffle'
+import {Contract, BigNumber} from 'ethers'
 
 import FixedPointExtraTest from '../build/FixedPointExtraTest.json'
-import { expect } from './shared/expect'
+import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 const overrides = {

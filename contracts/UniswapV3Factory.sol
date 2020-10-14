@@ -15,7 +15,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         feeToSetter = _feeToSetter;
     }
 
-    function allPairsLength() external override view returns (uint) {
+    function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
 
@@ -25,7 +25,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         require(token0 != address(0), 'UniswapV3: ZERO_ADDRESS');
         require(getPair[token0][token1] == address(0), 'UniswapV3: PAIR_EXISTS'); // single check is sufficient
         // CREATE2 salt is 0 since token0 and token1 are included as constructor arguments
-        pair = address(new UniswapV3Pair{ salt: bytes32(0) }(address(this), token0, token1));
+        pair = address(new UniswapV3Pair{salt: bytes32(0)}(address(this), token0, token1));
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);

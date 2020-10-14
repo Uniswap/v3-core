@@ -10,10 +10,10 @@ contract TickMathTest {
         return TickMath.getRatioAtTick(tick);
     }
 
-    function getGasUsed(int16 tick) view public returns (uint) {
-        uint gasBefore = gasleft();
+    function getGasUsed(int16 tick) public view returns (uint256) {
+        uint256 gasBefore = gasleft();
         TickMath.getRatioAtTick(tick);
-        uint gasAfter = gasleft();
+        uint256 gasAfter = gasleft();
         return (gasBefore - gasAfter);
     }
 }

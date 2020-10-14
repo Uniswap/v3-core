@@ -1,6 +1,6 @@
-import { BigNumber, BigNumberish, utils, constants } from 'ethers'
-import { Decimal } from 'decimal.js'
-import { assert } from 'chai'
+import {BigNumber, BigNumberish, utils, constants} from 'ethers'
+import {Decimal} from 'decimal.js'
+import {assert} from 'chai'
 
 export const MIN_TICK = -7802
 export const MAX_TICK = 7802
@@ -15,7 +15,7 @@ export enum FeeVote {
   FeeVote4 = 4,
   FeeVote5 = 5,
 }
-export const FEES: { [vote in FeeVote]: number } = {
+export const FEES: {[vote in FeeVote]: number} = {
   [FeeVote.FeeVote0]: 500,
   [FeeVote.FeeVote1]: 1000,
   [FeeVote.FeeVote2]: 3000,
