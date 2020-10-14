@@ -1,8 +1,8 @@
-import { Contract, Signer, providers } from 'ethers'
-import { waffle } from '@nomiclabs/buidler'
-const { loadFixture, deployContract } = waffle
+import {Contract, Signer, providers} from 'ethers'
+import {waffle} from '@nomiclabs/buidler'
+const {loadFixture, deployContract} = waffle
 
-import { expandTo18Decimals } from './utilities'
+import {expandTo18Decimals} from './utilities'
 
 import TestERC20 from '../../build/TestERC20.json'
 import UniswapV3Factory from '../../build/UniswapV3Factory.json'
@@ -15,7 +15,7 @@ interface FactoryFixture {
 
 export async function factoryFixture([wallet]: Signer[]): Promise<FactoryFixture> {
   const factory = await deployContract(wallet, UniswapV3Factory, [await wallet.getAddress()])
-  return { factory }
+  return {factory}
 }
 
 interface TokensFixture {
@@ -30,7 +30,7 @@ export async function tokensFixture([wallet]: Signer[]): Promise<TokensFixture> 
   const [token0, token1] =
     tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
 
-  return { token0, token1 }
+  return {token0, token1}
 }
 
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
@@ -44,12 +44,12 @@ interface PairFixture extends TokensAndFactoryFixture {
 export const TEST_PAIR_START_TIME = 1601906400
 
 export async function pairFixture([wallet]: Signer[]): Promise<PairFixture> {
-  const { factory } = await loadFixture(factoryFixture)
-  const { token0, token1 } = await loadFixture(tokensFixture)
+  const {factory} = await loadFixture(factoryFixture)
+  const {token0, token1} = await loadFixture(tokensFixture)
 
   const pair = await deployContract(wallet, MockTimeUniswapV3Pair, [factory.address, token0.address, token1.address])
   await pair.setTime(TEST_PAIR_START_TIME)
   const pairTest = await deployContract(wallet, UniswapV3PairTest, [pair.address])
 
-  return { token0, token1, pair, pairTest, factory }
+  return {token0, token1, pair, pairTest, factory}
 }

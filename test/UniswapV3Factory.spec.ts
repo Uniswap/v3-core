@@ -1,10 +1,10 @@
-import { expect } from './shared/expect'
-import { Contract, BigNumber, constants } from 'ethers'
-import { waffle } from '@nomiclabs/buidler'
+import {expect} from './shared/expect'
+import {Contract, BigNumber, constants} from 'ethers'
+import {waffle} from '@nomiclabs/buidler'
 import snapshotGasCost from './shared/snapshotGasCost'
 
-import { getCreate2Address } from './shared/utilities'
-import { factoryFixture } from './shared/fixtures'
+import {getCreate2Address} from './shared/utilities'
+import {factoryFixture} from './shared/fixtures'
 
 import UniswapV3Pair from '../build/UniswapV3Pair.json'
 

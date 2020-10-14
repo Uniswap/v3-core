@@ -1,8 +1,8 @@
-import { MockProvider, deployContract } from 'ethereum-waffle'
-import { Contract, BigNumber, BigNumberish } from 'ethers'
-import { expect } from './shared/expect'
+import {MockProvider, deployContract} from 'ethereum-waffle'
+import {Contract, BigNumber, BigNumberish} from 'ethers'
+import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import { bnify2 } from './shared/utilities'
+import {bnify2} from './shared/utilities'
 
 import TickMathTest from '../build/TickMathTest.json'
 

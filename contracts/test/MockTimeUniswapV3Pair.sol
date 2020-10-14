@@ -8,14 +8,17 @@ import '../UniswapV3Pair.sol';
 contract MockTimeUniswapV3Pair is UniswapV3Pair {
     uint32 public time;
 
-    constructor(address factory, address tokenA, address tokenB) public UniswapV3Pair(factory, tokenA, tokenB) {}
+    constructor(
+        address factory,
+        address tokenA,
+        address tokenB
+    ) public UniswapV3Pair(factory, tokenA, tokenB) {}
 
     function setTime(uint32 _time) external {
         time = _time;
     }
 
-    function _blockTimestamp() internal override view returns (uint32) {
+    function _blockTimestamp() internal view override returns (uint32) {
         return time;
     }
 }
-

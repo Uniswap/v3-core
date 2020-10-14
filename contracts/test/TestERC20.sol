@@ -4,11 +4,11 @@ pragma solidity =0.6.11;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 contract TestERC20 is ERC20 {
-    constructor (uint amountToMint) ERC20('TestERC20', 'TEST') public {
+    constructor(uint256 amountToMint) public ERC20('TestERC20', 'TEST') {
         mint(msg.sender, amountToMint);
     }
 
-    function mint(address to, uint amount) public {
+    function mint(address to, uint256 amount) public {
         _mint(to, amount);
     }
 }

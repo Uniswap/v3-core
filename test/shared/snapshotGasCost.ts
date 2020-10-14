@@ -1,6 +1,6 @@
-import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider'
-import { expect } from './expect'
-import { Contract, BigNumber } from 'ethers'
+import {TransactionReceipt, TransactionResponse} from '@ethersproject/abstract-provider'
+import {expect} from './expect'
+import {Contract, BigNumber} from 'ethers'
 
 export default async function snapshotGasCost(
   x:

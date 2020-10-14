@@ -1,4 +1,4 @@
-import { usePlugin } from '@nomiclabs/buidler/config'
+import {usePlugin} from '@nomiclabs/buidler/config'
 
 usePlugin('@nomiclabs/buidler-waffle')
 
