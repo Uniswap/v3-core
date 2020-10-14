@@ -16,12 +16,8 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
-    using SafeMath for uint256;
-    using SafeMath for uint112;
-    using SafeMath for int256;
-    using SafeMath for int112;
-
-    using FixedPoint for FixedPoint.uq112x112;
+    using SafeMath for *;
+    using FixedPoint for *;
 
     // Number of fee options
     uint8 public constant override NUM_FEE_OPTIONS = 6;
