@@ -31,11 +31,11 @@ library PriceMath {
      * Throw on overflow.
      */
     function getInputToRatioUQ128x128(
-        uint112 reserveIn,
-        uint112 reserveOut,
-        uint16 lpFee,
-        uint224 inOutRatio
-    ) internal pure returns (uint256 amountIn) {
+        uint256 reserveIn,
+        uint256 reserveOut,
+        uint256 lpFee,
+        uint256 inOutRatio
+    ) private pure returns (uint256 amountIn) {
         // g2y2 = g^2 * y^2 * 1e6 (max value: ~2^236)
         uint256 g2y2 = (lpFee * lpFee * uint256(reserveIn) * uint256(reserveIn) + (9999)) / 1e4;
 
@@ -43,7 +43,7 @@ library PriceMath {
         uint256 xy41g = 4 * uint256(reserveIn) * uint256(reserveOut) * (1e4 - lpFee);
 
         // xyr41g = 4 * x * y * r * (1 - g) * 1e6 (max value: ~2^246)
-        uint256 xyr41g = mulshift(xy41g, uint256(inOutRatio), 112);
+        uint256 xyr41g = mulshift(xy41g, uint256(inOutRatio));
         require(xyr41g < 2**254);
 
         // sr = sqrt (g^2 * y^2 + 4 * x * y * r * (1 - g)) * 2^128
@@ -65,23 +65,19 @@ library PriceMath {
     }
 
     /**
-     * Calculate x * y >> s rounding up.  Throw on overflow.
+     * Calculate x * y >> 112 rounding up.  Throw on overflow.
      */
-    function mulshift(
-        uint256 x,
-        uint256 y,
-        uint8 s
-    ) internal pure returns (uint256 result) {
+    function mulshift(uint256 x, uint256 y) private pure returns (uint256 result) {
         uint256 l = x * y;
         uint256 m = mulmod(x, y, uint256(-1));
         uint256 h = m - l;
         if (m < l) h -= 1;
 
-        uint256 ss = 256 - s;
+        uint256 ss = 144;
 
-        require(h >> s == 0);
-        result = (h << ss) | (l >> s);
-        if (l << ss > 0) {
+        require(h >> 112 == 0);
+        result = (h << 144) | (l >> 112);
+        if (l << 112 > 0) {
             require(result < uint256(-1));
             result += 1;
         }
@@ -90,7 +86,7 @@ library PriceMath {
     /**
      * Calculate sqrt (x) * 2^128 rounding up.  Throw on overflow.
      */
-    function sqrt(uint256 x) internal pure returns (uint256 result) {
+    function sqrt(uint256 x) private pure returns (uint256 result) {
         if (x == 0) return 0;
         else {
             uint256 s = 128;
