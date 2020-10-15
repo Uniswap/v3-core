@@ -37,6 +37,7 @@ interface IUniswapV3Pair {
 
     // derived state
     function getFee() external view returns (uint16 fee);
+
     function getVirtualSupply() external view returns (uint112 virtualSupply);
 
     function getCumulativePrices() external view returns (uint256 price0Cumulative, uint256 price1Cumulative);

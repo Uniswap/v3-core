@@ -73,8 +73,6 @@ library PriceMath {
         uint256 h = m - l;
         if (m < l) h -= 1;
 
-        uint256 ss = 144;
-
         require(h >> 112 == 0);
         result = (h << 144) | (l >> 112);
         if (l << 112 > 0) {

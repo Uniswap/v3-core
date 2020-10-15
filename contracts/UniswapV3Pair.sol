@@ -26,7 +26,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // Number of fee options
     uint8 public constant override NUM_FEE_OPTIONS = 6;
 
-    // list of fee options expressed as pips
+    // list of fee options expressed as bips
     // uint16 because the maximum value is 10_000
     // options are 0.05%, 0.10%, 0.30%, 0.60%, 1.00%, 2.00%
     // ideally this would be a constant array, but constant arrays are not supported in solidity
@@ -119,7 +119,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             virtualSupplies[5];
     }
 
-    // find the median fee vote, and return the fee in pips
+    // find the median fee vote, and return the fee in bips
     function getFee() public view override returns (uint16 fee) {
         uint112 virtualSupplyCumulative;
         // load all virtual supplies into memory
