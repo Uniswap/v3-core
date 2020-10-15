@@ -1,5 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `501`;
+exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `495`;
 
-exports[`PriceMath #getInputToRatio gas: 1:100 to 1:75 at 45bps 1`] = `2152`;
+exports[`PriceMath #getInputToRatio gas: 1:100 to 1:75 at 45bps 1`] = `2082`;
