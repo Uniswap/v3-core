@@ -36,22 +36,21 @@ library PriceMath {
         uint16 lpFee,
         uint224 inOutRatio
     ) internal pure returns (uint256 amountIn) {
-        uint256 feePips = uint256(lpFee * 100);
         // g2y2 = g^2 * y^2 * 1e6 (max value: ~2^236)
-        uint256 g2y2 = (feePips * feePips * uint256(reserveIn) * uint256(reserveIn) + 999999) / 1e6;
+        uint256 g2y2 = (lpFee * lpFee * uint256(reserveIn) * uint256(reserveIn) + (9999)) / 1e4;
 
         // xyr4g1 = 4 * x * y * (1 - g) * 1e6 (max value: ~2^246)
-        uint256 xy41g = 4 * uint256(reserveIn) * uint256(reserveOut) * (1e6 - feePips);
+        uint256 xy41g = 4 * uint256(reserveIn) * uint256(reserveOut) * (1e4 - lpFee);
 
         // xyr41g = 4 * x * y * r * (1 - g) * 1e6 (max value: ~2^246)
         uint256 xyr41g = mulshift(xy41g, uint256(inOutRatio), 112);
         require(xyr41g < 2**254);
 
         // sr = sqrt (g^2 * y^2 + 4 * x * y * r * (1 - g)) * 2^128
-        uint256 sr = (sqrt(g2y2 + xyr41g) + 999) / 1000;
+        uint256 sr = (sqrt(g2y2 + xyr41g) + 99) / 100;
 
         // y2g = y(2 - g) * 2^128
-        uint256 y2g = uint256(reserveIn) * (2e6 - feePips) * 0x10c6f7a0b5ed8d36b4c7f3493858;
+        uint256 y2g = uint256(reserveIn) * ((2e4) - lpFee) * 0x68db8bac710cb295e9e1b089a0275;
 
         // Make sure numerator is non-negative
         require(sr >= y2g);
@@ -60,9 +59,9 @@ library PriceMath {
         uint256 num = sr - y2g;
 
         // den = 2 * (1 - g) * 1e6
-        uint256 den = 2 * (1e6 - feePips);
+        uint256 den = 2 * (1e4 - lpFee);
 
-        return (((num + den - 1) / den) * 1e6 + 0xffff) >> 16;
+        return (((num + den - 1) / den) * 1e4 + 0xffff) >> 16;
     }
 
     /**
