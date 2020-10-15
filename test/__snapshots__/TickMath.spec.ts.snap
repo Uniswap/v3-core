@@ -62431,7 +62431,7 @@ exports[`TickMath gas tick -500 1`] = `844`;
 
 exports[`TickMath gas tick -1000 1`] = `844`;
 
-exports[`TickMath gas tick -7802 1`] = `913`;
+exports[`TickMath gas tick -7732 1`] = `867`;
 
 exports[`TickMath gas tick 0 1`] = `690`;
 
@@ -62441,4 +62441,4 @@ exports[`TickMath gas tick 500 1`] = `864`;
 
 exports[`TickMath gas tick 1000 1`] = `864`;
 
-exports[`TickMath gas tick 7802 1`] = `933`;
+exports[`TickMath gas tick 7732 1`] = `887`;

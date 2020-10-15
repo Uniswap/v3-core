@@ -4,34 +4,16 @@ pragma experimental ABIEncoderV2;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
-import '../libraries/FixedPointExtra.sol';
-
-contract FixedPointExtraTest {
-    function muluq(FixedPoint.uq112x112 memory self, FixedPoint.uq112x112 memory other)
-        public
-        pure
-        returns (FixedPoint.uq112x112 memory)
-    {
-        return FixedPointExtra.muluq(self, other);
-    }
-
+contract FixedPointGasTest {
     function muluqGasUsed(FixedPoint.uq112x112 memory self, FixedPoint.uq112x112 memory other)
         public
         view
         returns (uint256)
     {
         uint256 gasBefore = gasleft();
-        FixedPointExtra.muluq(self, other);
+        FixedPoint.muluq(self, other);
         uint256 gasAfter = gasleft();
         return (gasBefore - gasAfter);
-    }
-
-    function divuq(FixedPoint.uq112x112 memory self, FixedPoint.uq112x112 memory other)
-        public
-        pure
-        returns (FixedPoint.uq112x112 memory)
-    {
-        return FixedPointExtra.divuq(self, other);
     }
 
     function divuqGasUsed(FixedPoint.uq112x112 memory self, FixedPoint.uq112x112 memory other)
@@ -40,7 +22,7 @@ contract FixedPointExtraTest {
         returns (uint256)
     {
         uint256 gasBefore = gasleft();
-        FixedPointExtra.divuq(self, other);
+        FixedPoint.divuq(self, other);
         uint256 gasAfter = gasleft();
         return (gasBefore - gasAfter);
     }

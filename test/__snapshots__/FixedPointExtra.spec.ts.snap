@@ -1,5 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`FixedPointExtra #divuq gas 1`] = `1102`;
-
-exports[`FixedPointExtra #muluq gas 1`] = `686`;

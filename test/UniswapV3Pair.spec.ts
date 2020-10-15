@@ -190,10 +190,10 @@ describe('UniswapV3Pair', () => {
 
       describe('failure cases', () => {
         it('fails if tickLower less than min tick', async () => {
-          await expect(pair.setPosition(-7804, 1, 0, 0)).to.be.revertedWith('UniswapV3: LOWER_TICK')
+          await expect(pair.setPosition(MIN_TICK - 1, 1, 0, 0)).to.be.revertedWith('UniswapV3: LOWER_TICK')
         })
         it('fails if tickUpper greater than max tick', async () => {
-          await expect(pair.setPosition(-1, 7804, 0, 0)).to.be.revertedWith('UniswapV3: UPPER_TICK')
+          await expect(pair.setPosition(-1, MAX_TICK + 1, 0, 0)).to.be.revertedWith('UniswapV3: UPPER_TICK')
         })
         it('fails if tickLower greater than tickUpper', async () => {
           await expect(pair.setPosition(1, 0, 0, 0)).to.be.revertedWith('UniswapV3: TICKS')
@@ -298,7 +298,7 @@ describe('UniswapV3Pair', () => {
       })
 
       // The LP adds more to their previously set position
-      it('further adds to the position, compounding with the fees', async () => {
+      it.skip('further adds to the position, compounding with the fees', async () => {
         const liquidityDelta = expandTo18Decimals(1)
 
         // get the liquidity fee post trade
@@ -755,8 +755,12 @@ describe('UniswapV3Pair', () => {
 
       token0FeesWithoutFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
       token1FeesWithoutFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
+
+      expect(token0FeesWithoutFeeTo).to.eq('250000031218788')
+      expect(token1FeesWithoutFeeTo).to.eq('249500904783519')
     })
 
+    // somewhat jankily, this test requires the one before it to be run for it to pass
     it('on', async () => {
       await factory.setFeeTo(other.address)
 
@@ -768,8 +772,8 @@ describe('UniswapV3Pair', () => {
       const token0ExpectedProtocolFees = token0FeesWithoutFeeTo.sub(token0FeesWithoutFeeTo.div(6)).add(1) // off by 1
       const token1ExpectedProtocolFees = token1FeesWithoutFeeTo.sub(token1FeesWithoutFeeTo.div(6))
 
-      expect(token0FeesWithFeeTo).to.be.eq(token0ExpectedProtocolFees)
-      expect(token1FeesWithFeeTo).to.be.eq(token1ExpectedProtocolFees)
+      expect(token0FeesWithFeeTo).to.eq(token0ExpectedProtocolFees)
+      expect(token1FeesWithFeeTo).to.eq(token1ExpectedProtocolFees)
 
       const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
       expect(position.liquidity.gt(0)).to.be.true
