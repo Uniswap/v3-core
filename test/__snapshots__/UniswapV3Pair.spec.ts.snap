@@ -16,6 +16,6 @@ exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = 
 
 exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `1499197`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `90788`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `90778`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `1465169`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `1461595`;
