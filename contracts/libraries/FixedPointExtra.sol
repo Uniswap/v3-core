@@ -3,8 +3,6 @@ pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
-import './SafeMath.sol';
-
 // TODO: Move into @uniswap/lib
 library FixedPointExtra {
     // multiply a UQ112x112 by an int and decode, returning an int
