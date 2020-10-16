@@ -20,7 +20,7 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@uniswap/lib": "2.0.0"
+    "@uniswap/lib": "2.0.1"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.3",
