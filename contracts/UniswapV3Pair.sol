@@ -11,7 +11,6 @@ import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/SafeMathExtra.sol';
-import './libraries/FixedPointExtra.sol';
 import './libraries/TickMath.sol';
 import './libraries/PriceMath.sol';
 
@@ -171,7 +170,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         assert(growthBelow._x != 0);
         // tick is above the current tick, meaning growth outside represents growth above, not below, so adjust
         if (tick > tickCurrent) {
-            growthBelow = FixedPointExtra.divuq(g, growthBelow);
+            growthBelow = g.divuq(growthBelow);
         }
     }
 
@@ -184,7 +183,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         assert(growthAbove._x != 0);
         // tick is at or below the current tick, meaning growth outside represents growth below, not above, so adjust
         if (tick <= tickCurrent) {
-            growthAbove = FixedPointExtra.divuq(g, growthAbove);
+            growthAbove = g.divuq(growthAbove);
         }
     }
 
@@ -197,7 +196,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory g = getG();
         FixedPoint.uq112x112 memory growthBelow = _getGrowthBelow(tickLower, tickInfoLower, g);
         FixedPoint.uq112x112 memory growthAbove = _getGrowthAbove(tickUpper, tickInfoUpper, g);
-        growthInside = FixedPointExtra.divuq(g, FixedPointExtra.muluq(growthBelow, growthAbove));
+        growthInside = g.divuq(growthBelow.muluq(growthAbove));
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
@@ -208,8 +207,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         pure
         returns (int112 amount0, int112 amount1)
     {
-        amount0 = FixedPointExtra.muli(price.reciprocal().sqrt(), liquidity).itoInt112();
-        amount1 = FixedPointExtra.muli(price, amount0).itoInt112();
+        amount0 = price.reciprocal().sqrt().muli(liquidity).itoInt112();
+        amount1 = price.muli(amount0).itoInt112();
     }
 
     constructor(
@@ -618,7 +617,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // TODO this should always move the price _down_ (if it has to move at all), because that's the
                     // direction we're moving...floor division should ensure that this is the case with positive deltas,
                     // but not with negative
-                    int112 token1VirtualDelta = FixedPointExtra.muli(step.nextPrice, token0VirtualDelta).itoInt112();
+                    int112 token1VirtualDelta = step.nextPrice.muli(token0VirtualDelta).itoInt112();
                     // TODO i think we could squeeze out a tiny bit more precision under certain circumstances by doing:
                     // a) summing total negative and positive token0VirtualDeltas
                     // b) calculating the total negative and positive virtualSupply delta
@@ -646,7 +645,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // update tick info
                     // overflow is desired
-                    tickInfo.growthOutside = FixedPointExtra.divuq(getG(), tickInfo.growthOutside);
+                    tickInfo.growthOutside = getG().divuq(tickInfo.growthOutside);
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside;
                 }
 
