@@ -50,12 +50,19 @@ describe('TickMath', () => {
     }
 
     describe('js implementation', () => {
-      it.skip('max tick', () => {
+      it('max tick (math)', () => {
         // https://www.wolframalpha.com/input/?i=%281.01%5E7802%29+*+%282%5E112%29
         expect(exactTickRatioQ112x112(7802).toString()).to.eq(
           '26959868313666068472686589847821896098186460312140959350827207227142'
         )
       })
+
+      it('max tick (impl)', () => {
+        expect(exactTickRatioQ112x112(MAX_TICK).toString()).to.eq(
+          '13434502910636290242429127814602410926865305123888330957225010840918'
+        )
+      })
+
       it('-500 tick', () => {
         expect(exactTickRatioQ112x112(-500).toString()).to.eq('35865147646827690843910198668127')
       })
@@ -64,7 +71,11 @@ describe('TickMath', () => {
         expect(exactTickRatioQ112x112(-7000).toString()).to.eq('2922')
       })
 
-      it.skip('min tick', () => {
+      it('max tick (impl)', () => {
+        expect(exactTickRatioQ112x112(MIN_TICK).toString()).to.eq('2')
+      })
+
+      it('min tick (math)', () => {
         expect(exactTickRatioQ112x112(-7801).toString()).to.eq('1')
       })
     })
