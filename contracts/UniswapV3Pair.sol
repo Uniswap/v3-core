@@ -207,8 +207,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         pure
         returns (int112 amount0, int112 amount1)
     {
-        amount0 = price.reciprocal().sqrt().muli(liquidity).itoInt112();
-        amount1 = price.muli(amount0).itoInt112();
+        amount0 = price.reciprocal().sqrt().muli(liquidity).toInt112();
+        amount1 = price.muli(amount0).toInt112();
     }
 
     constructor(
@@ -473,30 +473,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (tickLower > TickMath.MIN_TICK) {
             tickInfoLower.token0VirtualDeltas[feeVote] = tickInfoLower.token0VirtualDeltas[feeVote]
                 .add(amount0Lower)
-                .itoInt112();
+                .toInt112();
         }
         // regardless of current price, when upper tick is crossed from left to right amount0Upper should be removed
         if (tickUpper < TickMath.MAX_TICK) {
             tickInfoUpper.token0VirtualDeltas[feeVote] = tickInfoUpper.token0VirtualDeltas[feeVote]
                 .sub(amount0Upper)
-                .itoInt112();
+                .toInt112();
         }
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tickCurrent < tickLower) {
-            amount0 = amount0.add(amount0Lower.sub(amount0Upper)).itoInt112();
+            amount0 = amount0.add(amount0Lower.sub(amount0Upper)).toInt112();
         } else if (tickCurrent < tickUpper) {
             // the current price is inside the passed range
             (int112 amount0Current, int112 amount1Current) = updateReservesAndVirtualSupply(liquidityDelta, feeVote);
 
             // charge the user whatever is required to cover their position
-            amount0 = amount0.add(amount0Current.sub(amount0Upper)).itoInt112();
-            amount1 = amount1.add(amount1Current.sub(amount1Lower)).itoInt112();
+            amount0 = amount0.add(amount0Current.sub(amount0Upper)).toInt112();
+            amount1 = amount1.add(amount1Current.sub(amount1Lower)).toInt112();
         } else {
             // the current price is above the passed range, so the liquidity can only become in range by crossing from right
             // to left, at which point we'll need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = amount1.add(amount1Upper.sub(amount1Lower)).itoInt112();
+            amount1 = amount1.add(amount1Upper.sub(amount1Lower)).toInt112();
         }
 
         if (amount0 > 0) {
@@ -617,7 +617,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // TODO this should always move the price _down_ (if it has to move at all), because that's the
                     // direction we're moving...floor division should ensure that this is the case with positive deltas,
                     // but not with negative
-                    int112 token1VirtualDelta = step.nextPrice.muli(token0VirtualDelta).itoInt112();
+                    int112 token1VirtualDelta = step.nextPrice.muli(token0VirtualDelta).toInt112();
                     // TODO i think we could squeeze out a tiny bit more precision under certain circumstances by doing:
                     // a) summing total negative and positive token0VirtualDeltas
                     // b) calculating the total negative and positive virtualSupply delta
@@ -628,7 +628,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         int112 virtualSupplyDelta = (tickInfo.token0VirtualDeltas[i].mul(virtualSupply) /
                             reserveInVirtual)
-                            .itoInt112();
+                            .toInt112();
                         // TODO are these SSTOREs optimized/packed?
                         virtualSupplies[i] = virtualSupplies[i].subi(virtualSupplyDelta).toUint112();
                     }
