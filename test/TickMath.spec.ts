@@ -2,7 +2,7 @@ import {MockProvider, deployContract} from 'ethereum-waffle'
 import {Contract, BigNumber, BigNumberish} from 'ethers'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {bnify2} from './shared/utilities'
+import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
 
 import TickMathTest from '../build/TickMathTest.json'
 
@@ -50,12 +50,19 @@ describe('TickMath', () => {
     }
 
     describe('js implementation', () => {
-      it('max tick', () => {
+      it('max tick (math)', () => {
         // https://www.wolframalpha.com/input/?i=%281.01%5E7802%29+*+%282%5E112%29
         expect(exactTickRatioQ112x112(7802).toString()).to.eq(
           '26959868313666068472686589847821896098186460312140959350827207227142'
         )
       })
+
+      it('max tick (impl)', () => {
+        expect(exactTickRatioQ112x112(MAX_TICK).toString()).to.eq(
+          '13434502910636290242429127814602410926865305123888330957225010840918'
+        )
+      })
+
       it('-500 tick', () => {
         expect(exactTickRatioQ112x112(-500).toString()).to.eq('35865147646827690843910198668127')
       })
@@ -64,7 +71,11 @@ describe('TickMath', () => {
         expect(exactTickRatioQ112x112(-7000).toString()).to.eq('2922')
       })
 
-      it('min tick', () => {
+      it('max tick (impl)', () => {
+        expect(exactTickRatioQ112x112(MIN_TICK).toString()).to.eq('2')
+      })
+
+      it('min tick (math)', () => {
         expect(exactTickRatioQ112x112(-7801).toString()).to.eq('1')
       })
     })
@@ -91,7 +102,7 @@ describe('TickMath', () => {
     // the max tick is going to be the tick corresponding to a price of 2^112/1 or 1/2^112
     // so log base 1.01 of 2^112 == 7802
     describe('large ticks', () => {
-      for (let tick of [50, 100, 250, 500, 1000, 2500, 3000, 4000, 5000, 6000, 7000, 7802]) {
+      for (let tick of [50, 100, 250, 500, 1000, 2500, 3000, 4000, 5000, 6000, 7000, MAX_TICK]) {
         it(`tick index: ${tick}`, async () => {
           await checkApproximatelyEquals(tickMath.getPrice(tick), exactTickRatioQ112x112(tick), ALLOWED_BIPS_DIFF)
         })
@@ -133,15 +144,15 @@ describe('TickMath', () => {
   if (process.env.UPDATE_SNAPSHOT) {
     it('all tick values', async () => {
       const promises: Promise<[BigNumber]>[] = []
-      for (let tick = -7802; tick < 7803; tick++) {
+      for (let tick = MIN_TICK; tick < MAX_TICK + 1; tick++) {
         promises.push(tickMath.getPrice(tick))
       }
-      expect((await Promise.all(promises)).map(([x], i) => [i - 7802, x.toString()])).toMatchSnapshot()
+      expect((await Promise.all(promises)).map(([x], i) => [i - MIN_TICK, x.toString()])).toMatchSnapshot()
     }).timeout(300000)
   }
 
   describe('gas', () => {
-    const ticks = [-7802, -1000, -500, -50, 0, 50, 500, 1000, 7802]
+    const ticks = [MIN_TICK, -1000, -500, -50, 0, 50, 500, 1000, MAX_TICK]
 
     for (let tick of ticks) {
       it(`tick ${tick}`, async () => {

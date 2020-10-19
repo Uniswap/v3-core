@@ -56,7 +56,7 @@ describe('UniswapV3Factory', () => {
     await createPair(TEST_ADDRESSES.slice().reverse() as [string, string])
   })
 
-  it.skip('createPair:gas', async () => {
+  it('createPair:gas', async () => {
     await snapshotGasCost(factory.createPair(...TEST_ADDRESSES))
   })
 

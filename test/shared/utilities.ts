@@ -2,8 +2,8 @@ import {BigNumber, BigNumberish, utils, constants} from 'ethers'
 import {Decimal} from 'decimal.js'
 import {assert} from 'chai'
 
-export const MIN_TICK = -7802
-export const MAX_TICK = 7802
+export const MIN_TICK = -7732
+export const MAX_TICK = 7732
 
 export const LIQUIDITY_MIN = 10 ** 3
 

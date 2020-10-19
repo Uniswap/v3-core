@@ -10,13 +10,13 @@ library TickMath {
     // 1.01**tick >= 1 / (2**112 - 1)
     // tick >= log_1.01(1 / (2**112 - 1))
     // tick = ceil(log_1.01(1 / (2**112 - 1))) = -7802
-    int16 public constant MIN_TICK = -7802;
+    int16 public constant MIN_TICK = -7732;
     // the minimum price that can be represented by a uq112x112 fixed point is (2**112 - 1) / 1 = 2**112 - 1
     // therefore, the largest possible tick that corresponds to a representable price is 7802, because:
     // 1.01**tick <= 2**112 - 1
     // tick <= log_1.01(2**112 - 1)
     // tick = floor(log_1.01(2**112 - 1)) = 7802
-    int16 public constant MAX_TICK = 7802;
+    int16 public constant MAX_TICK = 7732;
 
     function getRatioAtTick(int16 tick) internal pure returns (FixedPoint.uq112x112 memory) {
         // no need to check tick range since it's checked in getRatioAtTickUQ128x128
@@ -29,7 +29,7 @@ library TickMath {
      */
     function getRatioAtTickUQ128x128(int256 tick) internal pure returns (uint256 ratio) {
         uint256 absTick = uint256(tick >= 0 ? tick : -tick);
-        require(absTick <= 7802);
+        require(absTick <= 7732);
 
         ratio = absTick & 0x1 != 0 ? 0xfd7720f353a4c0a237c32b16cfd7720f : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfaf4ae9099c9241ccf4a1b745e424d72) >> 128;
