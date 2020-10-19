@@ -10,7 +10,7 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 
 import './libraries/SafeCast.sol';
-import './libraries/SafeMathExtra.sol';
+import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
 import './libraries/PriceMath.sol';
 
@@ -24,7 +24,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SignedSafeMath for int256;
     using SignedSafeMath for int112;
     using SafeCast for *;
-    using SafeMathExtra for *;
+    using MixedSafeMath for *;
     using FixedPoint for *;
 
     // Number of fee options
