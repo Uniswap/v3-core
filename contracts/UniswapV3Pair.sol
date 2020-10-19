@@ -9,6 +9,7 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 
+import './libraries/SafeCast.sol';
 import './libraries/SafeMathExtra.sol';
 import './libraries/FixedPointExtra.sol';
 import './libraries/TickMath.sol';
@@ -23,6 +24,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint112;
     using SignedSafeMath for int256;
     using SignedSafeMath for int112;
+    using SafeCast for *;
     using SafeMathExtra for *;
     using FixedPoint for *;
 
