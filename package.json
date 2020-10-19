@@ -20,13 +20,13 @@
     "node": ">=10"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "3.1.0",
     "@uniswap/lib": "2.0.3"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.3",
     "@nomiclabs/buidler-ethers": "^2.0.0",
     "@nomiclabs/buidler-waffle": "^2.0.0",
-    "@openzeppelin/contracts": "^3.1.0",
     "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",

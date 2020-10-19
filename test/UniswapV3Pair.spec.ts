@@ -383,7 +383,7 @@ describe('UniswapV3Pair', () => {
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, expandTo18Decimals(1000))
       await expect(
         pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, expandTo18Decimals(-1001))
-      ).to.be.revertedWith('ds-math-sub-underflow')
+      ).to.be.revertedWith('MixedSafeMath::addi: underflow')
     })
 
     it('swap0For1', async () => {

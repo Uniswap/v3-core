@@ -1,0 +1,7 @@
+{
+  "exclude_informational": true,
+  "exclude_low": false,
+  "exclude_medium": false,
+  "exclude_high": false,
+  "filter_paths": "contracts/test"
+}
