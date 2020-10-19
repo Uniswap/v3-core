@@ -869,10 +869,10 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@uniswap/lib@2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-2.0.1.tgz#80afb8a081711dd4001251e15c83377ddfa3569f"
-  integrity sha512-VWFPQxB088Y8Fmf2Pa9oBNJXO1XphDCfESLvJRrHHa8aTpGFS5KD8Ow0rbHv1umgmlzJXs7jtZpcZmy67al/zg==
+"@uniswap/lib@2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-2.0.3.tgz#f3da56e19d04a5f6cb445fe264b56aa944b60fd8"
+  integrity sha512-3056x9hgiJ0lyV97s0yklf3WSePLHLj1lPqCBcru2Zy6sBxvudT0vvCuPXQMEMQH7DMntZM84J5XADnXz58FKg==
 
 "@web3-js/scrypt-shim@^0.1.0":
   version "0.1.0"
