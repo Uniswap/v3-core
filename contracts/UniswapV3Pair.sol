@@ -8,6 +8,7 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/SignedSafeMath.sol';
+import '@openzeppelin/contracts/token/erc20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
@@ -700,5 +701,26 @@ contract UniswapV3Pair is IUniswapV3Pair {
             price0Cumulative = price0CumulativeLast;
             price1Cumulative = price1CumulativeLast;
         }
+    }
+
+    function recover(
+        address token,
+        address to,
+        uint256 amount
+    ) external override {
+        require(msg.sender == IUniswapV3Factory(factory).feeTo(), 'UniswapV3Pair::recover: caller not feeTo');
+        require(
+            to != address(0) && to != token && to != address(this) && to != token0 && to != token1,
+            'UniswapV3Pair::recover: invalid to'
+        );
+
+        uint256 token0Balance = IERC20(token0).balanceOf(address(this));
+        uint256 token1Balance = IERC20(token1).balanceOf(address(this));
+
+        TransferHelper.safeTransfer(token, to, amount);
+
+        // check the balance hasn't changed
+        require(IERC20(token0).balanceOf(address(this)) == token0Balance);
+        require(IERC20(token1).balanceOf(address(this)) == token1Balance);
     }
 }
