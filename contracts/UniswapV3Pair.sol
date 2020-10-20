@@ -49,6 +49,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     address public immutable override token0;
     address public immutable override token1;
 
+    address public override feeTo;
+
     // ⬇ single storage slot ⬇
     uint112 public override reserve0Virtual;
     uint112 public override reserve1Virtual;
@@ -245,6 +247,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    function setFeeTo(address feeTo_) external override {
+        require(
+            msg.sender == IUniswapV3Factory(factory).feeToSetter(),
+            'UniswapV3Pair::setFeeTo: caller not feeToSetter'
+        );
+        feeTo = feeTo_;
+    }
+
     // the reason this can't _just_ burn but needs to mint is because otherwise it would incentivize bad starting prices
     function initialize(
         uint112 amount0,
@@ -409,7 +419,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity
                 : 0;
             if (liquidityFee > 0) {
-                address feeTo = IUniswapV3Factory(factory).feeTo();
                 // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
                 if (feeTo != address(0) && msg.sender != feeTo) {
                     uint256 liquidityProtocol = liquidityFee / 6;
@@ -670,7 +679,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 amount0In,
         address to,
         bytes calldata data
-    ) external returns (uint112 amount1Out) {
+    ) external override returns (uint112 amount1Out) {
         SwapParams memory params = SwapParams({zeroForOne: true, amountIn: amount0In, to: to, data: data});
         return _swap(params);
     }
@@ -680,7 +689,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 amount1In,
         address to,
         bytes calldata data
-    ) external returns (uint112 amount0Out) {
+    ) external override returns (uint112 amount0Out) {
         SwapParams memory params = SwapParams({zeroForOne: false, amountIn: amount1In, to: to, data: data});
         return _swap(params);
     }
