@@ -801,7 +801,7 @@ describe('UniswapV3Pair', () => {
       )
     })
 
-    it('does not allow transferring a token from the pair', async () => {
+    it('allows recovery from the pair', async () => {
       await expect(pair.recover(token2.address, other.address, 10))
         .to.emit(token2, 'Transfer')
         .withArgs(pair.address, other.address, 10)
