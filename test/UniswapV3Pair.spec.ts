@@ -760,7 +760,7 @@ describe('UniswapV3Pair', () => {
 
     // somewhat jankily, this test requires the one before it to be run for it to pass
     it('on', async () => {
-      await factory.setFeeTo(other.address)
+      await pair.setFeeTo(other.address)
 
       const {token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter} = await claimFee()
 

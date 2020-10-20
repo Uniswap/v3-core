@@ -41,4 +41,22 @@ interface IUniswapV3Pair {
     function getVirtualSupply() external view returns (uint112 virtualSupply);
 
     function getCumulativePrices() external view returns (uint256 price0Cumulative, uint256 price1Cumulative);
+
+    // swapping
+    function swap0For1(
+        uint112 amount0In,
+        address to,
+        bytes calldata data
+    ) external returns (uint112 amount1Out);
+
+    function swap1For0(
+        uint112 amount1In,
+        address to,
+        bytes calldata data
+    ) external returns (uint112 amount0Out);
+
+    // called by fee to setter of the factory
+    function feeTo() external view returns (address);
+
+    function setFeeTo(address) external;
 }

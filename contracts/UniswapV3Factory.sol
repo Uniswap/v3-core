@@ -5,7 +5,6 @@ import './interfaces/IUniswapV3Factory.sol';
 import './UniswapV3Pair.sol';
 
 contract UniswapV3Factory is IUniswapV3Factory {
-    address public override feeTo;
     address public override feeToSetter;
 
     mapping(address => mapping(address => address)) public override getPair;
@@ -30,11 +29,6 @@ contract UniswapV3Factory is IUniswapV3Factory {
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
         emit PairCreated(token0, token1, pair, allPairs.length);
-    }
-
-    function setFeeTo(address _feeTo) external override {
-        require(msg.sender == feeToSetter, 'UniswapV3: FORBIDDEN');
-        feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external override {
