@@ -708,7 +708,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address to,
         uint256 amount
     ) external override {
-        require(msg.sender == IUniswapV3Factory(factory).feeTo(), 'UniswapV3Pair::recover: caller not feeTo');
+        require(
+            msg.sender == IUniswapV3Factory(factory).feeToSetter(),
+            'UniswapV3Pair::recover: caller not feeToSetter'
+        );
 
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
         uint256 token1Balance = IERC20(token1).balanceOf(address(this));
@@ -716,7 +719,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(token, to, amount);
 
         // check the balance hasn't changed
-        require(IERC20(token0).balanceOf(address(this)) == token0Balance);
-        require(IERC20(token1).balanceOf(address(this)) == token1Balance);
+        require(
+            IERC20(token0).balanceOf(address(this)) == token0Balance &&
+                IERC20(token1).balanceOf(address(this)) == token1Balance,
+            'UniswapV3Pair::recover: cannot recover token0 or token1'
+        );
     }
 }

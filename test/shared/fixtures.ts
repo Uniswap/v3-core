@@ -21,16 +21,19 @@ export async function factoryFixture([wallet]: Signer[]): Promise<FactoryFixture
 interface TokensFixture {
   token0: Contract
   token1: Contract
+  token2: Contract
 }
 
 export async function tokensFixture([wallet]: Signer[]): Promise<TokensFixture> {
   const tokenA = await deployContract(wallet, TestERC20, [expandTo18Decimals(10_000)])
   const tokenB = await deployContract(wallet, TestERC20, [expandTo18Decimals(10_000)])
+  const tokenC = await deployContract(wallet, TestERC20, [expandTo18Decimals(10_000)])
 
-  const [token0, token1] =
-    tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
+  const [token0, token1, token2] = [tokenA, tokenB, tokenC].sort((tokenA, tokenB) =>
+    tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? -1 : 1
+  )
 
-  return {token0, token1}
+  return {token0, token1, token2}
 }
 
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
@@ -45,11 +48,11 @@ export const TEST_PAIR_START_TIME = 1601906400
 
 export async function pairFixture([wallet]: Signer[]): Promise<PairFixture> {
   const {factory} = await loadFixture(factoryFixture)
-  const {token0, token1} = await loadFixture(tokensFixture)
+  const {token0, token1, token2} = await loadFixture(tokensFixture)
 
   const pair = await deployContract(wallet, MockTimeUniswapV3Pair, [factory.address, token0.address, token1.address])
   await pair.setTime(TEST_PAIR_START_TIME)
   const pairTest = await deployContract(wallet, UniswapV3PairTest, [pair.address])
 
-  return {token0, token1, pair, pairTest, factory}
+  return {token0, token1, token2, pair, pairTest, factory}
 }
