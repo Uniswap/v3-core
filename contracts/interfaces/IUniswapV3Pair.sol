@@ -41,4 +41,11 @@ interface IUniswapV3Pair {
     function getVirtualSupply() external view returns (uint112 virtualSupply);
 
     function getCumulativePrices() external view returns (uint256 price0Cumulative, uint256 price1Cumulative);
+
+    // allows the factory feeToSetter address to recover any tokens other than token0 and token1 held by the contract
+    function recover(
+        address token,
+        address to,
+        uint256 amount
+    ) external;
 }

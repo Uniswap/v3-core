@@ -1,9 +1,9 @@
-import {Contract, constants, BigNumber} from 'ethers'
 import {waffle} from '@nomiclabs/buidler'
-import {expect} from './shared/expect'
+import {BigNumber, constants, Contract} from 'ethers'
 import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
+import {expect} from './shared/expect'
 
-import {TEST_PAIR_START_TIME, pairFixture} from './shared/fixtures'
+import {pairFixture, TEST_PAIR_START_TIME} from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
@@ -22,12 +22,13 @@ describe('UniswapV3Pair', () => {
 
   let token0: Contract
   let token1: Contract
+  let token2: Contract
   let factory: Contract
   let pair: Contract
   let pairTest: Contract
 
   beforeEach('load fixture', async () => {
-    ;({token0, token1, factory, pair, pairTest} = await waffle.loadFixture(pairFixture))
+    ;({token0, token1, token2, factory, pair, pairTest} = await waffle.loadFixture(pairFixture))
   })
 
   // this invariant should always hold true.
@@ -776,6 +777,34 @@ describe('UniswapV3Pair', () => {
       const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
       expect(position.liquidity.gt(0)).to.be.true
       // TODO there's lots more to check here
+    })
+  })
+
+  describe('#recover', () => {
+    beforeEach('initialize the pair', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote0)
+    })
+
+    beforeEach('send some token2 to the pair', async () => {
+      await token2.transfer(pair.address, 10)
+    })
+
+    it('is only callable by feeToSetter', async () => {
+      await expect(pair.connect(other).recover(token2.address, other.address, 10)).to.be.revertedWith(
+        'UniswapV3Pair::recover: caller not feeToSetter'
+      )
+    })
+
+    it('does not allow transferring a token from the pair', async () => {
+      await expect(pair.recover(token0.address, other.address, 10)).to.be.revertedWith(
+        'UniswapV3Pair::recover: cannot recover token0 or token1'
+      )
+    })
+
+    it('allows recovery from the pair', async () => {
+      await expect(pair.recover(token2.address, other.address, 10))
+        .to.emit(token2, 'Transfer')
+        .withArgs(pair.address, other.address, 10)
     })
   })
 })
