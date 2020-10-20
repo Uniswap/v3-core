@@ -8,7 +8,7 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/SignedSafeMath.sol';
-import '@openzeppelin/contracts/token/erc20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
