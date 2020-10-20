@@ -709,10 +709,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount
     ) external override {
         require(msg.sender == IUniswapV3Factory(factory).feeTo(), 'UniswapV3Pair::recover: caller not feeTo');
-        require(
-            to != address(0) && to != token && to != address(this) && to != token0 && to != token1,
-            'UniswapV3Pair::recover: invalid to'
-        );
 
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
         uint256 token1Balance = IERC20(token1).balanceOf(address(this));
