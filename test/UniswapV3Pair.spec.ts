@@ -789,19 +789,19 @@ describe('UniswapV3Pair', () => {
       await token2.transfer(pair.address, 10)
     })
 
-    it.only('is only callable by feeToSetter', async () => {
+    it('is only callable by feeToSetter', async () => {
       await expect(pair.connect(other).recover(token2.address, other.address, 10)).to.be.revertedWith(
         'UniswapV3Pair::recover: caller not feeToSetter'
       )
     })
 
-    it.only('does not allow transferring a token from the pair', async () => {
+    it('does not allow transferring a token from the pair', async () => {
       await expect(pair.recover(token0.address, other.address, 10)).to.be.revertedWith(
         'UniswapV3Pair::recover: cannot recover token0 or token1'
       )
     })
 
-    it.only('does not allow transferring a token from the pair', async () => {
+    it('does not allow transferring a token from the pair', async () => {
       await expect(pair.recover(token2.address, other.address, 10))
         .to.emit(token2, 'Transfer')
         .withArgs(pair.address, other.address, 10)
