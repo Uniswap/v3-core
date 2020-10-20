@@ -1,4 +1,4 @@
-import {MockProvider, deployContract} from 'ethereum-waffle'
+import {waffle} from '@nomiclabs/buidler'
 import {Contract, BigNumber, BigNumberish} from 'ethers'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
@@ -6,25 +6,15 @@ import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
 
 import TickMathTest from '../build/TickMathTest.json'
 
-const overrides = {
-  gasLimit: 9999999,
-}
-
 const Q112 = BigNumber.from(2).pow(112)
 
 describe('TickMath', () => {
-  const provider = new MockProvider({
-    ganacheOptions: {
-      hardfork: 'istanbul',
-      mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-      gasLimit: 9999999,
-    },
-  })
-  const [wallet] = provider.getWallets()
+  const [wallet] = waffle.provider.getWallets()
+  const deployContract = waffle.deployContract
 
   let tickMath: Contract
   before('deploy TickMathTest', async () => {
-    tickMath = await deployContract(wallet, TickMathTest, [], overrides)
+    tickMath = await deployContract(wallet, TickMathTest, [])
   })
 
   // checks that an actual number is within allowedDiffBips of an expected number

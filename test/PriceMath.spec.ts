@@ -1,20 +1,13 @@
 import {Contract, BigNumber} from 'ethers'
-import {MockProvider, deployContract} from 'ethereum-waffle'
-
+import {waffle} from '@nomiclabs/buidler'
 import PriceMathTest from '../build/PriceMathTest.json'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {expandTo18Decimals} from './shared/utilities'
 
 describe('PriceMath', () => {
-  const provider = new MockProvider({
-    ganacheOptions: {
-      hardfork: 'istanbul',
-      mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
-      gasLimit: 9999999,
-    },
-  })
-  const [wallet] = provider.getWallets()
+  const [wallet] = waffle.provider.getWallets()
+  const deployContract = waffle.deployContract
 
   let priceMath: Contract
   beforeEach(async () => {

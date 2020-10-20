@@ -1,7 +1,6 @@
 import {Contract, constants, BigNumber} from 'ethers'
 import {waffle} from '@nomiclabs/buidler'
 import {expect} from './shared/expect'
-import {deployContract} from 'ethereum-waffle'
 import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 
 import {TEST_PAIR_START_TIME, pairFixture} from './shared/fixtures'
@@ -18,9 +17,8 @@ import {
 } from './shared/utilities'
 
 describe('UniswapV3Pair', () => {
-  const provider = waffle.provider
-
-  const [wallet, other] = provider.getWallets()
+  const [wallet, other] = waffle.provider.getWallets()
+  const deployContract = waffle.deployContract
 
   let token0: Contract
   let token1: Contract

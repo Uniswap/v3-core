@@ -14,8 +14,7 @@ const TEST_ADDRESSES: [string, string] = [
 ]
 
 describe('UniswapV3Factory', () => {
-  const provider = waffle.provider
-  const [wallet, other] = provider.getWallets()
+  const [wallet, other] = waffle.provider.getWallets()
 
   let factory: Contract
   beforeEach(async () => {
@@ -42,7 +41,7 @@ describe('UniswapV3Factory', () => {
     expect(await factory.allPairs(0)).to.eq(create2Address)
     expect(await factory.allPairsLength()).to.eq(1)
 
-    const pair = new Contract(create2Address, JSON.stringify(UniswapV3Pair.abi), provider)
+    const pair = new Contract(create2Address, JSON.stringify(UniswapV3Pair.abi), waffle.provider)
     expect(await pair.factory()).to.eq(factory.address)
     expect(await pair.token0()).to.eq(TEST_ADDRESSES[0])
     expect(await pair.token1()).to.eq(TEST_ADDRESSES[1])

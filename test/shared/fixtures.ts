@@ -1,4 +1,4 @@
-import {Contract, Signer, providers} from 'ethers'
+import {Contract, Signer} from 'ethers'
 import {waffle} from '@nomiclabs/buidler'
 const {loadFixture, deployContract} = waffle
 
