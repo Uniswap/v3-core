@@ -59,4 +59,11 @@ interface IUniswapV3Pair {
     function feeTo() external view returns (address);
 
     function setFeeTo(address) external;
+
+    // allows the factory feeToSetter address to recover any tokens other than token0 and token1 held by the contract
+    function recover(
+        address token,
+        address to,
+        uint256 amount
+    ) external;
 }
