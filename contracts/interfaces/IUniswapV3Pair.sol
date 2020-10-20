@@ -55,7 +55,7 @@ interface IUniswapV3Pair {
         bytes calldata data
     ) external returns (uint112 amount0Out);
 
-    // called by fee to setter of the factory
+    // called by feeToSetter of the factory
     function feeTo() external view returns (address);
 
     function setFeeTo(address) external;

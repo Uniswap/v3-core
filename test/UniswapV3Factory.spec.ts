@@ -73,7 +73,7 @@ describe('UniswapV3Factory', () => {
       expect(await factory.feeToSetter()).to.eq(other.address)
     })
 
-    it('cannot be called by original fee to setter', async () => {
+    it('cannot be called by original feeToSetter', async () => {
       await factory.setFeeToSetter(other.address)
       await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith('UniswapV3: FORBIDDEN')
     })
