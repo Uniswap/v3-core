@@ -231,14 +231,14 @@ describe('UniswapV3Pair', () => {
             expect(await token1.balanceOf(pair.address)).to.eq(1031)
           })
 
-          it.skip('initializes tickUpper', async () => {
+          it('initializes tickUpper', async () => {
             await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
             const [[growthOutside], secondsOutside] = await pair.tickInfos(MIN_TICK + 1)
             expect(growthOutside).to.eq(0)
             expect(secondsOutside).to.eq(0)
           })
 
-          it.skip('initializes tickLower', async () => {
+          it('initializes tickLower', async () => {
             await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
             const [[growthOutside], secondsOutside] = await pair.tickInfos(MAX_TICK - 1)
             expect(growthOutside).to.eq(0)
@@ -813,7 +813,7 @@ describe('UniswapV3Pair', () => {
       expectedProtocolDelta0TwoSwaps = token0DeltaTwoSwaps.div(6)
       expectedProtocolDelta1TwoSwaps = token1DeltaTwoSwaps.div(6)
 
-      await factory.setFeeTo(other.address)
+      await pair.setFeeTo(other.address)
 
       await swapAndGetFeeValue()
       const [token0Delta, token1Delta] = await swapAndGetFeeValue()
@@ -838,7 +838,7 @@ describe('UniswapV3Pair', () => {
     })
 
     it('on:two swaps with intermediary withdrawal', async () => {
-      await factory.setFeeTo(other.address)
+      await pair.setFeeTo(other.address)
 
       const [realizedGainsToken0, realizedGainsToken1] = await swapAndGetFeeValue()
       await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
