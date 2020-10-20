@@ -727,6 +727,21 @@ describe('UniswapV3Pair', () => {
       await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0)
     })
 
+    it('is initially set to 0', async () => {
+      expect(await pair.feeTo()).to.eq(constants.AddressZero)
+    })
+
+    it('can be changed by the feeToSetter', async () => {
+      await pair.setFeeTo(other.address)
+      expect(await pair.feeTo()).to.eq(other.address)
+    })
+
+    it('cannot be changed by addresses that are not feeToSetter', async () => {
+      await expect(pair.connect(other).setFeeTo(other.address)).to.be.revertedWith(
+        'UniswapV3Pair::setFeeTo: caller not feeToSetter'
+      )
+    })
+
     const swapAndGetFeeValue = async () => {
       const swapAmount = expandTo18Decimals(1)
       await pair.swap0For1(swapAmount, wallet.address, '0x')
@@ -752,7 +767,7 @@ describe('UniswapV3Pair', () => {
     })
 
     it('on', async () => {
-      await factory.setFeeTo(other.address)
+      await pair.setFeeTo(other.address)
 
       const [token0Delta, token1Delta] = await swapAndGetFeeValue()
 

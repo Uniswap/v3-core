@@ -22,9 +22,11 @@ describe('UniswapV3Factory', () => {
     factory = fixture.factory
   })
 
-  it('feeTo, feeToSetter, allPairsLength', async () => {
-    expect(await factory.feeTo()).to.eq(constants.AddressZero)
+  it('initial feeToSetter is deployer', async () => {
     expect(await factory.feeToSetter()).to.eq(wallet.address)
+  })
+
+  it('initial pairs length is 0', async () => {
     expect(await factory.allPairsLength()).to.eq(0)
   })
 
@@ -47,28 +49,33 @@ describe('UniswapV3Factory', () => {
     expect(await pair.token1()).to.eq(TEST_ADDRESSES[1])
   }
 
-  it('createPair', async () => {
-    await createPair(TEST_ADDRESSES)
+  describe('#createPair', () => {
+    it('succeeds', async () => {
+      await createPair(TEST_ADDRESSES)
+    })
+
+    it('succeeds in reverse', async () => {
+      await createPair(TEST_ADDRESSES.slice().reverse() as [string, string])
+    })
+
+    it('gas', async () => {
+      await snapshotGasCost(factory.createPair(...TEST_ADDRESSES))
+    })
   })
 
-  it('createPair:reverse', async () => {
-    await createPair(TEST_ADDRESSES.slice().reverse() as [string, string])
-  })
+  describe('#setFeeToSetter', () => {
+    it('fails if caller is not feeToSetter', async () => {
+      await expect(factory.connect(other).setFeeToSetter(wallet.address)).to.be.revertedWith('UniswapV3: FORBIDDEN')
+    })
 
-  it('createPair:gas', async () => {
-    await snapshotGasCost(factory.createPair(...TEST_ADDRESSES))
-  })
+    it('updates feeToSetter', async () => {
+      await factory.setFeeToSetter(other.address)
+      expect(await factory.feeToSetter()).to.eq(other.address)
+    })
 
-  it('setFeeTo', async () => {
-    await expect(factory.connect(other).setFeeTo(other.address)).to.be.revertedWith('UniswapV3: FORBIDDEN')
-    await factory.setFeeTo(wallet.address)
-    expect(await factory.feeTo()).to.eq(wallet.address)
-  })
-
-  it('setFeeToSetter', async () => {
-    await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.revertedWith('UniswapV3: FORBIDDEN')
-    await factory.setFeeToSetter(other.address)
-    expect(await factory.feeToSetter()).to.eq(other.address)
-    await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith('UniswapV3: FORBIDDEN')
+    it('cannot be called by original feeToSetter', async () => {
+      await factory.setFeeToSetter(other.address)
+      await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith('UniswapV3: FORBIDDEN')
+    })
   })
 })
