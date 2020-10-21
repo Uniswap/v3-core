@@ -75,7 +75,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint16 public feeLast;
 
     // the amount of virtual supply active within the current tick, for each fee vote
-    uint112[NUM_FEE_OPTIONS] public override virtualSupplies;
+    uint112[6] public override virtualSupplies;
 
     uint256 public override price0CumulativeLast; // cumulative (reserve1Virtual / reserve0Virtual) oracle price
     uint256 public override price1CumulativeLast; // cumulative (reserve0Virtual / reserve1Virtual) oracle price
@@ -89,7 +89,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 secondsOutside;
         // amount of token0 added when ticks are crossed from left to right
         // (i.e. as the (reserve1Virtual / reserve0Virtual) price goes up), for each fee vote
-        int112[NUM_FEE_OPTIONS] token0VirtualDeltas;
+        int112[6] token0VirtualDeltas;
     }
     mapping(int16 => TickInfo) public tickInfos;
 
@@ -139,7 +139,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function getFee() public view override returns (uint16 fee) {
         uint112 virtualSupplyCumulative;
         // load all virtual supplies into memory
-        uint112[NUM_FEE_OPTIONS] memory virtualSupplies_ = [
+        uint112[6] memory virtualSupplies_ = [
             virtualSupplies[0],
             virtualSupplies[1],
             virtualSupplies[2],
