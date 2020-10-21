@@ -486,10 +486,10 @@ describe('UniswapV3Pair', () => {
       const reserve1Post = await pair.reserve1Virtual()
       const virtualSupplyPost = await pair.getVirtualSupply()
 
-      expect(g2).to.be.eq('5192309491953746845251192201729146')
-      expect(reserve0Post).to.be.eq('102999754304399858799')
+      expect(g2).to.be.eq('5192309491953746845200286961423880')
+      expect(reserve0Post).to.be.eq('102999754304399858800')
       expect(reserve1Post).to.be.eq('101009959324375299209')
-      expect(virtualSupplyPost).to.be.eq('101999756689794034927')
+      expect(virtualSupplyPost).to.be.eq('101999756689794034929')
 
       const [amount0, amount1] = await pair.callStatic.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0)
       expect(amount0).to.be.eq(0)
