@@ -631,8 +631,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // to move at all...this probably manifests itself differently with positive/negative deltas
                     int256 token1VirtualDelta = step.nextPrice.muli(token0VirtualDelta);
 
-                    // subi because we're moving from right to left
                     if (params.zeroForOne) {
+                        // subi because we're moving from right to left
                         reserve0Virtual = reserve0Virtual.subi(token0VirtualDelta).toUint112();
                         reserve1Virtual = reserve1Virtual.subi(token1VirtualDelta).toUint112();
                     } else {
@@ -641,7 +641,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
                     
                     // update virtual supply
-                    // TODO is this correct?
                     // TODO it may be possible to squeeze out a bit more precision under certain circumstances by:
                     // a) summing total negative and positive token0VirtualDeltas
                     // b) calculating the total negative and positive virtualSupplyDelta
@@ -654,6 +653,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             .toInt112();
                         // TODO are these SSTOREs optimized/packed?
                         if (params.zeroForOne) {
+                            // subi because we're moving from right to left
                             virtualSupplies[i] = virtualSupplies[i].subi(virtualSupplyDelta).toUint112();
                         } else {
                             virtualSupplies[i] = virtualSupplies[i].addi(virtualSupplyDelta).toUint112();
