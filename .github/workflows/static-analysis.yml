@@ -29,8 +29,7 @@ jobs:
       - name: Install slither
         run: |
           python -m pip install --upgrade pip
-          git clone https://github.com/crytic/slither.git && cd slither
-          python3 setup.py install
+          pip3 install https://github.com/crytic/slither/archive/081a0717efbf983c567602d982a09780f7d74920.zip
 
       - name: Run slither
         run: slither .
