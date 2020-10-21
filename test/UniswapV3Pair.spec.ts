@@ -661,6 +661,61 @@ describe('UniswapV3Pair', () => {
       await pair.setPosition(-2, -1, FeeVote.FeeVote4, expandTo18Decimals(3))
       expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
     })
+    it('updates correctly when exiting range', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote1)
+
+      const virtualSupplyBefore = await pair.getVirtualSupply()
+      expect(virtualSupplyBefore).to.be.eq(expandTo18Decimals(2))
+
+      // add liquidity at and above current tick
+      const liquidityDelta = expandTo18Decimals(1)
+      const lowerTick = 0
+      const upperTick = 1
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote1, liquidityDelta)
+
+      // ensure virtual supply has increased appropriately
+      const virtualSupplyAfter = await pair.getVirtualSupply()
+      expect(virtualSupplyAfter.gt(virtualSupplyBefore)).to.be.true
+      expect(virtualSupplyAfter).to.be.eq(expandTo18Decimals(3))
+
+      // swap toward the left (just enough for the tick transition function to trigger)
+      await pair.swap0For1('1', wallet.address, '0x')
+      const tick = await pair.tickCurrent()
+      expect(tick).to.be.eq(-1)
+
+      const virtualSupplyAfterSwap = await pair.getVirtualSupply()
+      expect(virtualSupplyAfterSwap.lt(virtualSupplyAfter)).to.be.true
+      expect(virtualSupplyAfterSwap).to.be.eq(expandTo18Decimals(3).div(2))
+    })
+    it('updates correctly when entering range', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote1)
+
+      const virtualSupplyBefore = await pair.getVirtualSupply()
+      expect(virtualSupplyBefore).to.be.eq(expandTo18Decimals(2))
+
+      // add liquidity below the current tick
+      const liquidityDelta = expandTo18Decimals(1)
+      const lowerTick = -1
+      const upperTick = 0
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote1, liquidityDelta)
+
+      // ensure virtual supply hasn't changed
+      const virtualSupplyAfter = await pair.getVirtualSupply()
+      expect(virtualSupplyAfter).to.be.eq(virtualSupplyBefore)
+
+      // swap toward the left (just enough for the tick transition function to trigger)
+      await pair.swap0For1('1', wallet.address, '0x')
+      const tick = await pair.tickCurrent()
+      expect(tick).to.be.eq(-1)
+
+      const virtualSupplyAfterSwap = await pair.getVirtualSupply()
+      expect(virtualSupplyAfterSwap.gt(virtualSupplyAfter)).to.be.true
+      expect(virtualSupplyAfterSwap).to.be.eq(expandTo18Decimals(3).mul(8).div(9))
+    })
     it('gas cost uninitialized', async () => {
       await snapshotGasCost(pairTest.getGasCostOfGetVirtualSupply())
     })
