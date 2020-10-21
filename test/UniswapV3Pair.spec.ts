@@ -687,6 +687,7 @@ describe('UniswapV3Pair', () => {
 
       const virtualSupplyAfterSwap = await pair.getVirtualSupply()
       expect(virtualSupplyAfterSwap.lt(virtualSupplyAfter)).to.be.true
+      // TODO not sure this is right
       expect(virtualSupplyAfterSwap).to.be.eq(expandTo18Decimals(3).div(2))
     })
     it('updates correctly when entering range', async () => {
@@ -714,6 +715,7 @@ describe('UniswapV3Pair', () => {
 
       const virtualSupplyAfterSwap = await pair.getVirtualSupply()
       expect(virtualSupplyAfterSwap.gt(virtualSupplyAfter)).to.be.true
+      // TODO not sure this is right
       expect(virtualSupplyAfterSwap).to.be.eq(expandTo18Decimals(3).mul(8).div(9))
     })
     it('gas cost uninitialized', async () => {
@@ -901,7 +903,7 @@ describe('UniswapV3Pair', () => {
 
       expect(realizedGainsToken0.add(token0Delta).lt(token0DeltaTwoSwaps.sub(expectedProtocolDelta0TwoSwaps))).to.be
         .true
-      // unclear why this is the case...my expectation is that it should also be lt
+      // TODO unclear why this is the case...my expectation is that it should also be lt
       expect(realizedGainsToken1.add(token1Delta).gt(token1DeltaTwoSwaps.sub(expectedProtocolDelta1TwoSwaps))).to.be
         .true
 
