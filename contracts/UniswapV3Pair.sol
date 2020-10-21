@@ -595,9 +595,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // to the target price _without_ exceeding it
                 // this is desired so that we can get as close as possible to the target tick before running
                 // the tick transition logic, while guaranteeing we don't overshoot
-                uint256 reserveInVirtualNext = uint256(reserveInVirtual) + amountInRequiredForShift;
+                uint112 reserveInVirtualNext = (uint256(reserveInVirtual) + amountInRequiredForShift).toUint112();
                 uint256 reserveOutVirtualNext = params.zeroForOne
-                    ? FullMath.mulDiv(reserveInVirtualNext, step.nextPrice._x, FixedPoint.encode(1))
+                    ? FullMath.mulDiv(reserveInVirtualNext, step.nextPrice._x, FixedPoint.encode(1)._x)
                     : FixedPoint.encode(reserveInVirtualNext)._x / step.nextPrice._x;
                 uint112 amountOutMaximum = reserveOutVirtual.sub(reserveOutVirtualNext).toUint112();
                 step.amountOut = step.amountOut > amountOutMaximum ? amountOutMaximum : step.amountOut;
