@@ -231,14 +231,14 @@ describe('UniswapV3Pair', () => {
             expect(await token1.balanceOf(pair.address)).to.eq(1031)
           })
 
-          it.skip('initializes tickUpper', async () => {
+          it('initializes tickUpper', async () => {
             await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
             const [[growthOutside], secondsOutside] = await pair.tickInfos(MIN_TICK + 1)
             expect(growthOutside).to.eq(0)
             expect(secondsOutside).to.eq(0)
           })
 
-          it.skip('initializes tickLower', async () => {
+          it('initializes tickLower', async () => {
             await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
             const [[growthOutside], secondsOutside] = await pair.tickInfos(MAX_TICK - 1)
             expect(growthOutside).to.eq(0)
@@ -687,6 +687,7 @@ describe('UniswapV3Pair', () => {
 
       const virtualSupplyAfterSwap = await pair.getVirtualSupply()
       expect(virtualSupplyAfterSwap.lt(virtualSupplyAfter)).to.be.true
+      // TODO not sure this is right
       expect(virtualSupplyAfterSwap).to.be.eq(expandTo18Decimals(3).div(2))
     })
     it('updates correctly when entering range', async () => {
@@ -714,6 +715,7 @@ describe('UniswapV3Pair', () => {
 
       const virtualSupplyAfterSwap = await pair.getVirtualSupply()
       expect(virtualSupplyAfterSwap.gt(virtualSupplyAfter)).to.be.true
+      // TODO not sure this is right
       expect(virtualSupplyAfterSwap).to.be.eq(expandTo18Decimals(3).mul(8).div(9))
     })
     it('gas cost uninitialized', async () => {
@@ -771,12 +773,10 @@ describe('UniswapV3Pair', () => {
     })
   })
 
+  // jankily, these tests are prety interdependent and basically have to be run as a block
   describe('feeTo', () => {
     const token0Amount = expandTo18Decimals(1000)
     const token1Amount = expandTo18Decimals(1000)
-
-    let token0FeesWithoutFeeTo: BigNumber
-    let token1FeesWithoutFeeTo: BigNumber
 
     beforeEach(async () => {
       await token0.approve(pair.address, constants.MaxUint256)
@@ -799,54 +799,126 @@ describe('UniswapV3Pair', () => {
       )
     })
 
-    const claimFee = async () => {
+    const swapAndGetFeeValue = async () => {
       const swapAmount = expandTo18Decimals(1)
       await pair.swap0For1(swapAmount, wallet.address, '0x')
 
-      const token0BalanceBefore = await token0.balanceOf(wallet.address)
-      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+      const [amount0, amount1] = await pair.callStatic.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
 
-      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
+      const token0Delta = amount0.mul(-1)
+      const token1Delta = amount1.mul(-1)
 
-      const token0BalanceAfter = await token0.balanceOf(wallet.address)
-      const token1BalanceAfter = await token1.balanceOf(wallet.address)
-
-      return {
-        token0BalanceBefore,
-        token0BalanceAfter,
-        token1BalanceBefore,
-        token1BalanceAfter,
-      }
+      return [token0Delta, token1Delta]
     }
 
+    let token0DeltaWithoutFeeTo: BigNumber
+    let token1DeltaWithoutFeeTo: BigNumber
     it('off', async () => {
-      const {token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter} = await claimFee()
+      const [token0Delta, token1Delta] = await swapAndGetFeeValue()
 
-      token0FeesWithoutFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
-      token1FeesWithoutFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
+      token0DeltaWithoutFeeTo = token0Delta
+      token1DeltaWithoutFeeTo = token1Delta
 
-      expect(token0FeesWithoutFeeTo).to.eq('250000031218788')
-      expect(token1FeesWithoutFeeTo).to.eq('249500904783519')
+      expect(token0Delta).to.eq('250000031218788')
+      expect(token1Delta).to.eq('249500904783519')
     })
 
-    // somewhat jankily, this test requires the one before it to be run for it to pass
     it('on', async () => {
       await pair.setFeeTo(other.address)
 
-      const {token0BalanceBefore, token0BalanceAfter, token1BalanceBefore, token1BalanceAfter} = await claimFee()
+      const [token0Delta, token1Delta] = await swapAndGetFeeValue()
 
-      const token0FeesWithFeeTo = token0BalanceAfter.sub(token0BalanceBefore)
-      const token1FeesWithFeeTo = token1BalanceAfter.sub(token1BalanceBefore)
+      const expectedProtocolDelta0 = token0DeltaWithoutFeeTo.div(6)
+      const expectedProtocolDelta1 = token1DeltaWithoutFeeTo.div(6)
 
-      const token0ExpectedProtocolFees = token0FeesWithoutFeeTo.sub(token0FeesWithoutFeeTo.div(6)).add(1) // off by 1
-      const token1ExpectedProtocolFees = token1FeesWithoutFeeTo.sub(token1FeesWithoutFeeTo.div(6))
+      // off by one (rounded in favor of the user)
+      expect(token0Delta.sub(1)).to.eq(token0DeltaWithoutFeeTo.sub(expectedProtocolDelta0))
+      expect(token1Delta).to.eq(token1DeltaWithoutFeeTo.sub(expectedProtocolDelta1))
 
-      expect(token0FeesWithFeeTo).to.eq(token0ExpectedProtocolFees)
-      expect(token1FeesWithFeeTo).to.eq(token1ExpectedProtocolFees)
-
+      // actually set the position so the protocol gets a position
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
       const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
       expect(position.liquidity.gt(0)).to.be.true
-      // TODO there's lots more to check here
+
+      // measure how much the new protocol liquidity is worth
+      const [protocolAmount0, protocolAmount1] = await pair
+        .connect(other)
+        .callStatic.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, position.liquidity.mul(-1))
+
+      // off by one (rounded in favor of the user)
+      expect(protocolAmount0.mul(-1).add(1)).to.eq(expectedProtocolDelta0)
+      // off by one (rounded in favor of the smart contract) (?)
+      expect(protocolAmount1.mul(-1).add(1)).to.eq(expectedProtocolDelta1)
+    })
+
+    let token0DeltaTwoSwaps: BigNumber
+    let token1DeltaTwoSwaps: BigNumber
+    it('off:two swaps', async () => {
+      await swapAndGetFeeValue()
+      const [token0Delta, token1Delta] = await swapAndGetFeeValue()
+
+      token0DeltaTwoSwaps = token0Delta
+      token1DeltaTwoSwaps = token1Delta
+
+      expect(token0Delta).to.eq('500249750249780')
+      expect(token1Delta).to.eq('498255235786688')
+    })
+
+    let expectedProtocolDelta0TwoSwaps: BigNumber
+    let expectedProtocolDelta1TwoSwaps: BigNumber
+    it('on:two swaps', async () => {
+      expectedProtocolDelta0TwoSwaps = token0DeltaTwoSwaps.div(6)
+      expectedProtocolDelta1TwoSwaps = token1DeltaTwoSwaps.div(6)
+
+      await pair.setFeeTo(other.address)
+
+      await swapAndGetFeeValue()
+      const [token0Delta, token1Delta] = await swapAndGetFeeValue()
+
+      expect(token0Delta).to.eq(token0DeltaTwoSwaps.sub(expectedProtocolDelta0TwoSwaps))
+      expect(token1Delta).to.eq(token1DeltaTwoSwaps.sub(expectedProtocolDelta1TwoSwaps))
+
+      // actually set the position so the protocol gets a position
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
+      const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
+      expect(position.liquidity.gt(0)).to.be.true
+
+      // measure how much the new protocol liquidity is worth
+      const [protocolAmount0, protocolAmount1] = await pair
+        .connect(other)
+        .callStatic.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, position.liquidity.mul(-1))
+
+      // off by one (rounded in favor of the smart contract) (?)
+      expect(protocolAmount0.mul(-1).add(1)).to.eq(expectedProtocolDelta0TwoSwaps)
+      // off by one (rounded in favor of the smart contract) (?)
+      expect(protocolAmount1.mul(-1).add(1)).to.eq(expectedProtocolDelta1TwoSwaps)
+    })
+
+    it('on:two swaps with intermediary withdrawal', async () => {
+      await pair.setFeeTo(other.address)
+
+      const [realizedGainsToken0, realizedGainsToken1] = await swapAndGetFeeValue()
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
+      const [token0Delta, token1Delta] = await swapAndGetFeeValue()
+
+      expect(realizedGainsToken0.add(token0Delta).lt(token0DeltaTwoSwaps.sub(expectedProtocolDelta0TwoSwaps))).to.be
+        .true
+      // TODO unclear why this is the case...my expectation is that it should also be lt
+      expect(realizedGainsToken1.add(token1Delta).gt(token1DeltaTwoSwaps.sub(expectedProtocolDelta1TwoSwaps))).to.be
+        .true
+
+      // set position again so the protocol gets its shares again
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
+      const position = await pair.positions(getPositionKey(other.address, MIN_TICK, MAX_TICK, FeeVote.FeeVote0))
+      expect(position.liquidity.gt(0)).to.be.true
+
+      // measure how much the new protocol liquidity is worth
+      const [protocolAmount0, protocolAmount1] = await pair
+        .connect(other)
+        .callStatic.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, position.liquidity.mul(-1))
+
+      expect(protocolAmount0.mul(-1).gt(expectedProtocolDelta0TwoSwaps)).to.be.true
+      expect(protocolAmount1.mul(-1).gt(expectedProtocolDelta1TwoSwaps)).to.be.true
     })
   })
 

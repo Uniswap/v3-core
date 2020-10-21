@@ -204,8 +204,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
-    // note: this is imprecise (potentially by >1 bit?) because it uses reciprocal and sqrt
-    // note: this may not return in the _exact_ ratio of the passed price (amount1 accurate to < 1 bit given amonut0)
+    // note: this is imprecise (potentially by >1 bit) because it uses reciprocal and sqrt
+    // note: this may not return _exact_ ratio of the passed price (though amount1 accurate to < 1 bit given amount0)
     function getValueAtPrice(FixedPoint.uq112x112 memory price, int112 liquidity)
         public
         pure
