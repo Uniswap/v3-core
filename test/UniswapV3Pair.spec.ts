@@ -474,9 +474,9 @@ describe('UniswapV3Pair', () => {
       const reserve1Pre = await pair.reserve1Virtual()
       const virtualSupplyPre = await pair.getVirtualSupply()
 
-      expect(g1).to.be.eq('5192309491953746845268291565863104')
+      expect(g1).to.be.eq('5192309491953746845217386694700997')
       expect(reserve0Pre).to.be.eq('103000000000000000000')
-      expect(reserve1Pre).to.be.eq('101010200273518761200')
+      expect(reserve1Pre).to.be.eq('101010200273518761199')
       expect(virtualSupplyPre).to.be.eq('102000000000000000000')
 
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0)
@@ -486,10 +486,10 @@ describe('UniswapV3Pair', () => {
       const reserve1Post = await pair.reserve1Virtual()
       const virtualSupplyPost = await pair.getVirtualSupply()
 
-      expect(g2).to.be.eq('5192309491953746845251192201729146')
-      expect(reserve0Post).to.be.eq('102999754304399858799')
+      expect(g2).to.be.eq('5192309491953746845200286961423880')
+      expect(reserve0Post).to.be.eq('102999754304399858800')
       expect(reserve1Post).to.be.eq('101009959324375299209')
-      expect(virtualSupplyPost).to.be.eq('101999756689794034927')
+      expect(virtualSupplyPost).to.be.eq('101999756689794034929')
 
       const [amount0, amount1] = await pair.callStatic.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0)
       expect(amount0).to.be.eq(0)
@@ -540,7 +540,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '94959953735437429')
+        .withArgs(pair.address, wallet.address, '94959953735437435')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -561,7 +561,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95292372649584247')
+        .withArgs(pair.address, wallet.address, '95292372649584252')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -619,8 +619,8 @@ describe('UniswapV3Pair', () => {
       await pair.setTime(300)
       await pair.swap0For1(100, wallet.address, '0x')
       const [price0, price1] = await pair.getCumulativePrices()
-      expect(price0).to.eq('1038459371706965474302360366349228200')
-      expect(price1).to.eq('1038459371706965577109838165338815200')
+      expect(price0).to.eq('1038459371706965474042745523422486800')
+      expect(price1).to.eq('1038459371706965577369453008265556600')
     })
     it('counterfactually computes the cumulative price', async () => {
       await pair.setTime(200)
@@ -660,6 +660,61 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(-2, -1, FeeVote.FeeVote4, expandTo18Decimals(3))
       expect(await pair.getVirtualSupply()).to.eq(expandTo18Decimals(2))
+    })
+    it('updates correctly when exiting range', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote1)
+
+      const virtualSupplyBefore = await pair.getVirtualSupply()
+      expect(virtualSupplyBefore).to.be.eq(expandTo18Decimals(2))
+
+      // add liquidity at and above current tick
+      const liquidityDelta = expandTo18Decimals(1)
+      const lowerTick = 0
+      const upperTick = 1
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote1, liquidityDelta)
+
+      // ensure virtual supply has increased appropriately
+      const virtualSupplyAfter = await pair.getVirtualSupply()
+      expect(virtualSupplyAfter.gt(virtualSupplyBefore)).to.be.true
+      expect(virtualSupplyAfter).to.be.eq(expandTo18Decimals(3))
+
+      // swap toward the left (just enough for the tick transition function to trigger)
+      await pair.swap0For1('1', wallet.address, '0x')
+      const tick = await pair.tickCurrent()
+      expect(tick).to.be.eq(-1)
+
+      const virtualSupplyAfterSwap = await pair.getVirtualSupply()
+      expect(virtualSupplyAfterSwap.lt(virtualSupplyAfter)).to.be.true
+      expect(virtualSupplyAfterSwap).to.be.eq(expandTo18Decimals(3).div(2))
+    })
+    it('updates correctly when entering range', async () => {
+      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote1)
+
+      const virtualSupplyBefore = await pair.getVirtualSupply()
+      expect(virtualSupplyBefore).to.be.eq(expandTo18Decimals(2))
+
+      // add liquidity below the current tick
+      const liquidityDelta = expandTo18Decimals(1)
+      const lowerTick = -1
+      const upperTick = 0
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote1, liquidityDelta)
+
+      // ensure virtual supply hasn't changed
+      const virtualSupplyAfter = await pair.getVirtualSupply()
+      expect(virtualSupplyAfter).to.be.eq(virtualSupplyBefore)
+
+      // swap toward the left (just enough for the tick transition function to trigger)
+      await pair.swap0For1('1', wallet.address, '0x')
+      const tick = await pair.tickCurrent()
+      expect(tick).to.be.eq(-1)
+
+      const virtualSupplyAfterSwap = await pair.getVirtualSupply()
+      expect(virtualSupplyAfterSwap.gt(virtualSupplyAfter)).to.be.true
+      expect(virtualSupplyAfterSwap).to.be.eq(expandTo18Decimals(3).mul(8).div(9))
     })
     it('gas cost uninitialized', async () => {
       await snapshotGasCost(pairTest.getGasCostOfGetVirtualSupply())
