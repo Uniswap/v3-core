@@ -569,7 +569,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? (reserve0Virtual, reserve1Virtual)
                 : (reserve1Virtual, reserve0Virtual);
 
-
             // TODO are there issues with using reciprocal here?
             // compute the ~minimum amount of input token required s.t. the price _equals or exceeds_ the target price
             //after computing the corresponding output amount according to x * y = k, given the current fee
