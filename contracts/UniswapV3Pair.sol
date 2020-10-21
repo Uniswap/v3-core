@@ -3,6 +3,7 @@ pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
@@ -568,9 +569,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             (uint112 reserveInVirtual, uint112 reserveOutVirtual) = params.zeroForOne
                 ? (reserve0Virtual, reserve1Virtual)
                 : (reserve1Virtual, reserve0Virtual);
-            // compute the amount of token0 required s.t. the price is ~the lower bound for the current tick
-            // TODO adjust this amount (or amountOutStep) so that we're guaranteed the ratio is as close (or equal)
-            // to the lower bound _without_ exceeding it as possible
+            // compute the amount input token required s.t. the price _exceeds_ the target tick boundary after
+            // computing the the corresponding output amount
             uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
                 reserveInVirtual,
                 reserveOutVirtual,
@@ -578,28 +578,26 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 params.zeroForOne ? step.nextPrice.reciprocal() : step.nextPrice
             );
 
-            // only trade as much as we need to
             if (amountInRequiredForShift > 0) {
-                uint144 reserveInTarget = uint144(step.nextPrice._x > type(uint144).max ? (1 << 112) >> 80 : 1 << 112);
-                uint144 reserveOutTarget = uint144(
-                    step.nextPrice._x > type(uint144).max ? step.nextPrice._x >> 80 : step.nextPrice._x
-                );
-                uint112 reserveInVirtualNext = (uint256(reserveInVirtual) + amountInRequiredForShift).toUint112();
-                uint112 amountOutMaximum = reserveOutVirtual
-                    .sub((reserveOutTarget * reserveInVirtualNext) / reserveInTarget)
-                    .toUint112();
-
+                // only trade as much as we need to within the final tick
                 step.amountIn = amountInRemaining > amountInRequiredForShift
                     ? amountInRequiredForShift
                     : amountInRemaining;
-                // adjust the step amount by the current fee
-                uint112 amountInAdjusted = uint112(
-                    (uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - fee)) / PriceMath.LP_FEE_BASE
-                );
-                // calculate the output amount
-                step.amountOut = ((uint256(reserveOutVirtual) * amountInAdjusted) /
-                    (uint256(reserveInVirtual) + amountInAdjusted))
-                    .toUint112();
+
+                // calculate the owed output amount
+                step.amountOut = (uint256(reserveOutVirtual) * step.amountIn * (PriceMath.LP_FEE_BASE - fee) / (
+                    uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - fee) +
+                        uint256(reserveInVirtual) * PriceMath.LP_FEE_BASE
+                )).toUint112();
+
+                // calculate the maximum output amount s.t. the price is guaranteed to be as close as possible to the
+                // target tick boundary as possible _without_ exceeding it
+                uint256 reserveInVirtualNext = uint256(reserveInVirtual) + amountInRequiredForShift;
+                uint256 reserveOutVirtualNext = params.zeroForOne
+                    ? FullMath.mulDiv(reserveInVirtualNext, step.nextPrice._x, uint256(1) << 112)
+                    : reserveInVirtualNext * (uint256(1) << 112) / step.nextPrice._x;
+                uint112 amountOutMaximum = reserveOutVirtual.sub(reserveOutVirtualNext).toUint112();
+
                 step.amountOut = step.amountOut > amountOutMaximum ? amountOutMaximum : step.amountOut;
                 if (params.zeroForOne) {
                     reserve0Virtual = (uint256(reserve0Virtual) + step.amountIn).toUint112();
