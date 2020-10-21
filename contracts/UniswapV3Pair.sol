@@ -571,8 +571,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
 
             // TODO are there issues with using reciprocal here?
-            // compute the ~minimum amount of input token required s.t. the price _exceeds_ the target price after
-            // computing the corresponding output amount according to x * y = k, given the current fee
+            // compute the ~minimum amount of input token required s.t. the price _equals or exceeds_ the target price
+            //after computing the corresponding output amount according to x * y = k, given the current fee
             uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
                 reserveInVirtual,
                 reserveOutVirtual,
