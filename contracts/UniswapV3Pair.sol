@@ -583,14 +583,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 step.amountIn = amountInRemaining > amountInRequiredForShift
                     ? amountInRequiredForShift
                     : amountInRemaining;
-                // adjust the step amount by the current fee
-                uint112 amountInAdjusted = uint112(
-                    (uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - fee)) / PriceMath.LP_FEE_BASE
-                );
+
                 // calculate the owed output amount
-                step.amountOut = ((uint256(reserveOutVirtual) * amountInAdjusted) /
-                    (uint256(reserveInVirtual) + amountInAdjusted))
-                    .toUint112();
+                step.amountOut = (uint256(reserveOutVirtual) * step.amountIn * (PriceMath.LP_FEE_BASE - fee) / (
+                    uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - fee) +
+                        uint256(reserveInVirtual) * PriceMath.LP_FEE_BASE
+                )).toUint112();
 
                 // calculate the maximum output amount s.t. the price is guaranteed to be as close as possible to the
                 // target tick boundary as possible _without_ exceeding it
