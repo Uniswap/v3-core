@@ -648,9 +648,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // note: this may not be true, and could be overkill/unnecessary
                     uint112 virtualSupply = getVirtualSupply();
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-                        int112 virtualSupplyDelta = (tickInfo.token0VirtualDeltas[i].mul(virtualSupply) /
-                            reserve0Virtual)
-                            .toInt112();
+                        int256 virtualSupplyDelta = tickInfo.token0VirtualDeltas[i].mul(virtualSupply) /
+                            reserve0Virtual;
                         // TODO are these SSTOREs optimized/packed?
                         if (params.zeroForOne) {
                             // subi because we're moving from right to left
