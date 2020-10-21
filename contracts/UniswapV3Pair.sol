@@ -664,14 +664,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         tickCurrent = tick;
-        TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut); // optimistically transfer tokens
-        if (params.data.length > 0) IUniswapV3Callee(params.to).uniswapV3Call(msg.sender, 0, amountOut, params.data);
-        TransferHelper.safeTransferFrom(
-            params.zeroForOne ? token0 : token1,
-            msg.sender,
-            address(this),
-            params.amountIn
-        ); // this is different than v2
+
+        // transfers
+        {
+            (address tokenIn, address tokenOut, uint256 amount0, uint256 amount1) = params.zeroForOne
+                ? (token0, token1, uint256(0), uint256(amountOut))
+                : (token1, token0, uint256(amountOut), uint256(0));
+            TransferHelper.safeTransfer(tokenOut, params.to, amountOut); // optimistically transfer tokens
+            uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
+            IUniswapV3Callee(params.to).uniswapV3Call(msg.sender, amount0, amount1, params.data);
+            uint256 balanceAfter = IERC20(tokenIn).balanceOf(address(this));
+            require(balanceAfter.sub(balanceBefore) >= params.amountIn, '');
+        }
     }
 
     // move from right to left (token 1 is becoming more valuable)

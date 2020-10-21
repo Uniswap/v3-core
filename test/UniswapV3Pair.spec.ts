@@ -1,5 +1,5 @@
 import {waffle} from '@nomiclabs/buidler'
-import {BigNumber, constants, Contract} from 'ethers'
+import {BigNumber, constants, Contract, Wallet} from 'ethers'
 import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 import {expect} from './shared/expect'
 
@@ -15,6 +15,7 @@ import {
   MAX_TICK,
   MIN_TICK,
 } from './shared/utilities'
+import PayAndForwardContract from '../build/PayAndForwardContract.json'
 
 describe('UniswapV3Pair', () => {
   const [wallet, other] = waffle.provider.getWallets()
@@ -26,6 +27,19 @@ describe('UniswapV3Pair', () => {
   let factory: Contract
   let pair: Contract
   let pairTest: Contract
+
+  async function createSwapTarget(
+    inputToken: Contract,
+    inputAmount: string | number | BigNumber,
+    recipient: Wallet | string
+  ): Promise<string> {
+    const target = await deployContract(wallet, PayAndForwardContract, [
+      inputAmount,
+      typeof recipient === 'string' ? recipient : recipient.address,
+    ])
+    await inputToken.transfer(target.address, inputAmount)
+    return target.address
+  }
 
   beforeEach('load fixture', async () => {
     ;({token0, token1, token2, factory, pair, pairTest} = await waffle.loadFixture(pairFixture))
@@ -292,7 +306,7 @@ describe('UniswapV3Pair', () => {
       })
 
       beforeEach('swap in 2 token0 so G grows', async () => {
-        await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x')
+        await pair.swap0For1(expandTo18Decimals(2), await createSwapTarget(token0, expandTo18Decimals(2), wallet), '0x')
         ;[amount0, amount1] = await pair.getLiquidityFee(lowerTick, upperTick, fee)
       })
 
@@ -392,7 +406,7 @@ describe('UniswapV3Pair', () => {
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      await pair.swap0For1(amount0In, wallet.address, '0x')
+      await pair.swap0For1(amount0In, await createSwapTarget(token0, amount0In, wallet), '0x')
 
       const token0BalanceAfter = await token0.balanceOf(wallet.address)
       const token1BalanceAfter = await token1.balanceOf(wallet.address)
