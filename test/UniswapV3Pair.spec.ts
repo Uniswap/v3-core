@@ -310,9 +310,8 @@ describe('UniswapV3Pair', () => {
       const upperTick = 4
 
       await token0.approve(pair.address, constants.MaxUint256)
-      // TODO these are outdated
-      // lower: (990, 1009)
-      // upper: (980, 1019)
+      // lower: (989, 1009)
+      // upper: (980, 1020)
       const g1 = await pair.getG()
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
       const g2 = await pair.getG()
@@ -328,9 +327,8 @@ describe('UniswapV3Pair', () => {
       const upperTick = -2
 
       await token1.approve(pair.address, constants.MaxUint256)
-      // TODO these are outdated
-      // lower: (1020, 980)
-      // upper: (1009, 989)
+      // lower: (1019, 980)
+      // upper: (1009, 990)
       const g1 = await pair.getG()
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
       const g2 = await pair.getG()
@@ -347,9 +345,8 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      // TODO these are outdated
-      // lower: (1009, 989)
-      // upper: (990, 1009)
+      // lower: (1009, 990)
+      // upper: (989, 1009)
       const g1 = await pair.getG()
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
       const g2 = await pair.getG()
@@ -539,9 +536,8 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -3
       const upperTick = -2
       await token1.approve(pair.address, constants.MaxUint256)
-      // TODO these are probably outdated
-      // lower: (1015037437733209910, 985185336841573394)
-      // upper: (1009999999999999995, 990099009900990094)
+      // lower: (1015037437733209916, 985185336841573401)
+      // upper: (1009999999999999999, 990099009900990099)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       await token0.approve(pair.address, constants.MaxUint256)
