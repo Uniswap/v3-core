@@ -79,9 +79,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint32 secondsOutside;
-        // amount of token0 added when ticks are crossed from left to right
+        // amount of token1 added when ticks are crossed from left to right
         // (i.e. as the (reserve1Virtual / reserve0Virtual) price goes up), for each fee vote
-        int112[NUM_FEE_OPTIONS] token0VirtualDeltas;
+        int112[NUM_FEE_OPTIONS] token1VirtualDeltas;
     }
     mapping(int16 => TickInfo) public tickInfos;
 
@@ -486,14 +486,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // regardless of current price, when lower tick is crossed from left to right, amount0Lower should be added
         if (tickLower > TickMath.MIN_TICK) {
-            tickInfoLower.token0VirtualDeltas[feeVote] = tickInfoLower.token0VirtualDeltas[feeVote]
-                .add(amount0Lower)
+            tickInfoLower.token1VirtualDeltas[feeVote] = tickInfoLower.token1VirtualDeltas[feeVote]
+                .add(amount1Lower)
                 .toInt112();
         }
         // regardless of current price, when upper tick is crossed from left to right amount0Upper should be removed
         if (tickUpper < TickMath.MAX_TICK) {
-            tickInfoUpper.token0VirtualDeltas[feeVote] = tickInfoUpper.token0VirtualDeltas[feeVote]
-                .sub(amount0Upper)
+            tickInfoUpper.token1VirtualDeltas[feeVote] = tickInfoUpper.token1VirtualDeltas[feeVote]
+                .sub(amount1Upper)
                 .toInt112();
         }
 
@@ -622,14 +622,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // if the tick is initialized, we must update it
                 if (tickInfo.growthOutside._x != 0) {
                     // calculate the amount of reserves to kick in/out
-                    int256 token0VirtualDelta;
+                    int256 token1VirtualDelta;
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-                        token0VirtualDelta += tickInfo.token0VirtualDeltas[i];
+                        token1VirtualDelta += tickInfo.token1VirtualDeltas[i];
                     }
                     // TODO we need to ensure that adding/subtracting token{0,1}VirtualDelta to/from the current
                     // reserves always moves the price toward the direction we're moving (past the tick), if it has
                     // to move at all...this probably manifests itself differently with positive/negative deltas
-                    int256 token1VirtualDelta = step.nextPrice.muli(token0VirtualDelta);
+                    int256 token0VirtualDelta;
+                    {
+                    uint256 token0VirtualDeltaUnsigned = FullMath.mulDiv(
+                        uint256(token1VirtualDelta < 0 ? -token1VirtualDelta : token1VirtualDelta),
+                        uint256(1) << 112,
+                        step.nextPrice._x);
+                    token0VirtualDelta = token1VirtualDelta < 0
+                        ? -token0VirtualDeltaUnsigned.toInt256()
+                        : token0VirtualDeltaUnsigned.toInt256();
+                    }
 
                     if (params.zeroForOne) {
                         // subi because we're moving from right to left
@@ -642,14 +651,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     
                     // update virtual supply
                     // TODO it may be possible to squeeze out a bit more precision under certain circumstances by:
-                    // a) summing total negative and positive token0VirtualDeltas
+                    // a) summing total negative and positive token1VirtualDeltas
                     // b) calculating the total negative and positive virtualSupplyDelta
                     // c) allocating these deltas proportionally across virtualSupplies according to sign + proportion
                     // note: this may not be true, and could be overkill/unnecessary
                     uint112 virtualSupply = getVirtualSupply();
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-                        int256 virtualSupplyDelta = tickInfo.token0VirtualDeltas[i].mul(virtualSupply) /
-                            reserve0Virtual;
+                        int256 virtualSupplyDelta = tickInfo.token1VirtualDeltas[i].mul(virtualSupply) /
+                            reserve1Virtual;
                         // TODO are these SSTOREs optimized/packed?
                         if (params.zeroForOne) {
                             // subi because we're moving from right to left
