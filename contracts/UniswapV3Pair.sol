@@ -204,15 +204,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
-    // note: this is imprecise (potentially by >1 bit) because it uses reciprocal and sqrt
-    // note: this may not return _exact_ ratio of the passed price (though amount1 accurate to < 1 bit given amount0)
+    // note: this can be imprecise for 3 reasons:
+    // 1: because it uses sqrt, which can be lossy up to 40 bits
+    // 2: regardless of the lossiness of sqrt, amount1 may still be rounded from its actual value
+    // 3: regardless of the lossiness of amount1, amount0 may still be rounded from its actual value
+    // this means that the amounts may both be slightly inaccurate _and_ not return the exact ratio of the passed price
     function getValueAtPrice(FixedPoint.uq112x112 memory price, int112 liquidity)
         public
         pure
         returns (int112 amount0, int112 amount1)
     {
-        amount0 = price.reciprocal().sqrt().muli(liquidity).toInt112();
-        amount1 = price.muli(amount0).toInt112();
+        amount1 = price.sqrt().muli(liquidity).toInt112();
+        uint256 amount0Unsigned = FixedPoint.encode(uint112(amount1 < 0 ? -amount1 : amount1))._x / price._x;
+        amount0 = amount1 < 0 ? -amount0Unsigned.toInt112() : amount0Unsigned.toInt112();
     }
 
     constructor(
@@ -377,9 +381,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         if (amount0 > 0) {
-            assert(priceNext._x <= price._x);
-        } else if (amount0 < 0) {
             assert(priceNext._x >= price._x);
+        } else {
+            assert(priceNext._x <= price._x);
         }
     }
 
@@ -439,6 +443,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         FixedPoint.uq112x112 memory g = getG(); // shortcut for _getGrowthInside
 
                         // accrue any newly earned fee liquidity from the existing protocol position
+                        // TODO all the same caveats as above apply
                         liquidityProtocol = liquidityProtocol.add(
                             FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) > positionProtocol.liquidity
                                 ? FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) -
@@ -449,7 +454,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         updateReservesAndVirtualSupply(liquidityProtocol.toInt112(), feeVote);
 
                         // update the position
-                        // TODO all the same caveats as above apply
                         positionProtocol.liquidity = positionProtocol.liquidity.add(liquidityProtocol).toUint112();
                         positionProtocol.liquidityAdjusted = uint256(
                             FixedPoint.encode(positionProtocol.liquidity)._x / g._x
@@ -622,7 +626,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         token0VirtualDelta += tickInfo.token0VirtualDeltas[i];
                     }
-                    // TODO we have to do this in an overflow-safe way
                     // TODO we need to ensure that adding/subtracting token{0,1}VirtualDelta to/from the current
                     // reserves always moves the price toward the direction we're moving (past the tick), if it has
                     // to move at all...this probably manifests itself differently with positive/negative deltas

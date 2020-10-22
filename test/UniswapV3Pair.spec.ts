@@ -214,8 +214,8 @@ describe('UniswapV3Pair', () => {
           it('transfers token0 only', async () => {
             await expect(pair.setPosition(-231, 0, 0, 10000))
               .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, 21558)
-            expect(await token0.balanceOf(pair.address)).to.eq(31558)
+              .withArgs(wallet.address, pair.address, 21551)
+            expect(await token0.balanceOf(pair.address)).to.eq(31551)
             expect(await token1.balanceOf(pair.address)).to.eq(1000)
           })
         })
@@ -224,10 +224,10 @@ describe('UniswapV3Pair', () => {
           it('price within range: transfers current price of both tokens', async () => {
             await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
               .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, 316)
+              .withArgs(wallet.address, pair.address, 310)
               .to.emit(token1, 'Transfer')
               .withArgs(wallet.address, pair.address, 31)
-            expect(await token0.balanceOf(pair.address)).to.eq(10316)
+            expect(await token0.balanceOf(pair.address)).to.eq(10310)
             expect(await token1.balanceOf(pair.address)).to.eq(1031)
           })
 
@@ -328,6 +328,7 @@ describe('UniswapV3Pair', () => {
       const upperTick = 4
 
       await token0.approve(pair.address, constants.MaxUint256)
+      // TODO these are outdated
       // lower: (990, 1009)
       // upper: (980, 1019)
       const g1 = await pair.getG()
@@ -335,7 +336,7 @@ describe('UniswapV3Pair', () => {
       const g2 = await pair.getG()
 
       expect(g1[0]).to.eq(g2[0])
-      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
+      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(9))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
     })
 
@@ -345,6 +346,7 @@ describe('UniswapV3Pair', () => {
       const upperTick = -2
 
       await token1.approve(pair.address, constants.MaxUint256)
+      // TODO these are outdated
       // lower: (1020, 980)
       // upper: (1009, 989)
       const g1 = await pair.getG()
@@ -353,7 +355,7 @@ describe('UniswapV3Pair', () => {
 
       expect(g1[0]).to.eq(g2[0])
       expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
-      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(9))
+      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(10))
     })
 
     it('setPosition within the current price', async () => {
@@ -363,6 +365,7 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
+      // TODO these are outdated
       // lower: (1009, 989)
       // upper: (990, 1009)
       const g1 = await pair.getG()
@@ -370,8 +373,8 @@ describe('UniswapV3Pair', () => {
       const g2 = await pair.getG()
 
       expect(g1[0]).to.eq(g2[0])
-      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
-      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(11))
+      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(11))
+      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(10))
     })
 
     it('cannot remove more than the entire position', async () => {
@@ -487,7 +490,7 @@ describe('UniswapV3Pair', () => {
       const virtualSupplyPost = await pair.getVirtualSupply()
 
       expect(g2).to.be.eq('5192309491953746845200286961423880')
-      expect(reserve0Post).to.be.eq('102999754304399858800')
+      expect(reserve0Post).to.be.eq('102999754304399858801')
       expect(reserve1Post).to.be.eq('101009959324375299209')
       expect(virtualSupplyPost).to.be.eq('101999756689794034929')
 
@@ -554,6 +557,7 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -3
       const upperTick = -2
       await token1.approve(pair.address, constants.MaxUint256)
+      // TODO these are probably outdated
       // lower: (1015037437733209910, 985185336841573394)
       // upper: (1009999999999999995, 990099009900990094)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
@@ -819,7 +823,7 @@ describe('UniswapV3Pair', () => {
       token0DeltaWithoutFeeTo = token0Delta
       token1DeltaWithoutFeeTo = token1Delta
 
-      expect(token0Delta).to.eq('250000031218788')
+      expect(token0Delta).to.eq('250000031218787')
       expect(token1Delta).to.eq('249500904783519')
     })
 
@@ -831,8 +835,7 @@ describe('UniswapV3Pair', () => {
       const expectedProtocolDelta0 = token0DeltaWithoutFeeTo.div(6)
       const expectedProtocolDelta1 = token1DeltaWithoutFeeTo.div(6)
 
-      // off by one (rounded in favor of the user)
-      expect(token0Delta.sub(1)).to.eq(token0DeltaWithoutFeeTo.sub(expectedProtocolDelta0))
+      expect(token0Delta).to.eq(token0DeltaWithoutFeeTo.sub(expectedProtocolDelta0))
       expect(token1Delta).to.eq(token1DeltaWithoutFeeTo.sub(expectedProtocolDelta1))
 
       // actually set the position so the protocol gets a position
@@ -860,7 +863,7 @@ describe('UniswapV3Pair', () => {
       token0DeltaTwoSwaps = token0Delta
       token1DeltaTwoSwaps = token1Delta
 
-      expect(token0Delta).to.eq('500249750249780')
+      expect(token0Delta).to.eq('500249750249779')
       expect(token1Delta).to.eq('498255235786688')
     })
 
@@ -888,8 +891,8 @@ describe('UniswapV3Pair', () => {
         .connect(other)
         .callStatic.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, position.liquidity.mul(-1))
 
-      // off by one (rounded in favor of the smart contract) (?)
-      expect(protocolAmount0.mul(-1).add(1)).to.eq(expectedProtocolDelta0TwoSwaps)
+      // off by two (rounded in favor of the smart contract) (?)
+      expect(protocolAmount0.mul(-1).add(2)).to.eq(expectedProtocolDelta0TwoSwaps)
       // off by one (rounded in favor of the smart contract) (?)
       expect(protocolAmount1.mul(-1).add(1)).to.eq(expectedProtocolDelta1TwoSwaps)
     })
