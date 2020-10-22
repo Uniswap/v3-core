@@ -36,8 +36,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // uint16 because the maximum value is 10_000
     // options are 0.05%, 0.10%, 0.30%, 0.60%, 1.00%, 2.00%
     // ideally this would be a constant array, but constant arrays are not supported in solidity
-    function FEE_OPTIONS() public pure returns (uint16[NUM_FEE_OPTIONS] memory) {
-        return [uint16(5), 10, 30, 60, 100, 200];
+    function FEE_OPTIONS(uint8 i) public pure override returns (uint16) {
+        if (i < 3) {
+            if (i == 0) return 5;
+            if (i == 1) return 10;
+            return 30;
+        }
+        if (i == 3) return 60;
+        if (i == 4) return 100;
+        assert(i == 5);
+        return 200;
     }
 
     uint112 public constant override LIQUIDITY_MIN = 1000;
@@ -145,14 +153,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             virtualSupplies_[3] +
             virtualSupplies_[4] +
             virtualSupplies_[5]) / 2;
-        uint16[NUM_FEE_OPTIONS] memory feeOptions = FEE_OPTIONS();
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {
             virtualSupplyCumulative += virtualSupplies_[feeVoteIndex];
             if (virtualSupplyCumulative >= threshold) {
-                return feeOptions[feeVoteIndex];
+                return FEE_OPTIONS(feeVoteIndex);
             }
         }
-        return feeOptions[NUM_FEE_OPTIONS - 1];
+        return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
     }
 
     // get fee growth (sqrt(reserve0Virtual * reserve1Virtual) / virtualSupply)
@@ -586,10 +593,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     : amountInRemaining;
 
                 // calculate the owed output amount, given the current fee
-                step.amountOut = (uint256(reserveOutVirtual) * step.amountIn * (PriceMath.LP_FEE_BASE - fee) / (
-                    uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - fee) +
-                        uint256(reserveInVirtual) * PriceMath.LP_FEE_BASE
-                )).toUint112();
+                step.amountOut = ((uint256(reserveOutVirtual) * step.amountIn * (PriceMath.LP_FEE_BASE - fee)) /
+                    (uint256(step.amountIn) *
+                        (PriceMath.LP_FEE_BASE - fee) +
+                        uint256(reserveInVirtual) *
+                        PriceMath.LP_FEE_BASE))
+                    .toUint112();
 
                 // calculate the maximum output amount s.t. the reserves price is guaranteed to be as close as possible
                 // to the target price _without_ exceeding it
@@ -636,7 +645,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         reserve0Virtual = reserve0Virtual.addi(token0VirtualDelta).toUint112();
                         reserve1Virtual = reserve1Virtual.addi(token1VirtualDelta).toUint112();
                     }
-                    
+
                     // update virtual supply
                     // TODO it may be possible to squeeze out a bit more precision under certain circumstances by:
                     // a) summing total negative and positive token0VirtualDeltas

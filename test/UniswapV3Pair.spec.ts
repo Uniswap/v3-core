@@ -69,14 +69,14 @@ describe('UniswapV3Pair', () => {
   })
 
   it('fee options', async () => {
-    const options = await pair.FEE_OPTIONS()
+    const num = await pair.NUM_FEE_OPTIONS()
+    const options = await Promise.all([...Array(num)].map((_, i) => pair.FEE_OPTIONS(i)))
     expect(options[0]).to.eq(5)
     expect(options[1]).to.eq(10)
     expect(options[2]).to.eq(30)
     expect(options[3]).to.eq(60)
     expect(options[4]).to.eq(100)
     expect(options[5]).to.eq(200)
-    expect(options.length).to.eq(await pair.NUM_FEE_OPTIONS())
   })
 
   describe('#initialize', () => {
