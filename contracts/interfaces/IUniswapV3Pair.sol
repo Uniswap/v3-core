@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 interface IUniswapV3Pair {
     event Initialized(uint256 amount0, uint256 amount1, int16 tick, uint8 feeVote);
-    // todo: liquidityDelta or liquidity?
+    // TODO liquidityDelta or liquidity?
     event PositionSet(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
     // constants
