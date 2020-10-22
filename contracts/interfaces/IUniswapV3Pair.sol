@@ -9,6 +9,8 @@ interface IUniswapV3Pair {
     // constants
     function NUM_FEE_OPTIONS() external pure returns (uint8);
 
+    function FEE_OPTIONS(uint8) external pure returns (uint16);
+
     function LIQUIDITY_MIN() external pure returns (uint112);
 
     function TOKEN_MIN() external pure returns (uint8);
