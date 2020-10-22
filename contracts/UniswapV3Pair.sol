@@ -40,7 +40,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (i < 3) {
             if (i == 0) return 5;
             if (i == 1) return 10;
-            else return 30;
+            return 30;
         }
         if (i == 3) return 60;
         if (i == 4) return 100;
