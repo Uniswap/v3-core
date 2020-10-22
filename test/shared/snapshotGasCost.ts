@@ -1,11 +1,13 @@
 import {TransactionReceipt, TransactionResponse} from '@ethersproject/abstract-provider'
 import {expect} from './expect'
-import {Contract, BigNumber} from 'ethers'
+import {Contract, BigNumber, ContractTransaction} from 'ethers'
 
 export default async function snapshotGasCost(
   x:
     | TransactionResponse
     | Promise<TransactionResponse>
+    | ContractTransaction
+    | Promise<ContractTransaction>
     | TransactionReceipt
     | Promise<BigNumber>
     | BigNumber
