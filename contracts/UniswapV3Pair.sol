@@ -216,7 +216,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     {
         amount1 = price.sqrt().muli(liquidity).toInt112();
         uint256 amount0Unsigned = FixedPoint.encode(uint112(amount1 < 0 ? -amount1 : amount1))._x / price._x;
-        amount0 = amount1 < 0 ? -amount0Unsigned.toInt112() : amount0Unsigned.toInt112();
+        amount0 = amount1 < 0 ? -(amount0Unsigned.toInt112()) : amount0Unsigned.toInt112();
     }
 
     constructor(
@@ -631,12 +631,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // to move at all...this probably manifests itself differently with positive/negative deltas
                     int256 token0VirtualDelta;
                     {
-                    uint256 token0VirtualDeltaUnsigned = FullMath.mulDiv(
-                        uint256(token1VirtualDelta < 0 ? -token1VirtualDelta : token1VirtualDelta),
-                        uint256(1) << 112,
-                        step.nextPrice._x);
+                    uint256 token0VirtualDeltaUnsigned = (uint256(token1VirtualDelta < 0
+                        ? -token1VirtualDelta
+                        : token1VirtualDelta) << 112) / step.nextPrice._x;
                     token0VirtualDelta = token1VirtualDelta < 0
-                        ? -token0VirtualDeltaUnsigned.toInt256()
+                        ? -(token0VirtualDeltaUnsigned.toInt256())
                         : token0VirtualDeltaUnsigned.toInt256();
                     }
 
