@@ -1,7 +1,6 @@
 {
-  "exclude_informational": true,
+  "exclude_informational": false,
   "exclude_low": false,
   "exclude_medium": false,
-  "exclude_high": false,
-  "filter_paths": "contracts/test|@uniswap/lib|contracts/libraries/PriceMath.sol"
+  "exclude_high": false
 }
