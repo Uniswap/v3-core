@@ -44,6 +44,7 @@
   },
   "scripts": {
     "compile": "buidler compile",
+    "pretest": "yarn compile",
     "test": "buidler test",
     "lint": "solhint contracts/**/*.sol",
     "prepublishOnly": "yarn test"
