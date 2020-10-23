@@ -44,6 +44,14 @@ interface IUniswapV3Pair {
 
     function getCumulativePrices() external view returns (uint256 price0Cumulative, uint256 price1Cumulative);
 
+    // initialize the pair
+    function initialize(
+        uint112 amount0,
+        uint112 amount1,
+        int16 tick,
+        uint8 feeVote
+    ) external returns (uint112 liquidity);
+
     // swapping
     function swap0For1(
         uint112 amount0In,

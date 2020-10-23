@@ -273,7 +273,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 amount1,
         int16 tick,
         uint8 feeVote
-    ) external lock returns (uint112 liquidity) {
+    ) external lock override returns (uint112 liquidity) {
         require(getVirtualSupply() == 0, 'UniswapV3: ALREADY_INITIALIZED'); // sufficient check
         require(amount0 >= TOKEN_MIN, 'UniswapV3: AMOUNT_0_TOO_SMALL');
         require(amount1 >= TOKEN_MIN, 'UniswapV3: AMOUNT_1_TOO_SMALL');
