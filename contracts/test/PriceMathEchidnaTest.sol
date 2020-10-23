@@ -18,6 +18,7 @@ contract PriceMathEchidnaTest {
 
         uint256 amountInLessFee = (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE;
         uint256 amountOut = reserveOut - ((uint256(reserveIn) * reserveOut) / (uint256(reserveIn) + amountInLessFee));
+        if (amountOut >= reserveOut) return;
 
         assert(((uint256(reserveIn) + amountIn) << 112) / (reserveOut - amountOut) >= inOutRatio);
     }
