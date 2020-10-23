@@ -102,11 +102,11 @@ describe('PriceMath', () => {
       const reserveOutAfter = k.div(reserveInAfter)
 
       const amountOut = reserveOut.sub(reserveOutAfter)
-      expect(amountOut).to.be.lt(reserveOut)
+      expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
       expect(amountOut).to.eq('62269752876055359223767967182589')
 
       const priceAfter = reserveInAfter.mul(BigNumber.from(2).pow(112)).div(reserveOutAfter)
-      expect(priceAfter).to.be.gt(inOutRatio)
+      expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
     })
 
     it('gas: 1:100 to 1:75 at 45bps', async () => {
