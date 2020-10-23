@@ -33,7 +33,8 @@ contract PriceMathEchidnaTest {
         if (reserveIn == 0 || reserveOut == 0 || inOutRatio == 0) {
             return true;
         }
-        uint256 amountOut = (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE;
+        uint256 amountInLessFee = (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE;
+        uint256 amountOut = reserveOut - ((uint256(reserveIn) * reserveOut) / (uint256(reserveIn) + amountInLessFee));
         return ((uint256(reserveIn) + amountIn) << 112) / (uint256(reserveOut) - amountOut) >= inOutRatio;
     }
 }
