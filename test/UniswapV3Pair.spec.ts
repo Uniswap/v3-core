@@ -35,13 +35,13 @@ describe('UniswapV3Pair', () => {
     inputToken: Contract,
     inputAmount: string | number | BigNumber,
     recipient: Wallet | string
-  ): Promise<string> {
+  ): Promise<Contract> {
     const target = await deployContract(wallet, PayAndForwardContract, [
       inputAmount,
       typeof recipient === 'string' ? recipient : recipient.address,
     ])
     await inputToken.transfer(target.address, inputAmount)
-    return target.address
+    return target
   }
 
   /**
@@ -51,25 +51,19 @@ describe('UniswapV3Pair', () => {
     inputToken: Contract,
     amountIn: number | string | BigNumber,
     to: Wallet | string
-  ): Promise<{amountOut: BigNumber; tx: ContractTransaction}> {
+  ): Promise<{amountOut: BigNumber; tx: ContractTransaction; target: Contract}> {
     const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
     const target = await createSwapTarget(inputToken, amountIn, to)
     const amountOut = await pair.callStatic[method](amountIn, target, '0x')
     const tx = await pair[method](amountIn, target, '0x')
-    return {tx, amountOut}
+    return {tx, amountOut, target}
   }
 
-  function swap0For1(
-    amount: number | string | BigNumber,
-    to: Wallet | string
-  ): Promise<{amountOut: BigNumber; tx: ContractTransaction}> {
+  function swap0For1(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
     return _swap(token0, amount, to)
   }
 
-  function swap1For0(
-    amount: number | string | BigNumber,
-    to: Wallet | string
-  ): Promise<{amountOut: BigNumber; tx: ContractTransaction}> {
+  function swap1For0(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
     return _swap(token1, amount, to)
   }
 
@@ -338,7 +332,7 @@ describe('UniswapV3Pair', () => {
       })
 
       beforeEach('swap in 2 token0 so G grows', async () => {
-        await swap0For1(expandTo18Decimals(2), await createSwapTarget(token0, expandTo18Decimals(2), wallet))
+        await swap0For1(expandTo18Decimals(2), wallet)
         ;[amount0, amount1] = await pair.getLiquidityFee(lowerTick, upperTick, fee)
       })
 
@@ -585,9 +579,9 @@ describe('UniswapV3Pair', () => {
     it('swap0For1 to tick -10', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
-      await expect(swap0For1(amount0In, wallet.address).then(({tx}) => tx))
-        .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '94959953735437435')
+      const {tx, target} = await swap0For1(amount0In, wallet)
+
+      await expect(tx).to.emit(token1, 'Transfer').withArgs(target.address, wallet.address, '94959953735437435')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -606,9 +600,9 @@ describe('UniswapV3Pair', () => {
       // upper: (1009999999999999995, 990099009900990094)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
-      await expect(swap0For1(amount0In, wallet.address).then(({tx}) => tx))
-        .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95292372649584252')
+      const {tx, target} = await swap0For1(amount0In, wallet)
+
+      await expect(tx).to.emit(token1, 'Transfer').withArgs(target.address, wallet.address, '95292372649584252')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
