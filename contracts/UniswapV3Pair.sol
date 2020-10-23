@@ -357,7 +357,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
 
-        // TODO remove this eventually, it's simply meant to show the direction of rounding in both cases
+        // TODO remove this eventually, it's meant to demonstrate the direction of rounding
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         if (amount0 > 0) {
             assert(priceNext._x >= price._x);
@@ -587,7 +587,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         PriceMath.LP_FEE_BASE))
                     .toUint112();
 
-                // TODO remove this eventually, it's simply meant to ensure our overshoot logic is correct
+                // TODO remove this eventually, it's meant to ensure PriceMath.getInputToRatio is working correctly
                 {
                 FixedPoint.uq112x112 memory priceNext;
                 if (params.zeroForOne) {
@@ -622,6 +622,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 } else {
                     reserve0Virtual = reserve0Virtual.sub(step.amountOut).toUint112();
                     reserve1Virtual = (uint256(reserve1Virtual) + step.amountIn).toUint112();
+                }
+
+                // TODO remove this eventually, it's meant to ensure our overshoot compensation logic is correct
+                {
+                FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+                if (params.zeroForOne) {
+                    assert(priceNext._x >= step.nextPrice._x);
+                } else {
+                    assert(priceNext._x <= step.nextPrice._x);                    
+                }
                 }
 
                 amountInRemaining = amountInRemaining.sub(step.amountIn).toUint112();
@@ -662,7 +672,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         reserve1Virtual = reserve1Virtual.addi(token1VirtualDelta).toUint112();
                     }
 
-                    // TODO remove this eventually, it's simply meant to show the direction of rounding
+                    // TODO remove this eventually, it's meant to show the direction of rounding
                     {
                     FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
                     if (params.zeroForOne) {
