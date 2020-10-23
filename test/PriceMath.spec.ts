@@ -98,8 +98,8 @@ describe('PriceMath', () => {
       expect(amountIn).to.eq('65')
       const amountInLessFee = amountIn.mul(BigNumber.from(10_000).sub(lpFee)).div(BigNumber.from(10_000))
       expect(amountInLessFee).to.eq('63')
-      const reserveInAfter = reserveIn.add(amountInLessFee)
-      const reserveOutAfter = k.div(reserveInAfter)
+      const reserveInAfter = reserveIn.add(amountIn)
+      const reserveOutAfter = k.div(reserveIn.add(amountInLessFee))
 
       const amountOut = reserveOut.sub(reserveOutAfter)
       expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
