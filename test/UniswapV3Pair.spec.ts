@@ -54,8 +54,8 @@ describe('UniswapV3Pair', () => {
   ): Promise<{amountOut: BigNumber; tx: ContractTransaction; target: Contract}> {
     const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
     const target = await createSwapTarget(inputToken, amountIn, to)
-    const amountOut = await pair.callStatic[method](amountIn, target, '0x')
-    const tx = await pair[method](amountIn, target, '0x')
+    const amountOut = await pair.callStatic[method](amountIn, target.address, '0x')
+    const tx = await pair[method](amountIn, target.address, '0x')
     return {tx, amountOut, target}
   }
 
@@ -558,9 +558,12 @@ describe('UniswapV3Pair', () => {
     it('swap0For1 to tick -10', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
-      const {tx, target} = await swap0For1(amount0In, wallet)
+      const promise = swap0For1(amount0In, wallet)
+      const {target} = await promise
 
-      await expect(tx).to.emit(token1, 'Transfer').withArgs(target.address, wallet.address, '94959953735437435')
+      await expect(promise.then(({tx}) => tx))
+        .to.emit(token1, 'Transfer')
+        .withArgs(target.address, wallet.address, '94959953735437435')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
