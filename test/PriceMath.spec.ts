@@ -87,6 +87,29 @@ describe('PriceMath', () => {
       ).to.eq('155049452346487536')
     })
 
+    it.only('failing echidna', async () => {
+      //1040,1090214879718873987679620123847534,174,5590
+      const reserveIn = BigNumber.from('1040')
+      const reserveOut = BigNumber.from('1090214879718873987679620123847534')
+      const k = reserveOut.mul(reserveIn)
+      const lpFee = BigNumber.from('174')
+      const inOutRatio = BigNumber.from('5590')
+      const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
+
+      expect(amountIn).to.eq('65')
+      const amountInLessFee = amountIn.mul(BigNumber.from(10_000).sub(lpFee)).div(BigNumber.from(10_000))
+      expect(amountInLessFee).to.eq('63')
+      const reserveInAfter = reserveIn.add(amountInLessFee)
+      const reserveOutAfter = k.div(reserveInAfter)
+
+      const amountOut = reserveOut.sub(reserveOutAfter)
+      expect(amountOut).to.be.lt(reserveOut)
+      expect(amountOut).to.eq('62269752876055359223767967182589')
+
+      const priceAfter = reserveInAfter.mul(BigNumber.from(2).pow(112)).div(reserveOutAfter)
+      expect(priceAfter).to.be.gt(inOutRatio)
+    })
+
     it('gas: 1:100 to 1:75 at 45bps', async () => {
       await snapshotGasCost(
         priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 45, [

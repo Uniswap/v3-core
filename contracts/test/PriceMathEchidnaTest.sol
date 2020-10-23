@@ -20,6 +20,7 @@ contract PriceMathEchidnaTest {
         uint112 amountIn = PriceMath.getInputToRatio(reserveIn, reserveOut, lpFee, FixedPoint.uq112x112(inOutRatio));
         uint256 amountInLessFee = (uint256(amountIn).mul(PriceMath.LP_FEE_BASE - lpFee)).div(PriceMath.LP_FEE_BASE);
         if (amountInLessFee == 0) {
+            assert(amountIn == 0);
             assert((uint256(reserveIn) << 112) / reserveOut >= inOutRatio);
             return;
         }
