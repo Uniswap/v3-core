@@ -28,6 +28,9 @@ contract PriceMathEchidnaTest {
     }
 
     function echidna_ratioAfterAmountInAlwaysExceedsPrice() external view returns (bool) {
+        if (reserveIn == 0 || reserveOut == 0 || lpFee == 0 || inOutRatio == 0) {
+            return true;
+        }
         uint112 amountOut = (amountIn * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE;
         return ((reserveIn + amountIn) << 112) / (reserveOut - amountOut) >= inOutRatio;
     }
