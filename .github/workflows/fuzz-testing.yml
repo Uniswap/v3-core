@@ -45,4 +45,4 @@ jobs:
 
       - name: Run echidna
         run: |
-          echidna-test . --contract BabylonianEchidnaTest
+          echidna-test . --contract PriceMathEchidnaTest
