@@ -266,7 +266,7 @@ describe('UniswapV3Pair', () => {
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote)
   }
-  // TODO: Test rest of categories in a loop to reduce code duplication
+  // TODO test rest of categories in a loop to reduce code duplication
   describe('post-initialize (fee vote 1 - 0.10%)', () => {
     const fee = FeeVote.FeeVote1
 
@@ -279,8 +279,6 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -1
       const upperTick = 4
       const liquidityDelta = expandTo18Decimals(1000)
-      let amount0: BigNumber
-      let amount1: BigNumber
 
       beforeEach('provide 1 liquidity in the range -1 to 4', async () => {
         // approve max
@@ -293,32 +291,16 @@ describe('UniswapV3Pair', () => {
 
       beforeEach('swap in 2 token0 so G grows', async () => {
         await pair.swap0For1(expandTo18Decimals(2), wallet.address, '0x')
-        ;[amount0, amount1] = await pair.getLiquidityFee(lowerTick, upperTick, fee)
       })
 
-      // The LP adds more to their previously set position
-      it.skip('further adds to the position, compounding with the fees', async () => {
-        const liquidityDelta = expandTo18Decimals(1)
-
-        // get the liquidity fee post trade
-        await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
-
-        // this is token0 & token1 balance if the liquidity fee was 0 (we got these
-        // values by commenting out the `(amount0, amount1) = getValueAtPrice` line)
-        const balance0WithoutFees = BigNumber.from('9976274350446348266538')
-        const balance1WithoutFees = BigNumber.from('9995028242330516174961')
-        // check that the LP's fees were contributed towards their liquidity provision
-        // implicitly, by discounting them on the amount of tokens they need to deposit
-        expect(await token0.balanceOf(wallet.address)).to.eq(balance0WithoutFees.add(amount0))
-        expect(await token1.balanceOf(wallet.address)).to.eq(balance1WithoutFees.add(amount1))
-      })
+      // TODO add more tests here
 
       it('setPosition with 0 liquidity claims fees', async () => {
         const token0Before = await token0.balanceOf(wallet.address)
         const token1Before = await token1.balanceOf(wallet.address)
         await pair.setPosition(lowerTick, upperTick, fee, 0)
-        expect(await token0.balanceOf(wallet.address)).to.eq(token0Before.add(amount0))
-        expect(await token1.balanceOf(wallet.address)).to.eq(token1Before.add(amount1))
+        expect(await token0.balanceOf(wallet.address)).to.be.gt(token0Before)
+        expect(await token1.balanceOf(wallet.address)).to.be.gt(token1Before)
       })
     })
 
@@ -328,9 +310,8 @@ describe('UniswapV3Pair', () => {
       const upperTick = 4
 
       await token0.approve(pair.address, constants.MaxUint256)
-      // TODO these are outdated
-      // lower: (990, 1009)
-      // upper: (980, 1019)
+      // lower: (989, 1009)
+      // upper: (980, 1020)
       const g1 = await pair.getG()
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
       const g2 = await pair.getG()
@@ -346,9 +327,8 @@ describe('UniswapV3Pair', () => {
       const upperTick = -2
 
       await token1.approve(pair.address, constants.MaxUint256)
-      // TODO these are outdated
-      // lower: (1020, 980)
-      // upper: (1009, 989)
+      // lower: (1019, 980)
+      // upper: (1009, 990)
       const g1 = await pair.getG()
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
       const g2 = await pair.getG()
@@ -365,9 +345,8 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      // TODO these are outdated
-      // lower: (1009, 989)
-      // upper: (990, 1009)
+      // lower: (1009, 990)
+      // upper: (989, 1009)
       const g1 = await pair.getG()
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
       const g2 = await pair.getG()
@@ -557,9 +536,8 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -3
       const upperTick = -2
       await token1.approve(pair.address, constants.MaxUint256)
-      // TODO these are probably outdated
-      // lower: (1015037437733209910, 985185336841573394)
-      // upper: (1009999999999999995, 990099009900990094)
+      // lower: (1015037437733209916, 985185336841573401)
+      // upper: (1009999999999999999, 990099009900990099)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       await token0.approve(pair.address, constants.MaxUint256)

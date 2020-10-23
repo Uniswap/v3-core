@@ -7,6 +7,7 @@ import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
+import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -171,7 +172,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // gets the growth in g between two ticks
     // this only has relative meaning, not absolute
-    // TODO: simpler or more precise way to compute this?
     function _getGrowthBelow(
         int16 tick,
         TickInfo storage tickInfo,
@@ -236,9 +236,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         token1 = _token1;
         // initialize min and max ticks
         TickInfo storage tick = tickInfos[TickMath.MIN_TICK];
-        tick.growthOutside = FixedPoint.encode(1);
+        tick.growthOutside = FixedPoint.uq112x112(uint224(1) << 112); // 1
         tick = tickInfos[TickMath.MAX_TICK];
-        tick.growthOutside = FixedPoint.encode(1);
+        tick.growthOutside = FixedPoint.uq112x112(uint224(1) << 112); // 1
     }
 
     // returns the block timestamp % 2**32.
@@ -336,27 +336,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tickInfo.growthOutside = getG();
                 tickInfo.secondsOutside = _blockTimestamp();
             } else {
-                tickInfo.growthOutside = FixedPoint.encode(1);
+                tickInfo.growthOutside = FixedPoint.uq112x112(uint224(1) << 112); // 1
             }
         }
-    }
-
-    function getLiquidityFee(
-        int16 tickLower,
-        int16 tickUpper,
-        uint8 feeVote
-    ) public view returns (int112 amount0, int112 amount1) {
-        TickInfo storage tickInfoLower = tickInfos[tickLower];
-        TickInfo storage tickInfoUpper = tickInfos[tickUpper];
-        FixedPoint.uq112x112 memory growthInside = _getGrowthInside(tickLower, tickUpper, tickInfoLower, tickInfoUpper);
-
-        Position storage position = _getPosition(msg.sender, tickLower, tickUpper, feeVote);
-        uint256 liquidityFee = FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) > position.liquidity
-            ? FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity
-            : 0;
-
-        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-        (amount0, amount1) = getValueAtPrice(price, liquidityFee.toInt112());
     }
 
     // note: this function can cause the price to change
@@ -371,7 +353,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 rootKLast = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
 
         // update reserves (the price doesn't change, so no need to update the oracle/current tick)
-        // TODO: the price _can_ change because of rounding error
+        // TODO the price _can_ change because of rounding error
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
 
@@ -379,13 +361,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
 
         // update virtual supply
-        // TODO i believe this consistently results in a smaller g
+        // TODO does this consistently results in a smaller g?
         uint112 virtualSupply = getVirtualSupply();
         uint112 rootK = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
         virtualSupplies[feeVote] = virtualSupplies[feeVote]
             .addi(((int256(rootK) - rootKLast) * virtualSupply) / rootKLast)
             .toUint112();
 
+        // TODO remove this eventually, it's simply meant to show the direction of rounding in both cases
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         if (amount0 > 0) {
             assert(priceNext._x >= price._x);
@@ -422,14 +405,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             // check if this condition has accrued any untracked fees
-            // to account for rounding errors, we have to short-circuit the calculation if the untracked fees are too low
-            // TODO is this calculation correct/precise?
-            // TODO technically this can overflow
-            // TODO optimize this to save gas
-            uint256 liquidityFee = FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) >
+            // to account for rounding errors, we have to short-circuit the calculation if untracked fees are too low
+            uint256 liquidityFee = Math.max(
+                FullMath.mulDiv(growthInside._x, position.liquidityAdjusted, uint256(1) << 112),
                 position.liquidity
-                ? FixedPoint.decode144(growthInside.mul(position.liquidityAdjusted)) - position.liquidity
-                : 0;
+            ) - position.liquidity;
             if (liquidityFee > 0) {
                 // take the protocol fee if it's on (feeTo isn't address(0)) and the sender isn't feeTo
                 if (feeTo != address(0) && msg.sender != feeTo) {
@@ -449,23 +429,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         );
                         FixedPoint.uq112x112 memory g = getG(); // shortcut for _getGrowthInside
 
-                        // accrue any newly earned fee liquidity from the existing protocol position
-                        // TODO all the same caveats as above apply
+                        // accrue any untracked fees for the existing protocol position
                         liquidityProtocol = liquidityProtocol.add(
-                            FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) > positionProtocol.liquidity
-                                ? FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) -
-                                    positionProtocol.liquidity
-                                : 0
+                            Math.max(
+                                FullMath.mulDiv(g._x, positionProtocol.liquidityAdjusted, uint256(1) << 112),
+                                positionProtocol.liquidity
+                            ) - positionProtocol.liquidity
                         );
                         // update the reserves to account for the this new liquidity
                         updateReservesAndVirtualSupply(liquidityProtocol.toInt112(), feeVote);
 
                         // update the position
                         positionProtocol.liquidity = positionProtocol.liquidity.add(liquidityProtocol).toUint112();
-                        positionProtocol.liquidityAdjusted = uint256(
+                        positionProtocol.liquidityAdjusted = (
                             FixedPoint.encode(positionProtocol.liquidity)._x / g._x
-                        )
-                            .toUint112();
+                        ).toUint112();
                     }
                 }
 
@@ -475,8 +453,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // update position
             position.liquidity = position.liquidity.addi(liquidityDelta).toUint112();
-            position.liquidityAdjusted = uint256(FixedPoint.encode(position.liquidity)._x / growthInside._x)
-                .toUint112();
+            position.liquidityAdjusted = (FixedPoint.encode(position.liquidity)._x / growthInside._x).toUint112();
         }
 
         // calculate how much the specified liquidity delta is worth at the lower and upper ticks
@@ -492,6 +469,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
 
         // regardless of current price, when lower tick is crossed from left to right, amount0Lower should be added
+        // TODO should this be >=?
         if (tickLower > TickMath.MIN_TICK) {
             tickInfoLower.token1VirtualDeltas[feeVote] = tickInfoLower.token1VirtualDeltas[feeVote]
                 .add(amount1Lower)
@@ -516,8 +494,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount0 = amount0.add(amount0Current.sub(amount0Upper)).toInt112();
             amount1 = amount1.add(amount1Current.sub(amount1Lower)).toInt112();
         } else {
-            // the current price is above the passed range, so the liquidity can only become in range by crossing from right
-            // to left, at which point we'll need _more_ token1 (it's becoming more valuable) so the user must provide it
+            // the current price is above the passed range, so liquidity can only become in range by crossing from right
+            // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
             amount1 = amount1.add(amount1Upper.sub(amount1Lower)).toInt112();
         }
 
@@ -582,7 +560,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // TODO are there issues with using reciprocal here?
             // compute the ~minimum amount of input token required s.t. the price _equals or exceeds_ the target price
-            //after computing the corresponding output amount according to x * y = k, given the current fee
+            // after computing the corresponding output amount according to x * y = k, given the current fee
             uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
                 reserveInVirtual,
                 reserveOutVirtual,
@@ -590,6 +568,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 params.zeroForOne ? step.nextPrice.reciprocal() : step.nextPrice
             );
 
+            // TODO ensure that there's no off-by-one error here while transitioning ticks
             if (amountInRequiredForShift > 0) {
                 // either trade fully to the next tick, or only as much as we need to
                 step.amountIn = amountInRemaining > amountInRequiredForShift
@@ -635,9 +614,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         token1VirtualDelta += tickInfo.token1VirtualDeltas[i];
                     }
-                    // TODO we need to ensure that adding/subtracting token{0,1}VirtualDelta to/from the current
-                    // reserves always moves the price toward the direction we're moving (past the tick), if it has
-                    // to move at all...this probably manifests itself differently with positive/negative deltas
+    
+                    // TODO the price can change because of rounding error
+                    // should adding/subtracting token{0,1}VirtualDelta to/from the current reserves ideally always move
+                    // the price toward the direction we're moving (past the tick), if it has to move at all?
+                    // right now the behavior is probably different with positive/negative deltas
                     int256 token0VirtualDelta;
                     {
                     uint256 token0VirtualDeltaUnsigned = (uint256(token1VirtualDelta < 0
@@ -667,7 +648,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         int256 virtualSupplyDelta = tickInfo.token1VirtualDeltas[i].mul(virtualSupply) /
                             reserve1Virtual;
-                        // TODO are these SSTOREs optimized/packed?
                         if (params.zeroForOne) {
                             // subi because we're moving from right to left
                             virtualSupplies[i] = virtualSupplies[i].subi(virtualSupplyDelta).toUint112();
@@ -686,14 +666,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         tickCurrent = tick;
-        TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut); // optimistically transfer tokens
+        // this is different than v2
+        TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut);
         if (params.data.length > 0) IUniswapV3Callee(params.to).uniswapV3Call(msg.sender, 0, amountOut, params.data);
         TransferHelper.safeTransferFrom(
             params.zeroForOne ? token0 : token1,
             msg.sender,
             address(this),
             params.amountIn
-        ); // this is different than v2
+        );
     }
 
     // move from right to left (token 1 is becoming more valuable)
@@ -716,7 +697,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return _swap(params);
     }
 
-    // Helper for reading the cumulative price as of the current block
+    // helper for reading the cumulative price as of the current block
     function getCumulativePrices() public view override returns (uint256 price0Cumulative, uint256 price1Cumulative) {
         uint32 blockTimestamp = _blockTimestamp();
 
