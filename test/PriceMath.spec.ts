@@ -88,7 +88,6 @@ describe('PriceMath', () => {
     })
 
     it.only('failing echidna', async () => {
-      //1040,1090214879718873987679620123847534,174,5590
       const reserveIn = BigNumber.from('1040')
       const reserveOut = BigNumber.from('1090214879718873987679620123847534')
       const k = reserveOut.mul(reserveIn)
