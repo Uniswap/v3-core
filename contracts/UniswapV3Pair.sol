@@ -87,9 +87,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint32 secondsOutside;
-        // amount of token0 added when ticks are crossed from left to right
+        // amount of token1 added when ticks are crossed from left to right
         // (i.e. as the (reserve1Virtual / reserve0Virtual) price goes up), for each fee vote
-        int112[NUM_FEE_OPTIONS] token0VirtualDeltas;
+        int112[NUM_FEE_OPTIONS] token1VirtualDeltas;
     }
     mapping(int16 => TickInfo) public tickInfos;
 
@@ -211,15 +211,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
-    // note: this is imprecise (potentially by >1 bit) because it uses reciprocal and sqrt
-    // note: this may not return _exact_ ratio of the passed price (though amount1 accurate to < 1 bit given amount0)
+    // note: this can be imprecise for 3 reasons:
+    // 1: because it uses sqrt, which can be lossy up to 40 bits
+    // 2: regardless of the lossiness of sqrt, amount1 may still be rounded from its actual value
+    // 3: regardless of the lossiness of amount1, amount0 may still be rounded from its actual value
+    // this means that the amounts may both be slightly inaccurate _and_ not return the exact ratio of the passed price
     function getValueAtPrice(FixedPoint.uq112x112 memory price, int112 liquidity)
         public
         pure
         returns (int112 amount0, int112 amount1)
     {
-        amount0 = price.reciprocal().sqrt().muli(liquidity).toInt112();
-        amount1 = price.muli(amount0).toInt112();
+        amount1 = price.sqrt().muli(liquidity).toInt112();
+        uint256 amount0Unsigned = FixedPoint.encode(uint112(amount1 < 0 ? -amount1 : amount1))._x / price._x;
+        amount0 = amount1 < 0 ? -(amount0Unsigned.toInt112()) : amount0Unsigned.toInt112();
     }
 
     constructor(
@@ -384,9 +388,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         if (amount0 > 0) {
-            assert(priceNext._x <= price._x);
-        } else if (amount0 < 0) {
             assert(priceNext._x >= price._x);
+        } else {
+            assert(priceNext._x <= price._x);
         }
     }
 
@@ -446,6 +450,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         FixedPoint.uq112x112 memory g = getG(); // shortcut for _getGrowthInside
 
                         // accrue any newly earned fee liquidity from the existing protocol position
+                        // TODO all the same caveats as above apply
                         liquidityProtocol = liquidityProtocol.add(
                             FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) > positionProtocol.liquidity
                                 ? FixedPoint.decode144(g.mul(positionProtocol.liquidityAdjusted)) -
@@ -456,7 +461,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         updateReservesAndVirtualSupply(liquidityProtocol.toInt112(), feeVote);
 
                         // update the position
-                        // TODO all the same caveats as above apply
                         positionProtocol.liquidity = positionProtocol.liquidity.add(liquidityProtocol).toUint112();
                         positionProtocol.liquidityAdjusted = uint256(
                             FixedPoint.encode(positionProtocol.liquidity)._x / g._x
@@ -489,14 +493,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // regardless of current price, when lower tick is crossed from left to right, amount0Lower should be added
         if (tickLower > TickMath.MIN_TICK) {
-            tickInfoLower.token0VirtualDeltas[feeVote] = tickInfoLower.token0VirtualDeltas[feeVote]
-                .add(amount0Lower)
+            tickInfoLower.token1VirtualDeltas[feeVote] = tickInfoLower.token1VirtualDeltas[feeVote]
+                .add(amount1Lower)
                 .toInt112();
         }
         // regardless of current price, when upper tick is crossed from left to right amount0Upper should be removed
         if (tickUpper < TickMath.MAX_TICK) {
-            tickInfoUpper.token0VirtualDeltas[feeVote] = tickInfoUpper.token0VirtualDeltas[feeVote]
-                .sub(amount0Upper)
+            tickInfoUpper.token1VirtualDeltas[feeVote] = tickInfoUpper.token1VirtualDeltas[feeVote]
+                .sub(amount1Upper)
                 .toInt112();
         }
 
@@ -627,15 +631,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // if the tick is initialized, we must update it
                 if (tickInfo.growthOutside._x != 0) {
                     // calculate the amount of reserves to kick in/out
-                    int256 token0VirtualDelta;
+                    int256 token1VirtualDelta;
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-                        token0VirtualDelta += tickInfo.token0VirtualDeltas[i];
+                        token1VirtualDelta += tickInfo.token1VirtualDeltas[i];
                     }
-                    // TODO we have to do this in an overflow-safe way
                     // TODO we need to ensure that adding/subtracting token{0,1}VirtualDelta to/from the current
                     // reserves always moves the price toward the direction we're moving (past the tick), if it has
                     // to move at all...this probably manifests itself differently with positive/negative deltas
-                    int256 token1VirtualDelta = step.nextPrice.muli(token0VirtualDelta);
+                    int256 token0VirtualDelta;
+                    {
+                    uint256 token0VirtualDeltaUnsigned = (uint256(token1VirtualDelta < 0
+                        ? -token1VirtualDelta
+                        : token1VirtualDelta) << 112) / step.nextPrice._x;
+                    token0VirtualDelta = token1VirtualDelta < 0
+                        ? -(token0VirtualDeltaUnsigned.toInt256())
+                        : token0VirtualDeltaUnsigned.toInt256();
+                    }
 
                     if (params.zeroForOne) {
                         // subi because we're moving from right to left
@@ -648,14 +659,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // update virtual supply
                     // TODO it may be possible to squeeze out a bit more precision under certain circumstances by:
-                    // a) summing total negative and positive token0VirtualDeltas
+                    // a) summing total negative and positive token1VirtualDeltas
                     // b) calculating the total negative and positive virtualSupplyDelta
                     // c) allocating these deltas proportionally across virtualSupplies according to sign + proportion
                     // note: this may not be true, and could be overkill/unnecessary
                     uint112 virtualSupply = getVirtualSupply();
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-                        int256 virtualSupplyDelta = tickInfo.token0VirtualDeltas[i].mul(virtualSupply) /
-                            reserve0Virtual;
+                        int256 virtualSupplyDelta = tickInfo.token1VirtualDeltas[i].mul(virtualSupply) /
+                            reserve1Virtual;
                         // TODO are these SSTOREs optimized/packed?
                         if (params.zeroForOne) {
                             // subi because we're moving from right to left
