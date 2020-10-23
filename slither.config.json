@@ -1,6 +1,7 @@
 {
-  "exclude_informational": false,
+  "exclude_informational": true,
   "exclude_low": false,
   "exclude_medium": false,
-  "exclude_high": false
+  "exclude_high": false,
+  "filter_paths": "@uniswap/lib|@openzeppelin/contracts|contracts/test|contracts/libraries/PriceMath.sol|contracts/UniswapV3Pair.sol"
 }
