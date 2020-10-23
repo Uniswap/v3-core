@@ -369,7 +369,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
 
         // update virtual supply
-        // TODO does this consistently results in a smaller g?
+        // TODO does this consistently results in a smaller g? if so, is that what we want?
         uint112 virtualSupply = getVirtualSupply();
         uint112 rootK = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
         virtualSupplies[feeVote] = virtualSupplies[feeVote]
@@ -498,6 +498,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
             amount1 = amount1.add(amount1Upper.sub(amount1Lower)).toInt112();
         }
+
+        // TODO work on this, but for now just make sure the net result of all the updateReservesAndVirtualSupply...
+        // ...calls didn't push us out of the current tick
+        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+        require(TickMath.getRatioAtTick(tickCurrent)._x <= priceNext._x, 'UniswapV3: PRICE_EXCEEDS_LOWER_BOUND');
+        require(TickMath.getRatioAtTick(tickCurrent + 1)._x > priceNext._x, 'UniswapV3: PRICE_EXCEEDS_UPPER_BOUND');
 
         if (amount0 > 0) {
             TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
