@@ -19,6 +19,8 @@ contract PriceMathEchidnaTest {
         uint16 lpFee_,
         uint224 inOutRatio_
     ) external {
+        require(reserveIn > 101 && reserveOut > 101);
+
         reserveIn = reserveIn_;
         reserveOut = reserveOut_;
         lpFee = lpFee_;
@@ -28,10 +30,10 @@ contract PriceMathEchidnaTest {
     }
 
     function echidna_ratioAfterAmountInAlwaysExceedsPrice() external view returns (bool) {
-        if (reserveIn == 0 || reserveOut == 0 || lpFee == 0 || inOutRatio == 0) {
+        if (reserveIn == 0 || reserveOut == 0 || inOutRatio == 0) {
             return true;
         }
-        uint112 amountOut = (amountIn * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE;
-        return ((reserveIn + amountIn) << 112) / (reserveOut - amountOut) >= inOutRatio;
+        uint256 amountOut = (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE;
+        return ((uint256(reserveIn) + amountIn) << 112) / (uint256(reserveOut) - amountOut) >= inOutRatio;
     }
 }
