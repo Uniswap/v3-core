@@ -19,7 +19,7 @@ contract PriceMathEchidnaTest {
         uint16 lpFee_,
         uint224 inOutRatio_
     ) external {
-        require(reserveIn > 101 && reserveOut > 101);
+        require(reserveIn > 101 && reserveOut > 101 && lpFee < PriceMath.LP_FEE_BASE);
 
         reserveIn = reserveIn_;
         reserveOut = reserveOut_;
