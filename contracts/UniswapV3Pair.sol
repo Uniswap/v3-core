@@ -357,7 +357,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
 
-        // TODO remove this eventually, it's simply meant to show the direction of rounding in both cases
+        // TODO remove this eventually, it's meant to demonstrate the direction of rounding
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         if (amount0 > 0) {
             assert(priceNext._x >= price._x);
@@ -577,9 +577,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // TODO ensure that there's no off-by-one error here while transitioning ticks
             if (amountInRequiredForShift > 0) {
                 // either trade fully to the next tick, or only as much as we need to
-                step.amountIn = amountInRemaining > amountInRequiredForShift
-                    ? amountInRequiredForShift
-                    : amountInRemaining;
+                step.amountIn = Math.min(amountInRequiredForShift, amountInRemaining).toUint112();
 
                 // calculate the owed output amount, given the current fee
                 step.amountOut = ((uint256(reserveOutVirtual) * step.amountIn * (PriceMath.LP_FEE_BASE - fee)) /
@@ -588,6 +586,26 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         uint256(reserveInVirtual) *
                         PriceMath.LP_FEE_BASE))
                     .toUint112();
+
+                // TODO remove this eventually, it's meant to ensure PriceMath.getInputToRatio is working correctly
+                {
+                FixedPoint.uq112x112 memory priceNext;
+                if (params.zeroForOne) {
+                    priceNext = FixedPoint.fraction(
+                        reserve1Virtual.sub(step.amountOut).toUint112(),
+                        (uint256(reserve0Virtual) + step.amountIn).toUint112()
+                    );
+                    // TODO this should be <=
+                    assert(priceNext._x >= step.nextPrice._x);
+                } else {
+                    priceNext = FixedPoint.fraction(
+                        (uint256(reserve1Virtual) + step.amountIn).toUint112(),
+                        reserve0Virtual.sub(step.amountOut).toUint112()
+                    );
+                    // TODO this should be >=
+                    assert(priceNext._x <= step.nextPrice._x);                    
+                }
+                }
 
                 // calculate the maximum output amount s.t. the reserves price is guaranteed to be as close as possible
                 // to the target price _without_ exceeding it
@@ -606,7 +624,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     reserve1Virtual = (uint256(reserve1Virtual) + step.amountIn).toUint112();
                 }
 
-                // TODO remove this eventually, it's simply meant to ensure our overshoot logic is correct
+                // TODO remove this eventually, it's meant to ensure our overshoot compensation logic is correct
                 {
                 FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
                 if (params.zeroForOne) {
@@ -654,7 +672,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         reserve1Virtual = reserve1Virtual.addi(token1VirtualDelta).toUint112();
                     }
 
-                    // TODO remove this eventually, it's simply meant to show the direction of rounding
+                    // TODO remove this eventually, it's meant to show the direction of rounding
                     {
                     FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
                     if (params.zeroForOne) {
