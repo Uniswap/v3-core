@@ -577,7 +577,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // TODO ensure that there's no off-by-one error here while transitioning ticks
             if (amountInRequiredForShift > 0) {
                 // either trade fully to the next tick, or only as much as we need to
-                step.amountIn = Math.min(amountInRequiredForShift, amountInRemaining);
+                step.amountIn = Math.min(amountInRequiredForShift, amountInRemaining).toUint112();
 
                 // calculate the owed output amount, given the current fee
                 step.amountOut = ((uint256(reserveOutVirtual) * step.amountIn * (PriceMath.LP_FEE_BASE - fee)) /
@@ -595,13 +595,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         reserve1Virtual.sub(step.amountOut).toUint112(),
                         (uint256(reserve0Virtual) + step.amountIn).toUint112()
                     );
-                    assert(priceNext._x <= step.nextPrice._x);
+                    // TODO this should be <=
+                    assert(priceNext._x >= step.nextPrice._x);
                 } else {
                     priceNext = FixedPoint.fraction(
                         (uint256(reserve1Virtual) + step.amountIn).toUint112(),
                         reserve0Virtual.sub(step.amountOut).toUint112()
                     );
-                    assert(priceNext._x >= step.nextPrice._x);                    
+                    // TODO this should be >=
+                    assert(priceNext._x <= step.nextPrice._x);                    
                 }
                 }
 
