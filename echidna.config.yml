@@ -1,3 +1,7 @@
+#format can be "text" or "json" for different output (human or machine readable)
+format: 'text'
+#checkAsserts checks assertions
+checkAsserts: true
 # #psender is the sender for property transactions; by default intentionally
 # #the same as contract deployer
 # psender: "0x00a329c0648769a73afac7f9381e08fb43dbea70"
@@ -21,8 +25,6 @@
 # shrinkLimit: 5000
 # #coverage controls coverage guided testing
 # coverage: false
-# #format can be "text" or "json" for different output (human or machine readable)
-format: 'text'
 # #contractAddr is the address of the contract itself
 # contractAddr: "0x00a329c0648769a73afac7f9381e08fb43dbea72"
 # #deployer is address of the contract deployer (who often is privileged owner, etc.)
@@ -45,8 +47,6 @@ format: 'text'
 # initialize: null
 # #whether ot not to use the multi-abi mode of testing
 # multi-abi: false
-# #checkAsserts checks assertions
-checkAsserts: true
 # #benchmarkMode enables benchmark mode
 # benchmarkMode: false
 # #timeout controls test timeout settings
