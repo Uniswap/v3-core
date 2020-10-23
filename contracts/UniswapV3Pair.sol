@@ -635,7 +635,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // TODO the price can change because of rounding error
                     // should adding/subtracting token{0,1}VirtualDelta to/from the current reserves ideally always move
                     // the price toward the direction we're moving (past the tick), if it has to move at all?
-                    // right now the behavior is probably different with positive/negative deltas
                     int256 token0VirtualDelta;
                     {
                     uint256 token0VirtualDeltaUnsigned = (uint256(token1VirtualDelta < 0
@@ -662,13 +661,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         if (token1VirtualDelta > 0) {
                             assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
                         } else {
-                            assert(priceNext._x >= step.nextPrice._x); // this is less good, we're moving right
+                            require(priceNext._x == step.nextPrice._x, 'UniswapV3: RIGHT_IS_WRONG');
                         }
                     } else {
                         if (token1VirtualDelta > 0) {
                             assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
                         } else {
-                            assert(priceNext._x <= step.nextPrice._x); // this is less good, we're moving left
+                            require(priceNext._x == step.nextPrice._x, 'UniswapV3: LEFT_IS_NOT_RIGHT');
                         }
                     }
                     }
