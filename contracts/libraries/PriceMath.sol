@@ -18,7 +18,7 @@ library PriceMath {
         if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the ratios are equal
 
         uint256 inputToRatio = getInputToRatioUQ128x128(reserveIn, reserveOut, lpFee, inOutRatio._x);
-        require(inputToRatio >> 112 <= type(uint112).max, 'PriceMath: TODO');
+        require(inputToRatio >> 112 <= uint112(-1), 'PriceMath: TODO');
         return uint112(inputToRatio >> 112);
     }
 
