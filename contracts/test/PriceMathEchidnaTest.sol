@@ -17,8 +17,7 @@ contract PriceMathEchidnaTest {
     ) external pure {
         require(reserveIn > 1001 && reserveOut > 1001 && lpFee < PriceMath.LP_FEE_BASE);
 
-        uint112 amountIn = PriceMath.getInputToRatio(reserveIn, reserveOut, lpFee, FixedPoint.uq112x112(inOutRatio)) +
-            1;
+        uint112 amountIn = PriceMath.getInputToRatio(reserveIn, reserveOut, lpFee, FixedPoint.uq112x112(inOutRatio));
         uint256 amountInLessFee = (uint256(amountIn).mul(PriceMath.LP_FEE_BASE - lpFee)).div(PriceMath.LP_FEE_BASE);
 
         if (amountInLessFee == 0) {
