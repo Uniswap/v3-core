@@ -3,7 +3,7 @@ import {waffle} from '@nomiclabs/buidler'
 import PriceMathTest from '../build/PriceMathTest.json'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {expandTo18Decimals} from './shared/utilities'
+import {encodePrice, expandTo18Decimals} from './shared/utilities'
 
 describe('PriceMath', () => {
   const [wallet] = waffle.provider.getWallets()
@@ -90,22 +90,27 @@ describe('PriceMath', () => {
     it.only('failing echidna', async () => {
       const reserveIn = BigNumber.from('1040')
       const reserveOut = BigNumber.from('1090214879718873987679620123847534')
-      const k = reserveOut.mul(reserveIn)
       const lpFee = BigNumber.from('174')
       const inOutRatio = BigNumber.from('5590')
       const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
 
+      const LP_FEE_BASE = BigNumber.from(10000)
+
       expect(amountIn).to.eq('65')
-      const amountInLessFee = amountIn.mul(BigNumber.from(10_000).sub(lpFee)).div(BigNumber.from(10_000))
-      expect(amountInLessFee).to.eq('63')
+      //uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
+      //             (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
+      const amountOut = reserveOut
+        .mul(amountIn)
+        .mul(LP_FEE_BASE.sub(lpFee))
+        .div(amountIn.mul(BigNumber.from(LP_FEE_BASE).sub(lpFee)).add(reserveIn.mul(LP_FEE_BASE)))
+
       const reserveInAfter = reserveIn.add(amountIn)
-      const reserveOutAfter = k.div(reserveIn.add(amountInLessFee))
+      const reserveOutAfter = reserveOut.sub(amountOut)
 
-      const amountOut = reserveOut.sub(reserveOutAfter)
       expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
-      expect(amountOut).to.eq('62269752876055359223767967182589')
+      expect(amountOut).to.eq('63078983242363688733998017599930')
 
-      const priceAfter = reserveInAfter.mul(BigNumber.from(2).pow(112)).div(reserveOutAfter)
+      const priceAfter = encodePrice(reserveInAfter, reserveOutAfter)[0]
       expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
     })
 
