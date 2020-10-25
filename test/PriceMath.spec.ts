@@ -110,7 +110,7 @@ describe('PriceMath', () => {
       expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
       expect(amountOut).to.eq('63078983242363688733998017599930')
 
-      const priceAfter = encodePrice(reserveInAfter, reserveOutAfter)[0]
+      const priceAfter = encodePrice(reserveInAfter, reserveOutAfter)[1]
       expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
     })
 
