@@ -96,7 +96,7 @@ describe('PriceMath', () => {
 
       const LP_FEE_BASE = BigNumber.from(10000)
 
-      expect(amountIn).to.eq('65')
+      expect(amountIn).to.eq('66')
       //uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
       //             (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
       const amountOut = reserveOut
@@ -108,7 +108,7 @@ describe('PriceMath', () => {
       const reserveOutAfter = reserveOut.sub(amountOut)
 
       expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
-      expect(amountOut).to.eq('63078983242363688733998017599930')
+      expect(amountOut).to.eq('63992466765289137744294032269773')
 
       const priceAfter = encodePrice(reserveInAfter, reserveOutAfter)[1]
       expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
