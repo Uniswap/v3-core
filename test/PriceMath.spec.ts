@@ -114,6 +114,33 @@ describe('PriceMath', () => {
       expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
     })
 
+    it.only('failing echidna 2', async () => {
+      const reserveIn = BigNumber.from('1005')
+      const reserveOut = BigNumber.from('1137')
+      const lpFee = BigNumber.from('1')
+      const inOutRatio = BigNumber.from('10447815210759932949745600021781164648681654221105666413902984560')
+      const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
+
+      const LP_FEE_BASE = BigNumber.from(10000)
+
+      expect(amountIn).to.eq('1516414621093994411')
+      //uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
+      //             (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
+      const amountOut = reserveOut
+        .mul(amountIn)
+        .mul(LP_FEE_BASE.sub(lpFee))
+        .div(amountIn.mul(BigNumber.from(LP_FEE_BASE).sub(lpFee)).add(reserveIn.mul(LP_FEE_BASE)))
+
+      const reserveInAfter = reserveIn.add(amountIn)
+      const reserveOutAfter = reserveOut.sub(amountOut)
+
+      expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
+      expect(amountOut).to.eq('1136')
+
+      const priceAfter = encodePrice(reserveInAfter, reserveOutAfter)[1]
+      expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
+    })
+
     it('gas: 1:100 to 1:75 at 45bps', async () => {
       await snapshotGasCost(
         priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 45, [
