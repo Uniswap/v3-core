@@ -1,17 +1,21 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1,114860866806825295852992454585544,0,47) 1`] = `"0"`;
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1,114860866806825295852992454585544,0,47) 1`] = `"1"`;
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1,114860866806825295852992454585544,0,47) 2`] = `"0"`;
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1,114860866806825295852992454585544,0,47) 2`] = `"57430433403412647926496227292772"`;
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1005,1137,1,10447815210759932949745600021781164648681654221105666413902984560) 1`] = `"1516414621093994410"`;
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(123,1953579828864582940591891444058760,6,354) 1`] = `"5"`;
+
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(123,1953579828864582940591891444058760,6,354) 2`] = `"76267712562296936288644902192720"`;
+
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1005,1137,1,10447815210759932949745600021781164648681654221105666413902984560) 1`] = `"1516414621093994411"`;
 
 exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1005,1137,1,10447815210759932949745600021781164648681654221105666413902984560) 2`] = `"1136"`;
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1040,1090214879718873987679620123847534,174,5590) 1`] = `"65"`;
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1040,1090214879718873987679620123847534,174,5590) 1`] = `"66"`;
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1040,1090214879718873987679620123847534,174,5590) 2`] = `"63078983242363688733998017599930"`;
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1040,1090214879718873987679620123847534,174,5590) 2`] = `"63992466765289137744294032269773"`;
 
 exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `495`;
 
-exports[`PriceMath #getInputToRatio gas: 1:100 to 1:75 at 45bps 1`] = `2082`;
+exports[`PriceMath #getInputToRatio gas: 1:100 to 1:75 at 45bps 1`] = `2100`;
