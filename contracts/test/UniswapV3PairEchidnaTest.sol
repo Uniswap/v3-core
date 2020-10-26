@@ -22,15 +22,19 @@ contract UniswapV3PairEchidnaTest {
 
     constructor() public {
         factory = new UniswapV3Factory(address(this));
-        createNewPair();
-        initialize(0, 1e18, 2);
+        createNewPair(0, 1e18, 2);
     }
 
-    function createNewPair() private {
+    function createNewPair(
+        int16 tick,
+        uint112 amount0,
+        uint8 feeVote
+    ) public {
         TestERC20 tokenA = new TestERC20(0);
         TestERC20 tokenB = new TestERC20(0);
         (token0, token1) = (address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA));
         pair = UniswapV3Pair(factory.createPair(address(tokenA), address(tokenB)));
+        initialize(tick, amount0, feeVote);
     }
 
     function initialize(
@@ -50,6 +54,12 @@ contract UniswapV3PairEchidnaTest {
         token1.approve(address(pair), amount1);
 
         pair.initialize(amount0, amount1, tick, feeVote % pair.NUM_FEE_OPTIONS());
+    }
+
+    function swap0For1(uint112 amount0In) external {
+        token0.mint(address(this), amount0In);
+        token0.approve(address(pair), amount0In);
+        pair.swap0For1(amount0In, address(this), '');
     }
 
     function echidna_isInitialized() external view returns (bool) {
