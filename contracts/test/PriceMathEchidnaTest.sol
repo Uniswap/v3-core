@@ -5,17 +5,25 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import '../libraries/PriceMath.sol';
+import '../libraries/TickMath.sol';
 
 contract PriceMathEchidnaTest {
     using SafeMath for uint256;
+
+    uint256 immutable MIN_PRICE = uint256(TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
+    uint256 immutable MAX_PRICE = uint256(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
 
     function getInputToRatioAlwaysExceedsNextPrice(
         uint112 reserveIn,
         uint112 reserveOut,
         uint16 lpFee,
         uint224 inOutRatio
-    ) external pure {
-        require(reserveIn > 1001 && reserveOut > 1001 && lpFee < PriceMath.LP_FEE_BASE);
+    ) external view {
+        require(reserveIn > 0);
+        require(reserveOut > 0);
+        require(lpFee < PriceMath.LP_FEE_BASE);
+        require(inOutRatio >= MIN_PRICE && inOutRatio <= MAX_PRICE);
+
         uint256 priceBefore = (uint256(reserveIn) << 112) / reserveOut;
 
         uint112 amountIn = PriceMath.getInputToRatio(reserveIn, reserveOut, lpFee, FixedPoint.uq112x112(inOutRatio));
@@ -27,6 +35,7 @@ contract PriceMathEchidnaTest {
         }
 
         // the target next price is within 10%
+        // todo: can we remove this?
         require(priceBefore.mul(110).div(100) >= inOutRatio);
 
         uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
