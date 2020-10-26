@@ -10,19 +10,23 @@ import '../libraries/TickMath.sol';
 contract PriceMathEchidnaTest {
     using SafeMath for uint256;
 
+    uint256 MIN_PRICE;
+    uint256 MAX_PRICE;
+
+    constructor() public {
+        MIN_PRICE = uint256(TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
+        MAX_PRICE = uint256(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
+    }
+
     function getInputToRatioAlwaysExceedsNextPrice(
         uint112 reserveIn,
         uint112 reserveOut,
         uint16 lpFee,
         uint224 inOutRatio
     ) external view {
-        require(reserveIn > 0);
-        require(reserveOut > 0);
+        require(reserveIn > 0 && reserveOut > 0);
         require(lpFee < PriceMath.LP_FEE_BASE);
-        require(
-            inOutRatio >= uint256(TickMath.getRatioAtTick(TickMath.MIN_TICK)._x) &&
-                inOutRatio <= uint256(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x)
-        );
+        require(inOutRatio >= MIN_PRICE && inOutRatio <= MAX_PRICE);
 
         uint256 priceBefore = (uint256(reserveIn) << 112) / reserveOut;
 

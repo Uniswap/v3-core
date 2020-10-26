@@ -17,9 +17,9 @@ library PriceMath {
         FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
         if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the ratios are equal
 
-        uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x) + ((1 << 112) - 1);
+        uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x);
         require(inputToRatio >> 112 <= uint112(-1), 'PriceMath: TODO');
-        return uint112((inputToRatio) >> 112);
+        return uint112(inputToRatio >> 112);
     }
 
     /**
