@@ -14,9 +14,10 @@ contract UniswapV3PairEchidnaTest {
     using SafeMath for uint256;
     using SafeCast for uint256;
 
+    UniswapV3Factory factory;
+
     TestERC20 token0;
     TestERC20 token1;
-    UniswapV3Factory factory;
     UniswapV3Pair pair;
 
     constructor() public {
@@ -25,7 +26,7 @@ contract UniswapV3PairEchidnaTest {
         //        initialize(0, 1e18, 2);
     }
 
-    function createNewPair() public {
+    function createNewPair() private {
         TestERC20 tokenA = new TestERC20(0);
         TestERC20 tokenB = new TestERC20(0);
         (token0, token1) = (address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA));
