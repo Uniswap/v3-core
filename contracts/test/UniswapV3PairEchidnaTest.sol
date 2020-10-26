@@ -29,7 +29,7 @@ contract UniswapV3PairEchidnaTest {
         int16 tick,
         uint112 amount0,
         uint8 feeVote
-    ) public {
+    ) private {
         TestERC20 tokenA = new TestERC20(0);
         TestERC20 tokenB = new TestERC20(0);
         (token0, token1) = (address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA));
