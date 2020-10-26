@@ -114,6 +114,8 @@ describe('PriceMath', () => {
       expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
     })
 
+    // this case is that the reserve out cannot be less than 1, i.e. is not fractional, so the resulting amount in
+    // is insufficient to move to this very large price
     it.skip('failing echidna 2', async () => {
       const reserveIn = BigNumber.from('1005')
       const reserveOut = BigNumber.from('1137')
