@@ -2,6 +2,8 @@
 format: 'text'
 #checkAsserts checks assertions
 checkAsserts: true
+#coverage controls coverage guided testing
+coverage: true
 # #psender is the sender for property transactions; by default intentionally
 # #the same as contract deployer
 # psender: "0x00a329c0648769a73afac7f9381e08fb43dbea70"
@@ -23,8 +25,6 @@ checkAsserts: true
 # seqLen: 100
 # #shrinkLimit determines how much effort is spent shrinking failing sequences
 # shrinkLimit: 5000
-# #coverage controls coverage guided testing
-# coverage: false
 # #contractAddr is the address of the contract itself
 # contractAddr: "0x00a329c0648769a73afac7f9381e08fb43dbea72"
 # #deployer is address of the contract deployer (who often is privileged owner, etc.)
