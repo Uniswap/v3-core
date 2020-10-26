@@ -16,6 +16,10 @@ exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRati
 
 exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1040,1090214879718873987679620123847534,174,5590) 2`] = `"63992466765289137744294032269773"`;
 
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(15944303097720152669124120417149,102,1,828057777287919958470307583336398120126455251994321806143774553) 1`] = `"160433870911249896957126964926"`;
+
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(15944303097720152669124120417149,102,1,828057777287919958470307583336398120126455251994321806143774553) 2`] = `"1"`;
+
 exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `495`;
 
 exports[`PriceMath #getInputToRatio gas: 1:100 to 1:75 at 45bps 1`] = `2100`;

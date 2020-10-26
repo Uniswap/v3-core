@@ -117,6 +117,13 @@ describe('PriceMath', () => {
           lpFee: BigNumber.from('6'),
           inOutRatio: BigNumber.from('354'),
         },
+        // another failing test :(
+        // {
+        //   reserveIn: BigNumber.from('15944303097720152669124120417149'),
+        //   reserveOut: BigNumber.from('102'),
+        //   lpFee: BigNumber.from('1'),
+        //   inOutRatio: BigNumber.from('828057777287919958470307583336398120126455251994321806143774553'),
+        // },
       ]) {
         it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${inOutRatio.toString()})`, async () => {
           const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
