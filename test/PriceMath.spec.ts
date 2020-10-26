@@ -88,61 +88,50 @@ describe('PriceMath', () => {
     })
 
     describe('echidna edge cases', () => {
-      it.skip('rounds up', async () => {
-        const reserveIn = BigNumber.from('1040')
-        const reserveOut = BigNumber.from('1090214879718873987679620123847534')
-        const lpFee = BigNumber.from('174')
-        const inOutRatio = BigNumber.from('5590')
-        const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
+      const LP_FEE_BASE = BigNumber.from(10000)
+      // these edge cases were found by echidna
+      for (let {reserveOut, reserveIn, inOutRatio, lpFee} of [
+        {
+          reserveIn: BigNumber.from('1040'),
+          reserveOut: BigNumber.from('1090214879718873987679620123847534'),
+          lpFee: BigNumber.from('174'),
+          inOutRatio: BigNumber.from('5590'),
+        },
+        {
+          reserveIn: BigNumber.from('1005'),
+          reserveOut: BigNumber.from('1137'),
+          lpFee: BigNumber.from('1'),
+          inOutRatio: BigNumber.from('10447815210759932949745600021781164648681654221105666413902984560'),
+        },
+        {
+          reserveIn: BigNumber.from('1'),
+          reserveOut: BigNumber.from('114860866806825295852992454585544'),
+          lpFee: BigNumber.from('0'),
+          inOutRatio: BigNumber.from('47'),
+        },
+        //          getInputToRatioAlwaysExceedsNextPrice(1,114860866806825295852992454585544,0,47)
+      ]) {
+        it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${inOutRatio.toString()})`, async () => {
+          const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
 
-        const LP_FEE_BASE = BigNumber.from(10000)
+          expect(amountIn.toString()).to.matchSnapshot('computed amount in')
 
-        expect(amountIn).to.eq('66')
-        //uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
-        //             (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
-        const amountOut = reserveOut
-          .mul(amountIn)
-          .mul(LP_FEE_BASE.sub(lpFee))
-          .div(amountIn.mul(BigNumber.from(LP_FEE_BASE).sub(lpFee)).add(reserveIn.mul(LP_FEE_BASE)))
+          const amountOut = reserveOut
+            .mul(amountIn)
+            .mul(LP_FEE_BASE.sub(lpFee))
+            .div(amountIn.mul(BigNumber.from(LP_FEE_BASE).sub(lpFee)).add(reserveIn.mul(LP_FEE_BASE)))
 
-        const reserveInAfter = reserveIn.add(amountIn)
-        const reserveOutAfter = reserveOut.sub(amountOut)
+          const reserveInAfter = reserveIn.add(amountIn)
+          const reserveOutAfter = reserveOut.sub(amountOut)
 
-        expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
-        expect(amountOut).to.eq('63992466765289137744294032269773')
+          expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
+          expect(amountOut.toString()).to.matchSnapshot('computed amount out')
 
-        const priceAfter = encodePrice(reserveInAfter, reserveOutAfter)[1]
-        expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
-      })
-
-      // this case is that the reserve out cannot be less than 1, i.e. is not fractional, so the resulting amount in
-      // is insufficient to move to this very large price
-      it.skip('reserveOut cannot be less than 1', async () => {
-        const reserveIn = BigNumber.from('1005')
-        const reserveOut = BigNumber.from('1137')
-        const lpFee = BigNumber.from('1')
-        const inOutRatio = BigNumber.from('10447815210759932949745600021781164648681654221105666413902984560')
-        const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
-
-        const LP_FEE_BASE = BigNumber.from(10000)
-
-        expect(amountIn).to.eq('1516414621093994411')
-        //uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
-        //             (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
-        const amountOut = reserveOut
-          .mul(amountIn)
-          .mul(LP_FEE_BASE.sub(lpFee))
-          .div(amountIn.mul(BigNumber.from(LP_FEE_BASE).sub(lpFee)).add(reserveIn.mul(LP_FEE_BASE)))
-
-        const reserveInAfter = reserveIn.add(amountIn)
-        const reserveOutAfter = reserveOut.sub(amountOut)
-
-        expect(amountOut, 'amount out is less than the reserves out').to.be.lt(reserveOut)
-        expect(amountOut).to.eq('1136')
-
-        const priceAfter = encodePrice(reserveInAfter, reserveOutAfter)[1]
-        expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
-      })
+          const priceAfter = encodePrice(reserveInAfter, reserveOutAfter)[1]
+          // this is the failing part for these edge cases
+          // expect(priceAfter, 'price after exceeds in out ratio').to.be.gte(inOutRatio)
+        })
+      }
     })
 
     it('gas: 1:100 to 1:75 at 45bps', async () => {

@@ -24,7 +24,8 @@ contract PriceMathEchidnaTest {
         uint16 lpFee,
         uint224 inOutRatio
     ) external view {
-        require(reserveIn > 0 && reserveOut > 0);
+        // UniswapV3Pair.TOKEN_MIN
+        require(reserveIn >= 101 && reserveOut >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
         require(inOutRatio >= MIN_PRICE && inOutRatio <= MAX_PRICE);
 
