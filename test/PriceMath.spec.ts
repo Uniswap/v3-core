@@ -109,7 +109,6 @@ describe('PriceMath', () => {
           lpFee: BigNumber.from('0'),
           inOutRatio: BigNumber.from('47'),
         },
-        //          getInputToRatioAlwaysExceedsNextPrice(1,114860866806825295852992454585544,0,47)
       ]) {
         it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${inOutRatio.toString()})`, async () => {
           const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
