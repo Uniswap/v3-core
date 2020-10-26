@@ -22,7 +22,7 @@ contract UniswapV3PairEchidnaTest {
     constructor() public {
         factory = new UniswapV3Factory(address(this));
         createNewPair();
-        initialize(0, 1e18, 2);
+        //        initialize(0, 1e18, 2);
     }
 
     function createNewPair() public {
@@ -32,24 +32,24 @@ contract UniswapV3PairEchidnaTest {
         pair = UniswapV3Pair(factory.createPair(address(tokenA), address(tokenB)));
     }
 
-    function initialize(
-        int16 tick,
-        uint112 amount0,
-        uint8 feeVote
-    ) public {
-        require(tick < TickMath.MAX_TICK && tick > TickMath.MIN_TICK);
-
-        FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
-        uint112 amount1 = FullMath.mulDiv(amount0, price._x, uint256(1) << 112).toUint112();
-
-        token0.mint(address(this), amount0);
-        token1.mint(address(this), amount1);
-
-        token0.approve(address(pair), amount0);
-        token1.approve(address(pair), amount1);
-
-        pair.initialize(amount0, amount1, tick, feeVote % pair.NUM_FEE_OPTIONS());
-    }
+    //    function initialize(
+    //        int16 tick,
+    //        uint112 amount0,
+    //        uint8 feeVote
+    //    ) public {
+    //        require(tick < TickMath.MAX_TICK && tick > TickMath.MIN_TICK);
+    //
+    //        FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
+    //        uint112 amount1 = FullMath.mulDiv(amount0, price._x, uint256(1) << 112).toUint112();
+    //
+    //        token0.mint(address(this), amount0);
+    //        token1.mint(address(this), amount1);
+    //
+    //        token0.approve(address(pair), amount0);
+    //        token1.approve(address(pair), amount1);
+    //
+    //        pair.initialize(amount0, amount1, tick, feeVote % pair.NUM_FEE_OPTIONS());
+    //    }
 
     function echidna_isInitialized() external view returns (bool) {
         return (address(token0) != address(0) &&
