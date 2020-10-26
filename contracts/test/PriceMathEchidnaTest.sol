@@ -16,14 +16,18 @@ contract PriceMathEchidnaTest {
         uint224 inOutRatio
     ) external pure {
         require(reserveIn > 1001 && reserveOut > 1001 && lpFee < PriceMath.LP_FEE_BASE);
+        uint256 priceBefore = (uint256(reserveIn) << 112) / reserveOut;
 
         uint112 amountIn = PriceMath.getInputToRatio(reserveIn, reserveOut, lpFee, FixedPoint.uq112x112(inOutRatio));
 
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
-            assert((uint256(reserveIn) << 112) / reserveOut >= inOutRatio);
+            assert(priceBefore >= inOutRatio);
             return;
         }
+
+        // the target next price is within 10%
+        require(priceBefore.mul(110).div(100) >= inOutRatio);
 
         uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
             (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
