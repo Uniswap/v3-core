@@ -12,6 +12,7 @@ import '../libraries/SafeCast.sol';
 
 contract UniswapV3PairEchidnaTest {
     using SafeMath for uint256;
+    using SafeCast for uint256;
 
     TestERC20 token0;
     TestERC20 token1;
@@ -39,7 +40,7 @@ contract UniswapV3PairEchidnaTest {
         require(tick < TickMath.MAX_TICK && tick > TickMath.MIN_TICK);
 
         FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
-        uint112 amount1 = uint112(FullMath.mulDiv(amount0, price._x, uint256(1) << 112));
+        uint112 amount1 = FullMath.mulDiv(amount0, price._x, uint256(1) << 112).toUint112();
 
         token0.mint(address(this), amount0);
         token1.mint(address(this), amount1);
