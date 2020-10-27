@@ -97,14 +97,12 @@ describe('PriceMath', () => {
           lpFee: BigNumber.from('174'),
           inOutRatio: BigNumber.from('5590'),
         },
-        // todo: this is the case where reserveOut after the swap is 1,
-        //    and the amount in needs to be compensated because we cannot have a fraction amount of reserveOut
-        // {
-        //   reserveIn: BigNumber.from('1005'),
-        //   reserveOut: BigNumber.from('1137'),
-        //   lpFee: BigNumber.from('1'),
-        //   inOutRatio: BigNumber.from('10447815210759932949745600021781164648681654221105666413902984560'),
-        // },
+        {
+          reserveIn: BigNumber.from('1005'),
+          reserveOut: BigNumber.from('1137'),
+          lpFee: BigNumber.from('1'),
+          inOutRatio: BigNumber.from('10447815210759932949745600021781164648681654221105666413902984560'),
+        },
         {
           reserveIn: BigNumber.from('1'),
           reserveOut: BigNumber.from('114860866806825295852992454585544'),
@@ -117,13 +115,12 @@ describe('PriceMath', () => {
           lpFee: BigNumber.from('6'),
           inOutRatio: BigNumber.from('354'),
         },
-        // another failing test :(
-        // {
-        //   reserveIn: BigNumber.from('15944303097720152669124120417149'),
-        //   reserveOut: BigNumber.from('102'),
-        //   lpFee: BigNumber.from('1'),
-        //   inOutRatio: BigNumber.from('828057777287919958470307583336398120126455251994321806143774553'),
-        // },
+        {
+          reserveIn: BigNumber.from('15944303097720152669124120417149'),
+          reserveOut: BigNumber.from('102'),
+          lpFee: BigNumber.from('1'),
+          inOutRatio: BigNumber.from('828057777287919958470307583336398120126455251994321806143774553'),
+        },
       ]) {
         it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${inOutRatio.toString()})`, async () => {
           const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
