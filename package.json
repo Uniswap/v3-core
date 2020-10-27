@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "3.1.0",
-    "@uniswap/lib": "2.0.4"
+    "@uniswap/lib": "2.0.5"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.3",
@@ -44,7 +44,6 @@
   },
   "scripts": {
     "compile": "buidler compile",
-    "pretest": "yarn compile",
     "test": "buidler test",
     "lint": "solhint contracts/**/*.sol",
     "prepublishOnly": "yarn test"

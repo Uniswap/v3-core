@@ -57,7 +57,7 @@ describe('PriceMath', () => {
         ).to.eq('414835953198742811')
       })
       it('verify result', () => {
-        const amountIn = BigNumber.from('414835953198742810')
+        const amountIn = BigNumber.from('414835953198742811')
         const amountInWithoutFee = amountIn.mul(997).div(1000)
         const reserveInAfter = expandTo18Decimals(1).add(amountIn)
         const reserveOutAfter = expandTo18Decimals(1)
