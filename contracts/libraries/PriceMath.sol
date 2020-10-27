@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
+import '@openzeppelin/contracts/math/SafeMath.sol';
+
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
 import './SafeCast.sol';
 
 library PriceMath {
+    using SafeMath for *;
     using FixedPoint for FixedPoint.uq112x112;
     using SafeCast for *;
 
@@ -16,16 +19,14 @@ library PriceMath {
     // getInputToRatio
     uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
 
-    function getReserveOutThreshold(
-        bool zeroForOne,
-        uint112 reserveIn,
-        FixedPoint.uq112x112 memory ratio
-    ) internal pure returns (uint256) {
-        if (zeroForOne) {
-            return FullMath.mulDiv(reserveIn, ratio._x, uint256(1) << 112, true); // round up
-        } else {
-            return (uint256(FixedPoint.encode(reserveIn)._x) + ROUND_UP) / ratio._x; // round up
-        }
+    // get an amount quote at a price, rounded up
+    function getQuote(uint112 amount, FixedPoint.uq112x112 memory ratio) internal pure returns (uint256) {
+        return FullMath.mulDiv(amount, ratio._x, uint256(1) << 112, true);
+    }
+
+    // get an amount quote at a price (inverted), rounded up
+    function getQuoteInverse(uint112 amount, FixedPoint.uq112x112 memory ratio) internal pure returns (uint256) {
+        return (uint256(FixedPoint.encode(amount)._x) + ROUND_UP) / ratio._x;
     }
 
     function getAmountOut(
@@ -47,22 +48,20 @@ library PriceMath {
         FixedPoint.uq112x112 memory inOutRatio
     ) internal pure returns (uint112 amountIn) {
         FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
-        if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the ratios are equal
+        if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the price is equal to or above target
 
-        // TODO this could probably be a bit safer/more elegant
-        uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x) + ROUND_UP;
-        require(inputToRatio >> 112 <= uint112(-1), 'PriceMath: TODO');
+        uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x).add(ROUND_UP);
+        amountIn = (inputToRatio >> 112).toUint112();
 
-        amountIn = uint112(inputToRatio >> 112);
-
+        // get the output amount that the input amount entitles the swapper to
         uint256 amountOut = getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
-        uint256 reserveOutAfter = uint256(reserveOut) - amountOut;
-        uint256 reserveInAfter = uint256(reserveIn) + amountIn;
-        uint256 minReserveIn = FullMath.mulDiv(reserveOutAfter, inOutRatio._x, uint256(1) << 112, true);
 
-        if (minReserveIn > reserveInAfter) {
-            require(minReserveIn - reserveIn <= uint112(-1), 'PriceMath::getInputToRatio: amountIn overflows');
-            amountIn = uint112(minReserveIn - reserveIn);
+        // if necessary, increase the input amount s.t. we're guaranteed to have crossed the target price
+        uint112 reserveOutAfter = reserveOut.sub(amountOut).toUint112();
+        uint112 reserveInAfter = (uint256(reserveIn) + amountIn).toUint112();
+        uint256 reserveInMinimum = getQuote(reserveOutAfter, inOutRatio);
+        if (reserveInAfter < reserveInMinimum) {
+            amountIn = (reserveInMinimum - reserveIn).toUint112();
         }
     }
 

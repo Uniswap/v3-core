@@ -563,14 +563,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? (reserve0Virtual, reserve1Virtual)
                 : (reserve1Virtual, reserve0Virtual);
 
-            // TODO are there issues with using reciprocal here?
             // compute the ~minimum amount of input token required s.t. the price _equals or exceeds_ the target price
             // after computing the corresponding output amount according to x * y = k, given the current fee
             uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
                 reserveInVirtual,
                 reserveOutVirtual,
                 fee,
-                params.zeroForOne ? step.nextPrice.reciprocal() : step.nextPrice
+                params.zeroForOne ? TickMath.getRatioAtTick(-tick) : step.nextPrice
             );
 
             // TODO ensure that there's no off-by-one error here while transitioning ticks
@@ -586,11 +585,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // calculate the maximum output amount s.t. the reserves price is guaranteed to be as close as possible
                 // to the target price _without_ exceeding it
                 uint112 reserveInVirtualNext = (uint256(reserveInVirtual) + step.amountIn).toUint112();
-                uint256 reserveOutVirtualThreshold = PriceMath.getReserveOutThreshold(
-                    params.zeroForOne,
-                    reserveInVirtualNext,
-                    step.nextPrice
-                );
+                uint256 reserveOutVirtualThreshold = params.zeroForOne
+                    ? PriceMath.getQuote(reserveInVirtualNext, step.nextPrice)
+                    : PriceMath.getQuoteInverse(reserveInVirtualNext, step.nextPrice);
                 uint112 amountOutMaximum = reserveOutVirtual.sub(reserveOutVirtualThreshold).toUint112();
                 step.amountOut = Math.min(step.amountOut, amountOutMaximum).toUint112();
 

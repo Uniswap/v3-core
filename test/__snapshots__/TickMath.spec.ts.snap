@@ -61865,20 +61865,20 @@ Array [
 ]
 `;
 
-exports[`TickMath gas tick -50 1`] = `775`;
+exports[`TickMath gas tick -50 1`] = `822`;
 
-exports[`TickMath gas tick -500 1`] = `844`;
+exports[`TickMath gas tick -500 1`] = `891`;
 
-exports[`TickMath gas tick -1000 1`] = `844`;
+exports[`TickMath gas tick -1000 1`] = `891`;
 
-exports[`TickMath gas tick -7732 1`] = `867`;
+exports[`TickMath gas tick -7732 1`] = `914`;
 
-exports[`TickMath gas tick 0 1`] = `690`;
+exports[`TickMath gas tick 0 1`] = `737`;
 
-exports[`TickMath gas tick 50 1`] = `795`;
+exports[`TickMath gas tick 50 1`] = `842`;
 
-exports[`TickMath gas tick 500 1`] = `864`;
+exports[`TickMath gas tick 500 1`] = `911`;
 
-exports[`TickMath gas tick 1000 1`] = `864`;
+exports[`TickMath gas tick 1000 1`] = `911`;
 
-exports[`TickMath gas tick 7732 1`] = `887`;
+exports[`TickMath gas tick 7732 1`] = `934`;
