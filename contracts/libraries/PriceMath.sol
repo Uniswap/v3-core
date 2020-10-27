@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
 library PriceMath {
     using FixedPoint for FixedPoint.uq112x112;
@@ -24,7 +25,17 @@ library PriceMath {
 
         uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x) + ROUND_UP;
         require(inputToRatio >> 112 <= uint112(-1), 'PriceMath: TODO');
-        return uint112(inputToRatio >> 112);
+
+        amountIn = uint112(inputToRatio >> 112);
+
+        uint256 amountOut = ((uint256(reserveOut) * amountIn * (LP_FEE_BASE - lpFee)) /
+            (uint256(amountIn) * (LP_FEE_BASE - lpFee) + uint256(reserveIn) * LP_FEE_BASE));
+        uint256 reserveOutAfter = uint256(reserveOut) - amountOut;
+        uint256 minReserveIn = FullMath.mulDiv(reserveOutAfter, inOutRatio._x, uint256(1) << 112) + 1;
+
+        if (minReserveIn > reserveIn + amountIn) {
+            amountIn = uint112(minReserveIn - reserveIn);
+        }
     }
 
     /**
