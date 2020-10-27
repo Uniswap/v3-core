@@ -56,11 +56,11 @@ contract UniswapV3PairEchidnaTest {
         pair.initialize(amount0, amount1, tick, feeVote % pair.NUM_FEE_OPTIONS());
     }
 
-    function swap0For1(uint112 amount0In) external {
-        token0.mint(address(this), amount0In);
-        token0.approve(address(pair), amount0In);
-        pair.swap0For1(amount0In, address(this), '');
-    }
+    //    function swap0For1(uint112 amount0In) external {
+    //        token0.mint(address(this), amount0In);
+    //        token0.approve(address(pair), amount0In);
+    //        pair.swap0For1(amount0In, address(this), '');
+    //    }
 
     function echidna_isInitialized() external view returns (bool) {
         return (address(token0) != address(0) &&
