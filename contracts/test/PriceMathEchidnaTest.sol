@@ -51,5 +51,7 @@ contract PriceMathEchidnaTest {
         uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
 
         assert(((uint256(reserveIn).add(amountIn)) << 112) / reserveOutAfter >= inOutRatio);
+        // try this assertion
+        assert((uint256(reserveIn).add(amountIn).sub(1) << 112) / reserveOutAfter < inOutRatio);
     }
 }
