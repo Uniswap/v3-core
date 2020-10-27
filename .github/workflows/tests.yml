@@ -28,4 +28,5 @@ jobs:
             yarn-
 
       - run: yarn
+      - run: yarn compile
       - run: yarn test

@@ -2,16 +2,28 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
 library PriceMath {
     using FixedPoint for FixedPoint.uq112x112;
 
     uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
-
     // 2^112 - 1
     // added to the input amount before truncating so that we always round up the amountIn returned by
     // getInputToRatio
     uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
+
+    function getReserveOutThreshold(bool zeroForOne, uint112 reserveIn, FixedPoint.uq112x112 memory ratio)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (zeroForOne) {
+            return FullMath.mulDiv(reserveIn, ratio._x, uint256(1) << 112, true); // round up
+        } else {
+            return (uint256(FixedPoint.encode(reserveIn)._x) + ROUND_UP) / ratio._x; // round up
+        }
+    }
 
     function getInputToRatio(
         uint112 reserveIn,
@@ -22,6 +34,7 @@ library PriceMath {
         FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
         if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the ratios are equal
 
+        // TODO this could probably be a bit safer/more elegant
         uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x) + ROUND_UP;
         require(inputToRatio >> 112 <= uint112(-1), 'PriceMath: TODO');
         return uint112(inputToRatio >> 112);

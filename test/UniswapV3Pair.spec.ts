@@ -458,9 +458,9 @@ describe('UniswapV3Pair', () => {
       const reserve1Pre = await pair.reserve1Virtual()
       const virtualSupplyPre = await pair.getVirtualSupply()
 
-      expect(g1).to.be.eq('5192309491953746845217386694700997')
+      expect(g1).to.be.eq('5192309491953746845268291565863104')
       expect(reserve0Pre).to.be.eq('103000000000000000000')
-      expect(reserve1Pre).to.be.eq('101010200273518761199')
+      expect(reserve1Pre).to.be.eq('101010200273518761200')
       expect(virtualSupplyPre).to.be.eq('102000000000000000000')
 
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0)
@@ -470,10 +470,10 @@ describe('UniswapV3Pair', () => {
       const reserve1Post = await pair.reserve1Virtual()
       const virtualSupplyPost = await pair.getVirtualSupply()
 
-      expect(g2).to.be.eq('5192309491953746845200286961423880')
-      expect(reserve0Post).to.be.eq('102999754304399858801')
+      expect(g2).to.be.eq('5192309491953746845251192077871803')
+      expect(reserve0Post).to.be.eq('102999754304399858800')
       expect(reserve1Post).to.be.eq('101009959324375299209')
-      expect(virtualSupplyPost).to.be.eq('101999756689794034929')
+      expect(virtualSupplyPost).to.be.eq('101999756689794034928')
 
       const [amount0, amount1] = await pair.callStatic.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0)
       expect(amount0).to.be.eq(0)
@@ -524,7 +524,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x', overrides))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '94959953735437432')
+        .withArgs(pair.address, wallet.address, '94959953735437425')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -544,12 +544,62 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       // TODO fix this
-      await expect(pair.swap0For1(amount0In, wallet.address, '0x')).to.be.revertedWith('UniswapV3: RIGHT_IS_WRONG')
-      //   .to.emit(token1, 'Transfer')
-      //   .withArgs(pair.address, wallet.address, '95292372649584252')
+      await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair.address, wallet.address, '95292372649584245')
 
-      // const tickCurrent = await pair.tickCurrent()
-      // expect(tickCurrent).to.eq(-10)
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(-10)
+    })
+
+    it('swap1For0', async () => {
+      const amount1In = 1000
+
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.swap1For0(amount1In, wallet.address, '0x')
+
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      expect(token0BalanceAfter.sub(token0BalanceBefore)).to.eq(996)
+      expect(token1BalanceBefore.sub(token1BalanceAfter)).to.eq(amount1In)
+
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(0)
+    })
+
+    it('swap1For0 to tick -10', async () => {
+      const amount1In = expandTo18Decimals(1).div(10)
+
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.swap1For0(amount1In, wallet.address, '0x'))
+        .to.emit(token0, 'Transfer')
+        .withArgs(pair.address, wallet.address, '94959953735437425')
+
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(9)
+    })
+
+    it('swap1For0 to tick -10 with intermediate liquidity', async () => {
+      const amount1In = expandTo18Decimals(1).div(10)
+
+      // add liquidity between 2 and 3 (to the right of the current price)
+      const liquidityDelta = expandTo18Decimals(1)
+      const lowerTick = 2
+      const upperTick = 3
+      await token0.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
+
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.swap1For0(amount1In, wallet.address, '0x')) //.to.be.revertedWith('UniswapV3: RIGHT_IS_WRONG')
+        .to.emit(token0, 'Transfer')
+        .withArgs(pair.address, wallet.address, '95243793074784792')
+
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(9)
     })
   })
 
