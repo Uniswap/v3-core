@@ -524,7 +524,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x', overrides))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '94959953735437425')
+        .withArgs(pair.address, wallet.address, '94959953735437420')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -546,7 +546,7 @@ describe('UniswapV3Pair', () => {
       // TODO fix this
       await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95292372649584245')
+        .withArgs(pair.address, wallet.address, '95292372649584241')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -577,7 +577,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, wallet.address, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '94959953735437425')
+        .withArgs(pair.address, wallet.address, '94959953735437420')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(9)
@@ -596,7 +596,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, wallet.address, '0x')) //.to.be.revertedWith('UniswapV3: RIGHT_IS_WRONG')
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95243793074784792')
+        .withArgs(pair.address, wallet.address, '95243793074784788')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(9)
