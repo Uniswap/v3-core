@@ -614,7 +614,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 //     if (params.zeroForOne) {
                 //         assert(priceNext._x >= step.nextPrice._x);
                 //     } else {
-                //         assert(priceNext._x <= step.nextPrice._x);                    
+                //         assert(priceNext._x <= step.nextPrice._x);
                 //     }
                 // }
 
@@ -658,20 +658,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // TODO remove this eventually, it's meant to show the direction of rounding
                     {
-                    FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-                    if (params.zeroForOne) {
-                        if (token1VirtualDelta > 0) {
-                            assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
+                        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+                        if (params.zeroForOne) {
+                            if (token1VirtualDelta > 0) {
+                                assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
+                            } else {
+                                // TODO figure out what to do here
+                            }
                         } else {
-                            // TODO figure out what to do here
+                            if (token1VirtualDelta > 0) {
+                                assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
+                            } else {
+                                // TODO figure out what to do here
+                            }
                         }
-                    } else {
-                        if (token1VirtualDelta > 0) {
-                            assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
-                        } else {
-                            // TODO figure out what to do here
-                        }
-                    }
                     }
 
                     // update virtual supply
@@ -705,12 +705,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // transfers
         {
-            (address tokenIn, address tokenOut, uint256 amount0, uint256 amount1) = params.zeroForOne
-                ? (token0, token1, uint256(0), uint256(amountOut))
-                : (token1, token0, uint256(amountOut), uint256(0));
+            (address tokenIn, address tokenOut) = params.zeroForOne ? (token0, token1) : (token1, token0);
             TransferHelper.safeTransfer(tokenOut, params.to, amountOut); // optimistically transfer tokens
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
-            IUniswapV3Callee(params.to).uniswapV3Call(msg.sender, amount0, amount1, params.data);
+            params.zeroForOne
+                ? IUniswapV3Callee(params.to).swap0For1Callback(msg.sender, amountOut, params.data)
+                : IUniswapV3Callee(params.to).swap1For0Callback(msg.sender, amountOut, params.data);
             uint256 balanceAfter = IERC20(tokenIn).balanceOf(address(this));
             require(balanceAfter.sub(balanceBefore) >= params.amountIn, '');
         }

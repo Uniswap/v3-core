@@ -1,5 +1,5 @@
 import {waffle} from '@nomiclabs/buidler'
-import {BigNumber, constants, Contract, Wallet, ContractTransaction} from 'ethers'
+import {BigNumber, utils, constants, Contract, Wallet, ContractTransaction} from 'ethers'
 import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 import {expect} from './shared/expect'
 
@@ -30,20 +30,16 @@ describe('UniswapV3Pair', () => {
   let pair: Contract
   let pairTest: Contract
 
+  let swapTargetPromise: Promise<Contract>
   /**
    * Creates a target for a swap of the input token in the input amount, forwarding the proceeds to the recipient
    */
-  async function createSwapTarget(
-    inputToken: Contract,
-    inputAmount: string | number | BigNumber,
-    recipient: Wallet | string
-  ): Promise<Contract> {
-    const target = await deployContract(wallet, PayAndForwardContract, [
-      inputAmount,
-      typeof recipient === 'string' ? recipient : recipient.address,
-    ])
-    await inputToken.transfer(target.address, inputAmount)
-    return target
+  function createSwapTarget(inputToken: Contract, inputAmount: string | number | BigNumber): Promise<Contract> {
+    if (!swapTargetPromise) {
+      swapTargetPromise = deployContract(wallet, PayAndForwardContract, [])
+    }
+
+    return swapTargetPromise.then((target) => inputToken.transfer(target.address, inputAmount).then(() => target))
   }
 
   /**
@@ -55,9 +51,11 @@ describe('UniswapV3Pair', () => {
     to: Wallet | string
   ): Promise<{amountOut: BigNumber; tx: ContractTransaction; target: Contract}> {
     const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
-    const target = await createSwapTarget(inputToken, amountIn, to)
-    const amountOut = await pair.callStatic[method](amountIn, target.address, '0x')
-    const tx = await pair[method](amountIn, target.address, '0x')
+    const target = await createSwapTarget(inputToken, amountIn)
+
+    const data = utils.defaultAbiCoder.encode(['uint256', 'address'], [amountIn, to])
+    const amountOut = await pair.callStatic[method](amountIn, target.address, data)
+    const tx = await pair[method](amountIn, target.address, data)
     return {tx, amountOut, target}
   }
 
