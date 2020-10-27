@@ -579,12 +579,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 step.amountIn = Math.min(amountInRequiredForShift, amountInRemaining).toUint112();
 
                 // calculate the owed output amount, given the current fee
-                step.amountOut = ((uint256(reserveOutVirtual) * step.amountIn * (PriceMath.LP_FEE_BASE - fee)) /
-                    (uint256(step.amountIn) *
-                        (PriceMath.LP_FEE_BASE - fee) +
-                        uint256(reserveInVirtual) *
-                        PriceMath.LP_FEE_BASE))
-                    .toUint112();
+                step.amountOut = PriceMath.getAmountOut(reserveInVirtual, reserveOutVirtual, fee, step.amountIn);
 
                 // TODO we should ensure that step.amountOut + 1 always results in a price exceeding the target
 
@@ -614,7 +609,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 //     if (params.zeroForOne) {
                 //         assert(priceNext._x >= step.nextPrice._x);
                 //     } else {
-                //         assert(priceNext._x <= step.nextPrice._x);                    
+                //         assert(priceNext._x <= step.nextPrice._x);
                 //     }
                 // }
 
@@ -658,20 +653,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // TODO remove this eventually, it's meant to show the direction of rounding
                     {
-                    FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-                    if (params.zeroForOne) {
-                        if (token1VirtualDelta > 0) {
-                            assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
+                        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+                        if (params.zeroForOne) {
+                            if (token1VirtualDelta > 0) {
+                                assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
+                            } else {
+                                // TODO figure out what to do here
+                            }
                         } else {
-                            // TODO figure out what to do here
+                            if (token1VirtualDelta > 0) {
+                                assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
+                            } else {
+                                // TODO figure out what to do here
+                            }
                         }
-                    } else {
-                        if (token1VirtualDelta > 0) {
-                            assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
-                        } else {
-                            // TODO figure out what to do here
-                        }
-                    }
                     }
 
                     // update virtual supply
