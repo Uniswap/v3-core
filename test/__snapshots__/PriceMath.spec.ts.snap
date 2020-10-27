@@ -22,4 +22,4 @@ exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRati
 
 exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `495`;
 
-exports[`PriceMath #getInputToRatio gas: 1:100 to 1:75 at 45bps 1`] = `3269`;
+exports[`PriceMath #getInputToRatio gas: 1:100 to 1:75 at 45bps 1`] = `3381`;
