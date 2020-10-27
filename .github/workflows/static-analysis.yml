@@ -7,7 +7,8 @@ on:
   pull_request:
 
 jobs:
-  static-analysis:
+  slither:
+    name: Slither
     runs-on: ubuntu-latest
 
     steps:

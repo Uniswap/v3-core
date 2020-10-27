@@ -2,11 +2,28 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
 library PriceMath {
     using FixedPoint for FixedPoint.uq112x112;
 
     uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
+    // 2^112 - 1
+    // added to the input amount before truncating so that we always round up the amountIn returned by
+    // getInputToRatio
+    uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
+
+    function getReserveOutThreshold(bool zeroForOne, uint112 reserveIn, FixedPoint.uq112x112 memory ratio)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (zeroForOne) {
+            return FullMath.mulDiv(reserveIn, ratio._x, uint256(1) << 112, true); // round up
+        } else {
+            return (uint256(FixedPoint.encode(reserveIn)._x) + ROUND_UP) / ratio._x; // round up
+        }
+    }
 
     function getInputToRatio(
         uint112 reserveIn,
@@ -17,20 +34,33 @@ library PriceMath {
         FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
         if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the ratios are equal
 
-        uint256 inputToRatio = getInputToRatioUQ128x128(reserveIn, reserveOut, lpFee, inOutRatio._x);
+        // TODO this could probably be a bit safer/more elegant
+        uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x) + ROUND_UP;
         require(inputToRatio >> 112 <= uint112(-1), 'PriceMath: TODO');
-        return uint112(inputToRatio >> 112);
+
+        amountIn = uint112(inputToRatio >> 112);
+
+        uint256 amountOut = ((uint256(reserveOut) * amountIn * (LP_FEE_BASE - lpFee)) /
+            (uint256(amountIn) * (LP_FEE_BASE - lpFee) + uint256(reserveIn) * LP_FEE_BASE));
+        uint256 reserveOutAfter = uint256(reserveOut) - amountOut;
+        uint256 reserveInAfter = uint256(reserveIn) + amountIn;
+        uint256 minReserveIn = FullMath.mulDiv(reserveOutAfter, inOutRatio._x, uint256(1) << 112, true);
+
+        if (minReserveIn > reserveInAfter) {
+            require(minReserveIn - reserveIn <= uint112(-1), 'PriceMath::getInputToRatio: amountIn overflows');
+            amountIn = uint112(minReserveIn - reserveIn);
+        }
     }
 
     /**
      * Calculate (y(g - 2) + sqrt (g^2 * y^2 + 4xyr(1 - g))) / 2(1 - g) * 2^112, where
      * y = reserveIn,
      * x = reserveOut,
-     * g = lpFee * 10^-6,
+     * g = lpFee * 10^-4,
      * r = inOutRatio * 2^-112.
      * Throw on overflow.
      */
-    function getInputToRatioUQ128x128(
+    function getInputToRatioUQ144x112(
         uint256 reserveIn,
         uint256 reserveOut,
         uint256 lpFee,
