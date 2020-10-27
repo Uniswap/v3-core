@@ -57,7 +57,6 @@ describe('UniswapV3Pair', () => {
       ['uint256', 'address'],
       [amountIn, typeof to === 'string' ? to : to.address]
     )
-    console.log(data)
     const amountOut = await pair.callStatic[method](amountIn, target.address, data)
     const tx = await pair[method](amountIn, target.address, data)
     return {tx, amountOut, target}
@@ -448,7 +447,6 @@ describe('UniswapV3Pair', () => {
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
-      await token1.approve(pair.address, constants.MaxUint256)
       await swap1For0(amount1In, wallet.address)
 
       const token0BalanceAfter = await token0.balanceOf(wallet.address)
@@ -602,7 +600,6 @@ describe('UniswapV3Pair', () => {
 
       await expect(tx).to.emit(token1, 'Transfer').withArgs(target.address, wallet.address, '95292372649584252')
 
-      await token1.approve(pair.address, constants.MaxUint256)
       await pair.swap1For0(amount1In, wallet.address, '0x')
 
       const token0BalanceAfter = await token0.balanceOf(wallet.address)
@@ -618,7 +615,6 @@ describe('UniswapV3Pair', () => {
     it('swap1For0 to tick -10', async () => {
       const amount1In = expandTo18Decimals(1).div(10)
 
-      await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, wallet.address, '0x'))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '94959953735437420')
@@ -637,7 +633,6 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
-      await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, wallet.address, '0x')) //.to.be.revertedWith('UniswapV3: RIGHT_IS_WRONG')
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '95243793074784788')
