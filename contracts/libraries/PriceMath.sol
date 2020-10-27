@@ -44,7 +44,7 @@ library PriceMath {
             (uint256(amountIn) * (LP_FEE_BASE - lpFee) + uint256(reserveIn) * LP_FEE_BASE));
         uint256 reserveOutAfter = uint256(reserveOut) - amountOut;
         uint256 reserveInAfter = uint256(reserveIn) + amountIn;
-        uint256 minReserveIn = FullMath.mulDiv(reserveOutAfter, inOutRatio._x, uint256(1) << 112) + 1;
+        uint256 minReserveIn = FullMath.mulDiv(reserveOutAfter, inOutRatio._x, uint256(1) << 112, true);
 
         if (minReserveIn > reserveInAfter) {
             require(minReserveIn - reserveIn <= uint112(-1), 'PriceMath::getInputToRatio: amountIn overflows');
