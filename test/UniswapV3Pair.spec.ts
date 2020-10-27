@@ -53,7 +53,11 @@ describe('UniswapV3Pair', () => {
     const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
     const target = await createSwapTarget(inputToken, amountIn)
 
-    const data = utils.defaultAbiCoder.encode(['uint256', 'address'], [amountIn, to])
+    const data = utils.defaultAbiCoder.encode(
+      ['uint256', 'address'],
+      [amountIn, typeof to === 'string' ? to : to.address]
+    )
+    console.log(data)
     const amountOut = await pair.callStatic[method](amountIn, target.address, data)
     const tx = await pair[method](amountIn, target.address, data)
     return {tx, amountOut, target}
@@ -413,7 +417,6 @@ describe('UniswapV3Pair', () => {
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
-      await token0.approve(pair.address, constants.MaxUint256)
       await swap0For1(amount0In, wallet)
 
       const token0BalanceAfter = await token0.balanceOf(wallet.address)
