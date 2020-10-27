@@ -273,7 +273,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 amount1,
         int16 tick,
         uint8 feeVote
-    ) external lock returns (uint112 liquidity) {
+    ) external override lock returns (uint112 liquidity) {
         require(getVirtualSupply() == 0, 'UniswapV3: ALREADY_INITIALIZED'); // sufficient check
         require(amount0 >= TOKEN_MIN, 'UniswapV3: AMOUNT_0_TOO_SMALL');
         require(amount1 >= TOKEN_MIN, 'UniswapV3: AMOUNT_1_TOO_SMALL');
@@ -441,9 +441,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                         // update the position
                         positionProtocol.liquidity = positionProtocol.liquidity.add(liquidityProtocol).toUint112();
-                        positionProtocol.liquidityAdjusted = (
-                            FixedPoint.encode(positionProtocol.liquidity)._x / g._x
-                        ).toUint112();
+                        positionProtocol.liquidityAdjusted = (FixedPoint.encode(positionProtocol.liquidity)._x / g._x)
+                            .toUint112();
                     }
                 }
 
@@ -587,26 +586,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         PriceMath.LP_FEE_BASE))
                     .toUint112();
 
-                // TODO remove this eventually, it's meant to ensure PriceMath.getInputToRatio is working correctly
-                {
-                FixedPoint.uq112x112 memory priceNext;
-                if (params.zeroForOne) {
-                    priceNext = FixedPoint.fraction(
-                        reserve1Virtual.sub(step.amountOut).toUint112(),
-                        (uint256(reserve0Virtual) + step.amountIn).toUint112()
-                    );
-                    // TODO this should be <=
-                    assert(priceNext._x >= step.nextPrice._x);
-                } else {
-                    priceNext = FixedPoint.fraction(
-                        (uint256(reserve1Virtual) + step.amountIn).toUint112(),
-                        reserve0Virtual.sub(step.amountOut).toUint112()
-                    );
-                    // TODO this should be >=
-                    assert(priceNext._x <= step.nextPrice._x);                    
-                }
-                }
-
                 // calculate the maximum output amount s.t. the reserves price is guaranteed to be as close as possible
                 // to the target price _without_ exceeding it
                 uint112 reserveInVirtualNext = (uint256(reserveInVirtual) + amountInRequiredForShift).toUint112();
@@ -624,16 +603,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     reserve1Virtual = (uint256(reserve1Virtual) + step.amountIn).toUint112();
                 }
 
-                // TODO remove this eventually, it's meant to ensure our overshoot compensation logic is correct
-                {
-                FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-                if (params.zeroForOne) {
-                    assert(priceNext._x >= step.nextPrice._x);
-                } else {
-                    assert(priceNext._x <= step.nextPrice._x);                    
-                }
-                }
-
                 amountInRemaining = amountInRemaining.sub(step.amountIn).toUint112();
                 amountOut = (uint256(amountOut) + step.amountOut).toUint112();
             }
@@ -649,18 +618,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         token1VirtualDelta += tickInfo.token1VirtualDeltas[i];
                     }
-    
+
                     // TODO the price can change because of rounding error
                     // should adding/subtracting token{0,1}VirtualDelta to/from the current reserves ideally always move
                     // the price toward the direction we're moving (past the tick), if it has to move at all?
                     int256 token0VirtualDelta;
                     {
-                    uint256 token0VirtualDeltaUnsigned = (uint256(token1VirtualDelta < 0
-                        ? -token1VirtualDelta
-                        : token1VirtualDelta) << 112) / step.nextPrice._x;
-                    token0VirtualDelta = token1VirtualDelta < 0
-                        ? -(token0VirtualDeltaUnsigned.toInt256())
-                        : token0VirtualDeltaUnsigned.toInt256();
+                        uint256 token0VirtualDeltaUnsigned = (uint256(
+                            token1VirtualDelta < 0 ? -token1VirtualDelta : token1VirtualDelta
+                        ) << 112) / step.nextPrice._x;
+                        token0VirtualDelta = token1VirtualDelta < 0
+                            ? -(token0VirtualDeltaUnsigned.toInt256())
+                            : token0VirtualDeltaUnsigned.toInt256();
                     }
 
                     if (params.zeroForOne) {
@@ -674,20 +643,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // TODO remove this eventually, it's meant to show the direction of rounding
                     {
-                    FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-                    if (params.zeroForOne) {
-                        if (token1VirtualDelta > 0) {
-                            assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
+                        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+                        if (params.zeroForOne) {
+                            if (token1VirtualDelta > 0) {
+                                assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
+                            } else {
+                                require(priceNext._x == step.nextPrice._x, 'UniswapV3: RIGHT_IS_WRONG');
+                            }
                         } else {
-                            require(priceNext._x == step.nextPrice._x, 'UniswapV3: RIGHT_IS_WRONG');
+                            if (token1VirtualDelta > 0) {
+                                assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
+                            } else {
+                                require(priceNext._x == step.nextPrice._x, 'UniswapV3: LEFT_IS_NOT_RIGHT');
+                            }
                         }
-                    } else {
-                        if (token1VirtualDelta > 0) {
-                            assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
-                        } else {
-                            require(priceNext._x == step.nextPrice._x, 'UniswapV3: LEFT_IS_NOT_RIGHT');
-                        }
-                    }
                     }
 
                     // update virtual supply

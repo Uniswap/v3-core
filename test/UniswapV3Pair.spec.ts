@@ -16,6 +16,8 @@ import {
   MIN_TICK,
 } from './shared/utilities'
 
+const overrides = {gasLimit: 5_000_000}
+
 describe('UniswapV3Pair', () => {
   const [wallet, other] = waffle.provider.getWallets()
   const deployContract = waffle.deployContract
@@ -520,9 +522,9 @@ describe('UniswapV3Pair', () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
+      await expect(pair.swap0For1(amount0In, wallet.address, '0x', overrides))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '94959953735437435')
+        .withArgs(pair.address, wallet.address, '94959953735437432')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)

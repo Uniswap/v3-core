@@ -1,0 +1,74 @@
+#format can be "text" or "json" for different output (human or machine readable)
+format: 'text'
+#checkAsserts checks assertions
+checkAsserts: true
+#coverage controls coverage guided testing
+coverage: false
+# #psender is the sender for property transactions; by default intentionally
+# #the same as contract deployer
+# psender: "0x00a329c0648769a73afac7f9381e08fb43dbea70"
+# #prefix is the prefix for Boolean functions that are properties to be checked
+# prefix: "echidna_"
+# #propMaxGas defines gas cost at which a property fails
+# propMaxGas: 8000030
+# #testMaxGas is a gas limit; does not cause failure, but terminates sequence
+# testMaxGas: 8000030
+# #maxGasprice is the maximum gas price
+# maxGasprice: 100000000000
+# #testLimit is the number of test sequences to run
+# testLimit: 50000
+# #stopOnFail makes echidna terminate as soon as any property fails and has been shrunk
+# stopOnFail: false
+# #estimateGas makes echidna perform analysis of maximum gas costs for functions (experimental)
+# estimateGas: false
+# #seqLen defines how many transactions are in a test sequence
+# seqLen: 100
+# #shrinkLimit determines how much effort is spent shrinking failing sequences
+# shrinkLimit: 5000
+# #contractAddr is the address of the contract itself
+# contractAddr: "0x00a329c0648769a73afac7f9381e08fb43dbea72"
+# #deployer is address of the contract deployer (who often is privileged owner, etc.)
+# deployer: "0x00a329c0648769a73afac7f9381e08fb43dbea70"
+# #sender is set of addresses transactions may originate from
+# sender: ["0x10000", "0x20000", "0x00a329c0648769a73afac7f9381e08fb43dbea70"]
+# #balanceAddr is default balance for addresses
+# balanceAddr: 0xffffffff
+# #balanceContract overrides balanceAddr for the contract address
+# balanceContract: 0
+# #solcArgs allows special args to solc
+# solcArgs: ""
+# #solcLibs is solc libraries
+# solcLibs: []
+# #cryticArgs allows special args to crytic
+# cryticArgs: []
+# #quiet produces (much) less verbose output
+# quiet: false
+# #initialize the blockchain with some data
+# initialize: null
+# #whether ot not to use the multi-abi mode of testing
+# multi-abi: false
+# #benchmarkMode enables benchmark mode
+# benchmarkMode: false
+# #timeout controls test timeout settings
+# timeout: null
+# #seed not defined by default, is the random seed
+# #seed: 0
+# #dictFreq controls how often to use echidna's internal dictionary vs random
+# #values
+# dictFreq: 0.40
+# maxTimeDelay: 604800
+# #maximum time between generated txs; default is one week
+# maxBlockDelay: 60480
+# #maximum number of blocks elapsed between generated txs; default is expected increment in one week
+# # timeout:
+# #campaign timeout (in seconds)
+# # list of methods to filter
+# filterFunctions: []
+# # by default, blacklist methods in filterFunctions
+# filterBlacklist: true
+# #directory to save the corpus; by default is disabled
+# corpusDir: null
+# # constants for corpus mutations (for experimentation only)
+# mutConsts: [100, 1, 1]
+# # maximum value to send to payable functions
+# maxValue: 100000000000000000000 # 100 eth

@@ -8,6 +8,11 @@ library PriceMath {
 
     uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
 
+    // 2^112 - 1
+    // added to the input amount before truncating so that we always round up the amountIn returned by
+    // getInputToRatio
+    uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
+
     function getInputToRatio(
         uint112 reserveIn,
         uint112 reserveOut,
@@ -17,7 +22,7 @@ library PriceMath {
         FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
         if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the ratios are equal
 
-        uint256 inputToRatio = getInputToRatioUQ128x128(reserveIn, reserveOut, lpFee, inOutRatio._x);
+        uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x) + ROUND_UP;
         require(inputToRatio >> 112 <= uint112(-1), 'PriceMath: TODO');
         return uint112(inputToRatio >> 112);
     }
@@ -26,11 +31,11 @@ library PriceMath {
      * Calculate (y(g - 2) + sqrt (g^2 * y^2 + 4xyr(1 - g))) / 2(1 - g) * 2^112, where
      * y = reserveIn,
      * x = reserveOut,
-     * g = lpFee * 10^-6,
+     * g = lpFee * 10^-4,
      * r = inOutRatio * 2^-112.
      * Throw on overflow.
      */
-    function getInputToRatioUQ128x128(
+    function getInputToRatioUQ144x112(
         uint256 reserveIn,
         uint256 reserveOut,
         uint256 lpFee,
