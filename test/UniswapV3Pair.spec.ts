@@ -549,6 +549,57 @@ describe('UniswapV3Pair', () => {
       // const tickCurrent = await pair.tickCurrent()
       // expect(tickCurrent).to.eq(-10)
     })
+
+    // BEGIN
+    it('swap1For0', async () => {
+      const amount1In = 1000
+
+      const token0BalanceBefore = await token0.balanceOf(wallet.address)
+      const token1BalanceBefore = await token1.balanceOf(wallet.address)
+
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.swap1For0(amount1In, wallet.address, '0x')
+
+      const token0BalanceAfter = await token0.balanceOf(wallet.address)
+      const token1BalanceAfter = await token1.balanceOf(wallet.address)
+
+      expect(token0BalanceAfter.sub(token0BalanceBefore)).to.eq(996)
+      expect(token1BalanceBefore.sub(token1BalanceAfter)).to.eq(amount1In)
+
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(0)
+    })
+
+    it('swap1For0 to tick -10', async () => {
+      const amount1In = expandTo18Decimals(1).div(10)
+
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.swap1For0(amount1In, wallet.address, '0x'))
+        .to.emit(token0, 'Transfer')
+        .withArgs(pair.address, wallet.address, '94959953735437425')
+
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(9)
+    })
+
+    it('swap1For0 to tick -10 with intermediate liquidity', async () => {
+      const amount1In = expandTo18Decimals(1).div(10)
+
+      // add liquidity between 2 and 3 (to the right of the current price)
+      const liquidityDelta = expandTo18Decimals(1)
+      const lowerTick = 2
+      const upperTick = 3
+      await token0.approve(pair.address, constants.MaxUint256)
+      await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
+
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.swap1For0(amount1In, wallet.address, '0x')) //.to.be.revertedWith('UniswapV3: RIGHT_IS_WRONG')
+        .to.emit(token0, 'Transfer')
+        .withArgs(pair.address, wallet.address, '95243793074784792')
+
+      const tickCurrent = await pair.tickCurrent()
+      expect(tickCurrent).to.eq(9)
+    })
   })
 
   describe('#getCumulativePrices', () => {

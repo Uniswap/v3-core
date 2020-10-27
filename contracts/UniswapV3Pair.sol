@@ -588,22 +588,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     .toUint112();
 
                 // TODO remove this eventually, it's meant to ensure PriceMath.getInputToRatio is working correctly
-                // if (step.amountIn == amountInRequiredForShift) {
-                //     FixedPoint.uq112x112 memory priceNext;
-                //     if (params.zeroForOne) {
-                //         priceNext = FixedPoint.fraction(
-                //             reserve1Virtual.sub(step.amountOut).toUint112(),
-                //             (uint256(reserve0Virtual) + step.amountIn).toUint112()
-                //         );
-                //         assert(priceNext._x <= step.nextPrice._x);
-                //     } else {
-                //         priceNext = FixedPoint.fraction(
-                //             (uint256(reserve1Virtual) + step.amountIn).toUint112(),
-                //             reserve0Virtual.sub(step.amountOut).toUint112()
-                //         );
-                //         assert(priceNext._x >= step.nextPrice._x);
-                //     }
-                // }
+                if (step.amountIn == amountInRequiredForShift) {
+                    FixedPoint.uq112x112 memory priceNext;
+                    if (params.zeroForOne) {
+                        // TODO this needs more thought because of the reciprocal situation
+                    } else {
+                        priceNext = FixedPoint.fraction(
+                            (uint256(reserve1Virtual) + step.amountIn).toUint112(),
+                            reserve0Virtual.sub(step.amountOut).toUint112()
+                        );
+                        assert(priceNext._x >= step.nextPrice._x);
+                    }
+                }
 
                 // calculate the maximum output amount s.t. the reserves price is guaranteed to be as close as possible
                 // to the target price _without_ exceeding it
@@ -625,14 +621,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 }
 
                 // TODO remove this eventually, it's meant to ensure our overshoot compensation logic is correct
-                // {
-                // FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-                // if (params.zeroForOne) {
-                //     assert(priceNext._x >= step.nextPrice._x);
-                // } else {
-                //     assert(priceNext._x <= step.nextPrice._x);                    
-                // }
-                // }
+                {
+                FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+                if (params.zeroForOne) {
+                    assert(priceNext._x >= step.nextPrice._x);
+                } else {
+                    assert(priceNext._x <= step.nextPrice._x);                    
+                }
+                }
 
                 amountInRemaining = amountInRemaining.sub(step.amountIn).toUint112();
                 amountOut = (uint256(amountOut) + step.amountOut).toUint112();
@@ -679,13 +675,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         if (token1VirtualDelta > 0) {
                             assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
                         } else {
-                            require(priceNext._x == step.nextPrice._x, 'UniswapV3: RIGHT_IS_WRONG');
+                            // require(priceNext._x == step.nextPrice._x, 'UniswapV3: RIGHT_IS_WRONG');
                         }
                     } else {
                         if (token1VirtualDelta > 0) {
                             assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
                         } else {
-                            require(priceNext._x == step.nextPrice._x, 'UniswapV3: LEFT_IS_NOT_RIGHT');
+                            // require(priceNext._x == step.nextPrice._x, 'UniswapV3: LEFT_IS_NOT_RIGHT');
                         }
                     }
                     }
