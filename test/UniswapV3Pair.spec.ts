@@ -597,7 +597,7 @@ describe('UniswapV3Pair', () => {
 
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
-      const {tx, target} = await swap0For1(amount0In, wallet)
+      const {tx, target} = await swap0For1(amount1In, wallet)
 
       await expect(tx).to.emit(token1, 'Transfer').withArgs(target.address, wallet.address, '95292372649584252')
 
