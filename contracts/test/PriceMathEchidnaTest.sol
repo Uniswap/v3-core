@@ -10,12 +10,12 @@ import '../libraries/TickMath.sol';
 contract PriceMathEchidnaTest {
     using SafeMath for uint256;
 
-    uint256 MIN_PRICE;
-    uint256 MAX_PRICE;
+    uint224 MIN_PRICE;
+    uint224 MAX_PRICE;
 
     constructor() public {
-        MIN_PRICE = uint256(TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
-        MAX_PRICE = uint256(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
+        MIN_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
+        MAX_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
     }
 
     function getInputToRatioAlwaysExceedsNextPrice(
