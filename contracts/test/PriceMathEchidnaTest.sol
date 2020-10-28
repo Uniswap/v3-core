@@ -28,7 +28,7 @@ contract PriceMathEchidnaTest {
         // UniswapV3Pair.TOKEN_MIN
         require(reserveIn >= 101 && reserveOut >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
-        require(tick < TickMath.MAX_TICK);
+        require(uint(tick < 0 ? -tick : tick) < uint(TickMath.MAX_TICK));
         FixedPoint.uq112x112 memory nextPrice = zeroForOne
             ? TickMath.getRatioAtTick(tick)
             : TickMath.getRatioAtTick(tick + 1);
@@ -36,6 +36,11 @@ contract PriceMathEchidnaTest {
         uint256 priceBefore = zeroForOne
             ? (uint256(reserveOut) << 112) / reserveIn
             : (uint256(reserveIn) << 112) / reserveOut;
+
+        // the target next price is within 10%
+        // TODO can we remove this?
+        if (zeroForOne) require(priceBefore <= uint256(nextPrice._x).mul(110).div(100));
+        else require(priceBefore >= uint256(nextPrice._x).mul(90).div(100));
 
         uint112 amountIn = PriceMath.getInputToRatio(
             reserveIn,
@@ -53,17 +58,21 @@ contract PriceMathEchidnaTest {
             return;
         }
 
-        // the target next price is within 10%
-        // todo: can we remove this?
-        require(priceBefore.mul(110).div(100) >= nextPrice._x);
-
+        // PriceMath.getAmountOut
         uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
             (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
 
         assert(amountOut > 0 && amountOut < reserveOut);
 
-        // TODO add this back
-        // uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
-        // assert(((uint256(reserveIn).add(amountIn)) << 112) / reserveOutAfter >= inOutRatio);
+        uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
+        uint256 reserveInAfter = uint256(reserveIn).add(amountIn);
+        assert(reserveOutAfter <= uint112(-1));
+        assert(reserveInAfter <= uint112(-1));
+        uint256 priceAfter = zeroForOne
+            ? (reserveOutAfter << 112) / reserveInAfter
+            : (reserveInAfter << 112) / reserveOutAfter;
+
+        if (zeroForOne) assert(priceAfter <= nextPrice._x);
+        else assert(priceAfter >= nextPrice._x);
     }
 }
