@@ -29,7 +29,7 @@ contract UniswapV3PairEchidnaTest {
         int16 tick,
         uint112 amount0,
         uint8 feeVote
-    ) public {
+    ) private {
         TestERC20 tokenA = new TestERC20(0);
         TestERC20 tokenB = new TestERC20(0);
         (token0, token1) = (address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA));
@@ -57,12 +57,14 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function swap0For1(uint112 amount0In) external {
+        require(amount0In < 1e18);
         token0.mint(address(this), amount0In);
         token0.approve(address(pair), amount0In);
         pair.swap0For1(amount0In, address(this), '');
     }
 
     function swap1For0(uint112 amount1In) external {
+        require(amount1In < 1e18);
         token1.mint(address(this), amount1In);
         token1.approve(address(pair), amount1In);
         pair.swap1For0(amount1In, address(this), '');
