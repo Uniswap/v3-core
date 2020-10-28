@@ -14,6 +14,8 @@ import {
   getPositionKey,
   MAX_TICK,
   MIN_TICK,
+  swapFunctions,
+  SwapFunction,
 } from './shared/utilities'
 
 describe('UniswapV3Pair', () => {
@@ -28,37 +30,12 @@ describe('UniswapV3Pair', () => {
   let pairTest: Contract
   let swapTarget: Contract
 
-  /**
-   * Execute a swap against the pair of the input token in the input amount, sending proceeds to the given to address
-   */
-  async function _swap(
-    inputToken: Contract,
-    amountIn: number | string | BigNumber,
-    to: Wallet | string
-  ): Promise<{amountOut: BigNumber; tx: ContractTransaction}> {
-    const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
-
-    await inputToken.transfer(swapTarget.address, amountIn)
-
-    const data = utils.defaultAbiCoder.encode(
-      ['uint256', 'address'],
-      [amountIn, typeof to === 'string' ? to : to.address]
-    )
-    const amountOut = await pair.callStatic[method](amountIn, swapTarget.address, data)
-    const tx = await pair[method](amountIn, swapTarget.address, data)
-    return {tx, amountOut}
-  }
-
-  function swap0For1(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
-    return _swap(token0, amount, to)
-  }
-
-  function swap1For0(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
-    return _swap(token1, amount, to)
-  }
+  let swap0For1: SwapFunction
+  let swap1For0: SwapFunction
 
   beforeEach('load fixture', async () => {
     ;({token0, token1, token2, factory, pair, pairTest, swapTarget} = await waffle.loadFixture(pairFixture))
+    ;({swap0For1, swap1For0} = swapFunctions({pair, swapTarget, token0, token1, from: wallet}))
   })
 
   // this invariant should always hold true.
@@ -634,6 +611,7 @@ describe('UniswapV3Pair', () => {
     let pair: Contract
     beforeEach('deploy mock pair', async () => {
       pair = await deployContract(wallet, MockTimeUniswapV3Pair, [factory.address, token0.address, token1.address])
+      ;({swap0For1, swap1For0} = swapFunctions({from: wallet, token0, swapTarget, pair, token1}))
     })
     beforeEach('set pair time to 100', async () => {
       await pair.setTime(100)
@@ -648,6 +626,10 @@ describe('UniswapV3Pair', () => {
     })
     it('current block timestamp is 100', async () => {
       expect(await pair.blockTimestampLast()).to.eq(100)
+    })
+    it('reserve0Virtual/reserve1Virtual are nonzero', async () => {
+      expect(await pair.reserve0Virtual()).to.not.eq(0)
+      expect(await pair.reserve1Virtual()).to.not.eq(0)
     })
     it('cumulative prices are initially 0', async () => {
       const [price0, price1] = await pair.getCumulativePrices()
