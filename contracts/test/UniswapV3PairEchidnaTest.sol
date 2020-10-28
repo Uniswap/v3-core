@@ -6,11 +6,12 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import './TestERC20.sol';
+import './PayAndForwardContract.sol';
 import '../UniswapV3Pair.sol';
 import '../UniswapV3Factory.sol';
 import '../libraries/SafeCast.sol';
 
-contract UniswapV3PairEchidnaTest is IUniswapV3Callee {
+contract UniswapV3PairEchidnaTest {
     using SafeMath for uint256;
     using SafeCast for uint256;
 
@@ -19,8 +20,10 @@ contract UniswapV3PairEchidnaTest is IUniswapV3Callee {
 
     UniswapV3Factory factory;
     UniswapV3Pair pair;
+    PayAndForwardContract payer;
 
     constructor() public {
+        payer = new PayAndForwardContract();
         factory = new UniswapV3Factory(address(this));
         initializeTokens();
         createNewPair();
@@ -51,34 +54,14 @@ contract UniswapV3PairEchidnaTest is IUniswapV3Callee {
 
     function swap0For1(uint112 amount0In) external {
         require(amount0In < 1e18);
-        pair.swap0For1(amount0In, address(this), abi.encode(uint112(amount0In)));
-    }
-
-    function swap0For1Callback(
-        address sender,
-        uint256 amount1Out,
-        bytes calldata data
-    ) external override {
-        assert(sender == address(this));
-        assert(amount1Out > 0);
-        uint112 amount0In = abi.decode(data, (uint112));
-        token0.transfer(address(pair), amount0In);
+        token0.transfer(address(payer), amount0In);
+        pair.swap0For1(amount0In, address(payer), abi.encode(uint112(amount0In), address(this)));
     }
 
     function swap1For0(uint112 amount1In) external {
         require(amount1In < 1e18);
-        pair.swap1For0(amount1In, address(this), abi.encode(uint112(amount1In)));
-    }
-
-    function swap1For0Callback(
-        address sender,
-        uint256 amount0Out,
-        bytes calldata data
-    ) external override {
-        assert(sender == address(this));
-        assert(amount0Out > 0);
-        uint112 amount1In = abi.decode(data, (uint112));
-        token0.transfer(address(pair), amount1In);
+        token1.transfer(address(payer), amount1In);
+        pair.swap1For0(amount1In, address(payer), abi.encode(uint112(amount1In), address(this)));
     }
 
     function setPosition(
