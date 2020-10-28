@@ -1,4 +1,4 @@
-import {BigNumber, BigNumberish, utils, constants} from 'ethers'
+import {BigNumber, BigNumberish, utils, constants, Contract, Wallet, ContractTransaction} from 'ethers'
 import {Decimal} from 'decimal.js'
 import {assert} from 'chai'
 
@@ -86,4 +86,57 @@ export function bnify2(a: BigNumberish | [BigNumberish]): BigNumber {
   } else {
     return BigNumber.from(a)
   }
+}
+
+export type SwapFunction = (
+  amount: number | string | BigNumber,
+  to: Wallet | string
+) => Promise<{amountOut: BigNumber; tx: ContractTransaction}>
+export interface SwapFunctions {
+  swap0For1: SwapFunction
+  swap1For0: SwapFunction
+}
+export function swapFunctions({
+  token0,
+  token1,
+  swapTarget,
+  pair,
+  from,
+}: {
+  from: Wallet
+  swapTarget: Contract
+  token0: Contract
+  token1: Contract
+  pair: Contract
+}): SwapFunctions {
+  /**
+   * Execute a swap against the pair of the input token in the input amount, sending proceeds to the given to address
+   */
+  async function _swap(
+    inputToken: Contract,
+    amountIn: number | string | BigNumber,
+    to: Wallet | string
+  ): Promise<{amountOut: BigNumber; tx: ContractTransaction}> {
+    const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
+
+    await inputToken.connect(from).transfer(swapTarget.address, amountIn)
+
+    const data = utils.defaultAbiCoder.encode(
+      ['uint256', 'address'],
+      [amountIn, typeof to === 'string' ? to : to.address]
+    )
+    const amountOut = await pair.connect(from).callStatic[method](amountIn, swapTarget.address, data)
+    const tx = await pair.connect(from)[method](amountIn, swapTarget.address, data)
+    return {tx, amountOut}
+  }
+
+  function swap0For1(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
+    return _swap(token0, amount, to)
+  }
+
+  function swap1For0(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
+    return _swap(token1, amount, to)
+  }
+
+  return {swap0For1, swap1For0}
 }
