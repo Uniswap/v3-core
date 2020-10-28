@@ -604,8 +604,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // to the target price _without_ exceeding it
                 uint112 reserveInVirtualNext = (uint256(reserveInVirtual) + step.amountIn).toUint112();
                 uint256 reserveOutVirtualThreshold = params.zeroForOne
-                    ? PriceMath.getQuote(reserveInVirtualNext, step.nextPrice)
-                    : PriceMath.getQuoteInverse(reserveInVirtualNext, step.nextPrice);
+                    ? PriceMath.getQuoteFromDenominator(reserveInVirtualNext, step.nextPrice)
+                    : PriceMath.getQuoteFromNumerator(reserveInVirtualNext, step.nextPrice);
                 step.amountOut = Math.min(
                     step.amountOut,
                     reserveOutVirtual.sub(reserveOutVirtualThreshold)
@@ -641,6 +641,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // if the tick is initialized, we must update it
                 if (tickInfo.growthOutside._x != 0) {
                     // calculate the amount of reserves to kick in/out
+                    // TODO gas-golf this to an int256
                     int120 token1VirtualDelta;
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         token1VirtualDelta += tickInfo.token1VirtualDeltas[i];
@@ -651,7 +652,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // the price toward the direction we're moving (past the tick), if it has to move at all?
                     int256 token0VirtualDelta;
                     {
-                        // this is essentially getQuoteInverse, but we probably don't want to round up...
+                        // this is essentially getQuoteFromNumerator, but we probably don't want to round up...
                         uint256 token0VirtualDeltaUnsigned = (uint256(
                             token1VirtualDelta < 0 ? -token1VirtualDelta : token1VirtualDelta
                         ) << 112) / step.nextPrice._x;

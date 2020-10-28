@@ -16,19 +16,23 @@ library PriceMath {
 
     uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
     // 2^112 - 1
-    // added to the input amount before truncating so that we always round up the amountIn returned by
-    // getInputToRatio
+    // added to the input amount before truncating so that we always round up the amountIn returned by getInputToRatio
     uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
 
-    // get an amount quote at a price, rounded up
-    function getQuote(uint112 amount, FixedPoint.uq112x112 memory ratio) internal pure returns (uint256) {
-        return FullMath.mulDiv(amount, ratio._x, uint256(1) << 112, true);
+    // get a quote for a numerator amount from a denominator amount and a numerator/denominator price
+    function getQuoteFromDenominator(uint112 denominatorAmount, FixedPoint.uq112x112 memory ratio)
+        internal pure returns (uint256)
+    {
+        return FullMath.mulDiv(denominatorAmount, ratio._x, uint256(1) << 112, true);
     }
 
+    // get a quote for a denominator amount from a numerator amount and a numerator/denominator price
     // get an amount quote at a price (inverted), rounded up
-    function getQuoteInverse(uint144 amount, FixedPoint.uq112x112 memory ratio) internal pure returns (uint256) {
-        uint256 mm = mulmod(amount, uint256(1) << 112, ratio._x);
-        return ((uint256(amount) << 112) / ratio._x) + (mm > 0 ? 1 : 0);
+    function getQuoteFromNumerator(uint144 numeratorAmount, FixedPoint.uq112x112 memory ratio)
+        internal pure returns (uint256)
+    {
+        uint256 mm = mulmod(numeratorAmount, uint256(1) << 112, ratio._x);
+        return ((uint256(numeratorAmount) << 112) / ratio._x) + (mm > 0 ? 1 : 0);
     }
 
     function getAmountOut(
@@ -63,17 +67,18 @@ library PriceMath {
         uint256 inputToRatio = getInputToRatioUQ144x112(
             reserveIn, reserveOut, lpFee, zeroForOne ? nextPriceInverse._x : nextPrice._x
         );
+        // TODO convince ourselves that we don't need safemath here
         amountIn = (inputToRatio.add(ROUND_UP) >> 112).toUint112();
 
         // get the output amount that the input amount entitles the swapper to
         uint256 amountOut = getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
+        // TODO do we need to do something along the lines of minning amountOut with reserveOut - 1 here?
 
         // if necessary, increase the input amount s.t. we're guaranteed to have crossed the target price
-        // TODO do we need to do something along the lines of minning amountOut with reserveOut - 1 here?
         uint112 reserveOutNext = reserveOut.sub(amountOut).toUint112();
         uint256 reserveInThreshold = zeroForOne
-            ? getQuoteInverse(reserveOutNext, nextPrice)
-            : getQuote(reserveOutNext, nextPrice);
+            ? getQuoteFromNumerator(reserveOutNext, nextPrice)
+            : getQuoteFromDenominator(reserveOutNext, nextPrice);
         amountIn = Math.max(amountIn, reserveInThreshold.sub(reserveIn)).toUint112();
     }
 
