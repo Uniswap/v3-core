@@ -4,8 +4,11 @@ pragma solidity >=0.5.0;
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
+import './SafeCast.sol';
+
 library PriceMath {
     using FixedPoint for FixedPoint.uq112x112;
+    using SafeCast for *;
 
     uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
     // 2^112 - 1
@@ -13,16 +16,28 @@ library PriceMath {
     // getInputToRatio
     uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
 
-    function getReserveOutThreshold(bool zeroForOne, uint112 reserveIn, FixedPoint.uq112x112 memory ratio)
-        internal
-        pure
-        returns (uint256)
-    {
+    function getReserveOutThreshold(
+        bool zeroForOne,
+        uint112 reserveIn,
+        FixedPoint.uq112x112 memory ratio
+    ) internal pure returns (uint256) {
         if (zeroForOne) {
             return FullMath.mulDiv(reserveIn, ratio._x, uint256(1) << 112, true); // round up
         } else {
             return (uint256(FixedPoint.encode(reserveIn)._x) + ROUND_UP) / ratio._x; // round up
         }
+    }
+
+    function getAmountOut(
+        uint112 reserveIn,
+        uint112 reserveOut,
+        uint16 lpFee,
+        uint112 amountIn
+    ) internal pure returns (uint112) {
+        return
+            ((uint256(reserveOut) * amountIn * (LP_FEE_BASE - lpFee)) /
+                (uint256(amountIn) * (LP_FEE_BASE - lpFee) + uint256(reserveIn) * LP_FEE_BASE))
+                .toUint112();
     }
 
     function getInputToRatio(
@@ -40,8 +55,7 @@ library PriceMath {
 
         amountIn = uint112(inputToRatio >> 112);
 
-        uint256 amountOut = ((uint256(reserveOut) * amountIn * (LP_FEE_BASE - lpFee)) /
-            (uint256(amountIn) * (LP_FEE_BASE - lpFee) + uint256(reserveIn) * LP_FEE_BASE));
+        uint256 amountOut = getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
         uint256 reserveOutAfter = uint256(reserveOut) - amountOut;
         uint256 reserveInAfter = uint256(reserveIn) + amountIn;
         uint256 minReserveIn = FullMath.mulDiv(reserveOutAfter, inOutRatio._x, uint256(1) << 112, true);

@@ -579,12 +579,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 step.amountIn = Math.min(amountInRequiredForShift, amountInRemaining).toUint112();
 
                 // calculate the owed output amount, given the current fee
-                step.amountOut = ((uint256(reserveOutVirtual) * step.amountIn * (PriceMath.LP_FEE_BASE - fee)) /
-                    (uint256(step.amountIn) *
-                        (PriceMath.LP_FEE_BASE - fee) +
-                        uint256(reserveInVirtual) *
-                        PriceMath.LP_FEE_BASE))
-                    .toUint112();
+                step.amountOut = PriceMath.getAmountOut(reserveInVirtual, reserveOutVirtual, fee, step.amountIn);
 
                 // TODO we should ensure that step.amountOut + 1 always results in a price exceeding the target
 
