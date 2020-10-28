@@ -15,9 +15,6 @@ import {
   MAX_TICK,
   MIN_TICK,
 } from './shared/utilities'
-import PayAndForwardContract from '../build/PayAndForwardContract.json'
-
-const overrides = {gasLimit: 5_000_000}
 
 describe('UniswapV3Pair', () => {
   const [wallet, other] = waffle.provider.getWallets()
@@ -29,18 +26,7 @@ describe('UniswapV3Pair', () => {
   let factory: Contract
   let pair: Contract
   let pairTest: Contract
-
-  let swapTargetPromise: Promise<Contract>
-  /**
-   * Creates a target for a swap of the input token in the input amount, forwarding the proceeds to the recipient
-   */
-  function createSwapTarget(inputToken: Contract, inputAmount: string | number | BigNumber): Promise<Contract> {
-    if (!swapTargetPromise) {
-      swapTargetPromise = deployContract(wallet, PayAndForwardContract, [])
-    }
-
-    return swapTargetPromise.then((target) => inputToken.transfer(target.address, inputAmount).then(() => target))
-  }
+  let swapTarget: Contract
 
   /**
    * Execute a swap against the pair of the input token in the input amount, sending proceeds to the given to address
@@ -49,17 +35,18 @@ describe('UniswapV3Pair', () => {
     inputToken: Contract,
     amountIn: number | string | BigNumber,
     to: Wallet | string
-  ): Promise<{amountOut: BigNumber; tx: ContractTransaction; target: Contract}> {
+  ): Promise<{amountOut: BigNumber; tx: ContractTransaction}> {
     const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
-    const target = await createSwapTarget(inputToken, amountIn)
+
+    await inputToken.transfer(swapTarget.address, amountIn)
 
     const data = utils.defaultAbiCoder.encode(
       ['uint256', 'address'],
       [amountIn, typeof to === 'string' ? to : to.address]
     )
-    const amountOut = await pair.callStatic[method](amountIn, target.address, data)
-    const tx = await pair[method](amountIn, target.address, data)
-    return {tx, amountOut, target}
+    const amountOut = await pair.callStatic[method](amountIn, swapTarget.address, data)
+    const tx = await pair[method](amountIn, swapTarget.address, data)
+    return {tx, amountOut}
   }
 
   function swap0For1(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
@@ -71,7 +58,7 @@ describe('UniswapV3Pair', () => {
   }
 
   beforeEach('load fixture', async () => {
-    ;({token0, token1, token2, factory, pair, pairTest} = await waffle.loadFixture(pairFixture))
+    ;({token0, token1, token2, factory, pair, pairTest, swapTarget} = await waffle.loadFixture(pairFixture))
   })
 
   // this invariant should always hold true.
@@ -559,12 +546,11 @@ describe('UniswapV3Pair', () => {
     it('swap0For1 to tick -10', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
-      const promise = swap0For1(amount0In, wallet)
-      const {target} = await promise
+      const txPromise = swap0For1(amount0In, wallet).then(({tx}) => tx)
 
-      await expect(promise.then(({tx}) => tx))
+      await expect(txPromise)
         .to.emit(token1, 'Transfer')
-        .withArgs(target.address, wallet.address, '94959953735437420')
+        .withArgs(swapTarget.address, wallet.address, '94959953735437420')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -596,9 +582,11 @@ describe('UniswapV3Pair', () => {
 
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
-      const {tx, target} = await swap0For1(amount1In, wallet)
+      const txPromise = swap0For1(amount1In, wallet).then(({tx}) => tx)
 
-      await expect(tx).to.emit(token1, 'Transfer').withArgs(target.address, wallet.address, '95292372649584252')
+      await expect(txPromise)
+        .to.emit(token1, 'Transfer')
+        .withArgs(swapTarget.address, wallet.address, '95292372649584252')
 
       await pair.swap1For0(amount1In, wallet.address, '0x')
 
