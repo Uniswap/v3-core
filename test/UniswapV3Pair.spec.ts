@@ -544,7 +544,7 @@ describe('UniswapV3Pair', () => {
       // TODO fix this
       await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95292372649584237')
+        .withArgs(pair.address, wallet.address, '95292372649584241')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -592,7 +592,7 @@ describe('UniswapV3Pair', () => {
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       await token1.approve(pair.address, constants.MaxUint256)
-      await expect(pair.swap1For0(amount1In, wallet.address, '0x')) //.to.be.revertedWith('UniswapV3: RIGHT_IS_WRONG')
+      await expect(pair.swap1For0(amount1In, wallet.address, '0x'))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '95243793074784788')
 

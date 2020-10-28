@@ -27,7 +27,8 @@ library PriceMath {
 
     // get an amount quote at a price (inverted), rounded up
     function getQuoteInverse(uint144 amount, FixedPoint.uq112x112 memory ratio) internal pure returns (uint256) {
-        return ((uint256(amount) << 112).add(ROUND_UP)) / ratio._x;
+        uint256 mm = mulmod(amount, uint256(1) << 112, ratio._x);
+        return ((uint256(amount) << 112) / ratio._x) + (mm > 0 ? 1 : 0);
     }
 
     function getAmountOut(
@@ -73,8 +74,7 @@ library PriceMath {
         uint256 reserveInThreshold = zeroForOne
             ? getQuoteInverse(reserveOutNext, nextPrice)
             : getQuote(reserveOutNext, nextPrice);
-        uint256 amountInMinimum = reserveInThreshold.sub(reserveIn);
-        amountIn = Math.max(amountIn, amountInMinimum).toUint112();
+        amountIn = Math.max(amountIn, reserveInThreshold.sub(reserveIn)).toUint112();
     }
 
     /**

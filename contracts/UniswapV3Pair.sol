@@ -582,7 +582,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // calculate the owed output amount, given the current fee
                 step.amountOut = PriceMath.getAmountOut(reserveInVirtual, reserveOutVirtual, fee, step.amountIn);
 
-                // TODO if step.amountIn == amountInRequiredForShift we should ensure that the price exceeds the target
+               // TODO remove this eventually, it's meant to ensure getInputToRatio is working correctly
+                if (step.amountIn == amountInRequiredForShift) {
+                    FixedPoint.uq112x112 memory priceNext;
+                    if (params.zeroForOne) {
+                        priceNext = FixedPoint.fraction(
+                            reserve1Virtual.sub(step.amountOut).toUint112(),
+                            (uint256(reserve0Virtual) + step.amountIn).toUint112()
+                        );
+                        assert(priceNext._x <= step.nextPrice._x);
+                    } else {
+                        priceNext = FixedPoint.fraction(
+                            (uint256(reserve1Virtual) + step.amountIn).toUint112(),
+                            reserve0Virtual.sub(step.amountOut).toUint112()
+                        );
+                        assert(priceNext._x >= step.nextPrice._x);
+                    }
+                }
 
                 // calculate the maximum output amount s.t. the reserves price is guaranteed to be as close as possible
                 // to the target price _without_ exceeding it
@@ -590,8 +606,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 uint256 reserveOutVirtualThreshold = params.zeroForOne
                     ? PriceMath.getQuote(reserveInVirtualNext, step.nextPrice)
                     : PriceMath.getQuoteInverse(reserveInVirtualNext, step.nextPrice);
-                uint112 amountOutMaximum = reserveOutVirtual.sub(reserveOutVirtualThreshold).toUint112();
-                step.amountOut = Math.min(step.amountOut, amountOutMaximum).toUint112();
+                step.amountOut = Math.min(
+                    step.amountOut,
+                    reserveOutVirtual.sub(reserveOutVirtualThreshold)
+                ).toUint112();
 
                 if (params.zeroForOne) {
                     reserve0Virtual = (uint256(reserve0Virtual) + step.amountIn).toUint112();
@@ -601,16 +619,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     reserve1Virtual = (uint256(reserve1Virtual) + step.amountIn).toUint112();
                 }
 
-                // TODO add this back when we know its working
                 // TODO remove this eventually, it's meant to ensure our overshoot compensation logic is correct
-                // {
-                //     FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-                //     if (params.zeroForOne) {
-                //         assert(priceNext._x >= step.nextPrice._x);
-                //     } else {
-                //         assert(priceNext._x <= step.nextPrice._x);
-                //     }
-                // }
+                {
+                    FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+                    if (params.zeroForOne) {
+                        assert(priceNext._x >= step.nextPrice._x);
+                    } else {
+                        assert(priceNext._x <= step.nextPrice._x);
+                    }
+                }
 
                 amountInRemaining = amountInRemaining.sub(step.amountIn).toUint112();
                 amountOut = (uint256(amountOut) + step.amountOut).toUint112();
