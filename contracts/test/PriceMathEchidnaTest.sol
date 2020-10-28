@@ -75,7 +75,7 @@ contract PriceMathEchidnaTest {
             ? (reserveOutAfter << 112) / reserveInAfter
             : (reserveInAfter << 112) / reserveOutAfter;
 
-        // if (zeroForOne) assert(priceAfter <= nextPrice._x);
-        // else assert(priceAfter >= nextPrice._x);
+        if (zeroForOne) assert(priceAfter <= nextPrice._x);
+        else assert(priceAfter >= nextPrice._x);
     }
 }
