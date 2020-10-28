@@ -36,7 +36,7 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function createNewPair() private {
-        pair = UniswapV3Pair(factory.createPair(address(tokenA), address(tokenB)));
+        pair = UniswapV3Pair(factory.createPair(address(token0), address(token0)));
     }
 
     function initializePair(
