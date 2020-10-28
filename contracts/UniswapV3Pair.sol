@@ -528,7 +528,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct StepComputations {
-        // price for the tick
+        // price for the tick (1/0)
         FixedPoint.uq112x112 nextPrice;
         // how much is being swapped in in this step
         uint112 amountIn;
@@ -551,8 +551,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             assert(tick < TickMath.MAX_TICK);
             assert(reserve0Virtual >= TOKEN_MIN && reserve1Virtual >= TOKEN_MIN);
 
-            // get the inclusive price for the next tick we're moving toward
             StepComputations memory step;
+            // get the price for the next tick we're moving toward
             step.nextPrice = params.zeroForOne ? TickMath.getRatioAtTick(tick) : TickMath.getRatioAtTick(tick + 1);
 
             // protect liquidity providers by adjusting the fee only if the current fee is greater than the stored fee
@@ -569,7 +569,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 reserveInVirtual,
                 reserveOutVirtual,
                 fee,
-                params.zeroForOne ? TickMath.getRatioAtTick(-tick) : step.nextPrice
+                step.nextPrice,
+                params.zeroForOne ? TickMath.getRatioAtTick(-tick) : TickMath.getRatioAtTick(-(tick + 1)),
+                params.zeroForOne
             );
 
             // TODO ensure that there's no off-by-one error here while transitioning ticks
@@ -580,7 +582,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // calculate the owed output amount, given the current fee
                 step.amountOut = PriceMath.getAmountOut(reserveInVirtual, reserveOutVirtual, fee, step.amountIn);
 
-                // TODO we should ensure that step.amountOut + 1 always results in a price exceeding the target
+                // TODO if step.amountIn == amountInRequiredForShift we should ensure that the price exceeds the target
 
                 // calculate the maximum output amount s.t. the reserves price is guaranteed to be as close as possible
                 // to the target price _without_ exceeding it
@@ -615,13 +617,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
 
             // if a positive input amount still remains, we have to shift to the next tick
+            // TODO we also have to run this if we're moving right and the price is exactly on the target tick
             if (amountInRemaining > 0) {
                 TickInfo storage tickInfo = tickInfos[tick];
 
                 // if the tick is initialized, we must update it
                 if (tickInfo.growthOutside._x != 0) {
                     // calculate the amount of reserves to kick in/out
-                    int256 token1VirtualDelta;
+                    int120 token1VirtualDelta;
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         token1VirtualDelta += tickInfo.token1VirtualDeltas[i];
                     }
@@ -631,6 +634,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // the price toward the direction we're moving (past the tick), if it has to move at all?
                     int256 token0VirtualDelta;
                     {
+                        // this is essentially getQuoteInverse, but we probably don't want to round up...
                         uint256 token0VirtualDeltaUnsigned = (uint256(
                             token1VirtualDelta < 0 ? -token1VirtualDelta : token1VirtualDelta
                         ) << 112) / step.nextPrice._x;

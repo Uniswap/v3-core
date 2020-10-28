@@ -17,41 +17,69 @@ describe('PriceMath', () => {
   describe('#getInputToRatio', () => {
     describe('edge cases', () => {
       it('0 all', async () => {
-        await expect(priceMath.getInputToRatio(0, 0, 0, [0])).to.be.revertedWith('FixedPoint: DIV_BY_ZERO')
+        await expect(priceMath.getInputToRatio(0, 0, 0, [0], [0], true)).to.be.revertedWith('FixedPoint: DIV_BY_ZERO')
+        await expect(priceMath.getInputToRatio(0, 0, 0, [0], [0], false)).to.be.revertedWith('FixedPoint: DIV_BY_ZERO')
       })
 
       it('returns 0 if wrong direction', async () => {
         // no amount in will move the ratio of reserve in/reserve out from 1:50 to 1:75
+        const price = expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75))
         expect(
-          await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 30, [
-            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
-          ])
+          await priceMath.getInputToRatio(
+            expandTo18Decimals(1),
+            expandTo18Decimals(50),
+            30,
+            [price],
+            [BigNumber.from(2).pow(224).div(price)],
+            false
+          )
         ).to.eq('0')
       })
 
       it('returns 0 if price is equal', async () => {
+        const price = expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50))
+
         expect(
-          await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 30, [
-            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
-          ])
+          await priceMath.getInputToRatio(
+            expandTo18Decimals(1),
+            expandTo18Decimals(50),
+            30,
+            [price],
+            [BigNumber.from(2).pow(224).div(price)],
+            false
+          )
         ).to.eq('0')
       })
 
       it('gas: returns 0 if price is equal', async () => {
+        const price = expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50))
+
         await snapshotGasCost(
-          priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 3000, [
-            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
-          ])
+          priceMath.getGasCostOfGetInputToRatio(
+            expandTo18Decimals(1),
+            expandTo18Decimals(50),
+            3000,
+            [price],
+            [BigNumber.from(2).pow(224).div(price)],
+            false
+          )
         )
       })
     })
 
     describe('1:100 to 1:50 at 30bps', () => {
       it('returns 414835953198742784', async () => {
+        const price = expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50))
         expect(
-          await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 30, [
-            expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
-          ])
+          await priceMath.getInputToRatio(
+            expandTo18Decimals(1),
+            expandTo18Decimals(100),
+            30,
+            [price],
+            [BigNumber.from(2).pow(224).div(price)],
+            false
+          )
+          // TODO redo this?
           // close but not exact
           // https://www.wolframalpha.com/input/?i=solve+%28x0+%2B+x%29+%2F+%28%28y0+*+x0%29+%2F+%28x0+%2B+x+*+%281-f%29%29%29+%3D+p+for+x+where+x0+%3D+1e18+and+y0+%3D+1e20+and+f+%3D+0.003+and+p+%3D+1%2F50
         ).to.eq('414835953198742811')
@@ -72,18 +100,30 @@ describe('PriceMath', () => {
     })
 
     it('1:100 to 1:50 at 60bps', async () => {
+      const price = expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50))
       expect(
-        await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 60, [
-          expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(50)),
-        ])
+        await priceMath.getInputToRatio(
+          expandTo18Decimals(1),
+          expandTo18Decimals(100),
+          60,
+          [price],
+          [BigNumber.from(2).pow(224).div(price)],
+          false
+        )
       ).to.eq('415460493085696915')
     })
 
     it('1:100 to 1:75 at 45bps', async () => {
+      const price = expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75))
       expect(
-        await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 45, [
-          expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
-        ])
+        await priceMath.getInputToRatio(
+          expandTo18Decimals(1),
+          expandTo18Decimals(100),
+          45,
+          [price],
+          [BigNumber.from(2).pow(224).div(price)],
+          false
+        )
       ).to.eq('155049452346487537')
     })
 
@@ -123,7 +163,14 @@ describe('PriceMath', () => {
         },
       ]) {
         it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${inOutRatio.toString()})`, async () => {
-          const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, [inOutRatio])
+          const amountIn = await priceMath.getInputToRatio(
+            reserveIn,
+            reserveOut,
+            lpFee,
+            [inOutRatio],
+            [BigNumber.from(2).pow(224).div(inOutRatio)],
+            false
+          )
 
           expect(amountIn.toString()).to.matchSnapshot('computed amount in')
 
@@ -145,10 +192,16 @@ describe('PriceMath', () => {
     })
 
     it('gas: 1:100 to 1:75 at 45bps', async () => {
+      const price = expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75))
       await snapshotGasCost(
-        priceMath.getGasCostOfGetInputToRatio(expandTo18Decimals(1), expandTo18Decimals(100), 45, [
-          expandTo18Decimals(1).mul(BigNumber.from(2).pow(112)).div(expandTo18Decimals(75)),
-        ])
+        priceMath.getGasCostOfGetInputToRatio(
+          expandTo18Decimals(1),
+          expandTo18Decimals(100),
+          45,
+          [price],
+          [BigNumber.from(2).pow(224).div(price)],
+          false
+        )
       )
     })
   })

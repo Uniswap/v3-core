@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
+import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
@@ -25,8 +26,8 @@ library PriceMath {
     }
 
     // get an amount quote at a price (inverted), rounded up
-    function getQuoteInverse(uint112 amount, FixedPoint.uq112x112 memory ratio) internal pure returns (uint256) {
-        return (uint256(FixedPoint.encode(amount)._x) + ROUND_UP) / ratio._x;
+    function getQuoteInverse(uint144 amount, FixedPoint.uq112x112 memory ratio) internal pure returns (uint256) {
+        return ((uint256(amount) << 112).add(ROUND_UP)) / ratio._x;
     }
 
     function getAmountOut(
@@ -45,24 +46,35 @@ library PriceMath {
         uint112 reserveIn,
         uint112 reserveOut,
         uint16 lpFee,
-        FixedPoint.uq112x112 memory inOutRatio
+        FixedPoint.uq112x112 memory nextPrice,        // 1 / 0
+        FixedPoint.uq112x112 memory nextPriceInverse, // 0 / 1
+        bool zeroForOne
     ) internal pure returns (uint112 amountIn) {
-        FixedPoint.uq112x112 memory reserveRatio = FixedPoint.fraction(reserveIn, reserveOut);
-        if (reserveRatio._x >= inOutRatio._x) return 0; // short-circuit if the price is equal to or above target
+        FixedPoint.uq112x112 memory reservePrice; // 1 / 0
+        if (zeroForOne) {
+            reservePrice = FixedPoint.fraction(reserveOut, reserveIn);
+            if (reservePrice._x <= nextPrice._x) return 0;
+        } else {
+            reservePrice = FixedPoint.fraction(reserveIn, reserveOut);
+            if (reservePrice._x >= nextPrice._x) return 0;
+        }
 
-        uint256 inputToRatio = getInputToRatioUQ144x112(reserveIn, reserveOut, lpFee, inOutRatio._x).add(ROUND_UP);
-        amountIn = (inputToRatio >> 112).toUint112();
+        uint256 inputToRatio = getInputToRatioUQ144x112(
+            reserveIn, reserveOut, lpFee, zeroForOne ? nextPriceInverse._x : nextPrice._x
+        );
+        amountIn = (inputToRatio.add(ROUND_UP) >> 112).toUint112();
 
         // get the output amount that the input amount entitles the swapper to
         uint256 amountOut = getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
 
         // if necessary, increase the input amount s.t. we're guaranteed to have crossed the target price
-        uint112 reserveOutAfter = reserveOut.sub(amountOut).toUint112();
-        uint112 reserveInAfter = (uint256(reserveIn) + amountIn).toUint112();
-        uint256 reserveInMinimum = getQuote(reserveOutAfter, inOutRatio);
-        if (reserveInAfter < reserveInMinimum) {
-            amountIn = (reserveInMinimum - reserveIn).toUint112();
-        }
+        // TODO do we need to do something along the lines of minning amountOut with reserveOut - 1 here?
+        uint112 reserveOutNext = reserveOut.sub(amountOut).toUint112();
+        uint256 reserveInThreshold = zeroForOne
+            ? getQuoteInverse(reserveOutNext, nextPrice)
+            : getQuote(reserveOutNext, nextPrice);
+        uint256 amountInMinimum = reserveInThreshold.sub(reserveIn);
+        amountIn = Math.max(amountIn, amountInMinimum).toUint112();
     }
 
     /**

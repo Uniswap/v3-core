@@ -546,7 +546,7 @@ describe('UniswapV3Pair', () => {
       // TODO fix this
       await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95292372649584241')
+        .withArgs(pair.address, wallet.address, '95292372649584237')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
