@@ -22,7 +22,8 @@ library PriceMath {
     function getQuoteFromDenominator(uint144 denominatorAmount, FixedPoint.uq112x112 memory ratio)
         internal pure returns (uint256)
     {
-        return FullMath.mulDiv(denominatorAmount, ratio._x, uint256(1) << 112, true);
+        bool roundUp = mulmod(denominatorAmount, ratio._x, uint256(1) << 112) > 0;
+        return FullMath.mulDiv(denominatorAmount, ratio._x, uint256(1) << 112) + (roundUp ? 1 : 0);
     }
 
     // get a quote for a denominator amount from a numerator amount and a numerator/denominator price
@@ -89,8 +90,8 @@ library PriceMath {
         FixedPoint.uq112x112 memory priceNext = zeroForOne
             ? FixedPoint.fraction(reserveOutNext, reserveInNext)
             : FixedPoint.fraction(reserveInNext, reserveOutNext);
-        if (zeroForOne) assert(priceNext._x <= nextPrice._x && priceNext._x > nextPrice._x * 99 / 100);
-        else assert(priceNext._x >= nextPrice._x  && priceNext._x < nextPrice._x * 101 / 100);
+        if (zeroForOne) assert(priceNext._x <= nextPrice._x && priceNext._x >= nextPrice._x * 995 / 1000);
+        else assert(priceNext._x >= nextPrice._x  && priceNext._x <= nextPrice._x * 1005 / 1000);
     }
 
     /**
