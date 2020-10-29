@@ -25,6 +25,7 @@ contract PriceMathEchidnaTest {
         uint112 amountIn
     ) external pure {
         require(lpFee < PriceMath.LP_FEE_BASE);
+        require(reserveIn > 0 && reserveOut > 0);
         assert(PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn) < reserveOut);
     }
 
