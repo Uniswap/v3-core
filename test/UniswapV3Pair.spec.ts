@@ -26,9 +26,10 @@ describe('UniswapV3Pair', () => {
   let factory: Contract
   let pair: Contract
   let pairTest: Contract
+  let testCallee: Contract
 
   beforeEach('load fixture', async () => {
-    ;({token0, token1, token2, factory, pair, pairTest} = await waffle.loadFixture(pairFixture))
+    ;({token0, token1, token2, factory, pair, pairTest, testCallee} = await waffle.loadFixture(pairFixture))
   })
 
   // this invariant should always hold true.
@@ -260,12 +261,30 @@ describe('UniswapV3Pair', () => {
   })
 
   const initializeToken0Amount = expandTo18Decimals(2)
-  const initializeToken1Amount = expandTo18Decimals(2)
+  const initializeToken1Amount = initializeToken0Amount
   async function initializeAtZeroTick(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
     await token0.approve(pair.address, tokenAmount)
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote)
   }
+
+  describe('callee', () => {
+    beforeEach(() => initializeAtZeroTick(initializeToken0Amount, FeeVote.FeeVote0))
+    it('swap0For1 calls the callee', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await expect(pair.swap0For1(1000, testCallee.address, '0xabcd'))
+        .to.emit(testCallee, 'Callback')
+        .withArgs(pair.address, wallet.address, 0, 999, '0xabcd')
+    })
+
+    it('swap1For0 calls the callee', async () => {
+      await token1.approve(pair.address, constants.MaxUint256)
+      await expect(pair.swap1For0(1000, testCallee.address, '0xdeff'))
+        .to.emit(testCallee, 'Callback')
+        .withArgs(pair.address, wallet.address, 999, 0, '0xdeff')
+    })
+  })
+
   // TODO test rest of categories in a loop to reduce code duplication
   describe('post-initialize (fee vote 1 - 0.10%)', () => {
     const fee = FeeVote.FeeVote1

@@ -699,7 +699,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickCurrent = tick;
         // this is different than v2
         TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut);
-        if (params.data.length > 0) IUniswapV3Callee(params.to).uniswapV3Call(msg.sender, 0, amountOut, params.data);
+        if (params.data.length > 0)
+            IUniswapV3Callee(params.to).uniswapV3Call(
+                msg.sender,
+                params.zeroForOne ? 0 : amountOut,
+                params.zeroForOne ? amountOut : 0,
+                params.data
+            );
         TransferHelper.safeTransferFrom(
             params.zeroForOne ? token0 : token1,
             msg.sender,

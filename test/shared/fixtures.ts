@@ -8,6 +8,7 @@ import TestERC20 from '../../build/TestERC20.json'
 import UniswapV3Factory from '../../build/UniswapV3Factory.json'
 import UniswapV3PairTest from '../../build/UniswapV3PairTest.json'
 import MockTimeUniswapV3Pair from '../../build/MockTimeUniswapV3Pair.json'
+import TestUniswapV3Callee from '../../build/TestUniswapV3Callee.json'
 
 interface FactoryFixture {
   factory: Contract
@@ -41,6 +42,7 @@ type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 interface PairFixture extends TokensAndFactoryFixture {
   pair: Contract
   pairTest: Contract
+  testCallee: Contract
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
@@ -54,5 +56,7 @@ export async function pairFixture([wallet]: Signer[]): Promise<PairFixture> {
   await pair.setTime(TEST_PAIR_START_TIME)
   const pairTest = await deployContract(wallet, UniswapV3PairTest, [pair.address])
 
-  return {token0, token1, token2, pair, pairTest, factory}
+  const testCallee = await deployContract(wallet, TestUniswapV3Callee, [])
+
+  return {token0, token1, token2, pair, pairTest, factory, testCallee}
 }
