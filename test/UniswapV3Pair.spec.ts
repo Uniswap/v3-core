@@ -273,15 +273,15 @@ describe('UniswapV3Pair', () => {
     it('swap0For1 calls the callee', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(1000, testCallee.address, '0xabcd'))
-        .to.emit(testCallee, 'Callback')
-        .withArgs(pair.address, wallet.address, 0, 999, '0xabcd')
+        .to.emit(testCallee, 'Swap0For1Callback')
+        .withArgs(pair.address, wallet.address, 999, '0xabcd')
     })
 
     it('swap1For0 calls the callee', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(1000, testCallee.address, '0xdeff'))
-        .to.emit(testCallee, 'Callback')
-        .withArgs(pair.address, wallet.address, 999, 0, '0xdeff')
+        .to.emit(testCallee, 'Swap1For0Callback')
+        .withArgs(pair.address, wallet.address, 999, '0xdeff')
     })
   })
 
