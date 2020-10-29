@@ -16,20 +16,19 @@ library TickMath {
     // 1.01**tick <= 2**112 - 1
     // tick <= log_1.01(2**112 - 1)
     // tick = floor(log_1.01(2**112 - 1)) = 7802
-    int16 public constant MAX_TICK = 7732;
+    int16 public constant MAX_TICK = -MIN_TICK;
 
     function getRatioAtTick(int16 tick) internal pure returns (FixedPoint.uq112x112 memory) {
         // no need to check tick range since it's checked in getRatioAtTickUQ128x128
-        uint224 ratioAtTick = uint224(getRatioAtTickUQ128x128(tick) >> 16);
+        uint256 ratioAtTick = getRatioAtTickUQ128x128(tick) >> 16;
+        assert(ratioAtTick <= uint224(-1));
         return FixedPoint.uq112x112(uint224(ratioAtTick));
     }
 
-    /**
-     * Calculate 1.01^tick << 128 (i.e. Q128x128).  Throw in case |tick| > 7802.
-     */
+    // calculate 1.01^tick << 128
     function getRatioAtTickUQ128x128(int256 tick) internal pure returns (uint256 ratio) {
         uint256 absTick = uint256(tick >= 0 ? tick : -tick);
-        require(absTick <= 7732);
+        assert(absTick <= uint(MAX_TICK));
 
         ratio = absTick & 0x1 != 0 ? 0xfd7720f353a4c0a237c32b16cfd7720f : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfaf4ae9099c9241ccf4a1b745e424d72) >> 128;
