@@ -588,10 +588,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 uint256 reserveOutVirtualThreshold = params.zeroForOne
                     ? PriceMath.getQuoteFromDenominator(reserveInVirtualNext, step.nextPrice)
                     : PriceMath.getQuoteFromNumerator(reserveInVirtualNext, step.nextPrice);
-                step.amountOut = Math.min(
-                    step.amountOut,
-                    reserveOutVirtual.sub(reserveOutVirtualThreshold)
-                ).toUint112();
+                step.amountOut = Math
+                    .min(step.amountOut, reserveOutVirtual.sub(reserveOutVirtualThreshold))
+                    .toUint112();
 
                 if (params.zeroForOne) {
                     reserve0Virtual = (uint256(reserve0Virtual) + step.amountIn).toUint112();
@@ -700,13 +699,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickCurrent = tick;
         // this is different than v2
         TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut);
-        if (params.data.length > 0)
-            IUniswapV3Callee(params.to).uniswapV3Call(
-                msg.sender,
-                params.zeroForOne ? 0 : amountOut,
-                params.zeroForOne ? amountOut : 0,
-                params.data
-            );
+        if (params.data.length > 0) {
+            params.zeroForOne
+                ? IUniswapV3Callee(params.to).swap0For1Callback(msg.sender, amountOut, params.data)
+                : IUniswapV3Callee(params.to).swap1For0Callback(msg.sender, amountOut, params.data);
+        }
         TransferHelper.safeTransferFrom(
             params.zeroForOne ? token0 : token1,
             msg.sender,
