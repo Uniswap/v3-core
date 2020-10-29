@@ -1,5 +1,5 @@
 import {waffle} from '@nomiclabs/buidler'
-import {BigNumber, utils, constants, Contract, Wallet, ContractTransaction} from 'ethers'
+import {BigNumber, utils, constants, Contract, ContractTransaction} from 'ethers'
 import MockTimeUniswapV3Pair from '../build/MockTimeUniswapV3Pair.json'
 import {expect} from './shared/expect'
 
@@ -267,12 +267,13 @@ describe('UniswapV3Pair', () => {
   })
 
   const initializeToken0Amount = expandTo18Decimals(2)
-  const initializeToken1Amount = expandTo18Decimals(2)
+  const initializeToken1Amount = initializeToken0Amount
   async function initializeAtZeroTick(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
     await token0.approve(pair.address, tokenAmount)
     await token1.approve(pair.address, tokenAmount)
     await pair.initialize(tokenAmount, tokenAmount, 0, feeVote)
   }
+
   // TODO test rest of categories in a loop to reduce code duplication
   describe('post-initialize (fee vote 1 - 0.10%)', () => {
     const fee = FeeVote.FeeVote1
