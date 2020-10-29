@@ -84,7 +84,7 @@ library PriceMath {
 
         // if necessary, increase the input amount s.t. we're guaranteed to have crossed the target price
         uint112 reserveOutNext = reserveOut - amountOut;
-        uint256 reserveInThreshold = zeroForOne
+        uint256 minimumReserveIn = zeroForOne
             ? getQuoteFromNumerator(reserveOutNext, nextPrice)
             : getQuoteFromDenominator(reserveOutNext, nextPrice);
         require(minimumReserveIn <= uint112(-1), 'PriceMath: INPUT_RESERVES_NECESSARILY_OVERFLOW');
