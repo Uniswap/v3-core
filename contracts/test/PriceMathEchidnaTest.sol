@@ -57,25 +57,5 @@ contract PriceMathEchidnaTest {
             else assert(priceBefore >= nextPrice._x);
             return;
         }
-
-        // PriceMath.getAmountOut
-        uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
-            (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
-
-        // TODO work on these
-        // assert(amountOut > 0);
-        // if (amountOut >= reserveOut) amountOut = reserveOut - 1;
-
-        uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
-        uint256 reserveInAfter = uint256(reserveIn).add(amountIn);
-        // TODO these should be uint112(-1)
-        assert(reserveOutAfter <= uint144(-1));
-        assert(reserveInAfter <= uint144(-1));
-        uint256 priceAfter = zeroForOne
-            ? (reserveOutAfter << 112) / reserveInAfter
-            : (reserveInAfter << 112) / reserveOutAfter;
-
-        if (zeroForOne) assert(priceAfter <= nextPrice._x);
-        else assert(priceAfter >= nextPrice._x);
     }
 }

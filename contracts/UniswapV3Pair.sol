@@ -563,8 +563,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? (reserve0Virtual, reserve1Virtual)
                 : (reserve1Virtual, reserve0Virtual);
 
-            // compute the ~minimum amount of input token required s.t. the price _equals or exceeds_ the target price
-            // after computing the corresponding output amount according to x * y = k, given the current fee
+            // compute the ~minimum amount of input token required s.t. the price equals or exceeds the target price
+            // _after_ computing the corresponding output amount according to x * y = k given the current fee
             uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
                 reserveInVirtual,
                 reserveOutVirtual,
@@ -581,24 +581,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // calculate the owed output amount, given the current fee
                 step.amountOut = PriceMath.getAmountOut(reserveInVirtual, reserveOutVirtual, fee, step.amountIn);
-
-               // TODO remove this eventually, it's meant to ensure getInputToRatio is working correctly
-                if (step.amountIn == amountInRequiredForShift) {
-                    FixedPoint.uq112x112 memory priceNext;
-                    if (params.zeroForOne) {
-                        priceNext = FixedPoint.fraction(
-                            reserve1Virtual.sub(step.amountOut).toUint112(),
-                            (uint256(reserve0Virtual) + step.amountIn).toUint112()
-                        );
-                        assert(priceNext._x <= step.nextPrice._x);
-                    } else {
-                        priceNext = FixedPoint.fraction(
-                            (uint256(reserve1Virtual) + step.amountIn).toUint112(),
-                            reserve0Virtual.sub(step.amountOut).toUint112()
-                        );
-                        assert(priceNext._x >= step.nextPrice._x);
-                    }
-                }
 
                 // calculate the maximum output amount s.t. the reserves price is guaranteed to be as close as possible
                 // to the target price _without_ exceeding it

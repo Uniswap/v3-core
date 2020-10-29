@@ -144,12 +144,6 @@ describe('PriceMath', () => {
           inOutRatio: BigNumber.from('10447815210759932949745600021781164648681654221105666413902984560'),
         },
         {
-          reserveIn: BigNumber.from('1'),
-          reserveOut: BigNumber.from('114860866806825295852992454585544'),
-          lpFee: BigNumber.from('0'),
-          inOutRatio: BigNumber.from('47'),
-        },
-        {
           reserveIn: BigNumber.from('123'),
           reserveOut: BigNumber.from('1953579828864582940591891444058760'),
           lpFee: BigNumber.from('6'),
