@@ -48,11 +48,6 @@ contract PriceMathEchidnaTest {
             ? (uint256(reserveOut) << 112) / reserveIn
             : (uint256(reserveIn) << 112) / reserveOut;
 
-        // the target next price is within 10%
-        // TODO can we remove this?
-        if (zeroForOne) require(priceBefore.mul(90).div(100) <= nextPrice._x);
-        else require(priceBefore.mul(110).div(100) >= nextPrice._x);
-
         uint112 amountIn = PriceMath.getInputToRatio(
             reserveIn,
             reserveOut,
@@ -67,6 +62,17 @@ contract PriceMathEchidnaTest {
             if (zeroForOne) assert(priceBefore <= nextPrice._x);
             else assert(priceBefore >= nextPrice._x);
             return;
+        } else {
+            uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
+            uint112 reserveInNext = reserveIn + amountIn;
+            uint112 reserveOutNext = reserveOut - amountOut;
+            FixedPoint.uq112x112 memory priceAfterSwap = zeroForOne
+                ? FixedPoint.fraction(reserveOutNext, reserveInNext)
+                : FixedPoint.fraction(reserveInNext, reserveOutNext);
+
+            if (zeroForOne)
+                assert(priceAfterSwap._x <= nextPrice._x && priceAfterSwap._x >= (nextPrice._x * 995) / 1000);
+            else assert(priceAfterSwap._x >= nextPrice._x && priceAfterSwap._x <= (nextPrice._x * 1005) / 1000);
         }
     }
 }
