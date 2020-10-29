@@ -588,10 +588,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 uint256 reserveOutVirtualThreshold = params.zeroForOne
                     ? PriceMath.getQuoteFromDenominator(reserveInVirtualNext, step.nextPrice)
                     : PriceMath.getQuoteFromNumerator(reserveInVirtualNext, step.nextPrice);
-                step.amountOut = Math.min(
-                    step.amountOut,
-                    reserveOutVirtual.sub(reserveOutVirtualThreshold)
-                ).toUint112();
+                step.amountOut = Math
+                    .min(step.amountOut, reserveOutVirtual.sub(reserveOutVirtualThreshold))
+                    .toUint112();
 
                 if (params.zeroForOne) {
                     reserve0Virtual = (uint256(reserve0Virtual) + step.amountIn).toUint112();
