@@ -79,12 +79,12 @@ library PriceMath {
         uint256 reserveInThreshold = zeroForOne
             ? getQuoteFromNumerator(reserveOutNext, nextPrice)
             : getQuoteFromDenominator(reserveOutNext, nextPrice);
+        require(reserveInThreshold <= uint112(-1), 'PriceMath: INPUT_RESERVES_NECESSARILY_OVERFLOW');
         assert(reserveInThreshold >= reserveIn); // we can subtract safely
-        assert(reserveInThreshold - reserveIn <= uint112(-1)); // we can cast safely
         amountIn = uint112(Math.max(amountIn, reserveInThreshold - reserveIn));
+        require(uint112(-1) - amountIn >= reserveIn, 'PriceMath: INPUT_RESERVES_OVERFLOW');
 
         // TODO remove this eventually, just checking that we actually exceeded the price (and by < than 1%)
-        assert(uint112(-1) - amountIn >= reserveIn); // we can add safely
         uint112 reserveInNext = reserveIn + amountIn;
         FixedPoint.uq112x112 memory priceNext = zeroForOne
             ? FixedPoint.fraction(reserveOutNext, reserveInNext)
