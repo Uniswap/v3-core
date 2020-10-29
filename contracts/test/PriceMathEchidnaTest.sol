@@ -22,34 +22,40 @@ contract PriceMathEchidnaTest {
         uint112 reserveIn,
         uint112 reserveOut,
         uint16 lpFee,
-        uint224 inOutRatio
-    ) external view {
+        int16 tick,
+        bool zeroForOne
+    ) external pure {
         // UniswapV3Pair.TOKEN_MIN
         require(reserveIn >= 101 && reserveOut >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
-        require(inOutRatio >= MIN_PRICE && inOutRatio <= MAX_PRICE);
+        require(uint(tick < 0 ? -tick : tick) < uint(TickMath.MAX_TICK));
+        FixedPoint.uq112x112 memory nextPrice = zeroForOne
+            ? TickMath.getRatioAtTick(tick)
+            : TickMath.getRatioAtTick(tick + 1);
 
-        uint256 priceBefore = (uint256(reserveIn) << 112) / reserveOut;
+        uint256 priceBefore = zeroForOne
+            ? (uint256(reserveOut) << 112) / reserveIn
+            : (uint256(reserveIn) << 112) / reserveOut;
 
-        uint112 amountIn = PriceMath.getInputToRatio(reserveIn, reserveOut, lpFee, FixedPoint.uq112x112(inOutRatio));
+        // the target next price is within 10%
+        // TODO can we remove this?
+        if (zeroForOne) require(priceBefore.mul(90).div(100) <= nextPrice._x);
+        else require(priceBefore.mul(110).div(100) >= nextPrice._x);
+
+        uint112 amountIn = PriceMath.getInputToRatio(
+            reserveIn,
+            reserveOut,
+            lpFee,
+            nextPrice,
+            zeroForOne ? TickMath.getRatioAtTick(-tick) : TickMath.getRatioAtTick(-(tick + 1)),
+            zeroForOne
+        );
 
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
-            assert(priceBefore >= inOutRatio);
+            if (zeroForOne) assert(priceBefore <= nextPrice._x);
+            else assert(priceBefore >= nextPrice._x);
             return;
         }
-
-        // the target next price is within 10%
-        // todo: can we remove this?
-        require(priceBefore.mul(110).div(100) >= inOutRatio);
-
-        uint256 amountOut = ((uint256(reserveOut) * amountIn * (PriceMath.LP_FEE_BASE - lpFee)) /
-            (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) + uint256(reserveIn) * PriceMath.LP_FEE_BASE));
-
-        assert(amountOut > 0 && amountOut < reserveOut);
-
-        uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
-
-        assert(((uint256(reserveIn).add(amountIn)) << 112) / reserveOutAfter >= inOutRatio);
     }
 }
