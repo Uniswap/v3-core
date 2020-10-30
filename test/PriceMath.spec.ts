@@ -133,45 +133,71 @@ describe('PriceMath', () => {
     })
 
     describe('echidna edge cases', () => {
-      const LP_FEE_BASE = BigNumber.from(10000)
       // these edge cases were found by echidna
-      for (let {reserveOut, reserveIn, inOutRatio, lpFee} of [
+      for (let {reserveOut, reserveIn, tick, zeroForOne, lpFee} of [
         {
-          reserveIn: BigNumber.from('1040'),
-          reserveOut: BigNumber.from('1090214879718873987679620123847534'),
-          lpFee: BigNumber.from('174'),
-          inOutRatio: BigNumber.from('5590'),
+          reserveIn: BigNumber.from('464695615909263721513790873246206'),
+          reserveOut: BigNumber.from('269'),
+          lpFee: BigNumber.from('758'),
+          tick: BigNumber.from('7100'),
+          zeroForOne: false,
         },
         {
-          reserveIn: BigNumber.from('1005'),
-          reserveOut: BigNumber.from('1137'),
-          lpFee: BigNumber.from('1'),
-          inOutRatio: BigNumber.from('10447815210759932949745600021781164648681654221105666413902984560'),
+          reserveIn: BigNumber.from('102'),
+          reserveOut: BigNumber.from('726'),
+          lpFee: BigNumber.from('1277'),
+          tick: BigNumber.from('191'),
+          zeroForOne: true,
         },
         {
-          reserveIn: BigNumber.from('123'),
-          reserveOut: BigNumber.from('1953579828864582940591891444058760'),
-          lpFee: BigNumber.from('6'),
-          inOutRatio: BigNumber.from('354'),
-        },
-        {
-          reserveIn: BigNumber.from('15944303097720152669124120417149'),
-          reserveOut: BigNumber.from('102'),
-          lpFee: BigNumber.from('1'),
-          inOutRatio: BigNumber.from('828057777287919958470307583336398120126455251994321806143774553'),
+          reserveIn: BigNumber.from('113'),
+          reserveOut: BigNumber.from('880'),
+          lpFee: BigNumber.from('19'),
+          tick: BigNumber.from('200'),
+          zeroForOne: true,
         },
       ]) {
-        it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${inOutRatio.toString()})`, async () => {
+        it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${tick.toString()},${zeroForOne})`, async () => {
+          const [targetPrice, inverseTargetPrice] = await Promise.all([
+            tickMath.getPrice(tick),
+            tickMath.getPrice(-tick),
+          ])
           const amountIn = await priceMath.getInputToRatio(
             reserveIn,
             reserveOut,
             lpFee,
-            [inOutRatio],
-            [BigNumber.from(2).pow(224).div(inOutRatio)],
-            false
+            targetPrice,
+            inverseTargetPrice,
+            zeroForOne
           )
 
-          expect(amountIn.toString()).to.matchSnapshot('computed amount in')
+          const amountOut = await priceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn)
+          const priceAfterSwap = zeroForOne
+            ? encodePrice(reserveOut.sub(amountOut), reserveIn.add(amountIn))
+            : encodePrice(reserveIn.add(amountIn), reserveOut.sub(amountOut))
+
+          expect({
+            amountIn: amountIn.toString(),
+            amountOut: amountOut.toString(),
+            targetPrice: targetPrice[0].toString(),
+            priceAfter: priceAfterSwap.toString(),
+          }).to.matchSnapshot('params')
+
+          if (zeroForOne) expect(priceAfterSwap).to.be.lte(targetPrice[0])
+          else expect(priceAfterSwap).to.be.gte(targetPrice[0])
+
+          // check we did not go too far
+          if (amountIn.eq(0)) {
+            const originalPrice = zeroForOne ? encodePrice(reserveOut, reserveIn) : encodePrice(reserveIn, reserveOut)
+            if (zeroForOne) expect(originalPrice).to.be.lt(targetPrice)
+            else expect(origin).to.be.gte(targetPrice)
+          } else if (amountIn.gt(0)) {
+            const [nextTickPrice] = await tickMath.getPrice(zeroForOne ? tick.sub(1) : tick.add(1))
+
+            if (zeroForOne)
+              expect(priceAfterSwap, 'price is not past the next (lower) tick price').to.not.be.lte(nextTickPrice)
+            else expect(priceAfterSwap, 'price is not past the next (greater) tick price').to.not.be.gte(nextTickPrice)
+          }
         })
       }
 

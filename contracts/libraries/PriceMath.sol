@@ -38,6 +38,8 @@ library PriceMath {
         return ((uint256(numeratorAmount) << 112) / ratio._x) + (roundUp ? 1 : 0);
     }
 
+    // returns the amount out that should be sent for the given amount in, reserves and lpFee
+    // the returned amount will always be less than reserveOut if reserveOut > 0 and reserveIn > 0 and lpFee < LP_FEE_BASE
     function getAmountOut(
         uint112 reserveIn,
         uint112 reserveOut,
@@ -79,26 +81,16 @@ library PriceMath {
 
         // get the output amount that the input amount entitles the swapper to
         uint112 amountOut = getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
-        // TODO is this necessary?
-        amountOut = uint112(Math.min(amountOut, reserveOut - 1));
 
         // if necessary, increase the input amount s.t. we're guaranteed to have crossed the target price
         uint112 reserveOutNext = reserveOut - amountOut;
-        uint256 reserveInThreshold = zeroForOne
+        uint256 minimumReserveIn = zeroForOne
             ? getQuoteFromNumerator(reserveOutNext, nextPrice)
             : getQuoteFromDenominator(reserveOutNext, nextPrice);
-        require(reserveInThreshold <= uint112(-1), 'PriceMath: INPUT_RESERVES_NECESSARILY_OVERFLOW');
-        assert(reserveInThreshold >= reserveIn); // we can subtract safely
-        amountIn = uint112(Math.max(amountIn, reserveInThreshold - reserveIn));
+        require(minimumReserveIn <= uint112(-1), 'PriceMath: INPUT_RESERVES_NECESSARILY_OVERFLOW');
+        assert(minimumReserveIn >= reserveIn); // we can subtract safely
+        amountIn = uint112(Math.max(amountIn, minimumReserveIn - reserveIn));
         require(uint112(-1) - amountIn >= reserveIn, 'PriceMath: INPUT_RESERVES_OVERFLOW');
-
-        // TODO remove this eventually, just checking that we actually exceeded the price (and by < than 1%)
-        uint112 reserveInNext = reserveIn + amountIn;
-        FixedPoint.uq112x112 memory priceNext = zeroForOne
-            ? FixedPoint.fraction(reserveOutNext, reserveInNext)
-            : FixedPoint.fraction(reserveInNext, reserveOutNext);
-        if (zeroForOne) assert(priceNext._x <= nextPrice._x && priceNext._x >= (nextPrice._x * 995) / 1000);
-        else assert(priceNext._x >= nextPrice._x && priceNext._x <= (nextPrice._x * 1005) / 1000);
     }
 
     /**

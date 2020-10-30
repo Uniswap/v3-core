@@ -50,11 +50,8 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {
-  return [
-    reserve1.mul(BigNumber.from(2).pow(112)).div(reserve0),
-    reserve0.mul(BigNumber.from(2).pow(112)).div(reserve1),
-  ]
+export function encodePrice(reserve1: BigNumber, reserve0: BigNumber): BigNumber {
+  return reserve1.mul(BigNumber.from(2).pow(112)).div(reserve0)
 }
 
 export function getPositionKey(address: string, lowerTick: number, upperTick: number, feeVote: FeeVote): string {
