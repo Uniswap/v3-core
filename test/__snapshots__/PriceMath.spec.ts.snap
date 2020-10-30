@@ -1,5 +1,14 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(102,726,1277,191,true) 1`] = `
+Object {
+  "amountIn": "4",
+  "amountOut": "24",
+  "priceAfter": "34386720704636311275739702104834975",
+  "targetPrice": "34732968851089577431629185376309589",
+}
+`;
+
 exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(123,1953579828864582940591891444058760,6,354) 1`] = `"5"`;
 
 exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1005,1137,1,10447815210759932949745600021781164648681654221105666413902984560) 1`] = `"2012176016782699449905714286817"`;
@@ -12,8 +21,8 @@ exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRati
 Object {
   "amountIn": "323434110649163369820633726224867",
   "amountOut": "105",
-  "price": "24952460386141668856020999796520542359895644451028350780523976712",
   "priceAfter": "24952460386141668856020999796520573410562570473450518809976843189",
+  "targetPrice": "24952460386141668856020999796520542359895644451028350780523976712",
 }
 `;
 

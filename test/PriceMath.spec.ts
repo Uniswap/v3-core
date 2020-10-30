@@ -143,23 +143,44 @@ describe('PriceMath', () => {
           tick: BigNumber.from('7100'),
           zeroForOne: false,
         },
+        //102,726,1277,191,true
+        {
+          reserveIn: BigNumber.from('102'),
+          reserveOut: BigNumber.from('726'),
+          lpFee: BigNumber.from('1277'),
+          tick: BigNumber.from('191'),
+          zeroForOne: true,
+        },
       ]) {
         it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${tick.toString()},${zeroForOne})`, async () => {
           const [price, inversePrice] = await Promise.all([tickMath.getPrice(tick), tickMath.getPrice(-tick)])
-          const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, price, inversePrice, false)
+          const amountIn = await priceMath.getInputToRatio(
+            reserveIn,
+            reserveOut,
+            lpFee,
+            price,
+            inversePrice,
+            zeroForOne
+          )
 
           const amountOut = await priceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn)
-          const priceAfter = encodePrice(reserveOut.sub(amountOut), reserveIn.add(amountIn))[zeroForOne ? 1 : 0]
+          const priceAfter = zeroForOne
+            ? encodePrice(reserveOut.sub(amountOut), reserveIn.add(amountIn))
+            : encodePrice(reserveIn.add(amountIn), reserveOut.sub(amountOut))
 
           expect({
             amountIn: amountIn.toString(),
             amountOut: amountOut.toString(),
-            price: price[0].toString(),
+            targetPrice: price[0].toString(),
             priceAfter: priceAfter.toString(),
           }).to.matchSnapshot('params')
 
           if (zeroForOne) expect(priceAfter).to.be.lte(price[0])
           else expect(priceAfter).to.be.gte(price[0])
+
+          // check we did not go too far
+          if (zeroForOne) expect(priceAfter).to.be.gt(price[0].mul(995).div(1000))
+          else expect(priceAfter).to.be.lt(price[0].mul(1005).div(1000))
         })
       }
 
