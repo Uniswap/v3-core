@@ -135,43 +135,31 @@ describe('PriceMath', () => {
     describe('echidna edge cases', () => {
       const LP_FEE_BASE = BigNumber.from(10000)
       // these edge cases were found by echidna
-      for (let {reserveOut, reserveIn, inOutRatio, lpFee} of [
+      for (let {reserveOut, reserveIn, tick, zeroForOne, lpFee} of [
         {
-          reserveIn: BigNumber.from('1040'),
-          reserveOut: BigNumber.from('1090214879718873987679620123847534'),
-          lpFee: BigNumber.from('174'),
-          inOutRatio: BigNumber.from('5590'),
-        },
-        {
-          reserveIn: BigNumber.from('1005'),
-          reserveOut: BigNumber.from('1137'),
-          lpFee: BigNumber.from('1'),
-          inOutRatio: BigNumber.from('10447815210759932949745600021781164648681654221105666413902984560'),
-        },
-        {
-          reserveIn: BigNumber.from('123'),
-          reserveOut: BigNumber.from('1953579828864582940591891444058760'),
-          lpFee: BigNumber.from('6'),
-          inOutRatio: BigNumber.from('354'),
-        },
-        {
-          reserveIn: BigNumber.from('15944303097720152669124120417149'),
-          reserveOut: BigNumber.from('102'),
-          lpFee: BigNumber.from('1'),
-          inOutRatio: BigNumber.from('828057777287919958470307583336398120126455251994321806143774553'),
+          reserveIn: BigNumber.from('464695615909263721513790873246206'),
+          reserveOut: BigNumber.from('269'),
+          lpFee: BigNumber.from('758'),
+          tick: BigNumber.from('7100'),
+          zeroForOne: false,
         },
       ]) {
-        it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${inOutRatio.toString()})`, async () => {
-          const amountIn = await priceMath.getInputToRatio(
-            reserveIn,
-            reserveOut,
-            lpFee,
-            [inOutRatio],
-            [BigNumber.from(2).pow(224).div(inOutRatio)],
-            false
-          )
+        it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${tick.toString()},${zeroForOne})`, async () => {
+          const [price, inversePrice] = await Promise.all([tickMath.getPrice(tick), tickMath.getPrice(-tick)])
+          const amountIn = await priceMath.getInputToRatio(reserveIn, reserveOut, lpFee, price, inversePrice, false)
 
-          expect(amountIn.toString()).to.matchSnapshot('computed amount in')
+          const amountOut = await priceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn)
+          const priceAfter = encodePrice(reserveOut.sub(amountOut), reserveIn.add(amountIn))[zeroForOne ? 1 : 0]
+
+          expect({
+            amountIn: amountIn.toString(),
+            amountOut: amountOut.toString(),
+            price: price[0].toString(),
+            priceAfter: priceAfter.toString(),
+          }).to.matchSnapshot('params')
+
+          if (zeroForOne) expect(priceAfter).to.be.lte(price[0])
+          else expect(priceAfter).to.be.gte(price[0])
         })
       }
 
