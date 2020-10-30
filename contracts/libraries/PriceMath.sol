@@ -20,7 +20,9 @@ library PriceMath {
 
     // get a quote for a numerator amount from a denominator amount and a numerator/denominator price
     function getQuoteFromDenominator(uint144 denominatorAmount, FixedPoint.uq112x112 memory ratio)
-        internal pure returns (uint256)
+        internal
+        pure
+        returns (uint256)
     {
         bool roundUp = mulmod(denominatorAmount, ratio._x, uint256(1) << 112) > 0;
         return FullMath.mulDiv(denominatorAmount, ratio._x, uint256(1) << 112) + (roundUp ? 1 : 0);
@@ -28,7 +30,9 @@ library PriceMath {
 
     // get a quote for a denominator amount from a numerator amount and a numerator/denominator price
     function getQuoteFromNumerator(uint144 numeratorAmount, FixedPoint.uq112x112 memory ratio)
-        internal pure returns (uint256)
+        internal
+        pure
+        returns (uint256)
     {
         bool roundUp = mulmod(numeratorAmount, uint256(1) << 112, ratio._x) > 0;
         return ((uint256(numeratorAmount) << 112) / ratio._x) + (roundUp ? 1 : 0);
@@ -50,7 +54,7 @@ library PriceMath {
         uint112 reserveIn,
         uint112 reserveOut,
         uint16 lpFee,
-        FixedPoint.uq112x112 memory nextPrice,        // 1 / 0
+        FixedPoint.uq112x112 memory nextPrice, // 1 / 0
         FixedPoint.uq112x112 memory nextPriceInverse, // 0 / 1
         bool zeroForOne
     ) internal pure returns (uint112 amountIn) {
@@ -64,7 +68,10 @@ library PriceMath {
         }
 
         uint256 inputToRatio = getInputToRatioUQ144x112(
-            reserveIn, reserveOut, lpFee, zeroForOne ? nextPriceInverse._x : nextPrice._x
+            reserveIn,
+            reserveOut,
+            lpFee,
+            zeroForOne ? nextPriceInverse._x : nextPrice._x
         );
         assert(uint256(-1) - ROUND_UP >= inputToRatio); // we can add safely
         assert((inputToRatio + ROUND_UP) >> 112 <= uint112(-1)); // we can cast safely
@@ -90,8 +97,8 @@ library PriceMath {
         FixedPoint.uq112x112 memory priceNext = zeroForOne
             ? FixedPoint.fraction(reserveOutNext, reserveInNext)
             : FixedPoint.fraction(reserveInNext, reserveOutNext);
-        if (zeroForOne) assert(priceNext._x <= nextPrice._x && priceNext._x >= nextPrice._x * 995 / 1000);
-        else assert(priceNext._x >= nextPrice._x  && priceNext._x <= nextPrice._x * 1005 / 1000);
+        if (zeroForOne) assert(priceNext._x <= nextPrice._x && priceNext._x >= (nextPrice._x * 995) / 1000);
+        else assert(priceNext._x >= nextPrice._x && priceNext._x <= (nextPrice._x * 1005) / 1000);
     }
 
     /**

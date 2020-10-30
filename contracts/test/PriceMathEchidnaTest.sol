@@ -28,7 +28,7 @@ contract PriceMathEchidnaTest {
         // UniswapV3Pair.TOKEN_MIN
         require(reserveIn >= 101 && reserveOut >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
-        require(uint(tick < 0 ? -tick : tick) < uint(TickMath.MAX_TICK));
+        require(uint256(tick < 0 ? -tick : tick) < uint256(TickMath.MAX_TICK));
         FixedPoint.uq112x112 memory nextPrice = zeroForOne
             ? TickMath.getRatioAtTick(tick)
             : TickMath.getRatioAtTick(tick + 1);
