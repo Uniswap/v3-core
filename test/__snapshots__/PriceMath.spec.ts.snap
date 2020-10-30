@@ -9,6 +9,15 @@ Object {
 }
 `;
 
+exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(113,880,19,200,true) 1`] = `
+Object {
+  "amountIn": "4",
+  "amountOut": "30",
+  "priceAfter": "37721814784227380207272836579804116",
+  "targetPrice": "37986936509041317847013025054246590",
+}
+`;
+
 exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(123,1953579828864582940591891444058760,6,354) 1`] = `"5"`;
 
 exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1005,1137,1,10447815210759932949745600021781164648681654221105666413902984560) 1`] = `"2012176016782699449905714286817"`;

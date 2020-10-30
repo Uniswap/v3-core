@@ -133,7 +133,6 @@ describe('PriceMath', () => {
     })
 
     describe('echidna edge cases', () => {
-      const LP_FEE_BASE = BigNumber.from(10000)
       // these edge cases were found by echidna
       for (let {reserveOut, reserveIn, tick, zeroForOne, lpFee} of [
         {
@@ -143,7 +142,6 @@ describe('PriceMath', () => {
           tick: BigNumber.from('7100'),
           zeroForOne: false,
         },
-        //102,726,1277,191,true
         {
           reserveIn: BigNumber.from('102'),
           reserveOut: BigNumber.from('726'),
@@ -151,36 +149,55 @@ describe('PriceMath', () => {
           tick: BigNumber.from('191'),
           zeroForOne: true,
         },
+        {
+          reserveIn: BigNumber.from('113'),
+          reserveOut: BigNumber.from('880'),
+          lpFee: BigNumber.from('19'),
+          tick: BigNumber.from('200'),
+          zeroForOne: true,
+        },
       ]) {
-        it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${tick.toString()},${zeroForOne})`, async () => {
-          const [price, inversePrice] = await Promise.all([tickMath.getPrice(tick), tickMath.getPrice(-tick)])
+        it.only(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${tick.toString()},${zeroForOne})`, async () => {
+          const [targetPrice, inverseTargetPrice] = await Promise.all([
+            tickMath.getPrice(tick),
+            tickMath.getPrice(-tick),
+          ])
           const amountIn = await priceMath.getInputToRatio(
             reserveIn,
             reserveOut,
             lpFee,
-            price,
-            inversePrice,
+            targetPrice,
+            inverseTargetPrice,
             zeroForOne
           )
 
           const amountOut = await priceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn)
-          const priceAfter = zeroForOne
+          const priceAfterSwap = zeroForOne
             ? encodePrice(reserveOut.sub(amountOut), reserveIn.add(amountIn))
             : encodePrice(reserveIn.add(amountIn), reserveOut.sub(amountOut))
 
           expect({
             amountIn: amountIn.toString(),
             amountOut: amountOut.toString(),
-            targetPrice: price[0].toString(),
-            priceAfter: priceAfter.toString(),
+            targetPrice: targetPrice[0].toString(),
+            priceAfter: priceAfterSwap.toString(),
           }).to.matchSnapshot('params')
 
-          if (zeroForOne) expect(priceAfter).to.be.lte(price[0])
-          else expect(priceAfter).to.be.gte(price[0])
+          if (zeroForOne) expect(priceAfterSwap).to.be.lte(targetPrice[0])
+          else expect(priceAfterSwap).to.be.gte(targetPrice[0])
 
           // check we did not go too far
-          if (zeroForOne) expect(priceAfter).to.be.gt(price[0].mul(995).div(1000))
-          else expect(priceAfter).to.be.lt(price[0].mul(1005).div(1000))
+          if (amountIn.eq(0)) {
+            const originalPrice = zeroForOne ? encodePrice(reserveOut, reserveIn) : encodePrice(reserveIn, reserveOut)
+            if (zeroForOne) expect(originalPrice).to.be.lt(targetPrice)
+            else expect(origin).to.be.gte(targetPrice)
+          } else if (amountIn.gt(0)) {
+            const [nextTickPrice] = await tickMath.getPrice(zeroForOne ? tick.sub(1) : tick.add(1))
+
+            if (zeroForOne)
+              expect(priceAfterSwap, 'price is not past the next (lower) tick price').to.not.be.lte(nextTickPrice)
+            else expect(priceAfterSwap, 'price is not past the next (greater) tick price').to.not.be.gte(nextTickPrice)
+          }
         })
       }
 
