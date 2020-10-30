@@ -18,6 +18,17 @@ contract PriceMathEchidnaTest {
         MAX_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
     }
 
+    function getAmountOutLessThanReserveOut(
+        uint112 reserveIn,
+        uint112 reserveOut,
+        uint16 lpFee,
+        uint112 amountIn
+    ) external pure {
+        require(lpFee < PriceMath.LP_FEE_BASE);
+        require(reserveIn > 0 && reserveOut > 0);
+        assert(PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn) < reserveOut);
+    }
+
     function getInputToRatioAlwaysExceedsNextPrice(
         uint112 reserveIn,
         uint112 reserveOut,
@@ -28,7 +39,7 @@ contract PriceMathEchidnaTest {
         // UniswapV3Pair.TOKEN_MIN
         require(reserveIn >= 101 && reserveOut >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
-        require(uint256(tick < 0 ? -tick : tick) < uint256(TickMath.MAX_TICK));
+        require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
         FixedPoint.uq112x112 memory nextPrice = zeroForOne
             ? TickMath.getRatioAtTick(tick)
             : TickMath.getRatioAtTick(tick + 1);
@@ -56,6 +67,16 @@ contract PriceMathEchidnaTest {
             if (zeroForOne) assert(priceBefore <= nextPrice._x);
             else assert(priceBefore >= nextPrice._x);
             return;
+        } else {
+            uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
+            uint112 reserveInNext = reserveIn + amountIn;
+            uint112 reserveOutNext = reserveOut - amountOut;
+            FixedPoint.uq112x112 memory priceAfterSwap = zeroForOne
+                ? FixedPoint.fraction(reserveOutNext, reserveInNext)
+                : FixedPoint.fraction(reserveInNext, reserveOutNext);
+
+            if (zeroForOne) assert(priceAfterSwap._x <= nextPrice._x && priceAfterSwap._x > (nextPrice._x * 99) / 100);
+            else assert(priceAfterSwap._x >= nextPrice._x && priceAfterSwap._x < (nextPrice._x * 101) / 100);
         }
     }
 }
