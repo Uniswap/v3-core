@@ -75,8 +75,8 @@ contract PriceMathEchidnaTest {
                 ? FixedPoint.fraction(reserveOutNext, reserveInNext)
                 : FixedPoint.fraction(reserveInNext, reserveOutNext);
 
-            if (zeroForOne) assert(priceAfterSwap._x <= nextPrice._x && priceAfterSwap._x >= (nextPrice._x * 99) / 100);
-            else assert(priceAfterSwap._x >= nextPrice._x && priceAfterSwap._x <= (nextPrice._x * 101) / 100);
+            if (zeroForOne) assert(priceAfterSwap._x <= nextPrice._x && priceAfterSwap._x > (nextPrice._x * 99) / 100);
+            else assert(priceAfterSwap._x >= nextPrice._x && priceAfterSwap._x < (nextPrice._x * 101) / 100);
         }
     }
 }
