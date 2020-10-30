@@ -157,7 +157,7 @@ describe('PriceMath', () => {
           zeroForOne: true,
         },
       ]) {
-        it.only(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${tick.toString()},${zeroForOne})`, async () => {
+        it(`passes for getInputToRatioAlwaysExceedsNextPrice(${reserveIn.toString()},${reserveOut.toString()},${lpFee.toString()},${tick.toString()},${zeroForOne})`, async () => {
           const [targetPrice, inverseTargetPrice] = await Promise.all([
             tickMath.getPrice(tick),
             tickMath.getPrice(-tick),
