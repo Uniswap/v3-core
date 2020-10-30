@@ -39,7 +39,7 @@ contract PriceMathEchidnaTest {
         // UniswapV3Pair.TOKEN_MIN
         require(reserveIn >= 101 && reserveOut >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
-        require(uint256(tick < 0 ? -tick : tick) < uint256(TickMath.MAX_TICK));
+        require(tick > TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
         FixedPoint.uq112x112 memory nextPrice = zeroForOne
             ? TickMath.getRatioAtTick(tick)
             : TickMath.getRatioAtTick(tick + 1);
@@ -47,6 +47,11 @@ contract PriceMathEchidnaTest {
         uint256 priceBefore = zeroForOne
             ? (uint256(reserveOut) << 112) / reserveIn
             : (uint256(reserveIn) << 112) / reserveOut;
+
+        // the target next price is within 10%
+        // TODO can we remove this?
+        if (zeroForOne) require(priceBefore.mul(90).div(100) <= nextPrice._x);
+        else require(priceBefore.mul(110).div(100) >= nextPrice._x);
 
         uint112 amountIn = PriceMath.getInputToRatio(
             reserveIn,
