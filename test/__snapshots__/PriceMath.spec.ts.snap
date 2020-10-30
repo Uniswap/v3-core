@@ -18,14 +18,6 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(123,1953579828864582940591891444058760,6,354) 1`] = `"5"`;
-
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1005,1137,1,10447815210759932949745600021781164648681654221105666413902984560) 1`] = `"2012176016782699449905714286817"`;
-
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(1040,1090214879718873987679620123847534,174,5590) 1`] = `"66"`;
-
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(15944303097720152669124120417149,102,1,828057777287919958470307583336398120126455251994321806143774553) 1`] = `"162987718791419685211237152717"`;
-
 exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(464695615909263721513790873246206,269,758,7100,false) 1`] = `
 Object {
   "amountIn": "323434110649163369820633726224867",
