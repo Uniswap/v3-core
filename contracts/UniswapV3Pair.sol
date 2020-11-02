@@ -584,6 +584,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 : TickMath.getRatioAtTick(state.tick + 1);
 
             // protect liquidity providers by adjusting the fee only if the current fee is greater than the stored fee
+            // TODO: should this allow the fee to go back down after passing a tick?
             step.fee = uint16(Math.max(state.feeFloor, getFee()));
 
             // compute the ~minimum amount of input token required s.t. the price equals or exceeds the target price
