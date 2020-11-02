@@ -18,7 +18,7 @@ contract PriceMathEchidnaTest {
         MAX_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
     }
 
-    function getAmountOutLessThanReserveOut(
+    function getAmountOutInvariants(
         uint112 reserveIn,
         uint112 reserveOut,
         uint16 lpFee,
@@ -26,7 +26,16 @@ contract PriceMathEchidnaTest {
     ) external pure {
         require(lpFee < PriceMath.LP_FEE_BASE);
         require(reserveIn > 0 && reserveOut > 0);
-        assert(PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn) < reserveOut);
+
+        uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
+        assert(amountOut < reserveOut);
+
+        uint256 k = uint256(reserveIn).mul(reserveOut);
+        uint256 fee = uint256(amountIn).mul(lpFee).div(PriceMath.LP_FEE_BASE);
+        uint256 reserveInAfter = uint256(reserveIn).add(amountIn).sub(fee);
+        uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
+        uint256 kAfter = reserveInAfter.mul(reserveOutAfter);
+        assert(kAfter >= k);
     }
 
     function getInputToRatioAlwaysExceedsNextPrice(
