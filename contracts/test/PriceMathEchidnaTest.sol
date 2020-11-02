@@ -30,7 +30,7 @@ contract PriceMathEchidnaTest {
         uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
         assert(amountOut < reserveOut);
 
-        uint256 k = uint256(reserveIn) * reserveOut;
+        uint256 k = uint256(reserveIn).mul(reserveOut);
         uint256 fee = uint256(amountIn).mul(lpFee).div(PriceMath.LP_FEE_BASE);
         uint256 reserveInAfter = uint256(reserveIn).add(amountIn).sub(fee);
         uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
