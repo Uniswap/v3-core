@@ -77,11 +77,11 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function recoverToken0() external {
-        pair.recover(token0, address(this), 1);
+        pair.recover(address(token0), address(this), 1);
     }
 
     function recoverToken1() external {
-        pair.recover(token1, address(this), 1);
+        pair.recover(address(token1), address(this), 1);
     }
 
     function echidna_isInitialized() external view returns (bool) {
