@@ -127,13 +127,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // sum the virtual supply across all fee votes to get the total
     function getVirtualSupply() public view override returns (uint112 virtualSupply) {
-        virtualSupply =
-            virtualSupplies[0] +
+        virtualSupply = (uint256(virtualSupplies[0]) +
             virtualSupplies[1] +
             virtualSupplies[2] +
             virtualSupplies[3] +
             virtualSupplies[4] +
-            virtualSupplies[5];
+            virtualSupplies[5])
+            .toUint112();
     }
 
     // find the median fee vote, and return the fee in bips
