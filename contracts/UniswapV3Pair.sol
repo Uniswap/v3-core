@@ -138,17 +138,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // find the median fee vote, and return the fee in bips
     function getFee() public view override returns (uint16 fee) {
-        uint112 virtualSupplyCumulative;
+        uint256 virtualSupplyCumulative;
         // load all virtual supplies into memory
-        uint112[NUM_FEE_OPTIONS] memory virtualSupplies_ = [
-            virtualSupplies[0],
+        uint256[NUM_FEE_OPTIONS] memory virtualSupplies_ = [
+            uint256(virtualSupplies[0]),
             virtualSupplies[1],
             virtualSupplies[2],
             virtualSupplies[3],
             virtualSupplies[4],
             virtualSupplies[5]
         ];
-        uint112 threshold = (virtualSupplies_[0] +
+        uint256 threshold = (uint256(virtualSupplies_[0]) +
             virtualSupplies_[1] +
             virtualSupplies_[2] +
             virtualSupplies_[3] +
@@ -558,15 +558,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         SwapState memory state = params.zeroForOne
             ? SwapState({
-                reserveInVirtual: uint256(reserve0Virtual),
-                reserveOutVirtual: uint256(reserve1Virtual),
+                reserveInVirtual: reserve0Virtual,
+                reserveOutVirtual: reserve1Virtual,
                 amountInRemaining: params.amountIn,
                 tick: tickCurrent,
                 feeFloor: feeLast
             })
             : SwapState({
-                reserveInVirtual: uint256(reserve1Virtual),
-                reserveOutVirtual: uint256(reserve0Virtual),
+                reserveInVirtual: reserve1Virtual,
+                reserveOutVirtual: reserve0Virtual,
                 amountInRemaining: params.amountIn,
                 tick: tickCurrent,
                 feeFloor: feeLast
