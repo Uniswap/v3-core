@@ -193,7 +193,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // tick is at or below the current tick, meaning growth outside represents growth below, not above, so adjust
         if (tick <= tickCurrent) {
             feeGrowthAbove0 = FixedPoint.uq112x112(feeGrowthGlobal0._x - feeGrowthAbove0._x);
-            feeGrowthAbove0 = FixedPoint.uq112x112(feeGrowthGlobal1._x - feeGrowthAbove1._x);
+            feeGrowthAbove1 = FixedPoint.uq112x112(feeGrowthGlobal1._x - feeGrowthAbove1._x);
         }
     }
 
@@ -538,6 +538,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // either trade fully to the next tick, or only as much as we need to
                 step.amountIn = Math.min(amountInRequiredForShift, amountInRemaining).toUint112();
 
+                // TODO take protocol fees here
                 // account for fee paid
                 {
                     bool roundUp = uint256(step.amountIn) * fee % PriceMath.LP_FEE_BASE > 0;
@@ -546,11 +547,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // TODO we can probably do this less lossily
                     if (params.zeroForOne) {
                         feeGrowthGlobal0 = FixedPoint.uq112x112(
-                            feeGrowthGlobal0._x + FixedPoint.fraction(fee, liquidityVirtual)._x
+                            feeGrowthGlobal0._x + FixedPoint.fraction(feePaid, liquidityVirtual)._x
                         );
                     } else {
                         feeGrowthGlobal1 = FixedPoint.uq112x112(
-                            feeGrowthGlobal1._x + FixedPoint.fraction(fee, liquidityVirtual)._x
+                            feeGrowthGlobal1._x + FixedPoint.fraction(feePaid, liquidityVirtual)._x
                         );
                     }
 
@@ -599,6 +600,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             : token0VirtualDeltaUnsigned.toInt256();
                     }
 
+                    // TODO make sure there's not an attack here by repeatedly crossing ticks + forcing rounding
                     // TODO it is possible to squeeze out a bit more precision here by:
                     // a) summing total negative and positive token1VirtualDeltas
                     // b) calculating the total negative and positive liquidityDelta
