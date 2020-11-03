@@ -20,10 +20,9 @@ contract PriceMathTest {
     function getAmountOut(
         uint112 reserveIn,
         uint112 reserveOut,
-        uint16 lpFee,
         uint112 amountIn
     ) external pure returns (uint112) {
-        return PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
+        return PriceMath.getAmountOut(reserveIn, reserveOut, amountIn);
     }
 
     function getGasCostOfGetInputToRatio(
