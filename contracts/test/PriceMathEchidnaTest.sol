@@ -18,6 +18,26 @@ contract PriceMathEchidnaTest {
         MAX_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
     }
 
+    function getAmountOutInvariants(
+        uint112 reserveIn,
+        uint112 reserveOut,
+        uint16 lpFee,
+        uint112 amountIn
+    ) external pure {
+        require(lpFee < PriceMath.LP_FEE_BASE);
+        require(reserveIn > 0 && reserveOut > 0);
+
+        uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
+        assert(amountOut < reserveOut);
+
+        uint256 k = uint256(reserveIn).mul(reserveOut);
+        uint256 fee = uint256(amountIn).mul(lpFee).div(PriceMath.LP_FEE_BASE);
+        uint256 reserveInAfter = uint256(reserveIn).add(amountIn).sub(fee);
+        uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
+        uint256 kAfter = reserveInAfter.mul(reserveOutAfter);
+        assert(kAfter >= k);
+    }
+
     function getInputToRatioAlwaysExceedsNextPrice(
         uint112 reserve0,
         uint112 reserve1,
@@ -28,7 +48,7 @@ contract PriceMathEchidnaTest {
         // UniswapV3Pair.TOKEN_MIN
         require(reserve0 >= 101 && reserve1 >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
-        require(uint(tick < 0 ? -tick : tick) < uint(TickMath.MAX_TICK));
+        require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
         FixedPoint.uq112x112 memory nextPrice = zeroForOne
             ? TickMath.getRatioAtTick(tick)
             : TickMath.getRatioAtTick(tick + 1);
@@ -53,6 +73,16 @@ contract PriceMathEchidnaTest {
             if (zeroForOne) assert(priceBefore <= nextPrice._x);
             else assert(priceBefore >= nextPrice._x);
             return;
+        } else {
+            uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
+            uint112 reserveInNext = reserveIn + amountIn;
+            uint112 reserveOutNext = reserveOut - amountOut;
+            FixedPoint.uq112x112 memory priceAfterSwap = zeroForOne
+                ? FixedPoint.fraction(reserveOutNext, reserveInNext)
+                : FixedPoint.fraction(reserveInNext, reserveOutNext);
+
+            if (zeroForOne) assert(priceAfterSwap._x <= nextPrice._x && priceAfterSwap._x > (nextPrice._x * 99) / 100);
+            else assert(priceAfterSwap._x >= nextPrice._x && priceAfterSwap._x < (nextPrice._x * 101) / 100);
         }
     }
 }

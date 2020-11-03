@@ -68,6 +68,22 @@ contract UniswapV3PairEchidnaTest {
         pair.setPosition(tickLower, tickUpper, feeVote % pair.NUM_FEE_OPTIONS(), liquidityDelta);
     }
 
+    function turnOnFee() external {
+        pair.setFeeTo(address(this));
+    }
+
+    function turnOffFee() external {
+        pair.setFeeTo(address(0));
+    }
+
+    function recoverToken0() external {
+        pair.recover(address(token0), address(this), 1);
+    }
+
+    function recoverToken1() external {
+        pair.recover(address(token1), address(this), 1);
+    }
+
     function echidna_isInitialized() external view returns (bool) {
         return (address(token0) != address(0) &&
             address(token1) != address(0) &&
