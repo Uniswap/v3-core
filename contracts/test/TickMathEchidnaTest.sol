@@ -8,8 +8,8 @@ import '../libraries/TickMath.sol';
 contract TickMathEchidnaTest {
     using FixedPoint for *;
 
-    function getRatioAtTick(int16 tick) external pure {
-        require(tick < TickMath.MAX_TICK && tick > TickMath.MIN_TICK);
+    function getRatioAtTickInvariant(int16 tick) external pure {
+        require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
 
         assert(TickMath.getRatioAtTick(tick)._x == TickMath.getRatioAtTick(-tick).reciprocal()._x);
     }
