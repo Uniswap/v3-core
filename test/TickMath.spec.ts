@@ -107,6 +107,17 @@ describe('TickMath', () => {
     })
   })
 
+  describe.only('same as reciprocal', () => {
+    for (const tick of [1, 32, 64, 128, 256, 512, 1024, 2048, 4096]) {
+      it(`tick: ${tick}`, async () => {
+        const diff = (await tickMath.getReciprocalOfPrice(tick))[0].sub((await tickMath.getPrice(-tick))[0]).abs()
+        const otherDiff = (await tickMath.getReciprocalOfPrice(-tick))[0].sub((await tickMath.getPrice(tick))[0]).abs()
+        expect(diff, 'negative tick').to.be.lte(2)
+        expect(otherDiff, 'positive tick').to.be.lte(2)
+      })
+    }
+  })
+
   // these hand written tests make sure we are computing it roughly correctly
   it('returns exactly 1 for tick 0', async () => {
     await checkApproximatelyEquals(tickMath.getPrice(0), Q112, 0)

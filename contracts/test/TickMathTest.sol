@@ -6,8 +6,14 @@ import '../libraries/TickMath.sol';
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
 contract TickMathTest {
+    using FixedPoint for *;
+
     function getPrice(int16 tick) public pure returns (FixedPoint.uq112x112 memory) {
         return TickMath.getRatioAtTick(tick);
+    }
+
+    function getReciprocalOfPrice(int16 tick) public pure returns (FixedPoint.uq112x112 memory) {
+        return TickMath.getRatioAtTick(tick).reciprocal();
     }
 
     function getGasUsed(int16 tick) public view returns (uint256) {
