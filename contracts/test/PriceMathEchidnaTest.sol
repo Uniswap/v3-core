@@ -19,23 +19,21 @@ contract PriceMathEchidnaTest {
     }
 
     function getInputToRatioAlwaysExceedsNextPrice(
-        uint112 reserveIn,
-        uint112 reserveOut,
+        uint112 reserve0,
+        uint112 reserve1,
         uint16 lpFee,
         int16 tick,
         bool zeroForOne
     ) external pure {
         // UniswapV3Pair.TOKEN_MIN
-        require(reserveIn >= 101 && reserveOut >= 101);
+        require(reserve0 >= 101 && reserve1 >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
         require(uint(tick < 0 ? -tick : tick) < uint(TickMath.MAX_TICK));
         FixedPoint.uq112x112 memory nextPrice = zeroForOne
             ? TickMath.getRatioAtTick(tick)
             : TickMath.getRatioAtTick(tick + 1);
 
-        uint256 priceBefore = zeroForOne
-            ? (uint256(reserveOut) << 112) / reserveIn
-            : (uint256(reserveIn) << 112) / reserveOut;
+        uint256 priceBefore = (uint256(reserve1) << 112) / reserve0;
 
         // the target next price is within 10%
         // TODO can we remove this?
@@ -43,11 +41,10 @@ contract PriceMathEchidnaTest {
         else require(priceBefore.mul(110).div(100) >= nextPrice._x);
 
         uint112 amountIn = PriceMath.getInputToRatio(
-            reserveIn,
-            reserveOut,
+            reserve0,
+            reserve1,
             lpFee,
             nextPrice,
-            zeroForOne ? TickMath.getRatioAtTick(-tick) : TickMath.getRatioAtTick(-(tick + 1)),
             zeroForOne
         );
 

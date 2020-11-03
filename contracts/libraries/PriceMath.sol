@@ -6,6 +6,7 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
+import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 
 import './SafeCast.sol';
 
@@ -18,191 +19,69 @@ library PriceMath {
     // 2**112 - 1, can be added to the input amount before truncating so that we always round up in getInputToRatio
     uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
 
-    // get a quote for a numerator amount from a denominator amount and a numerator/denominator price
-    function getQuoteFromDenominator(uint144 denominatorAmount, FixedPoint.uq112x112 memory ratio)
-        internal pure returns (uint256)
-    {
-        bool roundUp = mulmod(denominatorAmount, ratio._x, uint256(1) << 112) > 0;
-        return FullMath.mulDiv(denominatorAmount, ratio._x, uint256(1) << 112) + (roundUp ? 1 : 0);
-    }
-
-    // get a quote for a denominator amount from a numerator amount and a numerator/denominator price
-    function getQuoteFromNumerator(uint144 numeratorAmount, FixedPoint.uq112x112 memory ratio)
-        internal pure returns (uint256)
-    {
-        bool roundUp = mulmod(numeratorAmount, uint256(1) << 112, ratio._x) > 0;
-        return ((uint256(numeratorAmount) << 112) / ratio._x) + (roundUp ? 1 : 0);
-    }
-
-    function getAmountOut(
-        uint112 reserveIn,
-        uint112 reserveOut,
-        uint16 lpFee,
-        uint112 amountIn
-    ) internal pure returns (uint112) {
-        return
-            ((uint256(reserveOut) * amountIn * (LP_FEE_BASE - lpFee)) /
-                (uint256(amountIn) * (LP_FEE_BASE - lpFee) + uint256(reserveIn) * LP_FEE_BASE))
-                .toUint112();
+    // amountIn here is assumed to have already been discounted by the fee
+    function getAmountOut(uint112 reserveIn, uint112 reserveOut, uint112 amountIn) internal pure returns (uint112) {
+        return (uint256(reserveOut) * amountIn / (uint256(reserveIn) + amountIn)).toUint112();
     }
 
     function getInputToRatio(
-        uint112 reserveIn,
-        uint112 reserveOut,
+        uint112 reserve0,
+        uint112 reserve1,
         uint16 lpFee,
-        FixedPoint.uq112x112 memory nextPrice,        // 1 / 0
-        FixedPoint.uq112x112 memory nextPriceInverse, // 0 / 1
+        FixedPoint.uq112x112 memory priceTarget,
         bool zeroForOne
     ) internal pure returns (uint112 amountIn) {
-        FixedPoint.uq112x112 memory reservePrice; // 1 / 0
+        // short-circuit if we're already at or past the target price
+        FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1, reserve0);
+        if (zeroForOne) { if (price._x <= priceTarget._x) return 0; }
+        else if (price._x >= priceTarget._x) return 0;
+
+        uint256 k = uint256(reserve0) * reserve1;
+
+        // compute the square of output reserves (rounded up)
+        uint256 reserveOutNextSquared;
         if (zeroForOne) {
-            reservePrice = FixedPoint.fraction(reserveOut, reserveIn);
-            if (reservePrice._x <= nextPrice._x) return 0;
+            bool roundUp = mulmod(k, priceTarget._x, uint256(1) << 112) > 0;
+            reserveOutNextSquared = FullMath.mulDiv(k, priceTarget._x, uint256(1) << 112) + (roundUp ? 1 : 0);
         } else {
-            reservePrice = FixedPoint.fraction(reserveIn, reserveOut);
-            if (reservePrice._x >= nextPrice._x) return 0;
+            bool roundUp = mulmod(k, uint256(1) << 112, priceTarget._x) > 0;
+            reserveOutNextSquared = FullMath.mulDiv(k, uint256(1) << 112, priceTarget._x) + (roundUp ? 1 : 0);
         }
 
-        uint256 inputToRatio = getInputToRatioUQ144x112(
-            reserveIn, reserveOut, lpFee, zeroForOne ? nextPriceInverse._x : nextPrice._x
-        );
-        assert(uint256(-1) - ROUND_UP >= inputToRatio); // we can add safely
-        assert((inputToRatio + ROUND_UP) >> 112 <= uint112(-1)); // we can cast safely
-        amountIn = uint112((inputToRatio + ROUND_UP) >> 112);
+        uint112 reserveIn = zeroForOne ? reserve0 : reserve1;
 
-        // get the output amount that the input amount entitles the swapper to
-        uint112 amountOut = getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
-        // TODO is this necessary?
-        amountOut = uint112(Math.min(amountOut, reserveOut - 1));
+        // compute exact output reserves (rounded up), because ceil(sqrt(ceil(x))) := ceil(sqrt(x)) ∀ x > 0
+        uint256 reserveOutNextMinimum = Babylonian.sqrt(reserveOutNextSquared);
+        while (reserveOutNextMinimum**2 < reserveOutNextSquared) reserveOutNextMinimum++;
 
-        // if necessary, increase the input amount s.t. we're guaranteed to have crossed the target price
-        uint112 reserveOutNext = reserveOut - amountOut;
-        uint256 reserveInThreshold = zeroForOne
-            ? getQuoteFromNumerator(reserveOutNext, nextPrice)
-            : getQuoteFromDenominator(reserveOutNext, nextPrice);
-        require(reserveInThreshold <= uint112(-1), 'PriceMath: INPUT_RESERVES_NECESSARILY_OVERFLOW');
-        assert(reserveInThreshold >= reserveIn); // we can subtract safely
-        amountIn = uint112(Math.max(amountIn, reserveInThreshold - reserveIn));
-        require(uint112(-1) - amountIn >= reserveIn, 'PriceMath: INPUT_RESERVES_OVERFLOW');
+        // compute input reserves (rounded down), s.t. 1 more wei of input leads to the price being exceeded
+        uint256 reserveInNext = zeroForOne
+            ? (reserveOutNextMinimum << 112) / priceTarget._x
+            : FullMath.mulDiv(reserveOutNextMinimum, priceTarget._x, uint256(1) << 112);
 
-        // TODO remove this eventually, just checking that we actually exceeded the price (and by < than 1%)
-        uint112 reserveInNext = reserveIn + amountIn;
-        FixedPoint.uq112x112 memory priceNext = zeroForOne
-            ? FixedPoint.fraction(reserveOutNext, reserveInNext)
-            : FixedPoint.fraction(reserveInNext, reserveOutNext);
-        if (zeroForOne) assert(priceNext._x <= nextPrice._x && priceNext._x >= nextPrice._x * 995 / 1000);
-        else assert(priceNext._x >= nextPrice._x  && priceNext._x <= nextPrice._x * 1005 / 1000);
-    }
+        amountIn = uint112(reserveInNext - reserveIn);
 
-    /**
-     * Calculate (y(g - 2) + sqrt (g^2 * y^2 + 4xyr(1 - g))) / 2(1 - g) * 2^112, where
-     * y = reserveIn,
-     * x = reserveOut,
-     * g = lpFee * 10^-4,
-     * r = inOutRatio * 2^-112.
-     * Throw on overflow.
-     */
-    function getInputToRatioUQ144x112(
-        uint256 reserveIn,
-        uint256 reserveOut,
-        uint256 lpFee,
-        uint256 inOutRatio
-    ) private pure returns (uint256 amountIn) {
-        // g2y2 = g^2 * y^2 * 1e6 (max value: ~2^236)
-        uint256 g2y2 = (lpFee * lpFee * uint256(reserveIn) * uint256(reserveIn) + (9999)) / 1e4;
+        // compute the (rounded-up) amountIn scaled by the current fee
+        bool roundUp = uint256(amountIn) * LP_FEE_BASE % (LP_FEE_BASE - lpFee) > 0;
+        amountIn = uint112((uint256(amountIn) * LP_FEE_BASE / (LP_FEE_BASE - lpFee)) + (roundUp ? 1 : 0));
+        // should be true because floor(ceil(x*LP_FEE_BASE/FEE)*FEE/LP_FEE_BASE) - x := 0 ∀ x ∈ Z
+        assert(amountIn * lpFee / LP_FEE_BASE == reserveInNext - reserveIn);
 
-        // xyr4g1 = 4 * x * y * (1 - g) * 1e6 (max value: ~2^246)
-        uint256 xy41g = 4 * uint256(reserveIn) * uint256(reserveOut) * (1e4 - lpFee);
-
-        // xyr41g = 4 * x * y * r * (1 - g) * 1e6 (max value: ~2^246)
-        uint256 xyr41g = mulshift(xy41g, uint256(inOutRatio));
-        require(xyr41g < 2**254);
-
-        // sr = sqrt (g^2 * y^2 + 4 * x * y * r * (1 - g)) * 2^128
-        uint256 sr = (sqrt(g2y2 + xyr41g) + 99) / 100;
-
-        // y2g = y(2 - g) * 2^128
-        uint256 y2g = uint256(reserveIn) * ((2e4) - lpFee) * 0x68db8bac710cb295e9e1b089a0275;
-
-        // Make sure numerator is non-negative
-        require(sr >= y2g);
-
-        // num = (sqrt (g^2 * y^2 + 4 * x * y * r * (1 - g)) - y(2 - g)) * 2^128
-        uint256 num = sr - y2g;
-
-        // den = 2 * (1 - g) * 1e6
-        uint256 den = 2 * (1e4 - lpFee);
-
-        return (((num + den - 1) / den) * 1e4 + 0xffff) >> 16;
-    }
-
-    /**
-     * Calculate x * y >> 112 rounding up.  Throw on overflow.
-     */
-    function mulshift(uint256 x, uint256 y) private pure returns (uint256 result) {
-        uint256 l = x * y;
-        uint256 m = mulmod(x, y, uint256(-1));
-        uint256 h = m - l;
-        if (m < l) h -= 1;
-
-        require(h >> 112 == 0);
-        result = (h << 144) | (l >> 112);
-        if (l << 112 > 0) {
-            require(result < uint256(-1));
-            result += 1;
-        }
-    }
-
-    /**
-     * Calculate sqrt (x) * 2^128 rounding up.  Throw on overflow.
-     */
-    function sqrt(uint256 x) private pure returns (uint256 result) {
-        if (x == 0) return 0;
-        else {
-            uint256 s = 128;
-
-            if (x < 2**128) {
-                x <<= 128;
-                s -= 64;
-            }
-            if (x < 2**192) {
-                x <<= 64;
-                s -= 32;
-            }
-            if (x < 2**224) {
-                x <<= 32;
-                s -= 16;
-            }
-            if (x < 2**240) {
-                x <<= 16;
-                s -= 8;
-            }
-            if (x < 2**248) {
-                x <<= 8;
-                s -= 4;
-            }
-            if (x < 2**252) {
-                x <<= 4;
-                s -= 2;
-            }
-            if (x < 2**254) {
-                x <<= 2;
-                s -= 1;
-            }
-
-            result = 2**127;
-            result = (x / result + result) >> 1;
-            result = (x / result + result) >> 1;
-            result = (x / result + result) >> 1;
-            result = (x / result + result) >> 1;
-            result = (x / result + result) >> 1;
-            result = (x / result + result) >> 1;
-            result = (x / result + result) >> 1; // 7 iterations should be enough
-
-            if (result * result < x) result = x / result + 1;
-
-            require(result <= uint256(-1) >> s);
-            result <<= s;
+        if (zeroForOne) {
+            // check that input reserve * minimum output reserve satisfying the invariant satisfied price inequality
+            roundUp = k % reserveInNext > 0;
+            uint256 reserveOutImplied = k / reserveInNext + (roundUp ? 1 : 0);
+            assert(FixedPoint.fraction(uint112(reserveOutImplied), uint112(reserveInNext))._x >= priceTarget._x);
+            roundUp = k % (reserveInNext + 1) > 0;
+            reserveOutImplied = k / (reserveInNext + 1) + (roundUp ? 1 : 0);
+            assert(FixedPoint.fraction(uint112(reserveOutImplied), uint112(reserveInNext + 1))._x < priceTarget._x);
+        } else {
+            roundUp = k % reserveInNext > 0;
+            uint256 reserveOutImplied = k / reserveInNext + (roundUp ? 1 : 0);
+            assert(FixedPoint.fraction(uint112(reserveInNext), uint112(reserveOutImplied))._x <= priceTarget._x);
+            roundUp = k % (reserveInNext + 1) > 0;
+            reserveOutImplied = k / (reserveInNext + 1) + (roundUp ? 1 : 0);
+            assert(FixedPoint.fraction(uint112(reserveInNext + 1), uint112(reserveOutImplied))._x > priceTarget._x);
         }
     }
 }
