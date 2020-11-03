@@ -11,6 +11,6 @@ contract TickMathEchidnaTest {
     function getRatioAtTick(int16 tick) external pure {
         require(tick < TickMath.MAX_TICK && tick > TickMath.MIN_TICK);
 
-        assert(TickMath.getRatioAtTick(tick) == TickMath.getRatioAtTick(-tick).reciprocal());
+        assert(TickMath.getRatioAtTick(tick)._x == TickMath.getRatioAtTick(-tick).reciprocal()._x);
     }
 }
