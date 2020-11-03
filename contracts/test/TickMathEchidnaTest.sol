@@ -15,6 +15,6 @@ contract TickMathEchidnaTest {
         uint224 reciprocalNegative = TickMath.getRatioAtTick(-tick).reciprocal()._x;
         uint224 diff = ratio > reciprocalNegative ? ratio - reciprocalNegative : reciprocalNegative - ratio;
 
-        assert(diff <= 1);
+        assert(diff <= 2);
     }
 }
