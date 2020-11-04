@@ -55,6 +55,14 @@ describe('PriceMath', () => {
       for (const {priceTarget, reserve0, reserve1, lpFee, zeroForOne, summary} of [
         {
           priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
+          reserve0: BigNumber.from(1000),
+          reserve1: BigNumber.from(100000),
+          lpFee: 60,
+          zeroForOne: true,
+          summary: '1:100 to 1:50 at 60bps with small reserves',
+        },
+        {
+          priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
           reserve0: expandTo18Decimals(1),
           reserve1: expandTo18Decimals(100),
           lpFee: 60,
@@ -83,30 +91,40 @@ describe('PriceMath', () => {
           let amountInLessFee: BigNumber
           let amountOut: BigNumber
           let priceAfterSwap: BigNumber
-          let amountInLessFeePlus1: BigNumber
+          let amountInPlus1: BigNumber
+          let amountInPlus1LessFee: BigNumber
           let amountOutWith1MoreWeiInput: BigNumber
-          let priceWithOneMoreInput: BigNumber
+          let priceAfterSwapWith1MoreWeiInput: BigNumber
 
-          before('compute swap result', async () => {
-            amountIn = await priceMath.getInputToRatio(reserve0, reserve1, lpFee, [priceTarget], zeroForOne)
+          async function computeSwapResult(
+            amountIn: BigNumber
+          ): Promise<{amountOut: BigNumber; priceAfterSwap: BigNumber; amountInLessFee: BigNumber}> {
+            const amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(BigNumber.from(10000))
 
-            amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(BigNumber.from(10000))
-            amountOut = zeroForOne
+            const amountOut = zeroForOne
               ? await priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
               : await priceMath.getAmountOut(reserve1, reserve0, amountInLessFee)
 
-            priceAfterSwap = zeroForOne
+            const priceAfterSwap = zeroForOne
               ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee))
               : encodePrice(reserve1.add(amountInLessFee), reserve0.sub(amountOut))
+            return {
+              amountOut,
+              priceAfterSwap,
+              amountInLessFee,
+            }
+          }
 
-            // if we had 1 more wei of input
-            amountInLessFeePlus1 = amountInLessFee.add(1)
-            amountOutWith1MoreWeiInput = zeroForOne
-              ? await priceMath.getAmountOut(reserve0, reserve1, amountInLessFeePlus1)
-              : await priceMath.getAmountOut(reserve1, reserve0, amountInLessFeePlus1)
-            priceWithOneMoreInput = zeroForOne
-              ? encodePrice(reserve1.sub(amountOutWith1MoreWeiInput), reserve0.add(amountInLessFeePlus1))
-              : encodePrice(reserve1.add(amountInLessFeePlus1), reserve0.sub(amountOutWith1MoreWeiInput))
+          before('compute swap result', async () => {
+            amountIn = await priceMath.getInputToRatio(reserve0, reserve1, lpFee, [priceTarget], zeroForOne)
+            ;({amountOut, priceAfterSwap, amountInLessFee} = await computeSwapResult(amountIn))
+
+            amountInPlus1 = amountIn.add(1)
+            ;({
+              amountOut: amountOutWith1MoreWeiInput,
+              priceAfterSwap: priceAfterSwapWith1MoreWeiInput,
+              amountInLessFee: amountInPlus1LessFee,
+            } = await computeSwapResult(amountInPlus1))
           })
 
           it('snapshot', () => {
@@ -121,9 +139,10 @@ describe('PriceMath', () => {
               amountIn: amountIn.toString(),
               amountInLessFee: amountInLessFee.toString(),
               amountOut: amountOut.toString(),
-              amountInLessFeePlus1: amountInLessFeePlus1.toString(),
+              amountInPlus1: amountInPlus1.toString(),
+              amountInPlus1LessFee: amountInPlus1LessFee.toString(),
               amountOutWith1MoreWeiInput: amountOutWith1MoreWeiInput.toString(),
-              priceWithOneMoreInput: priceWithOneMoreInput.toString(),
+              priceAfterSwapWith1MoreWeiInput: priceAfterSwapWith1MoreWeiInput.toString(),
             }).to.matchSnapshot()
           })
 
@@ -137,9 +156,9 @@ describe('PriceMath', () => {
 
           it('1 more wei of input exceeds the next price', async () => {
             if (zeroForOne) {
-              expect(priceWithOneMoreInput).to.be.lte(priceTarget)
+              expect(priceAfterSwapWith1MoreWeiInput).to.be.lte(priceTarget)
             } else {
-              expect(priceWithOneMoreInput).to.be.gte(priceTarget)
+              expect(priceAfterSwapWith1MoreWeiInput).to.be.gte(priceTarget)
             }
           })
 

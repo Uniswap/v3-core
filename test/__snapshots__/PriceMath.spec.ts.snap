@@ -8,13 +8,14 @@ exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1
 Object {
   "amountIn": "415459942199694130",
   "amountInLessFee": "414213562373095047",
-  "amountInLessFeePlus1": "414213562373095048",
+  "amountInPlus1": "415459942199694131",
+  "amountInPlus1LessFee": "414213562373095048",
   "amountOut": "29289321881345247469",
   "amountOutWith1MoreWeiInput": "29289321881345247519",
   "lpFee": 30,
   "priceAfterSwap": "259614842926741382091067822128253589",
+  "priceAfterSwapWith1MoreWeiInput": "259614842926741381723916990267895141",
   "priceTarget": "259614842926741381426524816461004800",
-  "priceWithOneMoreInput": "259614842926741381723916990267895141",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
   "zeroForOne": true,
@@ -27,15 +28,36 @@ exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1
 Object {
   "amountIn": "416713845445769665",
   "amountInLessFee": "414213562373095047",
-  "amountInLessFeePlus1": "414213562373095048",
+  "amountInPlus1": "416713845445769666",
+  "amountInPlus1LessFee": "414213562373095048",
   "amountOut": "29289321881345247469",
   "amountOutWith1MoreWeiInput": "29289321881345247519",
   "lpFee": 60,
   "priceAfterSwap": "259614842926741382091067822128253589",
+  "priceAfterSwapWith1MoreWeiInput": "259614842926741381723916990267895141",
   "priceTarget": "259614842926741381426524816461004800",
-  "priceWithOneMoreInput": "259614842926741381723916990267895141",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
+  "zeroForOne": true,
+}
+`;
+
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `5128`;
+
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves snapshot 1`] = `
+Object {
+  "amountIn": "416",
+  "amountInLessFee": "413",
+  "amountInPlus1": "417",
+  "amountInPlus1LessFee": "414",
+  "amountOut": "29228",
+  "amountOutWith1MoreWeiInput": "29278",
+  "lpFee": 60,
+  "priceAfterSwap": "260063151643472626274848044028000448",
+  "priceAfterSwapWith1MoreWeiInput": "259695628309264554133616521495830006",
+  "priceTarget": "259614842926741381426524816461004800",
+  "reserve0": "1000",
+  "reserve1": "100000",
   "zeroForOne": true,
 }
 `;
@@ -46,13 +68,14 @@ exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1
 Object {
   "amountIn": "155399837648670546",
   "amountInLessFee": "154700538379251528",
-  "amountInLessFeePlus1": "154700538379251529",
+  "amountInPlus1": "155399837648670547",
+  "amountInPlus1LessFee": "154700538379251529",
   "amountOut": "13397459621556135247",
   "amountOutWith1MoreWeiInput": "13397459621556135322",
   "lpFee": 45,
   "priceAfterSwap": "389422264390112072827776355164145551",
+  "priceAfterSwapWith1MoreWeiInput": "389422264390112072153277207641951089",
   "priceTarget": "389422264390112072139787224691507200",
-  "priceWithOneMoreInput": "389422264390112072153277207641951089",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
   "zeroForOne": true,
