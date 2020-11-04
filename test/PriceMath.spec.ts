@@ -51,7 +51,7 @@ describe('PriceMath', () => {
       })
     })
 
-    describe('invariants', () => {
+    describe.only('invariants', () => {
       for (const {priceTarget, reserve0, reserve1, lpFee, zeroForOne, summary} of [
         {
           priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
@@ -109,17 +109,22 @@ describe('PriceMath', () => {
           let priceAfterSwap: BigNumber
           let amountInPlus1: BigNumber
           let amountInPlus1LessFee: BigNumber
-          let amountOutWith1MoreWeiInput: BigNumber
-          let priceAfterSwapWith1MoreWeiInput: BigNumber
+          let amountOutWith1MoreWeiEffectiveInput: BigNumber
+          let priceAfterSwapWith1MoreWeiEffectiveInput: BigNumber
 
           async function computeSwapResult(
             amountIn: BigNumber
           ): Promise<{amountOut: BigNumber; priceAfterSwap: BigNumber; amountInLessFee: BigNumber}> {
-            const amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(BigNumber.from(10000))
+            const roundUp = amountIn.mul(lpFee).mod(10000).gt(0)
+            const fee = amountIn
+              .mul(lpFee)
+              .div(10000)
+              .add(roundUp ? 1 : 0)
+            const amountInLessFee = amountIn.sub(fee)
 
-            const amountOut = zeroForOne
-              ? await priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
-              : await priceMath.getAmountOut(reserve1, reserve0, amountInLessFee)
+            const amountOut = await (zeroForOne
+              ? priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
+              : priceMath.getAmountOut(reserve1, reserve0, amountInLessFee))
 
             const priceAfterSwap = zeroForOne
               ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee))
@@ -135,10 +140,15 @@ describe('PriceMath', () => {
             amountIn = await priceMath.getInputToRatio(reserve0, reserve1, lpFee, [priceTarget], zeroForOne)
             ;({amountOut, priceAfterSwap, amountInLessFee} = await computeSwapResult(amountIn))
 
-            amountInPlus1 = amountIn.add(1)
+            const amountInLessFeePlus1 = amountInLessFee.add(1)
+            const roundUp = amountInLessFeePlus1.mul(10000).mod(BigNumber.from(10000).sub(lpFee)).gt(0)
+            amountInPlus1 = amountInLessFeePlus1
+              .mul(10000)
+              .div(BigNumber.from(10000).sub(lpFee))
+              .add(roundUp ? 1 : 0)
             ;({
-              amountOut: amountOutWith1MoreWeiInput,
-              priceAfterSwap: priceAfterSwapWith1MoreWeiInput,
+              amountOut: amountOutWith1MoreWeiEffectiveInput,
+              priceAfterSwap: priceAfterSwapWith1MoreWeiEffectiveInput,
               amountInLessFee: amountInPlus1LessFee,
             } = await computeSwapResult(amountInPlus1))
           })
@@ -157,8 +167,8 @@ describe('PriceMath', () => {
               amountOut: amountOut.toString(),
               amountInPlus1: amountInPlus1.toString(),
               amountInPlus1LessFee: amountInPlus1LessFee.toString(),
-              amountOutWith1MoreWeiInput: amountOutWith1MoreWeiInput.toString(),
-              priceAfterSwapWith1MoreWeiInput: priceAfterSwapWith1MoreWeiInput.toString(),
+              amountOutWith1MoreWeiEffectiveInput: amountOutWith1MoreWeiEffectiveInput.toString(),
+              priceAfterSwapWith1MoreWeiEffectiveInput: priceAfterSwapWith1MoreWeiEffectiveInput.toString(),
             }).to.matchSnapshot()
           })
 
@@ -170,11 +180,11 @@ describe('PriceMath', () => {
             }
           })
 
-          it('1 more wei of input exceeds the next price', async () => {
+          it('1 more wei of effective input exceeds the next price', async () => {
             if (zeroForOne) {
-              expect(priceAfterSwapWith1MoreWeiInput).to.be.lte(priceTarget)
+              expect(priceAfterSwapWith1MoreWeiEffectiveInput).to.be.lt(priceTarget)
             } else {
-              expect(priceAfterSwapWith1MoreWeiInput).to.be.gte(priceTarget)
+              expect(priceAfterSwapWith1MoreWeiEffectiveInput).to.be.gt(priceTarget)
             }
           })
 

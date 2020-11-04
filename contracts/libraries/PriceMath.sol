@@ -29,12 +29,12 @@ library PriceMath {
     }
 
     function mulDivRoundingUp(
-        uint256 h,
-        uint256 l,
+        uint256 x,
+        uint256 y,
         uint256 d
     ) private pure returns (uint256) {
-        bool roundUp = mulmod(h, l, d) > 0;
-        return FullMath.mulDiv(h, l, d) + (roundUp ? 1 : 0);
+        bool roundUp = mulmod(x, y, d) > 0;
+        return FullMath.mulDiv(x, y, d) + (roundUp ? 1 : 0);
     }
 
     function getInputToRatio(
@@ -74,26 +74,8 @@ library PriceMath {
         uint112 amountInLessFee = uint112(reserveInNext - reserveIn);
 
         // compute the (rounded-up) amountIn scaled by the current fee
-        bool roundUp = (uint256(amountIn) * LP_FEE_BASE) % (LP_FEE_BASE - lpFee) > 0;
+        bool roundUp = (uint256(amountInLessFee) * LP_FEE_BASE) % (LP_FEE_BASE - lpFee) > 0;
         amountIn = uint112(((uint256(amountInLessFee) * LP_FEE_BASE) / (LP_FEE_BASE - lpFee)) + (roundUp ? 1 : 0));
-        // should be true because floor(ceil(x*LP_FEE_BASE/FEE)*FEE/LP_FEE_BASE) - x := 0 ∀ x ∈ Z
-        //        assert((amountIn * lpFee) / LP_FEE_BASE == reserveInNext - reserveIn);
-
-        //        if (zeroForOne) {
-        //            // check that input reserve * minimum output reserve satisfying the invariant satisfied price inequality
-        //            roundUp = k % reserveInNext > 0;
-        //            uint256 reserveOutImplied = k / reserveInNext + (roundUp ? 1 : 0);
-        //            assert(FixedPoint.fraction(uint112(reserveOutImplied), uint112(reserveInNext))._x >= priceTarget._x);
-        //            roundUp = k % (reserveInNext + 1) > 0;
-        //            reserveOutImplied = k / (reserveInNext + 1) + (roundUp ? 1 : 0);
-        //            assert(FixedPoint.fraction(uint112(reserveOutImplied), uint112(reserveInNext + 1))._x < priceTarget._x);
-        //        } else {
-        //            roundUp = k % reserveInNext > 0;
-        //            uint256 reserveOutImplied = k / reserveInNext + (roundUp ? 1 : 0);
-        //            assert(FixedPoint.fraction(uint112(reserveInNext), uint112(reserveOutImplied))._x <= priceTarget._x);
-        //            roundUp = k % (reserveInNext + 1) > 0;
-        //            reserveOutImplied = k / (reserveInNext + 1) + (roundUp ? 1 : 0);
-        //            assert(FixedPoint.fraction(uint112(reserveInNext + 1), uint112(reserveOutImplied))._x > priceTarget._x);
-        //        }
+        assert(amountIn * (LP_FEE_BASE - lpFee) / LP_FEE_BASE == amountInLessFee);
     }
 }
