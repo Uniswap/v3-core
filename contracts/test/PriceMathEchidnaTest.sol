@@ -46,9 +46,7 @@ contract PriceMathEchidnaTest {
         require(reserve0 >= 101 && reserve1 >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
         require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
-        FixedPoint.uq112x112 memory nextPrice = zeroForOne
-            ? TickMath.getRatioAtTick(tick)
-            : TickMath.getRatioAtTick(tick + 1);
+        FixedPoint.uq112x112 memory nextPrice = TickMath.getRatioAtTick(tick);
 
         uint256 priceBefore = (uint256(reserve1) << 112) / reserve0;
 

@@ -1,32 +1,60 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(102,726,1277,191,true) 1`] = `
+exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `517`;
+
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `10796`;
+
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1`] = `
 Object {
-  "amountIn": "4",
-  "amountOut": "24",
-  "priceAfter": "34386720704636311275739702104834975",
-  "targetPrice": "34732968851089577431629185376309589",
+  "amountIn": "415459942199694130",
+  "amountInLessFee": "414213562373095047",
+  "amountInLessFeePlus1": "414213562373095048",
+  "amountOut": "29289321881345247469",
+  "amountOutWith1MoreWeiInput": "29289321881345247519",
+  "lpFee": 30,
+  "priceAfterSwap": "259614842926741382091067822128253589",
+  "priceTarget": "259614842926741381426524816461004800",
+  "priceWithOneMoreInput": "259614842926741381723916990267895141",
+  "reserve0": "1000000000000000000",
+  "reserve1": "100000000000000000000",
+  "zeroForOne": true,
 }
 `;
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(113,880,19,200,true) 1`] = `
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `10796`;
+
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1`] = `
 Object {
-  "amountIn": "4",
-  "amountOut": "30",
-  "priceAfter": "37721814784227380207272836579804116",
-  "targetPrice": "37986936509041317847013025054246590",
+  "amountIn": "416713845445769665",
+  "amountInLessFee": "414213562373095047",
+  "amountInLessFeePlus1": "414213562373095048",
+  "amountOut": "29289321881345247469",
+  "amountOutWith1MoreWeiInput": "29289321881345247519",
+  "lpFee": 60,
+  "priceAfterSwap": "259614842926741382091067822128253589",
+  "priceTarget": "259614842926741381426524816461004800",
+  "priceWithOneMoreInput": "259614842926741381723916990267895141",
+  "reserve0": "1000000000000000000",
+  "reserve1": "100000000000000000000",
+  "zeroForOne": true,
 }
 `;
 
-exports[`PriceMath #getInputToRatio echidna edge cases passes for getInputToRatioAlwaysExceedsNextPrice(464695615909263721513790873246206,269,758,7100,false) 1`] = `
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `10796`;
+
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1`] = `
 Object {
-  "amountIn": "323434110649163369820633726224867",
-  "amountOut": "105",
-  "priceAfter": "24952460386141668856020999796520573410562570473450518809976843189",
-  "targetPrice": "24952460386141668856020999796520542359895644451028350780523976712",
+  "amountIn": "155399837648670546",
+  "amountInLessFee": "154700538379251528",
+  "amountInLessFeePlus1": "154700538379251529",
+  "amountOut": "13397459621556135247",
+  "amountOutWith1MoreWeiInput": "13397459621556135322",
+  "lpFee": 45,
+  "priceAfterSwap": "389422264390112072827776355164145551",
+  "priceTarget": "389422264390112072139787224691507200",
+  "priceWithOneMoreInput": "389422264390112072153277207641951089",
+  "reserve0": "1000000000000000000",
+  "reserve1": "100000000000000000000",
+  "zeroForOne": true,
 }
 `;
-
-exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `525`;
-
-exports[`PriceMath #getInputToRatio gas: 1:100 to 1:75 at 45bps 1`] = `3734`;
