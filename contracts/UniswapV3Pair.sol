@@ -284,7 +284,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int16 tick,
         uint8 feeVote
     ) external override lock returns (uint112 liquidity) {
-        require(!isInitialized(), 'UniswapV3: ALREADY_INITIALIZED');
+        require(isInitialized() == false, 'UniswapV3: ALREADY_INITIALIZED');
         require(amount0 >= TOKEN_MIN, 'UniswapV3: AMOUNT_0_TOO_SMALL');
         require(amount1 >= TOKEN_MIN, 'UniswapV3: AMOUNT_1_TOO_SMALL');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3: TICK_TOO_SMALL');
@@ -338,7 +338,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function _initializeTick(int16 tick) private returns (TickInfo storage tickInfo) {
         tickInfo = tickInfos[tick];
-        if (!tickInfo.initialized) {
+        if (tickInfo.initialized == false) {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
                 tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
@@ -406,7 +406,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // check if this condition has accrued any untracked fees and credit them to the caller
             if (position.liquidity > 0) {
                 if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                    amount0 = FullMath
+                    amount0 = -FullMath
                         .mulDiv(
                         feeGrowthInside0._x - position.feeGrowthInside0Last._x,
                         position
@@ -416,7 +416,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         .toInt112();
                 }
                 if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
-                    amount1 = FullMath
+                    amount1 = -FullMath
                         .mulDiv(
                         feeGrowthInside1._x - position.feeGrowthInside1Last._x,
                         position
@@ -553,7 +553,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             step.fee = uint16(Math.max(state.feeFloor, getFee()));
 
             // compute the ~minimum amount of input token required s.t. the price equals or exceeds the target price
-            // _after_ computing the corresponding output amount according to x * y = k given the current fee
+            // _after_ computing the corresponding output amount according to x * y = k, given the current fee
             uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
                 state.reserve0Virtual.toUint112(),
                 state.reserve1Virtual.toUint112(),
@@ -604,8 +604,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     state.reserve0Virtual = state.reserve0Virtual.add(step.amountIn);
                     state.reserve1Virtual = state.reserve1Virtual.sub(step.amountOut);
                 } else {
-                    state.reserve0Virtual = state.reserve0Virtual.add(step.amountIn);
-                    state.reserve1Virtual = state.reserve1Virtual.sub(step.amountOut);
+                    state.reserve1Virtual = state.reserve1Virtual.add(step.amountOut);
+                    state.reserve0Virtual = state.reserve0Virtual.sub(step.amountIn);
                 }
 
                 state.amountInRemaining = state.amountInRemaining.sub(step.amountIn).toUint112();
