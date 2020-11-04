@@ -106,6 +106,7 @@ describe('PriceMath', () => {
           let amountIn: BigNumber
           let amountInLessFee: BigNumber
           let amountOut: BigNumber
+          let priceBeforeSwap: BigNumber
           let priceAfterSwap: BigNumber
           let amountInPlus1: BigNumber
           let amountInPlus1LessFee: BigNumber
@@ -132,6 +133,8 @@ describe('PriceMath', () => {
           }
 
           before('compute swap result', async () => {
+            priceBeforeSwap = encodePrice(reserve1, reserve0)
+
             amountIn = await priceMath.getInputToRatio(reserve0, reserve1, lpFee, [priceTarget], zeroForOne)
             ;({amountOut, priceAfterSwap, amountInLessFee} = await computeSwapResult(amountIn))
 
@@ -151,6 +154,7 @@ describe('PriceMath', () => {
               lpFee,
               zeroForOne,
               priceTarget: priceTarget.toString(),
+              priceBeforeSwap: priceBeforeSwap.toString(),
               priceAfterSwap: priceAfterSwap.toString(),
               amountIn: amountIn.toString(),
               amountInLessFee: amountInLessFee.toString(),
@@ -162,7 +166,15 @@ describe('PriceMath', () => {
             }).to.matchSnapshot()
           })
 
-          it('new price does not exceed price target', async () => {
+          it('price moves in the right direction', () => {
+            if (zeroForOne) {
+              expect(priceBeforeSwap).to.be.gte(priceAfterSwap)
+            } else {
+              expect(priceBeforeSwap).to.be.lte(priceAfterSwap)
+            }
+          })
+
+          it('price after swap does not pass price target', () => {
             if (zeroForOne) {
               expect(priceAfterSwap).to.be.gte(priceTarget)
             } else {
