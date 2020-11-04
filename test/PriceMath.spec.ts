@@ -51,7 +51,7 @@ describe('PriceMath', () => {
       })
     })
 
-    describe('invariants', () => {
+    describe.only('invariants', () => {
       for (const {priceTarget, reserve0, reserve1, lpFee, zeroForOne, summary} of [
         {
           priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
@@ -84,6 +84,22 @@ describe('PriceMath', () => {
           lpFee: 30,
           zeroForOne: true,
           summary: '1:100 to 1:50 at 30bps',
+        },
+        {
+          priceTarget: encodePrice(expandTo18Decimals(100), expandTo18Decimals(1)),
+          reserve0: expandTo18Decimals(1),
+          reserve1: expandTo18Decimals(50),
+          lpFee: 200,
+          zeroForOne: false,
+          summary: '1:50 to 1:100 at 200bps',
+        },
+        {
+          priceTarget: encodePrice(expandTo18Decimals(75), expandTo18Decimals(1)),
+          reserve0: expandTo18Decimals(1),
+          reserve1: expandTo18Decimals(50),
+          lpFee: 60,
+          zeroForOne: false,
+          summary: '1:50 to 1:75 at 60bps',
         },
       ]) {
         describe(summary, () => {

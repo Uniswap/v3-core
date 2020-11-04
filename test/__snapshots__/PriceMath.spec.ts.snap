@@ -1,8 +1,46 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `517`;
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9764`;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `10796`;
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps snapshot 1`] = `
+Object {
+  "amountIn": "11305074013661421001",
+  "amountInLessFee": "11237243569579452474",
+  "amountInPlus1": "11305074013661421002",
+  "amountInPlus1LessFee": "11237243569579452475",
+  "amountOut": "183503419072273967",
+  "amountOutWith1MoreWeiInput": "183503419072273967",
+  "lpFee": 60,
+  "priceAfterSwap": "389422264390112072133427985743274010",
+  "priceAfterSwapWith1MoreWeiInput": "389422264390112072139787224691507200",
+  "priceTarget": "389422264390112072139787224691507200",
+  "reserve0": "1000000000000000000",
+  "reserve1": "50000000000000000000",
+  "zeroForOne": false,
+}
+`;
+
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9774`;
+
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps snapshot 1`] = `
+Object {
+  "amountIn": "21133345019035461734",
+  "amountInLessFee": "20710678118654752499",
+  "amountInPlus1": "21133345019035461735",
+  "amountInPlus1LessFee": "20710678118654752500",
+  "amountOut": "292893218813452476",
+  "amountOutWith1MoreWeiInput": "292893218813452476",
+  "lpFee": 200,
+  "priceAfterSwap": "519229685853482763580008280005519324",
+  "priceAfterSwapWith1MoreWeiInput": "519229685853482763587351296642726493",
+  "priceTarget": "519229685853482762853049632922009600",
+  "reserve0": "1000000000000000000",
+  "reserve1": "50000000000000000000",
+  "zeroForOne": false,
+}
+`;
+
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `9875`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1`] = `
 Object {
@@ -22,7 +60,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `10796`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `9875`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1`] = `
 Object {
@@ -42,7 +80,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `5128`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4207`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves snapshot 1`] = `
 Object {
@@ -62,7 +100,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `10796`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `9875`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1`] = `
 Object {
