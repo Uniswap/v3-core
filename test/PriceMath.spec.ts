@@ -103,84 +103,81 @@ describe('PriceMath', () => {
         },
       ]) {
         describe(summary, () => {
+          let priceBeforeSwap: BigNumber
           let amountIn: BigNumber
           let amountInLessFee: BigNumber
           let amountOut: BigNumber
-          let priceBeforeSwap: BigNumber
           let priceAfterSwap: BigNumber
-          let amountInPlus1: BigNumber
-          let amountInPlus1LessFee: BigNumber
-          let amountOutWith1MoreWeiEffectiveInput: BigNumber
           let priceAfterSwapWith1MoreWeiEffectiveInput: BigNumber
-
-          async function computeSwapResult(
-            amountIn: BigNumber
-          ): Promise<{amountOut: BigNumber; priceAfterSwap: BigNumber; amountInLessFee: BigNumber}> {
-            const roundUp = amountIn.mul(lpFee).mod(10000).gt(0)
-            const fee = amountIn
-              .mul(lpFee)
-              .div(10000)
-              .add(roundUp ? 1 : 0)
-            const amountInLessFee = amountIn.sub(fee)
-
-            const amountOut = await (zeroForOne
-              ? priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
-              : priceMath.getAmountOut(reserve1, reserve0, amountInLessFee))
-
-            const priceAfterSwap = zeroForOne
-              ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee))
-              : encodePrice(reserve1.add(amountInLessFee), reserve0.sub(amountOut))
-            return {
-              amountOut,
-              priceAfterSwap,
-              amountInLessFee,
-            }
-          }
 
           before('compute swap result', async () => {
             priceBeforeSwap = encodePrice(reserve1, reserve0)
 
             amountIn = await priceMath.getInputToRatio(reserve0, reserve1, lpFee, [priceTarget], zeroForOne)
-            ;({amountOut, priceAfterSwap, amountInLessFee} = await computeSwapResult(amountIn))
+            amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(10000)
+            amountOut = await (zeroForOne
+              ? priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
+              : priceMath.getAmountOut(reserve1, reserve0, amountInLessFee))
 
-            const amountInLessFeePlus1 = amountInLessFee.add(1)
-            const roundUp = amountInLessFeePlus1.mul(10000).mod(BigNumber.from(10000).sub(lpFee)).gt(0)
-            amountInPlus1 = amountInLessFeePlus1
-              .mul(10000)
-              .div(BigNumber.from(10000).sub(lpFee))
-              .add(roundUp ? 1 : 0)
-            ;({
-              amountOut: amountOutWith1MoreWeiEffectiveInput,
-              priceAfterSwap: priceAfterSwapWith1MoreWeiEffectiveInput,
-              amountInLessFee: amountInPlus1LessFee,
-            } = await computeSwapResult(amountInPlus1))
+            // cap the output amount, if necessary
+            const proposedPrice = zeroForOne
+              ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee))
+              : encodePrice(reserve1.add(amountInLessFee), reserve0.sub(amountOut))
+            if (zeroForOne) {
+              if (proposedPrice.lt(priceTarget)) {
+                const roundUp = reserve0.add(amountInLessFee).mul(priceTarget).mod(BigNumber.from(2).pow(112)).gt(0)
+                const minOutputReserves = reserve0
+                  .add(amountInLessFee)
+                  .mul(priceTarget)
+                  .div(BigNumber.from(2).pow(112))
+                  .add(roundUp ? 1 : 0)
+                amountOut = reserve1.sub(minOutputReserves)
+              }
+            } else if (proposedPrice.gt(priceTarget)) {
+              const roundUp = reserve1.add(amountInLessFee).mul(BigNumber.from(2).pow(112)).mod(priceTarget).gt(0)
+              const minOutputReserves = reserve1
+                .add(amountInLessFee)
+                .mul(BigNumber.from(2).pow(112))
+                .div(priceTarget)
+                .add(roundUp ? 1 : 0)
+              amountOut = reserve0.sub(minOutputReserves)
+            }
+
+            priceAfterSwap = zeroForOne
+              ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee))
+              : encodePrice(reserve1.add(amountInLessFee), reserve0.sub(amountOut))
+
+            const outputFor1MoreWeiInput = await (zeroForOne
+              ? priceMath.getAmountOut(reserve0.add(amountInLessFee), reserve1.sub(amountOut), 1)
+              : priceMath.getAmountOut(reserve1.add(amountInLessFee), reserve0.sub(amountOut), 1))
+
+            priceAfterSwapWith1MoreWeiEffectiveInput = zeroForOne
+              ? encodePrice(reserve1.sub(amountOut).sub(outputFor1MoreWeiInput), reserve0.add(amountInLessFee).add(1))
+              : encodePrice(reserve1.add(amountInLessFee).add(1), reserve0.sub(amountOut).sub(outputFor1MoreWeiInput))
           })
 
           it('snapshot', () => {
             // for debugging, store all the calculations
             expect({
+              priceTarget: priceTarget.toString(),
               reserve0: reserve0.toString(),
               reserve1: reserve1.toString(),
               lpFee,
               zeroForOne,
-              priceTarget: priceTarget.toString(),
               priceBeforeSwap: priceBeforeSwap.toString(),
-              priceAfterSwap: priceAfterSwap.toString(),
               amountIn: amountIn.toString(),
               amountInLessFee: amountInLessFee.toString(),
               amountOut: amountOut.toString(),
-              amountInPlus1: amountInPlus1.toString(),
-              amountInPlus1LessFee: amountInPlus1LessFee.toString(),
-              amountOutWith1MoreWeiEffectiveInput: amountOutWith1MoreWeiEffectiveInput.toString(),
+              priceAfterSwap: priceAfterSwap.toString(),
               priceAfterSwapWith1MoreWeiEffectiveInput: priceAfterSwapWith1MoreWeiEffectiveInput.toString(),
             }).to.matchSnapshot()
           })
 
           it('price moves in the right direction', () => {
             if (zeroForOne) {
-              expect(priceBeforeSwap).to.be.gte(priceAfterSwap)
+              expect(priceAfterSwap).to.be.lt(priceBeforeSwap)
             } else {
-              expect(priceBeforeSwap).to.be.lte(priceAfterSwap)
+              expect(priceAfterSwap).to.be.gt(priceBeforeSwap)
             }
           })
 

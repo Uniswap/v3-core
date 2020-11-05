@@ -1,18 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9754`;
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9856`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps snapshot 1`] = `
 Object {
   "amountIn": "11305074013661421002",
   "amountInLessFee": "11237243569579452475",
-  "amountInPlus1": "11305074013661421003",
-  "amountInPlus1LessFee": "11237243569579452476",
   "amountOut": "183503419072273967",
-  "amountOutWith1MoreWeiEffectiveInput": "183503419072273967",
   "lpFee": 60,
   "priceAfterSwap": "389422264390112072139787224691507200",
   "priceAfterSwapWith1MoreWeiEffectiveInput": "389422264390112072146146463639740389",
+  "priceBeforeSwap": "259614842926741381426524816461004800",
   "priceTarget": "389422264390112072139787224691507200",
   "reserve0": "1000000000000000000",
   "reserve1": "50000000000000000000",
@@ -20,19 +18,17 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9764`;
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9866`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps snapshot 1`] = `
 Object {
   "amountIn": "21133345019035461735",
   "amountInLessFee": "20710678118654752500",
-  "amountInPlus1": "21133345019035461736",
-  "amountInPlus1LessFee": "20710678118654752501",
-  "amountOut": "292893218813452476",
-  "amountOutWith1MoreWeiEffectiveInput": "292893218813452476",
+  "amountOut": "292893218813452475",
   "lpFee": 200,
-  "priceAfterSwap": "519229685853482763587351296642726493",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "519229685853482763594694313279933662",
+  "priceAfterSwap": "519229685853482762853049632922009600",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "519229685853482762860392649559216768",
+  "priceBeforeSwap": "259614842926741381426524816461004800",
   "priceTarget": "519229685853482762853049632922009600",
   "reserve0": "1000000000000000000",
   "reserve1": "50000000000000000000",
@@ -40,19 +36,17 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `9865`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `9967`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1`] = `
 Object {
   "amountIn": "415459942199694131",
   "amountInLessFee": "414213562373095048",
-  "amountInPlus1": "415459942199694132",
-  "amountInPlus1LessFee": "414213562373095049",
   "amountOut": "29289321881345247519",
-  "amountOutWith1MoreWeiEffectiveInput": "29289321881345247569",
   "lpFee": 30,
   "priceAfterSwap": "259614842926741381723916990267895141",
   "priceAfterSwapWith1MoreWeiEffectiveInput": "259614842926741381356766158407536695",
+  "priceBeforeSwap": "519229685853482762853049632922009600",
   "priceTarget": "259614842926741381426524816461004800",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
@@ -60,19 +54,17 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `9865`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `9967`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1`] = `
 Object {
   "amountIn": "416713845445769666",
   "amountInLessFee": "414213562373095048",
-  "amountInPlus1": "416713845445769668",
-  "amountInPlus1LessFee": "414213562373095049",
   "amountOut": "29289321881345247519",
-  "amountOutWith1MoreWeiEffectiveInput": "29289321881345247569",
   "lpFee": 60,
   "priceAfterSwap": "259614842926741381723916990267895141",
   "priceAfterSwapWith1MoreWeiEffectiveInput": "259614842926741381356766158407536695",
+  "priceBeforeSwap": "519229685853482762853049632922009600",
   "priceTarget": "259614842926741381426524816461004800",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
@@ -80,19 +72,17 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4197`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4299`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves snapshot 1`] = `
 Object {
   "amountIn": "417",
   "amountInLessFee": "414",
-  "amountInPlus1": "418",
-  "amountInPlus1LessFee": "415",
   "amountOut": "29278",
-  "amountOutWith1MoreWeiEffectiveInput": "29328",
   "lpFee": 60,
   "priceAfterSwap": "259695628309264554133616521495830006",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "259328624442666670080217128324129063",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "259332293910411217661580047402806957",
+  "priceBeforeSwap": "519229685853482762853049632922009600",
   "priceTarget": "259614842926741381426524816461004800",
   "reserve0": "1000",
   "reserve1": "100000",
@@ -100,19 +90,17 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `9865`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `9967`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1`] = `
 Object {
   "amountIn": "155399837648670547",
   "amountInLessFee": "154700538379251529",
-  "amountInPlus1": "155399837648670548",
-  "amountInPlus1LessFee": "154700538379251530",
   "amountOut": "13397459621556135322",
-  "amountOutWith1MoreWeiEffectiveInput": "13397459621556135397",
   "lpFee": 45,
   "priceAfterSwap": "389422264390112072153277207641951089",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "389422264390112071478778060119756628",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "389422264390112071483274721103237925",
+  "priceBeforeSwap": "519229685853482762853049632922009600",
   "priceTarget": "389422264390112072139787224691507200",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
