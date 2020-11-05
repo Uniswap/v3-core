@@ -51,7 +51,7 @@ describe('PriceMath', () => {
       })
     })
 
-    describe.only('invariants', () => {
+    describe('invariants', () => {
       for (const {priceTarget, reserve0, reserve1, lpFee, zeroForOne, summary} of [
         {
           priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
