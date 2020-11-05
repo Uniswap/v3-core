@@ -51,7 +51,7 @@ describe('PriceMath', () => {
       })
     })
 
-    describe('invariants', () => {
+    describe.only('invariants', () => {
       for (const {priceTarget, reserve0, reserve1, lpFee, zeroForOne, summary} of [
         {
           priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
@@ -112,8 +112,7 @@ describe('PriceMath', () => {
 
           before('compute swap result', async () => {
             priceBeforeSwap = encodePrice(reserve1, reserve0)
-
-            amountIn = await priceMath.getInputToRatio(reserve0, reserve1, lpFee, [priceTarget], zeroForOne)
+            ;[amountIn] = await priceMath.getInputToRatio(reserve0, reserve1, lpFee, [priceTarget], zeroForOne)
             amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(10000)
             amountOut = await (zeroForOne
               ? priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
