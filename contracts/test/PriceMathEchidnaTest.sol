@@ -86,7 +86,6 @@ contract PriceMathEchidnaTest {
                     reserve1 + amountInLessFee + 1
                 );
 
-
             // check that one more wei of effective amount in would result in a price that exceeds the next price
             {
                 FixedPoint.uq112x112 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
