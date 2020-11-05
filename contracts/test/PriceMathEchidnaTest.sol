@@ -43,7 +43,11 @@ contract PriceMathEchidnaTest {
         FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
 
         (uint112 amountIn, uint112 reserveOutMinimum) = PriceMath.getInputToRatio(
-            reserve0, reserve1, lpFee, priceTarget, zeroForOne
+            reserve0,
+            reserve1,
+            lpFee,
+            priceTarget,
+            zeroForOne
         );
 
         if (amountIn == 0) {
@@ -52,12 +56,12 @@ contract PriceMathEchidnaTest {
             else assert(priceBefore._x >= priceTarget._x);
         } else {
             uint112 effectiveAmountIn = uint112(
-                uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) / PriceMath.LP_FEE_BASE
+                (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE
             );
             uint112 amountOut = zeroForOne
                 ? PriceMath.getAmountOut(reserve0, reserve1, effectiveAmountIn)
                 : PriceMath.getAmountOut(reserve1, reserve0, effectiveAmountIn);
-            
+
             // downward-adjust amount out if necessary
             uint112 amountOutMax = (zeroForOne ? reserve1 : reserve0) - reserveOutMinimum;
             amountOut = uint112(Math.min(amountOut, amountOutMax));
@@ -69,8 +73,8 @@ contract PriceMathEchidnaTest {
             FixedPoint.uq112x112 memory priceAfterSwap = FixedPoint.fraction(reserve1Next, reserve0Next);
 
             uint112 output1MoreWeiInput = zeroForOne
-              ? PriceMath.getAmountOut(reserve0 + effectiveAmountIn, reserve1 - amountOut, 1)
-              : PriceMath.getAmountOut(reserve1 + effectiveAmountIn, reserve0 - amountOut, 1);
+                ? PriceMath.getAmountOut(reserve0 + effectiveAmountIn, reserve1 - amountOut, 1)
+                : PriceMath.getAmountOut(reserve1 + effectiveAmountIn, reserve0 - amountOut, 1);
 
             (reserve0Next, reserve1Next) = zeroForOne
                 ? (reserve0 + effectiveAmountIn + 1, reserve1 - amountOut - output1MoreWeiInput)
