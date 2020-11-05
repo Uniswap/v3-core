@@ -62,8 +62,6 @@ library PriceMath {
 
         // compute exact output reserves (rounded up), because ceil(sqrt(ceil(x))) := ceil(sqrt(x)) ∀ x > 0
         uint256 reserveOutNextMinimum = Babylonian.sqrt(reserveOutNextSquared);
-        // this line is because Babylonian.sqrt can be off by up to 2 (remove this line if possible)
-        while (reserveOutNextMinimum**2 < reserveOutNextSquared) reserveOutNextMinimum++;
 
         // compute input reserves (rounded down), s.t. 1 more wei of input leads to the price being exceeded
         uint256 reserveInNext = zeroForOne
@@ -76,6 +74,6 @@ library PriceMath {
         // compute the (rounded-up) amountIn scaled by the current fee
         bool roundUp = (uint256(amountInLessFee) * LP_FEE_BASE) % (LP_FEE_BASE - lpFee) > 0;
         amountIn = uint112(((uint256(amountInLessFee) * LP_FEE_BASE) / (LP_FEE_BASE - lpFee)) + (roundUp ? 1 : 0));
-        assert(amountIn * (LP_FEE_BASE - lpFee) / LP_FEE_BASE == amountInLessFee);
+        assert((amountIn * (LP_FEE_BASE - lpFee)) / LP_FEE_BASE == amountInLessFee);
     }
 }
