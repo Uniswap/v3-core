@@ -42,12 +42,9 @@ contract PriceMathEchidnaTest {
 
         FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
 
-        //        // the target next price is within 10%
-        //        // TODO can we remove this?
-        //        if (zeroForOne) require(priceBefore.mul(90).div(100) <= priceTarget._x);
-        //        else require(priceBefore.mul(110).div(100) >= priceTarget._x);
-
-        uint112 amountIn = PriceMath.getInputToRatio(reserve0, reserve1, lpFee, priceTarget, zeroForOne);
+        (uint112 amountIn, uint112 reserveOutMinimum) = PriceMath.getInputToRatio(
+            reserve0, reserve1, lpFee, priceTarget, zeroForOne
+        );
 
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
@@ -55,11 +52,15 @@ contract PriceMathEchidnaTest {
             else assert(priceBefore._x >= priceTarget._x);
         } else {
             uint112 effectiveAmountIn = uint112(
-                (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE
+                uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee) / PriceMath.LP_FEE_BASE
             );
             uint112 amountOut = zeroForOne
                 ? PriceMath.getAmountOut(reserve0, reserve1, effectiveAmountIn)
                 : PriceMath.getAmountOut(reserve1, reserve0, effectiveAmountIn);
+            
+            // downward-adjust amount out if necessary
+            uint112 amountOutMax = (zeroForOne ? reserve1 : reserve0) - reserveOutMinimum;
+            amountOut = uint112(Math.min(amountOut, amountOutMax));
 
             (uint112 reserve0Next, uint112 reserve1Next) = zeroForOne
                 ? (reserve0 + effectiveAmountIn, reserve1 - amountOut)
@@ -67,13 +68,25 @@ contract PriceMathEchidnaTest {
 
             FixedPoint.uq112x112 memory priceAfterSwap = FixedPoint.fraction(reserve1Next, reserve0Next);
 
+            uint112 output1MoreWeiInput = zeroForOne
+              ? PriceMath.getAmountOut(reserve0 + effectiveAmountIn, reserve1 - amountOut, 1)
+              : PriceMath.getAmountOut(reserve1 + effectiveAmountIn, reserve0 - amountOut, 1);
+
+            (reserve0Next, reserve1Next) = zeroForOne
+                ? (reserve0 + effectiveAmountIn + 1, reserve1 - amountOut - output1MoreWeiInput)
+                : (reserve0 - amountOut - output1MoreWeiInput, reserve1 + effectiveAmountIn + 1);
+
+            FixedPoint.uq112x112 memory priceAfterSwap1MoreWeiInput = FixedPoint.fraction(reserve1Next, reserve0Next);
+
             // check:
             //  - the price does not exceed the next price
-            //  - todo: one more wei of effective amount in would result in a price that exceeds the next price
+            //  - one more wei of effective amount in would result in a price that exceeds the next price
             if (zeroForOne) {
-                assert(priceAfterSwap._x > priceTarget._x);
+                assert(priceAfterSwap._x >= priceTarget._x);
+                assert(priceAfterSwap1MoreWeiInput._x < priceTarget._x);
             } else {
-                assert(priceAfterSwap._x < priceTarget._x);
+                assert(priceAfterSwap._x <= priceTarget._x);
+                assert(priceAfterSwap1MoreWeiInput._x > priceTarget._x);
             }
         }
     }

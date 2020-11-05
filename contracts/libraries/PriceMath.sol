@@ -19,6 +19,25 @@ library PriceMath {
     // 2**112 - 1, can be added to the input amount before truncating so that we always round up in getInputToRatio
     uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
 
+    // get a quote for a numerator amount from a denominator amount and a numerator/denominator price
+    function getQuoteFromDenominator(uint144 denominatorAmount, FixedPoint.uq112x112 memory ratio)
+        internal
+        pure
+        returns (uint256)
+    {
+        return mulDivRoundingUp(denominatorAmount, ratio._x, uint256(1) << 112);
+    }
+
+    // get a quote for a denominator amount from a numerator amount and a numerator/denominator price
+    function getQuoteFromNumerator(uint144 numeratorAmount, FixedPoint.uq112x112 memory ratio)
+        internal
+        pure
+        returns (uint256)
+    {
+        bool roundUp = mulmod(numeratorAmount, uint256(1) << 112, ratio._x) > 0;
+        return ((uint256(numeratorAmount) << 112) / ratio._x) + (roundUp ? 1 : 0);
+    }
+
     // amountIn here is assumed to have already been discounted by the fee
     function getAmountOut(
         uint112 reserveIn,
@@ -43,12 +62,12 @@ library PriceMath {
         uint16 lpFee,
         FixedPoint.uq112x112 memory priceTarget, // always reserve1/reserve0
         bool zeroForOne
-    ) internal pure returns (uint112 amountIn) {
+    ) internal pure returns (uint112 amountIn, uint112 reserveOutMinimum) {
         // short-circuit if we're already at or past the target price
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1, reserve0);
         if (zeroForOne) {
-            if (price._x <= priceTarget._x) return 0;
-        } else if (price._x >= priceTarget._x) return 0;
+            if (price._x <= priceTarget._x) return (0, reserve1);
+        } else if (price._x >= priceTarget._x) return (0, reserve0);
 
         uint256 k = uint256(reserve0) * reserve1;
 
@@ -61,21 +80,18 @@ library PriceMath {
         }
 
         // compute exact output reserves (rounded up), because ceil(sqrt(ceil(x))) := ceil(sqrt(x)) ∀ x > 0
-        uint256 reserveOutNextMinimum = Babylonian.sqrt(reserveOutNextSquared);
-        // round the square root up
-        if (reserveOutNextSquared % reserveOutNextMinimum != 0) reserveOutNextMinimum++;
+        reserveOutMinimum = Babylonian.sqrt(reserveOutNextSquared).toUint112();
+        if (reserveOutNextSquared % reserveOutMinimum != 0) reserveOutMinimum = reserveOutMinimum.add(1).toUint112();
 
-        // compute input reserves (rounded down), s.t. 1 more wei of input leads to the price being exceeded
-        uint256 reserveInNext = zeroForOne
-            ? (reserveOutNextMinimum << 112) / priceTarget._x
-            : FullMath.mulDiv(reserveOutNextMinimum, priceTarget._x, uint256(1) << 112);
-
+        // compute input reserves (rounded down), s.t. 1 more wei of input would lead to the price being exceeded
         uint112 reserveIn = zeroForOne ? reserve0 : reserve1;
+        uint256 reserveInNext = zeroForOne
+            ? (reserveOutMinimum << 112) / priceTarget._x
+            : FullMath.mulDiv(reserveOutMinimum, priceTarget._x, uint256(1) << 112);
         uint112 amountInLessFee = uint112(reserveInNext - reserveIn);
 
         // compute the (rounded-up) amountIn scaled by the current fee
-        bool roundUp = (uint256(amountInLessFee) * LP_FEE_BASE) % (LP_FEE_BASE - lpFee) > 0;
-        amountIn = uint112(((uint256(amountInLessFee) * LP_FEE_BASE) / (LP_FEE_BASE - lpFee)) + (roundUp ? 1 : 0));
-        assert((amountIn * (LP_FEE_BASE - lpFee)) / LP_FEE_BASE == amountInLessFee);
+        bool roundUp = uint256(amountInLessFee) * LP_FEE_BASE % (LP_FEE_BASE - lpFee) > 0;
+        amountIn = uint112(uint256(amountInLessFee) * LP_FEE_BASE / (LP_FEE_BASE - lpFee) + (roundUp ? 1 : 0));
     }
 }

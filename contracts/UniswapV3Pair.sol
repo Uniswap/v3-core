@@ -105,9 +105,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(bytes32 => Position) public positions;
 
-    // global values for all time fee growth per unit of liquidity
+    // global value for all time fee growth per unit of liquidity
     FixedPoint.uq112x112 feeGrowthGlobal0;
+    // value for protocol fees
+    uint112 feeToFees0;
+
     FixedPoint.uq112x112 feeGrowthGlobal1;
+    uint112 feeToFees1;
 
     uint256 public unlocked = 1;
     modifier lock() {
@@ -501,6 +505,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes data;
     }
 
+    // the top level state of the swap, the results of which are recorded in storage at the end
+    struct SwapState {
+        // the virtual reserves of token0
+        uint112 reserve0Virtual;
+        // the virtual reserves of token1
+        uint112 reserve1Virtual;
+        // the amount in remaining to be swapped of the input asset
+        uint112 amountInRemaining;
+        // the current tick
+        int16 tick;
+        // the floor for the fee, used to prevent sandwiching attacks
+        uint16 feeFloor;
+    }
+
     struct StepComputations {
         // price for the tick (1/0)
         FixedPoint.uq112x112 nextPrice;
@@ -512,19 +530,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint16 fee;
     }
 
-    // the top level state of the swap, the results of which are recorded in storage at the end
-    struct SwapState {
-        // the virtual reserves of token0
-        uint256 reserve0Virtual;
-        // the virtual reserves of token1
-        uint256 reserve1Virtual;
-        // the amount in remaining to be swapped of the input asset
-        uint256 amountInRemaining;
-        // the current tick
-        int16 tick;
-        // the floor for the fee, used to prevent sandwiching attacks
-        uint16 feeFloor;
-    }
 
     function _swap(SwapParams memory params) internal returns (uint112 amountOut) {
         require(params.amountIn > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
@@ -554,9 +559,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // compute the ~minimum amount of input token required s.t. the price equals or exceeds the target price
             // _after_ computing the corresponding output amount according to x * y = k, given the current fee
-            uint112 amountInRequiredForShift = PriceMath.getInputToRatio(
-                state.reserve0Virtual.toUint112(),
-                state.reserve1Virtual.toUint112(),
+            (uint112 amountInRequiredForShift, uint112 reserveOutMinimum) = PriceMath.getInputToRatio(
+                state.reserve0Virtual,
+                state.reserve1Virtual,
                 step.fee,
                 step.nextPrice,
                 params.zeroForOne
@@ -567,15 +572,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // either trade fully to the next tick, or only as much as we need to
                 step.amountIn = Math.min(amountInRequiredForShift, state.amountInRemaining).toUint112();
 
-                // TODO take protocol fees here
-                // account for fee paid
+                uint112 amountInLessFee = uint112(
+                    uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - step.fee) / PriceMath.LP_FEE_BASE
+                );
                 {
-                    bool roundUp = (uint256(step.amountIn) * step.fee) % PriceMath.LP_FEE_BASE > 0;
-                    uint112 feePaid = uint112(
-                        (uint256(step.amountIn) * step.fee) / PriceMath.LP_FEE_BASE + (roundUp ? 1 : 0)
-                    );
-                    uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
+                    uint112 feePaid = step.amountIn - amountInLessFee;
+
+                    // take the protocol fee
+                    // TODO improve this
+                    if (feeTo != address(0)) {
+                        uint112 feeToFee = feePaid / 6;
+                        if (params.zeroForOne) feeToFees0 += feeToFee;
+                        else feeToFees1 += feeToFee;
+                        feePaid -= feeToFee;
+                    }
+
+                    // update the global fee tracker
                     // TODO we can probably do this less lossily
+                    uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
                     if (params.zeroForOne) {
                         feeGrowthGlobal0 = FixedPoint.uq112x112(
                             feeGrowthGlobal0._x + FixedPoint.fraction(feePaid, liquidityVirtual)._x
@@ -585,42 +599,46 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             feeGrowthGlobal1._x + FixedPoint.fraction(feePaid, liquidityVirtual)._x
                         );
                     }
-
-                    // calculate the owed output amount on the input amount discounted by the fee paid
-                    step.amountOut = params.zeroForOne
-                        ? PriceMath.getAmountOut(
-                            state.reserve0Virtual.toUint112(),
-                            state.reserve1Virtual.toUint112(),
-                            step.amountIn - feePaid
-                        )
-                        : PriceMath.getAmountOut(
-                            state.reserve1Virtual.toUint112(),
-                            state.reserve0Virtual.toUint112(),
-                            step.amountIn - feePaid
-                        );
                 }
+
+                // calculate the owed output amount on the input amount discounted by the fee paid
+                step.amountOut = params.zeroForOne
+                    ? PriceMath.getAmountOut(state.reserve0Virtual, state.reserve1Virtual, amountInLessFee)
+                    : PriceMath.getAmountOut(state.reserve1Virtual, state.reserve0Virtual, amountInLessFee);
+
+                // in some cases this output amount can be marginally too high, fix this
+                uint112 amountOutMax = (params.zeroForOne ? state.reserve1Virtual : state.reserve0Virtual) - reserveOutMinimum;
+                step.amountOut = uint112(Math.min(step.amountOut, amountOutMax));
 
                 if (params.zeroForOne) {
-                    state.reserve0Virtual = state.reserve0Virtual.add(step.amountIn);
-                    state.reserve1Virtual = state.reserve1Virtual.sub(step.amountOut);
+                    // TODO - feePaid
+                    state.reserve0Virtual = state.reserve0Virtual.add(amountInLessFee).toUint112();
+                    state.reserve1Virtual = state.reserve1Virtual.sub(step.amountOut).toUint112();
                 } else {
-                    state.reserve1Virtual = state.reserve1Virtual.add(step.amountOut);
-                    state.reserve0Virtual = state.reserve0Virtual.sub(step.amountIn);
+                    state.reserve0Virtual = state.reserve0Virtual.sub(step.amountOut).toUint112();
+                    state.reserve1Virtual = state.reserve1Virtual.add(amountInLessFee).toUint112();
                 }
 
-                state.amountInRemaining = state.amountInRemaining.sub(step.amountIn).toUint112();
+                state.amountInRemaining = state.amountInRemaining - step.amountIn;
                 amountOut = (uint256(amountOut) + step.amountOut).toUint112();
             }
 
-            // if a positive input amount still remains, we have to shift to the next tick
-            // TODO we also have to run this if we're moving right and the price is exactly on the target tick
-            if (state.amountInRemaining > 0) {
+            // we have to shift to the next tick if either of two conditions are true:
+            // 1) if a positive input amount still remains
+            // 2) if we're moving right and the price is exactly on the target tick
+            if (
+                state.amountInRemaining > 0
+                    || (
+                        params.zeroForOne == false
+                            && FixedPoint.fraction(state.reserve1Virtual, state.reserve0Virtual)._x == step.nextPrice._x
+                    )
+            ) {
                 TickInfo storage tickInfo = tickInfos[state.tick];
 
                 // if the tick is initialized, we must update it
                 if (tickInfo.initialized) {
                     // calculate the amount of reserves to kick in/out
-                    int256 token1VirtualDelta; // will exceed int120
+                    int256 token1VirtualDelta; // will not exceed int120
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         token1VirtualDelta += tickInfo.token1VirtualDeltas[i];
                     }

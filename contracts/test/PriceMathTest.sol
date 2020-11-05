@@ -13,7 +13,7 @@ contract PriceMathTest {
         uint16 lpFee,
         FixedPoint.uq112x112 memory priceTarget,
         bool zeroForOne
-    ) public pure returns (uint112 amountIn) {
+    ) public pure returns (uint112 amountIn, uint112 reserveOutMinimum) {
         return PriceMath.getInputToRatio(reserve0, reserve1, lpFee, priceTarget, zeroForOne);
     }
 
