@@ -10,14 +10,6 @@ import '../libraries/TickMath.sol';
 contract PriceMathEchidnaTest {
     using SafeMath for uint256;
 
-    uint224 MIN_PRICE;
-    uint224 MAX_PRICE;
-
-    constructor() public {
-        MIN_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
-        MAX_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
-    }
-
     function getAmountOutInvariants(
         uint112 reserveIn,
         uint112 reserveOut,
@@ -35,7 +27,7 @@ contract PriceMathEchidnaTest {
         assert(kAfter >= k);
     }
 
-    function getInputToRatioAlwaysExceedsNextPrice(
+    function getInputToRatioInvariants(
         uint112 reserve0,
         uint112 reserve1,
         uint16 lpFee,
@@ -46,33 +38,43 @@ contract PriceMathEchidnaTest {
         require(reserve0 >= 101 && reserve1 >= 101);
         require(lpFee < PriceMath.LP_FEE_BASE);
         require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
-        FixedPoint.uq112x112 memory nextPrice = TickMath.getRatioAtTick(tick);
+        FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tick);
 
-        uint256 priceBefore = (uint256(reserve1) << 112) / reserve0;
+        FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
 
-        // the target next price is within 10%
-        // TODO can we remove this?
-        if (zeroForOne) require(priceBefore.mul(90).div(100) <= nextPrice._x);
-        else require(priceBefore.mul(110).div(100) >= nextPrice._x);
+        //        // the target next price is within 10%
+        //        // TODO can we remove this?
+        //        if (zeroForOne) require(priceBefore.mul(90).div(100) <= priceTarget._x);
+        //        else require(priceBefore.mul(110).div(100) >= priceTarget._x);
 
-        uint112 amountIn = PriceMath.getInputToRatio(reserve0, reserve1, lpFee, nextPrice, zeroForOne);
+        uint112 amountIn = PriceMath.getInputToRatio(reserve0, reserve1, lpFee, priceTarget, zeroForOne);
 
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
-            if (zeroForOne) assert(priceBefore <= nextPrice._x);
-            else assert(priceBefore >= nextPrice._x);
-            return;
+            if (zeroForOne) assert(priceBefore._x <= priceTarget._x);
+            else assert(priceBefore._x >= priceTarget._x);
         } else {
+            uint112 effectiveAmountIn = uint112(
+                (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE
+            );
             uint112 amountOut = zeroForOne
-                ? PriceMath.getAmountOut(reserve0, reserve1, amountIn)
-                : PriceMath.getAmountOut(reserve1, reserve0, amountIn);
+                ? PriceMath.getAmountOut(reserve0, reserve1, effectiveAmountIn)
+                : PriceMath.getAmountOut(reserve1, reserve0, effectiveAmountIn);
 
-            uint112 reserve0Next = zeroForOne ? reserve0 + amountIn : reserve0 - amountOut;
-            uint112 reserve1Next = zeroForOne ? reserve1 - amountOut : reserve1 + amountIn;
+            (uint112 reserve0Next, uint112 reserve1Next) = zeroForOne
+                ? (reserve0 + effectiveAmountIn, reserve1 - amountOut)
+                : (reserve0 - amountOut, reserve1 + effectiveAmountIn);
+
             FixedPoint.uq112x112 memory priceAfterSwap = FixedPoint.fraction(reserve1Next, reserve0Next);
 
-            if (zeroForOne) assert(priceAfterSwap._x <= nextPrice._x && priceAfterSwap._x > (nextPrice._x * 99) / 100);
-            else assert(priceAfterSwap._x >= nextPrice._x && priceAfterSwap._x < (nextPrice._x * 101) / 100);
+            // check:
+            //  - the price does not exceed the next price
+            //  - todo: one more wei of effective amount in would result in a price that exceeds the next price
+            if (zeroForOne) {
+                assert(priceAfterSwap._x > priceTarget._x);
+            } else {
+                assert(priceAfterSwap._x < priceTarget._x);
+            }
         }
     }
 }
