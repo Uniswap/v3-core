@@ -1,18 +1,20 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9856`;
+exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `517`;
+
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9660`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps snapshot 1`] = `
 Object {
-  "amountIn": "11305074013661421002",
-  "amountInLessFee": "11237243569579452475",
-  "amountInPlus1": "11305074013661421003",
-  "amountInPlus1LessFee": "11237243569579452476",
-  "amountOut": "183503419072273967",
-  "amountOutWith1MoreWeiEffectiveInput": "183503419072273967",
+  "amountIn": "11305074013661420926",
+  "amountInLessFee": "11237243569579452400",
+  "amountInPlus1": "11305074013661420927",
+  "amountInPlus1LessFee": "11237243569579452401",
+  "amountOut": "183503419072273966",
+  "amountOutWith1MoreWeiEffectiveInput": "183503419072273966",
   "lpFee": 60,
-  "priceAfterSwap": "389422264390112072139787224691507200",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "389422264390112072146146463639740389",
+  "priceAfterSwap": "389422264390112071185901382456528806",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "389422264390112071192260621404761995",
   "priceBeforeSwap": "259614842926741381426524816461004800",
   "priceTarget": "389422264390112072139787224691507200",
   "reserve0": "1000000000000000000",
@@ -21,19 +23,19 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9866`;
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9670`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps snapshot 1`] = `
 Object {
-  "amountIn": "21133345019035461735",
-  "amountInLessFee": "20710678118654752500",
-  "amountInPlus1": "21133345019035461736",
-  "amountInPlus1LessFee": "20710678118654752501",
-  "amountOut": "292893218813452476",
-  "amountOutWith1MoreWeiEffectiveInput": "292893218813452476",
+  "amountIn": "21133345019035461633",
+  "amountInLessFee": "20710678118654752400",
+  "amountInPlus1": "21133345019035461634",
+  "amountInPlus1LessFee": "20710678118654752401",
+  "amountOut": "292893218813452475",
+  "amountOutWith1MoreWeiEffectiveInput": "292893218813452475",
   "lpFee": 200,
-  "priceAfterSwap": "519229685853482763587351296642726493",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "519229685853482763594694313279933662",
+  "priceAfterSwap": "519229685853482762118747969201292707",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "519229685853482762126090985838499876",
   "priceBeforeSwap": "259614842926741381426524816461004800",
   "priceTarget": "519229685853482762853049632922009600",
   "reserve0": "1000000000000000000",
@@ -42,7 +44,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `9967`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `9771`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1`] = `
 Object {
@@ -63,7 +65,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `9967`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `9771`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1`] = `
 Object {
@@ -84,7 +86,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4299`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4103`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves snapshot 1`] = `
 Object {
@@ -105,7 +107,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `9967`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `9771`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1`] = `
 Object {
