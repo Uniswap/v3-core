@@ -530,7 +530,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint16 fee;
     }
 
-
     function _swap(SwapParams memory params) internal returns (uint112 amountOut) {
         require(params.amountIn > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
         _update(); // update the oracle and feeLast
@@ -573,7 +572,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 step.amountIn = Math.min(amountInRequiredForShift, state.amountInRemaining).toUint112();
 
                 uint112 amountInLessFee = uint112(
-                    uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - step.fee) / PriceMath.LP_FEE_BASE
+                    (uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - step.fee)) / PriceMath.LP_FEE_BASE
                 );
                 {
                     uint112 feePaid = step.amountIn - amountInLessFee;
@@ -607,7 +606,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     : PriceMath.getAmountOut(state.reserve1Virtual, state.reserve0Virtual, amountInLessFee);
 
                 // in some cases this output amount can be marginally too high, fix this
-                uint112 amountOutMax = (params.zeroForOne ? state.reserve1Virtual : state.reserve0Virtual) - reserveOutMinimum;
+                uint112 amountOutMax = (params.zeroForOne ? state.reserve1Virtual : state.reserve0Virtual) -
+                    reserveOutMinimum;
                 step.amountOut = uint112(Math.min(step.amountOut, amountOutMax));
 
                 if (params.zeroForOne) {
@@ -627,11 +627,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 1) if a positive input amount still remains
             // 2) if we're moving right and the price is exactly on the target tick
             if (
-                state.amountInRemaining > 0
-                    || (
-                        params.zeroForOne == false
-                            && FixedPoint.fraction(state.reserve1Virtual, state.reserve0Virtual)._x == step.nextPrice._x
-                    )
+                state.amountInRemaining > 0 ||
+                (params.zeroForOne == false &&
+                    FixedPoint.fraction(state.reserve1Virtual, state.reserve0Virtual)._x == step.nextPrice._x)
             ) {
                 TickInfo storage tickInfo = tickInfos[state.tick];
 

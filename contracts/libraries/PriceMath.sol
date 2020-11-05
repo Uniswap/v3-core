@@ -91,7 +91,7 @@ library PriceMath {
         uint112 amountInLessFee = uint112(reserveInNext - reserveIn);
 
         // compute the (rounded-up) amountIn scaled by the current fee
-        bool roundUp = uint256(amountInLessFee) * LP_FEE_BASE % (LP_FEE_BASE - lpFee) > 0;
-        amountIn = uint112(uint256(amountInLessFee) * LP_FEE_BASE / (LP_FEE_BASE - lpFee) + (roundUp ? 1 : 0));
+        bool roundUp = (uint256(amountInLessFee) * LP_FEE_BASE) % (LP_FEE_BASE - lpFee) > 0;
+        amountIn = uint112((uint256(amountInLessFee) * LP_FEE_BASE) / (LP_FEE_BASE - lpFee) + (roundUp ? 1 : 0));
     }
 }
