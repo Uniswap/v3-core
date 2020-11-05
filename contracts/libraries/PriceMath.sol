@@ -86,7 +86,7 @@ library PriceMath {
         // compute input reserves (rounded down), s.t. 1 more wei of input would lead to the price being exceeded
         uint112 reserveIn = zeroForOne ? reserve0 : reserve1;
         uint256 reserveInNext = zeroForOne
-            ? (reserveOutMinimum << 112) / priceTarget._x
+            ? (uint256(reserveOutMinimum) << 112) / priceTarget._x
             : FullMath.mulDiv(reserveOutMinimum, priceTarget._x, uint256(1) << 112);
         uint112 amountInLessFee = uint112(reserveInNext - reserveIn);
 

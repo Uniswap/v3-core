@@ -62,6 +62,15 @@ contract PriceMathEchidnaTest {
                 ? PriceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
                 : PriceMath.getAmountOut(reserve1, reserve0, amountInLessFee);
 
+            // TODO might be able to remove this
+            if (zeroForOne) {
+                require(uint256(reserve0) + amountInLessFee + 1 < uint112(-1));
+                require(amountOut > reserve1);
+            } else {
+                require(uint256(reserve1) + amountInLessFee + 1 < uint112(-1));
+                require(amountOut > reserve0);
+            }
+
             // downward-adjust amount out if necessary
             amountOut = uint112(Math.min(amountOut, (zeroForOne ? reserve1 : reserve0) - reserveOutMinimum));
 

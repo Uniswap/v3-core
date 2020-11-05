@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9900`;
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9912`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps snapshot 1`] = `
 Object {
@@ -18,7 +18,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9910`;
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9922`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps snapshot 1`] = `
 Object {
@@ -36,16 +36,16 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `10002`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `10029`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1`] = `
 Object {
-  "amountIn": "15623761861187044017644422254424",
-  "amountInLessFee": "15576890575603482885591488987660",
-  "amountOut": "-778844528780124144279574449383000",
+  "amountIn": "415459942199694131",
+  "amountInLessFee": "414213562373095048",
+  "amountOut": "29289321881345247519",
   "lpFee": 30,
-  "priceAfterSwap": "259614842926741381426524816461004800",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "259614842926741381426524816460971800",
+  "priceAfterSwap": "259614842926741381723916990267895141",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "259614842926741381356766158407536695",
   "priceBeforeSwap": "519229685853482762853049632922009600",
   "priceTarget": "259614842926741381426524816461004800",
   "reserve0": "1000000000000000000",
@@ -54,16 +54,16 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `10002`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `10029`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1`] = `
 Object {
-  "amountIn": "31341832144072400172216275629096",
-  "amountInLessFee": "31153781151207965771182977975321",
-  "amountOut": "-1557689057560348288559148898766050",
+  "amountIn": "416713845445769666",
+  "amountInLessFee": "414213562373095048",
+  "amountOut": "29289321881345247519",
   "lpFee": 60,
-  "priceAfterSwap": "259614842926741381426524816461004800",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "259614842926741381426524816460988300",
+  "priceAfterSwap": "259614842926741381723916990267895141",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "259614842926741381356766158407536695",
   "priceBeforeSwap": "519229685853482762853049632922009600",
   "priceTarget": "259614842926741381426524816461004800",
   "reserve0": "1000000000000000000",
@@ -72,16 +72,16 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4334`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4361`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves snapshot 1`] = `
 Object {
-  "amountIn": "31341832144073406208433579451027",
-  "amountInLessFee": "31153781151208965771182977974320",
-  "amountOut": "-1557689057560448288559148898666000",
+  "amountIn": "417",
+  "amountInLessFee": "414",
+  "amountOut": "29278",
   "lpFee": 60,
-  "priceAfterSwap": "259614842926741381426524816461004800",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "259614842926741381426524816460988300",
+  "priceAfterSwap": "259695628309264554133616521495830006",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "259332293910411217661580047402806957",
   "priceBeforeSwap": "519229685853482762853049632922009600",
   "priceTarget": "259614842926741381426524816461004800",
   "reserve0": "1000",
@@ -90,16 +90,16 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `10002`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `10029`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1`] = `
 Object {
-  "amountIn": "23470955161633073157596417359609",
-  "amountInLessFee": "23365335863405724328387233481490",
-  "amountOut": "-1752400189755404324629042511111750",
+  "amountIn": "155399837648670547",
+  "amountInLessFee": "154700538379251529",
+  "amountOut": "13397459621556135322",
   "lpFee": 45,
-  "priceAfterSwap": "389422264390112072139787224691507200",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "389422264390112072139787224691474088",
+  "priceAfterSwap": "389422264390112072153277207641951089",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "389422264390112071483274721103237925",
   "priceBeforeSwap": "519229685853482762853049632922009600",
   "priceTarget": "389422264390112072139787224691507200",
   "reserve0": "1000000000000000000",
