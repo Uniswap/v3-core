@@ -49,6 +49,7 @@ contract PriceMathEchidnaTest {
             priceTarget,
             zeroForOne
         );
+        assert(reserveOutMinimum <= (zeroForOne ? reserve1 : reserve0));
 
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
