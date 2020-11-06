@@ -29,16 +29,16 @@ describe('PriceMath', () => {
         // going from zero to one
         // that means reserve1 will decrease and reserve0 will increase
         // i.e. the price will decrease, so the target price must be lower than the current price
-        expect(await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 30, [price], true)).to.eq(
-          '0'
-        )
+        expect(
+          (await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 30, [price], true))[0]
+        ).to.eq('0')
       })
 
       it('returns 0 if price is equal', async () => {
         const price = encodePrice(expandTo18Decimals(50), expandTo18Decimals(1))
 
         expect(
-          await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 30, [price], false)
+          (await priceMath.getInputToRatio(expandTo18Decimals(1), expandTo18Decimals(50), 30, [price], false))[0]
         ).to.eq('0')
       })
 
