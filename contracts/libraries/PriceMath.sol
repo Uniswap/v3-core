@@ -62,7 +62,7 @@ library PriceMath {
         uint16 lpFee,
         FixedPoint.uq112x112 memory priceTarget, // always reserve1/reserve0
         bool zeroForOne
-    ) internal pure returns (uint112 amountIn, uint112 reserveOutMinimum) {
+    ) internal pure returns (uint112 amountIn, uint112 amountOut) {
         // short-circuit if we're already at or past the target price
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1, reserve0);
         if (zeroForOne) {
@@ -80,8 +80,8 @@ library PriceMath {
         }
 
         // compute exact output reserves (rounded up), because ceil(sqrt(ceil(x))) := ceil(sqrt(x)) ∀ x > 0
-        reserveOutMinimum = Babylonian.sqrt(reserveOutNextSquared).toUint112();
-        if (reserveOutNextSquared % reserveOutMinimum != 0) reserveOutMinimum = reserveOutMinimum.add(1).toUint112();
+        uint256 reserveOutMinimum = Babylonian.sqrt(reserveOutNextSquared);
+        if (reserveOutNextSquared % reserveOutMinimum != 0) reserveOutMinimum++;
 
         // compute input reserves (rounded down), s.t. 1 more wei of input would lead to the price being exceeded
         uint112 reserveIn = zeroForOne ? reserve0 : reserve1;
@@ -93,5 +93,6 @@ library PriceMath {
         // compute the (rounded-up) amountIn scaled by the current fee
         bool roundUp = (uint256(amountInLessFee) * LP_FEE_BASE) % (LP_FEE_BASE - lpFee) > 0;
         amountIn = uint112((uint256(amountInLessFee) * LP_FEE_BASE) / (LP_FEE_BASE - lpFee) + (roundUp ? 1 : 0));
+        amountOut = uint112(uint256(zeroForOne ? reserve1 : reserve0) - reserveOutMinimum);
     }
 }

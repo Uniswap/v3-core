@@ -558,7 +558,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // compute the ~minimum amount of input token required s.t. the price equals or exceeds the target price
             // _after_ computing the corresponding output amount according to x * y = k, given the current fee
-            (uint112 amountInRequiredForShift, uint112 reserveOutMinimum) = PriceMath.getInputToRatio(
+            (uint112 amountInRequiredForShift, uint112 amountOutMax) = PriceMath.getInputToRatio(
                 state.reserve0Virtual,
                 state.reserve1Virtual,
                 step.fee,
@@ -606,8 +606,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     : PriceMath.getAmountOut(state.reserve1Virtual, state.reserve0Virtual, amountInLessFee);
 
                 // in some cases this output amount can be marginally too high, fix this
-                uint112 amountOutMax = (params.zeroForOne ? state.reserve1Virtual : state.reserve0Virtual) -
-                    reserveOutMinimum;
                 step.amountOut = uint112(Math.min(step.amountOut, amountOutMax));
 
                 if (params.zeroForOne) {
