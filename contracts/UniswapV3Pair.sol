@@ -542,6 +542,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             feeFloor: feeLast
         });
 
+        // TODO here and the other place we check state.amountInRemaining > 0, we should _actually_ be checking
+        // that state.amountInRemaining > *whatever input amount, discounted by the appropriate fee,
+        // leads to 1 wei of effective input*, while still taking the whole amount and accounting correctly
+        // this will probably be complicated because fees can change every tick, gotta think about this...
         while (state.amountInRemaining > 0) {
             // TODO should these conditions be in a different place?
             assert(state.tick >= TickMath.MIN_TICK && state.tick < TickMath.MAX_TICK);
@@ -588,7 +592,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // update the global fee tracker
                     // TODO we can probably do this less lossily
-                    uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
+                    uint112 liquidityVirtual = uint112(
+                        Babylonian.sqrt(uint256(state.reserve0Virtual) * state.reserve1Virtual)
+                    );
                     if (params.zeroForOne) {
                         feeGrowthGlobal0 = FixedPoint.uq112x112(
                             feeGrowthGlobal0._x + FixedPoint.fraction(feePaid, liquidityVirtual)._x
@@ -611,7 +617,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 step.amountOut = uint112(Math.min(step.amountOut, amountOutMax));
 
                 if (params.zeroForOne) {
-                    // TODO - feePaid
                     state.reserve0Virtual = state.reserve0Virtual.add(amountInLessFee).toUint112();
                     state.reserve1Virtual = state.reserve1Virtual.sub(step.amountOut).toUint112();
                 } else {
@@ -624,7 +629,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
 
             // we have to shift to the next tick if either of two conditions are true:
-            // 1) if a positive input amount still remains
+            // 1) a positive input amount remains (TODO, a positive _effective_ input amount (at the next tick?))
             // 2) if we're moving right and the price is exactly on the target tick
             if (
                 state.amountInRemaining > 0 ||
@@ -635,15 +640,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // if the tick is initialized, we must update it
                 if (tickInfo.initialized) {
-                    // calculate the amount of reserves to kick in/out
+                    // calculate the net amount of token1 reserves to kick in/out
                     int256 token1VirtualDelta; // will not exceed int120
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         token1VirtualDelta += tickInfo.token1VirtualDeltas[i];
                     }
 
-                    // TODO the price can change because of rounding error
-                    // should adding/subtracting token{0,1}VirtualDelta to/from the current reserves ideally always move
-                    // the price toward the direction we're moving (past the tick), if it has to move at all?
+                    // calculate corresponding net amount of token0 reserves to kick in/out with minimal rouding error
                     int256 token0VirtualDelta;
                     {
                         uint256 token0VirtualDeltaUnsigned = (uint256(
@@ -654,11 +657,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             : token0VirtualDeltaUnsigned.toInt256();
                     }
 
-                    // TODO make sure there's not an attack here by repeatedly crossing ticks + forcing rounding
+                    // now, we need to update liquidityVirtualVotes. we _cannot_ do so using the net amounts,
+                    // so we have to use another for loop
                     // TODO it is possible to squeeze out a bit more precision here by:
                     // a) summing total negative and positive token1VirtualDeltas
                     // b) calculating the total negative and positive liquidityDelta
                     // c) allocating these deltas proportionally across virtualSupplies according to sign
+                    // TODO make sure there's not an attack here by repeatedly crossing ticks + forcing rounding
                     // compute update to liquidityVirtualVotes, for fee voting purposes
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         bool negative = tickInfo.token1VirtualDeltas[i] < 0;
@@ -680,29 +685,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         }
                     }
 
-                    // subi because we're moving from right to left
-                    state.reserve0Virtual = state.reserve0Virtual.subi(token0VirtualDelta).toUint112();
-                    state.reserve1Virtual = state.reserve1Virtual.subi(token1VirtualDelta).toUint112();
-
-                    // TODO remove this eventually, it's meant to show the direction of rounding
-                    {
-                        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(
-                            state.reserve1Virtual.toUint112(),
-                            state.reserve0Virtual.toUint112()
-                        );
-                        if (params.zeroForOne) {
-                            if (token1VirtualDelta > 0) {
-                                assert(priceNext._x <= step.nextPrice._x); // this should be ok, we're moving left
-                            } else {
-                                // TODO figure out what to do here
-                            }
-                        } else {
-                            if (token1VirtualDelta > 0) {
-                                assert(priceNext._x >= step.nextPrice._x); // this should be ok, we're moving right
-                            } else {
-                                // TODO figure out what to do here
-                            }
-                        }
+                    // TODO the price can change here because of rounding error in calculating token0VirtualDelta
+                    // it's very important that after adding/removing these reserves, we maintain the property that
+                    // adding 1 wei of effective input and subtracting the corresponding output amount still
+                    // is guaranteed to push us past the target price.
+                    // it's important because this is what lets us be confident that we can actually bump the tick
+                    // to the next value, as we're guaranteed that (since enough input amount remains to at least
+                    // add 1 more wei of effective input), the price will end up past the target.
+                    // it's pretty trivial to round s.t. the price consistently moves in the same direction we're going
+                    // (if it has to move at all), but it's not immediately clear that this will lead
+                    // to our desired property always holding
+                    if (params.zeroForOne) {
+                        // subi because we're moving from right to left
+                        state.reserve0Virtual = state.reserve0Virtual.subi(token0VirtualDelta).toUint112();
+                        state.reserve1Virtual = state.reserve1Virtual.subi(token1VirtualDelta).toUint112();
+                    } else {
+                        state.reserve0Virtual = state.reserve0Virtual.addi(token0VirtualDelta).toUint112();
+                        state.reserve1Virtual = state.reserve1Virtual.addi(token1VirtualDelta).toUint112();
                     }
 
                     // update tick info
