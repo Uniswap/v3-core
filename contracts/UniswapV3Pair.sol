@@ -588,7 +588,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // update the global fee tracker
                     // TODO we can probably do this less lossily
-                    uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
+                    uint112 liquidityVirtual = uint112(
+                        Babylonian.sqrt(uint256(state.reserve0Virtual) * state.reserve1Virtual)
+                    );
                     if (params.zeroForOne) {
                         feeGrowthGlobal0 = FixedPoint.uq112x112(
                             feeGrowthGlobal0._x + FixedPoint.fraction(feePaid, liquidityVirtual)._x
