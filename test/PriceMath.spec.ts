@@ -36,7 +36,7 @@ describe('PriceMath', () => {
           [price],
           true
         )
-        expect(amountIn).to.eq('0')
+        expect(amountIn).to.eq(0)
       })
 
       it('returns 0 if price is equal', async () => {
@@ -49,7 +49,7 @@ describe('PriceMath', () => {
           [price],
           false
         )
-        expect(amountIn).to.eq('0')
+        expect(amountIn).to.eq(0)
       })
 
       it('gas: returns 0 if price is equal', async () => {
@@ -115,15 +115,15 @@ describe('PriceMath', () => {
         describe(summary, () => {
           let priceBeforeSwap: BigNumber
           let amountIn: BigNumber
-          let reserveOutMinimum: BigNumber
           let amountInLessFee: BigNumber
           let amountOut: BigNumber
+          let amountOutMax: BigNumber
           let priceAfterSwap: BigNumber
           let priceAfterSwapWith1MoreWeiEffectiveInput: BigNumber
 
           before('compute swap result', async () => {
             priceBeforeSwap = encodePrice(reserve1, reserve0)
-            ;[amountIn, reserveOutMinimum] = await priceMath.getInputToRatio(
+            ;[amountIn, amountOutMax] = await priceMath.getInputToRatio(
               reserve0,
               reserve1,
               lpFee,
@@ -136,7 +136,6 @@ describe('PriceMath', () => {
               : priceMath.getAmountOut(reserve1, reserve0, amountInLessFee))
 
             // cap the output amount, if necessary
-            const amountOutMax = (zeroForOne ? reserve1 : reserve0).sub(reserveOutMinimum)
             if (amountOut.gt(amountOutMax)) amountOut = amountOutMax
 
             priceAfterSwap = zeroForOne

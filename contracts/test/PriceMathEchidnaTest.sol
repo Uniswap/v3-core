@@ -42,19 +42,20 @@ contract PriceMathEchidnaTest {
 
         FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
 
-        (uint112 amountIn, uint112 reserveOutMinimum) = PriceMath.getInputToRatio(
+        (uint112 amountIn, uint112 amountOutMax) = PriceMath.getInputToRatio(
             reserve0,
             reserve1,
             lpFee,
             priceTarget,
             zeroForOne
         );
-        assert(reserveOutMinimum <= (zeroForOne ? reserve1 : reserve0));
+        assert(amountOutMax < (zeroForOne ? reserve1 : reserve0));
 
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
             if (zeroForOne) assert(priceBefore._x <= priceTarget._x);
             else assert(priceBefore._x >= priceTarget._x);
+            assert(amountOutMax == 0);
         } else {
             uint112 amountInLessFee = uint112(
                 (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE
@@ -73,7 +74,7 @@ contract PriceMathEchidnaTest {
             }
 
             // downward-adjust amount out if necessary
-            amountOut = uint112(Math.min(amountOut, (zeroForOne ? reserve1 : reserve0) - reserveOutMinimum));
+            amountOut = uint112(Math.min(amountOut, amountOutMax));
 
             (uint112 reserve0Next, uint112 reserve1Next) = zeroForOne
                 ? (reserve0 + amountInLessFee, reserve1 - amountOut)
