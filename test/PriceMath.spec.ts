@@ -105,6 +105,7 @@ describe('PriceMath', () => {
         describe(summary, () => {
           let priceBeforeSwap: BigNumber
           let amountIn: BigNumber
+          let reserveOutMinimum: BigNumber
           let amountInLessFee: BigNumber
           let amountOut: BigNumber
           let priceAfterSwap: BigNumber
@@ -112,35 +113,21 @@ describe('PriceMath', () => {
 
           before('compute swap result', async () => {
             priceBeforeSwap = encodePrice(reserve1, reserve0)
-            ;[amountIn] = await priceMath.getInputToRatio(reserve0, reserve1, lpFee, [priceTarget], zeroForOne)
+            ;[amountIn, reserveOutMinimum] = await priceMath.getInputToRatio(
+              reserve0,
+              reserve1,
+              lpFee,
+              [priceTarget],
+              zeroForOne
+            )
             amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(10000)
             amountOut = await (zeroForOne
               ? priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
               : priceMath.getAmountOut(reserve1, reserve0, amountInLessFee))
 
             // cap the output amount, if necessary
-            const proposedPrice = zeroForOne
-              ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee))
-              : encodePrice(reserve1.add(amountInLessFee), reserve0.sub(amountOut))
-            if (zeroForOne) {
-              if (proposedPrice.lt(priceTarget)) {
-                const roundUp = reserve0.add(amountInLessFee).mul(priceTarget).mod(BigNumber.from(2).pow(112)).gt(0)
-                const minOutputReserves = reserve0
-                  .add(amountInLessFee)
-                  .mul(priceTarget)
-                  .div(BigNumber.from(2).pow(112))
-                  .add(roundUp ? 1 : 0)
-                amountOut = reserve1.sub(minOutputReserves)
-              }
-            } else if (proposedPrice.gt(priceTarget)) {
-              const roundUp = reserve1.add(amountInLessFee).mul(BigNumber.from(2).pow(112)).mod(priceTarget).gt(0)
-              const minOutputReserves = reserve1
-                .add(amountInLessFee)
-                .mul(BigNumber.from(2).pow(112))
-                .div(priceTarget)
-                .add(roundUp ? 1 : 0)
-              amountOut = reserve0.sub(minOutputReserves)
-            }
+            const amountOutMax = (zeroForOne ? reserve1 : reserve0).sub(reserveOutMinimum)
+            if (amountOut.gt(amountOutMax)) amountOut = amountOutMax
 
             priceAfterSwap = zeroForOne
               ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee))
