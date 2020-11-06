@@ -57,7 +57,7 @@ contract PriceMathEchidnaTest {
             else assert(priceBefore._x >= priceTarget._x);
             assert(amountOutMax == 0);
         } else {
-            assert(amountOutMax < (zeroForOne ? reserve1 : reserve0));
+            require((zeroForOne ? reserve1 : reserve0) >= amountOutMax);
             require((zeroForOne ? reserve1 : reserve0) - amountOutMax >= 101);
 
             uint112 amountInLessFee = uint112(
