@@ -31,8 +31,7 @@ contract PriceMathEchidnaTest {
         uint112 reserve0,
         uint112 reserve1,
         uint16 lpFee,
-        int16 tick,
-        bool zeroForOne
+        int16 tick
     ) external pure {
         // UniswapV3Pair.TOKEN_MIN
         require(reserve0 >= 101 && reserve1 >= 101);
@@ -41,6 +40,8 @@ contract PriceMathEchidnaTest {
         FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tick);
 
         FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
+
+        bool zeroForOne = priceTarget._x <= priceBefore._x ? true : false;
 
         (uint112 amountIn, uint112 amountOutMax) = PriceMath.getInputToRatio(
             reserve0,
