@@ -108,10 +108,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // global value for all time fee growth per unit of liquidity
     FixedPoint.uq112x112 feeGrowthGlobal0;
     // value for protocol fees
-    uint112 feeToFees0;
+    uint112 public feeToFees0;
 
     FixedPoint.uq112x112 feeGrowthGlobal1;
-    uint112 feeToFees1;
+    uint112 public feeToFees1;
 
     uint256 public unlocked = 1;
     modifier lock() {

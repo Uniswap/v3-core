@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #getFee gas cost initialized to vote 5 1`] = `6476`;
+exports[`UniswapV3Pair #getFee gas cost initialized to vote 5 1`] = `6498`;
 
-exports[`UniswapV3Pair #getFee gas cost multiple votes median in middle 1`] = `6253`;
+exports[`UniswapV3Pair #getFee gas cost multiple votes median in middle 1`] = `6275`;
 
-exports[`UniswapV3Pair #getFee gas cost uninitialized 1`] = `5847`;
+exports[`UniswapV3Pair #getFee gas cost uninitialized 1`] = `5869`;
 
 exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `135534`;
 
