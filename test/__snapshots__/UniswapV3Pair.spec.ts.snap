@@ -6,10 +6,10 @@ exports[`UniswapV3Pair #getFee gas cost multiple votes median in middle 1`] = `6
 
 exports[`UniswapV3Pair #getFee gas cost uninitialized 1`] = `5847`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `135785`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `136330`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `2344664`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `2385401`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `125859`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `126788`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `2844343`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `2436589`;
