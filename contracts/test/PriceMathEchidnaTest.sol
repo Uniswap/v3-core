@@ -36,7 +36,7 @@ contract PriceMathEchidnaTest {
     ) external pure {
         // UniswapV3Pair.TOKEN_MIN
         require(reserve0 >= 101 && reserve1 >= 101);
-        require(lpFee < PriceMath.LP_FEE_BASE);
+        require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
         require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
         FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tick);
 
@@ -49,7 +49,6 @@ contract PriceMathEchidnaTest {
             priceTarget,
             zeroForOne
         );
-        assert(amountOutMax < (zeroForOne ? reserve1 : reserve0));
 
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
@@ -57,6 +56,9 @@ contract PriceMathEchidnaTest {
             else assert(priceBefore._x >= priceTarget._x);
             assert(amountOutMax == 0);
         } else {
+            assert(amountOutMax < (zeroForOne ? reserve1 : reserve0));
+            require((zeroForOne ? reserve1 : reserve0) - amountOutMax >= 101);
+
             uint112 amountInLessFee = uint112(
                 (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE
             );
