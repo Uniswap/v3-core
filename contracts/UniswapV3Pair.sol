@@ -237,8 +237,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
         uint256 priceScaled = uint256(price._x) << safeShiftBits;
 
-        // calculate amount1 := liquidity * sqrt(price) and amount0 := liquidity / sqrt(price)...
-        // ...while rounding down, as liquidity is being removed
+        // calculate amount1 := liquidity * sqrt(price) and amount0 := liquidity / sqrt(price)
+        // while rounding down, as liquidity is being removed
         if (liquidity < 0) {
             amount1 = FullMath.mulDiv(
                 // must be cast as a uint112 for proper overflow handling if liquidity := type(int112).min
@@ -255,7 +255,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount1 *= -1;
             amount0 *= -1;
         }
-        // ...while rounding up, as liquidity is being added
+        // while rounding up, as liquidity is being added
         else {
             uint256 priceScaledRootRoundedUp = Babylonian.sqrt(priceScaled);
             if (priceScaled % priceScaledRootRoundedUp != 0) priceScaledRootRoundedUp++;
