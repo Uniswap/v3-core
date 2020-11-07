@@ -219,8 +219,8 @@ describe('UniswapV3Pair', () => {
           it('transfers token0 only', async () => {
             await expect(pair.setPosition(-231, 0, 0, 10000))
               .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, 21551)
-            expect(await token0.balanceOf(pair.address)).to.eq(31551)
+              .withArgs(wallet.address, pair.address, 21559)
+            expect(await token0.balanceOf(pair.address)).to.eq(31559)
             expect(await token1.balanceOf(pair.address)).to.eq(1000)
           })
         })
@@ -229,10 +229,10 @@ describe('UniswapV3Pair', () => {
           it('price within range: transfers current price of both tokens', async () => {
             await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
               .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, 310)
+              .withArgs(wallet.address, pair.address, 316)
               .to.emit(token1, 'Transfer')
               .withArgs(wallet.address, pair.address, 31)
-            expect(await token0.balanceOf(pair.address)).to.eq(10310)
+            expect(await token0.balanceOf(pair.address)).to.eq(10316)
             expect(await token1.balanceOf(pair.address)).to.eq(1031)
           })
 
@@ -342,7 +342,7 @@ describe('UniswapV3Pair', () => {
       const kAfter = await getK()
       expect(kAfter).to.be.gte(k)
 
-      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(9))
+      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
       expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
     })
 
@@ -381,8 +381,8 @@ describe('UniswapV3Pair', () => {
       const kAfter = await getK()
       expect(kAfter).to.be.gte(k)
 
-      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(11))
-      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(10))
+      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(9))
+      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(9))
     })
 
     it('cannot remove more than the entire position', async () => {

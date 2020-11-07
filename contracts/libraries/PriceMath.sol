@@ -51,7 +51,7 @@ library PriceMath {
         uint256 x,
         uint256 y,
         uint256 d
-    ) private pure returns (uint256) {
+    ) internal pure returns (uint256) {
         bool roundUp = mulmod(x, y, d) > 0;
         return FullMath.mulDiv(x, y, d) + (roundUp ? 1 : 0);
     }

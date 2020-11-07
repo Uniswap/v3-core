@@ -127,20 +127,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int16 tickUpper,
         uint8 feeVote
     ) private view returns (Position storage position) {
-        assert(tickLower >= TickMath.MIN_TICK);
-        assert(tickUpper <= TickMath.MAX_TICK);
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper, feeVote))];
     }
 
     // check for one-time initialization
-    function isInitialized() public view override returns (bool initialized) {
-        initialized =
-            liquidityVirtualVotes[0] > 0 ||
-            liquidityVirtualVotes[1] > 0 ||
-            liquidityVirtualVotes[2] > 0 ||
-            liquidityVirtualVotes[3] > 0 ||
-            liquidityVirtualVotes[4] > 0 ||
-            liquidityVirtualVotes[5] > 0;
+    function isInitialized() public view override returns (bool) {
+        return reserve0Virtual > 0; // sufficient check
     }
 
     // find the median fee vote, and return the fee in bips
@@ -235,9 +227,49 @@ contract UniswapV3Pair is IUniswapV3Pair {
         pure
         returns (int112 amount0, int112 amount1)
     {
-        amount1 = price.sqrt().muli(liquidity).toInt112();
-        uint256 amount0Unsigned = FixedPoint.encode(uint112(amount1 < 0 ? -amount1 : amount1))._x / price._x;
-        amount0 = amount1 < 0 ? -(amount0Unsigned.toInt112()) : amount0Unsigned.toInt112();
+        if (liquidity == 0) return (0, 0);
+
+        // since price is a uint224, we can shift it at least 32 bits
+        uint8 safeShiftBits = 32;
+        while (safeShiftBits < 254) {
+            if (price._x < (uint256(1) << (256 - safeShiftBits - 2))) safeShiftBits += 2;
+            else break;
+        }
+        uint256 priceScaled = uint256(price._x) << safeShiftBits;
+
+        // calculate amount1 := liquidity * sqrt(price) and amount0 := liquidity / sqrt(price)...
+        // ...while rounding down, as liquidity is being removed
+        if (liquidity < 0) {
+            amount1 = FullMath.mulDiv(
+                // must be cast as a uint112 for proper overflow handling if liquidity := type(int112).min
+                uint112(-liquidity),
+                Babylonian.sqrt(priceScaled),
+                uint256(1) << (56 + safeShiftBits / 2)
+            ).toInt112();
+            amount0 = FullMath.mulDiv(
+                // must be cast as a uint112 for proper overflow handling if liquidity := type(int112).min
+                uint112(-liquidity),
+                uint256(1) << (56 + safeShiftBits / 2),
+                Babylonian.sqrt(price._x)
+            ).toInt112();
+            amount1 *= -1;
+            amount0 *= -1;
+        }
+        // ...while rounding up, as liquidity is being added
+        else {
+            uint256 priceScaledRootRoundedUp = Babylonian.sqrt(priceScaled);
+            if (priceScaled % priceScaledRootRoundedUp != 0) priceScaledRootRoundedUp++;
+            amount1 = PriceMath.mulDivRoundingUp(
+                uint256(liquidity),
+                priceScaledRootRoundedUp,
+                uint256(1) << (56 + safeShiftBits / 2)
+            ).toInt112();
+            amount0 = PriceMath.mulDivRoundingUp(
+                uint256(liquidity),
+                uint256(1) << (56 + safeShiftBits / 2),
+                priceScaledRootRoundedUp
+            ).toInt112();
+        }
     }
 
     constructor(
@@ -362,7 +394,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (amount0, amount1) = getValueAtPrice(price, liquidityDelta);
 
         // update reserves (the price doesn't change, so no need to update the oracle/current tick)
-        // TODO the price _can_ change because of rounding error
+        // TODO the price _can_ change, if amount0 was rounded down
+        // if amount0 was rounded down, it would be pretty trivial to round in either direction here,
+        // either be doing nothing or by quoting amount1 against amount0 and rounding down
+        // we could potentially do this based on which tick we're closer to
         reserve0Virtual = reserve0Virtual.addi(amount0).toUint112();
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
         require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
@@ -370,11 +405,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // TODO remove this eventually, it's meant to demonstrate the direction of rounding
         FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-        if (amount0 > 0) {
-            assert(priceNext._x >= price._x);
-        } else {
-            assert(priceNext._x <= price._x);
-        }
+        if (amount0 > 0) assert(priceNext._x >= price._x);
+        else assert(priceNext._x <= price._x);
 
         liquidityVirtualVotes[feeVote] = liquidityVirtualVotes[feeVote].addi(liquidityDelta).toUint112();
     }
@@ -547,10 +579,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // leads to 1 wei of effective input*, while still taking the whole amount and accounting correctly
         // this will probably be complicated because fees can change every tick, gotta think about this...
         while (state.amountInRemaining > 0) {
-            // TODO should these conditions be in a different place?
-            assert(state.tick >= TickMath.MIN_TICK && state.tick < TickMath.MAX_TICK);
-            assert(state.reserve0Virtual >= TOKEN_MIN && state.reserve1Virtual >= TOKEN_MIN);
-
             StepComputations memory step;
             // get the price for the next tick we're moving toward
             step.nextPrice = params.zeroForOne
@@ -647,6 +675,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // calculate corresponding net amount of token0 reserves to kick in/out with minimal rouding error
                     int256 token0VirtualDelta;
                     {
+                        // must be cast as a uint256 for proper overflow handling
+                        // if token1VirtualDelta := type(int256).min
                         uint256 token0VirtualDeltaUnsigned = (uint256(
                             token1VirtualDelta < 0 ? -token1VirtualDelta : token1VirtualDelta
                         ) << 112) / step.nextPrice._x;
@@ -665,6 +695,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // compute update to liquidityVirtualVotes, for fee voting purposes
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         bool negative = tickInfo.token1VirtualDeltas[i] < 0;
+                        // must be cast as a uint112 for proper overflow handling
+                        // if tickInfo.token1VirtualDeltas[i] := type(int256).min
                         uint112 token1VirtualDeltaUnsigned = uint112(
                             negative ? -tickInfo.token1VirtualDeltas[i] : tickInfo.token1VirtualDeltas[i]
                         );
@@ -716,9 +748,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
         }
 
+        require(state.tick >= TickMath.MIN_TICK, 'UniswapV3: TICK_TOO_SMALL');
+        require(state.tick < TickMath.MAX_TICK, 'UniswapV3: TICK_TOO_LARGE');
         tickCurrent = state.tick;
-        reserve0Virtual = state.reserve0Virtual.toUint112();
-        reserve1Virtual = state.reserve1Virtual.toUint112();
+        require(state.reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
+        require(state.reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
+        reserve0Virtual = state.reserve0Virtual;
+        reserve1Virtual = state.reserve1Virtual;
 
         // this is different than v2
         TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut);
