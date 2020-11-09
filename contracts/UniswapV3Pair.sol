@@ -479,13 +479,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityDelta
         );
 
-        // regardless of current price, when lower tick is crossed from left to right, amount0Lower should be added
+        // regardless of current price, when lower tick is crossed from left to right, amount1Lower should be added
         if (tickLower > TickMath.MIN_TICK) {
             tickInfoLower.token1VirtualDeltas[feeVote] = tickInfoLower.token1VirtualDeltas[feeVote]
                 .add(amount1Lower)
                 .toInt112();
         }
-        // regardless of current price, when upper tick is crossed from left to right amount0Upper should be removed
+        // regardless of current price, when upper tick is crossed from left to right amount1Upper should be removed
         if (tickUpper < TickMath.MAX_TICK) {
             tickInfoUpper.token1VirtualDeltas[feeVote] = tickInfoUpper.token1VirtualDeltas[feeVote]
                 .sub(amount1Upper)
