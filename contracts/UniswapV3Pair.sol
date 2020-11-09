@@ -16,6 +16,7 @@ import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
 import './libraries/PriceMath.sol';
+import './libraries/BitMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -231,12 +232,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     {
         if (liquidity == 0) return (0, 0);
 
-        // since price is a uint224, we can shift it at least 32 bits
-        uint8 safeShiftBits = 32;
-        while (safeShiftBits < 254) {
-            if (price._x < (uint256(1) << (256 - safeShiftBits - 2))) safeShiftBits += 2;
-            else break;
-        }
+        uint8 safeShiftBits = (255 - BitMath.mostSignificantBit(price._x)) / 2 * 2;
         uint256 priceScaled = uint256(price._x) << safeShiftBits; // price * 2**safeShiftBits
 
         uint256 priceScaledRoot = Babylonian.sqrt(uint256(price._x) << safeShiftBits); // sqrt(priceScaled)
@@ -465,13 +461,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityDelta
         );
 
-        // regardless of current price, when lower tick is crossed from left to right, amount0Lower should be added
+        // regardless of current price, when lower tick is crossed from left to right, amount1Lower should be added
         if (tickLower > TickMath.MIN_TICK) {
             tickInfoLower.token1VirtualDeltas[feeVote] = tickInfoLower.token1VirtualDeltas[feeVote]
                 .add(amount1Lower)
                 .toInt112();
         }
-        // regardless of current price, when upper tick is crossed from left to right amount0Upper should be removed
+        // regardless of current price, when upper tick is crossed from left to right amount1Upper should be removed
         if (tickUpper < TickMath.MAX_TICK) {
             tickInfoUpper.token1VirtualDeltas[feeVote] = tickInfoUpper.token1VirtualDeltas[feeVote]
                 .sub(amount1Upper)
