@@ -238,17 +238,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 priceScaledRoot = Babylonian.sqrt(uint256(price._x) << safeShiftBits); // sqrt(priceScaled)
         uint256 scaleFactor = uint256(1) << (56 + safeShiftBits / 2); // compensate for q112 and shifted bits under root
 
-        // calculate amount0 := liquidity / sqrt(price) and amount1 := liquidity * sqrt(price)
-        // while rounding down, as liquidity is being removed
+        // calculate amount0 := liquidity / sqrt(price) and amount1 := liquidity * sqrt(price),
+        // rounding down when liquidity is <0, i.e. being removed, and up when liquidity is >0, i.e. being added
         if (liquidity < 0) {
             // liquidity must be cast as a uint112 for proper overflow handling if liquidity := type(int112).min
             amount0 = FullMath.mulDiv(uint112(-liquidity), scaleFactor, priceScaledRoot).toInt112();
             amount1 = FullMath.mulDiv(uint112(-liquidity), priceScaledRoot, scaleFactor).toInt112();
             amount0 *= -1;
             amount1 *= -1;
-        }
-        // while rounding up, as liquidity is being added
-        else {
+        } else {
             if (priceScaledRoot**2 < priceScaled) priceScaledRoot++; // round priceScaledRoot up
             amount0 = PriceMath.mulDivRoundingUp(uint256(liquidity), scaleFactor, priceScaledRoot).toInt112();
             amount1 = PriceMath.mulDivRoundingUp(uint256(liquidity), priceScaledRoot, scaleFactor).toInt112();
