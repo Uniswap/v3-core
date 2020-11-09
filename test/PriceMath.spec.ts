@@ -111,14 +111,6 @@ describe('PriceMath', () => {
           zeroForOne: false,
           summary: '1:50 to 1:75 at 60bps',
         },
-        {
-          priceTarget: BigNumber.from('5192296858534827628530496329220096'),
-          reserve0: BigNumber.from(101),
-          reserve1: BigNumber.from(101),
-          lpFee: 32,
-          zeroForOne: false,
-          summary: 'minimum tokens in both to tick 32 price, no fee',
-        },
       ]) {
         describe(summary, () => {
           let priceBeforeSwap: BigNumber

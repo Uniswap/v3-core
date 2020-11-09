@@ -109,21 +109,3 @@ Object {
   "zeroForOne": true,
 }
 `;
-
-exports[`PriceMath #getInputToRatio invariants minimum tokens in both to tick 32 price, no fee gas 1`] = `533`;
-
-exports[`PriceMath #getInputToRatio invariants minimum tokens in both to tick 32 price, no fee snapshot 1`] = `
-Object {
-  "amountIn": "0",
-  "amountInLessFee": "0",
-  "amountOut": "0",
-  "lpFee": 32,
-  "priceAfterSwap": "5192296858534827628530496329220096",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "5243705738322301169407035896836136",
-  "priceBeforeSwap": "5192296858534827628530496329220096",
-  "priceTarget": "5192296858534827628530496329220096",
-  "reserve0": "101",
-  "reserve1": "101",
-  "zeroForOne": false,
-}
-`;
