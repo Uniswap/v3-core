@@ -249,7 +249,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
         // while rounding up, as liquidity is being added
         else {
-            if (priceScaled % priceScaledRoot != 0) priceScaledRoot++; // round priceScaledRoot up
+            if (priceScaledRoot**2 < priceScaled) priceScaledRoot++; // round priceScaledRoot up
             amount0 = PriceMath.mulDivRoundingUp(uint256(liquidity), scaleFactor, priceScaledRoot).toInt112();
             amount1 = PriceMath.mulDivRoundingUp(uint256(liquidity), priceScaledRoot, scaleFactor).toInt112();
         }

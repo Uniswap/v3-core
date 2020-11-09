@@ -1,6 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9680`;
+exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `533`;
+
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9922`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps snapshot 1`] = `
 Object {
@@ -18,7 +20,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9690`;
+exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps gas 1`] = `9932`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:100 at 200bps snapshot 1`] = `
 Object {
@@ -36,7 +38,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `9781`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `9982`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1`] = `
 Object {
@@ -54,7 +56,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `9781`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `9982`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1`] = `
 Object {
@@ -72,7 +74,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4113`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4314`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves snapshot 1`] = `
 Object {
@@ -90,7 +92,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `9781`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `9982`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1`] = `
 Object {
@@ -108,16 +110,16 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants getInputToRatioInvariants(101,102,1934,2) gas 1`] = `3689`;
+exports[`PriceMath #getInputToRatio invariants echidna failed test: getInputToRatioInvariants(101,102,1934,2) gas 1`] = `3927`;
 
-exports[`PriceMath #getInputToRatio invariants getInputToRatioInvariants(101,102,1934,2) snapshot 1`] = `
+exports[`PriceMath #getInputToRatio invariants echidna failed test: getInputToRatioInvariants(101,102,1934,2) snapshot 1`] = `
 Object {
-  "amountIn": "0",
-  "amountInLessFee": "0",
+  "amountIn": "2",
+  "amountInLessFee": "1",
   "amountOut": "0",
   "lpFee": 1934,
-  "priceAfterSwap": "5243705738322301169407035896836136",
-  "priceAfterSwapWith1MoreWeiEffectiveInput": "5295114618109774710283575464452177",
+  "priceAfterSwap": "5295114618109774710283575464452177",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "5346523497897248251160115032068217",
   "priceBeforeSwap": "5243705738322301169407035896836136",
   "priceTarget": "5296662025391377663863959305437419",
   "reserve0": "101",
