@@ -16,6 +16,7 @@ import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
 import './libraries/PriceMath.sol';
+import './libraries/BitMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -232,11 +233,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (liquidity == 0) return (0, 0);
 
         // since price is a uint224, we can shift it at least 32 bits
-        uint8 safeShiftBits = 32;
-        while (safeShiftBits < 254) {
-            if (price._x < (uint256(1) << (256 - safeShiftBits - 2))) safeShiftBits += 2;
-            else break;
-        }
+        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(price._x)) / 2) * 2;
         uint256 priceScaled = uint256(price._x) << safeShiftBits;
 
         // calculate amount1 := liquidity * sqrt(price) and amount0 := liquidity / sqrt(price)
