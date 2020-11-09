@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-  pull_request_target:
+  pull_request:
 
 jobs:
   run-linters:
@@ -24,7 +24,7 @@ jobs:
         run: yarn
 
       - name: Run linters
-        uses: wearerequired/lint-action@feature/pull_request_target
+        uses: wearerequired/lint-action@a8497ddb33fb1205941fd40452ca9fff07e0770d
         with:
           github_token: ${{ secrets.github_token }}
           prettier: true
