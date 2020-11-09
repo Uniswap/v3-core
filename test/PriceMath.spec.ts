@@ -178,9 +178,9 @@ describe('PriceMath', () => {
 
           it('price moves in the right direction', () => {
             if (zeroForOne) {
-              expect(priceAfterSwap).to.be.lt(priceBeforeSwap)
+              expect(priceAfterSwap).to.be.lte(priceBeforeSwap)
             } else {
-              expect(priceAfterSwap).to.be.gt(priceBeforeSwap)
+              expect(priceAfterSwap).to.be.gte(priceBeforeSwap)
             }
           })
 
