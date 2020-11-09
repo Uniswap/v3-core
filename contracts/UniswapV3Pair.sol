@@ -240,35 +240,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // calculate amount1 := liquidity * sqrt(price) and amount0 := liquidity / sqrt(price)
         // while rounding down, as liquidity is being removed
         if (liquidity < 0) {
-            amount1 = FullMath.mulDiv(
+            amount1 = FullMath
+                .mulDiv(
                 // must be cast as a uint112 for proper overflow handling if liquidity := type(int112).min
                 uint112(-liquidity),
                 Babylonian.sqrt(priceScaled),
                 uint256(1) << (56 + safeShiftBits / 2)
-            ).toInt112();
-            amount0 = FullMath.mulDiv(
+            )
+                .toInt112();
+            amount0 = FullMath
+                .mulDiv(
                 // must be cast as a uint112 for proper overflow handling if liquidity := type(int112).min
                 uint112(-liquidity),
                 uint256(1) << (56 + safeShiftBits / 2),
                 Babylonian.sqrt(price._x)
-            ).toInt112();
+            )
+                .toInt112();
             amount1 *= -1;
             amount0 *= -1;
-        }
-        // while rounding up, as liquidity is being added
-        else {
+        } else {
+            // while rounding up, as liquidity is being added
             uint256 priceScaledRootRoundedUp = Babylonian.sqrt(priceScaled);
             if (priceScaled % priceScaledRootRoundedUp != 0) priceScaledRootRoundedUp++;
-            amount1 = PriceMath.mulDivRoundingUp(
-                uint256(liquidity),
-                priceScaledRootRoundedUp,
-                uint256(1) << (56 + safeShiftBits / 2)
-            ).toInt112();
-            amount0 = PriceMath.mulDivRoundingUp(
-                uint256(liquidity),
-                uint256(1) << (56 + safeShiftBits / 2),
-                priceScaledRootRoundedUp
-            ).toInt112();
+            amount1 = PriceMath
+                .mulDivRoundingUp(uint256(liquidity), priceScaledRootRoundedUp, uint256(1) << (56 + safeShiftBits / 2))
+                .toInt112();
+            amount0 = PriceMath
+                .mulDivRoundingUp(uint256(liquidity), uint256(1) << (56 + safeShiftBits / 2), priceScaledRootRoundedUp)
+                .toInt112();
         }
     }
 
