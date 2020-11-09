@@ -106,8 +106,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(bytes32 => Position) public positions;
 
     // global value for all time fee growth per unit of liquidity
+    // TODO convert to uint112 and scale whenever virtual supply changes
     FixedPoint.uq112x112 feeGrowthGlobal0;
     // value for protocol fees
+    // TODO simply cap these
     uint112 public feeToFees0;
 
     FixedPoint.uq112x112 feeGrowthGlobal1;
@@ -253,7 +255,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // must be cast as a uint112 for proper overflow handling if liquidity := type(int112).min
                 uint112(-liquidity),
                 uint256(1) << (56 + safeShiftBits / 2),
-                Babylonian.sqrt(price._x)
+                Babylonian.sqrt(priceScaled)
             )
                 .toInt112();
             amount1 *= -1;
@@ -401,11 +403,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         reserve1Virtual = reserve1Virtual.addi(amount1).toUint112();
         require(reserve0Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_0_TOO_SMALL');
         require(reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
-
-        // TODO remove this eventually, it's meant to demonstrate the direction of rounding
-        FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-        if (amount0 > 0) assert(priceNext._x >= price._x);
-        else assert(priceNext._x <= price._x);
+        // TODO work on this but for now make sure we didn't push ourselves out of the current tick
+        price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
+        require(TickMath.getRatioAtTick(tickCurrent)._x <= price._x, 'UniswapV3: PRICE_EXCEEDS_LOWER_BOUND');
+        require(TickMath.getRatioAtTick(tickCurrent + 1)._x > price._x, 'UniswapV3: PRICE_EXCEEDS_UPPER_BOUND');
 
         liquidityVirtualVotes[feeVote] = liquidityVirtualVotes[feeVote].addi(liquidityDelta).toUint112();
     }
@@ -498,11 +499,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else if (tickCurrent < tickUpper) {
             // the current price is inside the passed range
             (int112 amount0Current, int112 amount1Current) = updateReservesAndLiquidity(liquidityDelta, feeVote);
-
-            // TODO work on this but for now make sure updateReservesAndLiquidity didn't push us out of the current tick
-            FixedPoint.uq112x112 memory priceNext = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
-            require(TickMath.getRatioAtTick(tickCurrent)._x <= priceNext._x, 'UniswapV3: PRICE_EXCEEDS_LOWER_BOUND');
-            require(TickMath.getRatioAtTick(tickCurrent + 1)._x > priceNext._x, 'UniswapV3: PRICE_EXCEEDS_UPPER_BOUND');
 
             // charge the user whatever is required to cover their position
             amount0 = amount0.add(amount0Current.sub(amount0Upper)).toInt112();
@@ -797,10 +793,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
             price0Cumulative =
-                price0CumulativeLast +
+                price0CumulativeLast + // overflow is desired
                 FixedPoint.fraction(reserve1Virtual, reserve0Virtual).mul(timeElapsed)._x;
             price1Cumulative =
-                price1CumulativeLast +
+                price1CumulativeLast + // overflow is desired
                 FixedPoint.fraction(reserve0Virtual, reserve1Virtual).mul(timeElapsed)._x;
         } else {
             price0Cumulative = price0CumulativeLast;
