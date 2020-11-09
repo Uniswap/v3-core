@@ -7,7 +7,7 @@ import {encodePrice, expandTo18Decimals} from './shared/utilities'
 
 import PriceMathTest from '../build/PriceMathTest.json'
 
-describe.only('PriceMath', () => {
+describe('PriceMath', () => {
   const [wallet] = waffle.provider.getWallets()
   const deployContract = waffle.deployContract
 
