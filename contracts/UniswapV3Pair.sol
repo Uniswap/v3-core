@@ -232,7 +232,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     {
         if (liquidity == 0) return (0, 0);
 
-        uint8 safeShiftBits = (255 - BitMath.mostSignificantBit(price._x)) / 2 * 2;
+        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(price._x)) / 2) * 2;
         uint256 priceScaled = uint256(price._x) << safeShiftBits; // price * 2**safeShiftBits
 
         uint256 priceScaledRoot = Babylonian.sqrt(uint256(price._x) << safeShiftBits); // sqrt(priceScaled)
