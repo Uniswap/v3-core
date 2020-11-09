@@ -111,6 +111,14 @@ describe('PriceMath', () => {
           zeroForOne: false,
           summary: '1:50 to 1:75 at 60bps',
         },
+        {
+          priceTarget: BigNumber.from('5296662025391377663863959305437419'),
+          reserve0: BigNumber.from(101),
+          reserve1: BigNumber.from(102),
+          lpFee: 1934,
+          zeroForOne: false,
+          summary: 'echidna failed test: getInputToRatioInvariants(101,102,1934,2)',
+        },
       ]) {
         describe(summary, () => {
           let priceBeforeSwap: BigNumber

@@ -1,7 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `533`;
-
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps gas 1`] = `9680`;
 
 exports[`PriceMath #getInputToRatio invariants 1:50 to 1:75 at 60bps snapshot 1`] = `
@@ -107,5 +105,23 @@ Object {
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
   "zeroForOne": true,
+}
+`;
+
+exports[`PriceMath #getInputToRatio invariants getInputToRatioInvariants(101,102,1934,2) gas 1`] = `3689`;
+
+exports[`PriceMath #getInputToRatio invariants getInputToRatioInvariants(101,102,1934,2) snapshot 1`] = `
+Object {
+  "amountIn": "0",
+  "amountInLessFee": "0",
+  "amountOut": "0",
+  "lpFee": 1934,
+  "priceAfterSwap": "5243705738322301169407035896836136",
+  "priceAfterSwapWith1MoreWeiEffectiveInput": "5295114618109774710283575464452177",
+  "priceBeforeSwap": "5243705738322301169407035896836136",
+  "priceTarget": "5296662025391377663863959305437419",
+  "reserve0": "101",
+  "reserve1": "102",
+  "zeroForOne": false,
 }
 `;
