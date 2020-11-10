@@ -32,11 +32,19 @@ library PriceMath {
     }
 
     // amountIn here is assumed to have already been discounted by the fee
-    function getAmountOut(uint112 reserveIn, uint112 reserveOut, uint112 amountIn) internal pure returns (uint112) {
-        return (uint256(reserveOut) * amountIn / (uint256(reserveIn) + amountIn)).toUint112();
+    function getAmountOut(
+        uint112 reserveIn,
+        uint112 reserveOut,
+        uint112 amountIn
+    ) internal pure returns (uint112) {
+        return ((uint256(reserveOut) * amountIn) / (uint256(reserveIn) + amountIn)).toUint112();
     }
 
-    function mulDivRoundingUp(uint256 x, uint256 y, uint256 d) internal pure returns (uint256) {
+    function mulDivRoundingUp(
+        uint256 x,
+        uint256 y,
+        uint256 d
+    ) internal pure returns (uint256) {
         return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
     }
 
