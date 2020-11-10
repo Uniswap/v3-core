@@ -170,15 +170,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (FixedPoint.uq112x112 memory feeGrowthBelow0, FixedPoint.uq112x112 memory feeGrowthBelow1)
     {
-        feeGrowthBelow0 = tickInfo.feeGrowthOutside0;
-        feeGrowthBelow1 = tickInfo.feeGrowthOutside1;
-
-        // tick is above the current tick, meaning growth outside represents growth above, not below, so adjust
+        // tick is above the current tick, meaning growth outside represents growth above, not below
         if (tick > tickCurrent) {
             // TODO there is probably a less lossy way to do this
             uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-            feeGrowthBelow0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(feeGrowthBelow0);
-            feeGrowthBelow1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(feeGrowthBelow1);
+            feeGrowthBelow0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(tickInfo.feeGrowthOutside0);
+            feeGrowthBelow1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(tickInfo.feeGrowthOutside1);
+        } else {
+            feeGrowthBelow0 = tickInfo.feeGrowthOutside0;
+            feeGrowthBelow1 = tickInfo.feeGrowthOutside1;
         }
     }
 
@@ -187,15 +187,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (FixedPoint.uq112x112 memory feeGrowthAbove0, FixedPoint.uq112x112 memory feeGrowthAbove1)
     {
-        feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
-        feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
-
-        // tick is at or below the current tick, meaning growth outside represents growth below, not above, so adjust
+        // tick is at or below the current tick, meaning growth outside represents growth below, not above
         if (tick <= tickCurrent) {
             // TODO there is probably a less lossy way to do this
             uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-            feeGrowthAbove0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(feeGrowthAbove0);
-            feeGrowthAbove1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(feeGrowthAbove1);
+            feeGrowthAbove0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(tickInfo.feeGrowthOutside0);
+            feeGrowthAbove1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(tickInfo.feeGrowthOutside1);
+        } else {
+            feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
+            feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
         }
     }
 
@@ -219,12 +219,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
         // TODO there is probably a less lossy way to do this
         uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-        feeGrowthInside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual)
-            .sub(feeGrowthBelow0)
-            .sub(feeGrowthAbove0);
-        feeGrowthInside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual)
-            .sub(feeGrowthBelow1)
-            .sub(feeGrowthAbove1);
+        feeGrowthInside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(feeGrowthBelow0).sub(
+            feeGrowthAbove0
+        );
+        feeGrowthInside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(feeGrowthBelow1).sub(
+            feeGrowthAbove1
+        );
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
@@ -663,10 +663,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     uint112 liquidityVirtual = uint112(
                         Babylonian.sqrt(uint256(state.reserve0Virtual) * state.reserve1Virtual)
                     );
-                    tickInfo.feeGrowthOutside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual)
-                        .sub(tickInfo.feeGrowthOutside0);
-                    tickInfo.feeGrowthOutside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual)
-                        .sub(tickInfo.feeGrowthOutside1);
+                    tickInfo.feeGrowthOutside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(
+                        tickInfo.feeGrowthOutside0
+                    );
+                    tickInfo.feeGrowthOutside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(
+                        tickInfo.feeGrowthOutside1
+                    );
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
 
                     int256 token1VirtualDelta; // will not exceed int120
