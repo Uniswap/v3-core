@@ -409,12 +409,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // scale the global fee trackers
         uint256 liquidityVirtualAfter = Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual);
-        feeGrowthGlobal0 = (
-            uint256(feeGrowthGlobal0) * liquidityVirtualAfter / liquidityVirtual
-        ).toUint112();
-        feeGrowthGlobal1 = (
-            feeGrowthGlobal1 * liquidityVirtualAfter / liquidityVirtual
-        ).toUint112();
+        feeGrowthGlobal0 = ((uint256(feeGrowthGlobal0) * liquidityVirtualAfter) / liquidityVirtual).toUint112();
+        feeGrowthGlobal1 = ((feeGrowthGlobal1 * liquidityVirtualAfter) / liquidityVirtual).toUint112();
 
         liquidityVirtualVotes[feeVote] = liquidityVirtualVotes[feeVote].addi(liquidityDelta).toUint112();
     }
@@ -684,7 +680,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // loop through each entry in token1VirtualDeltas
                     for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                         int256 delta1I = tickInfo.token1VirtualDeltas[i];
-                        
+
                         // increment the _net_ token1VirtualDelta counter;
                         token1VirtualDelta += delta1I;
 
@@ -695,8 +691,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         // c) allocating these deltas proportionally across virtualSupplies according to sign
                         // TODO make sure there's not an attack here by repeatedly crossing ticks + forcing rounding
                         // compute update to liquidityVirtualVotes, for fee voting purposes
-                        int256 delta0I = delta1I << 112 / step.nextPrice._x;
-                        int256 liquidityDelta = int256(Babylonian.sqrt(uint(delta1I * delta0I)));
+                        int256 delta0I = delta1I << (112 / step.nextPrice._x);
+                        int256 liquidityDelta = int256(Babylonian.sqrt(uint256(delta1I * delta0I)));
                         if (delta1I < 0 || delta0I < 0) liquidityDelta *= -1;
 
                         if (params.zeroForOne) {
@@ -709,7 +705,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // calculate the net token1VirtualDelta
                     // TODO we probably have to round conditionally here, up or down depending on direction and sign
-                    int256 token0VirtualDelta = token1VirtualDelta << 112 / step.nextPrice._x;
+                    int256 token0VirtualDelta = token1VirtualDelta << (112 / step.nextPrice._x);
 
                     // TODO the price can change here because of rounding error in calculating token0VirtualDelta
                     // it's very important that after adding/removing these reserves, we maintain the property that
@@ -742,12 +738,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     uint256 liquidityVirtualAfter = Babylonian.sqrt(
                         uint256(state.reserve0Virtual) * state.reserve1Virtual
                     );
-                    state.feeGrowthGlobal0 = (
-                        uint256(state.feeGrowthGlobal0) * liquidityVirtualAfter / liquidityVirtual
-                    ).toUint112();
-                    state.feeGrowthGlobal1 = (
-                        uint256(state.feeGrowthGlobal1) * liquidityVirtualAfter / liquidityVirtual
-                    ).toUint112();
+                    state.feeGrowthGlobal0 = ((uint256(state.feeGrowthGlobal0) * liquidityVirtualAfter) /
+                        liquidityVirtual)
+                        .toUint112();
+                    state.feeGrowthGlobal1 = ((uint256(state.feeGrowthGlobal1) * liquidityVirtualAfter) /
+                        liquidityVirtual)
+                        .toUint112();
                 }
 
                 if (params.zeroForOne) {
