@@ -13,6 +13,7 @@ import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
+import './libraries/FixedPointExtra.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
 import './libraries/PriceMath.sol';
@@ -27,9 +28,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint112;
     using SignedSafeMath for int256;
     using SignedSafeMath for int112;
-    using SafeCast for *;
-    using MixedSafeMath for *;
-    using FixedPoint for *;
+    using SafeCast for uint256;
+    using SafeCast for int256;
+    using MixedSafeMath for uint112;
+    using FixedPoint for FixedPoint.uq112x112;
+    using FixedPointExtra for FixedPoint.uq112x112;
 
     // Number of fee options
     uint8 public constant override NUM_FEE_OPTIONS = 6;
@@ -174,12 +177,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (tick > tickCurrent) {
             // TODO there is probably a less lossy way to do this
             uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-            feeGrowthBelow0 = FixedPoint.uq112x112(
-                FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual)._x - feeGrowthBelow0._x
-            );
-            feeGrowthBelow1 = FixedPoint.uq112x112(
-                FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual)._x - feeGrowthBelow1._x
-            );
+            feeGrowthBelow0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(feeGrowthBelow0);
+            feeGrowthBelow1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(feeGrowthBelow1);
         }
     }
 
@@ -195,12 +194,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (tick <= tickCurrent) {
             // TODO there is probably a less lossy way to do this
             uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-            feeGrowthAbove0 = FixedPoint.uq112x112(
-                FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual)._x - feeGrowthAbove0._x
-            );
-            feeGrowthAbove1 = FixedPoint.uq112x112(
-                FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual)._x - feeGrowthAbove1._x
-            );
+            feeGrowthAbove0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(feeGrowthAbove0);
+            feeGrowthAbove1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(feeGrowthAbove1);
         }
     }
 
@@ -224,12 +219,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
         // TODO there is probably a less lossy way to do this
         uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-        feeGrowthInside0 = FixedPoint.uq112x112(
-            FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual)._x - feeGrowthBelow0._x - feeGrowthAbove0._x
-        );
-        feeGrowthInside1 = FixedPoint.uq112x112(
-            FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual)._x - feeGrowthBelow1._x - feeGrowthAbove1._x
-        );
+        feeGrowthInside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual)
+            .sub(feeGrowthBelow0)
+            .sub(feeGrowthAbove0);
+        feeGrowthInside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual)
+            .sub(feeGrowthBelow1)
+            .sub(feeGrowthAbove1);
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
@@ -668,12 +663,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     uint112 liquidityVirtual = uint112(
                         Babylonian.sqrt(uint256(state.reserve0Virtual) * state.reserve1Virtual)
                     );
-                    tickInfo.feeGrowthOutside0 = FixedPoint.uq112x112(
-                        FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual)._x - tickInfo.feeGrowthOutside0._x
-                    );
-                    tickInfo.feeGrowthOutside1 = FixedPoint.uq112x112(
-                        FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual)._x - tickInfo.feeGrowthOutside1._x
-                    );
+                    tickInfo.feeGrowthOutside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual)
+                        .sub(tickInfo.feeGrowthOutside0);
+                    tickInfo.feeGrowthOutside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual)
+                        .sub(tickInfo.feeGrowthOutside1);
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
 
                     int256 token1VirtualDelta; // will not exceed int120

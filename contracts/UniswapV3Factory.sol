@@ -2,6 +2,7 @@
 pragma solidity =0.6.12;
 
 import './interfaces/IUniswapV3Factory.sol';
+
 import './UniswapV3Pair.sol';
 
 contract UniswapV3Factory is IUniswapV3Factory {

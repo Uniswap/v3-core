@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-import '@openzeppelin/contracts/math/Math.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
-
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
@@ -11,13 +8,9 @@ import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import './SafeCast.sol';
 
 library PriceMath {
-    using SafeMath for *;
-    using FixedPoint for FixedPoint.uq112x112;
-    using SafeCast for *;
+    using SafeCast for uint256;
 
     uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
-    // 2**112 - 1, can be added to the input amount before truncating so that we always round up in getInputToRatio
-    uint256 private constant ROUND_UP = 0xffffffffffffffffffffffffffff;
 
     // get a quote for a numerator amount from a denominator amount and a numerator/denominator price
     function getQuoteFromDenominator(uint144 denominatorAmount, FixedPoint.uq112x112 memory ratio)
@@ -39,19 +32,11 @@ library PriceMath {
     }
 
     // amountIn here is assumed to have already been discounted by the fee
-    function getAmountOut(
-        uint112 reserveIn,
-        uint112 reserveOut,
-        uint112 amountIn
-    ) internal pure returns (uint112) {
-        return ((uint256(reserveOut) * amountIn) / (uint256(reserveIn) + amountIn)).toUint112();
+    function getAmountOut(uint112 reserveIn, uint112 reserveOut, uint112 amountIn) internal pure returns (uint112) {
+        return (uint256(reserveOut) * amountIn / (uint256(reserveIn) + amountIn)).toUint112();
     }
 
-    function mulDivRoundingUp(
-        uint256 x,
-        uint256 y,
-        uint256 d
-    ) internal pure returns (uint256) {
+    function mulDivRoundingUp(uint256 x, uint256 y, uint256 d) internal pure returns (uint256) {
         return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
     }
 
