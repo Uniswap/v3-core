@@ -356,8 +356,6 @@ describe('UniswapV3Pair', () => {
       const k = await getK()
 
       await token0.approve(pair.address, constants.MaxUint256)
-      // lower: (989, 1009)
-      // upper: (980, 1020)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       const kAfter = await getK()
@@ -375,8 +373,6 @@ describe('UniswapV3Pair', () => {
       const k = await getK()
 
       await token1.approve(pair.address, constants.MaxUint256)
-      // lower: (1019, 980)
-      // upper: (1009, 990)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       const kAfter = await getK()
@@ -395,8 +391,6 @@ describe('UniswapV3Pair', () => {
 
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      // lower: (1009, 990)
-      // upper: (989, 1009)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       const kAfter = await getK()
@@ -589,14 +583,12 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -3
       const upperTick = -2
       await token1.approve(pair.address, constants.MaxUint256)
-      // lower: (1015037437733209916, 985185336841573401)
-      // upper: (1009999999999999999, 990099009900990099)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95298218973436065')
+        .withArgs(pair.address, wallet.address, '95226354937833106')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -646,7 +638,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, wallet.address, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95249568745125009')
+        .withArgs(pair.address, wallet.address, '95389864174632611')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(9)
