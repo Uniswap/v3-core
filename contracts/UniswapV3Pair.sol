@@ -109,9 +109,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(bytes32 => Position) public positions;
 
-    uint112 public feeGrowthGlobal0; // accumulated fees per unit of liquidity, where the denominator is implicit
-    uint112 public feeToFees0; // accumulated protocol fees
-    uint112 public feeGrowthGlobal1;
+    // accumulated fees per unit of liquidity
+    FixedPoint.uq112x112 public feeGrowthGlobal0;
+    FixedPoint.uq112x112 public feeGrowthGlobal1;
+
+    // accumulated protocol fees
+    uint112 public feeToFees0;
     uint112 public feeToFees1;
 
     uint256 public unlocked = 1;
@@ -172,10 +175,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     {
         // tick is above the current tick, meaning growth outside represents growth above, not below
         if (tick > tickCurrent) {
-            // TODO there is probably a less lossy way to do this
-            uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-            feeGrowthBelow0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(tickInfo.feeGrowthOutside0);
-            feeGrowthBelow1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(tickInfo.feeGrowthOutside1);
+            feeGrowthBelow0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
+            feeGrowthBelow1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
         } else {
             feeGrowthBelow0 = tickInfo.feeGrowthOutside0;
             feeGrowthBelow1 = tickInfo.feeGrowthOutside1;
@@ -189,10 +190,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     {
         // tick is at or below the current tick, meaning growth outside represents growth below, not above
         if (tick <= tickCurrent) {
-            // TODO there is probably a less lossy way to do this
-            uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-            feeGrowthAbove0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(tickInfo.feeGrowthOutside0);
-            feeGrowthAbove1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(tickInfo.feeGrowthOutside1);
+            feeGrowthAbove0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
+            feeGrowthAbove1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
         } else {
             feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
             feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
@@ -217,14 +216,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tickUpper,
             tickInfoUpper
         );
-        // TODO there is probably a less lossy way to do this
-        uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-        feeGrowthInside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(feeGrowthBelow0).sub(
-            feeGrowthAbove0
-        );
-        feeGrowthInside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(feeGrowthBelow1).sub(
-            feeGrowthAbove1
-        );
+        feeGrowthInside0 = feeGrowthGlobal0.sub(feeGrowthBelow0).sub(feeGrowthAbove0);
+        feeGrowthInside1 = feeGrowthGlobal1.sub(feeGrowthBelow1).sub(feeGrowthAbove1);
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price
@@ -366,9 +359,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (tickInfo.initialized == false) {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
-                uint112 liquidityVirtual = uint112(Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual));
-                tickInfo.feeGrowthOutside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual);
-                tickInfo.feeGrowthOutside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual);
+                tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
+                tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
                 tickInfo.secondsOutside = _blockTimestamp();
             }
             tickInfo.initialized = true;
@@ -382,8 +374,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     {
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         (amount0, amount1) = getValueAtPrice(price, liquidityDelta);
-
-        uint256 liquidityVirtual = Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual);
 
         // update reserves
         // TODO in theory the price doesn't change, so there's no need to update the oracle or current tick,
@@ -401,11 +391,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         price = FixedPoint.fraction(reserve1Virtual, reserve0Virtual);
         require(TickMath.getRatioAtTick(tickCurrent)._x <= price._x, 'UniswapV3: PRICE_EXCEEDS_LOWER_BOUND');
         require(TickMath.getRatioAtTick(tickCurrent + 1)._x > price._x, 'UniswapV3: PRICE_EXCEEDS_UPPER_BOUND');
-
-        // scale the global fee trackers
-        uint256 liquidityVirtualAfter = Babylonian.sqrt(uint256(reserve0Virtual) * reserve1Virtual);
-        feeGrowthGlobal0 = ((uint256(feeGrowthGlobal0) * liquidityVirtualAfter) / liquidityVirtual).toUint112();
-        feeGrowthGlobal1 = ((feeGrowthGlobal1 * liquidityVirtualAfter) / liquidityVirtual).toUint112();
 
         liquidityVirtualVotes[feeVote] = liquidityVirtualVotes[feeVote].addi(liquidityDelta).toUint112();
     }
@@ -544,9 +529,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the floor for the fee, used to prevent sandwiching attacks
         uint16 feeFloor;
         // the global fee growth of token0
-        uint112 feeGrowthGlobal0;
+        FixedPoint.uq112x112 feeGrowthGlobal0;
         // the global fee growth of token1
-        uint112 feeGrowthGlobal1;
+        FixedPoint.uq112x112 feeGrowthGlobal1;
     }
 
     struct StepComputations {
@@ -620,8 +605,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
 
                     // update the global fee tracker
-                    if (params.zeroForOne) state.feeGrowthGlobal0 += feePaid;
-                    else state.feeGrowthGlobal1 += feePaid;
+                    // TODO is this correct/is there a less lossy way to do this?
+                    FixedPoint.uq112x112 memory feeGrowthGlobalDelta = FixedPoint.fraction(
+                        feePaid,
+                        uint112(Babylonian.sqrt(uint256(state.reserve0Virtual) * state.reserve1Virtual))
+                    );
+                    if (params.zeroForOne) state.feeGrowthGlobal0 = state.feeGrowthGlobal0.add(feeGrowthGlobalDelta);
+                    else state.feeGrowthGlobal1 = state.feeGrowthGlobal1.add(feeGrowthGlobalDelta);
                 }
 
                 // calculate the owed output amount on the input amount discounted by the fee paid
@@ -659,16 +649,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // if the tick is initialized, we must update it
                 if (tickInfo.initialized) {
                     // update tick info
-                    // TODO there is probably a less lossy way to do this
-                    uint112 liquidityVirtual = uint112(
-                        Babylonian.sqrt(uint256(state.reserve0Virtual) * state.reserve1Virtual)
-                    );
-                    tickInfo.feeGrowthOutside0 = FixedPoint.fraction(feeGrowthGlobal0, liquidityVirtual).sub(
-                        tickInfo.feeGrowthOutside0
-                    );
-                    tickInfo.feeGrowthOutside1 = FixedPoint.fraction(feeGrowthGlobal1, liquidityVirtual).sub(
-                        tickInfo.feeGrowthOutside1
-                    );
+                    tickInfo.feeGrowthOutside0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
+                    tickInfo.feeGrowthOutside1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
 
                     int256 token1VirtualDelta; // will not exceed int120
@@ -728,17 +710,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             require(state.reserve1Virtual >= TOKEN_MIN, 'UniswapV3: RESERVE_1_TOO_SMALL');
                         }
                     }
-
-                    // scale the global fee trackers
-                    uint256 liquidityVirtualAfter = Babylonian.sqrt(
-                        uint256(state.reserve0Virtual) * state.reserve1Virtual
-                    );
-                    state.feeGrowthGlobal0 = ((uint256(state.feeGrowthGlobal0) * liquidityVirtualAfter) /
-                        liquidityVirtual)
-                        .toUint112();
-                    state.feeGrowthGlobal1 = ((uint256(state.feeGrowthGlobal1) * liquidityVirtualAfter) /
-                        liquidityVirtual)
-                        .toUint112();
                 }
 
                 if (params.zeroForOne) {
