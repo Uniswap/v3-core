@@ -50,8 +50,8 @@ library PriceMath {
         // short-circuit if we're already at or past the target price
         FixedPoint.uq112x112 memory price = FixedPoint.fraction(reserve1, reserve0);
         if (zeroForOne) {
-            if (price._x <= priceTarget._x) return (0, reserve1);
-        } else if (price._x >= priceTarget._x) return (0, reserve0);
+            if (price._x <= priceTarget._x) return (0, 0);
+        } else if (price._x >= priceTarget._x) return (0, 0);
 
         uint256 k = uint256(reserve0) * reserve1;
 
