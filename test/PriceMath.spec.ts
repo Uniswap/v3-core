@@ -119,6 +119,24 @@ describe('PriceMath', () => {
           zeroForOne: false,
           summary: 'echidna failed test: getInputToRatioInvariants(101,102,1934,2)',
         },
+        {
+          priceTarget: BigNumber.from('5244219827120175904815801292512296'),
+          reserve0: BigNumber.from('44155072587566675454184985'),
+          reserve1: BigNumber.from('1420193175776351360096'),
+          lpFee: 1,
+          zeroForOne: false,
+          summary:
+            'echidna failed test: getInputToRatioInvariants(44155072587566675454184985,1420193175776351360096,1,1,false)',
+        },
+        {
+          // getInputToRatioInvariants(5253224048874618374,355610057740100969,1,1,false)
+          priceTarget: BigNumber.from('5244219827120175904815801292512296'),
+          reserve0: BigNumber.from('5253224048874618374'),
+          reserve1: BigNumber.from('355610057740100969'),
+          lpFee: 1,
+          zeroForOne: false,
+          summary: 'echidna failed test: getInputToRatioInvariants(5253224048874618374,355610057740100969,1,1,false)',
+        },
       ]) {
         describe(summary, () => {
           let priceBeforeSwap: BigNumber

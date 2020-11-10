@@ -33,17 +33,14 @@ contract PriceMathEchidnaTest {
         uint112 reserve0,
         uint112 reserve1,
         uint16 lpFee,
-        int16 tick
+        int16 tick,
+        bool zeroForOne
     ) external pure {
-        // UniswapV3Pair.TOKEN_MIN
-        require(reserve0 >= 101 && reserve1 >= 101);
+        require(reserve0 > 0 && reserve1 > 0);
         require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
         require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
+
         FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tick);
-
-        FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
-
-        bool zeroForOne = priceTarget._x <= priceBefore._x ? true : false;
 
         (uint112 amountIn, uint112 amountOutMax) = PriceMath.getInputToRatio(
             reserve0,
@@ -53,14 +50,15 @@ contract PriceMathEchidnaTest {
             zeroForOne
         );
 
+        FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
+
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
             if (zeroForOne) assert(priceBefore._x <= priceTarget._x);
             else assert(priceBefore._x >= priceTarget._x);
             assert(amountOutMax == 0);
         } else {
-            require((zeroForOne ? reserve1 : reserve0) >= amountOutMax);
-            require((zeroForOne ? reserve1 : reserve0) - amountOutMax >= 101);
+            assert((zeroForOne ? reserve1 : reserve0) > amountOutMax);
 
             uint112 amountInLessFee = uint112(
                 (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE
@@ -68,15 +66,6 @@ contract PriceMathEchidnaTest {
             uint112 amountOut = zeroForOne
                 ? PriceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
                 : PriceMath.getAmountOut(reserve1, reserve0, amountInLessFee);
-
-            // TODO might be able to remove this
-            if (zeroForOne) {
-                require(uint256(reserve0) + amountInLessFee + 1 < uint112(-1));
-                require(amountOut > reserve1);
-            } else {
-                require(uint256(reserve1) + amountInLessFee + 1 < uint112(-1));
-                require(amountOut > reserve0);
-            }
 
             // downward-adjust amount out if necessary
             amountOut = uint112(Math.min(amountOut, amountOutMax));
@@ -105,8 +94,8 @@ contract PriceMathEchidnaTest {
             // check that one more wei of effective amount in would result in a price that exceeds the next price
             {
                 FixedPoint.uq112x112 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
-                if (zeroForOne) assert(priceAfterSwap1MoreWei._x < priceTarget._x);
-                else assert(priceAfterSwap1MoreWei._x > priceTarget._x);
+                if (zeroForOne) assert(priceAfterSwap1MoreWei._x <= priceTarget._x);
+                else assert(priceAfterSwap1MoreWei._x >= priceTarget._x);
             }
         }
     }
