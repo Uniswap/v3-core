@@ -230,6 +230,10 @@ describe('UniswapV3Pair', () => {
             expect(await token0.balanceOf(pair.address)).to.eq(10000 + 1)
             expect(await token1.balanceOf(pair.address)).to.eq(1000)
           })
+
+          it('gas', async () => {
+            await snapshotGasCost(pair.setPosition(-231, 0, 0, 10000))
+          })
         })
 
         describe('including current price', () => {
@@ -263,6 +267,10 @@ describe('UniswapV3Pair', () => {
             expect(await token0.balanceOf(pair.address)).to.eq(10000)
             expect(await token1.balanceOf(pair.address)).to.eq(1000)
           })
+
+          it('gas', async () => {
+            await snapshotGasCost(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100))
+          })
         })
 
         describe('above current price', () => {
@@ -279,6 +287,10 @@ describe('UniswapV3Pair', () => {
             await pair.setPosition(-500, -233, 0, -10000)
             expect(await token0.balanceOf(pair.address)).to.eq(10000)
             expect(await token1.balanceOf(pair.address)).to.eq(1000)
+          })
+
+          it('gas', async () => {
+            await snapshotGasCost(await pair.setPosition(-500, -233, 0, 10000))
           })
         })
       })
