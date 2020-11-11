@@ -129,7 +129,6 @@ describe('PriceMath', () => {
             'echidna failed test: getInputToRatioInvariants(44155072587566675454184985,1420193175776351360096,1,1,false)',
         },
         {
-          // getInputToRatioInvariants(5253224048874618374,355610057740100969,1,1,false)
           priceTarget: BigNumber.from('5244219827120175904815801292512296'),
           reserve0: BigNumber.from('5253224048874618374'),
           reserve1: BigNumber.from('355610057740100969'),
@@ -145,7 +144,7 @@ describe('PriceMath', () => {
           let amountOut: BigNumber
           let amountOutMax: BigNumber
           let priceAfterSwap: BigNumber
-          let priceAfterSwapWith1MoreWeiEffectiveInput: BigNumber
+          let priceAfterSwapWith1MoreWeiInput: BigNumber
 
           before('compute swap result', async () => {
             priceBeforeSwap = encodePrice(reserve1, reserve0)
@@ -156,6 +155,7 @@ describe('PriceMath', () => {
               [priceTarget],
               zeroForOne
             )
+
             amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(10000)
             amountOut = await (zeroForOne
               ? priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
@@ -168,13 +168,9 @@ describe('PriceMath', () => {
               ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee))
               : encodePrice(reserve1.add(amountInLessFee), reserve0.sub(amountOut))
 
-            const outputFor1MoreWeiInput = await (zeroForOne
-              ? priceMath.getAmountOut(reserve0.add(amountInLessFee), reserve1.sub(amountOut), 1)
-              : priceMath.getAmountOut(reserve1.add(amountInLessFee), reserve0.sub(amountOut), 1))
-
-            priceAfterSwapWith1MoreWeiEffectiveInput = zeroForOne
-              ? encodePrice(reserve1.sub(amountOut).sub(outputFor1MoreWeiInput), reserve0.add(amountInLessFee).add(1))
-              : encodePrice(reserve1.add(amountInLessFee).add(1), reserve0.sub(amountOut).sub(outputFor1MoreWeiInput))
+            priceAfterSwapWith1MoreWeiInput = zeroForOne
+              ? encodePrice(reserve1.sub(amountOut), reserve0.add(amountInLessFee).add(1))
+              : encodePrice(reserve1.add(amountInLessFee).add(1), reserve0.sub(amountOut))
           })
 
           it('snapshot', () => {
@@ -190,7 +186,7 @@ describe('PriceMath', () => {
               amountInLessFee: amountInLessFee.toString(),
               amountOut: amountOut.toString(),
               priceAfterSwap: priceAfterSwap.toString(),
-              priceAfterSwapWith1MoreWeiEffectiveInput: priceAfterSwapWith1MoreWeiEffectiveInput.toString(),
+              priceAfterSwapWith1MoreWeiInput: priceAfterSwapWith1MoreWeiInput.toString(),
             }).to.matchSnapshot()
           })
 
@@ -210,11 +206,11 @@ describe('PriceMath', () => {
             }
           })
 
-          it('1 more wei of effective input exceeds the next price', async () => {
+          it('1 more wei of input exceeds the next price', async () => {
             if (zeroForOne) {
-              expect(priceAfterSwapWith1MoreWeiEffectiveInput).to.be.lt(priceTarget)
+              expect(priceAfterSwapWith1MoreWeiInput).to.be.lt(priceTarget)
             } else {
-              expect(priceAfterSwapWith1MoreWeiEffectiveInput).to.be.gt(priceTarget)
+              expect(priceAfterSwapWith1MoreWeiInput).to.be.gt(priceTarget)
             }
           })
 

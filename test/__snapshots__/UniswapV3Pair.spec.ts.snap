@@ -12,10 +12,10 @@ exports[`UniswapV3Pair #setPosition after initialization success cases below cur
 
 exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `307174`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `137320`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `139491`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `2209691`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `2393688`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `128053`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `129560`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `2265839`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `2395388`;

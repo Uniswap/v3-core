@@ -521,7 +521,7 @@ describe('UniswapV3Pair', () => {
       const reserve1Pre = await pair.reserve1Virtual()
 
       expect(reserve0Pre).to.be.eq('102999499999999999999')
-      expect(reserve1Pre).to.be.eq('101010199078636304062')
+      expect(reserve1Pre).to.be.eq('101010199078636304063')
 
       await pair.setPosition(lowerTick, upperTick, FeeVote.FeeVote0, 0)
 
@@ -581,7 +581,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '94965947516311844')
+        .withArgs(pair.address, wallet.address, '94965947516311833')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -600,7 +600,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, wallet.address, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95226354937833106')
+        .withArgs(pair.address, wallet.address, '95226354937833096')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(-10)
@@ -631,7 +631,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, wallet.address, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '94965947516311844')
+        .withArgs(pair.address, wallet.address, '94965947516311833')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(9)
@@ -650,7 +650,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, wallet.address, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '95389864174632611')
+        .withArgs(pair.address, wallet.address, '95389864174632606')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(9)

@@ -82,20 +82,14 @@ contract PriceMathEchidnaTest {
             }
 
             (reserve0Next, reserve1Next) = zeroForOne
-                ? (
-                    reserve0 + amountInLessFee + 1,
-                    reserve1 - amountOut - PriceMath.getAmountOut(reserve0 + amountInLessFee, reserve1 - amountOut, 1)
-                )
-                : (
-                    reserve0 - amountOut - PriceMath.getAmountOut(reserve1 + amountInLessFee, reserve0 - amountOut, 1),
-                    reserve1 + amountInLessFee + 1
-                );
+                ? (reserve0 + amountInLessFee + 1, reserve1 - amountOut)
+                : (reserve0 - amountOut, reserve1 + amountInLessFee + 1);
 
-            // check that one more wei of effective amount in would result in a price that exceeds the next price
+            // check that one more wei of amount in would result in a price that exceeds the next price
             {
                 FixedPoint.uq112x112 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
-                if (zeroForOne) assert(priceAfterSwap1MoreWei._x <= priceTarget._x);
-                else assert(priceAfterSwap1MoreWei._x >= priceTarget._x);
+                if (zeroForOne) assert(priceAfterSwap1MoreWei._x < priceTarget._x);
+                else assert(priceAfterSwap1MoreWei._x > priceTarget._x);
             }
         }
     }
