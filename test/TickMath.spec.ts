@@ -137,7 +137,7 @@ describe('TickMath', () => {
       for (let tick = MIN_TICK; tick < MAX_TICK + 1; tick++) {
         promises.push(tickMath.getPrice(tick))
       }
-      expect((await Promise.all(promises)).map(([x], i) => [i - MIN_TICK, x.toString()])).toMatchSnapshot()
+      expect((await Promise.all(promises)).map(([x], i) => [MIN_TICK + i, x.toString()])).toMatchSnapshot()
     }).timeout(300000)
   }
 

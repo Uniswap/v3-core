@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.6.12;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
+
+import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
 import '../libraries/PriceMath.sol';
 import '../libraries/TickMath.sol';
@@ -10,82 +12,85 @@ import '../libraries/TickMath.sol';
 contract PriceMathEchidnaTest {
     using SafeMath for uint256;
 
-    uint224 MIN_PRICE;
-    uint224 MAX_PRICE;
-
-    constructor() public {
-        MIN_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
-        MAX_PRICE = uint224(TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
-    }
-
     function getAmountOutInvariants(
         uint112 reserveIn,
         uint112 reserveOut,
-        uint16 lpFee,
         uint112 amountIn
     ) external pure {
-        require(lpFee < PriceMath.LP_FEE_BASE);
         require(reserveIn > 0 && reserveOut > 0);
 
-        uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
+        uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, amountIn);
         assert(amountOut < reserveOut);
 
         uint256 k = uint256(reserveIn).mul(reserveOut);
-        uint256 fee = uint256(amountIn).mul(lpFee).div(PriceMath.LP_FEE_BASE);
-        uint256 reserveInAfter = uint256(reserveIn).add(amountIn).sub(fee);
+        uint256 reserveInAfter = uint256(reserveIn).add(amountIn);
         uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
         uint256 kAfter = reserveInAfter.mul(reserveOutAfter);
         assert(kAfter >= k);
     }
 
-    function getInputToRatioAlwaysExceedsNextPrice(
-        uint112 reserveIn,
-        uint112 reserveOut,
+    function getInputToRatioInvariants(
+        uint112 reserve0,
+        uint112 reserve1,
         uint16 lpFee,
         int16 tick,
         bool zeroForOne
     ) external pure {
-        // UniswapV3Pair.TOKEN_MIN
-        require(reserveIn >= 101 && reserveOut >= 101);
-        require(lpFee < PriceMath.LP_FEE_BASE);
+        require(reserve0 > 0 && reserve1 > 0);
+        require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
         require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
-        FixedPoint.uq112x112 memory nextPrice = zeroForOne
-            ? TickMath.getRatioAtTick(tick)
-            : TickMath.getRatioAtTick(tick + 1);
 
-        uint256 priceBefore = zeroForOne
-            ? (uint256(reserveOut) << 112) / reserveIn
-            : (uint256(reserveIn) << 112) / reserveOut;
+        FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tick);
 
-        // the target next price is within 10%
-        // TODO can we remove this?
-        if (zeroForOne) require(priceBefore.mul(90).div(100) <= nextPrice._x);
-        else require(priceBefore.mul(110).div(100) >= nextPrice._x);
-
-        uint112 amountIn = PriceMath.getInputToRatio(
-            reserveIn,
-            reserveOut,
+        (uint112 amountIn, uint112 amountOutMax) = PriceMath.getInputToRatio(
+            reserve0,
+            reserve1,
             lpFee,
-            nextPrice,
-            zeroForOne ? TickMath.getRatioAtTick(-tick) : TickMath.getRatioAtTick(-(tick + 1)),
+            priceTarget,
             zeroForOne
         );
 
+        FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
+
         if (amountIn == 0) {
             // amountIn should only be 0 if the current price gte the inOutRatio
-            if (zeroForOne) assert(priceBefore <= nextPrice._x);
-            else assert(priceBefore >= nextPrice._x);
-            return;
+            if (zeroForOne) assert(priceBefore._x <= priceTarget._x);
+            else assert(priceBefore._x >= priceTarget._x);
+            assert(amountOutMax == 0);
         } else {
-            uint112 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, lpFee, amountIn);
-            uint112 reserveInNext = reserveIn + amountIn;
-            uint112 reserveOutNext = reserveOut - amountOut;
-            FixedPoint.uq112x112 memory priceAfterSwap = zeroForOne
-                ? FixedPoint.fraction(reserveOutNext, reserveInNext)
-                : FixedPoint.fraction(reserveInNext, reserveOutNext);
+            assert((zeroForOne ? reserve1 : reserve0) > amountOutMax);
 
-            if (zeroForOne) assert(priceAfterSwap._x <= nextPrice._x && priceAfterSwap._x > (nextPrice._x * 99) / 100);
-            else assert(priceAfterSwap._x >= nextPrice._x && priceAfterSwap._x < (nextPrice._x * 101) / 100);
+            uint112 amountInLessFee = uint112(
+                (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE
+            );
+            uint112 amountOut = zeroForOne
+                ? PriceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
+                : PriceMath.getAmountOut(reserve1, reserve0, amountInLessFee);
+
+            // downward-adjust amount out if necessary
+            amountOut = uint112(Math.min(amountOut, amountOutMax));
+
+            (uint112 reserve0Next, uint112 reserve1Next) = zeroForOne
+                ? (reserve0 + amountInLessFee, reserve1 - amountOut)
+                : (reserve0 - amountOut, reserve1 + amountInLessFee);
+
+            // check that the price does not exceed the next price
+            {
+                FixedPoint.uq112x112 memory priceAfterSwap = FixedPoint.fraction(reserve1Next, reserve0Next);
+                if (zeroForOne) assert(priceAfterSwap._x >= priceTarget._x);
+                else assert(priceAfterSwap._x <= priceTarget._x);
+            }
+
+            (reserve0Next, reserve1Next) = zeroForOne
+                ? (reserve0 + amountInLessFee + 1, reserve1 - amountOut)
+                : (reserve0 - amountOut, reserve1 + amountInLessFee + 1);
+
+            // check that one more wei of amount in would result in a price that exceeds the next price
+            {
+                FixedPoint.uq112x112 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
+                if (zeroForOne) assert(priceAfterSwap1MoreWei._x <= priceTarget._x);
+                else assert(priceAfterSwap1MoreWei._x >= priceTarget._x);
+            }
         }
     }
 }

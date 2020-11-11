@@ -27,7 +27,7 @@ library TickMath {
 
     // calculate 1.01^tick << 128
     function getRatioAtTickUQ128x128(int256 tick) internal pure returns (uint256 ratio) {
-        uint256 absTick = uint256(tick >= 0 ? tick : -tick);
+        uint256 absTick = uint256(tick < 0 ? -tick : tick);
         assert(absTick <= uint256(MAX_TICK));
 
         ratio = absTick & 0x1 != 0 ? 0xfd7720f353a4c0a237c32b16cfd7720f : 0x100000000000000000000000000000000;

@@ -31,7 +31,9 @@ interface IUniswapV3Pair {
 
     function tickCurrent() external view returns (int16);
 
-    function virtualSupplies(uint256) external view returns (uint112);
+    function feeLast() external view returns (uint16);
+
+    function liquidityVirtualVotes(uint256) external view returns (uint112);
 
     function price0CumulativeLast() external view returns (uint256);
 
@@ -40,9 +42,9 @@ interface IUniswapV3Pair {
     // derived state
     function getFee() external view returns (uint16 fee);
 
-    function getVirtualSupply() external view returns (uint112 virtualSupply);
-
     function getCumulativePrices() external view returns (uint256 price0Cumulative, uint256 price1Cumulative);
+
+    function isInitialized() external view returns (bool initialized);
 
     // initialize the pair
     function initialize(
