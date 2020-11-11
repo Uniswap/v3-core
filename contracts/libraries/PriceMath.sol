@@ -93,7 +93,7 @@ library PriceMath {
         // TODO is this necessary? maybe not
         assert(reserveOutMinimum <= (zeroForOne ? reserve1 : reserve0));
         amountOut = (zeroForOne ? reserve1 : reserve0) - uint112(reserveOutMinimum);
-        
+
         // scale amountIn by the current fee (rounding up)
         // TODO is the toUint112() necessary?
         amountIn = mulDivRoundingUp(amountIn, LP_FEE_BASE, LP_FEE_BASE - lpFee).toUint112();
