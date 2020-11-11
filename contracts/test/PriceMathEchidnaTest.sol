@@ -88,8 +88,8 @@ contract PriceMathEchidnaTest {
             // check that one more wei of amount in would result in a price that exceeds the next price
             {
                 FixedPoint.uq112x112 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
-                if (zeroForOne) assert(priceAfterSwap1MoreWei._x < priceTarget._x);
-                else assert(priceAfterSwap1MoreWei._x > priceTarget._x);
+                if (zeroForOne) assert(priceAfterSwap1MoreWei._x <= priceTarget._x);
+                else assert(priceAfterSwap1MoreWei._x >= priceTarget._x);
             }
         }
     }

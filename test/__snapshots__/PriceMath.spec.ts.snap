@@ -163,3 +163,21 @@ Object {
   "zeroForOne": false,
 }
 `;
+
+exports[`PriceMath #getInputToRatio invariants echidna failed test: getInputToRatioInvariants(9409237716022133308928237222943,4473130994246429306704691806449,2,1,false) gas 1`] = `16228`;
+
+exports[`PriceMath #getInputToRatio invariants echidna failed test: getInputToRatioInvariants(9409237716022133308928237222943,4473130994246429306704691806449,2,1,false) snapshot 1`] = `
+Object {
+  "amountIn": "2047220197107058230006219921451",
+  "amountInLessFee": "2046810753067636818360218677466",
+  "amountOut": "2953849847394345066289711991343",
+  "lpFee": 2,
+  "priceAfterSwap": "5244219827120175904815801292511492",
+  "priceAfterSwapWith1MoreWeiInput": "5244219827120175904815801292512296",
+  "priceBeforeSwap": "2468406550053610209368011230532125",
+  "priceTarget": "5244219827120175904815801292512296",
+  "reserve0": "9409237716022133308928237222943",
+  "reserve1": "4473130994246429306704691806449",
+  "zeroForOne": false,
+}
+`;
