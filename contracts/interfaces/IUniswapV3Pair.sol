@@ -7,12 +7,16 @@ interface IUniswapV3Pair {
 
     // constants
     function NUM_FEE_OPTIONS() external pure returns (uint8);
+
     function FEE_OPTIONS(uint8) external pure returns (uint16);
+
     function LIQUIDITY_MIN() external pure returns (uint112);
 
     // immutables
     function factory() external pure returns (address);
+
     function token0() external pure returns (address);
+
     function token1() external pure returns (address);
 
     // variables/state
@@ -21,8 +25,9 @@ interface IUniswapV3Pair {
     function blockTimestampLast() external view returns (uint32);
 
     function feeLast() external view returns (uint16);
-    
+
     function liquidityCurrent(uint256) external view returns (uint112);
+
     // function priceCurrent() external view returns (FixedPoint.uq112x112 memory);
     function tickCurrent() external view returns (int16);
 
@@ -30,12 +35,16 @@ interface IUniswapV3Pair {
     // function feeGrowthGlobal1() external view returns (FixedPoint.uq112x112 memory);
 
     function feeToFees0() external view returns (uint112);
+
     function feeToFees1() external view returns (uint112);
 
     // derived state
     function isInitialized() external view returns (bool);
+
     function getLiquidity() external view returns (uint112);
+
     function getFee() external view returns (uint16);
+
     // function getPriceCumulative() external view returns (FixedPoint.uq144x112 memory);
 
     // initialize the pair

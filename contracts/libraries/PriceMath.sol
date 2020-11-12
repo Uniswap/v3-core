@@ -29,7 +29,7 @@ library PriceMath {
         uint112 reserveOut,
         uint112 amountIn
     ) internal pure returns (uint112) {
-        return (uint256(reserveOut) * amountIn / (uint256(reserveIn) + amountIn)).toUint112();
+        return ((uint256(reserveOut) * amountIn) / (uint256(reserveIn) + amountIn)).toUint112();
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price, rounded up
@@ -40,7 +40,7 @@ library PriceMath {
     {
         if (liquidity == 0) return (0, 0);
 
-        uint8 safeShiftBits = (255 - BitMath.mostSignificantBit(price._x)) / 2 * 2;
+        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(price._x)) / 2) * 2;
 
         uint256 priceScaled = uint256(price._x) << safeShiftBits; // price * 2**safeShiftBits
         uint256 priceScaledRoot = Babylonian.sqrt(priceScaled); // sqrt(priceScaled)
@@ -61,7 +61,7 @@ library PriceMath {
     {
         if (liquidity == 0) return (0, 0);
 
-        uint8 safeShiftBits = (255 - BitMath.mostSignificantBit(price._x)) / 2 * 2;
+        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(price._x)) / 2) * 2;
 
         uint256 priceScaledRoot = Babylonian.sqrt(uint256(price._x) << safeShiftBits); // sqrt(price * 2**safeShiftBits)
 
@@ -83,9 +83,9 @@ library PriceMath {
         // estimate value of reserves at target price, rounding up
         (uint112 reserve0Target, uint112 reserve1Target) = getValueAtPriceRoundingUp(priceTarget, liquidity);
 
-        (amountIn, amountOut) = zeroForOne ?
-            (reserve0Target - reserve0, reserve1 - reserve1Target) :
-            (reserve1Target - reserve1, reserve0 - reserve0Target);
+        (amountIn, amountOut) = zeroForOne
+            ? (reserve0Target - reserve0, reserve1 - reserve1Target)
+            : (reserve1Target - reserve1, reserve0 - reserve0Target);
 
         // scale amountIn by the current fee (rounding up)
         amountIn = mulDivRoundingUp(amountIn, LP_FEE_BASE, LP_FEE_BASE - lpFee).toUint112();

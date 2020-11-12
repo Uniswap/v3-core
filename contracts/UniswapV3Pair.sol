@@ -211,15 +211,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityCurrent[5]
         ];
 
-        uint256 threshold = (
-            uint256(_liquidityCurrent[0]) +
+        uint256 threshold = (uint256(_liquidityCurrent[0]) +
             _liquidityCurrent[1] +
             _liquidityCurrent[2] +
             _liquidityCurrent[3] +
             _liquidityCurrent[4] +
             _liquidityCurrent[5]) / 2;
 
-        uint256 liquidityVirtualVotesCumulative; 
+        uint256 liquidityVirtualVotesCumulative;
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {
             liquidityVirtualVotesCumulative += _liquidityCurrent[feeVoteIndex];
             if (liquidityVirtualVotesCumulative >= threshold) return FEE_OPTIONS(feeVoteIndex);
@@ -314,7 +313,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (int256 amount0, int256 amount1) = PriceMath.getValueAtPriceRoundingUp(price, liquidity);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
-        
+
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
         feeLast = FEE_OPTIONS(feeVote);
@@ -390,19 +389,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
                     amount0 = -FullMath
                         .mulDiv(
-                            feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                            position.liquidity,
-                            uint256(1) << 112
-                        )
+                        feeGrowthInside0._x - position.feeGrowthInside0Last._x,
+                        position
+                            .liquidity,
+                        uint256(1) << 112
+                    )
                         .toInt256();
                 }
                 if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
                     amount1 = -FullMath
                         .mulDiv(
-                            feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                            position.liquidity,
-                            uint256(1) << 112
-                        )
+                        feeGrowthInside1._x - position.feeGrowthInside1Last._x,
+                        position
+                            .liquidity,
+                        uint256(1) << 112
+                    )
                         .toInt256();
                 }
             }
@@ -414,15 +415,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // regardless of current price, when lower tick is crossed from left to right, liquidityDelta should be added
-        if (tickLower > TickMath.MIN_TICK) tickInfoLower.liquidityDelta[feeVote] = tickInfoLower
-            .liquidityDelta[feeVote]
-            .add(liquidityDelta)
-            .toInt112();
+        if (tickLower > TickMath.MIN_TICK)
+            tickInfoLower.liquidityDelta[feeVote] = tickInfoLower.liquidityDelta[feeVote]
+                .add(liquidityDelta)
+                .toInt112();
         // regardless of current price, when upper tick is crossed from left to right, liquidityDelta should be removed
-        if (tickUpper < TickMath.MAX_TICK) tickInfoUpper.liquidityDelta[feeVote] = tickInfoUpper
-            .liquidityDelta[feeVote]
-            .sub(liquidityDelta)
-            .toInt112();
+        if (tickUpper < TickMath.MAX_TICK)
+            tickInfoUpper.liquidityDelta[feeVote] = tickInfoUpper.liquidityDelta[feeVote]
+                .sub(liquidityDelta)
+                .toInt112();
 
         // calculate how much the specified liquidity delta is worth at the lower and upper ticks
         // amount0Lower :> amount0Upper
@@ -537,7 +538,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // recompute reserves given the current price/liquidity
                 (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getValueAtPriceRoundingDown(
-                    priceCurrent, state.liquidity
+                    priceCurrent,
+                    state.liquidity
                 );
 
                 // compute the amount of input token required to push the price to the target (and max output token)
@@ -558,7 +560,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // discount the input amount by the fee
                 uint112 amountInLessFee = uint112(
-                    uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - step.fee) / PriceMath.LP_FEE_BASE
+                    (uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - step.fee)) / PriceMath.LP_FEE_BASE
                 );
 
                 // handle the fee accounting
@@ -621,10 +623,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 1) a positive input amount remains
             // 2) if we're moving right and the price is exactly on the target tick
             // TODO ensure that there's no off-by-one error here while transitioning ticks in euithger either direction
-            if (
-                state.amountInRemaining > 0 ||
-                (params.zeroForOne == false && state.price._x == step.priceNext._x)
-            ) {
+            if (state.amountInRemaining > 0 || (params.zeroForOne == false && state.price._x == step.priceNext._x)) {
                 TickInfo storage tickInfo = tickInfos[state.tick];
 
                 // if the tick is initialized, update it
@@ -643,12 +642,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                         // update liquidityVirtualVotes, subi from right to left, addi from left to right
                         // TODO put this into state? bit tricky
-                        if (params.zeroForOne) liquidityCurrent[i] = liquidityCurrent[i]
-                            .subi(liquidityDelta)
-                            .toUint112();
-                        else liquidityCurrent[i] = liquidityCurrent[i]
-                            .addi(liquidityDelta)
-                            .toUint112();
+                        if (params.zeroForOne)
+                            liquidityCurrent[i] = liquidityCurrent[i].subi(liquidityDelta).toUint112();
+                        else liquidityCurrent[i] = liquidityCurrent[i].addi(liquidityDelta).toUint112();
                     }
 
                     // update liquidity, subi from right to left, addi from left to right
@@ -669,7 +665,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         priceCurrent = state.price;
         tickCurrent = state.tick;
-        
+
         feeGrowthGlobal0 = state.feeGrowthGlobal0;
         feeGrowthGlobal1 = state.feeGrowthGlobal1;
 
