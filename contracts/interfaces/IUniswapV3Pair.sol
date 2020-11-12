@@ -2,57 +2,48 @@
 pragma solidity >=0.5.0;
 
 interface IUniswapV3Pair {
-    event Initialized(uint256 amount0, uint256 amount1, int16 tick, uint8 feeVote);
-    // TODO liquidityDelta or liquidity?
-    event PositionSet(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta);
+    // event Initialized(uint256 amount0, uint256 amount1, int16 tick, uint8 feeVote);
+    // event PositionSet(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
     // constants
     function NUM_FEE_OPTIONS() external pure returns (uint8);
-
     function FEE_OPTIONS(uint8) external pure returns (uint16);
-
     function LIQUIDITY_MIN() external pure returns (uint112);
 
-    function TOKEN_MIN() external pure returns (uint8);
-
     // immutables
-    function factory() external view returns (address);
-
-    function token0() external view returns (address);
-
-    function token1() external view returns (address);
+    function factory() external pure returns (address);
+    function token0() external pure returns (address);
+    function token1() external pure returns (address);
 
     // variables/state
-    function reserve0Virtual() external view returns (uint112);
-
-    function reserve1Virtual() external view returns (uint112);
+    function feeTo() external view returns (address);
 
     function blockTimestampLast() external view returns (uint32);
 
+    function feeLast() external view returns (uint16);
+    
+    function liquidityCurrent(uint256) external view returns (uint112);
+    // function priceCurrent() external view returns (FixedPoint.uq112x112 memory);
     function tickCurrent() external view returns (int16);
 
-    function feeLast() external view returns (uint16);
+    // function feeGrowthGlobal0() external view returns (FixedPoint.uq112x112 memory);
+    // function feeGrowthGlobal1() external view returns (FixedPoint.uq112x112 memory);
 
-    function liquidityVirtualVotes(uint256) external view returns (uint112);
-
-    function price0CumulativeLast() external view returns (uint256);
-
-    function price1CumulativeLast() external view returns (uint256);
+    function feeToFees0() external view returns (uint112);
+    function feeToFees1() external view returns (uint112);
 
     // derived state
-    function getFee() external view returns (uint16 fee);
-
-    function getCumulativePrices() external view returns (uint256 price0Cumulative, uint256 price1Cumulative);
-
-    function isInitialized() external view returns (bool initialized);
+    function isInitialized() external view returns (bool);
+    function getLiquidity() external view returns (uint112);
+    function getFee() external view returns (uint16);
+    // function getPriceCumulative() external view returns (FixedPoint.uq144x112 memory);
 
     // initialize the pair
     function initialize(
-        uint112 amount0,
-        uint112 amount1,
+        uint112 liquidity,
         int16 tick,
         uint8 feeVote
-    ) external returns (uint112 liquidity);
+    ) external;
 
     // swapping
     function swap0For1(
@@ -66,9 +57,6 @@ interface IUniswapV3Pair {
         address to,
         bytes calldata data
     ) external returns (uint112 amount0Out);
-
-    // called by feeToSetter of the factory
-    function feeTo() external view returns (address);
 
     function setFeeTo(address) external;
 

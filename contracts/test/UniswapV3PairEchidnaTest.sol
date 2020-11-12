@@ -26,7 +26,7 @@ contract UniswapV3PairEchidnaTest {
         createNewPair();
         token0.approve(address(pair), uint256(-1));
         token1.approve(address(pair), uint256(-1));
-        initializePair(0, 1e18, 2);
+        initializePair(1e18, 0, 2);
     }
 
     function initializeTokens() private {
@@ -40,13 +40,11 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function initializePair(
+        uint112 liquidity,
         int16 tick,
-        uint112 amount0,
         uint8 feeVote
     ) private {
-        FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
-        uint112 amount1 = FullMath.mulDiv(amount0, price._x, uint256(1) << 112).toUint112();
-        pair.initialize(amount0, amount1, tick, feeVote % pair.NUM_FEE_OPTIONS());
+        pair.initialize(liquidity, tick, feeVote % pair.NUM_FEE_OPTIONS());
     }
 
     function swap0For1(uint112 amount0In) external {

@@ -10,11 +10,12 @@ contract PriceMathTest {
     function getInputToRatio(
         uint112 reserve0,
         uint112 reserve1,
-        uint16 lpFee,
+        uint112 liquidity,
         FixedPoint.uq112x112 memory priceTarget,
+        uint16 lpFee,
         bool zeroForOne
     ) public pure returns (uint112 amountIn, uint112 amountOut) {
-        return PriceMath.getInputToRatio(reserve0, reserve1, lpFee, priceTarget, zeroForOne);
+        return PriceMath.getInputToRatio(reserve0, reserve1, liquidity, priceTarget, lpFee, zeroForOne);
     }
 
     function getAmountOut(
@@ -28,12 +29,13 @@ contract PriceMathTest {
     function getGasCostOfGetInputToRatio(
         uint112 reserve0,
         uint112 reserve1,
-        uint16 lpFee,
+        uint112 liquidity,
         FixedPoint.uq112x112 memory priceTarget,
+        uint16 lpFee,
         bool zeroForOne
     ) public view returns (uint256) {
         uint256 gasBefore = gasleft();
-        PriceMath.getInputToRatio(reserve0, reserve1, lpFee, priceTarget, zeroForOne);
+        PriceMath.getInputToRatio(reserve0, reserve1, liquidity, priceTarget, lpFee, zeroForOne);
         return gasBefore - gasleft();
     }
 }
