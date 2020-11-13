@@ -481,7 +481,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 liquidity;
         // the price
         FixedPoint.uq112x112 price;
-
         // protocol fees of the input token
         uint112 feeToFees;
         // the global fee growth of the input token
@@ -515,7 +514,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tick: tickCurrent,
             liquidity: getLiquidity(),
             price: priceCurrent,
-
             feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1
         });
