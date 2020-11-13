@@ -44,13 +44,13 @@ library PriceMath {
 
         uint256 priceScaled = uint256(price._x) << safeShiftBits; // price * 2**safeShiftBits
         uint256 priceScaledRoot = Babylonian.sqrt(priceScaled); // sqrt(priceScaled)
-        if (priceScaledRoot**2 < priceScaled) priceScaledRoot++; // round priceScaledRoot up
+        bool roundUp = priceScaledRoot**2 < priceScaled; // flag for whether priceScaledRoot needs to be rounded up
 
         uint256 scaleFactor = uint256(1) << (56 + safeShiftBits / 2); // compensate for q112 and shifted bits under root
 
         // calculate amount0 := liquidity / sqrt(price) and amount1 := liquidity * sqrt(price)
         amount0 = mulDivRoundingUp(liquidity, scaleFactor, priceScaledRoot).toUint112();
-        amount1 = mulDivRoundingUp(liquidity, priceScaledRoot, scaleFactor).toUint112();
+        amount1 = mulDivRoundingUp(liquidity, priceScaledRoot + (roundUp ? 1 : 0), scaleFactor).toUint112();
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price, rounded down
@@ -63,12 +63,14 @@ library PriceMath {
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(price._x)) / 2) * 2;
 
-        uint256 priceScaledRoot = Babylonian.sqrt(uint256(price._x) << safeShiftBits); // sqrt(price * 2**safeShiftBits)
+        uint256 priceScaled = uint256(price._x) << safeShiftBits; // price * 2**safeShiftBits
+        uint256 priceScaledRoot = Babylonian.sqrt(priceScaled); // sqrt(priceScaled)
+        bool roundUp = priceScaledRoot**2 < priceScaled; // flag for whether priceScaledRoot needs to be rounded up
 
         uint256 scaleFactor = uint256(1) << (56 + safeShiftBits / 2); // compensate for q112 and shifted bits under root
 
         // calculate amount0 := liquidity / sqrt(price) and amount1 := liquidity * sqrt(price)
-        amount0 = FullMath.mulDiv(liquidity, scaleFactor, priceScaledRoot).toUint112();
+        amount0 = FullMath.mulDiv(liquidity, scaleFactor, priceScaledRoot + (roundUp ? 1 : 0)).toUint112();
         amount1 = FullMath.mulDiv(liquidity, priceScaledRoot, scaleFactor).toUint112();
     }
 
