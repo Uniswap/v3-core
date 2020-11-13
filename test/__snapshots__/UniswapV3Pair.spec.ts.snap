@@ -1,3 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`UniswapV3Pair #getFee gas cost initialized to vote 5 1`] = `6587`;
+
+exports[`UniswapV3Pair #getFee gas cost multiple votes median in middle 1`] = `6347`;
+
 exports[`UniswapV3Pair #getFee gas cost uninitialized 1`] = `5887`;
+
+exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `272328`;
+
+exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `217815`;
+
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `293130`;
+
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `173697`;
+
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `152100`;
