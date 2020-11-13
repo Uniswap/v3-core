@@ -6,6 +6,7 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
+import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
 import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
@@ -17,7 +18,6 @@ import './libraries/FixedPointExtra.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
 import './libraries/PriceMath.sol';
-import './libraries/BitMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';

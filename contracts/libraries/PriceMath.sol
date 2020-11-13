@@ -6,9 +6,9 @@ import '@openzeppelin/contracts/math/Math.sol';
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
+import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
 import './SafeCast.sol';
-import './BitMath.sol';
 
 library PriceMath {
     using SafeCast for uint256;

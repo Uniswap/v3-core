@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "3.1.0",
-    "@uniswap/lib": "2.0.6"
+    "@uniswap/lib": "2.1.0"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.3",
