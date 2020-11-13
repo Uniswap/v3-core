@@ -30,6 +30,9 @@ contract PriceMathEchidnaTest {
     }
 
     function roundingCanBeGreaterThan1(uint224 price, uint256 liquidity) external pure {
+        require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
+        require(price <= TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
+
         (uint112 amount0Up, uint112 amount1Up) = PriceMath.getValueAtPriceRoundingUp(
             FixedPoint.uq112x112(price),
             liquidity
@@ -38,6 +41,8 @@ contract PriceMathEchidnaTest {
             FixedPoint.uq112x112(price),
             liquidity
         );
+        assert(amount0Up >= amount0Down);
+        assert(amount1Up >= amount1Down);
         assert(amount0Up - amount0Down <= 1);
         assert(amount1Up - amount1Down <= 1);
     }
