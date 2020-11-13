@@ -60,17 +60,17 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 const LN101 = Decimal.ln('1.01')
-export function getExpectedTick(reserve0: BigNumber, reserve1: BigNumber): number {
-  if (reserve0.isZero() && reserve1.isZero()) return 0
+export function getExpectedTick(priceCurrent: BigNumber): number {
+  if (priceCurrent.isZero()) return 0
 
-  const price = new Decimal(reserve1.toString()).div(new Decimal(reserve0.toString()))
+  const decimalPrice = new Decimal(priceCurrent.toString()).div(new Decimal(2).pow(112))
   // log_1.01(price) = ln(price) / ln(1.01) by the base change rule
-  const rawTick = Decimal.ln(price).div(LN101)
+  const rawTick = Decimal.ln(decimalPrice).div(LN101)
   const tick = rawTick.floor().toNumber()
 
   // verify
-  assert(new Decimal('1.01').pow(tick).lte(price))
-  assert(new Decimal('1.01').pow(tick + 1).gt(price))
+  assert(new Decimal('1.01').pow(tick).lte(decimalPrice))
+  assert(new Decimal('1.01').pow(tick + 1).gt(decimalPrice))
 
   return tick
 }
