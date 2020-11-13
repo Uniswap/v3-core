@@ -79,6 +79,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     FixedPoint.uq112x112 public feeGrowthGlobal1;
 
     // accumulated protocol fees
+    // TODO should we make these bigger (possibly informed by where it makes sense to pack them)
     uint112 public override feeToFees0;
     uint112 public override feeToFees1;
 
@@ -196,7 +197,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // check for one-time initialization
     function isInitialized() public view override returns (bool) {
-        return getLiquidity() > 0; // sufficient check
+        return priceCurrent._x != 0; // sufficient check
     }
 
     // find the median fee vote, and return the fee in bips
@@ -218,10 +219,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _liquidityCurrent[4] +
             _liquidityCurrent[5]) / 2;
 
-        uint256 liquidityVirtualVotesCumulative;
+        uint256 liquidityCumulative;
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {
-            liquidityVirtualVotesCumulative += _liquidityCurrent[feeVoteIndex];
-            if (liquidityVirtualVotesCumulative >= threshold) return FEE_OPTIONS(feeVoteIndex);
+            liquidityCumulative += _liquidityCurrent[feeVoteIndex];
+            if (liquidityCumulative >= threshold) return FEE_OPTIONS(feeVoteIndex);
         }
         return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
     }
@@ -414,16 +415,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             position.feeGrowthInside1Last = feeGrowthInside1;
         }
 
-        // regardless of current price, when lower tick is crossed from left to right, liquidityDelta should be added
-        if (tickLower > TickMath.MIN_TICK)
-            tickInfoLower.liquidityDelta[feeVote] = tickInfoLower.liquidityDelta[feeVote]
-                .add(liquidityDelta)
-                .toInt112();
-        // regardless of current price, when upper tick is crossed from left to right, liquidityDelta should be removed
-        if (tickUpper < TickMath.MAX_TICK)
-            tickInfoUpper.liquidityDelta[feeVote] = tickInfoUpper.liquidityDelta[feeVote]
-                .sub(liquidityDelta)
-                .toInt112();
+        // when the lower (upper) tick is crossed from left to right (right to left), liquidity must be added (removed)
+        tickInfoLower.liquidityDelta[feeVote] = tickInfoLower.liquidityDelta[feeVote].add(liquidityDelta).toInt112();
+        tickInfoUpper.liquidityDelta[feeVote] = tickInfoUpper.liquidityDelta[feeVote].sub(liquidityDelta).toInt112();
 
         // calculate how much the specified liquidity delta is worth at the lower and upper ticks
         // amount0Lower :> amount0Upper
@@ -487,16 +481,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint112 liquidity;
         // the price
         FixedPoint.uq112x112 price;
-        // the global fee growth of token0
-        FixedPoint.uq112x112 feeGrowthGlobal0;
-        // the global fee growth of token1
-        FixedPoint.uq112x112 feeGrowthGlobal1;
+
+        // protocol fees of the input token
+        uint112 feeToFees;
+        // the global fee growth of the input token
+        FixedPoint.uq112x112 feeGrowthGlobal;
     }
 
     struct StepComputations {
         // price for the target tick (1/0)
         FixedPoint.uq112x112 priceNext;
-        // the fee that will be paid in this step
+        // the fee that will be paid in this step, in bips
         uint16 fee;
         // (computed) virtual reserves of token0
         uint112 reserve0Virtual;
@@ -520,8 +515,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tick: tickCurrent,
             liquidity: getLiquidity(),
             price: priceCurrent,
-            feeGrowthGlobal0: feeGrowthGlobal0,
-            feeGrowthGlobal1: feeGrowthGlobal1
+
+            feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
+            feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1
         });
 
         while (state.amountInRemaining > 0) {
@@ -531,8 +527,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? TickMath.getRatioAtTick(state.tick)
                 : TickMath.getRatioAtTick(state.tick + 1);
 
-            // if there might be room to move in the current tick, check if we need to swap
-            if (params.zeroForOne ? state.price._x > step.priceNext._x : state.price._x < step.priceNext._x) {
+            // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
+            // similarly, if it's false we should be below the target price
+            // TODO we can remove this if/when we're confident they never trigger
+            if (params.zeroForOne) assert(state.price >= step.priceNext._x);
+            else assert(state.price < step.priceNext._x);
+
+            // if there might be room to move in the current tick, continue calculations
+            if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
                 // protect LPs by adjusting the fee only if the current fee is greater than the stored fee
                 step.fee = uint16(Math.max(feeFloor, getFee()));
 
@@ -571,16 +573,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         uint112 feeToFee = feePaid / 6;
                         // decrement feePaid
                         feePaid -= feeToFee;
-                        // increment feeToFees{0,1} monotonically, while being cognizant of overflow
-                        if (params.zeroForOne) feeToFees0 = uint112(Math.max(feeToFees0 + feeToFee, feeToFees0));
-                        else feeToFees1 = uint112(Math.max(feeToFees1 + feeToFee, feeToFees1));
+                        // increment feeToFees monotonically, while being cognizant of overflow
+                        state.feeToFees = uint112(Math.max(state.feeToFees + feeToFee, state.feeToFees));
                     }
 
                     // update global fee tracker
                     // TODO is this correct/is there a less lossy way to do this?
-                    FixedPoint.uq112x112 memory feeGrowthGlobalDelta = FixedPoint.fraction(feePaid, state.liquidity);
-                    if (params.zeroForOne) state.feeGrowthGlobal0 = state.feeGrowthGlobal0.add(feeGrowthGlobalDelta);
-                    else state.feeGrowthGlobal1 = state.feeGrowthGlobal1.add(feeGrowthGlobalDelta);
+                    state.feeGrowthGlobal = state.feeGrowthGlobal.add(FixedPoint.fraction(feePaid, state.liquidity));
                 }
 
                 // handle the swap
@@ -595,26 +594,28 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // increment amountOut
                     amountOut = (uint256(amountOut) + step.amountOut).toUint112();
+                }
 
-                    // update the price
-                    // if we've consumed the input required to get to the target price, that's the price now!
-                    if (amountInRequiredForShift == step.amountIn) {
-                        state.price = step.priceNext;
+                // update the price
+                // if we've consumed the input required to get to the target price, that's the price now!
+                if (step.amountIn == amountInRequiredForShift) {
+                    state.price = step.priceNext;
+                } else {
+                    // if not, the price is the new ratio of (computed) reserves, capped at the target price
+                    if (params.zeroForOne) {
+                        FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
+                            step.reserve1Virtual.sub(step.amountOut).toUint112(),
+                            (uint256(step.reserve0Virtual) + amountInLessFee).toUint112()
+                        );
+                        state.price = FixedPoint.uq112x112(uint224(Math.max(step.priceNext._x, priceEstimate._x)));
+                        assert(state.price._x < TickMath.getRatioAtTick(state.tick + 1)._x);
                     } else {
-                        // if not, the price is the new ratio of (computed) reserves, capped at the target price
-                        if (params.zeroForOne) {
-                            FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
-                                step.reserve1Virtual.sub(step.amountOut).toUint112(),
-                                (uint256(step.reserve0Virtual) + amountInLessFee).toUint112()
-                            );
-                            state.price = FixedPoint.uq112x112(uint224(Math.max(step.priceNext._x, priceEstimate._x)));
-                        } else {
-                            FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
-                                (uint256(step.reserve1Virtual) + amountInLessFee).toUint112(),
-                                step.reserve0Virtual.sub(step.amountOut).toUint112()
-                            );
-                            state.price = FixedPoint.uq112x112(uint224(Math.min(step.priceNext._x, priceEstimate._x)));
-                        }
+                        FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
+                            (uint256(step.reserve1Virtual) + amountInLessFee).toUint112(),
+                            step.reserve0Virtual.sub(step.amountOut).toUint112()
+                        );
+                        state.price = FixedPoint.uq112x112(uint224(Math.min(step.priceNext._x, priceEstimate._x)));
+                        assert(state.price._x >= TickMath.getRatioAtTick(state.tick)._x);
                     }
                 }
             }
@@ -622,7 +623,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // we have to shift to the next tick if either of two conditions are true:
             // 1) a positive input amount remains
             // 2) if we're moving right and the price is exactly on the target tick
-            // TODO ensure that there's no off-by-one error here while transitioning ticks in euithger either direction
+            // TODO ensure that there's no off-by-one error here while transitioning ticks in either direction
             if (state.amountInRemaining > 0 || (params.zeroForOne == false && state.price._x == step.priceNext._x)) {
                 TickInfo storage tickInfo = tickInfos[state.tick];
 
@@ -640,7 +641,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         // increment net liquidityDelta
                         liquidityDeltaNet = liquidityDeltaNet.add(liquidityDelta);
 
-                        // update liquidityVirtualVotes, subi from right to left, addi from left to right
+                        // update liquidityCurrent, subi from right to left, addi from left to right
                         // TODO put this into state? bit tricky
                         if (params.zeroForOne)
                             liquidityCurrent[i] = liquidityCurrent[i].subi(liquidityDelta).toUint112();
@@ -666,8 +667,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         priceCurrent = state.price;
         tickCurrent = state.tick;
 
-        feeGrowthGlobal0 = state.feeGrowthGlobal0;
-        feeGrowthGlobal1 = state.feeGrowthGlobal1;
+        if (params.zeroForOne) feeToFees0 = state.feeToFees;
+        else feeToFees1 = state.feeToFees;
+
+        if (params.zeroForOne) feeGrowthGlobal0 = state.feeGrowthGlobal;
+        else feeGrowthGlobal1 = state.feeGrowthGlobal;
 
         // this is different than v2
         TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut);
