@@ -38,8 +38,8 @@ contract PriceMathEchidnaTest {
             FixedPoint.uq112x112(price),
             liquidity
         );
-        assert(amount0Up >= amount0Down ? amount0Up - amount0Down <= 1 : amount0Down - amount0Up <= 1);
-        assert(amount1Up >= amount1Down ? amount1Up - amount1Down <= 1 : amount1Down - amount1Up <= 1);
+        assert(amount0Up - amount0Down <= 1);
+        assert(amount1Up - amount1Down <= 1);
     }
 
     function getInputToRatioInvariants(
