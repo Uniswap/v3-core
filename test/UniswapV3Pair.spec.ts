@@ -262,16 +262,19 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  const initializeToken0Amount = expandTo18Decimals(2)
+  const initializeLiquidityAmount = BigNumber.from('1414213562') // floor(sqrt(2 * 10 ** 18))
+  const initializeToken0Amount = initializeLiquidityAmount.pow(2)
   const initializeToken1Amount = initializeToken0Amount
-  async function initializeAtZeroTick(tokenAmount: BigNumber, feeVote: FeeVote): Promise<void> {
-    await token0.approve(pair.address, tokenAmount)
-    await token1.approve(pair.address, tokenAmount)
-    await pair.initialize(tokenAmount, 0, feeVote)
+  async function initializeAtZeroTick(feeVote: FeeVote): Promise<void> {
+    await token0.approve(pair.address, constants.MaxUint256)
+    await token1.approve(pair.address, constants.MaxUint256)
+    await pair.initialize(initializeLiquidityAmount, 0, feeVote)
+    await token0.approve(pair.address, 0)
+    await token1.approve(pair.address, 0)
   }
 
   describe('callee', () => {
-    beforeEach(() => initializeAtZeroTick(initializeToken0Amount, FeeVote.FeeVote0))
+    beforeEach(() => initializeAtZeroTick(FeeVote.FeeVote0))
     it('swap0For1 calls the callee', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(1000, testCallee.address, '0xabcd'))
@@ -292,8 +295,7 @@ describe('UniswapV3Pair', () => {
     const fee = FeeVote.FeeVote1
 
     beforeEach('initialize at zero tick with 2 liquidity tokens', async () => {
-      const tokenAmount = expandTo18Decimals(2)
-      await initializeAtZeroTick(tokenAmount, fee)
+      await initializeAtZeroTick(fee)
     })
 
     describe('with fees', async () => {
@@ -501,9 +503,8 @@ describe('UniswapV3Pair', () => {
   describe('post-initialize (fee vote 2 - 0.30%)', () => {
     const fee = FeeVote.FeeVote2
 
-    beforeEach(async () => {
-      const tokenAmount = expandTo18Decimals(2)
-      await initializeAtZeroTick(tokenAmount, fee)
+    beforeEach('initialize the pair', async () => {
+      await initializeAtZeroTick(fee)
     })
 
     it('swap0For1', async () => {
@@ -678,30 +679,30 @@ describe('UniswapV3Pair', () => {
       expect(await getK()).to.eq(0)
     })
     it('returns initial liquidity', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await initializeAtZeroTick(FeeVote.FeeVote3)
       expect(await getK()).to.eq(expandTo18Decimals(2))
     })
     it('returns in supply in range', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await initializeAtZeroTick(FeeVote.FeeVote3)
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(-1, 1, FeeVote.FeeVote4, expandTo18Decimals(3))
       expect(await getK()).to.eq(expandTo18Decimals(5))
     })
     it('excludes supply at tick above current tick', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await initializeAtZeroTick(FeeVote.FeeVote3)
       await token0.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(1, 2, FeeVote.FeeVote4, expandTo18Decimals(3))
       expect(await getK()).to.eq(expandTo18Decimals(2))
     })
     it('excludes supply at tick below current tick', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await initializeAtZeroTick(FeeVote.FeeVote3)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(-2, -1, FeeVote.FeeVote4, expandTo18Decimals(3))
       expect(await getK()).to.eq(expandTo18Decimals(2))
     })
     it('updates correctly when exiting range', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote1)
+      await initializeAtZeroTick(FeeVote.FeeVote1)
 
       const kBefore = await getK()
       expect(kBefore).to.be.eq(expandTo18Decimals(2))
@@ -732,7 +733,7 @@ describe('UniswapV3Pair', () => {
       expect(kAFterSwap).to.be.eq(expandTo18Decimals(2))
     })
     it('updates correctly when entering range', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote1)
+      await initializeAtZeroTick(FeeVote.FeeVote1)
 
       const kBefore = await getK()
       expect(kBefore).to.be.eq(expandTo18Decimals(2))
@@ -770,34 +771,34 @@ describe('UniswapV3Pair', () => {
     describe('returns only vote when initialized', () => {
       for (const vote of [FeeVote.FeeVote0, FeeVote.FeeVote1, FeeVote.FeeVote4, FeeVote.FeeVote5]) {
         it(`vote: ${FeeVote[vote]}`, async () => {
-          await initializeAtZeroTick(expandTo18Decimals(2), vote)
+          await initializeAtZeroTick(vote)
           expect(await pair.getFee()).to.eq(FEES[vote])
         })
       }
     })
     it('median computation', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote2)
-      const liquidityVote = await pair.liquidityVirtualVotes(FeeVote.FeeVote2)
-      expect(liquidityVote).to.eq(expandTo18Decimals(2))
-      expect(await getK()).to.eq(liquidityVote)
+      await initializeAtZeroTick(FeeVote.FeeVote2)
+      const liquidityVote = await pair.liquidityCurrent(FeeVote.FeeVote2)
+      expect(liquidityVote).to.eq(initializeLiquidityAmount)
+      expect(await getK()).to.eq(initializeLiquidityAmount)
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.setPosition(-1, 1, FeeVote.FeeVote4, liquidityVote.add(2))
-      expect(await getK()).to.eq(expandTo18Decimals(4).add(2))
+      await pair.setPosition(-1, 1, FeeVote.FeeVote4, initializeLiquidityAmount.add(2))
+      expect(await getK()).to.eq(initializeLiquidityAmount.add(initializeLiquidityAmount.add(2)))
       expect(await pair.getFee()).to.eq(FEES[FeeVote.FeeVote4])
     })
     it('gas cost uninitialized', async () => {
       await snapshotGasCost(pairTest.getGasCostOfGetFee())
     })
     it('gas cost multiple votes median in middle', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote3)
+      await initializeAtZeroTick(FeeVote.FeeVote3)
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(-1, 1, FeeVote.FeeVote4, expandTo18Decimals(2))
       await snapshotGasCost(pairTest.getGasCostOfGetFee())
     })
     it('gas cost initialized to vote 5', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote5)
+      await initializeAtZeroTick(FeeVote.FeeVote5)
       await snapshotGasCost(pairTest.getGasCostOfGetFee())
     })
   })
@@ -922,7 +923,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#recover', () => {
     beforeEach('initialize the pair', async () => {
-      await initializeAtZeroTick(expandTo18Decimals(2), FeeVote.FeeVote0)
+      await initializeAtZeroTick(FeeVote.FeeVote0)
     })
 
     beforeEach('send some token2 to the pair', async () => {
