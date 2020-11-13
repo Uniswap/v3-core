@@ -46,8 +46,5 @@ jobs:
       - name: PriceMathEchidnaTest
         run: echidna-test . --contract PriceMathEchidnaTest --config echidna.config.yml
 
-      - name: BitMathEchidnaTest
-        run: echidna-test . --contract BitMathEchidnaTest --config echidna.config.yml
-
       - name: UniswapV3PairEchidnaTest
         run: echidna-test . --contract UniswapV3PairEchidnaTest --config echidna.config.yml
