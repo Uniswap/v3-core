@@ -5,8 +5,6 @@ import {assert} from 'chai'
 export const MIN_TICK = -7732
 export const MAX_TICK = 7732
 
-export const LIQUIDITY_MIN = 10 ** 3
-
 export enum FeeVote {
   FeeVote0 = 0,
   FeeVote1 = 1,
@@ -15,6 +13,7 @@ export enum FeeVote {
   FeeVote4 = 4,
   FeeVote5 = 5,
 }
+
 export const FEES: {[vote in FeeVote]: number} = {
   [FeeVote.FeeVote0]: 5,
   [FeeVote.FeeVote1]: 10,
