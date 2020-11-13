@@ -29,6 +29,19 @@ contract PriceMathEchidnaTest {
         assert(kAfter >= k);
     }
 
+    function roundingCanBeGreaterThan1(uint224 price, uint256 liquidity) external pure {
+        (uint112 amount0Up, uint112 amount1Up) = PriceMath.getValueAtPriceRoundingUp(
+            FixedPoint.uq112x112(price),
+            liquidity
+        );
+        (uint112 amount0Down, uint112 amount1Down) = PriceMath.getValueAtPriceRoundingDown(
+            FixedPoint.uq112x112(price),
+            liquidity
+        );
+        assert(amount0Up - amount0Down <= 1);
+        assert(amount1Up - amount1Down <= 1);
+    }
+
     function getInputToRatioInvariants(
         int16 tick,
         int16 tickTarget,
