@@ -403,15 +403,7 @@ describe('UniswapV3Pair', () => {
       expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
       expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(998)
 
-      expect(await Promise.all([pair.reserve0Virtual(), pair.reserve1Virtual(), pair.tickCurrent()])).to.deep.eq([
-        expandTo18Decimals(2).add(
-          BigNumber.from(amount0In)
-            .mul(10000 - FEES[fee])
-            .div(10000)
-        ),
-        expandTo18Decimals(2).sub(998),
-        -1,
-      ])
+      expect(await pair.tickCurrent()).to.eq(-1)
     })
 
     it('swap0For1 gas', async () => {
@@ -438,15 +430,8 @@ describe('UniswapV3Pair', () => {
 
       expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(998)
       expect(token1BalanceBefore.sub(token1BalanceAfter), 'input amount decreased by amount in').to.eq(amount1In)
-      expect(await Promise.all([pair.reserve0Virtual(), pair.reserve1Virtual(), pair.tickCurrent()])).to.deep.eq([
-        expandTo18Decimals(2).sub(998),
-        expandTo18Decimals(2).add(
-          BigNumber.from(amount1In)
-            .mul(10000 - FEES[fee])
-            .div(10000)
-        ),
-        0,
-      ])
+
+      expect(await pair.tickCurrent()).to.eq(0)
     })
 
     it('swap1For0 gas', async () => {
