@@ -226,7 +226,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
     }
 
-    // helper for reading priceCumulativeLast as of the current block
+    // helper for reading the cumulative price as of the current block
     function getPriceCumulative() public view returns (FixedPoint.uq144x112 memory) {
         uint32 blockTimestamp = _blockTimestamp();
 
