@@ -262,8 +262,8 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  const initializeLiquidityAmount = BigNumber.from('1414213562') // floor(sqrt(2 * 10 ** 18))
-  const initializeToken0Amount = initializeLiquidityAmount.pow(2)
+  const initializeLiquidityAmount = expandTo18Decimals(2) // floor(sqrt(2 * 10 ** 18))
+  const initializeToken0Amount = initializeLiquidityAmount
   const initializeToken1Amount = initializeToken0Amount
   async function initializeAtZeroTick(feeVote: FeeVote): Promise<void> {
     await token0.approve(pair.address, constants.MaxUint256)
@@ -617,9 +617,7 @@ describe('UniswapV3Pair', () => {
       await pair.setTime(100)
     })
     beforeEach('initialize pair', async () => {
-      await token0.approve(pair.address, constants.MaxUint256)
-      await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(expandTo18Decimals(2), expandTo18Decimals(2), 0, 0)
+      await initializeAtZeroTick(FeeVote.FeeVote0)
     })
     it('current time is 100', async () => {
       expect(await pair.time()).to.eq(100)
@@ -805,13 +803,12 @@ describe('UniswapV3Pair', () => {
 
   // jankily, these tests are prety interdependent and basically have to be run as a block
   describe('feeTo', () => {
-    const token0Amount = expandTo18Decimals(1000)
-    const token1Amount = expandTo18Decimals(1000)
+    const tokenAmount = expandTo18Decimals(1000)
 
     beforeEach(async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(token0Amount, token1Amount, 0, FeeVote.FeeVote0)
+      await pair.initialize(tokenAmount, 0, FeeVote.FeeVote0)
     })
 
     it('is initially set to 0', async () => {
