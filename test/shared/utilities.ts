@@ -1,6 +1,4 @@
 import {BigNumber, BigNumberish, utils, constants} from 'ethers'
-import {Decimal} from 'decimal.js'
-import {assert} from 'chai'
 
 export const MIN_TICK = -7732
 export const MAX_TICK = 7732
@@ -57,22 +55,6 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
   return utils.keccak256(
     utils.solidityPack(['address', 'int16', 'int16', 'uint8'], [address, lowerTick, upperTick, feeVote])
   )
-}
-
-const LN101 = Decimal.ln('1.01')
-export function getExpectedTick(priceCurrent: BigNumber): number {
-  if (priceCurrent.isZero()) return 0
-
-  const decimalPrice = new Decimal(priceCurrent.toString()).div(new Decimal(2).pow(112))
-  // log_1.01(price) = ln(price) / ln(1.01) by the base change rule
-  const rawTick = Decimal.ln(decimalPrice).div(LN101)
-  const tick = rawTick.floor().toNumber()
-
-  // verify
-  assert(new Decimal('1.01').pow(tick).lte(decimalPrice))
-  assert(new Decimal('1.01').pow(tick + 1).gt(decimalPrice))
-
-  return tick
 }
 
 // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
