@@ -31,11 +31,13 @@ interface IUniswapV3Pair {
 
     function liquidityCurrent(uint256) external view returns (uint112);
 
-    // function priceCurrent() external view returns (FixedPoint.uq112x112 memory);
     function tickCurrent() external view returns (int16);
 
-    // function feeGrowthGlobal0() external view returns (FixedPoint.uq112x112 memory);
-    // function feeGrowthGlobal1() external view returns (FixedPoint.uq112x112 memory);
+    function priceCurrent() external view returns (uint224);
+
+    function feeGrowthGlobal0() external view returns (uint224);
+
+    function feeGrowthGlobal1() external view returns (uint224);
 
     function feeToFees0() external view returns (uint112);
 

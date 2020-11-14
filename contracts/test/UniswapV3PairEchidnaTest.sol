@@ -9,6 +9,7 @@ import './TestERC20.sol';
 import '../UniswapV3Pair.sol';
 import '../UniswapV3Factory.sol';
 import '../libraries/SafeCast.sol';
+import '../libraries/TickMath.sol';
 
 contract UniswapV3PairEchidnaTest {
     using SafeMath for uint256;
@@ -80,6 +81,18 @@ contract UniswapV3PairEchidnaTest {
 
     function recoverToken1() external {
         pair.recover(address(token1), address(this), 1);
+    }
+
+    function echidna_tickIsWithinBounds() external view returns (bool) {
+        int16 tick = pair.tickCurrent();
+        return (tick < TickMath.MAX_TICK && tick >= TickMath.MIN_TICK);
+    }
+
+    function echidna_priceIsWithinTickCurrent() external view returns (bool) {
+        int16 tick = pair.tickCurrent();
+        FixedPoint.uq112x112 memory priceCurrent = FixedPoint.uq112x112(pair.priceCurrent());
+        return (TickMath.getRatioAtTick(tick)._x <= priceCurrent._x &&
+            TickMath.getRatioAtTick(tick + 1)._x > priceCurrent._x);
     }
 
     function echidna_isInitialized() external view returns (bool) {
