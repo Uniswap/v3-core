@@ -48,21 +48,22 @@ contract PriceMathEchidnaTest {
     }
 
     function getInputToRatioInvariants(
-        int16 tick,
+        uint224 priceRaw,
         int16 tickTarget,
         uint112 liquidity,
         uint16 lpFee
     ) external pure {
-        require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
         require(tickTarget >= TickMath.MIN_TICK && tickTarget < TickMath.MAX_TICK);
         require(liquidity > 0);
         require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
 
-        bool zeroForOne = tick >= tickTarget ? true : false;
-
-        FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
+        FixedPoint.uq112x112 memory price = FixedPoint.uq112x112(priceRaw);
         (uint112 reserve0, uint112 reserve1) = PriceMath.getValueAtPriceRoundingDown(price, liquidity);
+
+        require(reserve0 > 0 && reserve1 > 0);
+
         FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tickTarget);
+        bool zeroForOne = price._x >= priceTarget._x;
 
         (uint112 amountIn, uint112 amountOutMax) = PriceMath.getInputToRatio(
             reserve0,
@@ -74,7 +75,7 @@ contract PriceMathEchidnaTest {
         );
 
         if (amountIn == 0) {
-            // amountIn should only be 0 if the current price gte the inOutRatio
+            // amountIn should only be 0 if the current price is past the target price
             if (zeroForOne) assert(price._x <= priceTarget._x);
             else assert(price._x >= priceTarget._x);
             assert(amountOutMax == 0);
