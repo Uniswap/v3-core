@@ -9,6 +9,7 @@ import UniswapV3Factory from '../../build/UniswapV3Factory.json'
 import UniswapV3PairTest from '../../build/UniswapV3PairTest.json'
 import MockTimeUniswapV3Pair from '../../build/MockTimeUniswapV3Pair.json'
 import TestUniswapV3Callee from '../../build/TestUniswapV3Callee.json'
+import TickMathTest from '../../build/TickMathTest.json'
 
 interface FactoryFixture {
   factory: Contract
@@ -43,6 +44,7 @@ interface PairFixture extends TokensAndFactoryFixture {
   pair: Contract
   pairTest: Contract
   testCallee: Contract
+  tickMath: Contract
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
@@ -58,5 +60,7 @@ export async function pairFixture([wallet]: Signer[]): Promise<PairFixture> {
 
   const testCallee = await deployContract(wallet, TestUniswapV3Callee, [])
 
-  return {token0, token1, token2, pair, pairTest, factory, testCallee}
+  const tickMath = await deployContract(wallet, TickMathTest, [])
+
+  return {token0, token1, token2, pair, pairTest, factory, testCallee, tickMath}
 }

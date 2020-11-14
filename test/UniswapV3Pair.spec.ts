@@ -27,9 +27,10 @@ describe('UniswapV3Pair', () => {
   let pair: Contract
   let pairTest: Contract
   let testCallee: Contract
+  let tickMath: Contract
 
   beforeEach('load fixture', async () => {
-    ;({token0, token1, token2, factory, pair, pairTest, testCallee} = await waffle.loadFixture(pairFixture))
+    ;({token0, token1, token2, factory, pair, pairTest, testCallee, tickMath} = await waffle.loadFixture(pairFixture))
   })
 
   function getK(): Promise<BigNumber> {
@@ -40,7 +41,17 @@ describe('UniswapV3Pair', () => {
   afterEach('check tick matches price', async () => {
     // ensure that the tick always matches the price given by virtual reserves
     const [priceCurrent, tickCurrent] = await Promise.all([pair.priceCurrent(), pair.tickCurrent()])
-    expect(tickCurrent, 'tick matches current ratio invariant').to.eq(getExpectedTick(priceCurrent))
+    if (priceCurrent.eq(0)) {
+      expect(tickCurrent).to.eq(0)
+    } else {
+      const [[tickPrice], [nextPrice]] = await Promise.all([
+        tickMath.getPrice(tickCurrent),
+        tickMath.getPrice(tickCurrent + 1),
+      ])
+      expect(priceCurrent, 'priceCurrent is within tickCurrent and tickCurrent+1 bounds')
+        .to.be.gte(tickPrice)
+        .and.lt(nextPrice)
+    }
   })
 
   it('constructor initializes immutables', async () => {
