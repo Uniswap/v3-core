@@ -6,15 +6,7 @@ import {expect} from './shared/expect'
 import {pairFixture, TEST_PAIR_START_TIME} from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
-import {
-  expandTo18Decimals,
-  FEES,
-  FeeVote,
-  getExpectedTick,
-  getPositionKey,
-  MAX_TICK,
-  MIN_TICK,
-} from './shared/utilities'
+import {expandTo18Decimals, FEES, FeeVote, getPositionKey, MAX_TICK, MIN_TICK} from './shared/utilities'
 
 describe('UniswapV3Pair', () => {
   const [wallet, other] = waffle.provider.getWallets()
