@@ -43,8 +43,8 @@ contract PriceMathEchidnaTest {
         );
         assert(amount0Up >= amount0Down);
         assert(amount1Up >= amount1Down);
-        assert(amount0Up - amount0Down <= 1);
-        assert(amount1Up - amount1Down <= 1);
+        assert(amount0Up - amount0Down <= 2);
+        assert(amount1Up - amount1Down <= 2);
     }
 
     function getInputToRatioInvariants(

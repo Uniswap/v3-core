@@ -39,6 +39,20 @@ describe.skip('PriceMath', () => {
         expect(amountIn).to.eq(0)
       })
 
+      it.only('can round poorly', async () => {
+        const price = BigNumber.from('4294967297')
+        const liquidity = BigNumber.from('18446744073709551615')
+
+        const [amount0Up, amount1Up] = await priceMath.getValueAtPriceRoundingUp([price], liquidity)
+        const [amount0Down, amount1Down] = await priceMath.getValueAtPriceRoundingDown([price], liquidity)
+
+        expect(amount0Up).to.be.gte(amount0Down)
+        expect(amount1Up).to.be.gte(amount1Down)
+
+        expect(amount0Up.sub(amount0Down)).to.be.eq(2)
+        expect(amount1Up.sub(amount1Down)).to.be.eq(1)
+      })
+
       it('returns 0 if price is equal', async () => {
         const price = encodePrice(expandTo18Decimals(50), expandTo18Decimals(1))
 
