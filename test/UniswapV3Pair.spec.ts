@@ -265,12 +265,12 @@ describe('UniswapV3Pair', () => {
   const initializeLiquidityAmount = expandTo18Decimals(2) // floor(sqrt(2 * 10 ** 18))
   const initializeToken0Amount = initializeLiquidityAmount
   const initializeToken1Amount = initializeToken0Amount
-  async function initializeAtZeroTick(feeVote: FeeVote): Promise<void> {
-    await token0.approve(pair.address, constants.MaxUint256)
-    await token1.approve(pair.address, constants.MaxUint256)
-    await pair.initialize(initializeLiquidityAmount, 0, feeVote)
-    await token0.approve(pair.address, 0)
-    await token1.approve(pair.address, 0)
+  async function initializeAtZeroTick(feeVote: FeeVote, p: Contract = pair): Promise<void> {
+    await token0.approve(p.address, constants.MaxUint256)
+    await token1.approve(p.address, constants.MaxUint256)
+    await p.initialize(initializeLiquidityAmount, 0, feeVote)
+    await token0.approve(p.address, 0)
+    await token1.approve(p.address, 0)
   }
 
   describe('callee', () => {
@@ -609,64 +609,75 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#getCumulativePrices', () => {
-    let pair: Contract
+    let mockTimePair: Contract
     beforeEach('deploy mock pair', async () => {
-      pair = await deployContract(wallet, MockTimeUniswapV3Pair, [factory.address, token0.address, token1.address])
+      mockTimePair = await deployContract(wallet, MockTimeUniswapV3Pair, [
+        factory.address,
+        token0.address,
+        token1.address,
+      ])
     })
     beforeEach('set pair time to 100', async () => {
-      await pair.setTime(100)
+      await mockTimePair.setTime(100)
     })
     beforeEach('initialize pair', async () => {
-      await initializeAtZeroTick(FeeVote.FeeVote0)
+      await initializeAtZeroTick(FeeVote.FeeVote0, mockTimePair)
+    })
+    beforeEach('approve the pair', async () => {
+      await token0.approve(mockTimePair.address, constants.MaxUint256)
+      await token1.approve(mockTimePair.address, constants.MaxUint256)
     })
     it('current time is 100', async () => {
-      expect(await pair.time()).to.eq(100)
+      expect(await mockTimePair.time()).to.eq(100)
+    })
+    it('is initialized', async () => {
+      expect(await mockTimePair.isInitialized()).to.eq(true)
     })
     it('current block timestamp is 100', async () => {
-      expect(await pair.blockTimestampLast()).to.eq(100)
+      expect(await mockTimePair.blockTimestampLast()).to.eq(100)
     })
     it('cumulative prices are initially 0', async () => {
-      const [price0, price1] = await pair.getCumulativePrices()
+      const [[price0], [price1]] = await mockTimePair.getCumulativePrices()
       expect(price0).to.eq(0)
       expect(price1).to.eq(0)
     })
     it('swap without time change does not affect cumulative price', async () => {
-      await pair.swap0For1(100, wallet.address, '0x')
-      const [price0, price1] = await pair.getCumulativePrices()
+      await mockTimePair.swap0For1(100, wallet.address, '0x')
+      const [[price0], [price1]] = await mockTimePair.getCumulativePrices()
       expect(price0).to.eq(0)
       expect(price1).to.eq(0)
     })
     it('swap after time change updates cumulative price', async () => {
-      await pair.setTime(200)
-      await pair.swap0For1(100, wallet.address, '0x')
-      const [price0, price1] = await pair.getCumulativePrices()
+      await mockTimePair.setTime(200)
+      await mockTimePair.swap0For1(100, wallet.address, '0x')
+      const [[price0], [price1]] = await mockTimePair.getCumulativePrices()
       expect(price0).to.eq(BigNumber.from(2).pow(112).mul(100))
       expect(price1).to.eq(BigNumber.from(2).pow(112).mul(100))
     })
     it('second swap after time change does not affect cumulative price', async () => {
-      await pair.setTime(200)
-      await pair.swap0For1(100, wallet.address, '0x')
-      await pair.swap0For1(100, wallet.address, '0x')
-      const [price0, price1] = await pair.getCumulativePrices()
+      await mockTimePair.setTime(200)
+      await mockTimePair.swap0For1(100, wallet.address, '0x')
+      await mockTimePair.swap0For1(100, wallet.address, '0x')
+      const [[price0], [price1]] = await mockTimePair.getCumulativePrices()
       expect(price0).to.eq(BigNumber.from(2).pow(112).mul(100))
       expect(price1).to.eq(BigNumber.from(2).pow(112).mul(100))
     })
     it('third swap after time change adds to cumulative', async () => {
-      await pair.setTime(200)
-      await pair.swap0For1(100, wallet.address, '0x')
-      await pair.setTime(300)
-      await pair.swap0For1(100, wallet.address, '0x')
-      const [price0, price1] = await pair.getCumulativePrices()
+      await mockTimePair.setTime(200)
+      await mockTimePair.swap0For1(100, wallet.address, '0x')
+      await mockTimePair.setTime(300)
+      await mockTimePair.swap0For1(100, wallet.address, '0x')
+      const [[price0], [price1]] = await mockTimePair.getCumulativePrices()
       expect(price0).to.eq('1038459371706965474561975209275969500')
-      expect(price1).to.eq('1038459371706965576850223322412073800')
+      expect(price1).to.eq('1038459371706965576850223322412073900')
     })
     it('counterfactually computes the cumulative price', async () => {
-      await pair.setTime(200)
-      const [price0_1, price1_1] = await pair.getCumulativePrices()
+      await mockTimePair.setTime(200)
+      const [[price0_1], [price1_1]] = await mockTimePair.getCumulativePrices()
       expect(price0_1).to.eq(BigNumber.from(2).pow(112).mul(100))
       expect(price1_1).to.eq(BigNumber.from(2).pow(112).mul(100))
-      await pair.setTime(300)
-      const [price0_2, price1_2] = await pair.getCumulativePrices()
+      await mockTimePair.setTime(300)
+      const [[price0_2], [price1_2]] = await mockTimePair.getCumulativePrices()
       expect(price0_2).to.eq(BigNumber.from(2).pow(112).mul(200))
       expect(price1_2).to.eq(BigNumber.from(2).pow(112).mul(200))
     })

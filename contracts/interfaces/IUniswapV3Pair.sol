@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
+pragma experimental ABIEncoderV2;
+
+import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
 interface IUniswapV3Pair {
     // event Initialized(uint256 amount0, uint256 amount1, int16 tick, uint8 feeVote);
@@ -45,7 +48,10 @@ interface IUniswapV3Pair {
 
     function getFee() external view returns (uint16);
 
-    // function getPriceCumulative() external view returns (FixedPoint.uq144x112 memory);
+    function getCumulativePrices()
+        external
+        view
+        returns (FixedPoint.uq144x112 memory price0Cumulative, FixedPoint.uq144x112 memory price1Cumulative);
 
     // initialize the pair
     function initialize(

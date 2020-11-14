@@ -63,7 +63,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     address public override feeTo;
 
     // meant to be accessed via getPriceCumulative
-    FixedPoint.uq144x112 private priceCumulativeLast; // cumulative (token1 / token0) oracle price
+    FixedPoint.uq144x112 private price0CumulativeLast; // cumulative (token1 / token0) oracle price
+    FixedPoint.uq144x112 private price1CumulativeLast; // cumulative (token0 / token1) oracle price
     uint32 public override blockTimestampLast;
 
     // the current fee (gets set by the first swap or setPosition/initialize in a block)
@@ -228,16 +229,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // helper for reading the cumulative price as of the current block
-    function getPriceCumulative() public view returns (FixedPoint.uq144x112 memory) {
+    function getCumulativePrices()
+        public
+        view
+        override
+        returns (FixedPoint.uq144x112 memory price0Cumulative, FixedPoint.uq144x112 memory price1Cumulative)
+    {
+        require(isInitialized(), 'UniswapV3Pair::getCumulativePrices: pair not initialized');
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
             // overflow desired in both of the following lines
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            return FixedPoint.uq144x112(priceCumulativeLast._x + priceCurrent.mul(timeElapsed)._x);
+            return (
+                FixedPoint.uq144x112(price0CumulativeLast._x + priceCurrent.mul(timeElapsed)._x),
+                FixedPoint.uq144x112(price1CumulativeLast._x + priceCurrent.reciprocal().mul(timeElapsed)._x)
+            );
         }
 
-        return priceCumulativeLast;
+        return (FixedPoint.uq144x112(price0CumulativeLast._x), FixedPoint.uq144x112(price1CumulativeLast._x));
     }
 
     function getValueAtPrice(FixedPoint.uq112x112 memory price, int256 liquidity) public pure returns (int256, int256) {
@@ -281,10 +291,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
-            priceCumulativeLast = getPriceCumulative();
-            blockTimestampLast = blockTimestamp;
-
+            (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
             feeLast = getFee();
+
+            blockTimestampLast = blockTimestamp;
         }
     }
 
