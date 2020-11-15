@@ -52,18 +52,6 @@ describe('UniswapV3Pair', () => {
     expect(await pair.token1()).to.eq(token1.address)
   })
 
-  it('min tick is initialized', async () => {
-    const [initialized, , , secondsOutside] = await pair.tickInfos(MIN_TICK)
-    expect(initialized).to.be.true
-    expect(secondsOutside).to.eq(0)
-  })
-
-  it('max tick is initialized', async () => {
-    const [initialized, , , secondsOutside] = await pair.tickInfos(MAX_TICK)
-    expect(initialized).to.be.true
-    expect(secondsOutside).to.eq(0)
-  })
-
   it('liquidity min', async () => {
     expect(await pair.LIQUIDITY_MIN()).to.eq(1000)
   })
@@ -217,15 +205,15 @@ describe('UniswapV3Pair', () => {
 
           it('initializes lower tick', async () => {
             await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)
-            const [initialized, , , secondsOutside] = await pair.tickInfos(MIN_TICK + 1)
-            expect(initialized).to.be.true
+            const [numPositions, , , secondsOutside] = await pair.tickInfos(MIN_TICK + 1)
+            expect(numPositions).to.eq(1)
             expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
           })
 
           it('initializes upper tick', async () => {
             await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)
-            const [initialized, , , secondsOutside] = await pair.tickInfos(MAX_TICK - 1)
-            expect(initialized).to.be.true
+            const [numPositions, , , secondsOutside] = await pair.tickInfos(MAX_TICK - 1)
+            expect(numPositions).to.eq(1)
             expect(secondsOutside).to.eq(0)
           })
 
