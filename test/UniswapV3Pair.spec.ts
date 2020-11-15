@@ -73,11 +73,23 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.initialize(expandTo18Decimals(1), 0, FeeVote.FeeVote0)
       await expect(pair.initialize(expandTo18Decimals(1), 0, FeeVote.FeeVote0)).to.be.revertedWith(
-        'UniswapV3: ALREADY_INITIALIZED'
+        'UniswapV3Pair::initialize: pair already initialized'
       )
     })
     it('fails if liquidity amount is too small', async () => {
-      await expect(pair.initialize(500, 0, FeeVote.FeeVote0)).to.be.revertedWith('UniswapV3: INSUFFICIENT_LIQUIDITY')
+      await expect(pair.initialize(500, 0, FeeVote.FeeVote0)).to.be.revertedWith(
+        'UniswapV3Pair::initialize: insufficient liquidity'
+      )
+    })
+    it('fails if tick is less than MIN_TICK', async () => {
+      await expect(pair.initialize(1000, MIN_TICK - 1, FeeVote.FeeVote0)).to.be.revertedWith(
+        'UniswapV3Pair::initialize: tick must be greater than or equal to min tick'
+      )
+    })
+    it('fails if tick is less than MIN_TICK', async () => {
+      await expect(pair.initialize(1000, MAX_TICK, FeeVote.FeeVote0)).to.be.revertedWith(
+        'UniswapV3Pair::initialize: tick must be less than max tick'
+      )
     })
     it('fails if cannot transfer from user', async () => {
       await expect(pair.initialize(1000, 0, FeeVote.FeeVote0)).to.be.revertedWith(
@@ -139,7 +151,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#setPosition', () => {
     it('fails if not initialized', async () => {
-      await expect(pair.setPosition(-1, 1, 0, 0)).to.be.revertedWith('UniswapV3: NOT_INITIALIZED')
+      await expect(pair.setPosition(-1, 1, 0, 0)).to.be.revertedWith('UniswapV3Pair::setPosition: pair not initialized')
     })
     describe('after initialization', () => {
       beforeEach('initialize the pair at price of 10:1 with fee vote 1', async () => {
@@ -150,13 +162,24 @@ describe('UniswapV3Pair', () => {
 
       describe('failure cases', () => {
         it('fails if tickLower greater than tickUpper', async () => {
-          await expect(pair.setPosition(1, 0, 0, 0)).to.be.revertedWith('UniswapV3: TICK_ORDER')
+          await expect(pair.setPosition(1, 0, 0, 0)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: tickLower must be less than tickUpper'
+          )
         })
         it('fails if tickLower less than min tick', async () => {
-          await expect(pair.setPosition(MIN_TICK - 1, 1, 0, 0)).to.be.revertedWith('UniswapV3: LOWER_TICK')
+          await expect(pair.setPosition(MIN_TICK - 1, 1, 0, 0)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: tickLower cannot be less than min tick'
+          )
         })
         it('fails if tickUpper greater than max tick', async () => {
-          await expect(pair.setPosition(-1, MAX_TICK + 1, 0, 0)).to.be.revertedWith('UniswapV3: UPPER_TICK')
+          await expect(pair.setPosition(-1, MAX_TICK + 1, 0, 0)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick'
+          )
+        })
+        it('fails if tickUpper greater than max tick', async () => {
+          await expect(pair.setPosition(-1, 1, 6, 0)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: fee vote must be a valid option'
+          )
         })
         it('fails if cannot transfer', async () => {
           await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)).to.be.revertedWith(

@@ -111,7 +111,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     uint256 private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, 'UniswapV3: LOCKED');
+        require(unlocked == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
         unlocked = 0;
         _;
         unlocked = 1;
@@ -309,11 +309,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int16 tick,
         uint8 feeVote
     ) external override lock {
-        require(isInitialized() == false, 'UniswapV3: ALREADY_INITIALIZED');
-        require(liquidity >= LIQUIDITY_MIN, 'UniswapV3: INSUFFICIENT_LIQUIDITY');
-        require(tick >= TickMath.MIN_TICK, 'UniswapV3: TICK_TOO_SMALL');
-        require(tick < TickMath.MAX_TICK, 'UniswapV3: TICK_TOO_LARGE');
-        require(feeVote < NUM_FEE_OPTIONS, 'UniswapV3: INVALID_FEE_VOTE');
+        require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
+        require(liquidity >= LIQUIDITY_MIN, 'UniswapV3Pair::initialize: insufficient liquidity');
+        require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
+        require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
+        require(feeVote < NUM_FEE_OPTIONS, 'UniswapV3Pair::initialize: fee vote must be a valid option');
 
         FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
 
@@ -389,11 +389,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint8 feeVote,
         int256 liquidityDelta
     ) external lock returns (int256 amount0, int256 amount1) {
-        require(isInitialized(), 'UniswapV3: NOT_INITIALIZED');
-        require(tickLower < tickUpper, 'UniswapV3: TICK_ORDER');
-        require(tickLower >= TickMath.MIN_TICK, 'UniswapV3: LOWER_TICK');
-        require(tickUpper <= TickMath.MAX_TICK, 'UniswapV3: UPPER_TICK');
-        require(feeVote < NUM_FEE_OPTIONS, 'UniswapV3: INVALID_FEE_VOTE');
+        require(isInitialized(), 'UniswapV3Pair::setPosition: pair not initialized');
+        require(tickLower < tickUpper, 'UniswapV3Pair::setPosition: tickLower must be less than tickUpper');
+        require(tickLower >= TickMath.MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
+        require(
+            tickUpper <= TickMath.MAX_TICK,
+            'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick'
+        );
+        require(feeVote < NUM_FEE_OPTIONS, 'UniswapV3Pair::setPosition: fee vote must be a valid option');
 
         return
             _setPosition(
@@ -507,10 +510,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         if (state.newLiquidity == 0 && state.oldLiquidity != 0) {
-            tickInfoLower.numPositions--;
-            if (tickInfoLower.numPositions == 0) _clearTick(tickInfoLower);
-            tickInfoUpper.numPositions--;
-            if (tickInfoUpper.numPositions == 0) _clearTick(tickInfoUpper);
+            if (tickInfoLower.numPositions == 1) _clearTick(tickInfoLower);
+            else tickInfoLower.numPositions--;
+            if (tickInfoUpper.numPositions == 1) _clearTick(tickInfoUpper);
+            else tickInfoUpper.numPositions--;
         }
 
         if (amount0 > 0) {
@@ -568,7 +571,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) internal returns (uint112 amountOut) {
-        require(params.amountIn > 0, 'UniswapV3: INSUFFICIENT_INPUT_AMOUNT');
         _update(); // update the oracle and feeLast
 
         // the floor for the fee, used to prevent sandwiching attacks, static on a per-swap basis
@@ -719,10 +721,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // update tick
                 if (params.zeroForOne) {
                     state.tick--;
-                    require(state.tick >= TickMath.MIN_TICK, 'UniswapV3: TICK_TOO_SMALL');
+                    require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
                 } else {
                     state.tick++;
-                    require(state.tick < TickMath.MAX_TICK, 'UniswapV3: TICK_TOO_LARGE');
+                    require(state.tick < TickMath.MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
                 }
             }
         }
@@ -759,6 +761,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address to,
         bytes calldata data
     ) external override lock returns (uint112 amount1Out) {
+        require(amount0In > 0, 'UniswapV3Pair::swap0For1: amountIn must be greater than 0');
+
         SwapParams memory params = SwapParams({zeroForOne: true, amountIn: amount0In, to: to, data: data});
         return _swap(params);
     }
@@ -769,6 +773,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address to,
         bytes calldata data
     ) external override lock returns (uint112 amount0Out) {
+        require(amount1In > 0, 'UniswapV3Pair::swap1For0: amountIn must be greater than 0');
+
         SwapParams memory params = SwapParams({zeroForOne: false, amountIn: amount1In, to: to, data: data});
         return _swap(params);
     }
