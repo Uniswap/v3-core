@@ -13,7 +13,8 @@
     "url": "https://github.com/Uniswap/uniswap-v3-core"
   },
   "files": [
-    "contracts",
+    "contracts/interfaces",
+    "contracts/libraries",
     "build"
   ],
   "engines": {

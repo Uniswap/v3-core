@@ -39,7 +39,7 @@ describe.skip('PriceMath', () => {
         expect(amountIn).to.eq(0)
       })
 
-      it.only('can round poorly', async () => {
+      it('can round poorly', async () => {
         const price = BigNumber.from('4294967297')
         const liquidity = BigNumber.from('18446744073709551615')
 

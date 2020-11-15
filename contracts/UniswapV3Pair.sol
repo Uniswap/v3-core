@@ -85,6 +85,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint112 public override feeToFees1;
 
     struct TickInfo {
+        // TODO replace this with the number of positions
+        // the size of such variable should be able to contain 2^160 addresses * 119559916 combinations of ticks * 6 fee votes
+        // this is roughly ~190 bits
         bool initialized;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
@@ -548,12 +551,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // recompute reserves given the current price/liquidity
                 (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getValueAtPriceRoundingDown(
-                    priceCurrent,
+                    state.price,
                     state.liquidity
                 );
 
                 // compute the amount of input token required to push the price to the target (and max output token)
-                (uint112 amountInRequiredForShift, uint112 amountOutMax) = PriceMath.getInputToRatio(
+                (uint112 amountInMax, uint112 amountOutMax) = PriceMath.getInputToRatio(
                     step.reserve0Virtual,
                     step.reserve1Virtual,
                     state.liquidity,
@@ -563,7 +566,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // swap to the next tick, or stop early if we've exhausted all the input
-                step.amountIn = uint112(Math.min(amountInRequiredForShift, state.amountInRemaining));
+                step.amountIn = uint112(Math.min(amountInMax, state.amountInRemaining));
 
                 // decrement remaining input amount
                 state.amountInRemaining -= step.amountIn;
@@ -606,7 +609,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // update the price
                 // if we've consumed the input required to get to the target price, that's the price now!
-                if (step.amountIn == amountInRequiredForShift) {
+                if (step.amountIn == amountInMax) {
                     state.price = step.priceNext;
                 } else {
                     // if not, the price is the new ratio of (computed) reserves, capped at the target price
@@ -616,8 +619,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             (uint256(step.reserve0Virtual) + amountInLessFee).toUint112()
                         );
                         state.price = FixedPoint.uq112x112(uint224(Math.max(step.priceNext._x, priceEstimate._x)));
-                        // todo: this assertion is failing due to a bug related to the test failures
-                        // assert(state.price._x < TickMath.getRatioAtTick(state.tick + 1)._x);
+                        assert(state.price._x < TickMath.getRatioAtTick(state.tick + 1)._x);
                     } else {
                         FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
                             (uint256(step.reserve1Virtual) + amountInLessFee).toUint112(),

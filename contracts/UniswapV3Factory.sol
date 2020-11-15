@@ -27,7 +27,9 @@ contract UniswapV3Factory is IUniswapV3Factory {
         // CREATE2 salt is 0 since token0 and token1 are included as constructor arguments
         pair = address(new UniswapV3Pair{salt: bytes32(0)}(address(this), token0, token1));
         getPair[token0][token1] = pair;
-        getPair[token1][token0] = pair; // populate mapping in the reverse direction
+        // populate mapping in the reverse direction
+        // this is a deliberate choice to avoid the cost of comparing addresses in a getPair function
+        getPair[token1][token0] = pair;
         allPairs.push(pair);
         emit PairCreated(token0, token1, pair, allPairs.length);
     }
