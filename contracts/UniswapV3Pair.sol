@@ -425,7 +425,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         state.newLiquidity = state.oldLiquidity.addi(params.liquidityDelta).toUint112();
 
         {
-            if (state.oldLiquidity == 0 && state.newLiquidity != 0) {
+            if (state.oldLiquidity == 0 && state.newLiquidity > 0) {
                 if (tickInfoLower.numPositions == 0) _initializeTick(params.tickLower, tickInfoLower);
                 tickInfoLower.numPositions++;
                 if (tickInfoUpper.numPositions == 0) _initializeTick(params.tickUpper, tickInfoUpper);
@@ -693,7 +693,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 TickInfo storage tickInfo = tickInfos[state.tick];
 
                 // if the tick is initialized, update it
-                if (tickInfo.numPositions != 0) {
+                if (tickInfo.numPositions > 0) {
                     // update tick info
                     tickInfo.feeGrowthOutside0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
                     tickInfo.feeGrowthOutside1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
