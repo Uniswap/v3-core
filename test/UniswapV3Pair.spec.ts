@@ -210,6 +210,27 @@ describe('UniswapV3Pair', () => {
             expect(await token1.balanceOf(pair.address)).to.eq(997)
           })
 
+          it('increments numPositions', async () => {
+            await pair.setPosition(-231, 0, 0, 100)
+            expect((await pair.tickInfos(-231))[0]).to.eq(1)
+            await pair.setPosition(-231, 0, 1, 100)
+            expect((await pair.tickInfos(-231))[0]).to.eq(2)
+          })
+
+          it('decrements numPositions', async () => {
+            await pair.setPosition(-231, 0, 0, 100)
+            await pair.setPosition(-231, 0, 1, 100)
+            await pair.setPosition(-231, 0, 1, -100)
+            expect((await pair.tickInfos(-231))[0]).to.eq(1)
+          })
+
+          it('clears tick if last position is removed', async () => {
+            await pair.setPosition(-231, 0, 1, 100)
+            await pair.setPosition(-231, 0, 1, -100)
+            const [numPositions] = await pair.tickInfos(-231)
+            expect(numPositions).to.eq(0)
+          })
+
           it('gas', async () => {
             await snapshotGasCost(pair.setPosition(-231, 0, 0, 10000))
           })

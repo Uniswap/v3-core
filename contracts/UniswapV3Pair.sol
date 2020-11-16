@@ -360,13 +360,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function _clearTick(TickInfo storage tickInfo) private {
-        delete tickInfo.feeGrowthOutside0;
-        delete tickInfo.feeGrowthOutside1;
-        delete tickInfo.secondsOutside;
-        delete tickInfo.numPositions;
-    }
-
     struct SetPositionParams {
         int16 tickLower;
         int16 tickUpper;
@@ -510,9 +503,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         if (state.newLiquidity == 0 && state.oldLiquidity != 0) {
-            if (tickInfoLower.numPositions == 1) _clearTick(tickInfoLower);
+            if (tickInfoLower.numPositions == 1) delete tickInfos[params.tickLower];
             else tickInfoLower.numPositions--;
-            if (tickInfoUpper.numPositions == 1) _clearTick(tickInfoUpper);
+            if (tickInfoUpper.numPositions == 1) delete tickInfos[params.tickUpper];
             else tickInfoUpper.numPositions--;
         }
 
