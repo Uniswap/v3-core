@@ -52,18 +52,6 @@ describe('UniswapV3Pair', () => {
     expect(await pair.token1()).to.eq(token1.address)
   })
 
-  it('min tick is initialized', async () => {
-    const [initialized, , , secondsOutside] = await pair.tickInfos(MIN_TICK)
-    expect(initialized).to.be.true
-    expect(secondsOutside).to.eq(0)
-  })
-
-  it('max tick is initialized', async () => {
-    const [initialized, , , secondsOutside] = await pair.tickInfos(MAX_TICK)
-    expect(initialized).to.be.true
-    expect(secondsOutside).to.eq(0)
-  })
-
   it('liquidity min', async () => {
     expect(await pair.LIQUIDITY_MIN()).to.eq(1000)
   })
@@ -85,11 +73,23 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.initialize(expandTo18Decimals(1), 0, FeeVote.FeeVote0)
       await expect(pair.initialize(expandTo18Decimals(1), 0, FeeVote.FeeVote0)).to.be.revertedWith(
-        'UniswapV3: ALREADY_INITIALIZED'
+        'UniswapV3Pair::initialize: pair already initialized'
       )
     })
     it('fails if liquidity amount is too small', async () => {
-      await expect(pair.initialize(500, 0, FeeVote.FeeVote0)).to.be.revertedWith('UniswapV3: INSUFFICIENT_LIQUIDITY')
+      await expect(pair.initialize(500, 0, FeeVote.FeeVote0)).to.be.revertedWith(
+        'UniswapV3Pair::initialize: insufficient liquidity'
+      )
+    })
+    it('fails if tick is less than MIN_TICK', async () => {
+      await expect(pair.initialize(1000, MIN_TICK - 1, FeeVote.FeeVote0)).to.be.revertedWith(
+        'UniswapV3Pair::initialize: tick must be greater than or equal to min tick'
+      )
+    })
+    it('fails if tick is less than MIN_TICK', async () => {
+      await expect(pair.initialize(1000, MAX_TICK, FeeVote.FeeVote0)).to.be.revertedWith(
+        'UniswapV3Pair::initialize: tick must be less than max tick'
+      )
     })
     it('fails if cannot transfer from user', async () => {
       await expect(pair.initialize(1000, 0, FeeVote.FeeVote0)).to.be.revertedWith(
@@ -151,7 +151,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#setPosition', () => {
     it('fails if not initialized', async () => {
-      await expect(pair.setPosition(-1, 1, 0, 0)).to.be.revertedWith('UniswapV3: NOT_INITIALIZED')
+      await expect(pair.setPosition(-1, 1, 0, 0)).to.be.revertedWith('UniswapV3Pair::setPosition: pair not initialized')
     })
     describe('after initialization', () => {
       beforeEach('initialize the pair at price of 10:1 with fee vote 1', async () => {
@@ -162,13 +162,24 @@ describe('UniswapV3Pair', () => {
 
       describe('failure cases', () => {
         it('fails if tickLower greater than tickUpper', async () => {
-          await expect(pair.setPosition(1, 0, 0, 0)).to.be.revertedWith('UniswapV3: TICK_ORDER')
+          await expect(pair.setPosition(1, 0, 0, 0)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: tickLower must be less than tickUpper'
+          )
         })
         it('fails if tickLower less than min tick', async () => {
-          await expect(pair.setPosition(MIN_TICK - 1, 1, 0, 0)).to.be.revertedWith('UniswapV3: LOWER_TICK')
+          await expect(pair.setPosition(MIN_TICK - 1, 1, 0, 0)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: tickLower cannot be less than min tick'
+          )
         })
         it('fails if tickUpper greater than max tick', async () => {
-          await expect(pair.setPosition(-1, MAX_TICK + 1, 0, 0)).to.be.revertedWith('UniswapV3: UPPER_TICK')
+          await expect(pair.setPosition(-1, MAX_TICK + 1, 0, 0)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick'
+          )
+        })
+        it('fails if tickUpper greater than max tick', async () => {
+          await expect(pair.setPosition(-1, 1, 6, 0)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: fee vote must be a valid option'
+          )
         })
         it('fails if cannot transfer', async () => {
           await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)).to.be.revertedWith(
@@ -199,6 +210,27 @@ describe('UniswapV3Pair', () => {
             expect(await token1.balanceOf(pair.address)).to.eq(997)
           })
 
+          it('increments numPositions', async () => {
+            await pair.setPosition(-231, 0, 0, 100)
+            expect((await pair.tickInfos(-231))[0]).to.eq(1)
+            await pair.setPosition(-231, 0, 1, 100)
+            expect((await pair.tickInfos(-231))[0]).to.eq(2)
+          })
+
+          it('decrements numPositions', async () => {
+            await pair.setPosition(-231, 0, 0, 100)
+            await pair.setPosition(-231, 0, 1, 100)
+            await pair.setPosition(-231, 0, 1, -100)
+            expect((await pair.tickInfos(-231))[0]).to.eq(1)
+          })
+
+          it('clears tick if last position is removed', async () => {
+            await pair.setPosition(-231, 0, 1, 100)
+            await pair.setPosition(-231, 0, 1, -100)
+            const [numPositions] = await pair.tickInfos(-231)
+            expect(numPositions).to.eq(0)
+          })
+
           it('gas', async () => {
             await snapshotGasCost(pair.setPosition(-231, 0, 0, 10000))
           })
@@ -217,15 +249,15 @@ describe('UniswapV3Pair', () => {
 
           it('initializes lower tick', async () => {
             await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)
-            const [initialized, , , secondsOutside] = await pair.tickInfos(MIN_TICK + 1)
-            expect(initialized).to.be.true
+            const [numPositions, , , secondsOutside] = await pair.tickInfos(MIN_TICK + 1)
+            expect(numPositions).to.eq(1)
             expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
           })
 
           it('initializes upper tick', async () => {
             await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)
-            const [initialized, , , secondsOutside] = await pair.tickInfos(MAX_TICK - 1)
-            expect(initialized).to.be.true
+            const [numPositions, , , secondsOutside] = await pair.tickInfos(MAX_TICK - 1)
+            expect(numPositions).to.eq(1)
             expect(secondsOutside).to.eq(0)
           })
 
