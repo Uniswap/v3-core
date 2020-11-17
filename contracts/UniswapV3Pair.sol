@@ -249,7 +249,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        return (FixedPoint.uq144x112(price0CumulativeLast._x), FixedPoint.uq144x112(price1CumulativeLast._x));
+        return (price0CumulativeLast, price1CumulativeLast);
     }
 
     function getValueAtPrice(FixedPoint.uq112x112 memory price, int256 liquidity) public pure returns (int256, int256) {
