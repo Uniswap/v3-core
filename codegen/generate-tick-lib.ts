@@ -10,7 +10,7 @@ BigNumber.config({EXPONENTIAL_AT: 99999999})
 
 interface Element {
   searchKey: BigNumber
-  value: BigNumber
+  value: string
 }
 
 // sorts by search key
@@ -22,7 +22,7 @@ function elementComparator({searchKey: sk1}: Element, {searchKey: sk2}: Element)
 
 const ALL_ELEMENTS: Element[] = ALL_TICKS.map(([tickIndex, price]) => ({
   searchKey: new BigNumber(tickIndex),
-  value: new BigNumber(price),
+  value: new BigNumber(price).toString(),
 })).sort(elementComparator)
 
 function generateBlock(elems: Element[], paramName: string, numSpaces: number): string {
@@ -30,9 +30,11 @@ function generateBlock(elems: Element[], paramName: string, numSpaces: number): 
   if (elems.length === 0) {
     throw new Error(`Called with 0 elements`)
   } else if (elems.length === 1) {
-    return `${spaces}return ${elems[0].value.toString()};`
+    return `${spaces}return ${elems[0].value};`
   } else if (elems.length === 2) {
-    return `${spaces}if (${paramName} == ${elems[0].searchKey.toString()}) return ${elems[0].value.toString()}; else return ${elems[1].value.toString()};`
+    return `${spaces}if (${paramName} <= ${elems[0].searchKey.toString()}) return ${elems[0].value}; else return ${
+      elems[1].value
+    };`
   } else {
     const middleIndex = Math.floor(elems.length / 2)
     const middleKey = elems[middleIndex].searchKey
@@ -46,20 +48,58 @@ ${spaces}}`
   }
 }
 
+const PER_CONTRACT = 1000
+
+const SEGMENTS: Array<Element[]> = []
+for (let i = 0; i < ALL_ELEMENTS.length; i += PER_CONTRACT) {
+  SEGMENTS.push(ALL_ELEMENTS.slice(i, i + PER_CONTRACT))
+}
+
+SEGMENTS.forEach((segment, ix) => {
+  writeFileSync(
+    resolve(__dirname, '..', 'contracts', 'codegen', `GeneratedTickMath${ix}.sol`),
+    `/////// This code is generated. Do not modify by hand.
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity >=0.5.0;
+
+contract GeneratedTickMath${ix} {
+  function getRatioAtTick(int256 tick) external pure returns (uint256) {
+${generateBlock(segment, 'tick', 4)}
+  }
+}
+`
+  )
+})
+
 writeFileSync(
   resolve(__dirname, '..', 'contracts', 'codegen', 'GeneratedTickMath.sol'),
   `/////// This code is generated. Do not modify by hand.
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+interface IGeneratedTickMathInner {
+  function getRatioAtTick(int256 tick) external pure returns (uint256);
+}
 
-library GeneratedTickMath {
-  function getRatioAtTick(int16 tick) internal pure returns (uint256) {
-    require(tick >= ${MIN_TICK}, 'GeneratedTickMath::getRatioAtTick: tick must be greater than ${MIN_TICK}');
-    require(tick <= ${MAX_TICK}, 'GeneratedTickMath::getRatioAtTick: tick must be less than ${MAX_TICK}');
-    
-${generateBlock(ALL_ELEMENTS.slice(0, 1100), 'tick', 4)}
+contract GeneratedTickMath {
+  ${SEGMENTS.map((_, ix) => `IGeneratedTickMathInner immutable private g${ix};`).join('\n  ')}
+  
+  constructor(
+    ${SEGMENTS.map((_, ix) => `IGeneratedTickMathInner _g${ix}`).join(',\n    ')}
+  ) public {
+    ${SEGMENTS.map((_, ix) => `g${ix} = _g${ix};`).join('\n    ')}
+  }
+  
+  function getRatioAtTick(int256 tick) external pure returns (uint256) {
+${generateBlock(
+  SEGMENTS.map((segment, ix) => ({
+    searchKey: segment[segment.length - 1].searchKey,
+    value: `g${ix}.getRatioAtTick(tick)`,
+  })),
+  'tick',
+  4
+)}
+    revert('invalid tick');
   }
 }
 `
