@@ -3,9 +3,6 @@ import {resolve} from 'path'
 import ALL_TICKS from './all-ticks.json'
 import {BigNumber} from 'bignumber.js'
 
-const MIN_TICK = ALL_TICKS[0][0]
-const MAX_TICK = ALL_TICKS[ALL_TICKS.length - 1][0]
-
 BigNumber.config({EXPONENTIAL_AT: 99999999})
 
 interface Element {

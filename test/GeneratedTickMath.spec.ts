@@ -5,6 +5,12 @@ import snapshotGasCost from './shared/snapshotGasCost'
 import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
 
 import GeneratedTickMathTest from '../build/GeneratedTickMathTest.json'
+import GeneratedTickMath from '../build/GeneratedTickMath.json'
+import GeneratedTickMath0 from '../build/GeneratedTickMath0.json'
+import GeneratedTickMath1 from '../build/GeneratedTickMath1.json'
+import GeneratedTickMath2 from '../build/GeneratedTickMath2.json'
+import GeneratedTickMath3 from '../build/GeneratedTickMath3.json'
+import GeneratedTickMath4 from '../build/GeneratedTickMath4.json'
 
 const Q112 = BigNumber.from(2).pow(112)
 
@@ -14,7 +20,48 @@ describe.only('GeneratedTickMathTest', () => {
 
   let tickMath: Contract
   before('deploy GeneratedTickMathTest', async () => {
-    tickMath = await deployContract(wallet, GeneratedTickMathTest, [])
+    const generatedTickMath0 = await deployContract(wallet, GeneratedTickMath0, [])
+    const generatedTickMath1 = await deployContract(wallet, GeneratedTickMath1, [])
+    const generatedTickMath2 = await deployContract(wallet, GeneratedTickMath2, [])
+    const generatedTickMath3 = await deployContract(wallet, GeneratedTickMath3, [])
+    const generatedTickMath4 = await deployContract(wallet, GeneratedTickMath4, [])
+    const generatedTickMath = await deployContract(wallet, GeneratedTickMath, [
+      [
+        generatedTickMath0.address,
+        generatedTickMath1.address,
+        generatedTickMath2.address,
+        generatedTickMath3.address,
+        generatedTickMath4.address,
+        //should fail past ticks -5700
+        generatedTickMath0.address,
+        generatedTickMath1.address,
+        generatedTickMath2.address,
+        generatedTickMath3.address,
+        generatedTickMath4.address,
+        generatedTickMath0.address,
+        generatedTickMath1.address,
+        generatedTickMath2.address,
+        generatedTickMath3.address,
+        generatedTickMath4.address,
+        generatedTickMath0.address,
+        generatedTickMath1.address,
+        generatedTickMath2.address,
+        generatedTickMath3.address,
+        generatedTickMath4.address,
+        generatedTickMath0.address,
+        generatedTickMath1.address,
+        generatedTickMath2.address,
+        generatedTickMath3.address,
+        generatedTickMath4.address,
+        generatedTickMath0.address,
+        generatedTickMath1.address,
+        generatedTickMath2.address,
+        generatedTickMath3.address,
+        generatedTickMath4.address,
+        generatedTickMath0.address,
+      ],
+    ])
+    tickMath = await deployContract(wallet, GeneratedTickMathTest, [generatedTickMath.address])
   })
 
   // checks that an actual number is within allowedDiffBips of an expected number

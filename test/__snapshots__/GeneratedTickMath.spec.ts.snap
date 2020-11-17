@@ -1,19 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`GeneratedTickMathTest gas tick -50 1`] = `505`;
+exports[`GeneratedTickMathTest gas tick -50 1`] = `4237`;
 
-exports[`GeneratedTickMathTest gas tick -500 1`] = `505`;
+exports[`GeneratedTickMathTest gas tick -500 1`] = `4250`;
 
-exports[`GeneratedTickMathTest gas tick -1000 1`] = `505`;
+exports[`GeneratedTickMathTest gas tick -1000 1`] = `4251`;
 
-exports[`GeneratedTickMathTest gas tick -7732 1`] = `459`;
+exports[`GeneratedTickMathTest gas tick -7732 1`] = `4215`;
 
-exports[`GeneratedTickMathTest gas tick 0 1`] = `505`;
+exports[`GeneratedTickMathTest gas tick 0 1`] = `4237`;
 
-exports[`GeneratedTickMathTest gas tick 50 1`] = `505`;
+exports[`GeneratedTickMathTest gas tick 50 1`] = `4237`;
 
-exports[`GeneratedTickMathTest gas tick 500 1`] = `505`;
+exports[`GeneratedTickMathTest gas tick 500 1`] = `4236`;
 
-exports[`GeneratedTickMathTest gas tick 1000 1`] = `505`;
+exports[`GeneratedTickMathTest gas tick 1000 1`] = `4238`;
 
-exports[`GeneratedTickMathTest gas tick 7732 1`] = `545`;
+exports[`GeneratedTickMathTest gas tick 7732 1`] = `4239`;
