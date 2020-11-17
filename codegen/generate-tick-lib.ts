@@ -9,7 +9,9 @@ const MAX_TICK = ALL_TICKS[ALL_TICKS.length - 1][0]
 BigNumber.config({EXPONENTIAL_AT: 99999999})
 
 interface Element {
+  // the first value of the key that matches, up to and excluding the next value
   searchKey: BigNumber
+  // the value that should be returned
   value: string
 }
 
@@ -32,8 +34,8 @@ function generateBlock(elems: Element[], paramName: string, numSpaces: number): 
   } else if (elems.length === 1) {
     return `${spaces}return ${elems[0].value};`
   } else if (elems.length === 2) {
-    return `${spaces}if (${paramName} <= ${elems[0].searchKey.toString()}) return ${elems[0].value}; else return ${
-      elems[1].value
+    return `${spaces}if (${paramName} >= ${elems[1].searchKey.toString()}) return ${elems[1].value}; else return ${
+      elems[0].value
     };`
   } else {
     const middleIndex = Math.floor(elems.length / 2)
@@ -48,9 +50,9 @@ ${spaces}}`
   }
 }
 
-const PER_CONTRACT = 1000
-
+const PER_CONTRACT = 512
 const SEGMENTS: Array<Element[]> = []
+
 for (let i = 0; i < ALL_ELEMENTS.length; i += PER_CONTRACT) {
   SEGMENTS.push(ALL_ELEMENTS.slice(i, i + PER_CONTRACT))
 }
@@ -90,10 +92,10 @@ contract GeneratedTickMath {
     ${SEGMENTS.map((_, ix) => `g${ix} = _g${ix};`).join('\n    ')}
   }
   
-  function getRatioAtTick(int256 tick) external pure returns (uint256) {
+  function getRatioAtTick(int256 tick) external view returns (uint256) {
 ${generateBlock(
   SEGMENTS.map((segment, ix) => ({
-    searchKey: segment[segment.length - 1].searchKey,
+    searchKey: segment[0].searchKey,
     value: `g${ix}.getRatioAtTick(tick)`,
   })),
   'tick',
