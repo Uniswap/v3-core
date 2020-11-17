@@ -489,9 +489,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount0 = amount0.add(amount0Current.sub(amount0Upper));
             amount1 = amount1.add(amount1Current.sub(amount1Lower));
 
-            liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote]
-                .addi(params.liquidityDelta)
-                .toUint112();
+            liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote].addi(params.liquidityDelta).toUint112();
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
