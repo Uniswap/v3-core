@@ -46,6 +46,7 @@
     "compile": "buidler compile",
     "test": "buidler test",
     "lint": "solhint contracts/**/*.sol",
-    "prepublishOnly": "yarn test"
+    "prepublishOnly": "yarn test",
+    "generate:tickmathlib": "ts-node codegen/generate-tick-lib.ts"
   }
 }
