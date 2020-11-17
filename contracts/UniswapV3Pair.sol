@@ -417,7 +417,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 } else tickInfoLower.numPositions++;
                 if (tickInfoUpper.numPositions == 0) {
                     _initializeTick(params.tickUpper, tickInfoUpper);
-                    tickInfoLower.numPositions = 1;
+                    tickInfoUpper.numPositions = 1;
                 } else tickInfoUpper.numPositions++;
             }
 
