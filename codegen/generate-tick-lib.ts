@@ -87,9 +87,9 @@ contract GeneratedTickMath {
   ${SEGMENTS.map((_, ix) => `IGeneratedTickMathInner immutable private g${ix};`).join('\n  ')}
   
   constructor(
-    ${SEGMENTS.map((_, ix) => `IGeneratedTickMathInner _g${ix}`).join(',\n    ')}
+    IGeneratedTickMathInner[] memory _g
   ) public {
-    ${SEGMENTS.map((_, ix) => `g${ix} = _g${ix};`).join('\n    ')}
+    ${SEGMENTS.map((_, ix) => `g${ix} = _g[${ix}];`).join('\n    ')}
   }
   
   function getRatioAtTick(int256 tick) external view returns (uint256) {
@@ -101,7 +101,6 @@ ${generateBlock(
   'tick',
   4
 )}
-    revert('invalid tick');
   }
 }
 `

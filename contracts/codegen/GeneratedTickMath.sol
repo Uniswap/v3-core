@@ -40,69 +40,39 @@ contract GeneratedTickMath {
   IGeneratedTickMathInner immutable private g30;
   
   constructor(
-    IGeneratedTickMathInner _g0,
-    IGeneratedTickMathInner _g1,
-    IGeneratedTickMathInner _g2,
-    IGeneratedTickMathInner _g3,
-    IGeneratedTickMathInner _g4,
-    IGeneratedTickMathInner _g5,
-    IGeneratedTickMathInner _g6,
-    IGeneratedTickMathInner _g7,
-    IGeneratedTickMathInner _g8,
-    IGeneratedTickMathInner _g9,
-    IGeneratedTickMathInner _g10,
-    IGeneratedTickMathInner _g11,
-    IGeneratedTickMathInner _g12,
-    IGeneratedTickMathInner _g13,
-    IGeneratedTickMathInner _g14,
-    IGeneratedTickMathInner _g15,
-    IGeneratedTickMathInner _g16,
-    IGeneratedTickMathInner _g17,
-    IGeneratedTickMathInner _g18,
-    IGeneratedTickMathInner _g19,
-    IGeneratedTickMathInner _g20,
-    IGeneratedTickMathInner _g21,
-    IGeneratedTickMathInner _g22,
-    IGeneratedTickMathInner _g23,
-    IGeneratedTickMathInner _g24,
-    IGeneratedTickMathInner _g25,
-    IGeneratedTickMathInner _g26,
-    IGeneratedTickMathInner _g27,
-    IGeneratedTickMathInner _g28,
-    IGeneratedTickMathInner _g29,
-    IGeneratedTickMathInner _g30
+    IGeneratedTickMathInner[] memory _g
   ) public {
-    g0 = _g0;
-    g1 = _g1;
-    g2 = _g2;
-    g3 = _g3;
-    g4 = _g4;
-    g5 = _g5;
-    g6 = _g6;
-    g7 = _g7;
-    g8 = _g8;
-    g9 = _g9;
-    g10 = _g10;
-    g11 = _g11;
-    g12 = _g12;
-    g13 = _g13;
-    g14 = _g14;
-    g15 = _g15;
-    g16 = _g16;
-    g17 = _g17;
-    g18 = _g18;
-    g19 = _g19;
-    g20 = _g20;
-    g21 = _g21;
-    g22 = _g22;
-    g23 = _g23;
-    g24 = _g24;
-    g25 = _g25;
-    g26 = _g26;
-    g27 = _g27;
-    g28 = _g28;
-    g29 = _g29;
-    g30 = _g30;
+    g0 = _g[0];
+    g1 = _g[1];
+    g2 = _g[2];
+    g3 = _g[3];
+    g4 = _g[4];
+    g5 = _g[5];
+    g6 = _g[6];
+    g7 = _g[7];
+    g8 = _g[8];
+    g9 = _g[9];
+    g10 = _g[10];
+    g11 = _g[11];
+    g12 = _g[12];
+    g13 = _g[13];
+    g14 = _g[14];
+    g15 = _g[15];
+    g16 = _g[16];
+    g17 = _g[17];
+    g18 = _g[18];
+    g19 = _g[19];
+    g20 = _g[20];
+    g21 = _g[21];
+    g22 = _g[22];
+    g23 = _g[23];
+    g24 = _g[24];
+    g25 = _g[25];
+    g26 = _g[26];
+    g27 = _g[27];
+    g28 = _g[28];
+    g29 = _g[29];
+    g30 = _g[30];
   }
   
   function getRatioAtTick(int256 tick) external view returns (uint256) {
@@ -167,6 +137,5 @@ contract GeneratedTickMath {
         }
       }
     }
-    revert('invalid tick');
   }
 }
