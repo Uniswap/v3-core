@@ -33,45 +33,29 @@ library PriceMath {
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price, rounded up
-    function getValueAtPriceRoundingUp(FixedPoint.uq112x112 memory price, uint256 liquidity)
-        internal
-        pure
-        returns (uint112 amount0, uint112 amount1)
-    {
+    function getVirtualReservesAtPrice(
+        FixedPoint.uq112x112 memory price,
+        uint256 liquidity,
+        bool roundUp
+    ) internal pure returns (uint112 reserve0, uint112 reserve1) {
         if (liquidity == 0) return (0, 0);
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(price._x)) / 2) * 2;
 
         uint256 priceScaled = uint256(price._x) << safeShiftBits; // price * 2**safeShiftBits
         uint256 priceScaledRoot = Babylonian.sqrt(priceScaled); // sqrt(priceScaled)
-        bool roundUp = priceScaledRoot**2 < priceScaled; // flag for whether priceScaledRoot needs to be rounded up
+        bool roundUpRoot = priceScaledRoot**2 < priceScaled; // flag for whether priceScaledRoot needs to be rounded up
 
         uint256 scaleFactor = uint256(1) << (56 + safeShiftBits / 2); // compensate for q112 and shifted bits under root
 
         // calculate amount0 := liquidity / sqrt(price) and amount1 := liquidity * sqrt(price)
-        amount0 = mulDivRoundingUp(liquidity, scaleFactor, priceScaledRoot).toUint112();
-        amount1 = mulDivRoundingUp(liquidity, priceScaledRoot + (roundUp ? 1 : 0), scaleFactor).toUint112();
-    }
-
-    // given a price and a liquidity amount, return the value of that liquidity at the price, rounded down
-    function getValueAtPriceRoundingDown(FixedPoint.uq112x112 memory price, uint256 liquidity)
-        internal
-        pure
-        returns (uint112 amount0, uint112 amount1)
-    {
-        if (liquidity == 0) return (0, 0);
-
-        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(price._x)) / 2) * 2;
-
-        uint256 priceScaled = uint256(price._x) << safeShiftBits; // price * 2**safeShiftBits
-        uint256 priceScaledRoot = Babylonian.sqrt(priceScaled); // sqrt(priceScaled)
-        bool roundUp = priceScaledRoot**2 < priceScaled; // flag for whether priceScaledRoot needs to be rounded up
-
-        uint256 scaleFactor = uint256(1) << (56 + safeShiftBits / 2); // compensate for q112 and shifted bits under root
-
-        // calculate amount0 := liquidity / sqrt(price) and amount1 := liquidity * sqrt(price)
-        amount0 = FullMath.mulDiv(liquidity, scaleFactor, priceScaledRoot + (roundUp ? 1 : 0)).toUint112();
-        amount1 = FullMath.mulDiv(liquidity, priceScaledRoot, scaleFactor).toUint112();
+        if (roundUp) {
+            reserve0 = mulDivRoundingUp(liquidity, scaleFactor, priceScaledRoot).toUint112();
+            reserve1 = mulDivRoundingUp(liquidity, priceScaledRoot + (roundUpRoot ? 1 : 0), scaleFactor).toUint112();
+        } else {
+            reserve0 = FullMath.mulDiv(liquidity, scaleFactor, priceScaledRoot + (roundUpRoot ? 1 : 0)).toUint112();
+            reserve1 = FullMath.mulDiv(liquidity, priceScaledRoot, scaleFactor).toUint112();
+        }
     }
 
     function getInputToRatio(
@@ -83,7 +67,7 @@ library PriceMath {
         bool zeroForOne
     ) internal pure returns (uint112 amountIn, uint112 amountOut) {
         // estimate value of reserves at target price, rounding up
-        (uint112 reserve0Target, uint112 reserve1Target) = getValueAtPriceRoundingUp(priceTarget, liquidity);
+        (uint112 reserve0Target, uint112 reserve1Target) = getVirtualReservesAtPrice(priceTarget, liquidity, true);
 
         (amountIn, amountOut) = zeroForOne
             ? (reserve0Target - reserve0, reserve1 - reserve1Target)

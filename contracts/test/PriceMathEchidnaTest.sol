@@ -33,13 +33,15 @@ contract PriceMathEchidnaTest {
         require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
         require(price <= TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
 
-        (uint112 amount0Up, uint112 amount1Up) = PriceMath.getValueAtPriceRoundingUp(
+        (uint112 amount0Up, uint112 amount1Up) = PriceMath.getVirtualReservesAtPrice(
             FixedPoint.uq112x112(price),
-            liquidity
+            liquidity,
+            true
         );
-        (uint112 amount0Down, uint112 amount1Down) = PriceMath.getValueAtPriceRoundingDown(
+        (uint112 amount0Down, uint112 amount1Down) = PriceMath.getVirtualReservesAtPrice(
             FixedPoint.uq112x112(price),
-            liquidity
+            liquidity,
+            false
         );
         assert(amount0Up >= amount0Down);
         assert(amount1Up >= amount1Down);
@@ -58,7 +60,7 @@ contract PriceMathEchidnaTest {
         require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
 
         FixedPoint.uq112x112 memory price = FixedPoint.uq112x112(priceRaw);
-        (uint112 reserve0, uint112 reserve1) = PriceMath.getValueAtPriceRoundingDown(price, liquidity);
+        (uint112 reserve0, uint112 reserve1) = PriceMath.getVirtualReservesAtPrice(price, liquidity, false);
 
         require(reserve0 > 0 && reserve1 > 0);
 

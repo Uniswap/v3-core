@@ -15,20 +15,12 @@ contract PriceMathTest {
         return PriceMath.getAmountOut(reserveIn, reserveOut, amountIn);
     }
 
-    function getValueAtPriceRoundingUp(FixedPoint.uq112x112 memory price, uint256 liquidity)
-        public
-        pure
-        returns (uint112 amount0, uint112 amount1)
-    {
-        return PriceMath.getValueAtPriceRoundingUp(price, liquidity);
-    }
-
-    function getValueAtPriceRoundingDown(FixedPoint.uq112x112 memory price, uint256 liquidity)
-        public
-        pure
-        returns (uint112 amount0, uint112 amount1)
-    {
-        return PriceMath.getValueAtPriceRoundingDown(price, liquidity);
+    function getVirtualReservesAtPrice(
+        FixedPoint.uq112x112 memory price,
+        uint256 liquidity,
+        bool roundUp
+    ) public pure returns (uint112 amount0, uint112 amount1) {
+        return PriceMath.getVirtualReservesAtPrice(price, liquidity, roundUp);
     }
 
     function getInputToRatio(

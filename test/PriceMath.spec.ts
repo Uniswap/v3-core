@@ -33,8 +33,8 @@ describe('PriceMath', () => {
         const price = BigNumber.from('4294967297')
         const liquidity = BigNumber.from('18446744073709551615')
 
-        const [amount0Up, amount1Up] = await priceMath.getValueAtPriceRoundingUp([price], liquidity)
-        const [amount0Down, amount1Down] = await priceMath.getValueAtPriceRoundingDown([price], liquidity)
+        const [amount0Up, amount1Up] = await priceMath.getVirtualReservesAtPrice([price], liquidity, true)
+        const [amount0Down, amount1Down] = await priceMath.getVirtualReservesAtPrice([price], liquidity, false)
 
         expect(amount0Up).to.be.gte(amount0Down)
         expect(amount1Up).to.be.gte(amount1Down)
@@ -47,7 +47,7 @@ describe('PriceMath', () => {
         const liquidity = expandTo18Decimals(10)
         const price = encodePrice(expandTo18Decimals(100), expandTo18Decimals(1))
 
-        const [reserve0, reserve1] = await priceMath.getValueAtPriceRoundingDown([price], liquidity)
+        const [reserve0, reserve1] = await priceMath.getVirtualReservesAtPrice([price], liquidity, false)
 
         expect(reserve0).to.be.eq(expandTo18Decimals(1))
         expect(reserve1).to.be.eq(expandTo18Decimals(100))
@@ -142,7 +142,7 @@ describe('PriceMath', () => {
           let priceAfterSwap: BigNumber
 
           before('compute swap result', async () => {
-            ;[reserve0, reserve1] = await priceMath.getValueAtPriceRoundingDown([priceStarting], liquidity)
+            ;[reserve0, reserve1] = await priceMath.getVirtualReservesAtPrice([priceStarting], liquidity, false)
             ;[amountIn, amountOutMax] = await priceMath.getInputToRatio(
               reserve0,
               reserve1,
