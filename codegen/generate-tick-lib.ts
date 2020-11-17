@@ -26,7 +26,7 @@ const ALL_ELEMENTS: Element[] = ALL_TICKS.map(([tickIndex, price]) => ({
 })).sort(elementComparator)
 
 function generateBlock(elems: Element[], paramName: string, numSpaces: number): string {
-  const spaces = Array(numSpaces).join(' ')
+  const spaces = Array(numSpaces).fill(' ').join('')
   if (elems.length === 0) {
     throw new Error(`Called with 0 elements`)
   } else if (elems.length === 1) {
