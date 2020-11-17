@@ -367,15 +367,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int256 liquidityDelta;
     }
 
-    struct SetPositionState {
-        uint112 oldLiquidity;
-        uint112 newLiquidity;
-        int256 amount0Lower;
-        int256 amount1Lower;
-        int256 amount0Upper;
-        int256 amount1Upper;
-    }
-
     function setPosition(
         int16 tickLower,
         int16 tickUpper,
@@ -408,105 +399,103 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _update();
 
-        // gather the storage pointers
-        TickInfo storage tickInfoLower = tickInfos[params.tickLower];
-        TickInfo storage tickInfoUpper = tickInfos[params.tickUpper];
-        Position storage position = _getPosition(msg.sender, params.tickLower, params.tickUpper, params.feeVote);
-
-        SetPositionState memory state;
-        state.oldLiquidity = position.liquidity;
-        state.newLiquidity = state.oldLiquidity.addi(params.liquidityDelta).toUint112();
-
         {
-            if (state.oldLiquidity == 0 && state.newLiquidity > 0) {
+            // gather the storage pointers
+            TickInfo storage tickInfoLower = tickInfos[params.tickLower];
+            TickInfo storage tickInfoUpper = tickInfos[params.tickUpper];
+            Position storage position = _getPosition(msg.sender, params.tickLower, params.tickUpper, params.feeVote);
+
+            // if necessary, initialize both ticks and increment the position counter
+            if (position.liquidity == 0 && params.liquidityDelta > 0) {
                 if (tickInfoLower.numPositions == 0) _initializeTick(params.tickLower, tickInfoLower);
                 tickInfoLower.numPositions++;
                 if (tickInfoUpper.numPositions == 0) _initializeTick(params.tickUpper, tickInfoUpper);
                 tickInfoUpper.numPositions++;
             }
 
-            (
-                FixedPoint.uq112x112 memory feeGrowthInside0,
-                FixedPoint.uq112x112 memory feeGrowthInside1
-            ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickInfoLower, tickInfoUpper);
+            {
+                (
+                    FixedPoint.uq112x112 memory feeGrowthInside0,
+                    FixedPoint.uq112x112 memory feeGrowthInside1
+                ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickInfoLower, tickInfoUpper);
 
-            // check if this condition has accrued any untracked fees and credit them to the caller
-            // TODO is this right?
-            if (state.oldLiquidity > 0) {
-                if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                    amount0 = -FullMath
-                        .mulDiv(
-                        feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                        position
-                            .liquidity,
-                        uint256(1) << 112
-                    )
-                        .toInt256();
+                // check if this condition has accrued any untracked fees and credit them to the caller
+                // TODO is this right?
+                if (position.liquidity > 0) {
+                    if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
+                        amount0 = -FullMath
+                            .mulDiv(
+                            feeGrowthInside0._x - position.feeGrowthInside0Last._x,
+                            position
+                                .liquidity,
+                            uint256(1) << 112
+                        )
+                            .toInt256();
+                    }
+                    if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
+                        amount1 = -FullMath
+                            .mulDiv(
+                            feeGrowthInside1._x - position.feeGrowthInside1Last._x,
+                            position
+                                .liquidity,
+                            uint256(1) << 112
+                        )
+                            .toInt256();
+                    }
                 }
-                if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
-                    amount1 = -FullMath
-                        .mulDiv(
-                        feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                        position
-                            .liquidity,
-                        uint256(1) << 112
-                    )
-                        .toInt256();
-                }
+
+                // update the position
+                position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint112();
+                position.feeGrowthInside0Last = feeGrowthInside0;
+                position.feeGrowthInside1Last = feeGrowthInside1;
             }
 
-            // update the position
-            position.liquidity = state.newLiquidity;
-            position.feeGrowthInside0Last = feeGrowthInside0;
-            position.feeGrowthInside1Last = feeGrowthInside1;
-        }
+            // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
+            tickInfoLower.liquidityDelta[params.feeVote] = tickInfoLower.liquidityDelta[params.feeVote]
+                .add(params.liquidityDelta)
+                .toInt112();
+            tickInfoUpper.liquidityDelta[params.feeVote] = tickInfoUpper.liquidityDelta[params.feeVote]
+                .sub(params.liquidityDelta)
+                .toInt112();
 
-        // when the lower (upper) tick is crossed from left to right (right to left), liquidity must be added (removed)
-        tickInfoLower.liquidityDelta[params.feeVote] = tickInfoLower.liquidityDelta[params.feeVote]
-            .add(params.liquidityDelta)
-            .toInt112();
-        tickInfoUpper.liquidityDelta[params.feeVote] = tickInfoUpper.liquidityDelta[params.feeVote]
-            .sub(params.liquidityDelta)
-            .toInt112();
-
-        {
-            // calculate how much the specified liquidity delta is worth at the lower and upper ticks
-            // amount0Lower :> amount0Upper
-            // amount1Upper :> amount1Lower
-            (state.amount0Lower, state.amount1Lower) = getValueAtPrice(
-                TickMath.getRatioAtTick(params.tickLower),
-                params.liquidityDelta
-            );
-            (state.amount0Upper, state.amount1Upper) = getValueAtPrice(
-                TickMath.getRatioAtTick(params.tickUpper),
-                params.liquidityDelta
-            );
-
-            // the current price is below the passed range, so the liquidity can only become in range by crossing from left
-            // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
-            if (tickCurrent < params.tickLower) {
-                amount0 = amount0.add(state.amount0Lower.sub(state.amount0Upper));
-            } else if (tickCurrent < params.tickUpper) {
-                // the current price is inside the passed range
-                (int256 amount0Current, int256 amount1Current) = getValueAtPrice(priceCurrent, params.liquidityDelta);
-                amount0 = amount0.add(amount0Current.sub(state.amount0Upper));
-                amount1 = amount1.add(amount1Current.sub(state.amount1Lower));
-
-                liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote]
-                    .addi(params.liquidityDelta)
-                    .toUint112();
-            } else {
-                // the current price is above the passed range, so liquidity can only become in range by crossing from right
-                // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-                amount1 = amount1.add(state.amount1Upper.sub(state.amount1Lower));
+            // if necessary, uninitialize both ticks and increment the position counter
+            if (position.liquidity == 0 && params.liquidityDelta < 0) {
+                if (tickInfoLower.numPositions == 1) delete tickInfos[params.tickLower];
+                else tickInfoLower.numPositions--;
+                if (tickInfoUpper.numPositions == 1) delete tickInfos[params.tickUpper];
+                else tickInfoUpper.numPositions--;
             }
         }
 
-        if (state.newLiquidity == 0 && state.oldLiquidity != 0) {
-            if (tickInfoLower.numPositions == 1) delete tickInfos[params.tickLower];
-            else tickInfoLower.numPositions--;
-            if (tickInfoUpper.numPositions == 1) delete tickInfos[params.tickUpper];
-            else tickInfoUpper.numPositions--;
+        // calculate how much the specified liquidity delta is worth at the lower and upper ticks
+        // amount0Lower :> amount0Upper
+        // amount1Upper :> amount1Lower
+        (int256 amount0Lower, int256 amount1Lower) = getValueAtPrice(
+            TickMath.getRatioAtTick(params.tickLower),
+            params.liquidityDelta
+        );
+        (int256 amount0Upper, int256 amount1Upper) = getValueAtPrice(
+            TickMath.getRatioAtTick(params.tickUpper),
+            params.liquidityDelta
+        );
+
+        // the current price is below the passed range, so the liquidity can only become in range by crossing from left
+        // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
+        if (tickCurrent < params.tickLower) {
+            amount0 = amount0.add(amount0Lower.sub(amount0Upper));
+        } else if (tickCurrent < params.tickUpper) {
+            // the current price is inside the passed range
+            (int256 amount0Current, int256 amount1Current) = getValueAtPrice(priceCurrent, params.liquidityDelta);
+            amount0 = amount0.add(amount0Current.sub(amount0Upper));
+            amount1 = amount1.add(amount1Current.sub(amount1Lower));
+
+            liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote]
+                .addi(params.liquidityDelta)
+                .toUint112();
+        } else {
+            // the current price is above the passed range, so liquidity can only become in range by crossing from right
+            // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
+            amount1 = amount1.add(amount1Upper.sub(amount1Lower));
         }
 
         if (amount0 > 0) {
