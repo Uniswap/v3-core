@@ -29,33 +29,55 @@ contract PriceMathEchidnaTest {
         assert(kAfter >= k);
     }
 
-    function getInputToRatioInvariants(
-        uint112 reserve0,
-        uint112 reserve1,
-        uint16 lpFee,
-        int16 tick,
-        bool zeroForOne
-    ) external pure {
-        require(reserve0 > 0 && reserve1 > 0);
-        require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
-        require(tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
+    function roundingCanBeGreaterThan1(uint224 price, uint256 liquidity) external pure {
+        require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
+        require(price <= TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
 
-        FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tick);
+        (uint112 amount0Up, uint112 amount1Up) = PriceMath.getValueAtPriceRoundingUp(
+            FixedPoint.uq112x112(price),
+            liquidity
+        );
+        (uint112 amount0Down, uint112 amount1Down) = PriceMath.getValueAtPriceRoundingDown(
+            FixedPoint.uq112x112(price),
+            liquidity
+        );
+        assert(amount0Up >= amount0Down);
+        assert(amount1Up >= amount1Down);
+        assert(amount0Up - amount0Down <= 2);
+        assert(amount1Up - amount1Down <= 2);
+    }
+
+    function getInputToRatioInvariants(
+        uint224 priceRaw,
+        int16 tickTarget,
+        uint112 liquidity,
+        uint16 lpFee
+    ) external pure {
+        require(tickTarget >= TickMath.MIN_TICK && tickTarget < TickMath.MAX_TICK);
+        require(liquidity > 0);
+        require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
+
+        FixedPoint.uq112x112 memory price = FixedPoint.uq112x112(priceRaw);
+        (uint112 reserve0, uint112 reserve1) = PriceMath.getValueAtPriceRoundingDown(price, liquidity);
+
+        require(reserve0 > 0 && reserve1 > 0);
+
+        FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tickTarget);
+        bool zeroForOne = price._x >= priceTarget._x;
 
         (uint112 amountIn, uint112 amountOutMax) = PriceMath.getInputToRatio(
             reserve0,
             reserve1,
-            lpFee,
+            liquidity,
             priceTarget,
+            lpFee,
             zeroForOne
         );
 
-        FixedPoint.uq112x112 memory priceBefore = FixedPoint.fraction(reserve1, reserve0);
-
         if (amountIn == 0) {
-            // amountIn should only be 0 if the current price gte the inOutRatio
-            if (zeroForOne) assert(priceBefore._x <= priceTarget._x);
-            else assert(priceBefore._x >= priceTarget._x);
+            // amountIn should only be 0 if the current price is past the target price
+            if (zeroForOne) assert(price._x <= priceTarget._x);
+            else assert(price._x >= priceTarget._x);
             assert(amountOutMax == 0);
         } else {
             assert((zeroForOne ? reserve1 : reserve0) > amountOutMax);
@@ -70,27 +92,27 @@ contract PriceMathEchidnaTest {
             // downward-adjust amount out if necessary
             amountOut = uint112(Math.min(amountOut, amountOutMax));
 
-            (uint112 reserve0Next, uint112 reserve1Next) = zeroForOne
-                ? (reserve0 + amountInLessFee, reserve1 - amountOut)
-                : (reserve0 - amountOut, reserve1 + amountInLessFee);
+            // (uint112 reserve0Next, uint112 reserve1Next) = zeroForOne
+            //     ? (reserve0 + amountInLessFee, reserve1 - amountOut)
+            //     : (reserve0 - amountOut, reserve1 + amountInLessFee);
 
-            // check that the price does not exceed the next price
-            {
-                FixedPoint.uq112x112 memory priceAfterSwap = FixedPoint.fraction(reserve1Next, reserve0Next);
-                if (zeroForOne) assert(priceAfterSwap._x >= priceTarget._x);
-                else assert(priceAfterSwap._x <= priceTarget._x);
-            }
+            // // check that the price does not exceed the next price
+            // {
+            //     FixedPoint.uq112x112 memory priceAfterSwap = FixedPoint.fraction(reserve1Next, reserve0Next);
+            //     if (zeroForOne) assert(priceAfterSwap._x >= priceTarget._x);
+            //     else assert(priceAfterSwap._x <= priceTarget._x);
+            // }
 
-            (reserve0Next, reserve1Next) = zeroForOne
-                ? (reserve0 + amountInLessFee + 1, reserve1 - amountOut)
-                : (reserve0 - amountOut, reserve1 + amountInLessFee + 1);
+            // (reserve0Next, reserve1Next) = zeroForOne
+            //     ? (reserve0 + amountInLessFee + 1, reserve1 - amountOut)
+            //     : (reserve0 - amountOut, reserve1 + amountInLessFee + 1);
 
-            // check that one more wei of amount in would result in a price that exceeds the next price
-            {
-                FixedPoint.uq112x112 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
-                if (zeroForOne) assert(priceAfterSwap1MoreWei._x <= priceTarget._x);
-                else assert(priceAfterSwap1MoreWei._x >= priceTarget._x);
-            }
+            // // check that one more wei of amount in would result in a price that exceeds the next price
+            // {
+            //     FixedPoint.uq112x112 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
+            //     if (zeroForOne) assert(priceAfterSwap1MoreWei._x <= priceTarget._x);
+            //     else assert(priceAfterSwap1MoreWei._x >= priceTarget._x);
+            // }
         }
     }
 }

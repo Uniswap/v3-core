@@ -9,6 +9,7 @@ import './TestERC20.sol';
 import '../UniswapV3Pair.sol';
 import '../UniswapV3Factory.sol';
 import '../libraries/SafeCast.sol';
+import '../libraries/TickMath.sol';
 
 contract UniswapV3PairEchidnaTest {
     using SafeMath for uint256;
@@ -26,7 +27,7 @@ contract UniswapV3PairEchidnaTest {
         createNewPair();
         token0.approve(address(pair), uint256(-1));
         token1.approve(address(pair), uint256(-1));
-        initializePair(0, 1e18, 2);
+        initializePair(1e18, 0, 2);
     }
 
     function initializeTokens() private {
@@ -40,13 +41,11 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function initializePair(
+        uint112 liquidity,
         int16 tick,
-        uint112 amount0,
         uint8 feeVote
     ) private {
-        FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
-        uint112 amount1 = FullMath.mulDiv(amount0, price._x, uint256(1) << 112).toUint112();
-        pair.initialize(amount0, amount1, tick, feeVote % pair.NUM_FEE_OPTIONS());
+        pair.initialize(liquidity, tick, feeVote % pair.NUM_FEE_OPTIONS());
     }
 
     function swap0For1(uint112 amount0In) external {
@@ -82,6 +81,18 @@ contract UniswapV3PairEchidnaTest {
 
     function recoverToken1() external {
         pair.recover(address(token1), address(this), 1);
+    }
+
+    function echidna_tickIsWithinBounds() external view returns (bool) {
+        int16 tick = pair.tickCurrent();
+        return (tick < TickMath.MAX_TICK && tick >= TickMath.MIN_TICK);
+    }
+
+    function echidna_priceIsWithinTickCurrent() external view returns (bool) {
+        int16 tick = pair.tickCurrent();
+        FixedPoint.uq112x112 memory priceCurrent = FixedPoint.uq112x112(pair.priceCurrent());
+        return (TickMath.getRatioAtTick(tick)._x <= priceCurrent._x &&
+            TickMath.getRatioAtTick(tick + 1)._x > priceCurrent._x);
     }
 
     function echidna_isInitialized() external view returns (bool) {

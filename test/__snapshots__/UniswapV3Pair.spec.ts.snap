@@ -1,21 +1,21 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #getFee gas cost initialized to vote 5 1`] = `6475`;
+exports[`UniswapV3Pair #getFee gas cost initialized to vote 5 1`] = `6587`;
 
-exports[`UniswapV3Pair #getFee gas cost multiple votes median in middle 1`] = `6253`;
+exports[`UniswapV3Pair #getFee gas cost multiple votes median in middle 1`] = `6347`;
 
-exports[`UniswapV3Pair #getFee gas cost uninitialized 1`] = `5847`;
+exports[`UniswapV3Pair #getFee gas cost uninitialized 1`] = `5887`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `272450`;
+exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `274443`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `217912`;
+exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `219915`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `307174`;
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `295284`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `139491`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `172864`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `2393688`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `3716529`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `129560`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `151219`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `2395388`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `3694020`;

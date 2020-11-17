@@ -36,8 +36,10 @@ describe('UniswapV3Factory', () => {
       .to.emit(factory, 'PairCreated')
       .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, BigNumber.from(1))
 
-    await expect(factory.createPair(...tokens)).to.be.revertedWith('UniswapV3: PAIR_EXISTS')
-    await expect(factory.createPair(...tokens.slice().reverse())).to.be.revertedWith('UniswapV3: PAIR_EXISTS')
+    await expect(factory.createPair(...tokens)).to.be.revertedWith('UniswapV3::createPair: pair already exists')
+    await expect(factory.createPair(...tokens.slice().reverse())).to.be.revertedWith(
+      'UniswapV3::createPair: pair already exists'
+    )
     expect(await factory.getPair(...tokens)).to.eq(create2Address)
     expect(await factory.getPair(...tokens.slice().reverse())).to.eq(create2Address)
     expect(await factory.allPairs(0)).to.eq(create2Address)
@@ -65,7 +67,9 @@ describe('UniswapV3Factory', () => {
 
   describe('#setFeeToSetter', () => {
     it('fails if caller is not feeToSetter', async () => {
-      await expect(factory.connect(other).setFeeToSetter(wallet.address)).to.be.revertedWith('UniswapV3: FORBIDDEN')
+      await expect(factory.connect(other).setFeeToSetter(wallet.address)).to.be.revertedWith(
+        'UniswapV3::setFeeToSetter: must be called by feeToSetter'
+      )
     })
 
     it('updates feeToSetter', async () => {
@@ -75,7 +79,9 @@ describe('UniswapV3Factory', () => {
 
     it('cannot be called by original feeToSetter', async () => {
       await factory.setFeeToSetter(other.address)
-      await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith('UniswapV3: FORBIDDEN')
+      await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith(
+        'UniswapV3::setFeeToSetter: must be called by feeToSetter'
+      )
     })
   })
 })

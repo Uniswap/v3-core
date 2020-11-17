@@ -20,20 +20,22 @@ contract UniswapV3Factory is IUniswapV3Factory {
     }
 
     function createPair(address tokenA, address tokenB) external override returns (address pair) {
-        require(tokenA != tokenB, 'UniswapV3: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, 'UniswapV3::createPair: tokenA cannot be the same as tokenB');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'UniswapV3: ZERO_ADDRESS');
-        require(getPair[token0][token1] == address(0), 'UniswapV3: PAIR_EXISTS'); // single check is sufficient
+        require(token0 != address(0), 'UniswapV3::createPair: tokens cannot be address 0');
+        require(getPair[token0][token1] == address(0), 'UniswapV3::createPair: pair already exists'); // single check is sufficient
         // CREATE2 salt is 0 since token0 and token1 are included as constructor arguments
         pair = address(new UniswapV3Pair{salt: bytes32(0)}(address(this), token0, token1));
         getPair[token0][token1] = pair;
-        getPair[token1][token0] = pair; // populate mapping in the reverse direction
+        // populate mapping in the reverse direction
+        // this is a deliberate choice to avoid the cost of comparing addresses in a getPair function
+        getPair[token1][token0] = pair;
         allPairs.push(pair);
         emit PairCreated(token0, token1, pair, allPairs.length);
     }
 
     function setFeeToSetter(address _feeToSetter) external override {
-        require(msg.sender == feeToSetter, 'UniswapV3: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'UniswapV3::setFeeToSetter: must be called by feeToSetter');
         feeToSetter = _feeToSetter;
     }
 }
