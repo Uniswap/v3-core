@@ -1,7 +1,7 @@
 import {BigNumber, BigNumberish, utils, constants} from 'ethers'
 
-export const MIN_TICK = -7732
-export const MAX_TICK = 7732
+export const MIN_TICK = -7351
+export const MAX_TICK = 7351
 
 export enum FeeVote {
   FeeVote0 = 0,
