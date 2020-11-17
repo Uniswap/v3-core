@@ -10,7 +10,7 @@ exports[`UniswapV3Pair #setPosition after initialization success cases above cur
 
 exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `219915`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `295284`;
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `295471`;
 
 exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `172864`;
 
