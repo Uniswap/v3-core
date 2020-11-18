@@ -13,6 +13,36 @@ describe('PriceMath', () => {
     priceMath = (await priceMathTestFactory.deploy()) as PriceMathTest
   })
 
+  describe('#getVirtualReservesAtPrice', () => {
+    it('works for 2e18 liquidity at price of tick 0', async () => {
+      const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
+        {_x: '5192296858534827628530496329220096'},
+        expandTo18Decimals(2),
+        false
+      )
+      expect(reserve0).to.eq('2000000000000000000')
+      expect(reserve1).to.eq('2000000000000000000')
+    })
+    it('works for max price and max liquidity', async () => {
+      const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
+        {_x: BigNumber.from(2).pow(224).sub(1)},
+        BigNumber.from(2).pow(112).sub(1),
+        false
+      )
+      expect(reserve0).to.eq('72057594037927935')
+      expect(reserve1).to.eq('374144419156711147060143317175368380973225181446144')
+    })
+    it('works for min price and max liquidity', async () => {
+      const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
+        {_x: BigNumber.from(1)},
+        BigNumber.from(2).pow(112).sub(1),
+        false
+      )
+      expect(reserve0).to.eq('374144419156711147060143317175368380974324693073920')
+      expect(reserve1).to.eq('72057594037927935')
+    })
+  })
+
   describe('#getInputToRatio', () => {
     describe('edge cases', () => {
       it('0 all', async () => {
