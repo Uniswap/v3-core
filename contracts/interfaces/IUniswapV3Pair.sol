@@ -35,13 +35,13 @@ interface IUniswapV3Pair {
 
     function priceCurrent() external view returns (uint224);
 
-    function feeGrowthGlobal0() external view returns (uint224);
+    function feeGrowthGlobal0() external view returns (uint256);
 
-    function feeGrowthGlobal1() external view returns (uint224);
+    function feeGrowthGlobal1() external view returns (uint256);
 
-    function feeToFees0() external view returns (uint112);
+    function feeToFees0() external view returns (uint256);
 
-    function feeToFees1() external view returns (uint112);
+    function feeToFees1() external view returns (uint256);
 
     // derived state
     function isInitialized() external view returns (bool);
