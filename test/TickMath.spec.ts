@@ -1,5 +1,5 @@
 import {ethers} from 'hardhat'
-import {Contract, BigNumber, BigNumberish} from 'ethers'
+import {BigNumber, BigNumberish} from 'ethers'
 import {TickMathTest} from '../typechain/TickMathTest'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'

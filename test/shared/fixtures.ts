@@ -1,5 +1,5 @@
-import {Contract, Signer} from 'ethers'
-import {waffle, ethers} from 'hardhat'
+import {Signer} from 'ethers'
+import {ethers} from 'hardhat'
 import {TestERC20} from '../../typechain/TestERC20'
 import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
 import {MockTimeUniswapV3Pair} from '../../typechain/MockTimeUniswapV3Pair'
