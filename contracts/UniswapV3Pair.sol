@@ -592,11 +592,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // recompute reserves given the current price/liquidity
                 {
-                    (uint256 a, uint256 b) = PriceMath.getVirtualReservesAtPrice(
-                        state.price,
-                        state.liquidity,
-                        false
-                    );
+                    (uint256 a, uint256 b) = PriceMath.getVirtualReservesAtPrice(state.price, state.liquidity, false);
                     (step.reserve0Virtual, step.reserve1Virtual) = (a.toUint112(), b.toUint112());
                 }
 
