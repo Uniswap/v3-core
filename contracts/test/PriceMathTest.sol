@@ -19,7 +19,7 @@ contract PriceMathTest {
         FixedPoint.uq112x112 memory price,
         uint256 liquidity,
         bool roundUp
-    ) external pure returns (uint112 reserve0, uint112 reserve1) {
+    ) external pure returns (uint256 reserve0, uint256 reserve1) {
         return PriceMath.getVirtualReservesAtPrice(price, liquidity, roundUp);
     }
 

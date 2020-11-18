@@ -13,7 +13,8 @@ interface IUniswapV3Pair {
 
     function FEE_OPTIONS(uint8) external pure returns (uint16);
 
-    function LIQUIDITY_MIN() external pure returns (uint112);
+    function LIQUIDITY_MIN() external pure returns (uint200);
+    function LIQUIDITY_MAX() external pure returns (uint200);
 
     // immutables
     function factory() external pure returns (address);
@@ -29,7 +30,7 @@ interface IUniswapV3Pair {
 
     function feeLast() external view returns (uint16);
 
-    function liquidityCurrent(uint256) external view returns (uint112);
+    function liquidityCurrent(uint256) external view returns (uint200);
 
     function tickCurrent() external view returns (int16);
 
@@ -46,7 +47,7 @@ interface IUniswapV3Pair {
     // derived state
     function isInitialized() external view returns (bool);
 
-    function getLiquidity() external view returns (uint112);
+    function getLiquidity() external view returns (uint208);
 
     function getFee() external view returns (uint16);
 
@@ -57,7 +58,7 @@ interface IUniswapV3Pair {
 
     // initialize the pair
     function initialize(
-        uint112 liquidity,
+        uint200 liquidity,
         int16 tick,
         uint8 feeVote
     ) external;

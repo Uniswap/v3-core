@@ -30,7 +30,7 @@ describe('PriceMath', () => {
         const price = BigNumber.from('4294967297')
         const liquidity = BigNumber.from('18446744073709551615')
 
-        const {reserve0: reserve0Up, reserve1: reserv1Up} = await priceMath.getVirtualReservesAtPrice(
+        const {reserve0: reserve0Up, reserve1: reserve1Up} = await priceMath.getVirtualReservesAtPrice(
           {_x: price},
           liquidity,
           true
@@ -42,10 +42,10 @@ describe('PriceMath', () => {
         )
 
         expect(reserve0Up).to.be.gte(reserve0Down)
-        expect(reserv1Up).to.be.gte(reserve1Down)
+        expect(reserve1Up).to.be.gte(reserve1Down)
 
         expect(reserve0Up.sub(reserve0Down)).to.be.eq(2)
-        expect(reserv1Up.sub(reserve1Down)).to.be.eq(1)
+        expect(reserve1Up.sub(reserve1Down)).to.be.eq(1)
       })
 
       it('returns 0 if price is equal', async () => {

@@ -27,10 +27,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint112;
     using SafeMath for uint256;
     using SignedSafeMath for int112;
+    using SignedSafeMath for int184;
     using SignedSafeMath for int256;
     using SafeCast for int256;
     using SafeCast for uint256;
     using MixedSafeMath for uint112;
+    using MixedSafeMath for uint200;
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPointExtra for FixedPoint.uq112x112;
 
@@ -53,7 +55,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return 200;
     }
 
-    uint112 public constant override LIQUIDITY_MIN = 1000;
+    uint200 public constant override LIQUIDITY_MIN = 1000;
+    uint200 public constant override LIQUIDITY_MAX = uint200(1) << 199;
 
     address public immutable override factory;
     address public immutable override token0;
@@ -71,7 +74,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // this is stored to protect liquidity providers from add/swap/remove sandwiching attacks
     uint16 public override feeLast;
 
-    uint112[NUM_FEE_OPTIONS] public override liquidityCurrent; // all in-range liquidity, segmented across fee options
+    uint200[NUM_FEE_OPTIONS] public override liquidityCurrent; // all in-range liquidity, segmented across fee options
     FixedPoint.uq112x112 public override priceCurrent; // (token1 / token0) price
     int16 public override tickCurrent; // first tick at or below priceCurrent
 
@@ -97,12 +100,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 secondsOutside;
         // amount of liquidity added (subtracted) when ticks are crossed from left to right (right to left),
         // i.e. as the price goes up (down), for each fee vote
-        int112[NUM_FEE_OPTIONS] liquidityDelta;
+        int184[NUM_FEE_OPTIONS] liquidityDelta;
     }
     mapping(int16 => TickInfo) public tickInfos;
 
     struct Position {
-        uint112 liquidity;
+        uint200 liquidity;
         // fee growth per unit of liquidity as of the last modification
         FixedPoint.uq112x112 feeGrowthInside0Last;
         FixedPoint.uq112x112 feeGrowthInside1Last;
@@ -178,10 +181,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeGrowthInside1 = feeGrowthGlobal1.sub(feeGrowthBelow1).sub(feeGrowthAbove1);
     }
 
-    // TODO think about how we should bound this
-    function getLiquidity() public view override returns (uint112) {
+    // guaranteed to be <= (2**200-1)*6)
+    function getLiquidity() public view override returns (uint208) {
         // load all liquidity into memory
-        uint112[NUM_FEE_OPTIONS] memory _liquidityCurrent = [
+        uint200[NUM_FEE_OPTIONS] memory temp = [
             liquidityCurrent[0],
             liquidityCurrent[1],
             liquidityCurrent[2],
@@ -190,12 +193,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityCurrent[5]
         ];
 
-        uint256 liquidity;
+        uint208 liquidity;
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS; feeVoteIndex++) {
-            liquidity += _liquidityCurrent[feeVoteIndex];
+            liquidity += temp[feeVoteIndex];
         }
 
-        return liquidity.toUint112();
+        return liquidity;
     }
 
     // check for one-time initialization
@@ -206,7 +209,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // find the median fee vote, and return the fee in bips
     function getFee() public view override returns (uint16 fee) {
         // load all virtual supplies into memory
-        uint112[NUM_FEE_OPTIONS] memory _liquidityCurrent = [
+        uint200[NUM_FEE_OPTIONS] memory temp = [
             liquidityCurrent[0],
             liquidityCurrent[1],
             liquidityCurrent[2],
@@ -215,16 +218,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityCurrent[5]
         ];
 
-        uint256 threshold = (uint256(_liquidityCurrent[0]) +
-            _liquidityCurrent[1] +
-            _liquidityCurrent[2] +
-            _liquidityCurrent[3] +
-            _liquidityCurrent[4] +
-            _liquidityCurrent[5]) / 2;
+        uint256 threshold = (uint256(temp[0]) + temp[1] + temp[2] + temp[3] + temp[4] + temp[5]) / 2;
 
         uint256 liquidityCumulative;
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {
-            liquidityCumulative += _liquidityCurrent[feeVoteIndex];
+            liquidityCumulative += temp[feeVoteIndex];
             if (liquidityCumulative >= threshold) return FEE_OPTIONS(feeVoteIndex);
         }
         return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
@@ -261,12 +259,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // we want to round up when liquidity is >0, i.e. being added
         if (liquidity > 0) {
-            (uint112 amount0, uint112 amount1) = PriceMath.getVirtualReservesAtPrice(price, uint256(liquidity), true);
-            return (amount0, amount1);
+            (uint256 amount0, uint256 amount1) = PriceMath.getVirtualReservesAtPrice(price, uint256(liquidity), true);
+            return (amount0.toInt256(), amount1.toInt256());
         } else {
             // we want to round down when liquidity is <0, i.e. being removed
-            (uint112 amount0, uint112 amount1) = PriceMath.getVirtualReservesAtPrice(price, uint256(-liquidity), false);
-            return (-int256(amount0), -int256(amount1));
+            (uint256 amount0, uint256 amount1) = PriceMath.getVirtualReservesAtPrice(price, uint256(-liquidity), false);
+            return (-amount0.toInt256(), -amount1.toInt256());
         }
     }
 
@@ -307,14 +305,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeTo = feeTo_;
     }
 
+    function _initializeTick(int16 tick, TickInfo storage tickInfo) private {
+        // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
+        if (tick <= tickCurrent) {
+            tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
+            tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
+            tickInfo.secondsOutside = _blockTimestamp();
+        }
+    }
+
     // the reason this can't _just_ burn but needs to mint is because otherwise it would incentivize bad starting prices
     function initialize(
-        uint112 liquidity,
+        uint200 liquidity,
         int16 tick,
         uint8 feeVote
     ) external override lock {
         require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
         require(liquidity >= LIQUIDITY_MIN, 'UniswapV3Pair::initialize: insufficient liquidity');
+        require(liquidity <= LIQUIDITY_MAX , 'UniswapV3Pair::initialize: excessive liquidity');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
         require(feeVote < NUM_FEE_OPTIONS, 'UniswapV3Pair::initialize: fee vote must be a valid option');
@@ -322,9 +330,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
 
         // take the tokens
-        (int256 amount0, int256 amount1) = PriceMath.getVirtualReservesAtPrice(price, liquidity, true);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
+        (uint256 amount0, uint256 amount1) = PriceMath.getVirtualReservesAtPrice(price, liquidity, true);
+        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
+        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
 
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
@@ -340,10 +348,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position.liquidity = LIQUIDITY_MIN;
         // emit PositionSet(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, int112(LIQUIDITY_MIN));
 
+        // initialize lower tick
+        TickInfo storage tickInfoMin = tickInfos[TickMath.MIN_TICK];
+        _initializeTick(TickMath.MIN_TICK, tickInfoMin);
+        tickInfoMin.numPositions = 1;
+        tickInfoMin.liquidityDelta[feeVote] = int256(liquidity).toInt112();
+
+        // initialize upper tick
+        TickInfo storage tickInfoMax = tickInfos[TickMath.MAX_TICK];
+        _initializeTick(TickMath.MAX_TICK, tickInfoMax);
+        tickInfoMax.numPositions = 1;
+        tickInfoMax.liquidityDelta[feeVote] = int256(liquidity).toInt112();
+
+        // just to check if these throw
+        getVirtualReservesDeltaAtPrice(TickMath.getRatioAtTick(TickMath.MIN_TICK), liquidity);
+        getVirtualReservesDeltaAtPrice(TickMath.getRatioAtTick(TickMath.MAX_TICK), liquidity);
+        getVirtualReservesDeltaAtPrice(priceCurrent, liquidity);
+
         // set the user's position if necessary
         if (liquidity > LIQUIDITY_MIN) {
             position = _getPosition(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
             position.liquidity = liquidity - LIQUIDITY_MIN;
+
+            tickInfoMin.numPositions++;
+            tickInfoMax.numPositions++;
             // emit PositionSet(
             //     msg.sender,
             //     TickMath.MIN_TICK,
@@ -353,15 +381,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // );
         }
         // emit Initialized(amount0, amount1, tick, feeVote);
-    }
-
-    function _initializeTick(int16 tick, TickInfo storage tickInfo) private {
-        // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
-        if (tick <= tickCurrent) {
-            tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
-            tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
-            tickInfo.secondsOutside = _blockTimestamp();
-        }
     }
 
     struct SetPositionParams {
@@ -500,7 +519,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount0 = amount0.add(amount0Current.sub(amount0Upper));
             amount1 = amount1.add(amount1Current.sub(amount1Lower));
 
-            liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote].addi(params.liquidityDelta).toUint112();
+            require(liquidityCurrent[params.feeVote].addi(params.liquidityDelta) <= LIQUIDITY_MAX, 'TODO');
+            liquidityCurrent[params.feeVote] = uint200(liquidityCurrent[params.feeVote].addi(params.liquidityDelta));
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
@@ -570,7 +590,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         SwapState memory state = SwapState({
             amountInRemaining: params.amountIn,
             tick: tickCurrent,
-            liquidity: getLiquidity(),
+            liquidity: uint112(getLiquidity()),
             price: priceCurrent,
             feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1
@@ -595,11 +615,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 step.fee = uint16(Math.max(feeFloor, getFee()));
 
                 // recompute reserves given the current price/liquidity
-                (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
-                    state.price,
-                    state.liquidity,
-                    false
-                );
+                {
+                    (uint256 a, uint256 b) = PriceMath.getVirtualReservesAtPrice(
+                        state.price,
+                        state.liquidity,
+                        false
+                    );
+                    (step.reserve0Virtual, step.reserve1Virtual) = (a.toUint112(), b.toUint112());
+                }
 
                 // compute the amount of input token required to push the price to the target (and max output token)
                 (uint112 amountInMax, uint112 amountOutMax) = PriceMath.getInputToRatio(

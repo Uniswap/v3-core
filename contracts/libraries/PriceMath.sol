@@ -37,7 +37,7 @@ library PriceMath {
         FixedPoint.uq112x112 memory price,
         uint256 liquidity,
         bool roundUp
-    ) internal pure returns (uint112 reserve0, uint112 reserve1) {
+    ) internal pure returns (uint256 reserve0, uint256 reserve1) {
         if (liquidity == 0) return (0, 0);
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(price._x)) / 2) * 2;
@@ -50,28 +50,28 @@ library PriceMath {
 
         // calculate amount0 := liquidity / sqrt(price) and amount1 := liquidity * sqrt(price)
         if (roundUp) {
-            reserve0 = mulDivRoundingUp(liquidity, scaleFactor, priceScaledRoot).toUint112();
-            reserve1 = mulDivRoundingUp(liquidity, priceScaledRoot + (roundUpRoot ? 1 : 0), scaleFactor).toUint112();
+            reserve0 = mulDivRoundingUp(liquidity, scaleFactor, priceScaledRoot);
+            reserve1 = mulDivRoundingUp(liquidity, priceScaledRoot + (roundUpRoot ? 1 : 0), scaleFactor);
         } else {
-            reserve0 = FullMath.mulDiv(liquidity, scaleFactor, priceScaledRoot + (roundUpRoot ? 1 : 0)).toUint112();
-            reserve1 = FullMath.mulDiv(liquidity, priceScaledRoot, scaleFactor).toUint112();
+            reserve0 = FullMath.mulDiv(liquidity, scaleFactor, priceScaledRoot + (roundUpRoot ? 1 : 0));
+            reserve1 = FullMath.mulDiv(liquidity, priceScaledRoot, scaleFactor);
         }
     }
 
     function getInputToRatio(
-        uint112 reserve0,
-        uint112 reserve1,
+        uint256 reserve0,
+        uint256 reserve1,
         uint112 liquidity,
         FixedPoint.uq112x112 memory priceTarget, // always reserve1/reserve0
         uint16 lpFee,
         bool zeroForOne
     ) internal pure returns (uint112 amountIn, uint112 amountOut) {
         // estimate value of reserves at target price, rounding up
-        (uint112 reserve0Target, uint112 reserve1Target) = getVirtualReservesAtPrice(priceTarget, liquidity, true);
+        (uint256 reserve0Target, uint256 reserve1Target) = getVirtualReservesAtPrice(priceTarget, liquidity, true);
 
         (amountIn, amountOut) = zeroForOne
-            ? (reserve0Target - reserve0, reserve1 - reserve1Target)
-            : (reserve1Target - reserve1, reserve0 - reserve0Target);
+            ? ((reserve0Target - reserve0).toUint112(), (reserve1 - reserve1Target).toUint112())
+            : ((reserve1Target - reserve1).toUint112(), (reserve0 - reserve0Target).toUint112());
 
         // scale amountIn by the current fee (rounding up)
         amountIn = mulDivRoundingUp(amountIn, LP_FEE_BASE, LP_FEE_BASE - lpFee).toUint112();
