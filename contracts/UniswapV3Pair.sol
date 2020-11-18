@@ -319,9 +319,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
 
         // take the tokens
-        (int256 amount0, int256 amount1) = PriceMath.getVirtualReservesAtPrice(price, 1, true);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
+        (uint256 amount0, uint256 amount1) = PriceMath.getVirtualReservesAtPrice(price, 1, true);
+        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
+        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
 
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
