@@ -211,10 +211,12 @@ describe('UniswapV3Pair', () => {
           })
 
           it('increments numPositions', async () => {
-            await pair.setPosition(-231, 0, 0, 100)
+            await pair.setPosition(-231, 5, 0, 100)
             expect((await pair.tickInfos(-231))[0]).to.eq(1)
-            await pair.setPosition(-231, 0, 1, 100)
+            expect((await pair.tickInfos(5))[0]).to.eq(1)
+            await pair.setPosition(-231, 5, 1, 100)
             expect((await pair.tickInfos(-231))[0]).to.eq(2)
+            expect((await pair.tickInfos(5))[0]).to.eq(2)
           })
 
           it('decrements numPositions', async () => {
@@ -222,6 +224,7 @@ describe('UniswapV3Pair', () => {
             await pair.setPosition(-231, 0, 1, 100)
             await pair.setPosition(-231, 0, 1, -100)
             expect((await pair.tickInfos(-231))[0]).to.eq(1)
+            expect((await pair.tickInfos(0))[0]).to.eq(1)
           })
 
           it('clears tick if last position is removed', async () => {
