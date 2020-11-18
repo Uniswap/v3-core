@@ -53,8 +53,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return 200;
     }
 
-    uint112 public constant override LIQUIDITY_MIN = 1000;
-
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
@@ -312,13 +310,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // the reason this can't _just_ burn but needs to mint is because otherwise it would incentivize bad starting prices
-    function initialize(
-        uint112 liquidity,
-        int16 tick,
-        uint8 feeVote
-    ) external override lock {
+    function initialize(int16 tick, uint8 feeVote) external override lock {
         require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
-        require(liquidity >= LIQUIDITY_MIN, 'UniswapV3Pair::initialize: insufficient liquidity');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
         require(feeVote < NUM_FEE_OPTIONS, 'UniswapV3Pair::initialize: fee vote must be a valid option');
@@ -326,7 +319,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
 
         // take the tokens
-        (int256 amount0, int256 amount1) = PriceMath.getVirtualReservesAtPrice(price, liquidity, true);
+        (int256 amount0, int256 amount1) = PriceMath.getVirtualReservesAtPrice(price, 1, true);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
 
@@ -335,7 +328,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeLast = FEE_OPTIONS(feeVote);
 
         // initialize liquidity, price, and tick (note that this votes indelibly with the burned liquidity)
-        liquidityCurrent[feeVote] = liquidity;
+        liquidityCurrent[feeVote] = 1;
         priceCurrent = price;
         tickCurrent = tick;
 
@@ -345,26 +338,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         _initializeTick(TickMath.MIN_TICK, minTick);
         _initializeTick(TickMath.MAX_TICK, maxTick);
 
-        // set the permanent LIQUIDITY_MIN position
+        // set the permanent address 0 position
         Position storage position = _getPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
-        position.liquidity = LIQUIDITY_MIN;
-        // emit PositionSet(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, int112(LIQUIDITY_MIN));
-
-        // set the user's position if necessary
-        if (liquidity > LIQUIDITY_MIN) {
-            position = _getPosition(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
-            position.liquidity = liquidity - LIQUIDITY_MIN;
-            minTick.numPositions++;
-            maxTick.numPositions++;
-            // emit PositionSet(
-            //     msg.sender,
-            //     TickMath.MIN_TICK,
-            //     TickMath.MAX_TICK,
-            //     feeVote,
-            //     (liquidity - LIQUIDITY_MIN).toInt112()
-            // );
-        }
-        // emit Initialized(amount0, amount1, tick, feeVote);
+        position.liquidity = 1;
+        // emit Initialized(tick, feeVote);
+        // emit PositionSet(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, 1);
     }
 
     function _initializeTick(int16 tick, TickInfo storage tickInfo) private {
