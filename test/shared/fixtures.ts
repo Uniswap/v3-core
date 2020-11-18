@@ -1,35 +1,35 @@
 import {Contract, Signer} from 'ethers'
-import {waffle} from '@nomiclabs/buidler'
-const {loadFixture, deployContract} = waffle
+import {waffle, ethers} from 'hardhat'
+import {TestERC20} from '../../typechain/TestERC20'
+import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
+import {MockTimeUniswapV3Pair} from '../../typechain/MockTimeUniswapV3Pair'
+import {TickMathTest} from '../../typechain/TickMathTest'
+import {UniswapV3PairTest} from '../../typechain/UniswapV3PairTest'
+import {UniswapV3Factory} from '../../typechain/UniswapV3Factory'
 
 import {expandTo18Decimals} from './utilities'
 
-import TestERC20 from '../../build/TestERC20.json'
-import UniswapV3Factory from '../../build/UniswapV3Factory.json'
-import UniswapV3PairTest from '../../build/UniswapV3PairTest.json'
-import MockTimeUniswapV3Pair from '../../build/MockTimeUniswapV3Pair.json'
-import TestUniswapV3Callee from '../../build/TestUniswapV3Callee.json'
-import TickMathTest from '../../build/TickMathTest.json'
-
 interface FactoryFixture {
-  factory: Contract
+  factory: UniswapV3Factory
 }
 
-export async function factoryFixture([wallet]: Signer[]): Promise<FactoryFixture> {
-  const factory = await deployContract(wallet, UniswapV3Factory, [await wallet.getAddress()])
-  return {factory}
+export async function factoryFixture(feeToSetter: Signer): Promise<FactoryFixture> {
+  const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
+  const factory = (await factoryFactory.deploy(await feeToSetter.getAddress())) as UniswapV3Factory
+  return {factory: factory}
 }
 
 interface TokensFixture {
-  token0: Contract
-  token1: Contract
-  token2: Contract
+  token0: TestERC20
+  token1: TestERC20
+  token2: TestERC20
 }
 
-export async function tokensFixture([wallet]: Signer[]): Promise<TokensFixture> {
-  const tokenA = await deployContract(wallet, TestERC20, [expandTo18Decimals(10_000)])
-  const tokenB = await deployContract(wallet, TestERC20, [expandTo18Decimals(10_000)])
-  const tokenC = await deployContract(wallet, TestERC20, [expandTo18Decimals(10_000)])
+export async function tokensFixture(): Promise<TokensFixture> {
+  const tokenFactory = await ethers.getContractFactory('TestERC20')
+  const tokenA = (await tokenFactory.deploy(expandTo18Decimals(10_000))) as TestERC20
+  const tokenB = (await tokenFactory.deploy(expandTo18Decimals(10_000))) as TestERC20
+  const tokenC = (await tokenFactory.deploy(expandTo18Decimals(10_000))) as TestERC20
 
   const [token0, token1, token2] = [tokenA, tokenB, tokenC].sort((tokenA, tokenB) =>
     tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? -1 : 1
@@ -41,26 +41,35 @@ export async function tokensFixture([wallet]: Signer[]): Promise<TokensFixture> 
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
 interface PairFixture extends TokensAndFactoryFixture {
-  pair: Contract
-  pairTest: Contract
-  testCallee: Contract
-  tickMath: Contract
+  pair: MockTimeUniswapV3Pair
+  pairTest: UniswapV3PairTest
+  testCallee: TestUniswapV3Callee
+  tickMath: TickMathTest
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
 export const TEST_PAIR_START_TIME = 1601906400
 
-export async function pairFixture([wallet]: Signer[]): Promise<PairFixture> {
-  const {factory} = await loadFixture(factoryFixture)
-  const {token0, token1, token2} = await loadFixture(tokensFixture)
+export async function pairFixture(feeToSetter: Signer): Promise<PairFixture> {
+  const {factory} = await factoryFixture(feeToSetter)
+  const {token0, token1, token2} = await tokensFixture()
 
-  const pair = await deployContract(wallet, MockTimeUniswapV3Pair, [factory.address, token0.address, token1.address])
+  const pairTesterFactory = await ethers.getContractFactory('UniswapV3PairTest')
+  const mockTimePairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
+  const testCalleeFactory = await ethers.getContractFactory('TestUniswapV3Callee')
+  const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
+
+  const pair = (await mockTimePairFactory.deploy(
+    factory.address,
+    token0.address,
+    token1.address
+  )) as MockTimeUniswapV3Pair
   await pair.setTime(TEST_PAIR_START_TIME)
-  const pairTest = await deployContract(wallet, UniswapV3PairTest, [pair.address])
+  const pairTest = (await pairTesterFactory.deploy(pair.address)) as UniswapV3PairTest
 
-  const testCallee = await deployContract(wallet, TestUniswapV3Callee, [])
+  const testCallee = (await testCalleeFactory.deploy()) as TestUniswapV3Callee
 
-  const tickMath = await deployContract(wallet, TickMathTest, [])
+  const tickMath = (await tickMathTestFactory.deploy()) as TickMathTest
 
   return {token0, token1, token2, pair, pairTest, factory, testCallee, tickMath}
 }

@@ -1,8 +1,8 @@
-import chai, {expect} from 'chai'
+import {expect, use} from 'chai'
 import {solidity} from 'ethereum-waffle'
 import {jestSnapshotPlugin} from 'mocha-chai-jest-snapshot'
 
-chai.use(solidity)
-chai.use(jestSnapshotPlugin())
+use(solidity)
+use(jestSnapshotPlugin())
 
 export {expect}

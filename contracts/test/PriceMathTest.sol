@@ -19,7 +19,7 @@ contract PriceMathTest {
         FixedPoint.uq112x112 memory price,
         uint256 liquidity,
         bool roundUp
-    ) public pure returns (uint112 amount0, uint112 amount1) {
+    ) external pure returns (uint112 reserve0, uint112 reserve1) {
         return PriceMath.getVirtualReservesAtPrice(price, liquidity, roundUp);
     }
 
@@ -27,10 +27,10 @@ contract PriceMathTest {
         uint112 reserve0,
         uint112 reserve1,
         uint112 liquidity,
-        FixedPoint.uq112x112 memory priceTarget,
+        FixedPoint.uq112x112 memory priceTarget, // always reserve1/reserve0
         uint16 lpFee,
         bool zeroForOne
-    ) public pure returns (uint112 amountIn, uint112 amountOut) {
+    ) external pure returns (uint112 amountIn, uint112 amountOut) {
         return PriceMath.getInputToRatio(reserve0, reserve1, liquidity, priceTarget, lpFee, zeroForOne);
     }
 

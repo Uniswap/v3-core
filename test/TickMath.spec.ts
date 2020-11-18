@@ -1,26 +1,23 @@
-import {waffle} from '@nomiclabs/buidler'
+import {ethers} from 'hardhat'
 import {Contract, BigNumber, BigNumberish} from 'ethers'
+import {TickMathTest} from '../typechain/TickMathTest'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
 
-import TickMathTest from '../build/TickMathTest.json'
-
 const Q112 = BigNumber.from(2).pow(112)
 
 describe('TickMath', () => {
-  const [wallet] = waffle.provider.getWallets()
-  const deployContract = waffle.deployContract
-
-  let tickMath: Contract
+  let tickMath: TickMathTest
   before('deploy TickMathTest', async () => {
-    tickMath = await deployContract(wallet, TickMathTest, [])
+    const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
+    tickMath = (await tickMathTestFactory.deploy()) as TickMathTest
   })
 
   // checks that an actual number is within allowedDiffBips of an expected number
   async function checkApproximatelyEquals(
-    actualP: BigNumberish | Promise<BigNumberish>,
-    expectedP: BigNumberish | Promise<BigNumberish>,
+    actualP: BigNumberish | Promise<BigNumberish> | Promise<{0: BigNumberish}>,
+    expectedP: BigNumberish | Promise<BigNumberish> | Promise<{0: BigNumberish}>,
     allowedDiffBips: BigNumberish
   ) {
     const [actual, expected] = [bnify2(await actualP), bnify2(await expectedP)]
@@ -131,11 +128,11 @@ describe('TickMath', () => {
 
   if (process.env.UPDATE_SNAPSHOT) {
     it('all tick values', async () => {
-      const promises: Promise<[BigNumber]>[] = []
+      const promises: Promise<{_x: BigNumber}>[] = []
       for (let tick = MIN_TICK; tick < MAX_TICK + 1; tick++) {
         promises.push(tickMath.getPrice(tick))
       }
-      expect((await Promise.all(promises)).map(([x], i) => [MIN_TICK + i, x.toString()])).toMatchSnapshot()
+      expect((await Promise.all(promises)).map(({_x: x}, i) => [MIN_TICK + i, x.toString()])).toMatchSnapshot()
     }).timeout(300000)
   }
 
