@@ -871,7 +871,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.initialize(0, FeeVote.FeeVote0)
-      await pair.setPosition(MIN_TICK, MAX_TICK, liquidityAmount, FeeVote.FeeVote0)
+      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, liquidityAmount)
     })
 
     it('is initially set to 0', async () => {
