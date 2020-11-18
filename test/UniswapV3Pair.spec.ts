@@ -30,7 +30,7 @@ describe('UniswapV3Pair', () => {
 
   beforeEach('deploy pair fixture', async () => {
     ;[wallet, other] = await ethers.getSigners()
-    ;[walletAddress, otherAddress] = [await wallet.getAddress(), await other.getAddress()]
+    ;[walletAddress, otherAddress] = await Promise.all([wallet.getAddress(), other.getAddress()])
     ;({token0, token1, token2, factory, pair, pairTest, testCallee, tickMath} = await pairFixture(wallet))
   })
 
