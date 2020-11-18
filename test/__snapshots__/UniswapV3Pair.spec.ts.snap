@@ -6,16 +6,16 @@ exports[`UniswapV3Pair #getFee gas cost multiple votes median in middle 1`] = `6
 
 exports[`UniswapV3Pair #getFee gas cost uninitialized 1`] = `5887`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `274443`;
+exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `272928`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `219915`;
+exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `218400`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `295471`;
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `293993`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `172864`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas 1`] = `172928`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `3716529`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap0For1 gas large swap 1`] = `3721777`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `151219`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas 1`] = `151283`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `3694020`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.10%) swap1For0 gas large swap 1`] = `3699268`;

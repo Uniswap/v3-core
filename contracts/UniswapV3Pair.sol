@@ -252,16 +252,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return (price0CumulativeLast, price1CumulativeLast);
     }
 
-    function getValueAtPrice(FixedPoint.uq112x112 memory price, int256 liquidity) public pure returns (int256, int256) {
+    function getVirtualReservesDeltaAtPrice(FixedPoint.uq112x112 memory price, int256 liquidity)
+        public
+        pure
+        returns (int256, int256)
+    {
         if (liquidity == 0) return (0, 0);
 
         // we want to round up when liquidity is >0, i.e. being added
         if (liquidity > 0) {
-            (uint112 amount0, uint112 amount1) = PriceMath.getValueAtPriceRoundingUp(price, uint256(liquidity));
+            (uint112 amount0, uint112 amount1) = PriceMath.getVirtualReservesAtPrice(price, uint256(liquidity), true);
             return (amount0, amount1);
         } else {
             // we want to round down when liquidity is <0, i.e. being removed
-            (uint112 amount0, uint112 amount1) = PriceMath.getValueAtPriceRoundingDown(price, uint256(-liquidity));
+            (uint112 amount0, uint112 amount1) = PriceMath.getVirtualReservesAtPrice(price, uint256(-liquidity), false);
             return (-int256(amount0), -int256(amount1));
         }
     }
@@ -318,7 +322,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
 
         // take the tokens
-        (int256 amount0, int256 amount1) = PriceMath.getValueAtPriceRoundingUp(price, liquidity);
+        (int256 amount0, int256 amount1) = PriceMath.getVirtualReservesAtPrice(price, liquidity, true);
         TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
         TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
 
@@ -407,10 +411,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if necessary, initialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta > 0) {
-                if (tickInfoLower.numPositions == 0) _initializeTick(params.tickLower, tickInfoLower);
-                tickInfoLower.numPositions++;
-                if (tickInfoUpper.numPositions == 0) _initializeTick(params.tickUpper, tickInfoUpper);
-                tickInfoUpper.numPositions++;
+                if (tickInfoLower.numPositions == 0) {
+                    _initializeTick(params.tickLower, tickInfoLower);
+                    tickInfoLower.numPositions = 1;
+                } else tickInfoLower.numPositions++;
+                if (tickInfoUpper.numPositions == 0) {
+                    _initializeTick(params.tickUpper, tickInfoUpper);
+                    tickInfoUpper.numPositions = 1;
+                } else tickInfoUpper.numPositions++;
             }
 
             {
@@ -470,11 +478,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // calculate how much the specified liquidity delta is worth at the lower and upper ticks
         // amount0Lower :> amount0Upper
         // amount1Upper :> amount1Lower
-        (int256 amount0Lower, int256 amount1Lower) = getValueAtPrice(
+        (int256 amount0Lower, int256 amount1Lower) = getVirtualReservesDeltaAtPrice(
             TickMath.getRatioAtTick(params.tickLower),
             params.liquidityDelta
         );
-        (int256 amount0Upper, int256 amount1Upper) = getValueAtPrice(
+        (int256 amount0Upper, int256 amount1Upper) = getVirtualReservesDeltaAtPrice(
             TickMath.getRatioAtTick(params.tickUpper),
             params.liquidityDelta
         );
@@ -485,7 +493,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount0 = amount0.add(amount0Lower.sub(amount0Upper));
         } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
-            (int256 amount0Current, int256 amount1Current) = getValueAtPrice(priceCurrent, params.liquidityDelta);
+            (int256 amount0Current, int256 amount1Current) = getVirtualReservesDeltaAtPrice(
+                priceCurrent,
+                params.liquidityDelta
+            );
             amount0 = amount0.add(amount0Current.sub(amount0Upper));
             amount1 = amount1.add(amount1Current.sub(amount1Lower));
 
@@ -584,9 +595,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 step.fee = uint16(Math.max(feeFloor, getFee()));
 
                 // recompute reserves given the current price/liquidity
-                (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getValueAtPriceRoundingDown(
+                (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
                     state.price,
-                    state.liquidity
+                    state.liquidity,
+                    false
                 );
 
                 // compute the amount of input token required to push the price to the target (and max output token)
