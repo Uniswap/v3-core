@@ -27,10 +27,17 @@ jobs:
       - name: Install node dependencies
         run: yarn
 
-      - name: Install slither
+      - name: Install pip3
         run: |
           python -m pip install --upgrade pip
+
+      - name: Install slither
+        run: |
           pip3 install slither-analyzer
+
+      - name: Upgrade crytic-compile
+        run: |
+          pip3 install --upgrade crytic-compile
 
       # workaround for https://github.com/crytic/crytic-compile/issues/113
       - name: Install solc
