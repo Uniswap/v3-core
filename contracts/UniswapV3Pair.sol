@@ -135,8 +135,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         assert(tickInfo.numPositions > 0);
         // tick is above the current tick, meaning growth outside represents growth above, not below
         if (tick > tickCurrent) {
-            feeGrowthBelow0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
-            feeGrowthBelow1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
+            feeGrowthBelow0 = FixedPoint.uq144x112(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
+            feeGrowthBelow1 = FixedPoint.uq144x112(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
         } else {
             feeGrowthBelow0 = tickInfo.feeGrowthOutside0;
             feeGrowthBelow1 = tickInfo.feeGrowthOutside1;
@@ -155,8 +155,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
             feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
         } else {
-            feeGrowthAbove0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
-            feeGrowthAbove1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
+            feeGrowthAbove0 = FixedPoint.uq144x112(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
+            feeGrowthAbove1 = FixedPoint.uq144x112(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
         }
     }
 
@@ -178,8 +178,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tickUpper,
             tickInfoUpper
         );
-        feeGrowthInside0 = feeGrowthGlobal0.sub(feeGrowthBelow0).sub(feeGrowthAbove0);
-        feeGrowthInside1 = feeGrowthGlobal1.sub(feeGrowthBelow1).sub(feeGrowthAbove1);
+        feeGrowthInside0 = FixedPoint.uq144x112(feeGrowthGlobal0._x - feeGrowthBelow0._x - feeGrowthAbove0._x);
+        feeGrowthInside1 = FixedPoint.uq144x112(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
 
     function getLiquidity() public view override returns (uint112 liquidity) {
@@ -623,10 +623,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
 
                     // update global fee tracker
-                    // TODO update when the new fraction method is available
-                    state.feeGrowthGlobal = state.feeGrowthGlobal.add(
-                        FixedPoint.fraction(feePaid.toUint112(), state.liquidity)
-                    );
+                    state.feeGrowthGlobal._x += FixedPoint.fraction(feePaid, state.liquidity)._x;
                 }
 
                 // handle the swap
@@ -649,18 +646,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     state.price = step.priceNext;
                 } else {
                     // if not, the price is the new ratio of (computed) reserves, capped at the target price
-                    // TODO update when the new fraction method is available
                     if (params.zeroForOne) {
                         FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
-                            step.reserve1Virtual.sub(step.amountOut).toUint112(),
-                            step.reserve0Virtual.add(amountInLessFee).toUint112()
+                            step.reserve1Virtual.sub(step.amountOut),
+                            step.reserve0Virtual.add(amountInLessFee)
                         );
                         state.price = FixedPoint.uq112x112(uint224(Math.max(step.priceNext._x, priceEstimate._x)));
                         assert(state.price._x < TickMath.getRatioAtTick(state.tick + 1)._x);
                     } else {
                         FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
-                            step.reserve1Virtual.add(amountInLessFee).toUint112(),
-                            step.reserve0Virtual.sub(step.amountOut).toUint112()
+                            step.reserve1Virtual.add(amountInLessFee),
+                            step.reserve0Virtual.sub(step.amountOut)
                         );
                         state.price = FixedPoint.uq112x112(uint224(Math.min(step.priceNext._x, priceEstimate._x)));
                         assert(state.price._x >= TickMath.getRatioAtTick(state.tick)._x);
@@ -678,8 +674,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // if the tick is initialized, update it
                 if (tickInfo.numPositions > 0) {
                     // update tick info
-                    tickInfo.feeGrowthOutside0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
-                    tickInfo.feeGrowthOutside1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
+                    tickInfo.feeGrowthOutside0 = FixedPoint.uq144x112(
+                        feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x
+                    );
+                    tickInfo.feeGrowthOutside1 = FixedPoint.uq144x112(
+                        feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x
+                    );
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
 
                     int256 liquidityDeltaNet;

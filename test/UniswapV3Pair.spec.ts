@@ -310,7 +310,7 @@ describe('UniswapV3Pair', () => {
     await token0.approve(_pair.address, constants.MaxUint256)
     await token1.approve(_pair.address, constants.MaxUint256)
     await _pair.initialize(0, feeVote)
-    await _pair.setPosition(MIN_TICK, MAX_TICK, feeVote, initializeLiquidityAmount)
+    await _pair.setPosition(MIN_TICK, MAX_TICK, feeVote, initializeLiquidityAmount.sub(1))
     await token0.approve(_pair.address, 0)
     await token1.approve(_pair.address, 0)
   }
