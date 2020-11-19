@@ -17,6 +17,7 @@ library TickBitMap {
     function position(int16 tick) private pure returns (uint256 wordPos, uint256 bitPos) {
         require(tick >= TickMath.MIN_TICK, 'TickBitMap::position: tick must be greater than or equal to MIN_TICK');
         require(tick <= TickMath.MAX_TICK, 'TickBitMap::position: tick must be less than or equal to MAX_TICK');
+        // this subtraction is safe because tick - TickMath.MIN_TICK is at most 7351 * 2 which fits within int16
         uint256 bitIndex = uint256(tick - TickMath.MIN_TICK);
         wordPos = bitIndex / 256;
         bitPos = 255 - (bitIndex % 256);
@@ -76,14 +77,13 @@ library TickBitMap {
         bool lte
     ) internal view returns (int16 next) {
         bool initialized;
+        next = tick;
         if (lte) {
-            next = tick;
             while (next > TickMath.MIN_TICK && !initialized) {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, true);
                 if (!initialized) next--;
             }
         } else {
-            next = tick;
             while (next < TickMath.MAX_TICK && !initialized) {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, false);
             }
