@@ -8,29 +8,29 @@ import '../libraries/PriceMath.sol';
 
 contract PriceMathTest {
     function getAmountOut(
-        uint112 reserveIn,
-        uint112 reserveOut,
-        uint112 amountIn
-    ) external pure returns (uint112) {
+        uint256 reserveIn,
+        uint256 reserveOut,
+        uint256 amountIn
+    ) external pure returns (uint256) {
         return PriceMath.getAmountOut(reserveIn, reserveOut, amountIn);
     }
 
     function getVirtualReservesAtPrice(
         FixedPoint.uq112x112 memory price,
-        uint256 liquidity,
+        uint112 liquidity,
         bool roundUp
-    ) external pure returns (uint112 reserve0, uint112 reserve1) {
+    ) external pure returns (uint256 reserve0, uint256 reserve1) {
         return PriceMath.getVirtualReservesAtPrice(price, liquidity, roundUp);
     }
 
     function getInputToRatio(
-        uint112 reserve0,
-        uint112 reserve1,
+        uint256 reserve0,
+        uint256 reserve1,
         uint112 liquidity,
         FixedPoint.uq112x112 memory priceTarget, // always reserve1/reserve0
         uint16 lpFee,
         bool zeroForOne
-    ) external pure returns (uint112 amountIn, uint112 amountOut) {
+    ) external pure returns (uint256 amountIn, uint256 amountOut) {
         return PriceMath.getInputToRatio(reserve0, reserve1, liquidity, priceTarget, lpFee, zeroForOne);
     }
 
