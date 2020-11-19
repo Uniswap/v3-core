@@ -206,6 +206,14 @@ describe('UniswapV3Pair', () => {
             expect(await token1.balanceOf(pair.address)).to.eq(998)
           })
 
+          it('works for max tick', async () => {
+            await expect(pair.setPosition(-231, MAX_TICK, 0, 10000))
+              .to.emit(token0, 'Transfer')
+              .withArgs(walletAddress, pair.address, 31559)
+            expect(await token0.balanceOf(pair.address)).to.eq(10030 + 31559)
+            expect(await token1.balanceOf(pair.address)).to.eq(998)
+          })
+
           it('removing works', async () => {
             await pair.setPosition(-231, 0, 0, 10000)
             await pair.setPosition(-231, 0, 0, -10000)
@@ -267,6 +275,16 @@ describe('UniswapV3Pair', () => {
             expect(secondsOutside).to.eq(0)
           })
 
+          it('works for min/max tick', async () => {
+            await expect(pair.setPosition(MIN_TICK, MAX_TICK, 0, 10000))
+              .to.emit(token0, 'Transfer')
+              .withArgs(walletAddress, pair.address, 31717)
+              .to.emit(token1, 'Transfer')
+              .withArgs(walletAddress, pair.address, 3153)
+            expect(await token0.balanceOf(pair.address)).to.eq(10030 + 31717)
+            expect(await token1.balanceOf(pair.address)).to.eq(998 + 3153)
+          })
+
           it('removing works', async () => {
             await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)
             await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, -100)
@@ -286,6 +304,14 @@ describe('UniswapV3Pair', () => {
               .withArgs(walletAddress, pair.address, 2307)
             expect(await token0.balanceOf(pair.address)).to.eq(10030)
             expect(await token1.balanceOf(pair.address)).to.eq(998 + 2307)
+          })
+
+          it('works for min tick', async () => {
+            await expect(pair.setPosition(MIN_TICK, -233, 0, 10000))
+              .to.emit(token1, 'Transfer')
+              .withArgs(walletAddress, pair.address, 3138)
+            expect(await token0.balanceOf(pair.address)).to.eq(10030)
+            expect(await token1.balanceOf(pair.address)).to.eq(998 + 3138)
           })
 
           it('removing works', async () => {

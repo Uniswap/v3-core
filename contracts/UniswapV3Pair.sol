@@ -250,10 +250,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function getAmount0Delta(
         FixedPoint.uq112x112 memory priceLower,
-        FixedPoint.uq112x112 memory priceUpper,
+        FixedPoint.uq112x112 memory priceUpper, // can be the price at PriceMath.MAX_TICK
+        int16 tickUpper,
         int112 liquidity
     ) internal pure returns (int256) {
         if (liquidity == 0) return 0;
+
+        // if the upper bound is the max tick, we can skip some logic
+        if (tickUpper == TickMath.MAX_TICK) {
+            if (liquidity > 0) {
+                (uint256 reserve0,) = PriceMath.getVirtualReservesAtPrice(priceLower, uint112(liquidity), true);
+                return reserve0.toInt256();
+            }
+            (uint256 reserve0,) = PriceMath.getVirtualReservesAtPrice(priceLower, uint112(-liquidity), false);
+            return -reserve0.toInt256();
+        }
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
         if (liquidity < 0) safeShiftBits -= 2; // ensure that our denominator won't overflow
@@ -267,35 +278,39 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bool roundUpUpper = priceUpperScaledRoot**2 < priceUpperScaled;
 
         // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower)) / sqrt(priceUpper) * sqrt(priceLower)
-        // we want to round the delta up when liquidity is >0, i.e. being added
         if (liquidity > 0) {
-            return
-                PriceMath
-                    .mulDivRoundingUp(
-                    uint256(liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
-                    (priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot) << 56, // * 2**56
-                    priceLowerScaledRoot * priceUpperScaledRoot
-                )
-                    .toInt256();
-        } else {
-            // we want to round the delta down when liquidity is <0, i.e. being removed
-            return
-                -FullMath
-                    .mulDiv(
-                    uint256(uint112(-liquidity)) << (safeShiftBits / 2), // * 2**(SSB/2)
-                    priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
-                    (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
-                )
-                    .toInt256();
+            uint256 amount0 = PriceMath.mulDivRoundingUp(
+                uint256(liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
+                (priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot) << 56, // * 2**56
+                priceLowerScaledRoot * priceUpperScaledRoot
+            );
+            return amount0.toInt256();
         }
+        uint256 amount0 = FullMath.mulDiv(
+            uint256(uint112(-liquidity)) << (safeShiftBits / 2), // * 2**(SSB/2)
+            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
+            (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
+        );
+        return -amount0.toInt256();
     }
 
     function getAmount1Delta(
-        FixedPoint.uq112x112 memory priceLower,
+        FixedPoint.uq112x112 memory priceLower, // can be the price at PriceMath.MIN_TICK
+        int16 tickLower,
         FixedPoint.uq112x112 memory priceUpper,
         int112 liquidity
     ) internal pure returns (int256) {
         if (liquidity == 0) return 0;
+
+        // if the lower bound is the min tick, we can skip some logic
+        if (tickLower == TickMath.MIN_TICK) {
+            if (liquidity > 0) {
+                (, uint256 reserve1) = PriceMath.getVirtualReservesAtPrice(priceUpper, uint112(liquidity), true);
+                return reserve1.toInt256();
+            }
+            (, uint256 reserve1) = PriceMath.getVirtualReservesAtPrice(priceUpper, uint112(-liquidity), false);
+            return -reserve1.toInt256();
+        }
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
 
@@ -308,27 +323,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bool roundUpUpper = priceUpperScaledRoot**2 < priceUpperScaled;
 
         // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower))
-        // we want to round the delta up when liquidity is >0, i.e. being added
         if (liquidity > 0) {
-            return
-                PriceMath
-                    .mulDivRoundingUp(
-                    uint256(liquidity),
-                    priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
-                    uint256(1) << (56 + safeShiftBits / 2)
-                )
-                    .toInt256();
-        } else {
-            // we want to round the delta down when liquidity is <0, i.e. being removed
-            return
-                -FullMath
-                    .mulDiv(
-                    uint256(uint112(-liquidity)),
-                    priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
-                    uint256(1) << (56 + safeShiftBits / 2)
-                )
-                    .toInt256();
+            uint256 amount1 = PriceMath.mulDivRoundingUp(
+                uint256(liquidity),
+                priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
+                uint256(1) << (56 + safeShiftBits / 2)
+            );
+            return amount1.toInt256();
         }
+        uint256 amount1 = FullMath.mulDiv(
+            uint256(uint112(-liquidity)),
+            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
+            uint256(1) << (56 + safeShiftBits / 2)
+        );
+        return -amount1.toInt256();
     }
 
     constructor(
@@ -535,21 +543,26 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tickCurrent < params.tickLower) {
-            amount0 = amount0.add(
-                getAmount0Delta(
-                    TickMath.getRatioAtTick(params.tickLower),
-                    TickMath.getRatioAtTick(params.tickUpper),
-                    params.liquidityDelta
-                )
-            );
+            amount0 = amount0.add(getAmount0Delta(
+                TickMath.getRatioAtTick(params.tickLower),
+                TickMath.getRatioAtTick(params.tickUpper),
+                params.tickUpper,
+                params.liquidityDelta
+            ));
         } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
-            amount0 = amount0.add(
-                getAmount0Delta(priceCurrent, TickMath.getRatioAtTick(params.tickUpper), params.liquidityDelta)
-            );
-            amount1 = amount1.add(
-                getAmount1Delta(TickMath.getRatioAtTick(params.tickLower), priceCurrent, params.liquidityDelta)
-            );
+            amount0 = amount0.add(getAmount0Delta(
+                priceCurrent,
+                TickMath.getRatioAtTick(params.tickUpper),
+                params.tickUpper,
+                params.liquidityDelta
+            ));
+            amount1 = amount1.add(getAmount1Delta(
+                TickMath.getRatioAtTick(params.tickLower),
+                params.tickLower,
+                priceCurrent,
+                params.liquidityDelta
+            ));
 
             // this satisfies:
             // 2**107 + ((2**95 - 1) * 14701) < 2**112
@@ -561,13 +574,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = amount1.add(
-                getAmount1Delta(
-                    TickMath.getRatioAtTick(params.tickLower),
-                    TickMath.getRatioAtTick(params.tickUpper),
-                    params.liquidityDelta
-                )
-            );
+            amount1 = amount1.add(getAmount1Delta(
+                TickMath.getRatioAtTick(params.tickLower),
+                params.tickLower,
+                TickMath.getRatioAtTick(params.tickUpper),
+                params.liquidityDelta
+            ));
         }
 
         if (amount0 > 0) {
