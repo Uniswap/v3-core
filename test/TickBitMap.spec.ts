@@ -4,7 +4,7 @@ import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {MAX_TICK, MIN_TICK} from './shared/utilities'
 
-describe.only('TickBitMap', () => {
+describe('TickBitMap', () => {
   let tickBitMap: TickBitMapTest
 
   beforeEach('deploy TickBitMapTest', async () => {
