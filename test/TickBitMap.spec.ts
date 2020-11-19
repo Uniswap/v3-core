@@ -251,28 +251,48 @@ describe('TickBitMap', () => {
   })
 
   describe('#nextInitializedTick', () => {
-    beforeEach(() => initTicks([MIN_TICK, -1259, 529, 2350, MAX_TICK]))
-    describe('lte = true', () => {
-      it('one iteration', async () => {
-        expect(await tickBitMap.nextInitializedTick(-1230, true)).to.eq(-1259)
-      })
-      it('multiple iterations', async () => {
-        expect(await tickBitMap.nextInitializedTick(124, true)).to.eq(-1259)
-        expect(await tickBitMap.nextInitializedTick(528, true)).to.eq(-1259)
-      })
-      it('gas cost', async () => {
-        await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(124, true))
-      })
-    })
+    beforeEach(() => initTicks([MIN_TICK, -1259, 73, 529, 2350, MAX_TICK]))
     describe('lte = false', () => {
       it('one iteration', async () => {
         expect(await tickBitMap.nextInitializedTick(480, false)).to.eq(529)
       })
+      it('starting from initialized tick', async () => {
+        expect(await tickBitMap.nextInitializedTick(529, false)).to.eq(2350)
+        expect(await tickBitMap.nextInitializedTick(2350, false)).to.eq(MAX_TICK)
+      })
+      it('starting from just before initialized tick', async () => {
+        expect(await tickBitMap.nextInitializedTick(72, false)).to.eq(73)
+        expect(await tickBitMap.nextInitializedTick(528, false)).to.eq(529)
+      })
       it('multiple iterations', async () => {
         expect(await tickBitMap.nextInitializedTick(120, false)).to.eq(529)
       })
-      it('gas cost', async () => {
-        await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(120, false))
+      it('gas cost single iteration', async () => {
+        await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(400, false))
+      })
+      it('gas cost many iterations', async () => {
+        await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(2350, false))
+      })
+    })
+    describe('lte = true', () => {
+      it('one iteration', async () => {
+        expect(await tickBitMap.nextInitializedTick(-1230, true)).to.eq(-1259)
+      })
+      it('starting from initialized tick', async () => {
+        expect(await tickBitMap.nextInitializedTick(529, true)).to.eq(529)
+      })
+      it('getting to MIN_TICK', async () => {
+        expect(await tickBitMap.nextInitializedTick(-1260, true)).to.eq(MIN_TICK)
+      })
+      it('multiple iterations', async () => {
+        expect(await tickBitMap.nextInitializedTick(528, true)).to.eq(73)
+        expect(await tickBitMap.nextInitializedTick(2349, true)).to.eq(529)
+      })
+      it('gas cost single iteration', async () => {
+        await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(124, true))
+      })
+      it('gas cost many iterations', async () => {
+        await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(2349, true))
       })
     })
   })
