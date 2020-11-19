@@ -23,6 +23,8 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
 
 /// @title The Uniswap V3 Pair Contract
+/// @notice The V3 pair allows liquidity provisioning within user specified positions
+/// @dev Liquidity positions are partitioned into "ticks", 
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint112;
     using SafeMath for uint256;
@@ -762,7 +764,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    /// @notice move from right to left (token 1 is becoming more valuable)
+    /// @notice The first main swap function.
+    /// @notice Used when moving from right to left (token 1 is becoming more valuable).
+    /// @param amount0In Amount of token you are sending.
+    /// @param to The destination address of the tokens.
+    /// @param calldata The call data of the swap.
     function swap0For1(
         uint256 amount0In,
         address to,
@@ -773,8 +779,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         SwapParams memory params = SwapParams({zeroForOne: true, amountIn: amount0In, to: to, data: data});
         return _swap(params);
     }
-
-    /// @notice move from left to right (token 0 is becoming more valuable)
+    
+    /// @notice The second main swap function
+    /// @notice Used when moving from left to right (token 0 is becoming more valuable)
+    /// @param amount1In amount of token you are sending 
+    /// @param to The destination address of the tokens.
+    /// @param calldata The call data of the swap.
     function swap1For0(
         uint256 amount1In,
         address to,
