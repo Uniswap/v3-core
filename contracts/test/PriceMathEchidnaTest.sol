@@ -22,9 +22,9 @@ contract PriceMathEchidnaTest {
         uint256 amountOut = PriceMath.getAmountOut(reserveIn, reserveOut, amountIn);
         assert(amountOut < reserveOut);
 
-        uint256 k = uint256(reserveIn).mul(reserveOut);
-        uint256 reserveInAfter = uint256(reserveIn).add(amountIn);
-        uint256 reserveOutAfter = uint256(reserveOut).sub(amountOut);
+        uint256 k = reserveIn.mul(reserveOut);
+        uint256 reserveInAfter = reserveIn.add(amountIn);
+        uint256 reserveOutAfter = reserveOut.sub(amountOut);
         uint256 kAfter = reserveInAfter.mul(reserveOutAfter);
         assert(kAfter >= k);
     }
@@ -47,6 +47,31 @@ contract PriceMathEchidnaTest {
         assert(amount1Up >= amount1Down);
         assert(amount0Up - amount0Down <= 2);
         assert(amount1Up - amount1Down <= 2);
+    }
+
+    function getAmountOutAlwaysLtDifferenceInPrices(
+        uint224 priceRaw,
+        uint224 priceNextRaw,
+        uint112 liquidity
+    ) external pure {
+        require(priceRaw > 0 && priceNextRaw > 0 && liquidity > 0);
+        bool zeroForOne = priceNextRaw <= priceRaw;
+        (uint256 reserve0, uint256 reserve1) = PriceMath.getVirtualReservesAtPrice(
+            FixedPoint.uq112x112(priceRaw),
+            liquidity,
+            false
+        );
+        (uint256 reserve0Next, uint256 reserve1Next) = PriceMath.getVirtualReservesAtPrice(
+            FixedPoint.uq112x112(priceNextRaw),
+            liquidity,
+            false
+        );
+        uint256 amountIn = zeroForOne ? reserve0Next - reserve0 : reserve1Next - reserve1;
+        uint256 amountOut = zeroForOne
+            ? PriceMath.getAmountOut(reserve0, reserve1, amountIn)
+            : PriceMath.getAmountOut(reserve1, reserve0, amountIn);
+        uint256 maxAmountOut = zeroForOne ? reserve1 - reserve1Next : reserve0 - reserve0Next;
+        assert(amountOut < maxAmountOut);
     }
 
     function getInputToRatioInvariants(
@@ -84,9 +109,7 @@ contract PriceMathEchidnaTest {
         } else {
             assert((zeroForOne ? reserve1 : reserve0) > amountOutMax);
 
-            uint112 amountInLessFee = uint112(
-                (uint256(amountIn) * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE
-            );
+            uint112 amountInLessFee = uint112((amountIn * (PriceMath.LP_FEE_BASE - lpFee)) / PriceMath.LP_FEE_BASE);
             uint256 amountOut = zeroForOne
                 ? PriceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
                 : PriceMath.getAmountOut(reserve1, reserve0, amountInLessFee);
