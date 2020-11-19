@@ -13,8 +13,6 @@ interface IUniswapV3Pair {
 
     function FEE_OPTIONS(uint8) external pure returns (uint16);
 
-    function LIQUIDITY_MIN() external pure returns (uint112);
-
     // immutables
     function factory() external pure returns (address);
 
@@ -56,24 +54,20 @@ interface IUniswapV3Pair {
         returns (FixedPoint.uq144x112 memory price0Cumulative, FixedPoint.uq144x112 memory price1Cumulative);
 
     // initialize the pair
-    function initialize(
-        uint112 liquidity,
-        int16 tick,
-        uint8 feeVote
-    ) external;
+    function initialize(int16 tick, uint8 feeVote) external;
 
     // swapping
     function swap0For1(
-        uint112 amount0In,
+        uint256 amount0In,
         address to,
         bytes calldata data
-    ) external returns (uint112 amount1Out);
+    ) external returns (uint256 amount1Out);
 
     function swap1For0(
-        uint112 amount1In,
+        uint256 amount1In,
         address to,
         bytes calldata data
-    ) external returns (uint112 amount0Out);
+    ) external returns (uint256 amount0Out);
 
     function setFeeTo(address) external;
 
