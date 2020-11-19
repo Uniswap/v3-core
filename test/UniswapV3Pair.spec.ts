@@ -131,12 +131,10 @@ describe('UniswapV3Pair', () => {
       )
       expect(liquidity).to.eq(1)
     })
-    it.skip('emits a PositionSet event with the zero address', async () => {
+    it('emits a Initialized event with the input tick', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await expect(pair.initialize(-70, FeeVote.FeeVote1))
-        .to.emit(pair, 'PositionSet')
-        .withArgs(constants.AddressZero, MIN_TICK, MAX_TICK, FeeVote.FeeVote1, 1000)
+      await expect(pair.initialize(-70, FeeVote.FeeVote1)).to.emit(pair, 'Initialized').withArgs(-70)
     })
     it('transfers the token', async () => {
       await token0.approve(pair.address, constants.MaxUint256)

@@ -417,8 +417,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // set the permanent address 0 position
         Position storage position = _getPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
         position.liquidity = 1;
-        // emit Initialized(tick, feeVote);
-        // emit PositionSet(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, 1);
+        emit Initialized(tick);
+        //        emit PositionSet(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, 1);
     }
 
     struct SetPositionParams {
