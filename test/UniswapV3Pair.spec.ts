@@ -332,7 +332,7 @@ describe('UniswapV3Pair', () => {
   })
 
   // TODO test rest of categories in a loop to reduce code duplication
-  describe('post-initialize (fee vote 1 - 0.10%)', () => {
+  describe('post-initialize (fee vote 1 - 0.12%)', () => {
     const fee = FeeVote.FeeVote1
 
     beforeEach('initialize at zero tick', async () => {
@@ -453,7 +453,7 @@ describe('UniswapV3Pair', () => {
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
 
       expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(amount0In)
-      expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(998)
+      expect(token1BalanceAfter.sub(token1BalanceBefore)).to.eq(997)
 
       expect(await pair.tickCurrent()).to.eq(-1)
     })
@@ -480,7 +480,7 @@ describe('UniswapV3Pair', () => {
       const token0BalanceAfter = await token0.balanceOf(walletAddress)
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
 
-      expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(998)
+      expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(997)
       expect(token1BalanceBefore.sub(token1BalanceAfter), 'input amount decreased by amount in').to.eq(amount1In)
 
       expect(await pair.tickCurrent()).to.eq(0)
@@ -919,7 +919,7 @@ describe('UniswapV3Pair', () => {
       token0DeltaWithoutFeeTo = token0Delta
       token1DeltaWithoutFeeTo = token1Delta
 
-      expect(token0Delta).to.eq('499999999999999')
+      expect(token0Delta).to.eq('599999999999999')
       expect(token1Delta).to.eq(0)
     })
 
@@ -928,7 +928,7 @@ describe('UniswapV3Pair', () => {
 
       const [token0Delta, token1Delta] = await swapAndGetFeeValue()
 
-      const expectedProtocolDelta0 = token0DeltaWithoutFeeTo.div(6)
+      const expectedProtocolDelta0 = token0DeltaWithoutFeeTo.div(6).add(1)
       const expectedProtocolDelta1 = token1DeltaWithoutFeeTo.div(6)
 
       expect(token0Delta).to.be.eq(token0DeltaWithoutFeeTo.sub(expectedProtocolDelta0))
@@ -950,14 +950,14 @@ describe('UniswapV3Pair', () => {
       token0DeltaTwoSwaps = token0Delta
       token1DeltaTwoSwaps = token1Delta
 
-      expect(token0Delta).to.eq('999999999999999')
+      expect(token0Delta).to.eq('1199999999999999')
       expect(token1Delta).to.eq(0)
     })
 
     let expectedProtocolDelta0TwoSwaps: BigNumber
     let expectedProtocolDelta1TwoSwaps: BigNumber
     it('on:two swaps', async () => {
-      expectedProtocolDelta0TwoSwaps = token0DeltaTwoSwaps.div(6)
+      expectedProtocolDelta0TwoSwaps = token0DeltaTwoSwaps.div(6).add(1)
       expectedProtocolDelta1TwoSwaps = token1DeltaTwoSwaps.div(6)
 
       await pair.setFeeTo(otherAddress)
