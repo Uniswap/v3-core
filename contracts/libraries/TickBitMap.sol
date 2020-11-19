@@ -33,28 +33,30 @@ library TickBitMap {
 
     // returns the next initialized tick contained in the same word as the current tick that is either lte this tick
     // or greater than this tick
-    function nextInitializedTick(
+    function nextInitializedTickInSameWord(
         uint256[58] storage self,
         int16 tick,
         bool lte
-    ) internal view returns (int16) {
+    ) internal view returns (int16 next, bool initialized) {
         (uint256 wordPos, uint256 bitPos) = position(tick);
         uint256 word = self[wordPos];
 
         if (lte) {
-            // if we are on the left edge of the word, just return the current tick
-            if (bitPos == 255) return tick;
-
             // this should be all the 1s to the left of (or equal to) the current bitPos
-            uint256 mask = uint256(-1) - ((uint256(1) << bitPos) - 1);
+            uint256 mask = bitPos == 0 ? uint256(-1) : uint256(-1) - ((uint256(1) << bitPos) - 1);
             uint256 masked = word & mask;
 
-            // there are no initialized ticks to the left or at of the current tick, just return the leftmost in the word
-            if (masked == 0) return tick - int16(255 - bitPos);
+            // there are no initialized ticks to the left or at of the current tick, return the leftmost in the word
+            if (masked == 0) return (tick - int16(255 - bitPos), false);
 
-            uint8 lsbFromLeft = 255 - BitMath.leastSignificantBit(masked);
-            return tick - int16(255 - bitPos) + int16(lsbFromLeft);
+            return (tick + int16(bitPos) - int16(BitMath.leastSignificantBit(masked)), true);
         } else {
+            uint256 mask = bitPos == 0 ? 0 : ~(uint256(-1) - ((uint256(1) << bitPos) - 1));
+            uint256 masked = word & mask;
+
+            // there are no initialized ticks to the right of the current tick, just return the rightmost in the word
+            if (masked == 0) return (tick + int16(bitPos), false);
+
             revert('todo');
         }
     }
