@@ -520,7 +520,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
-        // TODO even if individual values are rounded appropriately, the difference can still be rounded inappropriately
         if (tickCurrent < params.tickLower) {
             amount0 = amount0.add(
                 getAmount0Delta(
