@@ -79,13 +79,13 @@ library TickBitMap {
         if (lte) {
             next = tick;
             while (next > TickMath.MIN_TICK && !initialized) {
-                (next, initialized) = nextInitializedTickWithinOneWord(self, tick, true);
+                (next, initialized) = nextInitializedTickWithinOneWord(self, next, true);
                 if (!initialized) next--;
             }
         } else {
             next = tick;
             while (next < TickMath.MAX_TICK && !initialized) {
-                (next, initialized) = nextInitializedTickWithinOneWord(self, tick, false);
+                (next, initialized) = nextInitializedTickWithinOneWord(self, next, false);
             }
         }
         require(initialized, 'TickMath::nextInitializedTick: no initialized tick after input tick');

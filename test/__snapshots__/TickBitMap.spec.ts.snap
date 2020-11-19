@@ -10,6 +10,10 @@ exports[`TickBitMap #isInitialized gas if tick is initialized 1`] = `1107`;
 
 exports[`TickBitMap #isInitialized gas if tick is not initialized 1`] = `1107`;
 
+exports[`TickBitMap #nextInitializedTick lte = false gas cost 1`] = `3152`;
+
+exports[`TickBitMap #nextInitializedTick lte = true gas cost 1`] = `9858`;
+
 exports[`TickBitMap #nextInitializedTickWithinOneWord lte = false gas cost for entire word 1`] = `1261`;
 
 exports[`TickBitMap #nextInitializedTickWithinOneWord lte = false gas cost just below boundary 1`] = `1621`;

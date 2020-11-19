@@ -257,7 +257,11 @@ describe.only('TickBitMap', () => {
         expect(await tickBitMap.nextInitializedTick(-1230, true)).to.eq(-1259)
       })
       it('multiple iterations', async () => {
-        expect(await tickBitMap.nextInitializedTick(-300, true)).to.eq(-1259)
+        expect(await tickBitMap.nextInitializedTick(124, true)).to.eq(-1259)
+        expect(await tickBitMap.nextInitializedTick(528, true)).to.eq(-1259)
+      })
+      it('gas cost', async () => {
+        await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(124, true))
       })
     })
     describe('lte = false', () => {
@@ -265,7 +269,10 @@ describe.only('TickBitMap', () => {
         expect(await tickBitMap.nextInitializedTick(480, false)).to.eq(529)
       })
       it('multiple iterations', async () => {
-        expect(await tickBitMap.nextInitializedTick(120, true)).to.eq(529)
+        expect(await tickBitMap.nextInitializedTick(120, false)).to.eq(529)
+      })
+      it('gas cost', async () => {
+        await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(120, false))
       })
     })
   })
