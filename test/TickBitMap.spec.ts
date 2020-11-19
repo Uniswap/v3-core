@@ -1,9 +1,10 @@
 import {ethers} from 'hardhat'
 import {TickBitMapTest} from '../typechain/TickBitMapTest'
 import {expect} from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
 import {MAX_TICK, MIN_TICK} from './shared/utilities'
 
-describe('TickBitMap', () => {
+describe.only('TickBitMap', () => {
   let tickBitMap: TickBitMapTest
 
   beforeEach('deploy TickBitMapTest', async () => {
@@ -48,6 +49,13 @@ describe('TickBitMap', () => {
       await expect(tickBitMap.isInitialized(MAX_TICK + 1)).to.be.revertedWith(
         'TickBitMap::position: tick must be less than or equal to MAX_TICK'
       )
+    })
+    it('gas if tick is not initialized', async () => {
+      await snapshotGasCost(tickBitMap.getGasCostOfIsInitialized(1))
+    })
+    it('gas if tick is initialized', async () => {
+      await tickBitMap.flipTick(1)
+      await snapshotGasCost(tickBitMap.getGasCostOfIsInitialized(1))
     })
   })
 
@@ -98,18 +106,31 @@ describe('TickBitMap', () => {
         'TickBitMap::position: tick must be less than or equal to MAX_TICK'
       )
     })
+
+    it('gas cost of flipping first tick in word to initialized', async () => {
+      await snapshotGasCost(await tickBitMap.getGasCostOfFlipTick(1))
+    })
+    it('gas cost of flipping second tick in word to initialized', async () => {
+      await tickBitMap.flipTick(0)
+      await snapshotGasCost(await tickBitMap.getGasCostOfFlipTick(1))
+    })
+    it('gas cost of flipping a tick that results in deleting a word', async () => {
+      await tickBitMap.flipTick(0)
+      await snapshotGasCost(await tickBitMap.getGasCostOfFlipTick(0))
+    })
   })
 
-  describe.only('#nextInitializedTick', () => {
-    describe('lte = false', () => {
-      beforeEach('set up some ticks', async () => {
-        // 73 is the first positive tick at the start of a word
-        await tickBitMap.flipTick(70)
-        await tickBitMap.flipTick(78)
-        await tickBitMap.flipTick(84)
-        await tickBitMap.flipTick(139)
-        await tickBitMap.flipTick(240)
-      })
+  describe('#nextInitializedTick', () => {
+    beforeEach('set up some ticks', async () => {
+      // 73 is the first positive tick at the start of a word
+      await tickBitMap.flipTick(70)
+      await tickBitMap.flipTick(78)
+      await tickBitMap.flipTick(84)
+      await tickBitMap.flipTick(139)
+      await tickBitMap.flipTick(240)
+    })
+
+    describe('lte = true', () => {
       it('returns same tick if initialized', async () => {
         expect(await tickBitMap.nextInitializedTick(78, true)).to.eq(78)
       })
@@ -131,6 +152,15 @@ describe('TickBitMap', () => {
       it('halfway through empty word', async () => {
         expect(await tickBitMap.nextInitializedTick(456, true)).to.eq(329)
       })
+
+      it('gas cost on boundary', async () => {
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTick(78, true))
+      })
+      it('gas cost just below boundary', async () => {
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTick(77, true))
+      })
     })
+
+    describe('lte = false', async () => {})
   })
 })
