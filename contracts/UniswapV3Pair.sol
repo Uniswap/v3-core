@@ -42,14 +42,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // ideally this would be a constant array, but constant arrays are not supported in solidity
     function FEE_OPTIONS(uint8 i) public pure override returns (uint16) {
         if (i < 3) {
-            if (i == 0) return 5;
-            if (i == 1) return 10;
+            if (i == 0) return 6;
+            if (i == 1) return 12;
             return 30;
         }
         if (i == 3) return 60;
-        if (i == 4) return 100;
+        if (i == 4) return 120;
         assert(i == 5);
-        return 200;
+        return 240;
     }
 
     address public immutable override factory;
