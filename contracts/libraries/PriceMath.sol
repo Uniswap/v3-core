@@ -9,11 +9,8 @@ import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
-import './SafeCast.sol';
-
 library PriceMath {
     using SafeMath for uint256;
-    using SafeCast for uint256;
 
     uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
 
