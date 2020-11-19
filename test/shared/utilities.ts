@@ -13,12 +13,12 @@ export enum FeeVote {
 }
 
 export const FEES: {[vote in FeeVote]: number} = {
-  [FeeVote.FeeVote0]: 5,
-  [FeeVote.FeeVote1]: 10,
+  [FeeVote.FeeVote0]: 6,
+  [FeeVote.FeeVote1]: 12,
   [FeeVote.FeeVote2]: 30,
   [FeeVote.FeeVote3]: 60,
-  [FeeVote.FeeVote4]: 100,
-  [FeeVote.FeeVote5]: 200,
+  [FeeVote.FeeVote4]: 120,
+  [FeeVote.FeeVote5]: 240,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {

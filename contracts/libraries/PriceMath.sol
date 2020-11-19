@@ -18,7 +18,7 @@ library PriceMath {
         uint256 x,
         uint256 y,
         uint256 d
-    ) private pure returns (uint256) {
+    ) internal pure returns (uint256) {
         return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
     }
 
