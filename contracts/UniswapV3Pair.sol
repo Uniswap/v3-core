@@ -544,8 +544,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 2**107 + ((2**95 - 1) * 14701) < 2**112
             // and, more importantly:
             // (2**107 * 6) + ((2**95 - 1) * 14701 * 6) < 2**112
-            require(liquidityCurrent[params.feeVote].addi(params.liquidityDelta) <= (uint112(1) << 107), 'TODO');
-            liquidityCurrent[params.feeVote] = uint112(liquidityCurrent[params.feeVote].addi(params.liquidityDelta));
+            uint256 liquidityCurrentNext = liquidityCurrent[params.feeVote].addi(params.liquidityDelta);
+            require(liquidityCurrentNext <= (uint256(1) << 107), 'UniswapV3Pair::setPosition: liquidity overflow');
+            liquidityCurrent[params.feeVote] = uint112(liquidityCurrentNext);
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
