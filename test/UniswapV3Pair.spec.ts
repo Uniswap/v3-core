@@ -88,7 +88,9 @@ describe('UniswapV3Pair', () => {
       )
     })
     it('fails if cannot transfer from user', async () => {
-      await expect(pair.initialize(0, FeeVote.FeeVote0)).to.be.revertedWith('TransferHelper::transferFrom: transferFrom failed')
+      await expect(pair.initialize(0, FeeVote.FeeVote0)).to.be.revertedWith(
+        'TransferHelper::transferFrom: transferFrom failed'
+      )
     })
     it('sets initial variables', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
