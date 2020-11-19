@@ -125,6 +125,12 @@ describe('TickBitMap', () => {
       it('boundary less 1', async () => {
         expect(await tickBitMap.nextInitializedTick(72, true)).to.eq(70)
       })
+      it('entire empty word', async () => {
+        expect(await tickBitMap.nextInitializedTick(584, true)).to.eq(329)
+      })
+      it('halfway through empty word', async () => {
+        expect(await tickBitMap.nextInitializedTick(456, true)).to.eq(329)
+      })
     })
   })
 })
