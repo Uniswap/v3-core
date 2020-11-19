@@ -61,12 +61,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // TODO figure out the best way to pack state variables
     address public override feeTo;
 
-    // the map of which ticks are initialized
-    // the tick's initialization bit position in this map is computed by:
-    // word: (tick - TickMath.MIN_TICK) / 256
-    // bit in word: (tick - TickMath.MIN_TICK) % 256
-    // mask: uint256(1) << (tick - TickMath.MIN_TICK) % 256
-    // since we have 14703 ticks, we need 58 words to store all the ticks
+    // see TickBitMap.sol
     uint256[58] public override tickBitMap;
 
     // meant to be accessed via getPriceCumulative

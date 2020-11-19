@@ -5,7 +5,12 @@ import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
 import '../libraries/TickMath.sol';
 
-// a library for dealing with a bitmap of all ticks initialized states
+// a library for dealing with a bitmap of all ticks initialized states, represented as an array of uint256[58]
+// the tick's initialization bit position in this map is computed by:
+// word: (tick - TickMath.MIN_TICK) / 256
+// bit in word: (tick - TickMath.MIN_TICK) % 256
+// mask: uint256(1) << (tick - TickMath.MIN_TICK) % 256
+// since we have 14703 ticks, we need 58 words to store all the ticks
 library TickBitMap {
     // computes the position in the uint256 array where the initialized state for a tick lives
     // bitPos is the 0 indexed position in the word from most to least significant where the flag is set
