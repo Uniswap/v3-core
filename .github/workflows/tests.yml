@@ -27,6 +27,8 @@ jobs:
           restore-keys: |
             yarn-
 
-      - run: yarn
-      - run: yarn compile
-      - run: yarn test
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run unit tests
+        run: yarn test

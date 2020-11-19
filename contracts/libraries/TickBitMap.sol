@@ -79,7 +79,7 @@ library TickBitMap {
         bool initialized;
         next = tick;
         if (lte) {
-            while (next > TickMath.MIN_TICK && !initialized) {
+            while (next >= TickMath.MIN_TICK && !initialized) {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, true);
                 if (!initialized) next--;
             }

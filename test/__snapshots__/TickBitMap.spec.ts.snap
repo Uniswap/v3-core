@@ -14,9 +14,9 @@ exports[`TickBitMap #nextInitializedTick initialized lte = false gas cost many i
 
 exports[`TickBitMap #nextInitializedTick initialized lte = false gas cost single iteration 1`] = `1832`;
 
-exports[`TickBitMap #nextInitializedTick initialized lte = true gas cost many iterations 1`] = `11173`;
+exports[`TickBitMap #nextInitializedTick initialized lte = true gas cost many iterations 1`] = `11200`;
 
-exports[`TickBitMap #nextInitializedTick initialized lte = true gas cost single iteration 1`] = `1892`;
+exports[`TickBitMap #nextInitializedTick initialized lte = true gas cost single iteration 1`] = `1898`;
 
 exports[`TickBitMap #nextInitializedTickWithinOneWord lte = false gas cost for entire word 1`] = `1261`;
 

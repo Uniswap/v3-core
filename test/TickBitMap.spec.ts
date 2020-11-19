@@ -259,6 +259,30 @@ describe('TickBitMap', () => {
         'TickMath::nextInitializedTick: no initialized next tick'
       )
     })
+    it('succeeds if initialized only to the left', async () => {
+      await initTicks([MIN_TICK])
+      expect(await tickBitMap.nextInitializedTick(0, true)).to.eq(MIN_TICK)
+      expect(await tickBitMap.nextInitializedTick(MIN_TICK + 1, true)).to.eq(MIN_TICK)
+      expect(await tickBitMap.nextInitializedTick(MIN_TICK, true)).to.eq(MIN_TICK)
+    })
+    it('succeeds if initialized only to the right', async () => {
+      await initTicks([MAX_TICK])
+      expect(await tickBitMap.nextInitializedTick(0, false)).to.eq(MAX_TICK)
+      expect(await tickBitMap.nextInitializedTick(MAX_TICK - 1, false)).to.eq(MAX_TICK)
+    })
+    it('reverts if called with MAX_TICK', async () => {
+      await initTicks([MAX_TICK])
+      await expect(tickBitMap.nextInitializedTick(MAX_TICK, false)).to.be.revertedWith(
+        'TickMath::nextInitializedTick: no initialized next tick'
+      )
+    })
+    it('reverts if called with MIN_TICK - 1', async () => {
+      await initTicks([MIN_TICK])
+      await expect(tickBitMap.nextInitializedTick(MIN_TICK - 1, true)).to.be.revertedWith(
+        'TickMath::nextInitializedTick: no initialized next tick'
+      )
+    })
+
     describe('initialized', () => {
       beforeEach(() => initTicks([MIN_TICK, -1259, 73, 529, 2350, MAX_TICK]))
       describe('lte = false', () => {
