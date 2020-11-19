@@ -42,8 +42,8 @@ library TickBitMap {
         uint256 word = self[wordPos];
 
         if (lte) {
-            // this should be all the 1s to the left of (or equal to) the current bitPos
-            uint256 mask = bitPos == 0 ? uint256(-1) : uint256(-1) - ((uint256(1) << bitPos) - 1);
+            // all the 1s to the left of (or equal to) the current bitPos
+            uint256 mask = uint256(-1) - ((uint256(1) << bitPos) - 1);
             uint256 masked = word & mask;
 
             // there are no initialized ticks to the left or at of the current tick, return the leftmost in the word
@@ -51,13 +51,19 @@ library TickBitMap {
 
             return (tick + int16(bitPos) - int16(BitMath.leastSignificantBit(masked)), true);
         } else {
-            uint256 mask = bitPos == 0 ? 0 : ~(uint256(-1) - ((uint256(1) << bitPos) - 1));
+            // if bitPos is 0, there is no tick to the right in the same word
+            if (bitPos == 0) {
+                return (tick, word & 1 != 0);
+            }
+
+            // all the 1s at or to the right of the bitPos
+            uint256 mask = (uint256(1) << bitPos) - 1;
             uint256 masked = word & mask;
 
             // there are no initialized ticks to the right of the current tick, just return the rightmost in the word
             if (masked == 0) return (tick + int16(bitPos), false);
 
-            revert('todo');
+            return (tick + int16(bitPos) - int16(BitMath.mostSignificantBit(masked)), true);
         }
     }
 }

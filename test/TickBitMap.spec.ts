@@ -4,7 +4,7 @@ import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {MAX_TICK, MIN_TICK} from './shared/utilities'
 
-describe.only('TickBitMap', () => {
+describe('TickBitMap', () => {
   let tickBitMap: TickBitMapTest
 
   beforeEach('deploy TickBitMapTest', async () => {
@@ -203,6 +203,26 @@ describe.only('TickBitMap', () => {
         const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(78, false)
         expect(next).to.eq(84)
         expect(initialized).to.eq(true)
+      })
+      it('returns the tick directly to the right', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(77, false)
+        expect(next).to.eq(78)
+        expect(initialized).to.eq(true)
+      })
+      it('does not exceed boundary', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(70, false)
+        expect(next).to.eq(72)
+        expect(initialized).to.eq(false)
+      })
+      it('skips entire word', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(329, false)
+        expect(next).to.eq(584)
+        expect(initialized).to.eq(false)
+      })
+      it('skips half word', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(456, false)
+        expect(next).to.eq(584)
+        expect(initialized).to.eq(false)
       })
     })
   })

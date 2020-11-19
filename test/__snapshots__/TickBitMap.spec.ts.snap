@@ -10,8 +10,8 @@ exports[`TickBitMap #isInitialized gas if tick is initialized 1`] = `1107`;
 
 exports[`TickBitMap #isInitialized gas if tick is not initialized 1`] = `1107`;
 
-exports[`TickBitMap #nextInitializedTickInSameWord lte = true gas cost for entire word 1`] = `1223`;
+exports[`TickBitMap #nextInitializedTickInSameWord lte = true gas cost for entire word 1`] = `1209`;
 
-exports[`TickBitMap #nextInitializedTickInSameWord lte = true gas cost just below boundary 1`] = `1248`;
+exports[`TickBitMap #nextInitializedTickInSameWord lte = true gas cost just below boundary 1`] = `1209`;
 
-exports[`TickBitMap #nextInitializedTickInSameWord lte = true gas cost on boundary 1`] = `1664`;
+exports[`TickBitMap #nextInitializedTickInSameWord lte = true gas cost on boundary 1`] = `1625`;
