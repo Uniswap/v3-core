@@ -22,9 +22,9 @@ import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
 
-/// @title The Uniswap V3 Pair Contract
-/// @notice The V3 pair allows liquidity provisioning within user specified positions
-/// @dev Liquidity positions are partitioned into "ticks", 
+/// @title The Uniswap V3 Pair Contract.
+/// @notice The V3 pair allows liquidity provisioning within user specified positions.
+/// @dev Liquidity positions are partitioned into "ticks"
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint112;
     using SafeMath for uint256;
@@ -796,6 +796,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return _swap(params);
     }
 
+    /// @notice Recovers tokens accidentally sent to the pair contract
+    /// @param token The token address
+    /// @param to The destination address of the transfer
+    /// @param amount The amount of the token to be recovered
     function recover(
         address token,
         address to,
