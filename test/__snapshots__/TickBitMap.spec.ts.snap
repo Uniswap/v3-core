@@ -10,13 +10,13 @@ exports[`TickBitMap #isInitialized gas if tick is initialized 1`] = `1107`;
 
 exports[`TickBitMap #isInitialized gas if tick is not initialized 1`] = `1107`;
 
-exports[`TickBitMap #nextInitializedTick lte = false gas cost many iterations 1`] = `28017`;
+exports[`TickBitMap #nextInitializedTick initialized lte = false gas cost many iterations 1`] = `28008`;
 
-exports[`TickBitMap #nextInitializedTick lte = false gas cost single iteration 1`] = `1841`;
+exports[`TickBitMap #nextInitializedTick initialized lte = false gas cost single iteration 1`] = `1832`;
 
-exports[`TickBitMap #nextInitializedTick lte = true gas cost many iterations 1`] = `11181`;
+exports[`TickBitMap #nextInitializedTick initialized lte = true gas cost many iterations 1`] = `11173`;
 
-exports[`TickBitMap #nextInitializedTick lte = true gas cost single iteration 1`] = `1900`;
+exports[`TickBitMap #nextInitializedTick initialized lte = true gas cost single iteration 1`] = `1892`;
 
 exports[`TickBitMap #nextInitializedTickWithinOneWord lte = false gas cost for entire word 1`] = `1261`;
 

@@ -88,6 +88,6 @@ library TickBitMap {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, false);
             }
         }
-        require(initialized, 'TickMath::nextInitializedTick: no initialized tick after input tick');
+        require(initialized, 'TickMath::nextInitializedTick: no initialized next tick');
     }
 }
