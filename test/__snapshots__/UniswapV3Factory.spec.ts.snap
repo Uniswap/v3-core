@@ -1,3 +1,3 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Factory #createPair gas 1`] = `3575279`;
+exports[`UniswapV3Factory #createPair gas 1`] = `3651947`;
