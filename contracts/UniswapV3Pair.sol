@@ -14,7 +14,6 @@ import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
-import './libraries/FixedPointExtra.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
 import './libraries/PriceMath.sol';
@@ -33,8 +32,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeCast for uint256;
     using MixedSafeMath for uint112;
     using FixedPoint for FixedPoint.uq112x112;
-    using FixedPointExtra for FixedPoint.uq112x112;
-    using FixedPointExtra for FixedPoint.uq144x112;
 
     // Number of fee options
     uint8 public constant override NUM_FEE_OPTIONS = 6;
