@@ -229,15 +229,6 @@ describe('PriceMath', () => {
             }
           })
 
-          // TODO this isn't always true, we have to cap the price
-          it.skip('price after swap does not pass price target', () => {
-            if (zeroForOne) {
-              expect(priceAfterSwap).to.be.gte(priceTarget)
-            } else {
-              expect(priceAfterSwap).to.be.lte(priceTarget)
-            }
-          })
-
           it('gas', async () => {
             await snapshotGasCost(
               priceMath.getGasCostOfGetInputToRatio(reserve0, reserve1, liquidity, {_x: priceTarget}, lpFee, zeroForOne)
