@@ -640,7 +640,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '95250928097033997')
+        .withArgs(pair.address, walletAddress, '95298218973436055')
 
       const tickCurrent = await pair.tickCurrent()
       expect(tickCurrent).to.eq(9)
