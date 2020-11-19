@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import '@openzeppelin/contracts/math/Math.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
@@ -11,6 +12,7 @@ import '@uniswap/lib/contracts/libraries/BitMath.sol';
 import './SafeCast.sol';
 
 library PriceMath {
+    using SafeMath for uint256;
     using SafeCast for uint256;
 
     uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
@@ -25,17 +27,17 @@ library PriceMath {
 
     // amountIn here is assumed to have already been discounted by the fee
     function getAmountOut(
-        uint112 reserveIn,
-        uint112 reserveOut,
-        uint112 amountIn
-    ) internal pure returns (uint112) {
-        return ((uint256(reserveOut) * amountIn) / (uint256(reserveIn) + amountIn)).toUint112();
+        uint256 reserveIn,
+        uint256 reserveOut,
+        uint256 amountIn
+    ) internal pure returns (uint256 amountOut) {
+        amountOut = FullMath.mulDiv(reserveOut, amountIn, reserveIn.add(amountIn));
     }
 
     // given a price and a liquidity amount, return the value of that liquidity at the price, rounded up
     function getVirtualReservesAtPrice(
         FixedPoint.uq112x112 memory price,
-        uint256 liquidity,
+        uint112 liquidity,
         bool roundUp
     ) internal pure returns (uint256 reserve0, uint256 reserve1) {
         if (liquidity == 0) return (0, 0);
@@ -65,17 +67,15 @@ library PriceMath {
         FixedPoint.uq112x112 memory priceTarget, // always reserve1/reserve0
         uint16 lpFee,
         bool zeroForOne
-    ) internal pure returns (uint112 amountIn, uint112 amountOut) {
+    ) internal pure returns (uint256 amountIn, uint256 amountOut) {
         // estimate value of reserves at target price, rounding up
         (uint256 reserve0Target, uint256 reserve1Target) = getVirtualReservesAtPrice(priceTarget, liquidity, true);
 
         (amountIn, amountOut) = zeroForOne
-            ? ((reserve0Target - reserve0).toUint112(), (reserve1 - reserve1Target).toUint112())
-            : ((reserve1Target - reserve1).toUint112(), (reserve0 - reserve0Target).toUint112());
+            ? (reserve0Target - reserve0, reserve1 - reserve1Target)
+            : (reserve1Target - reserve1, reserve0 - reserve0Target);
 
         // scale amountIn by the current fee (rounding up)
-        amountIn = mulDivRoundingUp(amountIn, LP_FEE_BASE, LP_FEE_BASE - lpFee).toUint112();
-
-        return (amountIn, amountOut);
+        amountIn = mulDivRoundingUp(amountIn, LP_FEE_BASE, LP_FEE_BASE - lpFee);
     }
 }

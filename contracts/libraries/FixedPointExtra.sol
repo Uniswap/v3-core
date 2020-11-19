@@ -7,6 +7,26 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
 library FixedPointExtra {
     // reverts on overflow
+    function add(FixedPoint.uq112x112 memory x, FixedPoint.uq112x112 memory y)
+        internal
+        pure
+        returns (FixedPoint.uq112x112 memory)
+    {
+        uint256 sum = uint256(x._x) + y._x;
+        require(sum <= uint224(-1), 'FixedPointExtra::add: OVERFLOW');
+        return FixedPoint.uq112x112(uint224(sum));
+    }
+
+    // reverts on overflow
+    function add(FixedPoint.uq144x112 memory x, FixedPoint.uq112x112 memory y)
+        internal
+        pure
+        returns (FixedPoint.uq144x112 memory)
+    {
+        return FixedPoint.uq144x112(SafeMath.add(x._x, y._x));
+    }
+
+    // reverts on overflow
     function sub(FixedPoint.uq112x112 memory x, FixedPoint.uq112x112 memory y)
         internal
         pure
@@ -16,13 +36,11 @@ library FixedPointExtra {
     }
 
     // reverts on overflow
-    function add(FixedPoint.uq112x112 memory x, FixedPoint.uq112x112 memory y)
+    function sub(FixedPoint.uq144x112 memory x, FixedPoint.uq144x112 memory y)
         internal
         pure
-        returns (FixedPoint.uq112x112 memory)
+        returns (FixedPoint.uq144x112 memory)
     {
-        uint256 sum = uint256(x._x) + y._x;
-        require(sum <= uint224(-1), 'FixedPointExtra::add: OVERFLOW');
-        return FixedPoint.uq112x112(uint224(sum));
+        return FixedPoint.uq144x112(SafeMath.sub(x._x, y._x));
     }
 }
