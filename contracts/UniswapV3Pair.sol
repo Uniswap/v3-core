@@ -21,6 +21,7 @@ import './libraries/PriceMath.sol';
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
+import './libraries/TickBitMap.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint112;
@@ -32,6 +33,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeCast for uint256;
     using MixedSafeMath for uint112;
     using FixedPoint for FixedPoint.uq112x112;
+    using TickBitMap for uint256[58];
 
     // Number of fee options
     uint8 public constant override NUM_FEE_OPTIONS = 6;
@@ -58,6 +60,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // TODO figure out the best way to pack state variables
     address public override feeTo;
+
+    // see TickBitMap.sol
+    uint256[58] public override tickBitMap;
 
     // meant to be accessed via getPriceCumulative
     FixedPoint.uq144x112 private price0CumulativeLast; // cumulative (token1 / token0) oracle price
@@ -371,6 +376,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tickInfo.secondsOutside = _blockTimestamp();
         }
         tickInfo.numPositions = 1;
+        tickBitMap.flipTick(tick);
+    }
+
+    function _clearTick(int16 tick) private {
+        delete tickInfos[tick];
+        tickBitMap.flipTick(tick);
     }
 
     function initialize(int16 tick, uint8 feeVote) external override lock {
@@ -510,9 +521,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if necessary, uninitialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta < 0) {
-                if (tickInfoLower.numPositions == 1) delete tickInfos[params.tickLower];
+                if (tickInfoLower.numPositions == 1) _clearTick(params.tickLower);
                 else tickInfoLower.numPositions--;
-                if (tickInfoUpper.numPositions == 1) delete tickInfos[params.tickUpper];
+                if (tickInfoUpper.numPositions == 1) _clearTick(params.tickUpper);
                 else tickInfoUpper.numPositions--;
 
                 // reset fee growth
