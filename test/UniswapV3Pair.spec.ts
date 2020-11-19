@@ -303,9 +303,8 @@ describe('UniswapV3Pair', () => {
     })
   })
 
+  // the combined amount of liquidity that the pair is initialized with (including the 1 minimum liquidity that is burned)
   const initializeLiquidityAmount = expandTo18Decimals(2)
-  const initializeToken0Amount = initializeLiquidityAmount
-  const initializeToken1Amount = initializeToken0Amount
   async function initializeAtZeroTick(feeVote: FeeVote, _pair: MockTimeUniswapV3Pair = pair): Promise<void> {
     await token0.approve(_pair.address, constants.MaxUint256)
     await token1.approve(_pair.address, constants.MaxUint256)
@@ -376,14 +375,17 @@ describe('UniswapV3Pair', () => {
 
       const k = await pair.getLiquidity()
 
+      const b0 = await token0.balanceOf(pair.address)
+      const b1 = await token1.balanceOf(pair.address)
+
       await token0.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       const kAfter = await pair.getLiquidity()
       expect(kAfter).to.be.gte(k)
 
-      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(10))
-      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount)
+      expect((await token0.balanceOf(pair.address)).sub(b0)).to.eq(10)
+      expect((await token1.balanceOf(pair.address)).sub(b1)).to.eq(0)
     })
 
     it('setPosition to the left of the current price', async () => {
@@ -393,14 +395,17 @@ describe('UniswapV3Pair', () => {
 
       const k = await pair.getLiquidity()
 
+      const b0 = await token0.balanceOf(pair.address)
+      const b1 = await token1.balanceOf(pair.address)
+
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
 
       const kAfter = await pair.getLiquidity()
       expect(kAfter).to.be.gte(k)
 
-      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount)
-      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(10))
+      expect((await token0.balanceOf(pair.address)).sub(b0)).to.eq(0)
+      expect((await token1.balanceOf(pair.address)).sub(b1)).to.eq(10)
     })
 
     it('setPosition within the current price', async () => {
@@ -410,6 +415,9 @@ describe('UniswapV3Pair', () => {
 
       const k = await pair.getLiquidity()
 
+      const b0 = await token0.balanceOf(pair.address)
+      const b1 = await token1.balanceOf(pair.address)
+
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(lowerTick, upperTick, fee, liquidityDelta)
@@ -417,8 +425,8 @@ describe('UniswapV3Pair', () => {
       const kAfter = await pair.getLiquidity()
       expect(kAfter).to.be.gte(k)
 
-      expect(await token0.balanceOf(pair.address)).to.eq(initializeToken0Amount.add(9))
-      expect(await token1.balanceOf(pair.address)).to.eq(initializeToken1Amount.add(9))
+      expect((await token0.balanceOf(pair.address)).sub(b0)).to.eq(9)
+      expect((await token1.balanceOf(pair.address)).sub(b1)).to.eq(9)
     })
 
     it('cannot remove more than the entire position', async () => {
