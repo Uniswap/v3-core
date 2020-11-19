@@ -4,13 +4,19 @@ import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {MAX_TICK, MIN_TICK} from './shared/utilities'
 
-describe('TickBitMap', () => {
+describe.only('TickBitMap', () => {
   let tickBitMap: TickBitMapTest
 
   beforeEach('deploy TickBitMapTest', async () => {
     const tickBitMapTestFactory = await ethers.getContractFactory('TickBitMapTest')
     tickBitMap = (await tickBitMapTestFactory.deploy()) as TickBitMapTest
   })
+
+  async function initTicks(ticks: number[]): Promise<void> {
+    for (const tick of ticks) {
+      await tickBitMap.flipTick(tick)
+    }
+  }
 
   describe('#isInitialized', () => {
     it('is false at first', async () => {
@@ -120,109 +126,146 @@ describe('TickBitMap', () => {
     })
   })
 
-  describe('#nextInitializedTickInSameWord', () => {
+  describe('#nextInitializedTickWithinOneWord', () => {
     beforeEach('set up some ticks', async () => {
       // 73 is the first positive tick at the start of a word
-      await tickBitMap.flipTick(70)
-      await tickBitMap.flipTick(78)
-      await tickBitMap.flipTick(84)
-      await tickBitMap.flipTick(139)
-      await tickBitMap.flipTick(240)
+      await initTicks([70, 78, 84, 139, 240])
+    })
+
+    describe('lte = false', async () => {
+      it('returns tick to right if at initialized tick', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(78, false)
+        expect(next).to.eq(84)
+        expect(initialized).to.eq(true)
+      })
+      it('returns the tick directly to the right', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(77, false)
+        expect(next).to.eq(78)
+        expect(initialized).to.eq(true)
+      })
+      it('returns the next words initialized tick if on the right boundary', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(328, false)
+        expect(next).to.eq(584)
+        expect(initialized).to.eq(false)
+      })
+      it('returns the next initialized tick from the next word', async () => {
+        await tickBitMap.flipTick(340)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(328, false)
+        expect(next).to.eq(340)
+        expect(initialized).to.eq(true)
+      })
+      it('does not exceed boundary', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(70, false)
+        expect(next).to.eq(72)
+        expect(initialized).to.eq(false)
+      })
+      it('skips entire word', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(329, false)
+        expect(next).to.eq(584)
+        expect(initialized).to.eq(false)
+      })
+      it('skips half word', async () => {
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(456, false)
+        expect(next).to.eq(584)
+        expect(initialized).to.eq(false)
+      })
+
+      it('gas cost on boundary', async () => {
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(78, false))
+      })
+      it('gas cost just below boundary', async () => {
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(77, false))
+      })
+      it('gas cost for entire word', async () => {
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(329, false))
+      })
     })
 
     describe('lte = true', () => {
       it('returns same tick if initialized', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(78, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(78, true)
 
         expect(next).to.eq(78)
         expect(initialized).to.eq(true)
       })
       it('returns tick directly to the left of input tick if not initialized', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(79, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(79, true)
 
         expect(next).to.eq(78)
         expect(initialized).to.eq(true)
       })
       it('will not exceed the word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(73, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(73, true)
 
         expect(next).to.eq(73)
         expect(initialized).to.eq(false)
       })
       it('at the word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(73, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(73, true)
 
         expect(next).to.eq(73)
         expect(initialized).to.eq(false)
       })
       it('word boundary less 1 (next initialized tick in next word)', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(72, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(72, true)
 
         expect(next).to.eq(70)
         expect(initialized).to.eq(true)
       })
       it('word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(69, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(69, true)
 
         expect(next).to.eq(-183)
         expect(initialized).to.eq(false)
       })
       it('entire empty word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(584, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(584, true)
 
         expect(next).to.eq(329)
         expect(initialized).to.eq(false)
       })
       it('halfway through empty word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(456, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(456, true)
 
         expect(next).to.eq(329)
         expect(initialized).to.eq(false)
       })
       it('boundary is initialized', async () => {
         await tickBitMap.flipTick(329)
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(456, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(456, true)
 
         expect(next).to.eq(329)
         expect(initialized).to.eq(true)
       })
 
       it('gas cost on boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickInSameWord(78, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(78, true))
       })
       it('gas cost just below boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickInSameWord(77, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(77, true))
       })
       it('gas cost for entire word', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickInSameWord(584, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(584, true))
       })
     })
+  })
 
-    describe('lte = false', async () => {
-      it('returns tick to right if at initialized tick', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(78, false)
-        expect(next).to.eq(84)
-        expect(initialized).to.eq(true)
+  describe('#nextInitializedTick', () => {
+    beforeEach(() => initTicks([MIN_TICK, -1259, 529, 2350, MAX_TICK]))
+    describe('lte = true', () => {
+      it('one iteration', async () => {
+        expect(await tickBitMap.nextInitializedTick(-1230, true)).to.eq(-1259)
       })
-      it('returns the tick directly to the right', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(77, false)
-        expect(next).to.eq(78)
-        expect(initialized).to.eq(true)
+      it('multiple iterations', async () => {
+        expect(await tickBitMap.nextInitializedTick(-300, true)).to.eq(-1259)
       })
-      it('does not exceed boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(70, false)
-        expect(next).to.eq(72)
-        expect(initialized).to.eq(false)
+    })
+    describe('lte = false', () => {
+      it('one iteration', async () => {
+        expect(await tickBitMap.nextInitializedTick(480, false)).to.eq(529)
       })
-      it('skips entire word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(329, false)
-        expect(next).to.eq(584)
-        expect(initialized).to.eq(false)
-      })
-      it('skips half word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickInSameWord(456, false)
-        expect(next).to.eq(584)
-        expect(initialized).to.eq(false)
+      it('multiple iterations', async () => {
+        expect(await tickBitMap.nextInitializedTick(120, true)).to.eq(529)
       })
     })
   })

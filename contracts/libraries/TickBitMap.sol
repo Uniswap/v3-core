@@ -38,16 +38,15 @@ library TickBitMap {
 
     // returns the next initialized tick contained in the same word as the current tick that is either lte this tick
     // or greater than this tick
-    function nextInitializedTickInSameWord(
+    function nextInitializedTickWithinOneWord(
         uint256[58] storage self,
         int16 tick,
         bool lte
     ) internal view returns (int16 next, bool initialized) {
-        (uint256 wordPos, uint256 bitPos) = position(tick);
-        uint256 word = self[wordPos];
-
         if (lte) {
-            // all the 1s to the left of (or equal to) the current bitPos
+            (uint256 wordPos, uint256 bitPos) = position(tick);
+            uint256 word = self[wordPos];
+            // all the 1s at or to the left of the current bitPos
             uint256 mask = uint256(-1) - ((uint256(1) << bitPos) - 1);
             uint256 masked = word & mask;
 
@@ -56,19 +55,39 @@ library TickBitMap {
 
             return (tick + int16(bitPos) - int16(BitMath.leastSignificantBit(masked)), true);
         } else {
-            // if bitPos is 0, there is no tick to the right in the same word
-            if (bitPos == 0) {
-                return (tick, word & 1 != 0);
-            }
-
+            // start from the word of the next tick, since the current tick state doesn't matter
+            (uint256 wordPos, uint256 bitPos) = position(tick + 1);
+            uint256 word = self[wordPos];
             // all the 1s at or to the right of the bitPos
-            uint256 mask = (uint256(1) << bitPos) - 1;
+            uint256 mask = bitPos == 255 ? uint256(-1) : (uint256(1) << (bitPos + 1)) - 1;
             uint256 masked = word & mask;
 
             // there are no initialized ticks to the right of the current tick, just return the rightmost in the word
-            if (masked == 0) return (tick + int16(bitPos), false);
+            if (masked == 0) return (tick + 1 + int16(bitPos), false);
 
-            return (tick + int16(bitPos) - int16(BitMath.mostSignificantBit(masked)), true);
+            return (tick + 1 + int16(bitPos) - int16(BitMath.mostSignificantBit(masked)), true);
         }
+    }
+
+    // same as above, but iterates until it finds the next initialized tick
+    function nextInitializedTick(
+        uint256[58] storage self,
+        int16 tick,
+        bool lte
+    ) internal view returns (int16 next) {
+        bool initialized;
+        if (lte) {
+            next = tick;
+            while (next > TickMath.MIN_TICK && !initialized) {
+                (next, initialized) = nextInitializedTickWithinOneWord(self, tick, true);
+                if (!initialized) next--;
+            }
+        } else {
+            next = tick;
+            while (next < TickMath.MAX_TICK && !initialized) {
+                (next, initialized) = nextInitializedTickWithinOneWord(self, tick, false);
+            }
+        }
+        require(initialized, 'TickMath::nextInitializedTick: no initialized tick after input tick');
     }
 }
