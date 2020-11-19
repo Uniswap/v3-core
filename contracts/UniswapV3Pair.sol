@@ -248,9 +248,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory priceUpper,
         int112 liquidity
     ) internal pure returns (int256) {
-        if (liquidity == 0) return (0);
+        if (liquidity == 0) return 0;
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
+        if (liquidity < 0) safeShiftBits -= 2; // ensure that our denominator won't overflow
 
         uint256 priceLowerScaled = uint256(priceLower._x) << safeShiftBits; // priceLower * 2**safeShiftBits
         uint256 priceLowerScaledRoot = Babylonian.sqrt(priceLowerScaled); // sqrt(priceLowerScaled)
@@ -278,7 +279,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     .mulDiv(
                     uint256(uint112(-liquidity)) << (safeShiftBits / 2), // * 2**(SSB/2)
                     priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
-                    (priceLowerScaledRoot + (roundUpLower ? 1 : 0)).mul(priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
+                    (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
                 )
                     .toInt256();
         }
@@ -289,7 +290,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory priceUpper,
         int112 liquidity
     ) internal pure returns (int256) {
-        if (liquidity == 0) return (0);
+        if (liquidity == 0) return 0;
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
 
