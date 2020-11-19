@@ -322,9 +322,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeTo = feeTo_;
     }
 
-    /// @notice initializes 
+    /// @notice initializes tick
+    /// @param tick desired tick
+    /// @dev by convention, we assume that all growth before a tick was initialized happened _below_ the tick
     function _initializeTick(int16 tick, TickInfo storage tickInfo) private {
-        // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
         if (tick <= tickCurrent) {
             tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
             tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
@@ -403,9 +404,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
     }
 
-    // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
-    // also sync a position and return accumulated fees from it to user as tokens
-    // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
+    /// @notice add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
+    /// @notice also sync a position and return accumulated fees from it to user as tokens
+    /// @dev liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _update();
 
@@ -761,7 +762,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    // move from right to left (token 1 is becoming more valuable)
+    /// @notice move from right to left (token 1 is becoming more valuable)
     function swap0For1(
         uint256 amount0In,
         address to,
@@ -773,7 +774,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return _swap(params);
     }
 
-    // move from left to right (token 0 is becoming more valuable)
+    /// @notice move from left to right (token 0 is becoming more valuable)
     function swap1For0(
         uint256 amount1In,
         address to,
