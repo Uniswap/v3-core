@@ -54,7 +54,7 @@ library TickBitMap {
             // there are no initialized ticks to the left or at of the current tick, return the leftmost in the word
             if (masked == 0) return (tick - int16(255 - bitPos), false);
 
-            return (tick + int16(bitPos) - int16(BitMath.leastSignificantBit(masked)), true);
+            return (tick + (int16(bitPos) - int16(BitMath.leastSignificantBit(masked))), true);
         } else {
             // start from the word of the next tick, since the current tick state doesn't matter
             (uint256 wordPos, uint256 bitPos) = position(tick + 1);
@@ -66,7 +66,7 @@ library TickBitMap {
             // there are no initialized ticks to the right of the current tick, just return the rightmost in the word
             if (masked == 0) return (tick + 1 + int16(bitPos), false);
 
-            return (tick + 1 + int16(bitPos) - int16(BitMath.mostSignificantBit(masked)), true);
+            return ((tick + 1) + (int16(bitPos) - int16(BitMath.mostSignificantBit(masked))), true);
         }
     }
 
