@@ -288,11 +288,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint.uq112x112 memory priceLower,
         FixedPoint.uq112x112 memory priceUpper,
         int112 liquidity
-    )
-        internal
-        pure
-        returns (int256)
-    {
+    ) internal pure returns (int256) {
         if (liquidity == 0) return (0);
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
@@ -308,18 +304,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower))
         // we want to round the delta up when liquidity is >0, i.e. being added
         if (liquidity > 0) {
-            return PriceMath.mulDivRoundingUp(
-                uint256(liquidity),
-                priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
-                uint256(1) << (56 + safeShiftBits / 2)
-            ).toInt256();
+            return
+                PriceMath
+                    .mulDivRoundingUp(
+                    uint256(liquidity),
+                    priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
+                    uint256(1) << (56 + safeShiftBits / 2)
+                )
+                    .toInt256();
         } else {
             // we want to round the delta down when liquidity is <0, i.e. being removed
-            return -FullMath.mulDiv(
-                uint256(uint112(-liquidity)),
-                priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
-                uint256(1) << (56 + safeShiftBits / 2)
-            ).toInt256();
+            return
+                -FullMath
+                    .mulDiv(
+                    uint256(uint112(-liquidity)),
+                    priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
+                    uint256(1) << (56 + safeShiftBits / 2)
+                )
+                    .toInt256();
         }
     }
 
@@ -530,16 +532,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
-            amount0 = amount0.add(getAmount0Delta(
-                priceCurrent,
-                TickMath.getRatioAtTick(params.tickUpper),
-                params.liquidityDelta
-            ));
-            amount1 = amount1.add(getAmount1Delta(
-                TickMath.getRatioAtTick(params.tickLower),
-                priceCurrent,
-                params.liquidityDelta
-            ));
+            amount0 = amount0.add(
+                getAmount0Delta(priceCurrent, TickMath.getRatioAtTick(params.tickUpper), params.liquidityDelta)
+            );
+            amount1 = amount1.add(
+                getAmount1Delta(TickMath.getRatioAtTick(params.tickLower), priceCurrent, params.liquidityDelta)
+            );
 
             // this satisfies:
             // 2**107 + ((2**95 - 1) * 14701) < 2**112
@@ -550,11 +548,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = amount1.add(getAmount1Delta(
-                TickMath.getRatioAtTick(params.tickLower),
-                TickMath.getRatioAtTick(params.tickUpper),
-                params.liquidityDelta
-            ));
+            amount1 = amount1.add(
+                getAmount1Delta(
+                    TickMath.getRatioAtTick(params.tickLower),
+                    TickMath.getRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                )
+            );
         }
 
         if (amount0 > 0) {
