@@ -98,7 +98,7 @@ describe('UniswapV3Pair', () => {
     })
     it('fails if cannot transfer from user', async () => {
       await expect(pair.initialize(1000, 0, FeeVote.FeeVote0)).to.be.revertedWith(
-        'TransferHelper: TRANSFER_FROM_FAILED'
+        'TransferHelper::transferFrom: transferFrom failed'
       )
     })
     it('sets initial variables', async () => {
@@ -217,7 +217,7 @@ describe('UniswapV3Pair', () => {
         })
         it('fails if cannot transfer', async () => {
           await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)).to.be.revertedWith(
-            'TransferHelper: TRANSFER_FROM_FAILED'
+            'TransferHelper::transferFrom: transferFrom failed'
           )
         })
       })
