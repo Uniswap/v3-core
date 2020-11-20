@@ -267,27 +267,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bool roundUpUpper = priceUpperScaledRoot**2 < priceUpperScaled;
 
         // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower)) / sqrt(priceUpper) * sqrt(priceLower)
-        // we want to round the delta up when liquidity is >0, i.e. being added
         if (liquidity > 0) {
-            return
-                PriceMath
-                    .mulDivRoundingUp(
-                    uint256(liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
-                    (priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot) << 56, // * 2**56
-                    priceLowerScaledRoot * priceUpperScaledRoot
-                )
-                    .toInt256();
-        } else {
-            // we want to round the delta down when liquidity is <0, i.e. being removed
-            return
-                -FullMath
-                    .mulDiv(
-                    uint256(uint112(-liquidity)) << (safeShiftBits / 2), // * 2**(SSB/2)
-                    priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
-                    (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
-                )
-                    .toInt256();
+            uint256 amount0 = PriceMath.mulDivRoundingUp(
+                uint256(liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
+                (priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot) << 56, // * 2**56
+                priceLowerScaledRoot * priceUpperScaledRoot
+            );
+            return amount0.toInt256();
         }
+        uint256 amount0 = FullMath.mulDiv(
+            uint256(uint112(-liquidity)) << (safeShiftBits / 2), // * 2**(SSB/2)
+            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
+            (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
+        );
+        return -amount0.toInt256();
     }
 
     function getAmount1Delta(
@@ -308,27 +301,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bool roundUpUpper = priceUpperScaledRoot**2 < priceUpperScaled;
 
         // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower))
-        // we want to round the delta up when liquidity is >0, i.e. being added
         if (liquidity > 0) {
-            return
-                PriceMath
-                    .mulDivRoundingUp(
-                    uint256(liquidity),
-                    priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
-                    uint256(1) << (56 + safeShiftBits / 2)
-                )
-                    .toInt256();
-        } else {
-            // we want to round the delta down when liquidity is <0, i.e. being removed
-            return
-                -FullMath
-                    .mulDiv(
-                    uint256(uint112(-liquidity)),
-                    priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
-                    uint256(1) << (56 + safeShiftBits / 2)
-                )
-                    .toInt256();
+            uint256 amount1 = PriceMath.mulDivRoundingUp(
+                uint256(liquidity),
+                priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
+                uint256(1) << (56 + safeShiftBits / 2)
+            );
+            return amount1.toInt256();
         }
+        uint256 amount1 = FullMath.mulDiv(
+            uint256(uint112(-liquidity)),
+            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
+            uint256(1) << (56 + safeShiftBits / 2)
+        );
+        return -amount1.toInt256();
     }
 
     constructor(
@@ -384,44 +370,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickBitMap.flipTick(tick);
     }
 
-    function initialize(int16 tick, uint8 feeVote) external override lock {
+    function initialize(int16 tick) external override lock {
         require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
-        require(feeVote < NUM_FEE_OPTIONS, 'UniswapV3Pair::initialize: fee vote must be a valid option');
 
-        FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
-
-        // take the tokens
-        (uint256 amount0, uint256 amount1) = PriceMath.getVirtualReservesAtPrice(price, 1, true);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
-
-        // initialize oracle timestamp and fee
+        // initialize oracle timestamp
         blockTimestampLast = _blockTimestamp();
-        feeLast = FEE_OPTIONS(feeVote);
 
-        // initialize liquidity, price, and tick (note that this votes indelibly with the burned liquidity)
-        liquidityCurrent[feeVote] = 1;
-        priceCurrent = price;
+        // initialize current price and tick
+        priceCurrent = TickMath.getRatioAtTick(tick);
         tickCurrent = tick;
 
-        // this is basically _setPosition for address 0
-        TickInfo storage minTick = tickInfos[TickMath.MIN_TICK];
-        TickInfo storage maxTick = tickInfos[TickMath.MAX_TICK];
-        _initializeTick(TickMath.MIN_TICK, minTick);
-        _initializeTick(TickMath.MAX_TICK, maxTick);
-        minTick.liquidityDelta[feeVote] = 1;
-        maxTick.liquidityDelta[feeVote] = -1;
+        // set permanent 1 wei position
+        _setPosition(
+            SetPositionParams({
+                owner: address(0),
+                tickLower: TickMath.MIN_TICK,
+                tickUpper: TickMath.MAX_TICK,
+                feeVote: 2, // FEE_OPTIONS(2) == 30 bips :)
+                liquidityDelta: 1
+            })
+        );
 
-        // set the permanent address 0 position
-        Position storage position = _getPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
-        position.liquidity = 1;
         emit Initialized(tick);
-        //        emit PositionSet(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, 1);
     }
 
     struct SetPositionParams {
+        address owner;
         int16 tickLower;
         int16 tickUpper;
         uint8 feeVote;
@@ -433,7 +409,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int16 tickUpper,
         uint8 feeVote,
         int112 liquidityDelta
-    ) external lock returns (int256 amount0, int256 amount1) {
+    ) external override lock returns (int256 amount0, int256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::setPosition: pair not initialized');
         require(tickLower < tickUpper, 'UniswapV3Pair::setPosition: tickLower must be less than tickUpper');
         require(tickLower >= TickMath.MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
@@ -446,6 +422,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return
             _setPosition(
                 SetPositionParams({
+                    owner: msg.sender,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
                     feeVote: feeVote,
@@ -464,7 +441,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // gather the storage pointers
             TickInfo storage tickInfoLower = tickInfos[params.tickLower];
             TickInfo storage tickInfoUpper = tickInfos[params.tickUpper];
-            Position storage position = _getPosition(msg.sender, params.tickLower, params.tickUpper, params.feeVote);
+            Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper, params.feeVote);
 
             // if necessary, initialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta > 0) {

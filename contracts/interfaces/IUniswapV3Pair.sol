@@ -57,7 +57,14 @@ interface IUniswapV3Pair {
         returns (FixedPoint.uq144x112 memory price0Cumulative, FixedPoint.uq144x112 memory price1Cumulative);
 
     // initialize the pair
-    function initialize(int16 tick, uint8 feeVote) external;
+    function initialize(int16 tick) external;
+
+    function setPosition(
+        int16 tickLower,
+        int16 tickUpper,
+        uint8 feeVote,
+        int112 liquidityDelta
+    ) external returns (int256 amount0, int256 amount1);
 
     // swapping
     function swap0For1(
