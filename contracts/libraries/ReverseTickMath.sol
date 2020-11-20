@@ -7,7 +7,7 @@ import './TickMath.sol';
 
 // calculates ticks from prices
 library ReverseTickMath {
-    // gets the tick from a price, assuming the tick is within the given lower and upper bound
+    // gets the tick from a price, assuming the tick is gte the lower and lt the upper bound
     function getTickFromPrice(
         FixedPoint.uq112x112 memory price,
         int16 lowerBound,
@@ -22,7 +22,12 @@ library ReverseTickMath {
 
         while (upperBound - lowerBound > 1) {
             FixedPoint.uq112x112 memory middle = TickMath.getRatioAtTick(tick);
-            if (price._x >= middle._x) {
+
+            // that's a bingo
+            if (price._x == middle._x) {
+                return tick;
+            }
+            if (price._x > middle._x) {
                 lowerBound = tick;
             } else {
                 upperBound = tick;
