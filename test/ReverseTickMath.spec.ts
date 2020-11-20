@@ -12,7 +12,7 @@ describe('ReverseTickMath', () => {
     reverseTickMath = (await reverseTickMathTest.deploy()) as ReverseTickMathTest
   })
 
-  describe.only('#getTickFromPrice', () => {
+  describe('#getTickFromPrice', () => {
     it('lowerBound = upperBound - 1', async () => {
       expect(await reverseTickMath.getTickFromPrice({_x: encodePrice(1, 1)}, 0, 1)).to.eq(0)
     })
