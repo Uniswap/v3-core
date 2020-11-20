@@ -95,8 +95,8 @@ describe('UniswapV3Pair', () => {
       expect(await pair.priceCurrent()).to.eq('2587398664091925131144072317295472') // copied from tickmath spec
       expect(await pair.blockTimestampLast()).to.eq(TEST_PAIR_START_TIME)
       expect(await pair.tickCurrent()).to.eq(-70)
-      expect(await pair.feeLast()).to.eq(0)
-      expect(await pair.liquidityCurrent(FeeVote.FeeVote2)).to.eq(1)
+      expect(await pair.feeFloor()).to.eq(6)
+      expect(await pair.liquidityCurrent(FeeVote.FeeVote0)).to.eq(1)
     })
     it('initializes MIN_TICK and MAX_TICK', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
@@ -123,7 +123,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.initialize(-70)
       const {liquidity} = await pair.positions(
-        getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK, FeeVote.FeeVote2)
+        getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK, FeeVote.FeeVote0)
       )
       expect(liquidity).to.eq(1)
     })
@@ -867,8 +867,8 @@ describe('UniswapV3Pair', () => {
       }
     })
     it('median computation', async () => {
-      await initializeAtZeroTick(FeeVote.FeeVote2)
-      const liquidityVote = await pair.liquidityCurrent(FeeVote.FeeVote2)
+      await initializeAtZeroTick(FeeVote.FeeVote0)
+      const liquidityVote = await pair.liquidityCurrent(FeeVote.FeeVote0)
       expect(liquidityVote).to.eq(initializeLiquidityAmount)
       expect(await pair.getLiquidity()).to.eq(initializeLiquidityAmount)
       await token0.approve(pair.address, constants.MaxUint256)
