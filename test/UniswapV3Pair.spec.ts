@@ -894,36 +894,47 @@ describe('UniswapV3Pair', () => {
   })
 
   // jankily, these tests are prety interdependent and basically have to be run as a block
-  describe('feeTo', () => {
+  describe.only('feeTo', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
+    let mockTimePair: MockTimeUniswapV3Pair
     beforeEach(async () => {
-      await token0.approve(pair.address, constants.MaxUint256)
-      await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(0)
-      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, liquidityAmount)
+      const mockTimePairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
+      mockTimePair = (await mockTimePairFactory.deploy(
+        factory.address,
+        token0.address,
+        token1.address
+      )) as MockTimeUniswapV3Pair
+
+      await mockTimePair.setTime(1)
+
+      await token0.approve(mockTimePair.address, constants.MaxUint256)
+      await token1.approve(mockTimePair.address, constants.MaxUint256)
+      await mockTimePair.initialize(0)
+      await mockTimePair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, liquidityAmount)
+      await mockTimePair.setTime(2)
     })
 
     it('is initially set to 0', async () => {
-      expect(await pair.feeTo()).to.eq(constants.AddressZero)
+      expect(await mockTimePair.feeTo()).to.eq(constants.AddressZero)
     })
 
     it('can be changed by the feeToSetter', async () => {
-      await pair.setFeeTo(otherAddress)
-      expect(await pair.feeTo()).to.eq(otherAddress)
+      await mockTimePair.setFeeTo(otherAddress)
+      expect(await mockTimePair.feeTo()).to.eq(otherAddress)
     })
 
     it('cannot be changed by addresses that are not feeToSetter', async () => {
-      await expect(pair.connect(other).setFeeTo(otherAddress)).to.be.revertedWith(
+      await expect(mockTimePair.connect(other).setFeeTo(otherAddress)).to.be.revertedWith(
         'UniswapV3Pair::setFeeTo: caller not feeToSetter'
       )
     })
 
+    const swapAmount = expandTo18Decimals(1)
     const swapAndGetFeeValue = async () => {
-      const swapAmount = expandTo18Decimals(1)
-      await pair.swap0For1(swapAmount, walletAddress, '0x')
+      await mockTimePair.swap0For1(swapAmount, walletAddress, '0x')
 
-      const {amount0, amount1} = await pair.callStatic.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
+      const {amount0, amount1} = await mockTimePair.callStatic.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
 
       const token0Delta = amount0.mul(-1)
       const token1Delta = amount1.mul(-1)
@@ -936,15 +947,15 @@ describe('UniswapV3Pair', () => {
     it('off', async () => {
       const [token0Delta, token1Delta] = await swapAndGetFeeValue()
 
+      expect(token0Delta).to.eq(swapAmount.sub(swapAmount.mul(10000 - FEES[0]).div(10000)).sub(1))
+      expect(token1Delta).to.eq(0)
+
       token0DeltaWithoutFeeTo = token0Delta
       token1DeltaWithoutFeeTo = token1Delta
-
-      expect(token0Delta).to.eq('2999999999999999')
-      expect(token1Delta).to.eq(0)
     })
 
     it('on', async () => {
-      await pair.setFeeTo(otherAddress)
+      await mockTimePair.setFeeTo(otherAddress)
 
       const [token0Delta, token1Delta] = await swapAndGetFeeValue()
 
@@ -956,9 +967,9 @@ describe('UniswapV3Pair', () => {
 
       // measure how much the new protocol liquidity is worth
       // off by one (rounded in favor of the user)
-      expect(await pair.feeToFees0()).to.eq(expectedProtocolDelta0)
+      expect(await mockTimePair.feeToFees0()).to.eq(expectedProtocolDelta0)
       // off by one (rounded in favor of the smart contract) (?)
-      expect(await pair.feeToFees1()).to.eq(expectedProtocolDelta1)
+      expect(await mockTimePair.feeToFees1()).to.eq(expectedProtocolDelta1)
     })
 
     let token0DeltaTwoSwaps: BigNumber
@@ -970,7 +981,17 @@ describe('UniswapV3Pair', () => {
       token0DeltaTwoSwaps = token0Delta
       token1DeltaTwoSwaps = token1Delta
 
-      expect(token0Delta).to.eq('5999999999999999')
+      expect(token0Delta).to.eq(
+        swapAmount
+          .mul(2)
+          .sub(
+            swapAmount
+              .mul(2)
+              .mul(10000 - FEES[0])
+              .div(10000)
+          )
+          .sub(1)
+      )
       expect(token1Delta).to.eq(0)
     })
 
@@ -980,7 +1001,7 @@ describe('UniswapV3Pair', () => {
       expectedProtocolDelta0TwoSwaps = token0DeltaTwoSwaps.div(6).add(1)
       expectedProtocolDelta1TwoSwaps = token1DeltaTwoSwaps.div(6)
 
-      await pair.setFeeTo(otherAddress)
+      await mockTimePair.setFeeTo(otherAddress)
 
       await swapAndGetFeeValue()
       const [token0Delta, token1Delta] = await swapAndGetFeeValue()
@@ -990,24 +1011,24 @@ describe('UniswapV3Pair', () => {
 
       // measure how much the new protocol liquidity is worth
       // off by two (rounded in favor of the smart contract) (?)
-      expect(await pair.feeToFees0()).to.eq(expectedProtocolDelta0TwoSwaps)
+      expect(await mockTimePair.feeToFees0()).to.eq(expectedProtocolDelta0TwoSwaps)
       // off by one (rounded in favor of the smart contract) (?)
-      expect(await pair.feeToFees1()).to.eq(expectedProtocolDelta1TwoSwaps)
+      expect(await mockTimePair.feeToFees1()).to.eq(expectedProtocolDelta1TwoSwaps)
     })
 
     it('on:two swaps with intermediary withdrawal', async () => {
-      await pair.setFeeTo(otherAddress)
+      await mockTimePair.setFeeTo(otherAddress)
 
       const [realizedGainsToken0, realizedGainsToken1] = await swapAndGetFeeValue()
-      await pair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
+      await mockTimePair.setPosition(MIN_TICK, MAX_TICK, FeeVote.FeeVote0, 0)
       const [token0Delta, token1Delta] = await swapAndGetFeeValue()
 
       expect(realizedGainsToken0.add(token0Delta)).to.be.lte(token0DeltaTwoSwaps.sub(expectedProtocolDelta0TwoSwaps))
       expect(realizedGainsToken1.add(token1Delta)).to.be.lte(token1DeltaTwoSwaps.sub(expectedProtocolDelta1TwoSwaps))
 
       // measure how much the new protocol liquidity is worth
-      expect(await pair.feeToFees0()).to.be.eq(expectedProtocolDelta0TwoSwaps)
-      expect(await pair.feeToFees1()).to.be.eq(expectedProtocolDelta1TwoSwaps)
+      expect(await mockTimePair.feeToFees0()).to.be.eq(expectedProtocolDelta0TwoSwaps)
+      expect(await mockTimePair.feeToFees1()).to.be.eq(expectedProtocolDelta1TwoSwaps)
     })
   })
 
