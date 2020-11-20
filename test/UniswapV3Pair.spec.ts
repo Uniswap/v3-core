@@ -894,7 +894,7 @@ describe('UniswapV3Pair', () => {
   })
 
   // jankily, these tests are prety interdependent and basically have to be run as a block
-  describe.only('feeTo', () => {
+  describe('feeTo', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
     let mockTimePair: MockTimeUniswapV3Pair

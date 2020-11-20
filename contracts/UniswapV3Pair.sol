@@ -251,20 +251,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function getAmount0Delta(
         FixedPoint.uq112x112 memory priceLower,
         FixedPoint.uq112x112 memory priceUpper, // can be the price at PriceMath.MAX_TICK
-        int16 tickUpper,
         int112 liquidity
     ) internal pure returns (int256) {
         if (liquidity == 0) return 0;
-
-        // if the upper bound is the max tick, we can skip some logic
-        if (tickUpper == TickMath.MAX_TICK) {
-            if (liquidity > 0) {
-                (uint256 reserve0, ) = PriceMath.getVirtualReservesAtPrice(priceLower, uint112(liquidity), true);
-                return reserve0.toInt256();
-            }
-            (uint256 reserve0, ) = PriceMath.getVirtualReservesAtPrice(priceLower, uint112(-liquidity), false);
-            return -reserve0.toInt256();
-        }
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
         if (liquidity < 0) safeShiftBits -= 2; // ensure that our denominator won't overflow
@@ -296,21 +285,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function getAmount1Delta(
         FixedPoint.uq112x112 memory priceLower, // can be the price at PriceMath.MIN_TICK
-        int16 tickLower,
         FixedPoint.uq112x112 memory priceUpper,
         int112 liquidity
     ) internal pure returns (int256) {
         if (liquidity == 0) return 0;
-
-        // if the lower bound is the min tick, we can skip some logic
-        if (tickLower == TickMath.MIN_TICK) {
-            if (liquidity > 0) {
-                (, uint256 reserve1) = PriceMath.getVirtualReservesAtPrice(priceUpper, uint112(liquidity), true);
-                return reserve1.toInt256();
-            }
-            (, uint256 reserve1) = PriceMath.getVirtualReservesAtPrice(priceUpper, uint112(-liquidity), false);
-            return -reserve1.toInt256();
-        }
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
 
@@ -541,27 +519,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 getAmount0Delta(
                     TickMath.getRatioAtTick(params.tickLower),
                     TickMath.getRatioAtTick(params.tickUpper),
-                    params.tickUpper,
                     params.liquidityDelta
                 )
             );
         } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
             amount0 = amount0.add(
-                getAmount0Delta(
-                    priceCurrent,
-                    TickMath.getRatioAtTick(params.tickUpper),
-                    params.tickUpper,
-                    params.liquidityDelta
-                )
+                getAmount0Delta(priceCurrent, TickMath.getRatioAtTick(params.tickUpper), params.liquidityDelta)
             );
             amount1 = amount1.add(
-                getAmount1Delta(
-                    TickMath.getRatioAtTick(params.tickLower),
-                    params.tickLower,
-                    priceCurrent,
-                    params.liquidityDelta
-                )
+                getAmount1Delta(TickMath.getRatioAtTick(params.tickLower), priceCurrent, params.liquidityDelta)
             );
 
             // this satisfies:
@@ -577,7 +544,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount1 = amount1.add(
                 getAmount1Delta(
                     TickMath.getRatioAtTick(params.tickLower),
-                    params.tickLower,
                     TickMath.getRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 )
