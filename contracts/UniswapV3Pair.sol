@@ -271,6 +271,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (blockTimestampLast != blockTimestamp) {
             (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
+            // must be called after getCumulativePrices, as getCumulativePrices relies on blockTimestampLast
             blockTimestampLast = blockTimestamp;
 
             feeFloor = getFee();
