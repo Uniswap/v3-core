@@ -43,12 +43,12 @@ contract UniswapV3PairEchidnaTest {
         pair.initialize(tick);
     }
 
-    function swap0For1(uint112 amount0In) external {
+    function swap0For1(uint256 amount0In) external {
         require(amount0In < 1e18);
         pair.swap0For1(amount0In, address(this), '');
     }
 
-    function swap1For0(uint112 amount1In) external {
+    function swap1For0(uint256 amount1In) external {
         require(amount1In < 1e18);
         pair.swap1For0(amount1In, address(this), '');
     }
@@ -57,7 +57,7 @@ contract UniswapV3PairEchidnaTest {
         int16 tickLower,
         int16 tickUpper,
         uint8 feeVote,
-        int112 liquidityDelta
+        int256 liquidityDelta
     ) external {
         pair.setPosition(tickLower, tickUpper, feeVote % pair.NUM_FEE_OPTIONS(), liquidityDelta);
     }

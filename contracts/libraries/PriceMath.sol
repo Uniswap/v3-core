@@ -48,7 +48,7 @@ library PriceMath {
         uint256 priceScaledRoot = Babylonian.sqrt(priceScaled); // sqrt(priceScaled)
         bool roundUpRoot = priceScaledRoot**2 < priceScaled; // flag for whether priceScaledRoot needs to be rounded up
 
-        uint256 scaleFactor = uint256(1) << (56 + safeShiftBits / 2); // compensate for q112 and shifted bits under root
+        uint256 scaleFactor = uint256(1) << (64 + safeShiftBits / 2); // compensate for q112 and shifted bits under root
 
         // calculate amount0 := liquidity / sqrt(price) and amount1 := liquidity * sqrt(price)
         if (roundUp) {
@@ -102,14 +102,14 @@ library PriceMath {
         if (liquidity > 0) {
             uint256 amount0 = PriceMath.mulDivRoundingUp(
                 uint256(liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
-                (priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot) << 56, // * 2**56
+                (priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot) << 64, // * 2**64
                 priceLowerScaledRoot * priceUpperScaledRoot
             );
             return amount0.toInt256();
         }
         uint256 amount0 = FullMath.mulDiv(
             uint256(-liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
-            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
+            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 64, // * 2**64
             (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
         );
         return -amount0.toInt256();
@@ -138,14 +138,14 @@ library PriceMath {
             uint256 amount1 = PriceMath.mulDivRoundingUp(
                 uint256(liquidity),
                 priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
-                uint256(1) << (56 + safeShiftBits / 2)
+                uint256(1) << (64 + safeShiftBits / 2)
             );
             return amount1.toInt256();
         }
         uint256 amount1 = FullMath.mulDiv(
             uint256(-liquidity),
             priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
-            uint256(1) << (56 + safeShiftBits / 2)
+            uint256(1) << (64 + safeShiftBits / 2)
         );
         return -amount1.toInt256();
     }

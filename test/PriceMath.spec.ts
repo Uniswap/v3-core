@@ -16,7 +16,7 @@ describe('PriceMath', () => {
   describe('#getVirtualReservesAtPrice', () => {
     it('works for 2e18 liquidity at price of tick 0', async () => {
       const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
-        {_x: '5192296858534827628530496329220096'},
+        {_x: '340282366920938463463374607431768211456'},
         expandTo18Decimals(2),
         false
       )
@@ -25,21 +25,21 @@ describe('PriceMath', () => {
     })
     it('works for max price and max liquidity', async () => {
       const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
-        {_x: BigNumber.from(2).pow(224).sub(1)},
-        BigNumber.from(2).pow(112).sub(1),
+        {_x: BigNumber.from(2).pow(256).sub(1)},
+        BigNumber.from(2).pow(128).sub(1),
         false
       )
-      expect(reserve0).to.eq('72057594037927935')
-      expect(reserve1).to.eq('374144419156711147060143317175368380973225181446144')
+      expect(reserve0).to.eq('18446744073709551615')
+      expect(reserve1).to.eq('6277101735386680763835789423207666416065461956316615409664')
     })
     it('works for min price and max liquidity', async () => {
       const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
         {_x: BigNumber.from(1)},
-        BigNumber.from(2).pow(112).sub(1),
+        BigNumber.from(2).pow(128).sub(1),
         false
       )
-      expect(reserve0).to.eq('374144419156711147060143317175368380974324693073920')
-      expect(reserve1).to.eq('72057594037927935')
+      expect(reserve0).to.eq('6277101735386680763835789423207666416083908700390324961280')
+      expect(reserve1).to.eq('18446744073709551615')
     })
   })
 
