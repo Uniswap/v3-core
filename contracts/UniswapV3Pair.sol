@@ -4,9 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
-import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
 import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
@@ -16,6 +14,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
+import './libraries/ReverseTickMath.sol';
 import './libraries/PriceMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
@@ -519,7 +518,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint16 feeFloor;
         // the amount in remaining to be swapped of the input asset
         uint256 amountInRemaining;
-        // the current tick
+        // the tick associated with the current price
         int16 tick;
         // the virtual liquidity
         uint112 liquidity;
@@ -532,6 +531,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct StepComputations {
+        // the next initialized tick from the tickCurrent in the swap direction
+        int16 tickNext;
         // price for the target tick (1/0)
         FixedPoint.uq112x112 priceNext;
         // the fee that will be paid in this step, in bips
@@ -561,10 +562,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         while (state.amountInRemaining > 0) {
             StepComputations memory step;
+
+            (step.tickNext, ) = tickBitMap.nextInitializedTickWithinOneWord(state.tick, params.zeroForOne);
+
             // get the price for the next tick we're moving toward
-            step.priceNext = params.zeroForOne
-                ? TickMath.getRatioAtTick(state.tick)
-                : TickMath.getRatioAtTick(state.tick + 1);
+            step.priceNext = TickMath.getRatioAtTick(step.tickNext);
 
             // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
             // similarly, if it's false we should be below the target price
@@ -645,14 +647,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             step.reserve0Virtual.add(amountInLessFee)
                         );
                         state.price = FixedPoint.uq112x112(uint224(Math.max(step.priceNext._x, priceEstimate._x)));
-                        assert(state.price._x < TickMath.getRatioAtTick(state.tick + 1)._x);
                     } else {
                         FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
                             step.reserve1Virtual.add(amountInLessFee),
                             step.reserve0Virtual.sub(step.amountOut)
                         );
                         state.price = FixedPoint.uq112x112(uint224(Math.min(step.priceNext._x, priceEstimate._x)));
-                        assert(state.price._x >= TickMath.getRatioAtTick(state.tick)._x);
                     }
                 }
             }
@@ -662,7 +662,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 2) if we're moving right and the price is exactly on the target tick
             // TODO ensure that there's no off-by-one error here while transitioning ticks in either direction
             if (state.amountInRemaining > 0 || (params.zeroForOne == false && state.price._x == step.priceNext._x)) {
-                TickInfo storage tickInfo = params.zeroForOne ? tickInfos[state.tick] : tickInfos[state.tick + 1];
+                TickInfo storage tickInfo = tickInfos[step.tickNext];
 
                 // if the tick is initialized, update it
                 if (tickInfo.numPositions > 0) {
@@ -695,14 +695,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     else state.liquidity = uint112(state.liquidity.addi(liquidityDeltaNet));
                 }
 
-                // update tick
+                // this is ok because we still have amountInRemaining so price is guaranteed to be less than the tick
+                // after swapping the remaining amount in
+                state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
                 if (params.zeroForOne) {
-                    state.tick--;
                     require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
                 } else {
-                    state.tick++;
                     require(state.tick < TickMath.MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
                 }
+            } else {
+                state.tick = params.zeroForOne
+                    ? ReverseTickMath.getTickFromPrice(state.price, step.tickNext, state.tick + 1)
+                    : ReverseTickMath.getTickFromPrice(state.price, state.tick, step.tickNext);
             }
         }
 
