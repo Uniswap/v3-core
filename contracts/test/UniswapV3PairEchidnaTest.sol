@@ -2,7 +2,7 @@
 pragma solidity =0.6.12;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import './TestERC20.sol';

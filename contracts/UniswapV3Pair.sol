@@ -2,7 +2,6 @@
 pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
@@ -625,7 +624,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
 
                     // update global fee tracker
-                    state.feeGrowthGlobal._x += FixedPoint.fraction(feePaid, state.liquidity)._x;
+                    state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, state.liquidity)._x;
                 }
 
                 // handle the swap

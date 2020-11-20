@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import './FixedPoint128.sol';
 
 // calculates prices, encoded as uq112x112 fixed points, corresponding to reserves ratios of 1.01**tick

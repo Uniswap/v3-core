@@ -2,8 +2,6 @@
 pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
-
 import '../libraries/ReverseTickMath.sol';
 
 contract ReverseTickMathTest {

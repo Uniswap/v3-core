@@ -2,8 +2,6 @@
 pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
-
 import '../libraries/PriceMath.sol';
 
 contract PriceMathTest {
