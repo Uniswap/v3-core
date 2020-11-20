@@ -340,14 +340,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int16 tickLower;
         int16 tickUpper;
         uint8 feeVote;
-        int256 liquidityDelta;
+        int128 liquidityDelta;
     }
 
     function setPosition(
         int16 tickLower,
         int16 tickUpper,
         uint8 feeVote,
-        int256 liquidityDelta
+        int128 liquidityDelta
     ) external override lock returns (int256 amount0, int256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::setPosition: pair not initialized');
         require(tickLower < tickUpper, 'UniswapV3Pair::setPosition: tickLower must be less than tickUpper');

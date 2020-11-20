@@ -57,7 +57,7 @@ contract UniswapV3PairEchidnaTest {
         int16 tickLower,
         int16 tickUpper,
         uint8 feeVote,
-        int256 liquidityDelta
+        int128 liquidityDelta
     ) external {
         pair.setPosition(tickLower, tickUpper, feeVote % pair.NUM_FEE_OPTIONS(), liquidityDelta);
     }

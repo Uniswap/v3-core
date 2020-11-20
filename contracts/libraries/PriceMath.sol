@@ -82,9 +82,8 @@ library PriceMath {
     function getAmount0Delta(
         FixedPoint128.uq128x128 memory priceLower,
         FixedPoint128.uq128x128 memory priceUpper,
-        int256 liquidity
+        int128 liquidity
     ) internal pure returns (int256) {
-        // todo can liquidity overflow if it's greater than type(int128).max or less than type(int128).min?
         if (liquidity == 0) return 0;
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
@@ -118,7 +117,7 @@ library PriceMath {
     function getAmount1Delta(
         FixedPoint128.uq128x128 memory priceLower,
         FixedPoint128.uq128x128 memory priceUpper,
-        int256 liquidity
+        int128 liquidity
     ) internal pure returns (int256) {
         // todo can liquidity overflow if it's greater than type(int128).max or less than type(int128).min?
         if (liquidity == 0) return 0;

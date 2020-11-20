@@ -61,7 +61,7 @@ interface IUniswapV3Pair {
         int16 tickLower,
         int16 tickUpper,
         uint8 feeVote,
-        int256 liquidityDelta
+        int128 liquidityDelta
     ) external returns (int256 amount0, int256 amount1);
 
     // swapping
