@@ -2,6 +2,6 @@
 
 exports[`ReverseTickMath #getTickFromPrice gas cost 0 iterations 1`] = `164`;
 
-exports[`ReverseTickMath #getTickFromPrice gas cost diff of 8 1`] = `3155`;
+exports[`ReverseTickMath #getTickFromPrice gas cost diff of 8 1`] = `3106`;
 
 exports[`ReverseTickMath #getTickFromPrice gas cost diff of 256 1`] = `8157`;
