@@ -250,7 +250,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function getAmount0Delta(
         FixedPoint.uq112x112 memory priceLower,
-        FixedPoint.uq112x112 memory priceUpper, // can be the price at PriceMath.MAX_TICK
+        FixedPoint.uq112x112 memory priceUpper,
         int112 liquidity
     ) internal pure returns (int256) {
         if (liquidity == 0) return 0;
@@ -284,7 +284,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function getAmount1Delta(
-        FixedPoint.uq112x112 memory priceLower, // can be the price at PriceMath.MIN_TICK
+        FixedPoint.uq112x112 memory priceLower,
         FixedPoint.uq112x112 memory priceUpper,
         int112 liquidity
     ) internal pure returns (int256) {
