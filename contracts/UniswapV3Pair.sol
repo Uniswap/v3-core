@@ -24,7 +24,7 @@ import './interfaces/IUniswapV3Callee.sol';
 
 /// @title The Uniswap V3 Pair Contract.
 /// @notice The V3 pair allows liquidity provisioning within user specified positions.
-/// @dev Liquidity positions are partitioned into "ticks"
+/// @dev Liquidity positions are partitioned into "ticks", each tick is equally spaced and may have an arbitrary depth of liquidity.
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint112;
     using SafeMath for uint256;
@@ -88,7 +88,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override feeToFees0;
     uint256 public override feeToFees1;
 
-
+    /// @notice The TickInfo struct.
     struct TickInfo {
         /// @notice the number of positions that are active using this tick as a lower or upper tick
         /// @dev can technically grow to 2^160 addresses * 16k ticks * 6 fee options = ~177 bits
@@ -129,12 +129,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         unlocked = 1;
     }
 
-    /// @notice returns a given users position: a given allocation of liquidity by a user as detemined by the following parameters 
+    /// @notice gets a given users position: a given allocation of liquidity by a user as determined by the following parameters.
     /// @param owner a given liquidity providers address
     /// @param tickLower the lower boundary tick
     /// @param tickUppder the upper boundary tick
-    /// @param feeVote the fee Vote 
-    /// @return returns the position struct 
+    /// @param feeVote the fee Vote.
+    /// @return returns the position struct.
     function _getPosition(
         address owner,
         int16 tickLower,
@@ -267,6 +267,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return (price0CumulativeLast, price1CumulativeLast);
     }
 
+    /// @notice 
     function getVirtualReservesDeltaAtPrice(FixedPoint.uq112x112 memory price, int112 liquidity)
         public
         pure
@@ -285,6 +286,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    /// @notice The pair constructor
+    /// @dev executed once when a pair is initialized
+    /// @param _factory The uniswapV3 factory contract address.
+    /// @param _token0 The address of the first token you would like to pair.
+    /// @param _token1 The address of the second token you would like to pair. 
     constructor(
         address _factory,
         address _token0,
@@ -295,9 +301,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         token1 = _token1;
     }
 
-    /// @return returns the block timestamp % 2**32
-    /// @notice the timestamp is truncated to 32 bits because the pair only ever uses it for relative timestamp computations
-    /// @dev overridden for tests
+    /// @notice the timestamp is truncated to 32 bits because the pair only ever uses it for relative timestamp computations.
+    /// @dev overridden for tests.
+    /// @return returns the block timestamp % 2**32.
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
     }
@@ -314,8 +320,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    /// @notice sets fee destination
-    /// @param feeto_ address of pair 
+    /// @notice Sets the destination where the swap fees are routed to.
+    /// @param feeto_ address of the desired destination.
+    /// @dev only able to be called by "feeToSetter".
     function setFeeTo(address feeTo_) external override {
         require(
             msg.sender == IUniswapV3Factory(factory).feeToSetter(),
@@ -324,9 +331,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeTo = feeTo_;
     }
 
-    /// @notice initializes tick
-    /// @param tick desired tick
-    /// @dev by convention, we assume that all growth before a tick was initialized happened _below_ the tick
+    /// @notice Initializes a tick. 
+    /// @param tick Tick to be initialized.
+    /// @dev By convention, we assume that all growth before a tick was initialized happened _below_ the tick.
     function _initializeTick(int16 tick, TickInfo storage tickInfo) private {
         if (tick <= tickCurrent) {
             tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
@@ -336,6 +343,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickInfo.numPositions = 1;
     }
 
+    /// @notice initializes a pair.
+    /// @param tick 
     function initialize(int16 tick, uint8 feeVote) external override lock {
         require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
