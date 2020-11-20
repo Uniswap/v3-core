@@ -25,7 +25,6 @@ import './libraries/FixedPoint128.sol';
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
     using SafeMath for uint256;
-    using SignedSafeMath for int96;
     using SignedSafeMath for int128;
     using SignedSafeMath for int256;
     using SafeCast for int256;
@@ -98,7 +97,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 secondsOutside;
         // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
         // i.e. as the price goes up (down), for each fee vote
-        int96[NUM_FEE_OPTIONS] liquidityDelta;
+        int128[NUM_FEE_OPTIONS] liquidityDelta;
     }
     mapping(int16 => TickInfo) public tickInfos;
 
@@ -431,10 +430,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
             tickInfoLower.liquidityDelta[params.feeVote] = tickInfoLower.liquidityDelta[params.feeVote]
                 .add(params.liquidityDelta)
-                .toInt96();
+                .toInt128();
             tickInfoUpper.liquidityDelta[params.feeVote] = tickInfoUpper.liquidityDelta[params.feeVote]
                 .sub(params.liquidityDelta)
-                .toInt96();
+                .toInt128();
 
             // if necessary, uninitialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta < 0) {
@@ -477,7 +476,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             // this satisfies:
-            // 2**107 + ((2**95 - 1) * 14701) < 2**128
+            // 2**119 + ((2**95 - 1) * 14701) < 2**128
             // and, more importantly:
             // (2**107 * 6) + ((2**95 - 1) * 14701 * 6) < 2**128
             uint256 liquidityCurrentNext = liquidityCurrent[params.feeVote].addi(params.liquidityDelta);
