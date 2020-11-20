@@ -69,9 +69,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     FixedPoint.uq144x112 private price1CumulativeLast; // cumulative (token0 / token1) oracle price
     uint32 public override blockTimestampLast;
 
-    // the current fee (gets set by the first swap or setPosition/initialize in a block)
+    // the fee as of the end of the last block with a swap or setPosition/initialize
     // this is stored to protect liquidity providers from add/swap/remove sandwiching attacks
-    uint16 public override feeLast;
+    uint16 public override feeFloor;
 
     uint112[NUM_FEE_OPTIONS] public override liquidityCurrent; // all in-range liquidity, segmented across fee options
     FixedPoint.uq112x112 public override priceCurrent; // (token1 / token0) price
@@ -334,15 +334,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    // on the first interaction per block, update the fee and oracle price accumulator
+    // on the first interaction per block, update the oracle price accumulator and fee
     function _update() private {
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
             (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
-            feeLast = getFee();
-
             blockTimestampLast = blockTimestamp;
+
+            feeFloor = getFee();
         }
     }
 
@@ -375,8 +375,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
 
-        // initialize oracle timestamp
+        uint8 feeVote = 0;
+
+        // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
+        feeFloor = FEE_OPTIONS(feeVote);
 
         // initialize current price and tick
         priceCurrent = TickMath.getRatioAtTick(tick);
@@ -388,7 +391,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 owner: address(0),
                 tickLower: TickMath.MIN_TICK,
                 tickUpper: TickMath.MAX_TICK,
-                feeVote: 2, // FEE_OPTIONS(2) == 30 bips :)
+                feeVote: feeVote,
                 liquidityDelta: 1
             })
         );
@@ -572,6 +575,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // the top level state of the swap, the results of which are recorded in storage at the end
     struct SwapState {
+        // the floor for the fee, used to prevent sandwiching attacks
+        uint16 feeFloor;
         // the amount in remaining to be swapped of the input asset
         uint256 amountInRemaining;
         // the current tick
@@ -602,12 +607,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) internal returns (uint256 amountOut) {
-        _update(); // update the oracle and feeLast
-
-        // the floor for the fee, used to prevent sandwiching attacks, static on a per-swap basis
-        uint16 feeFloor = feeLast;
+        _update(); // update the oracle and feeFloor
 
         SwapState memory state = SwapState({
+            feeFloor: feeFloor,
             amountInRemaining: params.amountIn,
             tick: tickCurrent,
             liquidity: getLiquidity(),
@@ -632,7 +635,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
                 // protect LPs by adjusting the fee only if the current fee is greater than the stored fee
-                step.fee = uint16(Math.max(feeFloor, getFee()));
+                step.fee = uint16(Math.max(state.feeFloor, getFee()));
 
                 // recompute reserves given the current price/liquidity
                 (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(

@@ -26,7 +26,7 @@ interface IUniswapV3Pair {
 
     function blockTimestampLast() external view returns (uint32);
 
-    function feeLast() external view returns (uint16);
+    function feeFloor() external view returns (uint16);
 
     function liquidityCurrent(uint256) external view returns (uint112);
 
