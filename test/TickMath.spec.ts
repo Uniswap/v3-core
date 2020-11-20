@@ -1,26 +1,23 @@
-import {waffle} from '@nomiclabs/buidler'
-import {Contract, BigNumber, BigNumberish} from 'ethers'
+import {ethers} from 'hardhat'
+import {BigNumber, BigNumberish} from 'ethers'
+import {TickMathTest} from '../typechain/TickMathTest'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
 
-import TickMathTest from '../build/TickMathTest.json'
-
 const Q112 = BigNumber.from(2).pow(112)
 
 describe('TickMath', () => {
-  const [wallet] = waffle.provider.getWallets()
-  const deployContract = waffle.deployContract
-
-  let tickMath: Contract
+  let tickMath: TickMathTest
   before('deploy TickMathTest', async () => {
-    tickMath = await deployContract(wallet, TickMathTest, [])
+    const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
+    tickMath = (await tickMathTestFactory.deploy()) as TickMathTest
   })
 
   // checks that an actual number is within allowedDiffBips of an expected number
   async function checkApproximatelyEquals(
-    actualP: BigNumberish | Promise<BigNumberish>,
-    expectedP: BigNumberish | Promise<BigNumberish>,
+    actualP: BigNumberish | Promise<BigNumberish> | Promise<{0: BigNumberish}>,
+    expectedP: BigNumberish | Promise<BigNumberish> | Promise<{0: BigNumberish}>,
     allowedDiffBips: BigNumberish
   ) {
     const [actual, expected] = [bnify2(await actualP), bnify2(await expectedP)]
@@ -40,16 +37,25 @@ describe('TickMath', () => {
     }
 
     describe('js implementation', () => {
+      it('min tick (math)', () => {
+        // https://www.wolframalpha.com/input/?i=1.01**7351+*+2**112
+        expect(exactTickRatioQ112x112(MIN_TICK).toString()).to.eq('88')
+      })
+
+      it('min tick (impl)', () => {
+        expect(exactTickRatioQ112x112(MIN_TICK).toString()).to.eq('88')
+      })
+
       it('max tick (math)', () => {
-        // https://www.wolframalpha.com/input/?i=%281.01%5E7802%29+*+%282%5E112%29
-        expect(exactTickRatioQ112x112(7802).toString()).to.eq(
-          '26959868313666068472686589847821896098186460312140959350827207227142'
+        // https://www.wolframalpha.com/input/?i=1.01**7351+*+2**112
+        expect(exactTickRatioQ112x112(MAX_TICK).toString()).to.eq(
+          '303234206515492778604670563942879899541683825327377805701311231077'
         )
       })
 
       it('max tick (impl)', () => {
         expect(exactTickRatioQ112x112(MAX_TICK).toString()).to.eq(
-          '13434502910636290242429127814602410926865305123888330957225010840918'
+          '303234206515492778604670563942879899541683825327377805701311231077'
         )
       })
 
@@ -59,14 +65,6 @@ describe('TickMath', () => {
 
       it('-7000 tick', () => {
         expect(exactTickRatioQ112x112(-7000).toString()).to.eq('2922')
-      })
-
-      it('max tick (impl)', () => {
-        expect(exactTickRatioQ112x112(MIN_TICK).toString()).to.eq('2')
-      })
-
-      it('min tick (math)', () => {
-        expect(exactTickRatioQ112x112(-7801).toString()).to.eq('1')
       })
     })
 
@@ -88,9 +86,6 @@ describe('TickMath', () => {
       }
     })
 
-    // because reserves are represented as uint112,
-    // the max tick is going to be the tick corresponding to a price of 2^112/1 or 1/2^112
-    // so log base 1.01 of 2^112 == 7802
     describe('large ticks', () => {
       for (let tick of [50, 100, 250, 500, 1000, 2500, 3000, 4000, 5000, 6000, 7000, MAX_TICK]) {
         it(`tick index: ${tick}`, async () => {
@@ -117,7 +112,7 @@ describe('TickMath', () => {
   it('returns ~1/2 for tick -70', async () => {
     await checkApproximatelyEquals(tickMath.getPrice(-70), Q112.div(2), 34)
   })
-  it('returns ~1/4 for tick 140', async () => {
+  it('returns ~1/4 for tick -140', async () => {
     await checkApproximatelyEquals(tickMath.getPrice(-140), Q112.div(4), 70)
   })
   it('returns ~4/1 for tick 140', async () => {
@@ -125,19 +120,19 @@ describe('TickMath', () => {
   })
 
   it('tick too large', async () => {
-    await expect(tickMath.getPrice(7803)).to.be.revertedWith('')
+    await expect(tickMath.getPrice(MIN_TICK - 1)).to.be.revertedWith('')
   })
   it('tick too small', async () => {
-    await expect(tickMath.getPrice(-7803)).to.be.revertedWith('')
+    await expect(tickMath.getPrice(MAX_TICK + 1)).to.be.revertedWith('')
   })
 
   if (process.env.UPDATE_SNAPSHOT) {
     it('all tick values', async () => {
-      const promises: Promise<[BigNumber]>[] = []
+      const promises: Promise<{_x: BigNumber}>[] = []
       for (let tick = MIN_TICK; tick < MAX_TICK + 1; tick++) {
         promises.push(tickMath.getPrice(tick))
       }
-      expect((await Promise.all(promises)).map(([x], i) => [MIN_TICK + i, x.toString()])).toMatchSnapshot()
+      expect((await Promise.all(promises)).map(({_x: x}, i) => [MIN_TICK + i, x.toString()])).toMatchSnapshot()
     }).timeout(300000)
   }
 

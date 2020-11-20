@@ -27,6 +27,12 @@ jobs:
           restore-keys: |
             yarn-
 
-      - run: yarn
-      - run: yarn compile
-      - run: yarn test
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # This is required separately from yarn test because it generates the typechain definitions
+      - name: Compile
+        run: yarn compile
+
+      - name: Run unit tests
+        run: yarn test

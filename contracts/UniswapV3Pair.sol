@@ -14,7 +14,6 @@ import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
-import './libraries/FixedPointExtra.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
 import './libraries/PriceMath.sol';
@@ -22,17 +21,19 @@ import './libraries/PriceMath.sol';
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
+import './libraries/TickBitMap.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint112;
     using SafeMath for uint256;
+    using SignedSafeMath for int96;
     using SignedSafeMath for int112;
     using SignedSafeMath for int256;
     using SafeCast for int256;
     using SafeCast for uint256;
     using MixedSafeMath for uint112;
     using FixedPoint for FixedPoint.uq112x112;
-    using FixedPointExtra for FixedPoint.uq112x112;
+    using TickBitMap for uint256[58];
 
     // Number of fee options
     uint8 public constant override NUM_FEE_OPTIONS = 6;
@@ -43,24 +44,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // ideally this would be a constant array, but constant arrays are not supported in solidity
     function FEE_OPTIONS(uint8 i) public pure override returns (uint16) {
         if (i < 3) {
-            if (i == 0) return 5;
-            if (i == 1) return 10;
+            if (i == 0) return 6;
+            if (i == 1) return 12;
             return 30;
         }
         if (i == 3) return 60;
-        if (i == 4) return 100;
+        if (i == 4) return 120;
         assert(i == 5);
-        return 200;
+        return 240;
     }
-
-    uint112 public constant override LIQUIDITY_MIN = 1000;
 
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
 
-    // TODO figure out the best way to pack these state variables
+    // TODO figure out the best way to pack state variables
     address public override feeTo;
+
+    // see TickBitMap.sol
+    uint256[58] public override tickBitMap;
 
     // meant to be accessed via getPriceCumulative
     FixedPoint.uq144x112 private price0CumulativeLast; // cumulative (token1 / token0) oracle price
@@ -76,13 +78,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int16 public override tickCurrent; // first tick at or below priceCurrent
 
     // fee growth per unit of liquidity
-    FixedPoint.uq112x112 public override feeGrowthGlobal0;
-    FixedPoint.uq112x112 public override feeGrowthGlobal1;
+    FixedPoint.uq144x112 public override feeGrowthGlobal0;
+    FixedPoint.uq144x112 public override feeGrowthGlobal1;
 
     // accumulated protocol fees
-    // TODO should we make these bigger (possibly informed by where it makes sense to pack them)
-    uint112 public override feeToFees0;
-    uint112 public override feeToFees1;
+    // there is no value in packing these values, since we only ever set one at a time
+    uint256 public override feeToFees0;
+    uint256 public override feeToFees1;
 
     struct TickInfo {
         // the number of positions that are active using this tick as a lower or upper tick
@@ -90,22 +92,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 numPositions;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        FixedPoint.uq112x112 feeGrowthOutside0;
-        FixedPoint.uq112x112 feeGrowthOutside1;
+        FixedPoint.uq144x112 feeGrowthOutside0;
+        FixedPoint.uq144x112 feeGrowthOutside1;
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint32 secondsOutside;
-        // amount of liquidity added (subtracted) when ticks are crossed from left to right (right to left),
+        // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
         // i.e. as the price goes up (down), for each fee vote
-        int112[NUM_FEE_OPTIONS] liquidityDelta;
+        int96[NUM_FEE_OPTIONS] liquidityDelta;
     }
     mapping(int16 => TickInfo) public tickInfos;
 
     struct Position {
         uint112 liquidity;
         // fee growth per unit of liquidity as of the last modification
-        FixedPoint.uq112x112 feeGrowthInside0Last;
-        FixedPoint.uq112x112 feeGrowthInside1Last;
+        FixedPoint.uq144x112 feeGrowthInside0Last;
+        FixedPoint.uq144x112 feeGrowthInside1Last;
     }
     mapping(bytes32 => Position) public positions;
 
@@ -129,12 +131,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _getFeeGrowthBelow(int16 tick, TickInfo storage tickInfo)
         private
         view
-        returns (FixedPoint.uq112x112 memory feeGrowthBelow0, FixedPoint.uq112x112 memory feeGrowthBelow1)
+        returns (FixedPoint.uq144x112 memory feeGrowthBelow0, FixedPoint.uq144x112 memory feeGrowthBelow1)
     {
+        // should never be called on uninitialized ticks
+        assert(tickInfo.numPositions > 0);
         // tick is above the current tick, meaning growth outside represents growth above, not below
         if (tick > tickCurrent) {
-            feeGrowthBelow0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
-            feeGrowthBelow1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
+            feeGrowthBelow0 = FixedPoint.uq144x112(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
+            feeGrowthBelow1 = FixedPoint.uq144x112(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
         } else {
             feeGrowthBelow0 = tickInfo.feeGrowthOutside0;
             feeGrowthBelow1 = tickInfo.feeGrowthOutside1;
@@ -144,15 +148,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _getFeeGrowthAbove(int16 tick, TickInfo storage tickInfo)
         private
         view
-        returns (FixedPoint.uq112x112 memory feeGrowthAbove0, FixedPoint.uq112x112 memory feeGrowthAbove1)
+        returns (FixedPoint.uq144x112 memory feeGrowthAbove0, FixedPoint.uq144x112 memory feeGrowthAbove1)
     {
-        // tick is at or below the current tick, meaning growth outside represents growth below, not above
-        if (tick <= tickCurrent) {
-            feeGrowthAbove0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
-            feeGrowthAbove1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
-        } else {
+        // should never be called on uninitialized ticks
+        assert(tickInfo.numPositions > 0);
+        // tick is above current tick, meaning growth outside represents growth above
+        if (tick > tickCurrent) {
             feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
             feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
+        } else {
+            feeGrowthAbove0 = FixedPoint.uq144x112(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
+            feeGrowthAbove1 = FixedPoint.uq144x112(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
         }
     }
 
@@ -164,24 +170,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
     )
         private
         view
-        returns (FixedPoint.uq112x112 memory feeGrowthInside0, FixedPoint.uq112x112 memory feeGrowthInside1)
+        returns (FixedPoint.uq144x112 memory feeGrowthInside0, FixedPoint.uq144x112 memory feeGrowthInside1)
     {
-        (FixedPoint.uq112x112 memory feeGrowthBelow0, FixedPoint.uq112x112 memory feeGrowthBelow1) = _getFeeGrowthBelow(
+        (FixedPoint.uq144x112 memory feeGrowthBelow0, FixedPoint.uq144x112 memory feeGrowthBelow1) = _getFeeGrowthBelow(
             tickLower,
             tickInfoLower
         );
-        (FixedPoint.uq112x112 memory feeGrowthAbove0, FixedPoint.uq112x112 memory feeGrowthAbove1) = _getFeeGrowthAbove(
+        (FixedPoint.uq144x112 memory feeGrowthAbove0, FixedPoint.uq144x112 memory feeGrowthAbove1) = _getFeeGrowthAbove(
             tickUpper,
             tickInfoUpper
         );
-        feeGrowthInside0 = feeGrowthGlobal0.sub(feeGrowthBelow0).sub(feeGrowthAbove0);
-        feeGrowthInside1 = feeGrowthGlobal1.sub(feeGrowthBelow1).sub(feeGrowthAbove1);
+        feeGrowthInside0 = FixedPoint.uq144x112(feeGrowthGlobal0._x - feeGrowthBelow0._x - feeGrowthAbove0._x);
+        feeGrowthInside1 = FixedPoint.uq144x112(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
 
-    // TODO think about how we should bound this
-    function getLiquidity() public view override returns (uint112) {
+    function getLiquidity() public view override returns (uint112 liquidity) {
         // load all liquidity into memory
-        uint112[NUM_FEE_OPTIONS] memory _liquidityCurrent = [
+        uint112[NUM_FEE_OPTIONS] memory temp = [
             liquidityCurrent[0],
             liquidityCurrent[1],
             liquidityCurrent[2],
@@ -190,12 +195,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityCurrent[5]
         ];
 
-        uint256 liquidity;
-        for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS; feeVoteIndex++) {
-            liquidity += _liquidityCurrent[feeVoteIndex];
-        }
-
-        return liquidity.toUint112();
+        // guaranteed not to overflow because of conditions enforced outside this function
+        for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS; feeVoteIndex++) liquidity += temp[feeVoteIndex];
     }
 
     // check for one-time initialization
@@ -206,7 +207,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // find the median fee vote, and return the fee in bips
     function getFee() public view override returns (uint16 fee) {
         // load all virtual supplies into memory
-        uint112[NUM_FEE_OPTIONS] memory _liquidityCurrent = [
+        uint112[NUM_FEE_OPTIONS] memory temp = [
             liquidityCurrent[0],
             liquidityCurrent[1],
             liquidityCurrent[2],
@@ -215,16 +216,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityCurrent[5]
         ];
 
-        uint256 threshold = (uint256(_liquidityCurrent[0]) +
-            _liquidityCurrent[1] +
-            _liquidityCurrent[2] +
-            _liquidityCurrent[3] +
-            _liquidityCurrent[4] +
-            _liquidityCurrent[5]) / 2;
+        uint256 threshold = (uint256(temp[0]) + temp[1] + temp[2] + temp[3] + temp[4] + temp[5]) / 2;
 
         uint256 liquidityCumulative;
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {
-            liquidityCumulative += _liquidityCurrent[feeVoteIndex];
+            liquidityCumulative += temp[feeVoteIndex];
             if (liquidityCumulative >= threshold) return FEE_OPTIONS(feeVoteIndex);
         }
         return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
@@ -249,21 +245,76 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        return (FixedPoint.uq144x112(price0CumulativeLast._x), FixedPoint.uq144x112(price1CumulativeLast._x));
+        return (price0CumulativeLast, price1CumulativeLast);
     }
 
-    function getValueAtPrice(FixedPoint.uq112x112 memory price, int256 liquidity) public pure returns (int256, int256) {
-        if (liquidity == 0) return (0, 0);
+    function getAmount0Delta(
+        FixedPoint.uq112x112 memory priceLower,
+        FixedPoint.uq112x112 memory priceUpper,
+        int112 liquidity
+    ) internal pure returns (int256) {
+        if (liquidity == 0) return 0;
 
-        // we want to round up when liquidity is >0, i.e. being added
+        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
+        if (liquidity < 0) safeShiftBits -= 2; // ensure that our denominator won't overflow
+
+        uint256 priceLowerScaled = uint256(priceLower._x) << safeShiftBits; // priceLower * 2**safeShiftBits
+        uint256 priceLowerScaledRoot = Babylonian.sqrt(priceLowerScaled); // sqrt(priceLowerScaled)
+        bool roundUpLower = priceLowerScaledRoot**2 < priceLowerScaled;
+
+        uint256 priceUpperScaled = uint256(priceUpper._x) << safeShiftBits; // priceUpper * 2**safeShiftBits
+        uint256 priceUpperScaledRoot = Babylonian.sqrt(priceUpperScaled); // sqrt(priceUpperScaled)
+        bool roundUpUpper = priceUpperScaledRoot**2 < priceUpperScaled;
+
+        // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower)) / sqrt(priceUpper) * sqrt(priceLower)
         if (liquidity > 0) {
-            (uint112 amount0, uint112 amount1) = PriceMath.getValueAtPriceRoundingUp(price, uint256(liquidity));
-            return (amount0, amount1);
-        } else {
-            // we want to round down when liquidity is <0, i.e. being removed
-            (uint112 amount0, uint112 amount1) = PriceMath.getValueAtPriceRoundingDown(price, uint256(-liquidity));
-            return (-int256(amount0), -int256(amount1));
+            uint256 amount0 = PriceMath.mulDivRoundingUp(
+                uint256(liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
+                (priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot) << 56, // * 2**56
+                priceLowerScaledRoot * priceUpperScaledRoot
+            );
+            return amount0.toInt256();
         }
+        uint256 amount0 = FullMath.mulDiv(
+            uint256(uint112(-liquidity)) << (safeShiftBits / 2), // * 2**(SSB/2)
+            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
+            (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
+        );
+        return -amount0.toInt256();
+    }
+
+    function getAmount1Delta(
+        FixedPoint.uq112x112 memory priceLower,
+        FixedPoint.uq112x112 memory priceUpper,
+        int112 liquidity
+    ) internal pure returns (int256) {
+        if (liquidity == 0) return 0;
+
+        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
+
+        uint256 priceLowerScaled = uint256(priceLower._x) << safeShiftBits; // priceLower * 2**safeShiftBits
+        uint256 priceLowerScaledRoot = Babylonian.sqrt(priceLowerScaled); // sqrt(priceLowerScaled)
+        bool roundUpLower = priceLowerScaledRoot**2 < priceLowerScaled;
+
+        uint256 priceUpperScaled = uint256(priceUpper._x) << safeShiftBits; // priceUpper * 2**safeShiftBits
+        uint256 priceUpperScaledRoot = Babylonian.sqrt(priceUpperScaled); // sqrt(priceUpperScaled)
+        bool roundUpUpper = priceUpperScaledRoot**2 < priceUpperScaled;
+
+        // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower))
+        if (liquidity > 0) {
+            uint256 amount1 = PriceMath.mulDivRoundingUp(
+                uint256(liquidity),
+                priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
+                uint256(1) << (56 + safeShiftBits / 2)
+            );
+            return amount1.toInt256();
+        }
+        uint256 amount1 = FullMath.mulDiv(
+            uint256(uint112(-liquidity)),
+            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
+            uint256(1) << (56 + safeShiftBits / 2)
+        );
+        return -amount1.toInt256();
     }
 
     constructor(
@@ -303,54 +354,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeTo = feeTo_;
     }
 
-    // the reason this can't _just_ burn but needs to mint is because otherwise it would incentivize bad starting prices
-    function initialize(
-        uint112 liquidity,
-        int16 tick,
-        uint8 feeVote
-    ) external override lock {
-        require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
-        require(liquidity >= LIQUIDITY_MIN, 'UniswapV3Pair::initialize: insufficient liquidity');
-        require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
-        require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
-        require(feeVote < NUM_FEE_OPTIONS, 'UniswapV3Pair::initialize: fee vote must be a valid option');
-
-        FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
-
-        // take the tokens
-        (int256 amount0, int256 amount1) = PriceMath.getValueAtPriceRoundingUp(price, liquidity);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
-
-        // initialize oracle timestamp and fee
-        blockTimestampLast = _blockTimestamp();
-        feeLast = FEE_OPTIONS(feeVote);
-
-        // initialize liquidity, price, and tick (note that this votes indelibly with the burned liquidity)
-        liquidityCurrent[feeVote] = liquidity;
-        priceCurrent = price;
-        tickCurrent = tick;
-
-        // set the permanent LIQUIDITY_MIN position
-        Position storage position = _getPosition(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
-        position.liquidity = LIQUIDITY_MIN;
-        // emit PositionSet(address(0), TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote, int112(LIQUIDITY_MIN));
-
-        // set the user's position if necessary
-        if (liquidity > LIQUIDITY_MIN) {
-            position = _getPosition(msg.sender, TickMath.MIN_TICK, TickMath.MAX_TICK, feeVote);
-            position.liquidity = liquidity - LIQUIDITY_MIN;
-            // emit PositionSet(
-            //     msg.sender,
-            //     TickMath.MIN_TICK,
-            //     TickMath.MAX_TICK,
-            //     feeVote,
-            //     (liquidity - LIQUIDITY_MIN).toInt112()
-            // );
-        }
-        // emit Initialized(amount0, amount1, tick, feeVote);
-    }
-
     function _initializeTick(int16 tick, TickInfo storage tickInfo) private {
         // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
         if (tick <= tickCurrent) {
@@ -358,21 +361,55 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
             tickInfo.secondsOutside = _blockTimestamp();
         }
+        tickInfo.numPositions = 1;
+        tickBitMap.flipTick(tick);
+    }
+
+    function _clearTick(int16 tick) private {
+        delete tickInfos[tick];
+        tickBitMap.flipTick(tick);
+    }
+
+    function initialize(int16 tick) external override lock {
+        require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
+        require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
+        require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
+
+        // initialize oracle timestamp
+        blockTimestampLast = _blockTimestamp();
+
+        // initialize current price and tick
+        priceCurrent = TickMath.getRatioAtTick(tick);
+        tickCurrent = tick;
+
+        // set permanent 1 wei position
+        _setPosition(
+            SetPositionParams({
+                owner: address(0),
+                tickLower: TickMath.MIN_TICK,
+                tickUpper: TickMath.MAX_TICK,
+                feeVote: 2, // FEE_OPTIONS(2) == 30 bips :)
+                liquidityDelta: 1
+            })
+        );
+
+        emit Initialized(tick);
     }
 
     struct SetPositionParams {
+        address owner;
         int16 tickLower;
         int16 tickUpper;
         uint8 feeVote;
-        int256 liquidityDelta;
+        int112 liquidityDelta;
     }
 
     function setPosition(
         int16 tickLower,
         int16 tickUpper,
         uint8 feeVote,
-        int256 liquidityDelta
-    ) external lock returns (int256 amount0, int256 amount1) {
+        int112 liquidityDelta
+    ) external override lock returns (int256 amount0, int256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::setPosition: pair not initialized');
         require(tickLower < tickUpper, 'UniswapV3Pair::setPosition: tickLower must be less than tickUpper');
         require(tickLower >= TickMath.MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
@@ -385,6 +422,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return
             _setPosition(
                 SetPositionParams({
+                    owner: msg.sender,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
                     feeVote: feeVote,
@@ -403,20 +441,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // gather the storage pointers
             TickInfo storage tickInfoLower = tickInfos[params.tickLower];
             TickInfo storage tickInfoUpper = tickInfos[params.tickUpper];
-            Position storage position = _getPosition(msg.sender, params.tickLower, params.tickUpper, params.feeVote);
+            Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper, params.feeVote);
 
             // if necessary, initialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta > 0) {
                 if (tickInfoLower.numPositions == 0) _initializeTick(params.tickLower, tickInfoLower);
-                tickInfoLower.numPositions++;
+                else tickInfoLower.numPositions++;
                 if (tickInfoUpper.numPositions == 0) _initializeTick(params.tickUpper, tickInfoUpper);
-                tickInfoUpper.numPositions++;
+                else tickInfoUpper.numPositions++;
             }
 
             {
                 (
-                    FixedPoint.uq112x112 memory feeGrowthInside0,
-                    FixedPoint.uq112x112 memory feeGrowthInside1
+                    FixedPoint.uq144x112 memory feeGrowthInside0,
+                    FixedPoint.uq144x112 memory feeGrowthInside1
                 ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickInfoLower, tickInfoUpper);
 
                 // check if this condition has accrued any untracked fees and credit them to the caller
@@ -453,47 +491,60 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
             tickInfoLower.liquidityDelta[params.feeVote] = tickInfoLower.liquidityDelta[params.feeVote]
                 .add(params.liquidityDelta)
-                .toInt112();
+                .toInt96();
             tickInfoUpper.liquidityDelta[params.feeVote] = tickInfoUpper.liquidityDelta[params.feeVote]
                 .sub(params.liquidityDelta)
-                .toInt112();
+                .toInt96();
 
             // if necessary, uninitialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta < 0) {
-                if (tickInfoLower.numPositions == 1) delete tickInfos[params.tickLower];
+                if (tickInfoLower.numPositions == 1) _clearTick(params.tickLower);
                 else tickInfoLower.numPositions--;
-                if (tickInfoUpper.numPositions == 1) delete tickInfos[params.tickUpper];
+                if (tickInfoUpper.numPositions == 1) _clearTick(params.tickUpper);
                 else tickInfoUpper.numPositions--;
+
+                // reset fee growth
+                delete position.feeGrowthInside0Last;
+                delete position.feeGrowthInside1Last;
             }
         }
-
-        // calculate how much the specified liquidity delta is worth at the lower and upper ticks
-        // amount0Lower :> amount0Upper
-        // amount1Upper :> amount1Lower
-        (int256 amount0Lower, int256 amount1Lower) = getValueAtPrice(
-            TickMath.getRatioAtTick(params.tickLower),
-            params.liquidityDelta
-        );
-        (int256 amount0Upper, int256 amount1Upper) = getValueAtPrice(
-            TickMath.getRatioAtTick(params.tickUpper),
-            params.liquidityDelta
-        );
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tickCurrent < params.tickLower) {
-            amount0 = amount0.add(amount0Lower.sub(amount0Upper));
+            amount0 = amount0.add(
+                getAmount0Delta(
+                    TickMath.getRatioAtTick(params.tickLower),
+                    TickMath.getRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                )
+            );
         } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
-            (int256 amount0Current, int256 amount1Current) = getValueAtPrice(priceCurrent, params.liquidityDelta);
-            amount0 = amount0.add(amount0Current.sub(amount0Upper));
-            amount1 = amount1.add(amount1Current.sub(amount1Lower));
+            amount0 = amount0.add(
+                getAmount0Delta(priceCurrent, TickMath.getRatioAtTick(params.tickUpper), params.liquidityDelta)
+            );
+            amount1 = amount1.add(
+                getAmount1Delta(TickMath.getRatioAtTick(params.tickLower), priceCurrent, params.liquidityDelta)
+            );
 
-            liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote].addi(params.liquidityDelta).toUint112();
+            // this satisfies:
+            // 2**107 + ((2**95 - 1) * 14701) < 2**112
+            // and, more importantly:
+            // (2**107 * 6) + ((2**95 - 1) * 14701 * 6) < 2**112
+            uint256 liquidityCurrentNext = liquidityCurrent[params.feeVote].addi(params.liquidityDelta);
+            require(liquidityCurrentNext <= (uint256(1) << 107), 'UniswapV3Pair::setPosition: liquidity overflow');
+            liquidityCurrent[params.feeVote] = uint112(liquidityCurrentNext);
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = amount1.add(amount1Upper.sub(amount1Lower));
+            amount1 = amount1.add(
+                getAmount1Delta(
+                    TickMath.getRatioAtTick(params.tickLower),
+                    TickMath.getRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                )
+            );
         }
 
         if (amount0 > 0) {
@@ -512,7 +563,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // whether the swap is from token 0 to 1, or 1 for 0
         bool zeroForOne;
         // how much is being swapped in
-        uint112 amountIn;
+        uint256 amountIn;
         // the recipient address
         address to;
         // any data that should be sent to the address with the call
@@ -522,7 +573,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // the top level state of the swap, the results of which are recorded in storage at the end
     struct SwapState {
         // the amount in remaining to be swapped of the input asset
-        uint112 amountInRemaining;
+        uint256 amountInRemaining;
         // the current tick
         int16 tick;
         // the virtual liquidity
@@ -530,9 +581,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the price
         FixedPoint.uq112x112 price;
         // protocol fees of the input token
-        uint112 feeToFees;
+        uint256 feeToFees;
         // the global fee growth of the input token
-        FixedPoint.uq112x112 feeGrowthGlobal;
+        FixedPoint.uq144x112 feeGrowthGlobal;
     }
 
     struct StepComputations {
@@ -541,16 +592,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the fee that will be paid in this step, in bips
         uint16 fee;
         // (computed) virtual reserves of token0
-        uint112 reserve0Virtual;
+        uint256 reserve0Virtual;
         // (computed) virtual reserves of token1
-        uint112 reserve1Virtual;
+        uint256 reserve1Virtual;
         // how much is being swapped in in this step
-        uint112 amountIn;
+        uint256 amountIn;
         // how much is being swapped out in the current step
-        uint112 amountOut;
+        uint256 amountOut;
     }
 
-    function _swap(SwapParams memory params) internal returns (uint112 amountOut) {
+    function _swap(SwapParams memory params) internal returns (uint256 amountOut) {
         _update(); // update the oracle and feeLast
 
         // the floor for the fee, used to prevent sandwiching attacks, static on a per-swap basis
@@ -584,13 +635,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 step.fee = uint16(Math.max(feeFloor, getFee()));
 
                 // recompute reserves given the current price/liquidity
-                (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getValueAtPriceRoundingDown(
+                (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
                     state.price,
-                    state.liquidity
+                    state.liquidity,
+                    false
                 );
 
                 // compute the amount of input token required to push the price to the target (and max output token)
-                (uint112 amountInMax, uint112 amountOutMax) = PriceMath.getInputToRatio(
+                (uint256 amountInMax, uint256 amountOutMax) = PriceMath.getInputToRatio(
                     step.reserve0Virtual,
                     step.reserve1Virtual,
                     state.liquidity,
@@ -600,31 +652,28 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // swap to the next tick, or stop early if we've exhausted all the input
-                step.amountIn = uint112(Math.min(amountInMax, state.amountInRemaining));
+                step.amountIn = Math.min(amountInMax, state.amountInRemaining);
 
                 // decrement remaining input amount
                 state.amountInRemaining -= step.amountIn;
 
                 // discount the input amount by the fee
-                uint112 amountInLessFee = uint112(
-                    (uint256(step.amountIn) * (PriceMath.LP_FEE_BASE - step.fee)) / PriceMath.LP_FEE_BASE
-                );
+                uint256 amountInLessFee = step.amountIn.mul(PriceMath.LP_FEE_BASE - step.fee) / PriceMath.LP_FEE_BASE;
 
                 // handle the fee accounting
-                uint112 feePaid = step.amountIn - amountInLessFee;
+                uint256 feePaid = step.amountIn - amountInLessFee;
                 if (feePaid > 0) {
                     // take the protocol fee if it's on
                     if (feeTo != address(0)) {
-                        uint112 feeToFee = feePaid / 6;
+                        uint256 feeToFee = feePaid / 6;
                         // decrement feePaid
                         feePaid -= feeToFee;
-                        // increment feeToFees monotonically, while being cognizant of overflow
-                        state.feeToFees = uint112(Math.max(state.feeToFees + feeToFee, state.feeToFees));
+                        // increment feeToFees--overflow is not possible
+                        state.feeToFees += feeToFee;
                     }
 
                     // update global fee tracker
-                    // TODO is this correct/is there a less lossy way to do this?
-                    state.feeGrowthGlobal = state.feeGrowthGlobal.add(FixedPoint.fraction(feePaid, state.liquidity));
+                    state.feeGrowthGlobal._x += FixedPoint.fraction(feePaid, state.liquidity)._x;
                 }
 
                 // handle the swap
@@ -635,10 +684,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         : PriceMath.getAmountOut(step.reserve1Virtual, step.reserve0Virtual, amountInLessFee);
 
                     // cap the output amount
-                    step.amountOut = uint112(Math.min(step.amountOut, amountOutMax));
+                    step.amountOut = Math.min(step.amountOut, amountOutMax);
 
                     // increment amountOut
-                    amountOut = (uint256(amountOut) + step.amountOut).toUint112();
+                    amountOut = amountOut.add(step.amountOut);
                 }
 
                 // update the price
@@ -649,15 +698,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // if not, the price is the new ratio of (computed) reserves, capped at the target price
                     if (params.zeroForOne) {
                         FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
-                            step.reserve1Virtual.sub(step.amountOut).toUint112(),
-                            (uint256(step.reserve0Virtual) + amountInLessFee).toUint112()
+                            step.reserve1Virtual.sub(step.amountOut),
+                            step.reserve0Virtual.add(amountInLessFee)
                         );
                         state.price = FixedPoint.uq112x112(uint224(Math.max(step.priceNext._x, priceEstimate._x)));
                         assert(state.price._x < TickMath.getRatioAtTick(state.tick + 1)._x);
                     } else {
                         FixedPoint.uq112x112 memory priceEstimate = FixedPoint.fraction(
-                            (uint256(step.reserve1Virtual) + amountInLessFee).toUint112(),
-                            step.reserve0Virtual.sub(step.amountOut).toUint112()
+                            step.reserve1Virtual.add(amountInLessFee),
+                            step.reserve0Virtual.sub(step.amountOut)
                         );
                         state.price = FixedPoint.uq112x112(uint224(Math.min(step.priceNext._x, priceEstimate._x)));
                         assert(state.price._x >= TickMath.getRatioAtTick(state.tick)._x);
@@ -670,13 +719,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 2) if we're moving right and the price is exactly on the target tick
             // TODO ensure that there's no off-by-one error here while transitioning ticks in either direction
             if (state.amountInRemaining > 0 || (params.zeroForOne == false && state.price._x == step.priceNext._x)) {
-                TickInfo storage tickInfo = tickInfos[state.tick];
+                TickInfo storage tickInfo = params.zeroForOne ? tickInfos[state.tick] : tickInfos[state.tick + 1];
 
                 // if the tick is initialized, update it
                 if (tickInfo.numPositions > 0) {
                     // update tick info
-                    tickInfo.feeGrowthOutside0 = feeGrowthGlobal0.sub(tickInfo.feeGrowthOutside0);
-                    tickInfo.feeGrowthOutside1 = feeGrowthGlobal1.sub(tickInfo.feeGrowthOutside1);
+                    tickInfo.feeGrowthOutside0 = FixedPoint.uq144x112(
+                        feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x
+                    );
+                    tickInfo.feeGrowthOutside1 = FixedPoint.uq144x112(
+                        feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x
+                    );
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
 
                     int256 liquidityDeltaNet;
@@ -687,15 +740,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         liquidityDeltaNet = liquidityDeltaNet.add(liquidityDelta);
 
                         // update liquidityCurrent, subi from right to left, addi from left to right
-                        // TODO put this into state? bit tricky
-                        if (params.zeroForOne)
-                            liquidityCurrent[i] = liquidityCurrent[i].subi(liquidityDelta).toUint112();
-                        else liquidityCurrent[i] = liquidityCurrent[i].addi(liquidityDelta).toUint112();
+                        // can't put this in state because a) it's hard and b) we need it up-to-date for getFee
+                        // can't overflow
+                        if (params.zeroForOne) liquidityCurrent[i] = uint112(liquidityCurrent[i].subi(liquidityDelta));
+                        else liquidityCurrent[i] = uint112(liquidityCurrent[i].addi(liquidityDelta));
                     }
 
                     // update liquidity, subi from right to left, addi from left to right
-                    if (params.zeroForOne) state.liquidity = state.liquidity.subi(liquidityDeltaNet).toUint112();
-                    else state.liquidity = state.liquidity.addi(liquidityDeltaNet).toUint112();
+                    // can't overflow
+                    if (params.zeroForOne) state.liquidity = uint112(state.liquidity.subi(liquidityDeltaNet));
+                    else state.liquidity = uint112(state.liquidity.addi(liquidityDeltaNet));
                 }
 
                 // update tick
@@ -737,10 +791,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // move from right to left (token 1 is becoming more valuable)
     function swap0For1(
-        uint112 amount0In,
+        uint256 amount0In,
         address to,
         bytes calldata data
-    ) external override lock returns (uint112 amount1Out) {
+    ) external override lock returns (uint256 amount1Out) {
         require(amount0In > 0, 'UniswapV3Pair::swap0For1: amountIn must be greater than 0');
 
         SwapParams memory params = SwapParams({zeroForOne: true, amountIn: amount0In, to: to, data: data});
@@ -749,10 +803,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // move from left to right (token 0 is becoming more valuable)
     function swap1For0(
-        uint112 amount1In,
+        uint256 amount1In,
         address to,
         bytes calldata data
-    ) external override lock returns (uint112 amount0Out) {
+    ) external override lock returns (uint256 amount0Out) {
         require(amount1In > 0, 'UniswapV3Pair::swap1For0: amountIn must be greater than 0');
 
         SwapParams memory params = SwapParams({zeroForOne: false, amountIn: amount1In, to: to, data: data});

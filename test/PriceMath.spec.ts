@@ -1,29 +1,56 @@
-import {Contract, BigNumber} from 'ethers'
-import {waffle} from '@nomiclabs/buidler'
+import {BigNumber} from 'ethers'
+import {ethers} from 'hardhat'
+import {PriceMathTest} from '../typechain/PriceMathTest'
 
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {encodePrice, expandTo18Decimals} from './shared/utilities'
 
-import PriceMathTest from '../build/PriceMathTest.json'
-
 describe('PriceMath', () => {
-  const [wallet] = waffle.provider.getWallets()
-  const deployContract = waffle.deployContract
-
-  let priceMath: Contract
+  let priceMath: PriceMathTest
   before(async () => {
-    priceMath = await deployContract(wallet, PriceMathTest, [])
+    const priceMathTestFactory = await ethers.getContractFactory('PriceMathTest')
+    priceMath = (await priceMathTestFactory.deploy()) as PriceMathTest
+  })
+
+  describe('#getVirtualReservesAtPrice', () => {
+    it('works for 2e18 liquidity at price of tick 0', async () => {
+      const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
+        {_x: '5192296858534827628530496329220096'},
+        expandTo18Decimals(2),
+        false
+      )
+      expect(reserve0).to.eq('2000000000000000000')
+      expect(reserve1).to.eq('2000000000000000000')
+    })
+    it('works for max price and max liquidity', async () => {
+      const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
+        {_x: BigNumber.from(2).pow(224).sub(1)},
+        BigNumber.from(2).pow(112).sub(1),
+        false
+      )
+      expect(reserve0).to.eq('72057594037927935')
+      expect(reserve1).to.eq('374144419156711147060143317175368380973225181446144')
+    })
+    it('works for min price and max liquidity', async () => {
+      const {reserve1, reserve0} = await priceMath.getVirtualReservesAtPrice(
+        {_x: BigNumber.from(1)},
+        BigNumber.from(2).pow(112).sub(1),
+        false
+      )
+      expect(reserve0).to.eq('374144419156711147060143317175368380974324693073920')
+      expect(reserve1).to.eq('72057594037927935')
+    })
   })
 
   describe('#getInputToRatio', () => {
     describe('edge cases', () => {
       it('0 all', async () => {
-        expect(await priceMath.getInputToRatio(0, 0, 0, [0], 0, true)).to.be.deep.eq([
+        expect(await priceMath.getInputToRatio(0, 0, 0, {_x: 0}, 0, true)).to.be.deep.eq([
           BigNumber.from(0),
           BigNumber.from(0),
         ])
-        expect(await priceMath.getInputToRatio(0, 0, 0, [0], 0, false)).to.be.deep.eq([
+        expect(await priceMath.getInputToRatio(0, 0, 0, {_x: 0}, 0, false)).to.be.deep.eq([
           BigNumber.from(0),
           BigNumber.from(0),
         ])
@@ -33,30 +60,38 @@ describe('PriceMath', () => {
         const price = BigNumber.from('4294967297')
         const liquidity = BigNumber.from('18446744073709551615')
 
-        const [amount0Up, amount1Up] = await priceMath.getValueAtPriceRoundingUp([price], liquidity)
-        const [amount0Down, amount1Down] = await priceMath.getValueAtPriceRoundingDown([price], liquidity)
+        const {reserve0: reserve0Up, reserve1: reserve1Up} = await priceMath.getVirtualReservesAtPrice(
+          {_x: price},
+          liquidity,
+          true
+        )
+        const {reserve0: reserve0Down, reserve1: reserve1Down} = await priceMath.getVirtualReservesAtPrice(
+          {_x: price},
+          liquidity,
+          false
+        )
 
-        expect(amount0Up).to.be.gte(amount0Down)
-        expect(amount1Up).to.be.gte(amount1Down)
+        expect(reserve0Up).to.be.gte(reserve0Down)
+        expect(reserve1Up).to.be.gte(reserve1Down)
 
-        expect(amount0Up.sub(amount0Down)).to.be.eq(2)
-        expect(amount1Up.sub(amount1Down)).to.be.eq(1)
+        expect(reserve0Up.sub(reserve0Down)).to.be.eq(2)
+        expect(reserve1Up.sub(reserve1Down)).to.be.eq(1)
       })
 
       it('returns 0 if price is equal', async () => {
         const liquidity = expandTo18Decimals(10)
         const price = encodePrice(expandTo18Decimals(100), expandTo18Decimals(1))
 
-        const [reserve0, reserve1] = await priceMath.getValueAtPriceRoundingDown([price], liquidity)
+        const {reserve0, reserve1} = await priceMath.getVirtualReservesAtPrice({_x: price}, liquidity, false)
 
         expect(reserve0).to.be.eq(expandTo18Decimals(1))
         expect(reserve1).to.be.eq(expandTo18Decimals(100))
 
-        const [amountIn, amountOut] = await priceMath.getInputToRatio(
+        const {amountIn, amountOut} = await priceMath.getInputToRatio(
           expandTo18Decimals(1),
           expandTo18Decimals(100),
           liquidity,
-          [price],
+          {_x: price},
           30,
           false
         )
@@ -73,7 +108,7 @@ describe('PriceMath', () => {
             expandTo18Decimals(1),
             expandTo18Decimals(100),
             liquidity,
-            [price],
+            {_x: price},
             30,
             false
           )
@@ -142,15 +177,15 @@ describe('PriceMath', () => {
           let priceAfterSwap: BigNumber
 
           before('compute swap result', async () => {
-            ;[reserve0, reserve1] = await priceMath.getValueAtPriceRoundingDown([priceStarting], liquidity)
-            ;[amountIn, amountOutMax] = await priceMath.getInputToRatio(
+            ;({reserve0, reserve1} = await priceMath.getVirtualReservesAtPrice({_x: priceStarting}, liquidity, false))
+            ;({amountIn, amountOut: amountOutMax} = await priceMath.getInputToRatio(
               reserve0,
               reserve1,
               liquidity,
-              [priceTarget],
+              {_x: priceTarget},
               lpFee,
               zeroForOne
-            )
+            ))
 
             amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(10000)
             amountOut = await (zeroForOne
@@ -194,18 +229,9 @@ describe('PriceMath', () => {
             }
           })
 
-          // TODO this isn't always true, we have to cap the price
-          it.skip('price after swap does not pass price target', () => {
-            if (zeroForOne) {
-              expect(priceAfterSwap).to.be.gte(priceTarget)
-            } else {
-              expect(priceAfterSwap).to.be.lte(priceTarget)
-            }
-          })
-
           it('gas', async () => {
             await snapshotGasCost(
-              priceMath.getGasCostOfGetInputToRatio(reserve0, reserve1, liquidity, [priceTarget], lpFee, zeroForOne)
+              priceMath.getGasCostOfGetInputToRatio(reserve0, reserve1, liquidity, {_x: priceTarget}, lpFee, zeroForOne)
             )
           })
         })

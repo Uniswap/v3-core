@@ -1,7 +1,7 @@
 import {BigNumber, BigNumberish, utils, constants} from 'ethers'
 
-export const MIN_TICK = -7732
-export const MAX_TICK = 7732
+export const MIN_TICK = -7351
+export const MAX_TICK = 7351
 
 export enum FeeVote {
   FeeVote0 = 0,
@@ -13,12 +13,12 @@ export enum FeeVote {
 }
 
 export const FEES: {[vote in FeeVote]: number} = {
-  [FeeVote.FeeVote0]: 5,
-  [FeeVote.FeeVote1]: 10,
+  [FeeVote.FeeVote0]: 6,
+  [FeeVote.FeeVote1]: 12,
   [FeeVote.FeeVote2]: 30,
   [FeeVote.FeeVote3]: 60,
-  [FeeVote.FeeVote4]: 100,
-  [FeeVote.FeeVote5]: 200,
+  [FeeVote.FeeVote4]: 120,
+  [FeeVote.FeeVote5]: 240,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -58,7 +58,7 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-export function bnify2(a: BigNumberish | [BigNumberish]): BigNumber {
+export function bnify2(a: BigNumberish | [BigNumberish] | {0: BigNumberish}): BigNumber {
   if (Array.isArray(a)) {
     return BigNumber.from(a[0])
   } else {

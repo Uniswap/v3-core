@@ -7,13 +7,8 @@ library SafeCast {
         require((z = uint112(y)) == y, 'SafeCast::toUint112: downcast overflow');
     }
 
-    function toInt112(uint256 y) internal pure returns (int112 z) {
-        require(y < 2**111, 'SafeCast::toInt112: downcast overflow');
-        z = int112(y);
-    }
-
-    function toInt112(int256 y) internal pure returns (int112 z) {
-        require((z = int112(y)) == y, 'SafeCast::toInt112: downcast overflow');
+    function toInt96(int256 y) internal pure returns (int96 z) {
+        require((z = int96(y)) == y, 'SafeCast::toInt96: downcast overflow');
     }
 
     function toInt256(uint256 y) internal pure returns (int256 z) {
