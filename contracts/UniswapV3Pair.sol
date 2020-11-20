@@ -408,13 +408,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickCurrent = tick;
 
         // set permanent 1 wei position
-        _setPosition(SetPositionParams({
-            owner: address(0),
-            tickLower: TickMath.MIN_TICK,
-            tickUpper: TickMath.MAX_TICK,
-            feeVote: feeVote,
-            liquidityDelta: 1
-        }));
+        _setPosition(
+            SetPositionParams({
+                owner: address(0),
+                tickLower: TickMath.MIN_TICK,
+                tickUpper: TickMath.MAX_TICK,
+                feeVote: feeVote,
+                liquidityDelta: 1
+            })
+        );
 
         emit Initialized(tick);
     }
