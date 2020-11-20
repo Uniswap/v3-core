@@ -4,8 +4,6 @@ pragma solidity =0.6.12;
 import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
-
 import '../libraries/PriceMath.sol';
 import '../libraries/TickMath.sol';
 
@@ -34,12 +32,12 @@ contract PriceMathEchidnaTest {
         require(price <= TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
 
         (uint256 amount0Up, uint256 amount1Up) = PriceMath.getVirtualReservesAtPrice(
-            FixedPoint.uq112x112(price),
+            FixedPoint128.uq128x128(price),
             liquidity,
             true
         );
         (uint256 amount0Down, uint256 amount1Down) = PriceMath.getVirtualReservesAtPrice(
-            FixedPoint.uq112x112(price),
+            FixedPoint128.uq128x128(price),
             liquidity,
             false
         );
@@ -57,12 +55,12 @@ contract PriceMathEchidnaTest {
         require(priceRaw > 0 && priceNextRaw > 0 && liquidity > 0);
         bool zeroForOne = priceNextRaw <= priceRaw;
         (uint256 reserve0, uint256 reserve1) = PriceMath.getVirtualReservesAtPrice(
-            FixedPoint.uq112x112(priceRaw),
+            FixedPoint128.uq128x128(priceRaw),
             liquidity,
             false
         );
         (uint256 reserve0Next, uint256 reserve1Next) = PriceMath.getVirtualReservesAtPrice(
-            FixedPoint.uq112x112(priceNextRaw),
+            FixedPoint128.uq128x128(priceNextRaw),
             liquidity,
             false
         );
@@ -84,12 +82,12 @@ contract PriceMathEchidnaTest {
         require(liquidity > 0);
         require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
 
-        FixedPoint.uq112x112 memory price = FixedPoint.uq112x112(priceRaw);
+        FixedPoint128.uq128x128 memory price = FixedPoint128.uq128x128(priceRaw);
         (uint256 reserve0, uint256 reserve1) = PriceMath.getVirtualReservesAtPrice(price, liquidity, false);
 
         require(reserve0 > 0 && reserve1 > 0);
 
-        FixedPoint.uq112x112 memory priceTarget = TickMath.getRatioAtTick(tickTarget);
+        FixedPoint128.uq128x128 memory priceTarget = TickMath.getRatioAtTick(tickTarget);
         bool zeroForOne = price._x >= priceTarget._x;
 
         (uint256 amountIn, uint256 amountOutMax) = PriceMath.getInputToRatio(
@@ -123,7 +121,7 @@ contract PriceMathEchidnaTest {
 
             // // check that the price does not exceed the next price
             // {
-            //     FixedPoint.uq112x112 memory priceAfterSwap = FixedPoint.fraction(reserve1Next, reserve0Next);
+            //     FixedPoint128.uq128x128 memory priceAfterSwap = FixedPoint.fraction(reserve1Next, reserve0Next);
             //     if (zeroForOne) assert(priceAfterSwap._x >= priceTarget._x);
             //     else assert(priceAfterSwap._x <= priceTarget._x);
             // }
@@ -134,7 +132,7 @@ contract PriceMathEchidnaTest {
 
             // // check that one more wei of amount in would result in a price that exceeds the next price
             // {
-            //     FixedPoint.uq112x112 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
+            //     FixedPoint128.uq128x128 memory priceAfterSwap1MoreWei = FixedPoint.fraction(reserve1Next, reserve0Next);
             //     if (zeroForOne) assert(priceAfterSwap1MoreWei._x <= priceTarget._x);
             //     else assert(priceAfterSwap1MoreWei._x >= priceTarget._x);
             // }

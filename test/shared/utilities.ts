@@ -48,7 +48,7 @@ export function getCreate2Address(
 }
 
 export function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
-  return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(112)).div(reserve0)
+  return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(128)).div(reserve0)
 }
 
 export function getPositionKey(address: string, lowerTick: number, upperTick: number, feeVote: FeeVote): string {

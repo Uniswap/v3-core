@@ -2,7 +2,7 @@
 pragma solidity =0.6.12;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import './TestERC20.sol';
@@ -43,12 +43,12 @@ contract UniswapV3PairEchidnaTest {
         pair.initialize(tick);
     }
 
-    function swap0For1(uint112 amount0In) external {
+    function swap0For1(uint256 amount0In) external {
         require(amount0In < 1e18);
         pair.swap0For1(amount0In, address(this), '');
     }
 
-    function swap1For0(uint112 amount1In) external {
+    function swap1For0(uint256 amount1In) external {
         require(amount1In < 1e18);
         pair.swap1For0(amount1In, address(this), '');
     }
@@ -57,7 +57,7 @@ contract UniswapV3PairEchidnaTest {
         int16 tickLower,
         int16 tickUpper,
         uint8 feeVote,
-        int112 liquidityDelta
+        int128 liquidityDelta
     ) external {
         pair.setPosition(tickLower, tickUpper, feeVote % pair.NUM_FEE_OPTIONS(), liquidityDelta);
     }
@@ -85,7 +85,7 @@ contract UniswapV3PairEchidnaTest {
 
     function echidna_priceIsWithinTickCurrent() external view returns (bool) {
         int16 tick = pair.tickCurrent();
-        FixedPoint.uq112x112 memory priceCurrent = FixedPoint.uq112x112(pair.priceCurrent());
+        FixedPoint128.uq128x128 memory priceCurrent = FixedPoint128.uq128x128(pair.priceCurrent());
         return (TickMath.getRatioAtTick(tick)._x <= priceCurrent._x &&
             TickMath.getRatioAtTick(tick + 1)._x > priceCurrent._x);
     }

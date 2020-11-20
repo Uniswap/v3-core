@@ -3,12 +3,12 @@ pragma solidity >=0.5.0;
 
 // contains methods for safely casting between integer types
 library SafeCast {
-    function toUint112(uint256 y) internal pure returns (uint112 z) {
-        require((z = uint112(y)) == y, 'SafeCast::toUint112: downcast overflow');
+    function toUint128(uint256 y) internal pure returns (uint128 z) {
+        require((z = uint128(y)) == y, 'SafeCast::toUint128: downcast overflow');
     }
 
-    function toInt96(int256 y) internal pure returns (int96 z) {
-        require((z = int96(y)) == y, 'SafeCast::toInt96: downcast overflow');
+    function toInt128(int256 y) internal pure returns (int128 z) {
+        require((z = int128(y)) == y, 'SafeCast::toInt128: downcast overflow');
     }
 
     function toInt256(uint256 y) internal pure returns (int256 z) {

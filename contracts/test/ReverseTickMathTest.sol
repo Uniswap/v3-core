@@ -2,13 +2,11 @@
 pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
-
 import '../libraries/ReverseTickMath.sol';
 
 contract ReverseTickMathTest {
     function getTickFromPrice(
-        FixedPoint.uq112x112 memory price,
+        FixedPoint128.uq128x128 memory price,
         int16 lowerBound,
         int16 upperBound
     ) external pure returns (int16 tick) {
@@ -16,7 +14,7 @@ contract ReverseTickMathTest {
     }
 
     function getGasCostOfGetTickFromPrice(
-        FixedPoint.uq112x112 memory price,
+        FixedPoint128.uq128x128 memory price,
         int16 lowerBound,
         int16 upperBound
     ) external view returns (uint256) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import './FixedPoint128.sol';
 
 // calculates prices, encoded as uq112x112 fixed points, corresponding to reserves ratios of 1.01**tick
 library TickMath {
@@ -9,18 +9,11 @@ library TickMath {
     int16 public constant MIN_TICK = -7351;
     int16 public constant MAX_TICK = -MIN_TICK;
 
-    function getRatioAtTick(int16 tick) internal pure returns (FixedPoint.uq112x112 memory) {
-        uint256 ratioAtTick = getRatioAtTickUQ128x128(tick) >> 16;
-        assert(ratioAtTick <= uint224(-1));
-        return FixedPoint.uq112x112(uint224(ratioAtTick));
-    }
-
-    // calculate 1.01^tick << 128
-    function getRatioAtTickUQ128x128(int256 tick) internal pure returns (uint256 ratio) {
+    function getRatioAtTick(int16 tick) internal pure returns (FixedPoint128.uq128x128 memory) {
         uint256 absTick = uint256(tick < 0 ? -tick : tick);
         assert(absTick <= uint256(MAX_TICK));
 
-        ratio = absTick & 0x1 != 0 ? 0xfd7720f353a4c0a237c32b16cfd7720f : 0x100000000000000000000000000000000;
+        uint256 ratio = absTick & 0x1 != 0 ? 0xfd7720f353a4c0a237c32b16cfd7720f : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfaf4ae9099c9241ccf4a1b745e424d72) >> 128;
         if (absTick & 0x4 != 0) ratio = (ratio * 0xf602cecfa70ae4afe789b849b8ba756d) >> 128;
         if (absTick & 0x8 != 0) ratio = (ratio * 0xec69657ef75a64f2bc647042cf997b9b) >> 128;
@@ -35,5 +28,6 @@ library TickMath {
         if (absTick & 0x1000 != 0) ratio = (ratio * 0x24c6d58b0bcc3113a5) >> 128;
 
         if (tick > 0) ratio = uint256(-1) / ratio;
+        return FixedPoint128.uq128x128(ratio);
     }
 }

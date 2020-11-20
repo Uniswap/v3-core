@@ -2,8 +2,6 @@
 pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
-
 interface IUniswapV3Pair {
     event Initialized(int16 tick);
 
@@ -28,13 +26,13 @@ interface IUniswapV3Pair {
 
     function feeFloor() external view returns (uint16);
 
-    function liquidityCurrent(uint256) external view returns (uint112);
+    function liquidityCurrent(uint256) external view returns (uint128);
 
     function tickBitMap(uint256) external view returns (uint256);
 
     function tickCurrent() external view returns (int16);
 
-    function priceCurrent() external view returns (uint224);
+    function priceCurrent() external view returns (uint256);
 
     function feeGrowthGlobal0() external view returns (uint256);
 
@@ -47,14 +45,14 @@ interface IUniswapV3Pair {
     // derived state
     function isInitialized() external view returns (bool);
 
-    function getLiquidity() external view returns (uint112);
+    function getLiquidity() external view returns (uint128);
 
     function getFee() external view returns (uint16);
 
-    function getCumulativePrices()
-        external
-        view
-        returns (FixedPoint.uq144x112 memory price0Cumulative, FixedPoint.uq144x112 memory price1Cumulative);
+    //    function getCumulativePrices()
+    //        external
+    //        view
+    //        returns (FixedPoint.uq144x112 memory price0Cumulative, FixedPoint.uq144x112 memory price1Cumulative);
 
     // initialize the pair
     function initialize(int16 tick) external;
@@ -63,7 +61,7 @@ interface IUniswapV3Pair {
         int16 tickLower,
         int16 tickUpper,
         uint8 feeVote,
-        int112 liquidityDelta
+        int128 liquidityDelta
     ) external returns (int256 amount0, int256 amount1);
 
     // swapping
