@@ -6,7 +6,7 @@ import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {encodePrice} from './shared/utilities'
 
-describe.only('ReverseTickMath', () => {
+describe('ReverseTickMath', () => {
   let reverseTickMath: ReverseTickMathTest
   before('deploy test contract', async () => {
     const reverseTickMathTest = await ethers.getContractFactory('ReverseTickMathTest')
@@ -20,14 +20,24 @@ describe.only('ReverseTickMath', () => {
     it('lowerBound = upperBound - 1', async () => {
       expect(await reverseTickMath.getTickFromPrice(priceCloseToTickZero, 0, 1)).to.eq(0)
     })
+
     it('lowerBound = upperBound - 4', async () => {
       expect(await reverseTickMath.getTickFromPrice(priceCloseToTickZero, -3, 1)).to.eq(0)
-    })
-    it('upperBound = lowerBound + 4', async () => {
+      expect(await reverseTickMath.getTickFromPrice(priceCloseToTickZero, -1, 3)).to.eq(0)
       expect(await reverseTickMath.getTickFromPrice(priceCloseToTickZero, 0, 4)).to.eq(0)
     })
+
+    it('works for arbitrary prices', async () => {
+      // got this tick from the spec
+      const randomPriceAtTick365 = {_x: '196182807391309998172719813956365795'}
+      expect(await reverseTickMath.getTickFromPrice(randomPriceAtTick365, 159, 693)).to.eq(365)
+      expect(await reverseTickMath.getTickFromPrice(randomPriceAtTick365, 365, 404)).to.eq(365)
+      expect(await reverseTickMath.getTickFromPrice(randomPriceAtTick365, 293, 366)).to.eq(365)
+    })
+
     it('lowerBound and upper bound are both off', async () => {
       expect(await reverseTickMath.getTickFromPrice(priceCloseToTickZero, -3, 4)).to.eq(0)
+      expect(await reverseTickMath.getTickFromPrice(priceCloseToTickZero, -4, 3)).to.eq(0)
     })
 
     it('lowerBound and upper bound off by 128', async () => {
