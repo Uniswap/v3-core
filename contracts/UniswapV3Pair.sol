@@ -706,7 +706,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 }
             } else {
                 state.tick = params.zeroForOne
-                    ? ReverseTickMath.getTickFromPrice(state.price, step.tickNext, state.tick)
+                    ? ReverseTickMath.getTickFromPrice(state.price, step.tickNext, state.tick + 1)
                     : ReverseTickMath.getTickFromPrice(state.price, state.tick, step.tickNext);
             }
         }
