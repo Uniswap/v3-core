@@ -435,6 +435,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 .sub(params.liquidityDelta)
                 .toInt128();
 
+            // if we constrain the liquidity in a single fee vote across all ticks, then we can guarantee that the total
+            // liquidity current never exceeds uint128
+            // the max liquidity for a single tick fee vote is then:
+            //   floor(type(uint128).max / (6 fee votes * max number of ticks))
+            require(
+                // 865382809755804604755082721536682n = (2n ** 128n - 1n) / (6n * (2n ** 16n))
+                // this is about 109 bits
+                tickInfoLower.liquidityDelta[params.feeVote] < 865382809755804604755082721536682,
+                'UniswapV3Pair::setPosition: liquidity overflow'
+            );
+
             // if necessary, uninitialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta < 0) {
                 if (tickInfoLower.numPositions == 1) _clearTick(params.tickLower);
@@ -475,13 +486,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 )
             );
 
-            // this satisfies:
-            // 2**119 + ((2**95 - 1) * 14701) < 2**128
-            // and, more importantly:
-            // (2**107 * 6) + ((2**95 - 1) * 14701 * 6) < 2**128
-            uint256 liquidityCurrentNext = liquidityCurrent[params.feeVote].addi(params.liquidityDelta);
-            require(liquidityCurrentNext <= (uint256(1) << 119), 'UniswapV3Pair::setPosition: liquidity overflow');
-            liquidityCurrent[params.feeVote] = uint128(liquidityCurrentNext);
+            liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote].addi(params.liquidityDelta).toUint128();
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
