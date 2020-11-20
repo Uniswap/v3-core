@@ -6,7 +6,7 @@ import '../libraries/TickMath.sol';
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
 contract TickMathTest {
-    function getPrice(int16 tick) public pure returns (FixedPoint.uq112x112 memory) {
+    function getPrice(int16 tick) public pure returns (FixedPoint128.uq128x128 memory) {
         return TickMath.getRatioAtTick(tick);
     }
 

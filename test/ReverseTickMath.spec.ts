@@ -14,8 +14,8 @@ describe('ReverseTickMath', () => {
   })
 
   describe('#getTickFromPrice', () => {
-    const priceCloseToTickZero = {_x: encodePrice(1, 1).add(1)}
-    const priceExactlyAtTickZero = {_x: BigNumber.from('5192296858534827628530496329220096')}
+    const priceExactlyAtTickZero = {_x: BigNumber.from('340282366920938463463374607431768211456')}
+    const priceCloseToTickZero = {_x: priceExactlyAtTickZero._x.add(1)}
 
     it('lowerBound = upperBound - 1', async () => {
       expect(await reverseTickMath.getTickFromPrice(priceCloseToTickZero, 0, 1)).to.eq(0)
@@ -29,7 +29,7 @@ describe('ReverseTickMath', () => {
 
     it('works for arbitrary prices', async () => {
       // got this tick from the spec
-      const randomPriceAtTick365 = {_x: '196182807391309998172719813956365795'}
+      const randomPriceAtTick365 = {_x: '12857036465196691992791697221653775109723'}
       expect(await reverseTickMath.getTickFromPrice(randomPriceAtTick365, 159, 693)).to.eq(365)
       expect(await reverseTickMath.getTickFromPrice(randomPriceAtTick365, 365, 404)).to.eq(365)
       expect(await reverseTickMath.getTickFromPrice(randomPriceAtTick365, 293, 366)).to.eq(365)

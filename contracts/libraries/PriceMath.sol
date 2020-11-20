@@ -4,12 +4,12 @@ pragma solidity >=0.5.0;
 import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
 import './SafeCast.sol';
+import './FixedPoint128.sol';
 
 library PriceMath {
     using SafeMath for uint256;
@@ -36,8 +36,8 @@ library PriceMath {
 
     // given a price and a liquidity amount, return the value of that liquidity at the price, rounded up
     function getVirtualReservesAtPrice(
-        FixedPoint.uq112x112 memory price,
-        uint112 liquidity,
+        FixedPoint128.uq128x128 memory price,
+        uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 reserve0, uint256 reserve1) {
         if (liquidity == 0) return (0, 0);
@@ -63,8 +63,8 @@ library PriceMath {
     function getInputToRatio(
         uint256 reserve0,
         uint256 reserve1,
-        uint112 liquidity,
-        FixedPoint.uq112x112 memory priceTarget, // always reserve1/reserve0
+        uint128 liquidity,
+        FixedPoint128.uq128x128 memory priceTarget, // always reserve1/reserve0
         uint16 lpFee,
         bool zeroForOne
     ) internal pure returns (uint256 amountIn, uint256 amountOut) {
@@ -80,10 +80,11 @@ library PriceMath {
     }
 
     function getAmount0Delta(
-        FixedPoint.uq112x112 memory priceLower,
-        FixedPoint.uq112x112 memory priceUpper,
-        int112 liquidity
+        FixedPoint128.uq128x128 memory priceLower,
+        FixedPoint128.uq128x128 memory priceUpper,
+        int256 liquidity
     ) internal pure returns (int256) {
+        // todo can liquidity overflow if it's greater than type(int128).max or less than type(int128).min?
         if (liquidity == 0) return 0;
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
@@ -107,7 +108,7 @@ library PriceMath {
             return amount0.toInt256();
         }
         uint256 amount0 = FullMath.mulDiv(
-            uint256(uint112(-liquidity)) << (safeShiftBits / 2), // * 2**(SSB/2)
+            uint256(-liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
             priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
             (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
         );
@@ -115,10 +116,11 @@ library PriceMath {
     }
 
     function getAmount1Delta(
-        FixedPoint.uq112x112 memory priceLower,
-        FixedPoint.uq112x112 memory priceUpper,
-        int112 liquidity
+        FixedPoint128.uq128x128 memory priceLower,
+        FixedPoint128.uq128x128 memory priceUpper,
+        int256 liquidity
     ) internal pure returns (int256) {
+        // todo can liquidity overflow if it's greater than type(int128).max or less than type(int128).min?
         if (liquidity == 0) return 0;
 
         uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
@@ -141,7 +143,7 @@ library PriceMath {
             return amount1.toInt256();
         }
         uint256 amount1 = FullMath.mulDiv(
-            uint256(uint112(-liquidity)),
+            uint256(-liquidity),
             priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
             uint256(1) << (56 + safeShiftBits / 2)
         );
