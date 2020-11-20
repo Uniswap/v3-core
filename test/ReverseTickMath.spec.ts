@@ -32,7 +32,15 @@ describe('ReverseTickMath', () => {
       expect(await reverseTickMath.getTickFromPrice({_x: encodePrice(1, 1)}, 5, 250)).to.eq(5)
     })
     it('price is above upper bound', async () => {
-      expect(await reverseTickMath.getTickFromPrice({_x: encodePrice(1, 1)}, -100, -25)).to.eq(-25)
+      // weird
+      expect(await reverseTickMath.getTickFromPrice({_x: encodePrice(1, 1)}, -100, -25)).to.eq(-26)
+    })
+    it('upperBound cannot be == the tick', async () => {
+      expect(await reverseTickMath.getTickFromPrice({_x: encodePrice(1, 1)}, -1, 0)).to.eq(-1)
+    })
+    it('accuracy', async () => {
+      // this is the price tick at 0 - 1
+      expect(await reverseTickMath.getTickFromPrice({_x: '5192296858534827628530496329220095'}, -1, 0)).to.eq(-1)
     })
     it('throws if lowerBound == upperBound', async () => {
       await expect(reverseTickMath.getTickFromPrice({_x: encodePrice(1, 1)}, 0, 0)).to.be.revertedWith(

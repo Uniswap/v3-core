@@ -18,7 +18,7 @@ library ReverseTickMath {
             'ReverseTickMath::getTickFromPrice: lower bound must be less than upper bound'
         );
 
-        tick = (lowerBound + upperBound) / 2;
+        tick = (lowerBound + upperBound) >> 1;
 
         while (upperBound - lowerBound > 1) {
             FixedPoint.uq112x112 memory middle = TickMath.getRatioAtTick(tick);
@@ -27,7 +27,7 @@ library ReverseTickMath {
             } else {
                 upperBound = tick;
             }
-            tick = (lowerBound + upperBound) / 2;
+            tick = (lowerBound + upperBound) >> 1;
         }
 
         return tick;
