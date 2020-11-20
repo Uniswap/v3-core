@@ -36,8 +36,6 @@ contract GeneratedTickMath {
   IGeneratedTickMathInner immutable private g26;
   IGeneratedTickMathInner immutable private g27;
   IGeneratedTickMathInner immutable private g28;
-  IGeneratedTickMathInner immutable private g29;
-  IGeneratedTickMathInner immutable private g30;
   
   constructor(
     IGeneratedTickMathInner[] memory _g
@@ -71,68 +69,66 @@ contract GeneratedTickMath {
     g26 = _g[26];
     g27 = _g[27];
     g28 = _g[28];
-    g29 = _g[29];
-    g30 = _g[30];
   }
   
   function getRatioAtTick(int256 tick) external view returns (uint256) {
-    if (tick < -52) {
-      if (tick < -4148) {
-        if (tick < -6196) {
-          if (tick < -7220) {
+    if (tick < -183) {
+      if (tick < -3767) {
+        if (tick < -5815) {
+          if (tick < -6839) {
             return g0.getRatioAtTick(tick);
           } else {
-            if (tick >= -6708) return g2.getRatioAtTick(tick); else return g1.getRatioAtTick(tick);
+            if (tick >= -6327) return g2.getRatioAtTick(tick); else return g1.getRatioAtTick(tick);
           }
         } else {
-          if (tick < -5172) {
-            if (tick >= -5684) return g4.getRatioAtTick(tick); else return g3.getRatioAtTick(tick);
+          if (tick < -4791) {
+            if (tick >= -5303) return g4.getRatioAtTick(tick); else return g3.getRatioAtTick(tick);
           } else {
-            if (tick >= -4660) return g6.getRatioAtTick(tick); else return g5.getRatioAtTick(tick);
+            if (tick >= -4279) return g6.getRatioAtTick(tick); else return g5.getRatioAtTick(tick);
           }
         }
       } else {
-        if (tick < -2100) {
-          if (tick < -3124) {
-            if (tick >= -3636) return g8.getRatioAtTick(tick); else return g7.getRatioAtTick(tick);
+        if (tick < -2231) {
+          if (tick < -3255) {
+            return g7.getRatioAtTick(tick);
           } else {
-            if (tick >= -2612) return g10.getRatioAtTick(tick); else return g9.getRatioAtTick(tick);
+            if (tick >= -2743) return g9.getRatioAtTick(tick); else return g8.getRatioAtTick(tick);
           }
         } else {
-          if (tick < -1076) {
-            if (tick >= -1588) return g12.getRatioAtTick(tick); else return g11.getRatioAtTick(tick);
+          if (tick < -1207) {
+            if (tick >= -1719) return g11.getRatioAtTick(tick); else return g10.getRatioAtTick(tick);
           } else {
-            if (tick >= -564) return g14.getRatioAtTick(tick); else return g13.getRatioAtTick(tick);
+            if (tick >= -695) return g13.getRatioAtTick(tick); else return g12.getRatioAtTick(tick);
           }
         }
       }
     } else {
-      if (tick < 4044) {
-        if (tick < 1996) {
-          if (tick < 972) {
-            if (tick >= 460) return g16.getRatioAtTick(tick); else return g15.getRatioAtTick(tick);
+      if (tick < 3401) {
+        if (tick < 1353) {
+          if (tick < 329) {
+            return g14.getRatioAtTick(tick);
           } else {
-            if (tick >= 1484) return g18.getRatioAtTick(tick); else return g17.getRatioAtTick(tick);
+            if (tick >= 841) return g16.getRatioAtTick(tick); else return g15.getRatioAtTick(tick);
           }
         } else {
-          if (tick < 3020) {
-            if (tick >= 2508) return g20.getRatioAtTick(tick); else return g19.getRatioAtTick(tick);
+          if (tick < 2377) {
+            if (tick >= 1865) return g18.getRatioAtTick(tick); else return g17.getRatioAtTick(tick);
           } else {
-            if (tick >= 3532) return g22.getRatioAtTick(tick); else return g21.getRatioAtTick(tick);
+            if (tick >= 2889) return g20.getRatioAtTick(tick); else return g19.getRatioAtTick(tick);
           }
         }
       } else {
-        if (tick < 6092) {
-          if (tick < 5068) {
-            if (tick >= 4556) return g24.getRatioAtTick(tick); else return g23.getRatioAtTick(tick);
+        if (tick < 5449) {
+          if (tick < 4425) {
+            if (tick >= 3913) return g22.getRatioAtTick(tick); else return g21.getRatioAtTick(tick);
           } else {
-            if (tick >= 5580) return g26.getRatioAtTick(tick); else return g25.getRatioAtTick(tick);
+            if (tick >= 4937) return g24.getRatioAtTick(tick); else return g23.getRatioAtTick(tick);
           }
         } else {
-          if (tick < 7116) {
-            if (tick >= 6604) return g28.getRatioAtTick(tick); else return g27.getRatioAtTick(tick);
+          if (tick < 6473) {
+            if (tick >= 5961) return g26.getRatioAtTick(tick); else return g25.getRatioAtTick(tick);
           } else {
-            if (tick >= 7628) return g30.getRatioAtTick(tick); else return g29.getRatioAtTick(tick);
+            if (tick >= 6985) return g28.getRatioAtTick(tick); else return g27.getRatioAtTick(tick);
           }
         }
       }

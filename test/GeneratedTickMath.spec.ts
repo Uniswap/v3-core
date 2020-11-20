@@ -12,7 +12,7 @@ describe.only('GeneratedTickMathTest', () => {
   let tickMath: GeneratedTickMathTest
   before('deploy GeneratedTickMathTest', async () => {
     const gs: IGeneratedTickMathInner[] = []
-    for (let i = 0; i < 31; i++) {
+    for (let i = 0; i < 29; i++) {
       const f = await ethers.getContractFactory(`GeneratedTickMath${i}`)
       gs.push((await f.deploy()) as IGeneratedTickMathInner)
     }

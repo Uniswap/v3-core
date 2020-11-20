@@ -4,255 +4,255 @@ pragma solidity >=0.5.0;
 
 contract GeneratedTickMath7 {
   function getRatioAtTick(int256 tick) external pure returns (uint256) {
-    if (tick < -3892) {
-      if (tick < -4020) {
-        if (tick < -4084) {
-          if (tick < -4116) {
-            if (tick < -4132) {
-              if (tick < -4140) {
-                if (tick < -4144) {
-                  if (tick < -4146) {
-                    if (tick >= -4147) return 6231928152600410; else return 6170225893663773;
+    if (tick < -3511) {
+      if (tick < -3639) {
+        if (tick < -3703) {
+          if (tick < -3735) {
+            if (tick < -3751) {
+              if (tick < -3759) {
+                if (tick < -3763) {
+                  if (tick < -3765) {
+                    if (tick >= -3766) return 276099645442569520; else return 273365985586702495;
                   } else {
-                    if (tick >= -4145) return 6357189908467679; else return 6294247434126415;
+                    if (tick >= -3764) return 281649248315965167; else return 278860641896995215;
                   }
                 } else {
-                  if (tick < -4142) {
-                    if (tick >= -4143) return 6484969425627879; else return 6420761807552356;
+                  if (tick < -3761) {
+                    if (tick >= -3762) return 287310398207116067; else return 284465740799124819;
                   } else {
-                    if (tick >= -4141) return 6615317311082999; else return 6549819119884158;
+                    if (tick >= -3760) return 293085337211079100; else return 290183502189187228;
                   }
                 }
               } else {
-                if (tick < -4136) {
-                  if (tick < -4138) {
-                    if (tick >= -4139) return 6748285189035768; else return 6681470484193829;
+                if (tick < -3755) {
+                  if (tick < -3757) {
+                    if (tick >= -3758) return 298976352489021790; else return 296016190583189891;
                   } else {
-                    if (tick >= -4137) return 6883925721335387; else return 6815768040926125;
+                    if (tick >= -3756) return 304985777174051128; else return 301966116013912008;
                   }
                 } else {
-                  if (tick < -4134) {
-                    if (tick >= -4135) return 7022292628334228; else return 6952764978548741;
+                  if (tick < -3753) {
+                    if (tick >= -3754) return 311115991295249555; else return 308035634945791639;
                   } else {
-                    if (tick >= -4133) return 7163440710163746; else return 7092515554617570;
+                    if (tick >= -3752) return 317369422720284072; else return 314227151208202051;
                   }
                 }
               }
             } else {
-              if (tick < -4124) {
-                if (tick < -4128) {
-                  if (tick < -4130) {
-                    if (tick >= -4131) return 7307425868438037; else return 7235075117265383;
+              if (tick < -3743) {
+                if (tick < -3747) {
+                  if (tick < -3749) {
+                    if (tick >= -3750) return 323748548116961781; else return 320543116947486912;
                   } else {
-                    if (tick >= -4129) return 7454305128393642; else return 7380500127122418;
+                    if (tick >= -3748) return 330255893934112713; else return 326986033598131399;
                   }
                 } else {
-                  if (tick < -4126) {
-                    if (tick >= -4127) return 7604136661474354; else return 7528848179677578;
+                  if (tick < -3745) {
+                    if (tick >= -3746) return 336894037402188379; else return 333558452873453840;
                   } else {
-                    if (tick >= -4125) return 7756979808369989; else return 7680178028089098;
+                    if (tick >= -3744) return 343665607553972365; else return 340262977776210263;
                   }
                 }
               } else {
-                if (tick < -4120) {
-                  if (tick < -4122) {
-                    if (tick >= -4123) return 7912895102518225; else return 7834549606453688;
+                if (tick < -3739) {
+                  if (tick < -3741) {
+                    if (tick >= -3742) return 350573286265807210; else return 347102263629512089;
                   } else {
-                    if (tick >= -4121) return 8071944294078842; else return 7992024053543408;
+                    if (tick >= -3740) return 357619809319749935; else return 354079019128465282;
                   }
                 } else {
-                  if (tick < -4118) {
-                    if (tick >= -4119) return 8234190374389826; else return 8152663737019630;
+                  if (tick < -3737) {
+                    if (tick >= -3738) return 364807967487076908; else return 361196007412947434;
                   } else {
-                    if (tick >= -4117) return 8399697600915062; else return 8316532278133725;
+                    if (tick >= -3736) return 372140607633567154; else return 368456047161947677;
                   }
                 }
               }
             }
           } else {
-            if (tick < -4100) {
-              if (tick < -4108) {
-                if (tick < -4112) {
-                  if (tick < -4114) {
-                    if (tick >= -4115) return 8568531522693455; else return 8483694576924213;
+            if (tick < -3719) {
+              if (tick < -3727) {
+                if (tick < -3731) {
+                  if (tick < -3733) {
+                    if (tick >= -3734) return 379620633847001854; else return 375862013709902826;
                   } else {
-                    if (tick >= -4113) return 8740759006299593; else return 8654216837920389;
+                    if (tick >= -3732) return 387251008587326591; else return 383416840185471873;
                   }
                 } else {
-                  if (tick < -4110) {
-                    if (tick >= -4111) return 8916448262326215; else return 8828166596362589;
+                  if (tick < -3729) {
+                    if (tick >= -3730) return 395034753859931856; else return 391123518673199857;
                   } else {
-                    if (tick >= -4109) return 9095668872398972; else return 9005612744949477;
+                    if (tick >= -3728) return 402974952412516486; else return 398985101398531174;
                   }
                 }
               } else {
-                if (tick < -4104) {
-                  if (tick < -4106) {
-                    if (tick >= -4107) return 9278491816734191; else return 9186625561122962;
+                if (tick < -3723) {
+                  if (tick < -3725) {
+                    if (tick >= -3726) return 411074748956008067; else return 407004701936641651;
                   } else {
-                    if (tick >= -4105) return 9464989502250549; else return 9371276734901533;
+                    if (tick >= -3724) return 419337351410023830; else return 415185496445568148;
                   }
                 } else {
-                  if (tick < -4102) {
-                    if (tick >= -4103) return 9655235791245785; else return 9559639397273054;
+                  if (tick < -3721) {
+                    if (tick >= -3722) return 427766032173365309; else return 423530724924124068;
                   } else {
-                    if (tick >= -4101) return 9849306030649825; else return 9751788149158242;
+                    if (tick >= -3720) return 436364129420049951; else return 432043692495098962;
                   }
                 }
               }
             } else {
-              if (tick < -4092) {
-                if (tick < -4096) {
-                  if (tick < -4098) {
-                    if (tick >= -4099) return 10047277081865886; else return 9947799090956323;
+              if (tick < -3711) {
+                if (tick < -3715) {
+                  if (tick < -3717) {
+                    if (tick >= -3718) return 445135048421392955; else return 440727770714250451;
                   } else {
-                    if (tick >= -4097) return 10249227351211391; else return 10147749852684545;
+                    if (tick >= -3716) return 454082262894662954; else return 449586398905606885;
                   }
                 } else {
-                  if (tick < -4094) {
-                    if (tick >= -4095) return 10455236820970740; else return 10351719624723505;
+                  if (tick < -3713) {
+                    if (tick >= -3714) return 463209316378845679; else return 458623085523609583;
                   } else {
-                    if (tick >= -4093) return 10665387081072252; else return 10559789189180447;
+                    if (tick >= -3712) return 472519823638060477; else return 467841409542634136;
                   }
                 }
               } else {
-                if (tick < -4088) {
-                  if (tick < -4090) {
-                    if (tick >= -4091) return 10879761361401804; else return 10772040951882974;
+                if (tick < -3707) {
+                  if (tick < -3709) {
+                    if (tick >= -3710) return 482017472093185493; else return 477245021874441082;
                   } else {
-                    if (tick >= -4089) return 11098444564765980; else return 10988558975015822;
+                    if (tick >= -3708) return 491706023282258521; else return 486837646814117348;
                   }
                 } else {
-                  if (tick < -4086) {
-                    if (tick >= -4087) return 11321523300517776; else return 11209429010413640;
+                  if (tick < -3705) {
+                    if (tick >= -3706) return 501589314350231918; else return 496623083515081107;
                   } else {
-                    if (tick >= -4085) return 11549085918858184; else return 11434738533522954;
+                    if (tick >= -3704) return 511671259568671579; else return 506605207493734237;
                   }
                 }
               }
             }
           }
         } else {
-          if (tick < -4052) {
-            if (tick < -4068) {
-              if (tick < -4076) {
-                if (tick < -4080) {
-                  if (tick < -4082) {
-                    if (tick >= -4083) return 11781222545827233; else return 11664576778046765;
+          if (tick < -3671) {
+            if (tick < -3687) {
+              if (tick < -3695) {
+                if (tick < -3699) {
+                  if (tick < -3701) {
+                    if (tick >= -3702) return 521955851886001878; else return 516787972164358295;
                   } else {
-                    if (tick >= -4081) return 12018025118998360; else return 11899034771285505;
+                    if (tick >= -3700) return 532447164508910516; else return 527175410404861897;
                   }
                 } else {
-                  if (tick < -4078) {
-                    if (tick >= -4079) return 12259587423890228; else return 12138205370188344;
+                  if (tick < -3697) {
+                    if (tick >= -3698) return 543149352515539617; else return 537771636153999621;
                   } else {
-                    if (tick >= -4077) return 12506005131110421; else return 12382183298129130;
+                    if (tick >= -3696) return 554066654501101963; else return 548580846040695013;
                   }
                 }
               } else {
-                if (tick < -4072) {
-                  if (tick < -4074) {
-                    if (tick >= -4075) return 12757375834245741; else return 12631065182421525;
+                if (tick < -3691) {
+                  if (tick < -3693) {
+                    if (tick >= -3694) return 565203394256574113; else return 559607321046112983;
                   } else {
-                    if (tick >= -4073) return 13013799088514080; else return 12884949592588198;
+                    if (tick >= -3692) return 576563982481131253; else return 570855428199139854;
                   }
                 } else {
-                  if (tick < -4070) {
-                    if (tick >= -4071) return 13275376450193213; else return 13143937079399221;
+                  if (tick < -3689) {
+                    if (tick >= -3690) return 588152918529001991; else return 582329622305942565;
                   } else {
-                    if (tick >= -4069) return 13542211516842097; else return 13408130214695145;
+                    if (tick >= -3688) return 599974792191434931; else return 594034447714292011;
                   }
                 }
               }
             } else {
-              if (tick < -4060) {
-                if (tick < -4064) {
-                  if (tick < -4066) {
-                    if (tick >= -4067) return 13814409968330623; else return 13677633632010518;
+              if (tick < -3679) {
+                if (tick < -3683) {
+                  if (tick < -3685) {
+                    if (tick >= -3686) return 612034285514482773; else return 605974540113349280;
                   } else {
-                    if (tick >= -4065) return 14092079608694068; else return 13952554068013929;
+                    if (tick >= -3684) return 624336174653323877; else return 618154628369627601;
                   }
                 } else {
-                  if (tick < -4062) {
-                    if (tick >= -4063) return 14375330408828819; else return 14233000404781009;
+                  if (tick < -3681) {
+                    if (tick >= -3682) return 636885331763855687; else return 630579536399857115;
                   } else {
-                    if (tick >= -4061) return 14664274550046278; else return 14519083712917107;
+                    if (tick >= -3680) return 649686726932309186; else return 643254185081494243;
                   }
                 }
               } else {
-                if (tick < -4056) {
-                  if (tick < -4058) {
-                    if (tick >= -4059) return 14959026468502209; else return 14810917295546741;
+                if (tick < -3675) {
+                  if (tick < -3677) {
+                    if (tick >= -3678) return 662745430143648600; else return 656183594201632278;
                   } else {
-                    if (tick >= -4057) return 15259702900519103; else return 15108616733187231;
+                    if (tick >= -3676) return 676066613289535937; else return 669372884445085086;
                   }
                 } else {
-                  if (tick < -4054) {
-                    if (tick >= -4055) return 15566422928819537; else return 15412299929524294;
+                  if (tick < -3673) {
+                    if (tick >= -3674) return 689655552216655610; else return 682827279422431297;
                   } else {
-                    if (tick >= -4053) return 15879308029688810; else return 15722087158107732;
+                    if (tick >= -3672) return 703517628816210387; else return 696552107738822166;
                   }
                 }
               }
             }
           } else {
-            if (tick < -4036) {
-              if (tick < -4044) {
-                if (tick < -4048) {
-                  if (tick < -4050) {
-                    if (tick >= -4051) return 16198482121085555; else return 16038101109985698;
+            if (tick < -3655) {
+              if (tick < -3663) {
+                if (tick < -3667) {
+                  if (tick < -3669) {
+                    if (tick >= -3670) return 717658333155416216; else return 710552805104372491;
                   } else {
-                    if (tick >= -4049) return 16524071611719374; else return 16360466942296410;
+                    if (tick >= -3668) return 732083265651840082; else return 724834916486970378;
                   }
                 } else {
-                  if (tick < -4046) {
-                    if (tick >= -4047) return 16856205451114934; else return 16689312327836568;
+                  if (tick < -3665) {
+                    if (tick >= -3666) return 746798139291442068; else return 739404098308358483;
                   } else {
-                    if (tick >= -4045) return 17195015180682344; else return 17024767505626083;
+                    if (tick >= -3664) return 761808781891200053; else return 754266120684356489;
                   }
                 }
               } else {
-                if (tick < -4040) {
-                  if (tick < -4042) {
-                    if (tick >= -4043) return 17540634985814059; else return 17366965332489167;
+                if (tick < -3659) {
+                  if (tick < -3661) {
+                    if (tick >= -3662) return 777121138407213175; else return 769426869710112054;
                   } else {
-                    if (tick >= -4041) return 17893201749028922; else return 17716041335672200;
+                    if (tick >= -3660) return 792741273289198159; else return 784892349791285306;
                   }
                 } else {
-                  if (tick < -4038) {
-                    if (tick >= -4039) return 18252855104184403; else return 18072133766519211;
+                  if (tick < -3657) {
+                    if (tick >= -3658) return 808675372882311042; else return 800668686022090141;
                   } else {
-                    if (tick >= -4037) return 18619737491778510; else return 18435383655226247;
+                    if (tick >= -3656) return 824929747877245494; else return 816762126611134153;
                   }
                 }
               }
             } else {
-              if (tick < -4028) {
-                if (tick < -4032) {
-                  if (tick < -4034) {
-                    if (tick >= -4035) return 18993994215363258; else return 18805934866696295;
+              if (tick < -3647) {
+                if (tick < -3651) {
+                  if (tick < -3653) {
+                    if (tick >= -3654) return 841510835809578129; else return 833179045356017949;
                   } else {
-                    if (tick >= -4033) return 19375773499092059; else return 19183934157516890;
+                    if (tick >= -3652) return 858425203609350649; else return 849925944167673910;
                   }
                 } else {
-                  if (tick < -4030) {
-                    if (tick >= -4031) return 19765226546423809; else return 19569531234082980;
+                  if (tick < -3649) {
+                    if (tick >= -3650) return 875679550201898597; else return 867009455645444156;
                   } else {
-                    if (tick >= -4029) return 20162507600006928; else return 19962878811888048;
+                    if (tick >= -3648) return 893280709160956759; else return 884436345703917583;
                   }
                 }
               } else {
-                if (tick < -4024) {
-                  if (tick < -4026) {
-                    if (tick >= -4027) return 20567774002767067; else return 20364132676006997;
+                if (tick < -3643) {
+                  if (tick < -3645) {
+                    if (tick >= -3646) return 911235651415091990; else return 902213516252566327;
                   } else {
-                    if (tick >= -4025) return 20981186260222685; else return 20773451742794738;
+                    if (tick >= -3644) return 929551488008535339; else return 920348007929242910;
                   }
                 } else {
-                  if (tick < -4022) {
-                    if (tick >= -4023) return 21402908104053161; else return 21190998122824912;
+                  if (tick < -3641) {
+                    if (tick >= -3642) return 948235472917506899; else return 938847002888620692;
                   } else {
-                    if (tick >= -4021) return 21833106556944630; else return 21616937185093693;
+                    if (tick >= -3640) return 967295005923148788; else return 957717827646681968;
                   }
                 }
               }
@@ -260,253 +260,253 @@ contract GeneratedTickMath7 {
           }
         }
       } else {
-        if (tick < -3956) {
-          if (tick < -3988) {
-            if (tick < -4004) {
-              if (tick < -4012) {
-                if (tick < -4016) {
-                  if (tick < -4018) {
-                    if (tick >= -4019) return 22271951998739217; else return 22051437622514076;
+        if (tick < -3575) {
+          if (tick < -3607) {
+            if (tick < -3623) {
+              if (tick < -3631) {
+                if (tick < -3635) {
+                  if (tick < -3637) {
+                    if (tick >= -3638) return 986737635542204079; else return 976967955982380276;
                   } else {
-                    if (tick >= -4017) return 22719618233913875; else return 22494671518726609;
+                    if (tick >= -3636) return 1006571062016602381; else return 996605011897626119;
                   }
                 } else {
-                  if (tick < -4014) {
-                    if (tick >= -4015) return 23176282560415544; else return 22946814416253014;
+                  if (tick < -3633) {
+                    if (tick >= -3634) return 1026803140363136088; else return 1016636772636768404;
                   } else {
-                    if (tick >= -4013) return 23642125839879897; else return 23408045386019700;
+                    if (tick >= -3632) return 1047441883484435124; else return 1037071171766767449;
                   }
                 }
               } else {
-                if (tick < -4008) {
-                  if (tick < -4010) {
-                    if (tick >= -4011) return 24117332569261483; else return 23878547098278696;
+                if (tick < -3627) {
+                  if (tick < -3629) {
+                    if (tick >= -3630) return 1068495465342472270; else return 1057916302319279475;
                   } else {
-                    if (tick >= -4009) return 24602090953903638; else return 24358505894954097;
+                    if (tick >= -3628) return 1089972224195855962; else return 1079180419995896993;
                   }
                 } else {
-                  if (tick < -4006) {
-                    if (tick >= -4007) return 25096592982077101; else return 24848111863442675;
+                  if (tick < -3625) {
+                    if (tick >= -3626) return 1111880665902192667; else return 1100871946437814522;
                   } else {
-                    if (tick >= -4005) return 25601034501016851; else return 25347558911897872;
+                    if (tick >= -3624) return 1134229467286826740; else return 1122999472561214594;
                   }
                 }
               }
             } else {
-              if (tick < -3996) {
-                if (tick < -4000) {
-                  if (tick < -4002) {
-                    if (tick >= -4003) return 26115615294487290; else return 25857044846027020;
+              if (tick < -3615) {
+                if (tick < -3619) {
+                  if (tick < -3621) {
+                    if (tick >= -3622) return 1157027479579291957; else return 1145571761959695007;
                   } else {
-                    if (tick >= -4001) return 26640539161906484; else return 26376771447432163;
+                    if (tick >= -3620) return 1180283731918835726; else return 1168597754375084877;
                   }
                 } else {
-                  if (tick < -3998) {
-                    if (tick >= -3999) return 27176013999060805; else return 26906944553525549;
+                  if (tick < -3617) {
+                    if (tick >= -3618) return 1204007434930404324; else return 1192086569238024083;
                   } else {
-                    if (tick >= -3997) return 27722251880441927; else return 27447774139051413;
+                    if (tick >= -3616) return 1228207984372505451; else return 1216047509279708367;
                   }
                 }
               } else {
-                if (tick < -3992) {
-                  if (tick < -3994) {
-                    if (tick >= -3995) return 28279469143238810; else return 27999474399246346;
+                if (tick < -3611) {
+                  if (tick < -3613) {
+                    if (tick >= -3614) return 1252894964858392810; else return 1240490064216230505;
                   } else {
-                    if (tick >= -3993) return 28847886473017910; else return 28562263834671198;
+                    if (tick >= -3612) return 1278078153652046506; else return 1265423914506976738;
                   }
                 } else {
-                  if (tick < -3990) {
-                    if (tick >= -3991) return 29427728991125570; else return 29136365337748089;
+                  if (tick < -3609) {
+                    if (tick >= -3610) return 1303767524540452641; else return 1290858935188566971;
                   } else {
-                    if (tick >= -3989) return 30019226343847194; else return 29722006281036826;
+                    if (tick >= -3608) return 1329973251783715739; else return 1316805199785857167;
                   }
                 }
               }
             }
           } else {
-            if (tick < -3972) {
-              if (tick < -3980) {
-                if (tick < -3984) {
-                  if (tick < -3986) {
-                    if (tick >= -3987) return 30622612793358522; else return 30319418607285666;
+            if (tick < -3591) {
+              if (tick < -3599) {
+                if (tick < -3603) {
+                  if (tick < -3605) {
+                    if (tick >= -3606) return 1356705714144568425; else return 1343272984301552896;
                   } else {
-                    if (tick >= -3985) return 31238127310505029; else return 30928838921292108;
+                    if (tick >= -3604) return 1383975498998874250; else return 1370272771286014109;
                   }
                 } else {
-                  if (tick < -3982) {
-                    if (tick >= -3983) return 31866013669446180; else return 31550508583610079;
+                  if (tick < -3601) {
+                    if (tick >= -3602) return 1411793406528751623; else return 1397815253988862993;
                   } else {
-                    if (tick >= -3981) return 32506520544202048; else return 32184673806140642;
+                    if (tick >= -3600) return 1440170453999979531; else return 1425911340594039139;
                   }
                 }
               } else {
-                if (tick < -3976) {
-                  if (tick < -3978) {
-                    if (tick >= -3979) return 33159901607140509; else return 32831585749644068;
+                if (tick < -3595) {
+                  if (tick < -3597) {
+                    if (tick >= -3598) return 1469117880125379119; else return 1454572158539979326;
                   } else {
-                    if (tick >= -3977) return 33826415629444033; else return 33491500623211914;
+                    if (tick >= -3596) return 1498647149515899239; else return 1483809058926632910;
                   }
                 } else {
-                  if (tick < -3974) {
-                    if (tick >= -3975) return 34506326583595859; else return 34164679785738474;
+                  if (tick < -3593) {
+                    if (tick >= -3594) return 1528769957221168814; else return 1513633621011058232;
                   } else {
-                    if (tick >= -3973) return 35199903747926135; else return 34851389849431817;
+                    if (tick >= -3592) return 1559498233361314307; else return 1544057656793380502;
                   }
                 }
               }
             } else {
-              if (tick < -3964) {
-                if (tick < -3968) {
-                  if (tick < -3970) {
-                    if (tick >= -3971) return 35907421813259451; else return 35551902785405397;
+              if (tick < -3583) {
+                if (tick < -3587) {
+                  if (tick < -3589) {
+                    if (tick >= -3590) return 1590844147851876725; else return 1575093215694927450;
                   } else {
-                    if (tick >= -3969) return 36629160991705966; else return 36266496031392045;
+                    if (tick >= -3588) return 1622820115223699447; else return 1606752589330395492;
                   }
                 } else {
-                  if (tick < -3966) {
-                    if (tick >= -3967) return 37365407127639255; else return 36995452601623025;
+                  if (tick < -3585) {
+                    if (tick >= -3586) return 1655438799539695806; else return 1639048316375936442;
                   } else {
-                    if (tick >= -3965) return 38116451810904805; else return 37739061198915648;
+                    if (tick >= -3584) return 1688713119410443692; else return 1671993187535092764;
                   }
                 }
               } else {
-                if (tick < -3960) {
-                  if (tick < -3962) {
-                    if (tick >= -3963) return 38882592492303991; else return 38497616329013853;
+                if (tick < -3579) {
+                  if (tick < -3581) {
+                    if (tick >= -3582) return 1722656253110593610; else return 1705600250604548129;
                   } else {
-                    if (tick >= -3961) return 39664132601399301; else return 39271418417227031;
+                    if (tick >= -3580) return 1757281643798116541; else return 1739882815641699546;
                   }
                 } else {
-                  if (tick < -3958) {
-                    if (tick >= -3959) return 40461381666687427; else return 40060773927413294;
+                  if (tick < -3577) {
+                    if (tick >= -3578) return 1792603004838458684; else return 1774854460236097707;
                   } else {
-                    if (tick >= -3957) return 41274655438187845; else return 40865995483354302;
+                    if (tick >= -3576) return 1828634325235711703; else return 1810529034886843271;
                   }
                 }
               }
             }
           }
         } else {
-          if (tick < -3924) {
-            if (tick < -3940) {
-              if (tick < -3948) {
-                if (tick < -3952) {
-                  if (tick < -3954) {
-                    if (tick >= -3955) return 42104276012495420; else return 41687401992569723;
+          if (tick < -3543) {
+            if (tick < -3559) {
+              if (tick < -3567) {
+                if (tick < -3571) {
+                  if (tick < -3573) {
+                    if (tick >= -3574) return 1865389875172949509; else return 1846920668488068821;
                   } else {
-                    if (tick >= -3953) return 42950571960346578; else return 42525318772620375;
+                    if (tick >= -3572) return 1902884211663925794; else return 1884043773924679004;
                   }
                 } else {
-                  if (tick < -3950) {
-                    if (tick >= -3951) return 43813878456749544; else return 43380077679950044;
+                  if (tick < -3569) {
+                    if (tick >= -3570) return 1941132184318370702; else return 1921913053780565052;
                   } else {
-                    if (tick >= -3949) return 44694537413730210; else return 44252017241317040;
+                    if (tick >= -3568) return 1980148941223169953; else return 1960543506161554409;
                   }
                 }
               } else {
-                if (tick < -3944) {
-                  if (tick < -3946) {
-                    if (tick >= -3947) return 45592897615746188; else return 45141482787867512;
+                if (tick < -3563) {
+                  if (tick < -3565) {
+                    if (tick >= -3566) return 2019949934941755670; else return 1999950430635401653;
                   } else {
-                    if (tick >= -3945) return 46509314857822686; else return 46048826591903649;
+                    if (tick >= -3564) return 2060550928634084959; else return 2040149434291173226;
                   }
                 } else {
-                  if (tick < -3942) {
-                    if (tick >= -3943) return 47444152086464922; else return 46974408006400913;
+                  if (tick < -3561) {
+                    if (tick >= -3562) return 2101968002299630066; else return 2081156437920425808;
                   } else {
-                    if (tick >= -3941) return 48397779543402867; else return 47918593607329571;
+                    if (tick >= -3560) return 2144217559145852631; else return 2122987682322626367;
                   }
                 }
               }
             } else {
-              if (tick < -3932) {
-                if (tick < -3936) {
-                  if (tick < -3938) {
-                    if (tick >= -3939) return 49370574912225265; else return 48881757338836896;
+              if (tick < -3551) {
+                if (tick < -3555) {
+                  if (tick < -3557) {
+                    if (tick >= -3558) return 2187316332084684268; else return 2165659734737311157;
                   } else {
-                    if (tick >= -3937) return 50362923467960992; else return 49864280661347517;
+                    if (tick >= -3556) return 2231281390359586422; else return 2209189495405531111;
                   }
                 } else {
-                  if (tick < -3934) {
-                    if (tick >= -3935) return 51375218229667008; else return 50866552702640602;
+                  if (tick < -3553) {
+                    if (tick >= -3554) return 2276130146305814109; else return 2253594204263182286;
                   } else {
-                    if (tick >= -3933) return 52407860116083315; else return 51888970411963678;
+                    if (tick >= -3552) return 2321880362246560973; else return 2298891447768872250;
                   }
                 }
               } else {
-                if (tick < -3928) {
-                  if (tick < -3930) {
-                    if (tick >= -3931) return 53461258104416590; else return 52931938717244148;
+                if (tick < -3547) {
+                  if (tick < -3549) {
+                    if (tick >= -3550) return 2368550157527716848; else return 2345099165869026583;
                   } else {
-                    if (tick >= -3929) return 54535829392315363; else return 53995870685460756;
+                    if (tick >= -3548) return 2416158015694023957; else return 2392235659102994017;
                   }
                 } else {
-                  if (tick < -3926) {
-                    if (tick >= -3927) return 55631999563100902; else return 55081187686238517;
+                  if (tick < -3545) {
+                    if (tick >= -3546) return 2464722791809473839; else return 2440319595850964197;
                   } else {
-                    if (tick >= -3925) return 56750202754319230; else return 56188319558731911;
+                    if (tick >= -3544) return 2514263719924844263; else return 2489370019727568577;
                   }
                 }
               }
             }
           } else {
-            if (tick < -3908) {
-              if (tick < -3916) {
-                if (tick < -3920) {
-                  if (tick < -3922) {
-                    if (tick >= -3923) return 57890881829681047; else return 57317704781862423;
+            if (tick < -3527) {
+              if (tick < -3535) {
+                if (tick < -3539) {
+                  if (tick < -3541) {
+                    if (tick >= -3542) return 2564800420695333633; else return 2539406357124092705;
                   } else {
-                    if (tick >= -3921) return 59054488554457636; else return 58469790647977857;
+                    if (tick >= -3540) return 2616352909151309839; else return 2590448424902286969;
                   }
                 } else {
-                  if (tick < -3918) {
-                    if (tick >= -3919) return 60241483774402234; else return 59645033440002212;
+                  if (tick < -3537) {
+                    if (tick >= -3538) return 2668941602625251166; else return 2642516438242822937;
                   } else {
-                    if (tick >= -3917) return 61452337598267719; else return 60843898612146257;
+                    if (tick >= -3536) return 2722587328838018715; else return 2695631018651503678;
                   }
                 }
               } else {
-                if (tick < -3912) {
-                  if (tick < -3914) {
-                    if (tick >= -3915) return 62687529583992900; else return 62066860974250396;
+                if (tick < -3531) {
+                  if (tick < -3533) {
+                    if (tick >= -3534) return 2777311334147662891; else return 2749813202126398902;
                   } else {
-                    if (tick >= -3913) return 63947548928631158; else return 63314404879832829;
+                    if (tick >= -3532) return 2833135291964030915; else return 2805084447489139520;
                   }
                 } else {
-                  if (tick < -3910) {
-                    if (tick >= -3911) return 65232894662096644; else return 64587024417917469;
+                  if (tick < -3529) {
+                    if (tick >= -3530) return 2890081311332507936; else return 2861466644883671224;
                   } else {
-                    if (tick >= -3909) return 66544075844804787; else return 65885223608717610;
+                    if (tick >= -3528) return 2948171945690291346; else return 2918982124445833016;
                   }
                 }
               }
             } else {
-              if (tick < -3900) {
-                if (tick < -3904) {
-                  if (tick < -3906) {
-                    if (tick >= -3907) return 67881611769285363; else return 67209516603252834;
+              if (tick < -3519) {
+                if (tick < -3523) {
+                  if (tick < -3525) {
+                    if (tick >= -3526) return 3007430201798666202; else return 2977653665147194259;
                   } else {
-                    if (tick >= -3905) return 69246032165847999; else return 68560427886978216;
+                    if (tick >= -3524) return 3067879548854819393; else return 3037504503816652864;
                   }
                 } else {
-                  if (tick < -3902) {
-                    if (tick >= -3903) return 70637877412381543; else return 69938492487506479;
+                  if (tick < -3521) {
+                    if (tick >= -3522) return 3129543927786801263; else return 3098558344343367587;
                   } else {
-                    if (tick >= -3901) return 72057698748370412; else return 71344256186505359;
+                    if (tick >= -3520) return 3192447760735315968; else return 3160839367064669275;
                   }
                 }
               } else {
-                if (tick < -3896) {
-                  if (tick < -3898) {
-                    if (tick >= -3899) return 73506058493212658; else return 72778275735854117;
+                if (tick < -3515) {
+                  if (tick < -3517) {
+                    if (tick >= -3518) return 3256615960726095819; else return 3224372238342669128;
                   } else {
-                    if (tick >= -3897) return 74983530268926232; else return 74241119078144784;
+                    if (tick >= -3516) return 3322073941536690345; else return 3289182120333356777;
                   }
                 } else {
-                  if (tick < -3894) {
-                    if (tick >= -3895) return 76490699227331649; else return 75733365571615494;
+                  if (tick < -3513) {
+                    if (tick >= -3514) return 3388847627761577821; else return 3355294680952057248;
                   } else {
-                    if (tick >= -3893) return 78028162281801016; else return 77255606219604966;
+                    if (tick >= -3512) return 3456963465079585535; else return 3422736104039193599;
                   }
                 }
               }
@@ -515,254 +515,254 @@ contract GeneratedTickMath7 {
         }
       }
     } else {
-      if (tick < -3764) {
-        if (tick < -3828) {
-          if (tick < -3860) {
-            if (tick < -3876) {
-              if (tick < -3884) {
-                if (tick < -3888) {
-                  if (tick < -3890) {
-                    if (tick >= -3891) return 79596528343665216; else return 78808443904619026;
+      if (tick < -3383) {
+        if (tick < -3447) {
+          if (tick < -3479) {
+            if (tick < -3495) {
+              if (tick < -3503) {
+                if (tick < -3507) {
+                  if (tick < -3509) {
+                    if (tick >= -3510) return 3526448430727685204; else return 3491533099730381390;
                   } else {
-                    if (tick >= -3889) return 81196418563372887; else return 80392493627101868;
+                    if (tick >= -3508) return 3597330044185311677; else return 3561712915034962056;
                   }
                 } else {
-                  if (tick < -3886) {
-                    if (tick >= -3887) return 82828466576496682; else return 82008382749006616;
+                  if (tick < -3505) {
+                    if (tick >= -3506) return 3669636378073436442; else return 3633303344627164794;
                   } else {
-                    if (tick >= -3885) return 84493318754684265; else return 83656751242261649;
+                    if (tick >= -3504) return 3743396069272712514; else return 3706332741854170806;
                   }
                 }
               } else {
-                if (tick < -3880) {
-                  if (tick < -3882) {
-                    if (tick >= -3883) return 86191634461653419; else return 85338251942231108;
+                if (tick < -3499) {
+                  if (tick < -3501) {
+                    if (tick >= -3502) return 3818638330265094036; else return 3780830029965439639;
                   } else {
-                    if (tick >= -3881) return 87924086314332653; else return 87053550806269953;
+                    if (tick >= -3500) return 3895392960703422426; else return 3856824713567744976;
                   }
                 } else {
-                  if (tick < -3878) {
-                    if (tick >= -3879) return 89691360449250739; else return 88803327177475979;
+                  if (tick < -3497) {
+                    if (tick >= -3498) return 3973690359213561217; else return 3934346890310456650;
                   } else {
-                    if (tick >= -3877) return 91494156794280679; else return 90588274053743246;
+                    if (tick >= -3496) return 4053561535433753797; else return 4013427262805696829;
                   }
                 }
               }
             } else {
-              if (tick < -3868) {
-                if (tick < -3872) {
-                  if (tick < -3874) {
-                    if (tick >= -3875) return 93333189345845721; else return 92409098362223486;
+              if (tick < -3487) {
+                if (tick < -3491) {
+                  if (tick < -3493) {
+                    if (tick >= -3494) return 4135038122295972248; else return 4094097150788091335;
                   } else {
-                    if (tick >= -3873) return 95209186451697220; else return 94266521239304178;
+                    if (tick >= -3492) return 4218152388554121291; else return 4176388503518931971;
                   }
                 } else {
-                  if (tick < -3870) {
-                    if (tick >= -3871) return 97122891099376334; else return 96161278316214192;
+                  if (tick < -3489) {
+                    if (tick >= -3490) return 4302937251564059129; else return 4260333912439662503;
                   } else {
-                    if (tick >= -3869) return 99075061210473798; else return 98094120010370097;
+                    if (tick >= -3488) return 4389426290320496717; else return 4345966624079699720;
                   }
                 }
               } else {
-                if (tick < -3864) {
-                  if (tick < -3866) {
-                    if (tick >= -3867) return 101066469940804321; else return 100065811822578536;
+                if (tick < -3483) {
+                  if (tick < -3485) {
+                    if (tick >= -3486) return 4477653758755938701; else return 4433320553223701684;
                   } else {
-                    if (tick >= -3865) return 103097905986614488; else return 102077134640212365;
+                    if (tick >= -3484) return 4567654599306933069; else return 4522430296343498088;
                   }
                 } else {
-                  if (tick < -3862) {
-                    if (tick >= -3863) return 105170173896945439; else return 104128885046480633;
+                  if (tick < -3481) {
+                    if (tick >= -3482) return 4659464456753002424; else return 4613331145300002400;
                   } else {
-                    if (tick >= -3861) return 107284094392274043; else return 106221875635914894;
+                    if (tick >= -3480) return 4753119692333737772; else return 4706059101320532448;
                   }
                 }
               }
             }
           } else {
-            if (tick < -3844) {
-              if (tick < -3852) {
-                if (tick < -3856) {
-                  if (tick < -3858) {
-                    if (tick >= -3859) return 109440504689558751; else return 108356935336196783;
+            if (tick < -3463) {
+              if (tick < -3471) {
+                if (tick < -3475) {
+                  if (tick < -3477) {
+                    if (tick >= -3478) return 4848657398149645902; else return 4800650889257075150;
                   } else {
-                    if (tick >= -3857) return 111640258833818882; else return 110534909736454339;
+                    if (tick >= -3476) return 4946115411852453784; else return 4897143972131142361;
                   }
                 } else {
-                  if (tick < -3854) {
-                    if (tick >= -3855) return 113884228036378641; else return 112756661422157071;
+                  if (tick < -3473) {
+                    if (tick >= -3474) return 5045532331630688105; else return 4995576565970978322;
                   } else {
-                    if (tick >= -3853) return 116173301019909852; else return 115023070316742428;
+                    if (tick >= -3472) return 5146947531496464936; else return 5095987654946994986;
                   }
                 }
               } else {
-                if (tick < -3848) {
-                  if (tick < -3850) {
-                    if (tick >= -3851) return 118508384370410040; else return 117335034030108951;
+                if (tick < -3467) {
+                  if (tick < -3469) {
+                    if (tick >= -3470) return 5250401176879543881; else return 5198417006811429586;
                   } else {
-                    if (tick >= -3849) return 120890402896255282; else return 119693468214114141;
+                    if (tick >= -3468) return 5355934240534822713; else return 5302905188648339320;
                   }
                 } else {
-                  if (tick < -3846) {
-                    if (tick >= -3847) return 123320299994470013; else return 122099306925217835;
+                  if (tick < -3465) {
+                    if (tick >= -3466) return 5463588518769572650; else return 5409493582940170941;
                   } else {
-                    if (tick >= -3845) return 125799038024358860; else return 124553502994414713;
+                    if (tick >= -3464) return 5573406647996841060; else return 5518224403957268377;
                   }
                 }
               }
             } else {
-              if (tick < -3836) {
-                if (tick < -3840) {
-                  if (tick < -3842) {
-                    if (tick >= -3843) return 128327598688648474; else return 127057028404602449;
+              if (tick < -3455) {
+                if (tick < -3459) {
+                  if (tick < -3461) {
+                    if (tick >= -3462) return 5685432121621577566; else return 5629140714476809471;
                   } else {
-                    if (tick >= -3841) return 130906983422290308; else return 129610874675534958;
+                    if (tick >= -3460) return 5799709307266171275; else return 5742286442837793341;
                   }
                 } else {
-                  if (tick < -3838) {
-                    if (tick >= -3839) return 133538213789078343; else return 132216053256513211;
+                  if (tick < -3457) {
+                    if (tick >= -3458) return 5916283464342221317; else return 5857706400338832987;
                   } else {
-                    if (tick >= -3837) return 136222331886238818; else return 134873595926969127;
+                    if (tick >= -3456) return 6035200761975499966; else return 5975446298985643531;
                   }
                 }
               } else {
-                if (tick < -3832) {
-                  if (tick < -3834) {
-                    if (tick >= -3835) return 138960400757152218; else return 137584555205101206;
+                if (tick < -3451) {
+                  if (tick < -3453) {
+                    if (tick >= -3454) return 6156508297291207515; else return 6095552769595254965;
                   } else {
-                    if (tick >= -3833) return 141753504812370978; else return 140350004764723740;
+                    if (tick >= -3452) return 6280254114066760786; else return 6218073380264119590;
                   }
                 } else {
-                  if (tick < -3830) {
-                    if (tick >= -3831) return 144602750259099634; else return 143171039860494687;
+                  if (tick < -3449) {
+                    if (tick >= -3450) return 6406487221759502678; else return 6343056655207428394;
                   } else {
-                    if (tick >= -3829) return 147509265539307537; else return 146048777761690631;
+                    if (tick >= -3448) return 6535257614916868682; else return 6470552093977097705;
                   }
                 }
               }
             }
           }
         } else {
-          if (tick < -3796) {
-            if (tick < -3812) {
-              if (tick < -3820) {
-                if (tick < -3824) {
-                  if (tick < -3826) {
-                    if (tick >= -3827) return 150474201776647618; else return 148984358194700612;
+          if (tick < -3415) {
+            if (tick < -3431) {
+              if (tick < -3439) {
+                if (tick < -3443) {
+                  if (tick < -3445) {
+                    if (tick >= -3446) return 6666616292976697742; else return 6600610191066037369;
                   } else {
-                    if (tick >= -3825) return 153498733232358236; else return 151978943794414095;
+                    if (tick >= -3444) return 6800615280465529367; else return 6733282455906464720;
                   }
                 } else {
-                  if (tick < -3822) {
-                    if (tick >= -3823) return 156584057770328636; else return 155033720564681818;
+                  if (tick < -3441) {
+                    if (tick >= -3442) return 6937307647602886507; else return 6868621433270184661;
                   } else {
-                    if (tick >= -3821) return 159731397331512242; else return 158149898348031923;
+                    if (tick >= -3440) return 7076747531319704526; else return 7006680724078915372;
                   }
                 }
               } else {
-                if (tick < -3816) {
-                  if (tick < -3818) {
-                    if (tick >= -3819) return 162941998417875638; else return 161328711304827364;
+                if (tick < -3435) {
+                  if (tick < -3437) {
+                    if (tick >= -3438) return 7218990156699230587; else return 7147515006632901571;
                   } else {
-                    if (tick >= -3817) return 166217132586074938; else return 164571418402054394;
+                    if (tick >= -3436) return 7364091858848885122; else return 7291180058266222893;
                   }
                 } else {
-                  if (tick < -3814) {
-                    if (tick >= -3815) return 169558096951055044; else return 167879303911935688;
+                  if (tick < -3433) {
+                    if (tick >= -3434) return 7512110105211747713; else return 7437732777437373973;
                   } else {
-                    if (tick >= -3813) return 172966214699771251; else return 171253677920565595;
+                    if (tick >= -3432) return 7663103518326503842; else return 7587231206263865190;
                   }
                 }
               }
             } else {
-              if (tick < -3804) {
-                if (tick < -3808) {
-                  if (tick < -3810) {
-                    if (tick >= -3811) return 176442835615236653; else return 174695876846768963;
+              if (tick < -3423) {
+                if (tick < -3427) {
+                  if (tick < -3429) {
+                    if (tick >= -3430) return 7817131899044866569; else return 7739734553509768880;
                   } else {
-                    if (tick >= -3809) return 179989336611102910; else return 178207263971389020;
+                    if (tick >= -3428) return 7974256250215668387; else return 7895303218035315235;
                   }
                 } else {
-                  if (tick < -3806) {
-                    if (tick >= -3807) return 183607122276986078; else return 181789229977213939;
+                  if (tick < -3425) {
+                    if (tick >= -3426) return 8134538800845003322; else return 8053998812717825071;
                   } else {
-                    if (tick >= -3805) return 187297625434753498; else return 185443193499755939;
+                    if (tick >= -3424) return 8298043030741987889; else return 8215884188853453355;
                   }
                 }
               } else {
-                if (tick < -3800) {
-                  if (tick < -3802) {
-                    if (tick >= -3803) return 191062307705992044; else return 189170601689101033;
+                if (tick < -3419) {
+                  if (tick < -3421) {
+                    if (tick >= -3422) return 8464833695659901845; else return 8381023461049407767;
                   } else {
-                    if (tick >= -3801) return 194902660090882484; else return 192972930783051964;
+                    if (tick >= -3420) return 8634976852942665872; else return 8549482032616500864;
                   }
                 } else {
-                  if (tick < -3798) {
-                    if (tick >= -3799) return 198820203558709222; else return 196851686691791309;
+                  if (tick < -3417) {
+                    if (tick >= -3418) return 8808539887686813456; else return 8721326621472092531;
                   } else {
-                    if (tick >= -3797) return 202816489650239277; else return 200808405594296314;
+                    if (tick >= -3416) return 8985591539429318407; else return 8896625286563681591;
                   }
                 }
               }
             }
           } else {
-            if (tick < -3780) {
-              if (tick < -3788) {
-                if (tick < -3792) {
-                  if (tick < -3794) {
-                    if (tick >= -3795) return 206893101092209087; else return 204844654546741670;
+            if (tick < -3399) {
+              if (tick < -3407) {
+                if (tick < -3411) {
+                  if (tick < -3413) {
+                    if (tick >= -3414) return 9166201929371847707; else return 9075447454823611591;
                   } else {
-                    if (tick >= -3793) return 211051652424162489; else return 208962032103131177;
+                    if (tick >= -3412) return 9350442588152221846; else return 9257863948665566184;
                   }
                 } else {
-                  if (tick < -3790) {
-                    if (tick >= -3791) return 215293790637888155; else return 213162168948404114;
+                  if (tick < -3409) {
+                    if (tick >= -3410) return 9538386484174081505; else return 9443947014033744064;
                   } else {
-                    if (tick >= -3789) return 219621195829709707; else return 217446728544267037;
+                    if (tick >= -3408) return 9730108052505980543; else return 9633770349015822320;
                   }
                 }
               } else {
-                if (tick < -3784) {
-                  if (tick < -3786) {
-                    if (tick >= -3787) return 224035581865886872; else return 221817407788006804;
+                if (tick < -3403) {
+                  if (tick < -3405) {
+                    if (tick >= -3406) return 9925683224361350752; else return 9827409133031040348;
                   } else {
-                    if (tick >= -3785) return 228538697061391198; else return 226275937684545741;
+                    if (tick >= -3404) return 10125189457171013902; else return 10024940056604964259;
                   }
                 } else {
-                  if (tick < -3782) {
-                    if (tick >= -3783) return 233132324872325162; else return 230824084032005110;
+                  if (tick < -3401) {
+                    if (tick >= -3402) return 10328705765260151281; else return 10226441351742724041;
                   } else {
-                    if (tick >= -3781) return 237818284602258897; else return 235463648121048413;
+                    if (tick >= -3400) return 10536312751141880322; else return 10431992822912752794;
                   }
                 }
               }
             } else {
-              if (tick < -3772) {
-                if (tick < -3776) {
-                  if (tick < -3778) {
-                    if (tick >= -3779) return 242598432122764301; else return 240196467448281486;
+              if (tick < -3391) {
+                if (tick < -3395) {
+                  if (tick < -3397) {
+                    if (tick >= -3398) return 10748092637439832117; else return 10641675878653299125;
                   } else {
-                    if (tick >= -3777) return 247474660608431864; else return 245024416443991944;
+                    if (tick >= -3396) return 10964129299452372742; else return 10855573563814230438;
                   }
                 } else {
-                  if (tick < -3774) {
-                    if (tick >= -3775) return 252448901286661344; else return 249949407214516182;
+                  if (tick < -3393) {
+                    if (tick >= -3394) return 11184508298371365434; else return 11073770592446896470;
                   } else {
-                    if (tick >= -3773) return 257523124202523237; else return 254973390299527958;
+                    if (tick >= -3392) return 11409316915168629880; else return 11296353381355079089;
                   }
                 }
               } else {
-                if (tick < -3768) {
-                  if (tick < -3770) {
-                    if (tick >= -3771) return 262699338998993954; else return 260098355444548470;
+                if (tick < -3387) {
+                  if (tick < -3389) {
+                    if (tick >= -3390) return 11638644185163519340; else return 11523410084320316178;
                   } else {
-                    if (tick >= -3769) return 267979595712873733; else return 265326332388983894;
+                    if (tick >= -3388) return 11872580933285306079; else return 11755030627015154534;
                   }
                 } else {
-                  if (tick < -3766) {
-                    if (tick >= -3767) return 273365985586702495; else return 270659391670002470;
+                  if (tick < -3385) {
+                    if (tick >= -3386) return 12111219810044340731; else return 11991306742618159140;
                   } else {
-                    if (tick >= -3765) return 278860641896995215; else return 276099645442569520;
+                    if (tick >= -3384) return 12354655328226231980; else return 12232332008144784139;
                   }
                 }
               }
@@ -770,253 +770,253 @@ contract GeneratedTickMath7 {
           }
         }
       } else {
-        if (tick < -3700) {
-          if (tick < -3732) {
-            if (tick < -3748) {
-              if (tick < -3756) {
-                if (tick < -3760) {
-                  if (tick < -3762) {
-                    if (tick >= -3763) return 284465740799124819; else return 281649248315965167;
+        if (tick < -3319) {
+          if (tick < -3351) {
+            if (tick < -3367) {
+              if (tick < -3375) {
+                if (tick < -3379) {
+                  if (tick < -3381) {
+                    if (tick >= -3382) return 12602983900323579243; else return 12478201881508494300;
                   } else {
-                    if (tick >= -3761) return 290183502189187228; else return 287310398207116067;
+                    if (tick >= -3380) return 12856303876720083186; else return 12729013739326815035;
                   }
                 } else {
-                  if (tick < -3758) {
-                    if (tick >= -3759) return 296016190583189891; else return 293085337211079100;
+                  if (tick < -3377) {
+                    if (tick >= -3378) return 13114715584642156858; else return 12984866915487284017;
                   } else {
-                    if (tick >= -3757) return 301966116013912008; else return 298976352489021790;
+                    if (tick >= -3376) return 13378321367893464210; else return 13245862740488578426;
                   }
                 }
               } else {
-                if (tick < -3752) {
-                  if (tick < -3754) {
-                    if (tick >= -3755) return 308035634945791639; else return 304985777174051128;
+                if (tick < -3371) {
+                  if (tick < -3373) {
+                    if (tick >= -3374) return 13647225627388122841; else return 13512104581572398852;
                   } else {
-                    if (tick >= -3753) return 314227151208202051; else return 311115991295249555;
+                    if (tick >= -3372) return 13921534862498624110; else return 13783697883662004069;
                   }
                 } else {
-                  if (tick < -3750) {
-                    if (tick >= -3751) return 320543116947486912; else return 317369422720284072;
+                  if (tick < -3369) {
+                    if (tick >= -3370) return 14201357713234846455; else return 14060750211123610351;
                   } else {
-                    if (tick >= -3749) return 326986033598131399; else return 323748548116961781;
+                    if (tick >= -3368) return 14486805003270866869; else return 14343371290367194919;
                   }
                 }
               }
             } else {
-              if (tick < -3740) {
-                if (tick < -3744) {
-                  if (tick < -3746) {
-                    if (tick >= -3747) return 333558452873453840; else return 330255893934112713;
+              if (tick < -3359) {
+                if (tick < -3363) {
+                  if (tick < -3365) {
+                    if (tick >= -3366) return 14777989783836611293; else return 14631673053303575537;
                   } else {
-                    if (tick >= -3745) return 340262977776210263; else return 336894037402188379;
+                    if (tick >= -3364) return 15075027378491727180; else return 14925769681674977406;
                   }
                 } else {
-                  if (tick < -3742) {
-                    if (tick >= -3743) return 347102263629512089; else return 343665607553972365;
+                  if (tick < -3361) {
+                    if (tick >= -3362) return 15378035428799410896; else return 15225777652276644451;
                   } else {
-                    if (tick >= -3741) return 354079019128465282; else return 350573286265807210;
+                    if (tick >= -3360) return 15687133940918279055; else return 15531815783087405005;
                   }
                 }
               } else {
-                if (tick < -3736) {
-                  if (tick < -3738) {
-                    if (tick >= -3739) return 361196007412947434; else return 357619809319749935;
+                if (tick < -3355) {
+                  if (tick < -3357) {
+                    if (tick >= -3358) return 16002445333130736464; else return 15844005280327461845;
                   } else {
-                    if (tick >= -3737) return 368456047161947677; else return 364807967487076908;
+                    if (tick >= -3356) return 16324094484326664267; else return 16162469786462043829;
                   }
                 } else {
-                  if (tick < -3734) {
-                    if (tick >= -3735) return 375862013709902826; else return 372140607633567154;
+                  if (tick < -3353) {
+                    if (tick >= -3354) return 16652208783461630219; else return 16487335429169930910;
                   } else {
-                    if (tick >= -3733) return 383416840185471873; else return 379620633847001854;
+                    if (tick >= -3352) return 16986918180009208986; else return 16818730871296246521;
                   }
                 }
               }
             }
           } else {
-            if (tick < -3716) {
-              if (tick < -3724) {
-                if (tick < -3728) {
-                  if (tick < -3730) {
-                    if (tick >= -3731) return 391123518673199857; else return 387251008587326591;
+            if (tick < -3335) {
+              if (tick < -3343) {
+                if (tick < -3347) {
+                  if (tick < -3349) {
+                    if (tick >= -3350) return 17328355235427394087; else return 17156787361809301076;
                   } else {
-                    if (tick >= -3729) return 398985101398531174; else return 395034753859931856;
+                    if (tick >= -3348) return 17676655175659484708; else return 17501638787781668028;
                   }
                 } else {
-                  if (tick < -3726) {
-                    if (tick >= -3727) return 407004701936641651; else return 402974952412516486;
+                  if (tick < -3345) {
+                    if (tick >= -3346) return 18031955944690240350; else return 17853421727416079555;
                   } else {
-                    if (tick >= -3725) return 415185496445568148; else return 411074748956008067;
+                    if (tick >= -3344) return 18394398259178514182; else return 18212275504137142754;
                   }
                 }
               } else {
-                if (tick < -3720) {
-                  if (tick < -3722) {
-                    if (tick >= -3723) return 423530724924124068; else return 419337351410023830;
+                if (tick < -3339) {
+                  if (tick < -3341) {
+                    if (tick >= -3342) return 18764125664188002317; else return 18578342241770299323;
                   } else {
-                    if (tick >= -3721) return 432043692495098962; else return 427766032173365309;
+                    if (tick >= -3340) return 19141284590038181163; else return 18951766920829882340;
                   }
                 } else {
-                  if (tick < -3718) {
-                    if (tick >= -3719) return 440727770714250451; else return 436364129420049951;
+                  if (tick < -3337) {
+                    if (tick >= -3338) return 19526024410297948605; else return 19332697435938562975;
                   } else {
-                    if (tick >= -3717) return 449586398905606885; else return 445135048421392955;
+                    if (tick >= -3336) return 19918497500944937371; else return 19721284654400928091;
                   }
                 }
               }
             } else {
-              if (tick < -3708) {
-                if (tick < -3712) {
-                  if (tick < -3714) {
-                    if (tick >= -3715) return 458623085523609583; else return 454082262894662954;
+              if (tick < -3327) {
+                if (tick < -3331) {
+                  if (tick < -3333) {
+                    if (tick >= -3334) return 20318859300713930613; else return 20117682475954386745;
                   } else {
-                    if (tick >= -3713) return 467841409542634136; else return 463209316378845679;
+                    if (tick >= -3332) return 20727268372658280618; else return 20522047893721069919;
                   }
                 } else {
-                  if (tick < -3710) {
-                    if (tick >= -3711) return 477245021874441082; else return 472519823638060477;
+                  if (tick < -3329) {
+                    if (tick >= -3330) return 21143886466948712058; else return 20934541056384863424;
                   } else {
-                    if (tick >= -3709) return 486837646814117348; else return 482017472093185493;
+                    if (tick >= -3328) return 21568878584934381171; else return 21355325331618199179;
                   }
                 }
               } else {
-                if (tick < -3704) {
-                  if (tick < -3706) {
-                    if (tick >= -3707) return 496623083515081107; else return 491706023282258521;
+                if (tick < -3323) {
+                  if (tick < -3325) {
+                    if (tick >= -3326) return 22002413044491562232; else return 21784567370783724983;
                   } else {
-                    if (tick >= -3705) return 506605207493734237; else return 501589314350231918;
+                    if (tick >= -3324) return 22444661546685842633; else return 22222437174936477855;
                   }
                 } else {
-                  if (tick < -3702) {
-                    if (tick >= -3703) return 516787972164358295; else return 511671259568671579;
+                  if (tick < -3321) {
+                    if (tick >= -3322) return 22895799243774228070; else return 22669108162152701060;
                   } else {
-                    if (tick >= -3701) return 527175410404861897; else return 521955851886001878;
+                    if (tick >= -3320) return 23356004808574090054; else return 23124757236211970351;
                   }
                 }
               }
             }
           }
         } else {
-          if (tick < -3668) {
-            if (tick < -3684) {
-              if (tick < -3692) {
-                if (tick < -3696) {
-                  if (tick < -3698) {
-                    if (tick >= -3699) return 537771636153999621; else return 532447164508910516;
+          if (tick < -3287) {
+            if (tick < -3303) {
+              if (tick < -3311) {
+                if (tick < -3315) {
+                  if (tick < -3317) {
+                    if (tick >= -3318) return 23825460505226429265; else return 23589564856659830955;
                   } else {
-                    if (tick >= -3697) return 548580846040695013; else return 543149352515539617;
+                    if (tick >= -3316) return 24304352261381480493; else return 24063715110278693557;
                   }
                 } else {
-                  if (tick < -3694) {
-                    if (tick >= -3695) return 559607321046112983; else return 554066654501101963;
+                  if (tick < -3313) {
+                    if (tick >= -3314) return 24792869741835248251; else return 24547395783995295298;
                   } else {
-                    if (tick >= -3693) return 570855428199139854; else return 565203394256574113;
+                    if (tick >= -3312) return 25291206423646136740; else return 25040798439253600733;
                   }
                 }
               } else {
-                if (tick < -3688) {
-                  if (tick < -3690) {
-                    if (tick >= -3691) return 582329622305942565; else return 576563982481131253;
+                if (tick < -3307) {
+                  if (tick < -3309) {
+                    if (tick >= -3310) return 25799559672761424089; else return 25544118487882598108;
                   } else {
-                    if (tick >= -3689) return 594034447714292011; else return 588152918529001991;
+                    if (tick >= -3308) return 26318130822183928713; else return 26057555269489038330;
                   }
                 } else {
-                  if (tick < -3686) {
-                    if (tick >= -3687) return 605974540113349280; else return 599974792191434931;
+                  if (tick < -3305) {
+                    if (tick >= -3306) return 26847125251709825680; else return 26581312130405768000;
                   } else {
-                    if (tick >= -3685) return 618154628369627601; else return 612034285514482773;
+                    if (tick >= -3304) return 27386752469269193177; else return 27115596504226923937;
                   }
                 }
               }
             } else {
-              if (tick < -3676) {
-                if (tick < -3680) {
-                  if (tick < -3682) {
-                    if (tick >= -3683) return 630579536399857115; else return 624336174653323877;
+              if (tick < -3295) {
+                if (tick < -3299) {
+                  if (tick < -3301) {
+                    if (tick >= -3302) return 27937226193901503959; else return 27660619993961885108;
                   } else {
-                    if (tick >= -3681) return 643254185081494243; else return 636885331763855687;
+                    if (tick >= -3300) return 28498764440398924189; else return 28216598455840518999;
                   }
                 } else {
-                  if (tick < -3678) {
-                    if (tick >= -3679) return 656183594201632278; else return 649686726932309186;
+                  if (tick < -3297) {
+                    if (tick >= -3298) return 29071589605650942565; else return 28783752084802913431;
                   } else {
-                    if (tick >= -3677) return 669372884445085086; else return 662745430143648600;
+                    if (tick >= -3296) return 29655928556724526511; else return 29362305501707451991;
                   }
                 }
               } else {
-                if (tick < -3672) {
-                  if (tick < -3674) {
-                    if (tick >= -3675) return 682827279422431297; else return 676066613289535937;
+                if (tick < -3291) {
+                  if (tick < -3293) {
+                    if (tick >= -3294) return 30252012720714689494; else return 29952487842291771776;
                   } else {
-                    if (tick >= -3673) return 696552107738822166; else return 689655552216655610;
+                    if (tick >= -3292) return 30860078176401054752; else return 30554532847921836389;
                   }
                 } else {
-                  if (tick < -3670) {
-                    if (tick >= -3671) return 710552805104372491; else return 703517628816210387;
+                  if (tick < -3289) {
+                    if (tick >= -3290) return 31480365747746715953; else return 31168678958165065300;
                   } else {
-                    if (tick >= -3669) return 724834916486970378; else return 717658333155416216;
+                    if (tick >= -3288) return 32113121099276424944; else return 31795169405224183113;
                   }
                 }
               }
             }
           } else {
-            if (tick < -3652) {
-              if (tick < -3660) {
-                if (tick < -3664) {
-                  if (tick < -3666) {
-                    if (tick >= -3667) return 739404098308358483; else return 732083265651840082;
+            if (tick < -3271) {
+              if (tick < -3279) {
+                if (tick < -3283) {
+                  if (tick < -3285) {
+                    if (tick >= -3286) return 32758594833371881085; else return 32434252310269189193;
                   } else {
-                    if (tick >= -3665) return 754266120684356489; else return 746798139291442068;
+                    if (tick >= -3284) return 33417042589522655895; else return 33086180781705599896;
                   }
                 } else {
-                  if (tick < -3662) {
-                    if (tick >= -3663) return 769426869710112054; else return 761808781891200053;
+                  if (tick < -3281) {
+                    if (tick >= -3282) return 34088725145572061278; else return 33751213015417882454;
                   } else {
-                    if (tick >= -3661) return 784892349791285306; else return 777121138407213175;
+                    if (tick >= -3280) return 34773908520998059710; else return 34429612397027781891;
                   }
                 }
               } else {
-                if (tick < -3656) {
-                  if (tick < -3658) {
-                    if (tick >= -3659) return 800668686022090141; else return 792741273289198159;
+                if (tick < -3275) {
+                  if (tick < -3277) {
+                    if (tick >= -3278) return 35472864082270120710; else return 35121647606208040307;
                   } else {
-                    if (tick >= -3657) return 816762126611134153; else return 808675372882311042;
+                    if (tick >= -3276) return 36185868650323750137; else return 35827592723092821917;
                   }
                 } else {
-                  if (tick < -3654) {
-                    if (tick >= -3655) return 833179045356017949; else return 824929747877245494;
+                  if (tick < -3273) {
+                    if (tick >= -3274) return 36913204610195257514; else return 36547727336826987638;
                   } else {
-                    if (tick >= -3653) return 849925944167673910; else return 841510835809578129;
+                    if (tick >= -3272) return 37655160022860182190; else return 37282336656297210089;
                   }
                 }
               }
             } else {
-              if (tick < -3644) {
-                if (tick < -3648) {
-                  if (tick < -3650) {
-                    if (tick >= -3651) return 867009455645444156; else return 858425203609350649;
+              if (tick < -3263) {
+                if (tick < -3267) {
+                  if (tick < -3269) {
+                    if (tick >= -3270) return 38412028739319671852; else return 38031711623088784012;
                   } else {
-                    if (tick >= -3649) return 884436345703917583; else return 875679550201898597;
+                    if (tick >= -3268) return 39184110516979997257; else return 38796149026712868571;
                   }
                 } else {
-                  if (tick < -3646) {
-                    if (tick >= -3647) return 902213516252566327; else return 893280709160956759;
+                  if (tick < -3265) {
+                    if (tick >= -3266) return 39971711138371295201; else return 39575951622149797229;
                   } else {
-                    if (tick >= -3645) return 920348007929242910; else return 911235651415091990;
+                    if (tick >= -3264) return 40775142532252558235; else return 40371428249755008153;
                   }
                 }
               } else {
-                if (tick < -3640) {
-                  if (tick < -3642) {
-                    if (tick >= -3643) return 938847002888620692; else return 929551488008535339;
+                if (tick < -3259) {
+                  if (tick < -3261) {
+                    if (tick >= -3262) return 41594722897150834656; else return 41182893957575083817;
                   } else {
-                    if (tick >= -3641) return 957717827646681968; else return 948235472917506899;
+                    if (tick >= -3260) return 42430776827383566432; else return 42010670126122343002;
                   }
                 } else {
-                  if (tick < -3638) {
-                    if (tick >= -3639) return 976967955982380276; else return 967295005923148788;
+                  if (tick < -3257) {
+                    if (tick >= -3258) return 43283635441613976117; else return 42855084595657402096;
                   } else {
-                    if (tick >= -3637) return 996605011897626119; else return 986737635542204079;
+                    if (tick >= -3256) return 44153636513990417037; else return 43716471796030115879;
                   }
                 }
               }
