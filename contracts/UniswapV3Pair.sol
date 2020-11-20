@@ -4,9 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
-import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
 import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
@@ -697,6 +695,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     else state.liquidity = uint112(state.liquidity.addi(liquidityDeltaNet));
                 }
 
+                // this is ok because we still have amountInRemaining so price is guaranteed to be less than the tick
+                // after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
                 if (params.zeroForOne) {
                     require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
