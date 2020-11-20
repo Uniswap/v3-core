@@ -248,75 +248,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return (price0CumulativeLast, price1CumulativeLast);
     }
 
-    function getAmount0Delta(
-        FixedPoint.uq112x112 memory priceLower,
-        FixedPoint.uq112x112 memory priceUpper,
-        int112 liquidity
-    ) internal pure returns (int256) {
-        if (liquidity == 0) return 0;
-
-        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
-        if (liquidity < 0) safeShiftBits -= 2; // ensure that our denominator won't overflow
-
-        uint256 priceLowerScaled = uint256(priceLower._x) << safeShiftBits; // priceLower * 2**safeShiftBits
-        uint256 priceLowerScaledRoot = Babylonian.sqrt(priceLowerScaled); // sqrt(priceLowerScaled)
-        bool roundUpLower = priceLowerScaledRoot**2 < priceLowerScaled;
-
-        uint256 priceUpperScaled = uint256(priceUpper._x) << safeShiftBits; // priceUpper * 2**safeShiftBits
-        uint256 priceUpperScaledRoot = Babylonian.sqrt(priceUpperScaled); // sqrt(priceUpperScaled)
-        bool roundUpUpper = priceUpperScaledRoot**2 < priceUpperScaled;
-
-        // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower)) / sqrt(priceUpper) * sqrt(priceLower)
-        if (liquidity > 0) {
-            uint256 amount0 = PriceMath.mulDivRoundingUp(
-                uint256(liquidity) << (safeShiftBits / 2), // * 2**(SSB/2)
-                (priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot) << 56, // * 2**56
-                priceLowerScaledRoot * priceUpperScaledRoot
-            );
-            return amount0.toInt256();
-        }
-        uint256 amount0 = FullMath.mulDiv(
-            uint256(uint112(-liquidity)) << (safeShiftBits / 2), // * 2**(SSB/2)
-            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)) << 56, // * 2**56
-            (priceLowerScaledRoot + (roundUpLower ? 1 : 0)) * (priceUpperScaledRoot + (roundUpUpper ? 1 : 0))
-        );
-        return -amount0.toInt256();
-    }
-
-    function getAmount1Delta(
-        FixedPoint.uq112x112 memory priceLower,
-        FixedPoint.uq112x112 memory priceUpper,
-        int112 liquidity
-    ) internal pure returns (int256) {
-        if (liquidity == 0) return 0;
-
-        uint8 safeShiftBits = ((255 - BitMath.mostSignificantBit(priceUpper._x)) / 2) * 2;
-
-        uint256 priceLowerScaled = uint256(priceLower._x) << safeShiftBits; // priceLower * 2**safeShiftBits
-        uint256 priceLowerScaledRoot = Babylonian.sqrt(priceLowerScaled); // sqrt(priceLowerScaled)
-        bool roundUpLower = priceLowerScaledRoot**2 < priceLowerScaled;
-
-        uint256 priceUpperScaled = uint256(priceUpper._x) << safeShiftBits; // priceUpper * 2**safeShiftBits
-        uint256 priceUpperScaledRoot = Babylonian.sqrt(priceUpperScaled); // sqrt(priceUpperScaled)
-        bool roundUpUpper = priceUpperScaledRoot**2 < priceUpperScaled;
-
-        // calculate liquidity * (sqrt(priceUpper) - sqrt(priceLower))
-        if (liquidity > 0) {
-            uint256 amount1 = PriceMath.mulDivRoundingUp(
-                uint256(liquidity),
-                priceUpperScaledRoot + (roundUpUpper ? 1 : 0) - priceLowerScaledRoot,
-                uint256(1) << (56 + safeShiftBits / 2)
-            );
-            return amount1.toInt256();
-        }
-        uint256 amount1 = FullMath.mulDiv(
-            uint256(uint112(-liquidity)),
-            priceUpperScaledRoot.sub(priceLowerScaledRoot + (roundUpLower ? 1 : 0)),
-            uint256(1) << (56 + safeShiftBits / 2)
-        );
-        return -amount1.toInt256();
-    }
-
     constructor(
         address _factory,
         address _token0,
@@ -513,7 +444,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tickCurrent < params.tickLower) {
             amount0 = amount0.add(
-                getAmount0Delta(
+                PriceMath.getAmount0Delta(
                     TickMath.getRatioAtTick(params.tickLower),
                     TickMath.getRatioAtTick(params.tickUpper),
                     params.liquidityDelta
@@ -522,10 +453,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
             amount0 = amount0.add(
-                getAmount0Delta(priceCurrent, TickMath.getRatioAtTick(params.tickUpper), params.liquidityDelta)
+                PriceMath.getAmount0Delta(
+                    priceCurrent,
+                    TickMath.getRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                )
             );
             amount1 = amount1.add(
-                getAmount1Delta(TickMath.getRatioAtTick(params.tickLower), priceCurrent, params.liquidityDelta)
+                PriceMath.getAmount1Delta(
+                    TickMath.getRatioAtTick(params.tickLower),
+                    priceCurrent,
+                    params.liquidityDelta
+                )
             );
 
             // this satisfies:
@@ -539,7 +478,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
             amount1 = amount1.add(
-                getAmount1Delta(
+                PriceMath.getAmount1Delta(
                     TickMath.getRatioAtTick(params.tickLower),
                     TickMath.getRatioAtTick(params.tickUpper),
                     params.liquidityDelta
@@ -601,7 +540,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountOut;
     }
 
-    function _swap(SwapParams memory params) internal returns (uint256 amountOut) {
+    function _swap(SwapParams memory params) private returns (uint256 amountOut) {
         _update(); // update the oracle and feeLast
 
         // the floor for the fee, used to prevent sandwiching attacks, static on a per-swap basis
