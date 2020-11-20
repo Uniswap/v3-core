@@ -375,10 +375,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
 
-        uint8 feeVote = 2; // 30 bips :)
-
-        // initialize fee and oracle timestamp
-        feeLast = FEE_OPTIONS(feeVote);
+        // initialize oracle timestamp
         blockTimestampLast = _blockTimestamp();
 
         // initialize current price and tick
@@ -391,7 +388,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 owner: address(0),
                 tickLower: TickMath.MIN_TICK,
                 tickUpper: TickMath.MAX_TICK,
-                feeVote: feeVote,
+                feeVote: 2, // FEE_OPTIONS(2) == 30 bips :)
                 liquidityDelta: 1
             })
         );
