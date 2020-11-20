@@ -23,11 +23,7 @@ library ReverseTickMath {
         while (upperBound - lowerBound > 1) {
             FixedPoint.uq112x112 memory middle = TickMath.getRatioAtTick(tick);
 
-            // that's a bingo
-            if (price._x == middle._x) {
-                return tick;
-            }
-            if (price._x > middle._x) {
+            if (price._x >= middle._x) {
                 lowerBound = tick;
             } else {
                 upperBound = tick;
