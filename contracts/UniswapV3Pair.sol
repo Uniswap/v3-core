@@ -697,8 +697,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     else state.liquidity = uint112(state.liquidity.addi(liquidityDeltaNet));
                 }
 
-                state.tick = step.tickNext;
-                // update tick
+                state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
                 if (params.zeroForOne) {
                     require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
                 } else {
