@@ -230,7 +230,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
     }
 
-    function computeLiquidityFee(uint128[NUM_FEE_OPTIONS] memory _liquidityCurrent)
+    function computeLiquidityAndFee(uint128[NUM_FEE_OPTIONS] memory _liquidityCurrent)
         private
         pure
         returns (uint128 liquidity, uint16 fee)
@@ -619,7 +619,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                (step.liquidity, step.fee) = computeLiquidityFee(state.liquidityCurrent);
+                (step.liquidity, step.fee) = computeLiquidityAndFee(state.liquidityCurrent);
                 // protect LPs by adjusting the fee only if the current fee is greater than the stored fee
                 step.fee = uint16(Math.max(state.feeFloor, step.fee));
 
