@@ -173,7 +173,7 @@ describe('UniswapV3Pair', () => {
             'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick'
           )
         })
-        it('fails if tickUpper greater than max tick', async () => {
+        it('fails if fee vote is invalid', async () => {
           await expect(pair.setPosition(-1, 1, 6, 0)).to.be.revertedWith(
             'UniswapV3Pair::setPosition: fee vote must be a valid option'
           )
