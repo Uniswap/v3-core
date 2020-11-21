@@ -677,10 +677,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 if (tickInfo.numPositions > 0) {
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
-                        feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x
+                        (params.zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) -
+                            tickInfo.feeGrowthOutside0._x
                     );
                     tickInfo.feeGrowthOutside1 = FixedPoint128.uq128x128(
-                        feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x
+                        (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
+                            tickInfo.feeGrowthOutside1._x
                     );
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
 
