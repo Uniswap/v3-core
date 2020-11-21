@@ -22,7 +22,7 @@ interface IUniswapV3Pair {
     // variables/state
     function feeTo() external view returns (address);
 
-    function blockTimestampLast() external view returns (uint32);
+    function blockTimestampLast() external view returns (uint64);
 
     function feeFloor() external view returns (uint16);
 
