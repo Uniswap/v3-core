@@ -36,6 +36,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // Number of fee options
     uint8 public constant override NUM_FEE_OPTIONS = 8;
 
+    // if we constrain the liquidity in a single fee vote across all ticks, then we can guarantee that the total
+    // liquidity current never exceeds uint128
+    // the max liquidity for a single tick fee vote is then:
+    //   floor(type(uint128).max / (8 fee votes * max number of ticks))
+    //     = (2n ** 128n - 1n) / (8n * (2n ** 16n))
+    //     = (2n ** 128n - 1n) / (2n ** 19n)
+    // this is about 109 bits
+    // we use int256 since it is compared to a delta
+    int256 private constant MAX_LIQUIDITY_PER_FEE_VOTE_TICK = 649037107316853453566312041152511;
+
     // list of fee options expressed as bips
     // uint16 because the maximum value is 10_000
     // options are 0.05%, 0.10%, 0.30%, 0.60%, 1.00%, 2.00%
@@ -443,14 +453,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 .sub(params.liquidityDelta)
                 .toInt128();
 
-            // if we constrain the liquidity in a single fee vote across all ticks, then we can guarantee that the total
-            // liquidity current never exceeds uint128
-            // the max liquidity for a single tick fee vote is then:
-            //   floor(type(uint128).max / (6 fee votes * max number of ticks))
             require(
-                // 865382809755804604755082721536682n = (2n ** 128n - 1n) / (6n * (2n ** 16n))
-                // this is about 109 bits
-                tickInfoLower.liquidityDelta[params.feeVote] < 865382809755804604755082721536682,
+                tickInfoLower.liquidityDelta[params.feeVote] < MAX_LIQUIDITY_PER_FEE_VOTE_TICK,
                 'UniswapV3Pair::setPosition: liquidity overflow'
             );
 
