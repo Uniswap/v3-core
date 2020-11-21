@@ -182,7 +182,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
 
-    function getLiquidity() public view override returns (uint128 liquidity) {
+    function getLiquidity() external view override returns (uint128 liquidity) {
         // load all liquidity into memory
         uint128[NUM_FEE_OPTIONS] memory _liquidityCurrent = [
             liquidityCurrent[0],
@@ -228,6 +228,28 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (liquidityCumulative >= threshold) return FEE_OPTIONS(feeVoteIndex);
         }
         return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
+    }
+
+    function computeLiquidityFee(uint128[NUM_FEE_OPTIONS] memory _liquidityCurrent)
+        private
+        pure
+        returns (uint128 liquidity, uint16 fee)
+    {
+        liquidity =
+            _liquidityCurrent[0] +
+            _liquidityCurrent[1] +
+            _liquidityCurrent[2] +
+            _liquidityCurrent[3] +
+            _liquidityCurrent[4] +
+            _liquidityCurrent[5];
+
+        uint128 threshold = liquidity / 2;
+
+        uint128 liquidityCumulative;
+        for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS; feeVoteIndex++) {
+            liquidityCumulative += _liquidityCurrent[feeVoteIndex];
+            if (liquidityCumulative >= threshold) fee = FEE_OPTIONS(feeVoteIndex);
+        }
     }
 
     // helper for reading the cumulative price as of the current block
@@ -529,8 +551,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountInRemaining;
         // the tick associated with the current price
         int16 tick;
-        // the virtual liquidity
-        uint128 liquidity;
+        // the current liquidity
+        uint128[NUM_FEE_OPTIONS] liquidityCurrent;
         // the price
         FixedPoint128.uq128x128 price;
         // protocol fees of the input token
@@ -544,6 +566,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int16 tickNext;
         // price for the target tick (1/0)
         FixedPoint128.uq128x128 priceNext;
+        // the virtual liquidity
+        uint128 liquidity;
         // the fee that will be paid in this step, in bips
         uint16 fee;
         // (computed) virtual reserves of token0
@@ -563,10 +587,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
             feeFloor: feeFloor,
             amountInRemaining: params.amountIn,
             tick: tickCurrent,
-            liquidity: getLiquidity(),
             price: priceCurrent,
             feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
-            feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1
+            feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
+            liquidityCurrent: [
+                liquidityCurrent[0],
+                liquidityCurrent[1],
+                liquidityCurrent[2],
+                liquidityCurrent[3],
+                liquidityCurrent[4],
+                liquidityCurrent[5]
+            ]
         });
 
         while (state.amountInRemaining > 0) {
@@ -577,21 +608,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // get the price for the next tick we're moving toward
             step.priceNext = TickMath.getRatioAtTick(step.tickNext);
 
-            // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
-            // similarly, if it's false we should be below the target price
-            // TODO we can remove this if/when we're confident they never trigger
-            if (params.zeroForOne) assert(state.price._x >= step.priceNext._x);
-            else assert(state.price._x < step.priceNext._x);
-
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
+                (step.liquidity, step.fee) = computeLiquidityFee(state.liquidityCurrent);
                 // protect LPs by adjusting the fee only if the current fee is greater than the stored fee
-                step.fee = uint16(Math.max(state.feeFloor, getFee()));
+                step.fee = uint16(Math.max(state.feeFloor, step.fee));
 
                 // recompute reserves given the current price/liquidity
                 (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
                     state.price,
-                    state.liquidity,
+                    step.liquidity,
                     false
                 );
 
@@ -599,7 +625,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 (uint256 amountInMax, uint256 amountOutMax) = PriceMath.getInputToRatio(
                     step.reserve0Virtual,
                     step.reserve1Virtual,
-                    state.liquidity,
+                    step.liquidity,
                     step.priceNext,
                     step.fee,
                     params.zeroForOne
@@ -627,7 +653,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
 
                     // update global fee tracker
-                    state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, state.liquidity)._x;
+                    state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, step.liquidity)._x;
                 }
 
                 // handle the swap
@@ -686,24 +712,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     );
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
 
-                    int256 liquidityDeltaNet;
-                    // loop through each entry in liquidityDelta
-                    for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
-                        int256 liquidityDelta = tickInfo.liquidityDelta[i];
-                        // increment net liquidityDelta
-                        liquidityDeltaNet = liquidityDeltaNet.add(liquidityDelta);
-
-                        // update liquidityCurrent, subi from right to left, addi from left to right
-                        // can't put this in state because a) it's hard and b) we need it up-to-date for getFee
-                        // can't overflow
-                        if (params.zeroForOne) liquidityCurrent[i] = uint128(liquidityCurrent[i].subi(liquidityDelta));
-                        else liquidityCurrent[i] = uint128(liquidityCurrent[i].addi(liquidityDelta));
+                    int128[NUM_FEE_OPTIONS] memory tickLiquidityDeltas = [
+                        tickInfo.liquidityDelta[0],
+                        tickInfo.liquidityDelta[1],
+                        tickInfo.liquidityDelta[2],
+                        tickInfo.liquidityDelta[3],
+                        tickInfo.liquidityDelta[4],
+                        tickInfo.liquidityDelta[5]
+                    ];
+                    // update liquidityCurrent, subi from right to left, addi from left to right
+                    if (params.zeroForOne) {
+                        state.liquidityCurrent[0] = uint128(state.liquidityCurrent[0].subi(tickLiquidityDeltas[0]));
+                        state.liquidityCurrent[1] = uint128(state.liquidityCurrent[1].subi(tickLiquidityDeltas[1]));
+                        state.liquidityCurrent[2] = uint128(state.liquidityCurrent[2].subi(tickLiquidityDeltas[2]));
+                        state.liquidityCurrent[3] = uint128(state.liquidityCurrent[3].subi(tickLiquidityDeltas[3]));
+                        state.liquidityCurrent[4] = uint128(state.liquidityCurrent[4].subi(tickLiquidityDeltas[4]));
+                        state.liquidityCurrent[5] = uint128(state.liquidityCurrent[5].subi(tickLiquidityDeltas[5]));
+                    } else {
+                        state.liquidityCurrent[0] = uint128(state.liquidityCurrent[0].addi(tickLiquidityDeltas[0]));
+                        state.liquidityCurrent[1] = uint128(state.liquidityCurrent[1].addi(tickLiquidityDeltas[1]));
+                        state.liquidityCurrent[2] = uint128(state.liquidityCurrent[2].addi(tickLiquidityDeltas[2]));
+                        state.liquidityCurrent[3] = uint128(state.liquidityCurrent[3].addi(tickLiquidityDeltas[3]));
+                        state.liquidityCurrent[4] = uint128(state.liquidityCurrent[4].addi(tickLiquidityDeltas[4]));
+                        state.liquidityCurrent[5] = uint128(state.liquidityCurrent[5].addi(tickLiquidityDeltas[5]));
                     }
-
-                    // update liquidity, subi from right to left, addi from left to right
-                    // can't overflow
-                    if (params.zeroForOne) state.liquidity = uint128(state.liquidity.subi(liquidityDeltaNet));
-                    else state.liquidity = uint128(state.liquidity.addi(liquidityDeltaNet));
                 }
 
                 // this is ok because we still have amountInRemaining so price is guaranteed to be less than the tick
@@ -722,7 +754,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         priceCurrent = state.price;
-        tickCurrent = state.tick;
+
+        if (tickCurrent != state.tick) {
+            tickCurrent = state.tick;
+            liquidityCurrent[0] = state.liquidityCurrent[0];
+            liquidityCurrent[1] = state.liquidityCurrent[1];
+            liquidityCurrent[2] = state.liquidityCurrent[2];
+            liquidityCurrent[3] = state.liquidityCurrent[3];
+            liquidityCurrent[4] = state.liquidityCurrent[4];
+            liquidityCurrent[5] = state.liquidityCurrent[5];
+        }
 
         if (params.zeroForOne) {
             feeToFees0 = state.feeToFees;
