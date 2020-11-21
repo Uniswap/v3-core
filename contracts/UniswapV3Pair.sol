@@ -248,7 +248,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 liquidityCumulative;
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS; feeVoteIndex++) {
             liquidityCumulative += _liquidityCurrent[feeVoteIndex];
-            if (liquidityCumulative >= threshold) fee = FEE_OPTIONS(feeVoteIndex);
+            if (liquidityCumulative >= threshold) {
+                fee = FEE_OPTIONS(feeVoteIndex);
+                break;
+            }
         }
     }
 
@@ -722,19 +725,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     ];
                     // update liquidityCurrent, subi from right to left, addi from left to right
                     if (params.zeroForOne) {
-                        state.liquidityCurrent[0] = uint128(state.liquidityCurrent[0].subi(tickLiquidityDeltas[0]));
-                        state.liquidityCurrent[1] = uint128(state.liquidityCurrent[1].subi(tickLiquidityDeltas[1]));
-                        state.liquidityCurrent[2] = uint128(state.liquidityCurrent[2].subi(tickLiquidityDeltas[2]));
-                        state.liquidityCurrent[3] = uint128(state.liquidityCurrent[3].subi(tickLiquidityDeltas[3]));
-                        state.liquidityCurrent[4] = uint128(state.liquidityCurrent[4].subi(tickLiquidityDeltas[4]));
-                        state.liquidityCurrent[5] = uint128(state.liquidityCurrent[5].subi(tickLiquidityDeltas[5]));
+                        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++)
+                            state.liquidityCurrent[i] = uint128(state.liquidityCurrent[i].subi(tickLiquidityDeltas[i]));
                     } else {
-                        state.liquidityCurrent[0] = uint128(state.liquidityCurrent[0].addi(tickLiquidityDeltas[0]));
-                        state.liquidityCurrent[1] = uint128(state.liquidityCurrent[1].addi(tickLiquidityDeltas[1]));
-                        state.liquidityCurrent[2] = uint128(state.liquidityCurrent[2].addi(tickLiquidityDeltas[2]));
-                        state.liquidityCurrent[3] = uint128(state.liquidityCurrent[3].addi(tickLiquidityDeltas[3]));
-                        state.liquidityCurrent[4] = uint128(state.liquidityCurrent[4].addi(tickLiquidityDeltas[4]));
-                        state.liquidityCurrent[5] = uint128(state.liquidityCurrent[5].addi(tickLiquidityDeltas[5]));
+                        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++)
+                            state.liquidityCurrent[i] = uint128(state.liquidityCurrent[i].addi(tickLiquidityDeltas[i]));
                     }
                 }
 
