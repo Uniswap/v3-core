@@ -68,7 +68,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // meant to be accessed via getPriceCumulative
     //    FixedPoint128.uq128x128 private price0CumulativeLast; // cumulative (token1 / token0) oracle price
     //    FixedPoint128.uq128x128 private price1CumulativeLast; // cumulative (token0 / token1) oracle price
-    uint32 public override blockTimestampLast;
+    uint64 public override blockTimestampLast;
 
     // the fee as of the end of the last block with a swap or setPosition/initialize
     // this is stored to protect liquidity providers from add/swap/remove sandwiching attacks
@@ -97,7 +97,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint128.uq128x128 feeGrowthOutside1;
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        uint32 secondsOutside;
+        uint64 secondsOutside;
         // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
         // i.e. as the price goes up (down), for each fee vote
         int128[NUM_FEE_OPTIONS] liquidityDelta;
@@ -247,11 +247,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     //        returns (FixedPoint128.uq128x128 memory price0Cumulative, FixedPoint128.uq128x128 memory price1Cumulative)
     //    {
     //        require(isInitialized(), 'UniswapV3Pair::getCumulativePrices: pair not initialized');
-    //        uint32 blockTimestamp = _blockTimestamp();
+    //        uint64 blockTimestamp = _blockTimestamp();
     //
     //        if (blockTimestampLast != blockTimestamp) {
     //            // overflow desired in both of the following lines
-    //            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+    //            uint64 timeElapsed = blockTimestamp - blockTimestampLast;
     //            return (
     //                FixedPoint128.uq128x128(price0CumulativeLast._x + priceCurrent.mul(timeElapsed)._x),
     //                FixedPoint128.uq128x128(price1CumulativeLast._x + priceCurrent.reciprocal().mul(timeElapsed)._x)
@@ -271,16 +271,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         token1 = _token1;
     }
 
-    // returns the block timestamp % 2**32
-    // the timestamp is truncated to 32 bits because the pair only ever uses it for relative timestamp computations
+    // returns the block timestamp % 2**64
     // overridden for tests
-    function _blockTimestamp() internal view virtual returns (uint32) {
-        return uint32(block.timestamp); // truncation is desired
+    function _blockTimestamp() internal view virtual returns (uint64) {
+        return uint64(block.timestamp); // truncation is desired
     }
 
     // on the first interaction per block, update the oracle price accumulator and fee
     function _update() private {
-        uint32 blockTimestamp = _blockTimestamp();
+        uint64 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
             //            (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
@@ -448,21 +447,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // liquidity current never exceeds uint128
             // the max liquidity for a single tick fee vote is then:
             //   floor(type(uint128).max / (6 fee votes * max number of ticks))
-            if (params.liquidityDelta < 0) {
-                require(
-                    // 865382809755804604755082721536682n = (2n ** 128n - 1n) / (6n * (2n ** 16n))
-                    // this is about 109 bits
-                    tickInfoUpper.liquidityDelta[params.feeVote] < 865382809755804604755082721536682,
-                    'UniswapV3Pair::setPosition: liquidity overflow'
-                );
-            } else if (params.liquidityDelta > 0) {
-                require(
-                    // 865382809755804604755082721536682n = (2n ** 128n - 1n) / (6n * (2n ** 16n))
-                    // this is about 109 bits
-                    tickInfoLower.liquidityDelta[params.feeVote] < 865382809755804604755082721536682,
-                    'UniswapV3Pair::setPosition: liquidity overflow'
-                );
-            }
+            require(
+                // 865382809755804604755082721536682n = (2n ** 128n - 1n) / (6n * (2n ** 16n))
+                // this is about 109 bits
+                tickInfoLower.liquidityDelta[params.feeVote] < 865382809755804604755082721536682,
+                'UniswapV3Pair::setPosition: liquidity overflow'
+            );
 
             // if necessary, uninitialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta < 0) {
