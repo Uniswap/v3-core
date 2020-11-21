@@ -326,12 +326,10 @@ describe('UniswapV3Pair', () => {
   // the combined amount of liquidity that the pair is initialized with (including the 1 minimum liquidity that is burned)
   const initializeLiquidityAmount = expandTo18Decimals(2)
   async function initializeAtZeroTick(feeVote: FeeVote, _pair: MockTimeUniswapV3Pair = pair): Promise<void> {
-    await token0.approve(_pair.address, constants.MaxUint256)
-    await token1.approve(_pair.address, constants.MaxUint256)
+    await token0.approve(_pair.address, initializeLiquidityAmount)
+    await token1.approve(_pair.address, initializeLiquidityAmount)
     await _pair.initialize(0)
     await _pair.setPosition(MIN_TICK, MAX_TICK, feeVote, initializeLiquidityAmount.sub(1))
-    await token0.approve(_pair.address, 0)
-    await token1.approve(_pair.address, 0)
   }
 
   describe('callee', () => {
@@ -486,7 +484,17 @@ describe('UniswapV3Pair', () => {
     it('swap0For1 gas large swap', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
-    }).timeout(300000)
+    })
+
+    it('swap0For1 gas large swap crossing several initialized ticks', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+
+      await pair.setPosition(-4, -2, FeeVote.FeeVote2, 20)
+      await pair.setPosition(-8, -3, FeeVote.FeeVote4, 20)
+
+      await snapshotGasCost(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
+    })
 
     it('swap1For0', async () => {
       const amount1In = 1000
@@ -514,7 +522,17 @@ describe('UniswapV3Pair', () => {
     it('swap1For0 gas large swap', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
-    }).timeout(300000)
+    })
+
+    it('swap1For0 gas large swap crossing several initialized ticks', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+
+      await pair.setPosition(2, 4, FeeVote.FeeVote2, 20)
+      await pair.setPosition(3, 8, FeeVote.FeeVote4, 20)
+
+      await snapshotGasCost(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
+    })
 
     it('setPosition with 0 liquidityDelta within the current price after swap must collect fees', async () => {
       let liquidityDelta = expandTo18Decimals(100)
