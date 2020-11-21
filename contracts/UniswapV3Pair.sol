@@ -262,8 +262,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         token1 = _token1;
     }
 
-    // returns the block timestamp % 2**32
-    // the timestamp is truncated to 32 bits because the pair only ever uses it for relative timestamp computations
+    // returns the block timestamp % 2**64
     // overridden for tests
     function _blockTimestamp() internal view virtual returns (uint64) {
         return uint64(block.timestamp); // truncation is desired
