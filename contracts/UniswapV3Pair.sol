@@ -48,7 +48,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         } else if (i < 6) {
             if (i == 3) return 60;
             if (i == 4) return 120;
-            if (i == 5) return 240;
+            return 240;
         }
         if (i == 6) return 480;
         assert(i == 7);
