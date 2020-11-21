@@ -611,6 +611,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // get the price for the next tick we're moving toward
             step.priceNext = TickMath.getRatioAtTick(step.tickNext);
 
+            // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
+            // similarly, if it's false we should be below the target price
+            // TODO we can remove this if/when we're confident they never trigger
+            if (params.zeroForOne) assert(state.price._x >= step.priceNext._x);
+            else assert(state.price._x < step.priceNext._x);
+
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
                 (step.liquidity, step.fee) = computeLiquidityFee(state.liquidityCurrent);
