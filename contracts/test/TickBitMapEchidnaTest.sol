@@ -12,6 +12,27 @@ contract TickBitMapEchidnaTest {
         bitmap.flipTick(tick);
     }
 
+    function checkNextInitializedTickWithinOneWordInvariants(int16 tick, bool lte) public view {
+        (int16 next, bool initialized) = bitmap.nextInitializedTickWithinOneWord(tick, lte);
+        if (lte) {
+            assert(next <= tick);
+            assert(tick - next < 256);
+            // all the ticks between the input tick and the next tick should be uninitialized
+            for (int16 i = tick - 1; i > next; i--) {
+                assert(!bitmap.isInitialized(i));
+            }
+            assert(bitmap.isInitialized(next) == initialized);
+        } else {
+            assert(next > tick);
+            assert(next - tick <= 256);
+            // all the ticks between the input tick and the next tick should be uninitialized
+            for (int16 i = tick + 1; i < next; i++) {
+                assert(!bitmap.isInitialized(i));
+            }
+            assert(bitmap.isInitialized(next) == initialized);
+        }
+    }
+
     function checkNextInitializedTickInvariants(int16 tick, bool lte) public view {
         int16 next = bitmap.nextInitializedTick(tick, lte);
         if (lte) {
