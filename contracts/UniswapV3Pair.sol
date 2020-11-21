@@ -439,21 +439,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // liquidity current never exceeds uint128
             // the max liquidity for a single tick fee vote is then:
             //   floor(type(uint128).max / (6 fee votes * max number of ticks))
-            if (params.liquidityDelta < 0) {
-                require(
-                    // 865382809755804604755082721536682n = (2n ** 128n - 1n) / (6n * (2n ** 16n))
-                    // this is about 109 bits
-                    tickInfoUpper.liquidityDelta[params.feeVote] < 865382809755804604755082721536682,
-                    'UniswapV3Pair::setPosition: liquidity overflow'
-                );
-            } else if (params.liquidityDelta > 0) {
-                require(
-                    // 865382809755804604755082721536682n = (2n ** 128n - 1n) / (6n * (2n ** 16n))
-                    // this is about 109 bits
-                    tickInfoLower.liquidityDelta[params.feeVote] < 865382809755804604755082721536682,
-                    'UniswapV3Pair::setPosition: liquidity overflow'
-                );
-            }
+            require(
+                // 865382809755804604755082721536682n = (2n ** 128n - 1n) / (6n * (2n ** 16n))
+                // this is about 109 bits
+                tickInfoLower.liquidityDelta[params.feeVote] < 865382809755804604755082721536682,
+                'UniswapV3Pair::setPosition: liquidity overflow'
+            );
 
             // if necessary, uninitialize both ticks and increment the position counter
             if (position.liquidity == 0 && params.liquidityDelta < 0) {
