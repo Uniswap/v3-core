@@ -34,7 +34,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using TickBitMap for uint256[58];
 
     // Number of fee options
-    uint8 public constant override NUM_FEE_OPTIONS = 6;
+    uint8 public constant override NUM_FEE_OPTIONS = 8;
 
     // list of fee options expressed as bips
     // uint16 because the maximum value is 10_000
@@ -45,11 +45,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (i == 0) return 6;
             if (i == 1) return 12;
             return 30;
+        } else if (i < 6) {
+            if (i == 3) return 60;
+            if (i == 4) return 120;
+            if (i == 5) return 240;
         }
-        if (i == 3) return 60;
-        if (i == 4) return 120;
-        assert(i == 5);
-        return 240;
+        if (i == 6) return 480;
+        assert(i == 7);
+        return 960;
     }
 
     address public immutable override factory;
@@ -190,7 +193,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityCurrent[2],
             liquidityCurrent[3],
             liquidityCurrent[4],
-            liquidityCurrent[5]
+            liquidityCurrent[5],
+            liquidityCurrent[6],
+            liquidityCurrent[7]
         ];
 
         // guaranteed not to overflow because of conditions enforced outside this function
@@ -212,7 +217,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityCurrent[2],
             liquidityCurrent[3],
             liquidityCurrent[4],
-            liquidityCurrent[5]
+            liquidityCurrent[5],
+            liquidityCurrent[6],
+            liquidityCurrent[7]
         ];
 
         uint256 threshold = (uint256(_liquidityCurrent[0]) +
@@ -220,7 +227,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _liquidityCurrent[2] +
             _liquidityCurrent[3] +
             _liquidityCurrent[4] +
-            _liquidityCurrent[5]) / 2;
+            _liquidityCurrent[5] +
+            _liquidityCurrent[6] +
+            _liquidityCurrent[7]) / 2;
 
         uint256 liquidityCumulative;
         for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS - 1; feeVoteIndex++) {

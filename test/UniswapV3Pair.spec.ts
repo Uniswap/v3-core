@@ -66,6 +66,8 @@ describe('UniswapV3Pair', () => {
     expect(options[3]).to.eq(FEES[FeeVote.FeeVote3])
     expect(options[4]).to.eq(FEES[FeeVote.FeeVote4])
     expect(options[5]).to.eq(FEES[FeeVote.FeeVote5])
+    expect(options[6]).to.eq(FEES[FeeVote.FeeVote6])
+    expect(options[7]).to.eq(FEES[FeeVote.FeeVote7])
   })
 
   describe('#initialize', () => {
@@ -174,7 +176,7 @@ describe('UniswapV3Pair', () => {
           )
         })
         it('fails if fee vote is invalid', async () => {
-          await expect(pair.setPosition(-1, 1, 6, 0)).to.be.revertedWith(
+          await expect(pair.setPosition(-1, 1, 8, 0)).to.be.revertedWith(
             'UniswapV3Pair::setPosition: fee vote must be a valid option'
           )
         })
