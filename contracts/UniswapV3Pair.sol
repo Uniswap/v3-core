@@ -554,8 +554,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountInRemaining;
         // the tick associated with the current price
         int16 tick;
-        // the current liquidity
+        // the liquidity in range segmented by fee vote
         uint128[NUM_FEE_OPTIONS] liquidityCurrent;
+        // whether the swap has crossed an initialized tick
+        bool crossedInitializedTick;
         // the price
         FixedPoint128.uq128x128 price;
         // protocol fees of the input token
@@ -593,6 +595,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             price: priceCurrent,
             feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
+            crossedInitializedTick: false,
             liquidityCurrent: [
                 liquidityCurrent[0],
                 liquidityCurrent[1],
@@ -737,6 +740,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++)
                             state.liquidityCurrent[i] = uint128(state.liquidityCurrent[i].addi(tickLiquidityDeltas[i]));
                     }
+                    state.crossedInitializedTick = true;
                 }
 
                 // this is ok because we still have amountInRemaining so price is guaranteed to be less than the tick
@@ -755,9 +759,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         priceCurrent = state.price;
+        tickCurrent = state.tick;
 
-        if (tickCurrent != state.tick) {
-            tickCurrent = state.tick;
+        if (state.crossedInitializedTick) {
             liquidityCurrent[0] = state.liquidityCurrent[0];
             liquidityCurrent[1] = state.liquidityCurrent[1];
             liquidityCurrent[2] = state.liquidityCurrent[2];
