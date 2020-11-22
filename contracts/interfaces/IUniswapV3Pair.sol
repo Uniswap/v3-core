@@ -49,11 +49,6 @@ interface IUniswapV3Pair {
 
     function getFee() external view returns (uint16);
 
-    //    function getCumulativePrices()
-    //        external
-    //        view
-    //        returns (FixedPoint.uq144x112 memory price0Cumulative, FixedPoint.uq144x112 memory price1Cumulative);
-
     // initialize the pair
     function initialize(int16 tick) external;
 

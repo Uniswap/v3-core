@@ -62,9 +62,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // see TickBitMap.sol
     uint256[58] public override tickBitMap;
 
-    // meant to be accessed via getPriceCumulative
-    //    FixedPoint128.uq128x128 private price0CumulativeLast; // cumulative (token1 / token0) oracle price
-    //    FixedPoint128.uq128x128 private price1CumulativeLast; // cumulative (token0 / token1) oracle price
     uint64 public override blockTimestampLast;
 
     // the fee as of the end of the last block with a swap or setPosition/initialize
@@ -230,28 +227,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
     }
 
-    // helper for reading the cumulative price as of the current block
-    //    function getCumulativePrices()
-    //        public
-    //        view
-    //        override
-    //        returns (FixedPoint128.uq128x128 memory price0Cumulative, FixedPoint128.uq128x128 memory price1Cumulative)
-    //    {
-    //        require(isInitialized(), 'UniswapV3Pair::getCumulativePrices: pair not initialized');
-    //        uint64 blockTimestamp = _blockTimestamp();
-    //
-    //        if (blockTimestampLast != blockTimestamp) {
-    //            // overflow desired in both of the following lines
-    //            uint64 timeElapsed = blockTimestamp - blockTimestampLast;
-    //            return (
-    //                FixedPoint128.uq128x128(price0CumulativeLast._x + priceCurrent.mul(timeElapsed)._x),
-    //                FixedPoint128.uq128x128(price1CumulativeLast._x + priceCurrent.reciprocal().mul(timeElapsed)._x)
-    //            );
-    //        }
-    //
-    //        return (price0CumulativeLast, price1CumulativeLast);
-    //    }
-
     constructor(
         address _factory,
         address _token0,
@@ -273,10 +248,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint64 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
-            //            (price0CumulativeLast, price1CumulativeLast) = getCumulativePrices();
-            // must be called after getCumulativePrices, as getCumulativePrices relies on blockTimestampLast
             blockTimestampLast = blockTimestamp;
-
             feeFloor = getFee();
         }
     }
