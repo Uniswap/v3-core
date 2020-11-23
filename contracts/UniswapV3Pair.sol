@@ -300,6 +300,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
                 tickInfo.secondsOutside = _blockTimestamp();
             }
+            // save because of the prior assert
             tickInfo.liquidityGross = uint128(liquidityDelta);
             tickBitMap.flipTick(tick);
         } else {
@@ -385,18 +386,29 @@ contract UniswapV3Pair is IUniswapV3Pair {
         {
             Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper, params.feeVote);
 
-            require(
-                position.liquidity != 0 || params.liquidityDelta != 0,
-                'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
-            );
-
-            require(
-                params.liquidityDelta > 0 || position.liquidity >= uint128(-params.liquidityDelta),
-                'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
-            );
+            if (params.liquidityDelta == 0) {
+                require(
+                    position.liquidity != 0,
+                    'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
+                );
+            } else if (params.liquidityDelta < 0) {
+                require(
+                    position.liquidity >= uint128(-params.liquidityDelta),
+                    'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
+                );
+            }
 
             TickInfo storage tickInfoLower = _updateTick(params.tickLower, params.liquidityDelta);
             TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, params.liquidityDelta);
+
+            require(
+                tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
+                'UniswapV3Pair::_setPosition: liquidity overflow in lower tick'
+            );
+            require(
+                tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
+                'UniswapV3Pair::_setPosition: liquidity overflow in upper tick'
+            );
 
             {
                 (

@@ -11,7 +11,15 @@ import {expect} from './shared/expect'
 import {pairFixture, TEST_PAIR_START_TIME} from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
-import {expandTo18Decimals, FEES, FeeVote, getPositionKey, MAX_TICK, MIN_TICK} from './shared/utilities'
+import {
+  expandTo18Decimals,
+  FEES,
+  FeeVote,
+  getPositionKey,
+  MAX_TICK,
+  MIN_TICK,
+  MAX_LIQUIDITY_GROSS_PER_TICK,
+} from './shared/utilities'
 
 describe('UniswapV3Pair', () => {
   let wallet: Signer
@@ -182,6 +190,26 @@ describe('UniswapV3Pair', () => {
           await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 100)).to.be.revertedWith(
             'TransferHelper::transferFrom: transferFrom failed'
           )
+        })
+        it('fails if called with 0 liquidityDelta for empty position', async () => {
+          await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 0)).to.be.revertedWith(
+            'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
+          )
+        })
+        it('fails if called with 0 liquidityDelta for empty position', async () => {
+          await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, 0)).to.be.revertedWith(
+            'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
+          )
+        })
+        it('fails if called with negative liquidityDelta gt position liquidity', async () => {
+          await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, -1)).to.be.revertedWith(
+            'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
+          )
+        })
+        it('fails if liquidityDelta exceeds the max', async () => {
+          await expect(
+            pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0, MAX_LIQUIDITY_GROSS_PER_TICK.add(1))
+          ).to.be.revertedWith('UniswapV3Pair::_setPosition: liquidity overflow in lower tick')
         })
       })
 
