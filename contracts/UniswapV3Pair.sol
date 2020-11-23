@@ -563,6 +563,27 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return FixedPoint128.fraction(balance.subi(q).sub(reserveVirtual), liquidity);
     }
 
+    function _computeQNext(
+        int128 q,
+        uint256 balance,
+        int256 balanceDelta, // any changes in balance due to liquidity delta that should be applied to q to keep invariant
+        int128 liquidityDelta,
+        uint128 liquidity
+    ) private pure returns (int128 qNext) {
+        revert('todo');
+        //        int256 bNext = balance.subi(q).add(balanceDelta);
+        //        uint256 deltaQAbs = FullMath.mulDiv(
+        //            bNext < 0 ? uint256(-bNext) : uint256(bNext),
+        //            liquidityDelta < 0 ? uint256(-liquidityDelta) : liquidityDelta,
+        //            liquidity
+        //        );
+        //        if ((bNext < 0 && liquidityDelta < 0) || (bNext > 0 && liquidityDelta > 0)) {
+        //            return q.sub(deltaQAbs.toInt256());
+        //        } else {
+        //            return q.add(deltaQAbs.toInt256());
+        //        }
+    }
+
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
         _update(); // update the oracle and feeFloor
 
@@ -714,15 +735,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         tickInfo.liquidityDelta[4],
                         tickInfo.liquidityDelta[5]
                     ];
+                    int128 liquidityDeltaNet;
                     // update liquidityCurrent, subi from right to left, addi from left to right
                     if (params.zeroForOne) {
-                        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++)
+                        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                             state.liquidityCurrent[i] = uint128(state.liquidityCurrent[i].subi(tickLiquidityDeltas[i]));
+                            liquidityDeltaNet -= tickLiquidityDeltas[i];
+                        }
                     } else {
-                        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++)
+                        for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++) {
                             state.liquidityCurrent[i] = uint128(state.liquidityCurrent[i].addi(tickLiquidityDeltas[i]));
+                            liquidityDeltaNet += tickLiquidityDeltas[i];
+                        }
                     }
-                    // todo: update state.q0/state.q1
+
+                    state.q0 = _computeQNext(state.q0, state.balance0, 0, liquidityDeltaNet, step.liquidity);
+                    state.q1 = _computeQNext(state.q1, state.balance1, 0, liquidityDeltaNet, step.liquidity);
                     state.crossedInitializedTick = true;
                 }
 
