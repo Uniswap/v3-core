@@ -10,6 +10,7 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
+import './libraries/CheckedTransferHelper.sol';
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/TickMath.sol';
@@ -471,12 +472,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         if (amount0 > 0) {
-            TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
+            CheckedTransferHelper.checkedSafeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
         } else if (amount0 < 0) {
             TransferHelper.safeTransfer(token0, msg.sender, uint256(-amount0));
         }
         if (amount1 > 0) {
-            TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
+            CheckedTransferHelper.checkedSafeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
         } else if (amount1 < 0) {
             TransferHelper.safeTransfer(token1, msg.sender, uint256(-amount1));
         }
@@ -711,7 +712,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? IUniswapV3Callee(params.to).swap0For1Callback(msg.sender, amountOut, params.data)
                 : IUniswapV3Callee(params.to).swap1For0Callback(msg.sender, amountOut, params.data);
         }
-        TransferHelper.safeTransferFrom(
+        CheckedTransferHelper.checkedSafeTransferFrom(
             params.zeroForOne ? token0 : token1,
             msg.sender,
             address(this),
