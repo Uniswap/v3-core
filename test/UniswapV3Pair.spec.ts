@@ -486,12 +486,24 @@ describe('UniswapV3Pair', () => {
       await snapshotGasCost(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
     })
 
+    it('swap0For1 large swap crossing several initialized ticks', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+
+      await pair.setPosition(-4, -2, FeeVote.FeeVote2, expandTo18Decimals(1))
+      await pair.setPosition(-8, -3, FeeVote.FeeVote4, expandTo18Decimals(1))
+
+      await expect(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair.address, walletAddress, '684085616395642021')
+    })
+
     it('swap0For1 gas large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
-      await pair.setPosition(-4, -2, FeeVote.FeeVote2, 20)
-      await pair.setPosition(-8, -3, FeeVote.FeeVote4, 20)
+      await pair.setPosition(-4, -2, FeeVote.FeeVote2, expandTo18Decimals(1))
+      await pair.setPosition(-8, -3, FeeVote.FeeVote4, expandTo18Decimals(1))
 
       await snapshotGasCost(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
     })
@@ -524,12 +536,24 @@ describe('UniswapV3Pair', () => {
       await snapshotGasCost(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
     })
 
+    it('swap1For0 large swap crossing several initialized ticks', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+
+      await pair.setPosition(2, 4, FeeVote.FeeVote2, expandTo18Decimals(1))
+      await pair.setPosition(3, 8, FeeVote.FeeVote4, expandTo18Decimals(1))
+
+      await expect(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
+        .to.emit(token0, 'Transfer')
+        .withArgs(pair.address, walletAddress, '684085616395642018')
+    })
+
     it('swap1For0 gas large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
-      await pair.setPosition(2, 4, FeeVote.FeeVote2, 20)
-      await pair.setPosition(3, 8, FeeVote.FeeVote4, 20)
+      await pair.setPosition(2, 4, FeeVote.FeeVote2, expandTo18Decimals(1))
+      await pair.setPosition(3, 8, FeeVote.FeeVote4, expandTo18Decimals(1))
 
       await snapshotGasCost(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
     })
