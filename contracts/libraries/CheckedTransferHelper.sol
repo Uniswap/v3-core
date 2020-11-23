@@ -9,7 +9,12 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 library CheckedTransferHelper {
     using SafeMath for uint256;
 
-    function checkedSafeTransferFrom(address token, address from, address to, uint256 value) internal {
+    function checkedSafeTransferFrom(
+        address token,
+        address from,
+        address to,
+        uint256 value
+    ) internal {
         uint256 balanceBefore = IERC20(token).balanceOf(to);
         TransferHelper.safeTransferFrom(token, from, to, value);
         require(
