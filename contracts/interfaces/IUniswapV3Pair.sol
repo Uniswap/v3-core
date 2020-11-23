@@ -34,10 +34,6 @@ interface IUniswapV3Pair {
 
     function priceCurrent() external view returns (uint256);
 
-    function feeGrowthGlobal0() external view returns (uint256);
-
-    function feeGrowthGlobal1() external view returns (uint256);
-
     function feeToFees0() external view returns (uint256);
 
     function feeToFees1() external view returns (uint256);

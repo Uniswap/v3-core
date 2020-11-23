@@ -72,14 +72,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
     int16 public override tickCurrent; // first tick at or below priceCurrent
 
-    // fee growth per unit of liquidity
-    FixedPoint128.uq128x128 public override feeGrowthGlobal0;
-    FixedPoint128.uq128x128 public override feeGrowthGlobal1;
-
-    // accumulated protocol fees
-    // there is no value in packing these values, since we only ever set one at a time
-    uint256 public override feeToFees0;
-    uint256 public override feeToFees1;
+    // used to derive fee growth per unit of liquidity
+    int128 public override q0;
+    int128 public override q1;
 
     struct TickInfo {
         // the number of positions that are active using this tick as a lower or upper tick
@@ -532,10 +527,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bool crossedInitializedTick;
         // the price
         FixedPoint128.uq128x128 price;
-        // protocol fees of the input token
-        uint256 feeToFees;
-        // the global fee growth of the input token
-        FixedPoint128.uq128x128 feeGrowthGlobal;
+        // the token balance that is not due to fees or reserves
+        int128 q0;
+        int128 q1;
+        // the current balance of token0 and token1
+        uint256 balance0;
+        uint256 balance1;
     }
 
     struct StepComputations {
@@ -565,8 +562,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amountInRemaining: params.amountIn,
             tick: tickCurrent,
             price: priceCurrent,
-            feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
-            feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
             crossedInitializedTick: false,
             liquidityCurrent: [
                 liquidityCurrent[0],
@@ -575,7 +570,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 liquidityCurrent[3],
                 liquidityCurrent[4],
                 liquidityCurrent[5]
-            ]
+            ],
+            q0: q0,
+            q1: q1,
+            balance0: IERC20(token0).balanceOf(address(this)),
+            balance1: IERC20(token1).balanceOf(address(this))
         });
 
         while (state.amountInRemaining > 0) {
@@ -624,22 +623,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // discount the input amount by the fee
                 uint256 amountInLessFee = step.amountIn.mul(PriceMath.LP_FEE_BASE - step.fee) / PriceMath.LP_FEE_BASE;
 
-                // handle the fee accounting
-                uint256 feePaid = step.amountIn - amountInLessFee;
-                if (feePaid > 0) {
-                    // take the protocol fee if it's on
-                    if (feeTo != address(0)) {
-                        uint256 feeToFee = feePaid / 6;
-                        // decrement feePaid
-                        feePaid -= feeToFee;
-                        // increment feeToFees--overflow is not possible
-                        state.feeToFees += feeToFee;
-                    }
-
-                    // update global fee tracker
-                    state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, step.liquidity)._x;
-                }
-
                 // handle the swap
                 if (amountInLessFee > 0) {
                     // calculate the owed output amount on the discounted input amount
@@ -654,23 +637,31 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     amountOut = amountOut.add(step.amountOut);
                 }
 
+                if (params.zeroForOne) {
+                    step.reserve1Virtual = step.reserve1Virtual.sub(step.amountOut);
+                    step.reserve0Virtual = step.reserve0Virtual.add(amountInLessFee);
+                    state.balance0 = state.balance0.add(amountInLessFee);
+                    state.balance1 = state.balance1.sub(step.amountOut);
+                } else {
+                    step.reserve1Virtual = step.reserve1Virtual.add(amountInLessFee);
+                    step.reserve0Virtual = step.reserve0Virtual.sub(step.amountOut);
+                    state.balance0 = state.balance0.add(amountInLessFee);
+                    state.balance1 = state.balance1.sub(step.amountOut);
+                }
+
                 // update the price
                 // if we've consumed the input required to get to the target price, that's the price now!
                 if (step.amountIn == amountInMax) {
                     state.price = step.priceNext;
                 } else {
+                    FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
+                        step.reserve1Virtual,
+                        step.reserve0Virtual
+                    );
                     // if not, the price is the new ratio of (computed) reserves, capped at the target price
                     if (params.zeroForOne) {
-                        FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
-                            step.reserve1Virtual.sub(step.amountOut),
-                            step.reserve0Virtual.add(amountInLessFee)
-                        );
                         state.price = FixedPoint128.uq128x128(Math.max(step.priceNext._x, priceEstimate._x));
                     } else {
-                        FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
-                            step.reserve1Virtual.add(amountInLessFee),
-                            step.reserve0Virtual.sub(step.amountOut)
-                        );
                         state.price = FixedPoint128.uq128x128(Math.min(step.priceNext._x, priceEstimate._x));
                     }
                 }
@@ -685,14 +676,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // if the tick is initialized, update it
                 if (tickInfo.numPositions > 0) {
+                    FixedPoint128.uq128x128 memory feeGrowthGlobal0 = FixedPoint128.fraction(
+                        state.balance0.subi(state.q0).sub(step.reserve0Virtual),
+                        step.liquidity
+                    );
+                    FixedPoint128.uq128x128 memory feeGrowthGlobal1 = FixedPoint128.fraction(
+                        state.balance1.subi(state.q1).sub(step.reserve1Virtual),
+                        step.liquidity
+                    );
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
-                        (params.zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) -
-                            tickInfo.feeGrowthOutside0._x
+                        feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x
                     );
                     tickInfo.feeGrowthOutside1 = FixedPoint128.uq128x128(
-                        (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
-                            tickInfo.feeGrowthOutside1._x
+                        feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x
                     );
                     tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
 
@@ -734,20 +731,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickCurrent = state.tick;
 
         if (state.crossedInitializedTick) {
+            q0 = state.q0;
+            q1 = state.q1;
+
             liquidityCurrent[0] = state.liquidityCurrent[0];
             liquidityCurrent[1] = state.liquidityCurrent[1];
             liquidityCurrent[2] = state.liquidityCurrent[2];
             liquidityCurrent[3] = state.liquidityCurrent[3];
             liquidityCurrent[4] = state.liquidityCurrent[4];
             liquidityCurrent[5] = state.liquidityCurrent[5];
-        }
-
-        if (params.zeroForOne) {
-            feeToFees0 = state.feeToFees;
-            feeGrowthGlobal0 = state.feeGrowthGlobal;
-        } else {
-            feeToFees1 = state.feeToFees;
-            feeGrowthGlobal1 = state.feeGrowthGlobal;
         }
 
         // this is different than v2
