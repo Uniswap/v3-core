@@ -303,7 +303,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function initialize(int16 tick) external override lock {
-        require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
+        require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
 
@@ -718,11 +718,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // this is ok because we still have amountInRemaining so price is guaranteed to be less than the tick
                 // after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
-                if (params.zeroForOne) {
-                    require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
-                } else {
-                    require(state.tick < TickMath.MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
-                }
             } else {
                 state.tick = params.zeroForOne
                     ? ReverseTickMath.getTickFromPrice(state.price, step.tickNext, state.tick + 1)
@@ -731,6 +726,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         priceCurrent = state.price;
+        if (params.zeroForOne) require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
+        else require(state.tick < TickMath.MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
         tickCurrent = state.tick;
 
         if (state.crossedInitializedTick) {
