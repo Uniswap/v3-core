@@ -554,6 +554,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountOut;
     }
 
+    function _computeFeeGrowthGlobal(
+        uint256 balance,
+        int128 q,
+        uint256 reserveVirtual,
+        uint128 liquidity
+    ) private pure returns (FixedPoint128.uq128x128 memory) {
+        return FixedPoint128.fraction(balance.subi(q).sub(reserveVirtual), liquidity);
+    }
+
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
         _update(); // update the oracle and feeFloor
 
@@ -676,12 +685,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // if the tick is initialized, update it
                 if (tickInfo.numPositions > 0) {
-                    FixedPoint128.uq128x128 memory feeGrowthGlobal0 = FixedPoint128.fraction(
-                        state.balance0.subi(state.q0).sub(step.reserve0Virtual),
+                    FixedPoint128.uq128x128 memory feeGrowthGlobal0 = _computeFeeGrowthGlobal(
+                        state.balance0,
+                        state.q0,
+                        step.reserve0Virtual,
                         step.liquidity
                     );
-                    FixedPoint128.uq128x128 memory feeGrowthGlobal1 = FixedPoint128.fraction(
-                        state.balance1.subi(state.q1).sub(step.reserve1Virtual),
+                    FixedPoint128.uq128x128 memory feeGrowthGlobal1 = _computeFeeGrowthGlobal(
+                        state.balance1,
+                        state.q1,
+                        step.reserve1Virtual,
                         step.liquidity
                     );
                     // update tick info
@@ -709,6 +722,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         for (uint8 i = 0; i < NUM_FEE_OPTIONS; i++)
                             state.liquidityCurrent[i] = uint128(state.liquidityCurrent[i].addi(tickLiquidityDeltas[i]));
                     }
+                    // todo: update state.q0/state.q1
                     state.crossedInitializedTick = true;
                 }
 
@@ -749,12 +763,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? IUniswapV3Callee(params.to).swap0For1Callback(msg.sender, amountOut, params.data)
                 : IUniswapV3Callee(params.to).swap1For0Callback(msg.sender, amountOut, params.data);
         }
+        // to *only* support callback style payment, remove the following transferFrom call.
         TransferHelper.safeTransferFrom(
             params.zeroForOne ? token0 : token1,
             msg.sender,
             address(this),
             params.amountIn
         );
+        require(IERC20(token0).balanceOf(address(this)) == state.balance0);
+        require(IERC20(token1).balanceOf(address(this)) == state.balance1);
     }
 
     // move from right to left (token 1 is becoming more valuable)
