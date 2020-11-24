@@ -430,18 +430,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
             true
         );
         (state.q0, state.q1) = (q0, q1);
-        state.feeGrowthGlobal0 = _computeFeeGrowthGlobal(
-            state.q0,
-            state.balance0,
-            state.reserve0Virtual,
-            state.liquidity
-        );
-        state.feeGrowthGlobal1 = _computeFeeGrowthGlobal(
-            state.q1,
-            state.balance1,
-            state.reserve1Virtual,
-            state.liquidity
-        );
+        if (state.liquidity > 0) {
+            state.feeGrowthGlobal0 = _computeFeeGrowthGlobal(
+                state.q0,
+                state.balance0,
+                state.reserve0Virtual,
+                state.liquidity
+            );
+            state.feeGrowthGlobal1 = _computeFeeGrowthGlobal(
+                state.q1,
+                state.balance1,
+                state.reserve1Virtual,
+                state.liquidity
+            );
+        }
 
         {
             Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper, params.feeVote);
