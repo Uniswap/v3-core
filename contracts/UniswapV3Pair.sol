@@ -74,7 +74,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // the fee as of the end of the last block with a swap or setPosition/initialize
     // this is stored to protect liquidity providers from add/swap/remove sandwiching attacks
-    uint16 public override feeFloor;
+    uint16 public override feeLast;
 
     uint128[NUM_FEE_OPTIONS] public override liquidityCurrent; // all in-range liquidity, segmented across fee options
     FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
@@ -182,20 +182,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
 
-    function getLiquidity() external view override returns (uint128 liquidity) {
-        // load all liquidity into memory
-        uint128[NUM_FEE_OPTIONS] memory _liquidityCurrent = [
+    // guaranteed not to overflow because of conditions enforced outside this function
+    function getLiquidityCurrent() external view override returns (uint128) {
+        return getLiquidity([
             liquidityCurrent[0],
             liquidityCurrent[1],
             liquidityCurrent[2],
             liquidityCurrent[3],
             liquidityCurrent[4],
             liquidityCurrent[5]
-        ];
+        ]);
+    }
 
-        // guaranteed not to overflow because of conditions enforced outside this function
-        for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS; feeVoteIndex++)
-            liquidity += _liquidityCurrent[feeVoteIndex];
+    function getLiquidity(uint128[NUM_FEE_OPTIONS] memory liquidity)
+        private
+        pure
+        returns (uint128)
+    {
+        return liquidity[0] + liquidity[1] + liquidity[2] + liquidity[3] + liquidity[4] + liquidity[5];
     }
 
     // check for one-time initialization
@@ -230,31 +234,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return FEE_OPTIONS(NUM_FEE_OPTIONS - 1);
     }
 
-    function computeLiquidityAndFee(uint128[NUM_FEE_OPTIONS] memory _liquidityCurrent)
-        private
-        pure
-        returns (uint128 liquidity, uint16 fee)
-    {
-        liquidity =
-            _liquidityCurrent[0] +
-            _liquidityCurrent[1] +
-            _liquidityCurrent[2] +
-            _liquidityCurrent[3] +
-            _liquidityCurrent[4] +
-            _liquidityCurrent[5];
-
-        uint128 threshold = liquidity / 2;
-
-        uint128 liquidityCumulative;
-        for (uint8 feeVoteIndex = 0; feeVoteIndex < NUM_FEE_OPTIONS; feeVoteIndex++) {
-            liquidityCumulative += _liquidityCurrent[feeVoteIndex];
-            if (liquidityCumulative >= threshold) {
-                fee = FEE_OPTIONS(feeVoteIndex);
-                break;
-            }
-        }
-    }
-
     constructor(
         address _factory,
         address _token0,
@@ -277,7 +256,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (blockTimestampLast != blockTimestamp) {
             blockTimestampLast = blockTimestamp;
-            feeFloor = getFee();
+            feeLast = getFee();
         }
     }
 
@@ -318,11 +297,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
 
-        uint8 feeVote = 0;
+        uint8 feeVote = 2; // 30 bips :)
 
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
-        feeFloor = FEE_OPTIONS(feeVote);
+        feeLast = FEE_OPTIONS(feeVote);
 
         // initialize current price and tick
         priceCurrent = TickMath.getRatioAtTick(tick);
@@ -519,6 +498,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct SwapParams {
+        // the fee that this swap will pay, in bips
+        uint16 fee;
         // whether the swap is from token 0 to 1, or 1 for 0
         bool zeroForOne;
         // how much is being swapped in
@@ -531,8 +512,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // the top level state of the swap, the results of which are recorded in storage at the end
     struct SwapState {
-        // the floor for the fee, used to prevent sandwiching attacks
-        uint16 feeFloor;
         // the amount in remaining to be swapped of the input asset
         uint256 amountInRemaining;
         // the tick associated with the current price
@@ -556,8 +535,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint128.uq128x128 priceNext;
         // the virtual liquidity
         uint128 liquidity;
-        // the fee that will be paid in this step, in bips
-        uint16 fee;
         // (computed) virtual reserves of token0
         uint256 reserve0Virtual;
         // (computed) virtual reserves of token1
@@ -569,10 +546,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
-        _update(); // update the oracle and feeFloor
-
         SwapState memory state = SwapState({
-            feeFloor: feeFloor,
             amountInRemaining: params.amountIn,
             tick: tickCurrent,
             price: priceCurrent,
@@ -605,9 +579,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                (step.liquidity, step.fee) = computeLiquidityAndFee(state.liquidityCurrent);
-                // protect LPs by adjusting the fee only if the current fee is greater than the stored fee
-                step.fee = uint16(Math.max(state.feeFloor, step.fee));
+                step.liquidity = getLiquidity(state.liquidityCurrent);
 
                 // recompute reserves given the current price/liquidity
                 (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
@@ -622,7 +594,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     step.reserve1Virtual,
                     step.liquidity,
                     step.priceNext,
-                    step.fee,
+                    params.fee,
                     params.zeroForOne
                 );
 
@@ -633,7 +605,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 state.amountInRemaining -= step.amountIn;
 
                 // discount the input amount by the fee
-                uint256 amountInLessFee = step.amountIn.mul(PriceMath.LP_FEE_BASE - step.fee) / PriceMath.LP_FEE_BASE;
+                uint256 amountInLessFee = step.amountIn.mul(PriceMath.LP_FEE_BASE - params.fee) / PriceMath.LP_FEE_BASE;
 
                 // handle the fee accounting
                 uint256 feePaid = step.amountIn - amountInLessFee;
@@ -782,8 +754,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount1Out) {
         require(amount0In > 0, 'UniswapV3Pair::swap0For1: amountIn must be greater than 0');
 
-        SwapParams memory params = SwapParams({zeroForOne: true, amountIn: amount0In, to: to, data: data});
-        return _swap(params);
+        _update(); // update the oracle and feeLast (has to happen here, not in swap, because we use feeLast)
+
+        return _swap(SwapParams({fee: feeLast, zeroForOne: true, amountIn: amount0In, to: to, data: data}));
     }
 
     // move from left to right (token 0 is becoming more valuable)
@@ -794,8 +767,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount0Out) {
         require(amount1In > 0, 'UniswapV3Pair::swap1For0: amountIn must be greater than 0');
 
-        SwapParams memory params = SwapParams({zeroForOne: false, amountIn: amount1In, to: to, data: data});
-        return _swap(params);
+        _update(); // update the oracle and feeLast (has to happen here, not in swap, because we use feeLast)
+
+        return _swap(SwapParams({fee: feeLast, zeroForOne: false, amountIn: amount1In, to: to, data: data}));
     }
 
     function recover(
