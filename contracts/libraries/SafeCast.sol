@@ -11,6 +11,11 @@ library SafeCast {
         require((z = int128(y)) == y, 'SafeCast::toInt128: downcast overflow');
     }
 
+    function toUint256(int256 y) internal pure returns (uint256 z) {
+        require(y >= 0, 'SafeCast::toUint256: negative');
+        z = uint256(y);
+    }
+
     function toInt256(uint256 y) internal pure returns (int256 z) {
         require(y < 2**255, 'SafeCast::toInt256: downcast overflow');
         z = int256(y);

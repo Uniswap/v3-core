@@ -573,6 +573,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote].addi(params.liquidityDelta).toUint128();
+            state.liquidity = state.liquidity.addi(params.liquidityDelta).toUint128();
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
@@ -585,11 +586,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        {
-            state.liquidity = state.liquidity.addi(params.liquidityDelta).toUint128();
-            state.q0 = _computeQNext(state.q0 - state.amount0, state.balance0, state.liquidity, params.liquidityDelta);
-            state.q1 = _computeQNext(state.q1 - state.amount1, state.balance1, state.liquidity, params.liquidityDelta);
-        }
+        q0 = _computeQNext(state.q0 - state.amount0, state.balance0, state.liquidity, params.liquidityDelta);
+        q1 = _computeQNext(state.q1 - state.amount1, state.balance1, state.liquidity, params.liquidityDelta);
 
         if (state.amount0 > 0) {
             TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(state.amount0));
@@ -662,7 +660,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 reserveVirtual,
         uint128 liquidity
     ) private pure returns (FixedPoint128.uq128x128 memory) {
-        return FixedPoint128.fraction(balance.subi(q).sub(reserveVirtual), liquidity);
+        // todo: handle underflow on the subtraction better
+        return FixedPoint128.fraction(balance.toInt256().sub(q).sub(reserveVirtual.toInt256()).toUint256(), liquidity);
     }
 
     function _computeQNext(
@@ -889,8 +888,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
             address(this),
             params.amountIn
         );
-        require(IERC20(token0).balanceOf(address(this)) == state.balance0);
-        require(IERC20(token1).balanceOf(address(this)) == state.balance1);
+        require(
+            IERC20(token0).balanceOf(address(this)) == state.balance0,
+            'UniswapV3Pair::_swap: balance of token0 not as expected'
+        );
+        require(
+            IERC20(token1).balanceOf(address(this)) == state.balance1,
+            'UniswapV3Pair::_swap: balance of token1 not as expected'
+        );
     }
 
     // move from right to left (token 1 is becoming more valuable)
