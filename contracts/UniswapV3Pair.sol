@@ -184,21 +184,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // guaranteed not to overflow because of conditions enforced outside this function
     function getLiquidityCurrent() external view override returns (uint128) {
-        return getLiquidity([
-            liquidityCurrent[0],
-            liquidityCurrent[1],
-            liquidityCurrent[2],
-            liquidityCurrent[3],
-            liquidityCurrent[4],
-            liquidityCurrent[5]
-        ]);
+        return
+            getLiquidity(
+                [
+                    liquidityCurrent[0],
+                    liquidityCurrent[1],
+                    liquidityCurrent[2],
+                    liquidityCurrent[3],
+                    liquidityCurrent[4],
+                    liquidityCurrent[5]
+                ]
+            );
     }
 
-    function getLiquidity(uint128[NUM_FEE_OPTIONS] memory liquidity)
-        private
-        pure
-        returns (uint128)
-    {
+    function getLiquidity(uint128[NUM_FEE_OPTIONS] memory liquidity) private pure returns (uint128) {
         return liquidity[0] + liquidity[1] + liquidity[2] + liquidity[3] + liquidity[4] + liquidity[5];
     }
 
