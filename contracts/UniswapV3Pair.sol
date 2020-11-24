@@ -419,6 +419,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _setPosition(SetPositionParams memory params) private returns (int256, int256) {
         _update();
 
+        Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper, params.feeVote);
+        if (params.liquidityDelta == 0) {
+            require(
+                position.liquidity != 0,
+                'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
+            );
+        } else if (params.liquidityDelta < 0) {
+            require(
+                position.liquidity >= uint128(-params.liquidityDelta),
+                'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
+            );
+        }
+
         SetPositionState memory state;
         state.balance0 = IERC20(token0).balanceOf(address(this));
         state.balance1 = IERC20(token1).balanceOf(address(this));
@@ -446,20 +459,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         {
-            Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper, params.feeVote);
-
-            if (params.liquidityDelta == 0) {
-                require(
-                    position.liquidity != 0,
-                    'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
-                );
-            } else if (params.liquidityDelta < 0) {
-                require(
-                    position.liquidity >= uint128(-params.liquidityDelta),
-                    'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
-                );
-            }
-
             TickInfo storage tickInfoLower = _updateTick(
                 params.tickLower,
                 params.liquidityDelta,
@@ -482,49 +481,47 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 'UniswapV3Pair::_setPosition: liquidity overflow in upper tick'
             );
 
-            {
-                (
-                    FixedPoint128.uq128x128 memory feeGrowthInside0,
-                    FixedPoint128.uq128x128 memory feeGrowthInside1
-                ) = _getFeeGrowthInside(
-                    params.tickLower,
-                    params.tickUpper,
-                    tickInfoLower,
-                    tickInfoUpper,
-                    state.feeGrowthGlobal0,
-                    state.feeGrowthGlobal1
-                );
+            (
+                FixedPoint128.uq128x128 memory feeGrowthInside0,
+                FixedPoint128.uq128x128 memory feeGrowthInside1
+            ) = _getFeeGrowthInside(
+                params.tickLower,
+                params.tickUpper,
+                tickInfoLower,
+                tickInfoUpper,
+                state.feeGrowthGlobal0,
+                state.feeGrowthGlobal1
+            );
 
-                // check if this condition has accrued any untracked fees and credit them to the caller
-                // TODO is this right?
-                if (position.liquidity > 0) {
-                    if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                        state.amount0 = -FullMath
-                            .mulDiv(
-                            feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                            position
-                                .liquidity,
-                            uint256(1) << 128
-                        )
-                            .toInt256();
-                    }
-                    if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
-                        state.amount1 = -FullMath
-                            .mulDiv(
-                            feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                            position
-                                .liquidity,
-                            uint256(1) << 128
-                        )
-                            .toInt256();
-                    }
+            // check if this condition has accrued any untracked fees and credit them to the caller
+            // TODO is this right?
+            if (position.liquidity > 0) {
+                if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
+                    state.amount0 = -FullMath
+                        .mulDiv(
+                        feeGrowthInside0._x - position.feeGrowthInside0Last._x,
+                        position
+                            .liquidity,
+                        uint256(1) << 128
+                    )
+                        .toInt256();
                 }
-
-                // update the position
-                position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint128();
-                position.feeGrowthInside0Last = feeGrowthInside0;
-                position.feeGrowthInside1Last = feeGrowthInside1;
+                if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
+                    state.amount1 = -FullMath
+                        .mulDiv(
+                        feeGrowthInside1._x - position.feeGrowthInside1Last._x,
+                        position
+                            .liquidity,
+                        uint256(1) << 128
+                    )
+                        .toInt256();
+                }
             }
+
+            // update the position
+            position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint128();
+            position.feeGrowthInside0Last = feeGrowthInside0;
+            position.feeGrowthInside1Last = feeGrowthInside1;
 
             // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
             tickInfoLower.liquidityDelta[params.feeVote] = tickInfoLower.liquidityDelta[params.feeVote]
@@ -762,13 +759,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 if (params.zeroForOne) {
                     step.reserve1Virtual = step.reserve1Virtual.sub(step.amountOut);
                     step.reserve0Virtual = step.reserve0Virtual.add(amountInLessFee);
-                    state.balance0 = state.balance0.add(amountInLessFee);
+                    state.balance0 = state.balance0.add(step.amountIn);
                     state.balance1 = state.balance1.sub(step.amountOut);
                 } else {
                     step.reserve1Virtual = step.reserve1Virtual.add(amountInLessFee);
                     step.reserve0Virtual = step.reserve0Virtual.sub(step.amountOut);
-                    state.balance0 = state.balance0.add(amountInLessFee);
-                    state.balance1 = state.balance1.sub(step.amountOut);
+                    state.balance0 = state.balance0.sub(step.amountOut);
+                    state.balance1 = state.balance1.add(step.amountIn);
                 }
 
                 // update the price
