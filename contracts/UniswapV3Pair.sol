@@ -193,10 +193,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function setFeeTo(address feeTo_) external override {
-        require(
-            msg.sender == IUniswapV3Factory(factory).feeToSetter(),
-            'UniswapV3Pair::setFeeTo: caller not feeToSetter'
-        );
+        require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::setFeeTo: caller not owner');
         feeTo = feeTo_;
     }
 
@@ -669,10 +666,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address to,
         uint256 amount
     ) external override {
-        require(
-            msg.sender == IUniswapV3Factory(factory).feeToSetter(),
-            'UniswapV3Pair::recover: caller not feeToSetter'
-        );
+        require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::recover: caller not owner');
 
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
         uint256 token1Balance = IERC20(token1).balanceOf(address(this));
