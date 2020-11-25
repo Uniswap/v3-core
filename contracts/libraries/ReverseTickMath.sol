@@ -9,9 +9,9 @@ library ReverseTickMath {
     // gets the tick from a price, assuming the tick is gte the lower and lt the upper bound
     function getTickFromPrice(
         FixedPoint128.uq128x128 memory price,
-        int16 lowerBound,
-        int16 upperBound
-    ) internal pure returns (int16 tick) {
+        int24 lowerBound,
+        int24 upperBound
+    ) internal pure returns (int24 tick) {
         require(
             lowerBound < upperBound,
             'ReverseTickMath::getTickFromPrice: lower bound must be less than upper bound'

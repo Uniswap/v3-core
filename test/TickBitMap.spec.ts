@@ -128,8 +128,8 @@ describe('TickBitMap', () => {
 
   describe('#nextInitializedTickWithinOneWord', () => {
     beforeEach('set up some ticks', async () => {
-      // 73 is the first positive tick at the start of a word
-      await initTicks([70, 78, 84, 139, 240])
+      // word boundaries are at multiples of 256
+      await initTicks([70, 78, 84, 139, 240, 535])
     })
 
     describe('lte = false', async () => {
@@ -144,8 +144,8 @@ describe('TickBitMap', () => {
         expect(initialized).to.eq(true)
       })
       it('returns the next words initialized tick if on the right boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(328, false)
-        expect(next).to.eq(584)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(255, false)
+        expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('returns the next initialized tick from the next word', async () => {
@@ -155,29 +155,29 @@ describe('TickBitMap', () => {
         expect(initialized).to.eq(true)
       })
       it('does not exceed boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(70, false)
-        expect(next).to.eq(72)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(508, false)
+        expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('skips entire word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(329, false)
-        expect(next).to.eq(584)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(255, false)
+        expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('skips half word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(456, false)
-        expect(next).to.eq(584)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(383, false)
+        expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
 
       it('gas cost on boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(78, false))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(255, false))
       })
       it('gas cost just below boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(77, false))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(254, false))
       })
       it('gas cost for entire word', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(329, false))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(768, false))
       })
     })
 
@@ -195,15 +195,15 @@ describe('TickBitMap', () => {
         expect(initialized).to.eq(true)
       })
       it('will not exceed the word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(73, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(258, true)
 
-        expect(next).to.eq(73)
+        expect(next).to.eq(256)
         expect(initialized).to.eq(false)
       })
       it('at the word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(73, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(256, true)
 
-        expect(next).to.eq(73)
+        expect(next).to.eq(256)
         expect(initialized).to.eq(false)
       })
       it('word boundary less 1 (next initialized tick in next word)', async () => {
@@ -213,21 +213,21 @@ describe('TickBitMap', () => {
         expect(initialized).to.eq(true)
       })
       it('word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(69, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(-1, true)
 
-        expect(next).to.eq(-183)
+        expect(next).to.eq(-256)
         expect(initialized).to.eq(false)
       })
       it('entire empty word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(584, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(1023, true)
 
-        expect(next).to.eq(329)
+        expect(next).to.eq(768)
         expect(initialized).to.eq(false)
       })
       it('halfway through empty word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(456, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(900, true)
 
-        expect(next).to.eq(329)
+        expect(next).to.eq(768)
         expect(initialized).to.eq(false)
       })
       it('boundary is initialized', async () => {
@@ -239,13 +239,13 @@ describe('TickBitMap', () => {
       })
 
       it('gas cost on boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(78, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(256, true))
       })
       it('gas cost just below boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(77, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(255, true))
       })
       it('gas cost for entire word', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(584, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(1024, true))
       })
     })
   })

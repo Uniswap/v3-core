@@ -5,11 +5,11 @@ pragma experimental ABIEncoderV2;
 import '../libraries/TickMath.sol';
 
 contract TickMathTest {
-    function getPrice(int16 tick) public pure returns (FixedPoint128.uq128x128 memory) {
+    function getPrice(int24 tick) public pure returns (FixedPoint128.uq128x128 memory) {
         return TickMath.getRatioAtTick(tick);
     }
 
-    function getGasUsed(int16 tick) public view returns (uint256) {
+    function getGasUsed(int24 tick) public view returns (uint256) {
         uint256 gasBefore = gasleft();
         TickMath.getRatioAtTick(tick);
         uint256 gasAfter = gasleft();

@@ -74,7 +74,7 @@ contract PriceMathEchidnaTest {
 
     function getInputToRatioInvariants(
         uint224 priceRaw,
-        int16 tickTarget,
+        int24 tickTarget,
         uint112 liquidity,
         uint24 lpFee
     ) external pure {

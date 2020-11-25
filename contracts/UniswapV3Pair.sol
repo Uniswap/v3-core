@@ -31,7 +31,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeCast for uint256;
     using MixedSafeMath for uint128;
     using FixedPoint128 for FixedPoint128.uq128x128;
-    using TickBitMap for uint256[58];
+    using TickBitMap for mapping(uint256 => uint256);
 
     // if we constrain the liquidity associated to a single tick, then we can guarantee that the total
     // liquidityCurrent never exceeds uint128
@@ -50,13 +50,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     address public override feeTo;
 
     // see TickBitMap.sol
-    uint256[58] public override tickBitMap;
+    mapping(uint256 => uint256) public override tickBitMap;
 
     uint32 public override blockTimestampLast;
 
     uint128 public override liquidityCurrent; // all in-range liquidity
     FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
-    int16 public override tickCurrent; // first tick at or below priceCurrent
+    int24 public override tickCurrent; // first tick at or below priceCurrent
 
     // fee growth per unit of liquidity
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
@@ -81,7 +81,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // i.e. as the price goes up (down), for each fee vote
         int128 liquidityDelta;
     }
-    mapping(int16 => TickInfo) public tickInfos;
+    mapping(int24 => TickInfo) public tickInfos;
 
     struct Position {
         uint128 liquidity;
@@ -101,13 +101,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function _getPosition(
         address owner,
-        int16 tickLower,
-        int16 tickUpper
+        int24 tickLower,
+        int24 tickUpper
     ) private view returns (Position storage position) {
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    function _getFeeGrowthBelow(int16 tick, TickInfo storage tickInfo)
+    function _getFeeGrowthBelow(int24 tick, TickInfo storage tickInfo)
         private
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1)
@@ -122,7 +122,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function _getFeeGrowthAbove(int16 tick, TickInfo storage tickInfo)
+    function _getFeeGrowthAbove(int24 tick, TickInfo storage tickInfo)
         private
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1)
@@ -138,8 +138,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _getFeeGrowthInside(
-        int16 tickLower,
-        int16 tickUpper,
+        int24 tickLower,
+        int24 tickUpper,
         TickInfo storage tickInfoLower,
         TickInfo storage tickInfoUpper
     )
@@ -196,7 +196,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeTo = feeTo_;
     }
 
-    function _updateTick(int16 tick, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
+    function _updateTick(int24 tick, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
         tickInfo = tickInfos[tick];
 
         if (tickInfo.liquidityGross == 0) {
@@ -215,12 +215,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function _clearTick(int16 tick) private {
+    function _clearTick(int24 tick) private {
         delete tickInfos[tick];
         tickBitMap.flipTick(tick);
     }
 
-    function initialize(int16 tick) external override lock {
+    function initialize(int24 tick) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
@@ -247,14 +247,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     struct SetPositionParams {
         address owner;
-        int16 tickLower;
-        int16 tickUpper;
+        int24 tickLower;
+        int24 tickUpper;
         int128 liquidityDelta;
     }
 
     function setPosition(
-        int16 tickLower,
-        int16 tickUpper,
+        int24 tickLower,
+        int24 tickUpper,
         int128 liquidityDelta
     ) external override lock returns (int256 amount0, int256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::setPosition: pair not initialized');
@@ -429,7 +429,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the amount in remaining to be swapped of the input asset
         uint256 amountInRemaining;
         // the tick associated with the current price
-        int16 tick;
+        int24 tick;
         // the price
         FixedPoint128.uq128x128 price;
         // protocol fees of the input token
@@ -444,7 +444,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     struct StepComputations {
         // the next initialized tick from the tickCurrent in the swap direction
-        int16 tickNext;
+        int24 tickNext;
         // price for the target tick (1/0)
         FixedPoint128.uq128x128 priceNext;
         // (computed) virtual reserves of token0
