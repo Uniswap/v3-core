@@ -571,6 +571,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote].addi(params.liquidityDelta).toUint128();
             state.liquidity = state.liquidity.addi(params.liquidityDelta).toUint128();
+
+            if (state.liquidity > 0) {
+                state.q0 = _computeQNext(state.q0, state.balance0, state.liquidity, params.liquidityDelta);
+                state.q1 = _computeQNext(state.q1, state.balance1, state.liquidity, params.liquidityDelta);
+            }
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
@@ -583,8 +588,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        q0 = _computeQNext(state.q0 - state.amount0, state.balance0, state.liquidity, params.liquidityDelta);
-        q1 = _computeQNext(state.q1 - state.amount1, state.balance1, state.liquidity, params.liquidityDelta);
+        q0 = state.q0.sub(state.amount0);
+        q1 = state.q1.sub(state.amount1);
 
         if (state.amount0 > 0) {
             TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(state.amount0));
