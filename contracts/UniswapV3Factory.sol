@@ -49,7 +49,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         require(feeOption < FEE_OPTIONS_COUNT, 'UniswapV3::createPair: invalid fee option');
         require(getPair[token0][token1][feeOption] == address(0), 'UniswapV3::createPair: pair already exists');
         // CREATE2 salt is 0 since token0, token1, and fee are included as constructor arguments
-        pair = address(new UniswapV3Pair{salt: bytes32(0)}(msg.sender, token0, token1, FEE_OPTIONS(feeOption)));
+        pair = address(new UniswapV3Pair{salt: bytes32(0)}(address(this), token0, token1, FEE_OPTIONS(feeOption)));
         allPairs.push(pair);
         getPair[token0][token1][feeOption] = pair;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
