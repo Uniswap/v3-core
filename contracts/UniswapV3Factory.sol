@@ -60,15 +60,17 @@ contract UniswapV3Factory is IUniswapV3Factory {
     }
 
     function _enableFeeOption(uint16 fee) private {
+        require(fee < 10000, 'UniswapV3Factory::enableFeeOption: fee cannot be greater than or equal to 100%');
+        require(isFeeOptionEnabled[fee] == false, 'UniswapV3Factory::enableFeeOption: fee option is already enabled');
+
         isFeeOptionEnabled[fee] = true;
         allEnabledFeeOptions.push(fee);
         emit FeeOptionEnabled(fee);
     }
 
     function enableFeeOption(uint16 fee) external override {
-        require(fee < 10000, 'UniswapV3Factory::enableFeeOption: fee cannot be greater than or equal to 100%');
         require(msg.sender == owner, 'UniswapV3Factory::enableFeeOption: must be called by owner');
-        require(isFeeOptionEnabled[fee] == false, 'UniswapV3Factory::enableFeeOption: fee option is already enabled');
+
         _enableFeeOption(fee);
     }
 }
