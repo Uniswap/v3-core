@@ -17,7 +17,9 @@ library TickBitMap {
         require(tick >= TickMath.MIN_TICK, 'TickBitMap::position: tick must be greater than or equal to MIN_TICK');
         require(tick <= TickMath.MAX_TICK, 'TickBitMap::position: tick must be less than or equal to MAX_TICK');
         // moves the tick into positive integer space while making sure all ticks are adjacent
-        uint256 bitIndex = uint256(int256(tick) + type(int24).min);
+        uint256 bitIndex = uint256(
+            int256(tick) + 8388608 /* equivalent to -type(int24).min */
+        );
         wordPos = bitIndex / 256;
         bitPos = 255 - (bitIndex % 256);
     }
