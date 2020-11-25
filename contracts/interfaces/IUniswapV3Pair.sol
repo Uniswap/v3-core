@@ -9,8 +9,11 @@ interface IUniswapV3Pair {
 
     // immutables
     function factory() external pure returns (address);
+
     function token0() external pure returns (address);
+
     function token1() external pure returns (address);
+
     function fee() external pure returns (uint16);
 
     // variables/state

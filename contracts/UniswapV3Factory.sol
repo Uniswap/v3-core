@@ -7,6 +7,7 @@ import './UniswapV3Pair.sol';
 
 contract UniswapV3Factory is IUniswapV3Factory {
     uint8 public constant override FEE_OPTIONS_COUNT = 6;
+
     // list of fee options expressed as bips
     // uint16 because the maximum value is 1e4
     // ideally this would be a constant array, but constant arrays are not supported in solidity
@@ -25,6 +26,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
     address public override feeToSetter;
 
     address[] public override allPairs;
+
     function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
@@ -36,7 +38,11 @@ contract UniswapV3Factory is IUniswapV3Factory {
         emit FeeToSetterChanged(address(0), _feeToSetter);
     }
 
-    function createPair(address tokenA, address tokenB, uint8 feeOption) external override returns (address pair) {
+    function createPair(
+        address tokenA,
+        address tokenB,
+        uint8 feeOption
+    ) external override returns (address pair) {
         require(tokenA != tokenB, 'UniswapV3::createPair: tokenA cannot be the same as tokenB');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'UniswapV3::createPair: tokens cannot be address 0');

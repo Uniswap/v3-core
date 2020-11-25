@@ -164,7 +164,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return priceCurrent._x != 0; // sufficient check
     }
 
-    constructor(address _factory, address _token0, address _token1, uint16 _fee) public {
+    constructor(
+        address _factory,
+        address _token0,
+        address _token1,
+        uint16 _fee
+    ) public {
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
@@ -485,8 +490,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                // step.liquidity = computeLiquidityAndFee(state.liquidityCurrent);
-
                 // recompute reserves given the current price/liquidity
                 (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
                     state.price,

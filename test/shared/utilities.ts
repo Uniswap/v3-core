@@ -28,12 +28,13 @@ export function expandTo18Decimals(n: number): BigNumber {
 export function getCreate2Address(
   factoryAddress: string,
   [tokenA, tokenB]: [string, string],
+  feeOption: FeeVote,
   bytecode: string
 ): string {
-  const [token0, token1] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA]
+  const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
   const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address'],
-    [factoryAddress, token0, token1]
+    ['address', 'address', 'address', 'uint16'],
+    [factoryAddress, token0, token1, FEES[feeOption]]
   )
   const create2Inputs = [
     '0xff',
@@ -51,10 +52,8 @@ export function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): Big
   return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(128)).div(reserve0)
 }
 
-export function getPositionKey(address: string, lowerTick: number, upperTick: number, feeVote: FeeVote): string {
-  return utils.keccak256(
-    utils.solidityPack(['address', 'int16', 'int16', 'uint8'], [address, lowerTick, upperTick, feeVote])
-  )
+export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
+  return utils.keccak256(utils.solidityPack(['address', 'int16', 'int16'], [address, lowerTick, upperTick]))
 }
 
 // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)

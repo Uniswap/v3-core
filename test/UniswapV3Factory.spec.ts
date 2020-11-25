@@ -1,9 +1,9 @@
-import {expect} from './shared/expect'
-import {waffle, ethers} from 'hardhat'
-import snapshotGasCost from './shared/snapshotGasCost'
+import {ethers, waffle} from 'hardhat'
 import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
+import {expect} from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
 
-import {getCreate2Address} from './shared/utilities'
+import {FeeVote, getCreate2Address} from './shared/utilities'
 
 const TEST_ADDRESSES: [string, string] = [
   '0x1000000000000000000000000000000000000000',
@@ -29,18 +29,20 @@ describe('UniswapV3Factory', () => {
     expect(await factory.allPairsLength()).to.eq(0)
   })
 
-  async function createPair(tokens: [string, string]) {
-    const reverseTokens: [string, string] = [tokens[1], tokens[0]]
-
-    const create2Address = getCreate2Address(factory.address, tokens, pairBytecode)
-    await expect(factory.createPair(...tokens))
+  async function createPair(tokens: [string, string], feeVote: FeeVote) {
+    const create2Address = getCreate2Address(factory.address, tokens, feeVote, pairBytecode)
+    await expect(factory.createPair(tokens[0], tokens[1], feeVote))
       .to.emit(factory, 'PairCreated')
-      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, 1)
+      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeVote, create2Address, 1)
 
-    await expect(factory.createPair(...tokens)).to.be.revertedWith('UniswapV3::createPair: pair already exists')
-    await expect(factory.createPair(...reverseTokens)).to.be.revertedWith('UniswapV3::createPair: pair already exists')
-    expect(await factory.getPair(...tokens)).to.eq(create2Address)
-    expect(await factory.getPair(...reverseTokens)).to.eq(create2Address)
+    await expect(factory.createPair(tokens[0], tokens[1], feeVote)).to.be.revertedWith(
+      'UniswapV3::createPair: pair already exists'
+    )
+    await expect(factory.createPair(tokens[1], tokens[0], feeVote)).to.be.revertedWith(
+      'UniswapV3::createPair: pair already exists'
+    )
+    expect(await factory.getPair(tokens[0], tokens[1], feeVote)).to.eq(create2Address)
+    expect(await factory.getPair(tokens[1], tokens[0], feeVote)).to.eq(create2Address)
     expect(await factory.allPairs(0)).to.eq(create2Address)
     expect(await factory.allPairsLength()).to.eq(1)
 
@@ -49,19 +51,20 @@ describe('UniswapV3Factory', () => {
     expect(await pair.factory()).to.eq(factory.address)
     expect(await pair.token0()).to.eq(TEST_ADDRESSES[0])
     expect(await pair.token1()).to.eq(TEST_ADDRESSES[1])
+    expect(await pair.fee()).to.eq(feeVote)
   }
 
   describe('#createPair', () => {
     it('succeeds', async () => {
-      await createPair(TEST_ADDRESSES)
+      await createPair(TEST_ADDRESSES, FeeVote.FeeVote3)
     })
 
     it('succeeds in reverse', async () => {
-      await createPair([TEST_ADDRESSES[1], TEST_ADDRESSES[0]])
+      await createPair([TEST_ADDRESSES[1], TEST_ADDRESSES[0]], FeeVote.FeeVote1)
     })
 
     it('gas', async () => {
-      await snapshotGasCost(factory.createPair(...TEST_ADDRESSES))
+      await snapshotGasCost(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeVote.FeeVote0))
     })
   })
 
