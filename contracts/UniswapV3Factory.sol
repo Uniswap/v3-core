@@ -8,10 +8,10 @@ import './UniswapV3Pair.sol';
 contract UniswapV3Factory is IUniswapV3Factory {
     address public override owner;
 
-    mapping(uint16 => bool) public override isFeeOptionEnabled;
-    uint16[] public override allEnabledFeeOptions;
+    mapping(uint24 => bool) public override isFeeOptionEnabled;
+    uint24[] public override allEnabledFeeOptions;
 
-    mapping(address => mapping(address => mapping(uint16 => address))) public override getPair;
+    mapping(address => mapping(address => mapping(uint24 => address))) public override getPair;
     address[] public override allPairs;
 
     function allPairsLength() external view override returns (uint256) {
@@ -26,18 +26,18 @@ contract UniswapV3Factory is IUniswapV3Factory {
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
 
-        _enableFeeOption(6);
-        _enableFeeOption(12);
-        _enableFeeOption(30);
-        _enableFeeOption(60);
-        _enableFeeOption(120);
-        _enableFeeOption(240);
+        _enableFeeOption(600);
+        _enableFeeOption(1200);
+        _enableFeeOption(3000);
+        _enableFeeOption(6000);
+        _enableFeeOption(12000);
+        _enableFeeOption(24000);
     }
 
     function createPair(
         address tokenA,
         address tokenB,
-        uint16 fee
+        uint24 fee
     ) external override returns (address pair) {
         require(tokenA != tokenB, 'UniswapV3Factory::createPair: tokenA cannot be the same as tokenB');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
@@ -59,8 +59,8 @@ contract UniswapV3Factory is IUniswapV3Factory {
         owner = _owner;
     }
 
-    function _enableFeeOption(uint16 fee) private {
-        require(fee < 10000, 'UniswapV3Factory::enableFeeOption: fee cannot be greater than or equal to 100%');
+    function _enableFeeOption(uint24 fee) private {
+        require(fee < 1000000, 'UniswapV3Factory::enableFeeOption: fee cannot be greater than or equal to 100%');
         require(isFeeOptionEnabled[fee] == false, 'UniswapV3Factory::enableFeeOption: fee option is already enabled');
 
         isFeeOptionEnabled[fee] = true;
@@ -68,7 +68,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         emit FeeOptionEnabled(fee);
     }
 
-    function enableFeeOption(uint16 fee) external override {
+    function enableFeeOption(uint24 fee) external override {
         require(msg.sender == owner, 'UniswapV3Factory::enableFeeOption: must be called by owner');
 
         _enableFeeOption(fee);

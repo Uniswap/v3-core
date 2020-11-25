@@ -26,7 +26,7 @@ contract PriceMathTest {
         uint256 reserve1,
         uint128 liquidity,
         FixedPoint128.uq128x128 memory priceTarget, // always reserve1/reserve0
-        uint16 lpFee,
+        uint24 lpFee,
         bool zeroForOne
     ) external pure returns (uint256 amountIn, uint256 amountOut) {
         return PriceMath.getInputToRatio(reserve0, reserve1, liquidity, priceTarget, lpFee, zeroForOne);
@@ -37,7 +37,7 @@ contract PriceMathTest {
         uint256 reserve1,
         uint128 liquidity,
         FixedPoint128.uq128x128 memory priceTarget, // always reserve1/reserve0
-        uint16 lpFee,
+        uint24 lpFee,
         bool zeroForOne
     ) public view returns (uint256) {
         uint256 gasBefore = gasleft();

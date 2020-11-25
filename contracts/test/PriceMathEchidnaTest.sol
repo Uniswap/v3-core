@@ -76,7 +76,7 @@ contract PriceMathEchidnaTest {
         uint224 priceRaw,
         int16 tickTarget,
         uint112 liquidity,
-        uint16 lpFee
+        uint24 lpFee
     ) external pure {
         require(tickTarget >= TickMath.MIN_TICK && tickTarget < TickMath.MAX_TICK);
         require(liquidity > 0);

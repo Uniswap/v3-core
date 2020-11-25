@@ -14,7 +14,7 @@ interface IUniswapV3Pair {
 
     function token1() external pure returns (address);
 
-    function fee() external pure returns (uint16);
+    function fee() external pure returns (uint24);
 
     // variables/state
     function feeTo() external view returns (address);

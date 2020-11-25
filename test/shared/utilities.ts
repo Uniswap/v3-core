@@ -14,12 +14,12 @@ export enum FeeOption {
 }
 
 export const FEES: {[vote in FeeOption]: number} = {
-  [FeeOption.FeeOption0]: 6,
-  [FeeOption.FeeOption1]: 12,
-  [FeeOption.FeeOption2]: 30,
-  [FeeOption.FeeOption3]: 60,
-  [FeeOption.FeeOption4]: 120,
-  [FeeOption.FeeOption5]: 240,
+  [FeeOption.FeeOption0]: 600,
+  [FeeOption.FeeOption1]: 1200,
+  [FeeOption.FeeOption2]: 3000,
+  [FeeOption.FeeOption3]: 6000,
+  [FeeOption.FeeOption4]: 12000,
+  [FeeOption.FeeOption5]: 24000,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -34,7 +34,7 @@ export function getCreate2Address(
 ): string {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
   const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address', 'uint16'],
+    ['address', 'address', 'address', 'uint24'],
     [factoryAddress, token0, token1, fee]
   )
   const create2Inputs = [

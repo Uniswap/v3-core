@@ -35,7 +35,7 @@ contract UniswapV3PairEchidnaTest {
         (token0, token1) = (address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA));
     }
 
-    function createNewPair(uint16 fee) private {
+    function createNewPair(uint24 fee) private {
         pair = UniswapV3Pair(factory.createPair(address(token0), address(token1), fee));
     }
 

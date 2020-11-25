@@ -44,7 +44,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
-    uint16 public immutable override fee;
+    uint24 public immutable override fee;
 
     // TODO figure out the best way to pack state variables
     address public override feeTo;
@@ -168,7 +168,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address _factory,
         address _token0,
         address _token1,
-        uint16 _fee
+        uint24 _fee
     ) public {
         factory = _factory;
         token0 = _token0;

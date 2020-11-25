@@ -667,8 +667,6 @@ describe('UniswapV3Pair', () => {
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
       const token1BalanceBefore = await token1.balanceOf(walletAddress)
 
-      expect(await pair.fee()).to.eq(30)
-
       await token0.approve(pair.address, constants.MaxUint256)
       await pair.swap0For1(amount0In, walletAddress, '0x')
 
