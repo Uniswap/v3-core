@@ -21,10 +21,10 @@ contract UniswapV3PairEchidnaTest {
     UniswapV3Factory factory;
     UniswapV3Pair pair;
 
-    constructor(uint8 feeOption) public {
+    constructor() public {
         factory = new UniswapV3Factory(address(this));
         initializeTokens();
-        createNewPair(feeOption);
+        createNewPair(2);
         token0.approve(address(pair), uint256(-1));
         token1.approve(address(pair), uint256(-1));
     }
