@@ -6,60 +6,69 @@ import './interfaces/IUniswapV3Factory.sol';
 import './UniswapV3Pair.sol';
 
 contract UniswapV3Factory is IUniswapV3Factory {
-    uint8 public constant override FEE_OPTIONS_COUNT = 6;
+    address public override owner;
 
-    // list of fee options expressed as bips
-    // uint16 because the maximum value is 1e4
-    // ideally this would be a constant array, but constant arrays are not supported in solidity
-    function FEE_OPTIONS(uint8 feeOption) public pure override returns (uint16 fee) {
-        if (feeOption < 3) {
-            if (feeOption == 0) return 6;
-            if (feeOption == 1) return 12;
-            return 30;
-        }
-        if (feeOption == 3) return 60;
-        if (feeOption == 4) return 120;
-        assert(feeOption == 5);
-        return 240;
-    }
+    mapping(uint16 => bool) public override isFeeOptionEnabled;
+    uint16[] public override allEnabledFeeOptions;
 
-    address public override feeToSetter;
-
+    mapping(address => mapping(address => mapping(uint16 => address))) public override getPair;
     address[] public override allPairs;
 
     function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
 
-    mapping(address => mapping(address => mapping(uint8 => address))) public override getPair;
+    function allEnabledFeeOptionsLength() external view override returns (uint256) {
+        return allEnabledFeeOptions.length;
+    }
 
-    constructor(address _feeToSetter) public {
-        feeToSetter = _feeToSetter;
-        emit FeeToSetterChanged(address(0), _feeToSetter);
+    constructor(address _owner) public {
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
+
+        _enableFeeOption(6);
+        _enableFeeOption(12);
+        _enableFeeOption(30);
+        _enableFeeOption(60);
+        _enableFeeOption(120);
+        _enableFeeOption(240);
     }
 
     function createPair(
         address tokenA,
         address tokenB,
-        uint8 feeOption
+        uint16 fee
     ) external override returns (address pair) {
-        require(tokenA != tokenB, 'UniswapV3::createPair: tokenA cannot be the same as tokenB');
+        require(tokenA != tokenB, 'UniswapV3Factory::createPair: tokenA cannot be the same as tokenB');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'UniswapV3::createPair: tokens cannot be address 0');
-        require(feeOption < FEE_OPTIONS_COUNT, 'UniswapV3::createPair: invalid fee option');
-        require(getPair[token0][token1][feeOption] == address(0), 'UniswapV3::createPair: pair already exists');
+        require(token0 != address(0), 'UniswapV3Factory::createPair: tokens cannot be address 0');
+        require(isFeeOptionEnabled[fee], 'UniswapV3Factory::createPair: fee option is not enabled');
+        require(getPair[token0][token1][fee] == address(0), 'UniswapV3Factory::createPair: pair already exists');
         // CREATE2 salt is 0 since token0, token1, and fee are included as constructor arguments
-        pair = address(new UniswapV3Pair{salt: bytes32(0)}(address(this), token0, token1, FEE_OPTIONS(feeOption)));
+        pair = address(new UniswapV3Pair{salt: bytes32(0)}(address(this), token0, token1, fee));
         allPairs.push(pair);
-        getPair[token0][token1][feeOption] = pair;
+        getPair[token0][token1][fee] = pair;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
-        getPair[token1][token0][feeOption] = pair;
-        emit PairCreated(token0, token1, feeOption, pair, allPairs.length);
+        getPair[token1][token0][fee] = pair;
+        emit PairCreated(token0, token1, fee, pair, allPairs.length);
     }
 
-    function setFeeToSetter(address _feeToSetter) external override {
-        require(msg.sender == feeToSetter, 'UniswapV3::setFeeToSetter: must be called by feeToSetter');
-        emit FeeToSetterChanged(feeToSetter, _feeToSetter);
-        feeToSetter = _feeToSetter;
+    function setOwner(address _owner) external override {
+        require(msg.sender == owner, 'UniswapV3Factory::setOwner: must be called by owner');
+        emit OwnerChanged(owner, _owner);
+        owner = _owner;
+    }
+
+    function _enableFeeOption(uint16 fee) private {
+        isFeeOptionEnabled[fee] = true;
+        allEnabledFeeOptions.push(fee);
+        emit FeeOptionEnabled(fee);
+    }
+
+    function enableFeeOption(uint16 fee) external override {
+        require(fee < 10000, 'UniswapV3Factory::enableFeeOption: fee cannot be greater than or equal to 100%');
+        require(msg.sender == owner, 'UniswapV3Factory::enableFeeOption: must be called by owner');
+        require(isFeeOptionEnabled[fee] == false, 'UniswapV3Factory::enableFeeOption: fee option is already enabled');
+        _enableFeeOption(fee);
     }
 }

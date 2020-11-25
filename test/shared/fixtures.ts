@@ -6,15 +6,15 @@ import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
 import {TickMathTest} from '../../typechain/TickMathTest'
 import {UniswapV3Factory} from '../../typechain/UniswapV3Factory'
 
-import {expandTo18Decimals, FEES, FeeVote} from './utilities'
+import {expandTo18Decimals, FEES, FeeOption} from './utilities'
 
 interface FactoryFixture {
   factory: UniswapV3Factory
 }
 
-export async function factoryFixture(feeToSetter: Signer): Promise<FactoryFixture> {
+export async function factoryFixture(owner: Signer): Promise<FactoryFixture> {
   const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
-  const factory = (await factoryFactory.deploy(await feeToSetter.getAddress())) as UniswapV3Factory
+  const factory = (await factoryFactory.deploy(await owner.getAddress())) as UniswapV3Factory
   return {factory}
 }
 
@@ -40,7 +40,7 @@ export async function tokensFixture(): Promise<TokensFixture> {
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
 interface PairFixture extends TokensAndFactoryFixture {
-  pairs: {[feeVote in FeeVote]: MockTimeUniswapV3Pair}
+  pairs: {[feeVote in FeeOption]: MockTimeUniswapV3Pair}
   testCallee: TestUniswapV3Callee
   tickMath: TickMathTest
 }
@@ -48,22 +48,22 @@ interface PairFixture extends TokensAndFactoryFixture {
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
 export const TEST_PAIR_START_TIME = 1601906400
 
-export async function pairFixture([feeToSetter]: [Signer]): Promise<PairFixture> {
-  const {factory} = await factoryFixture(feeToSetter)
+export async function pairFixture([owner]: [Signer]): Promise<PairFixture> {
+  const {factory} = await factoryFixture(owner)
   const {token0, token1, token2} = await tokensFixture()
 
   const mockTimePairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
   const testCalleeFactory = await ethers.getContractFactory('TestUniswapV3Callee')
   const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
 
-  const pairs: {[feeVote in FeeVote]?: MockTimeUniswapV3Pair} = {}
+  const pairs: {[feeVote in FeeOption]?: MockTimeUniswapV3Pair} = {}
   for (const feeVote of [
-    FeeVote.FeeVote0,
-    FeeVote.FeeVote1,
-    FeeVote.FeeVote2,
-    FeeVote.FeeVote3,
-    FeeVote.FeeVote4,
-    FeeVote.FeeVote5,
+    FeeOption.FeeOption0,
+    FeeOption.FeeOption1,
+    FeeOption.FeeOption2,
+    FeeOption.FeeOption3,
+    FeeOption.FeeOption4,
+    FeeOption.FeeOption5,
   ]) {
     const pair = (await mockTimePairFactory.deploy(
       factory.address,

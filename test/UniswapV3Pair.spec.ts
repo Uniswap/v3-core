@@ -12,7 +12,7 @@ import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
   expandTo18Decimals,
-  FeeVote,
+  FeeOption,
   getPositionKey,
   MAX_TICK,
   MIN_TICK,
@@ -31,7 +31,7 @@ describe('UniswapV3Pair', () => {
   let token1: TestERC20
   let token2: TestERC20
   let factory: UniswapV3Factory
-  let pairs: {[feeVote in FeeVote]: MockTimeUniswapV3Pair}
+  let pairs: {[feeVote in FeeOption]: MockTimeUniswapV3Pair}
   let pair: MockTimeUniswapV3Pair
   let testCallee: TestUniswapV3Callee
   let tickMath: TickMathTest
@@ -47,7 +47,7 @@ describe('UniswapV3Pair', () => {
   beforeEach('deploy fixture', async () => {
     ;({token0, token1, token2, factory, pairs, testCallee, tickMath} = await loadFixture(pairFixture))
     // default to the 30 bips pair
-    pair = pairs[FeeVote.FeeVote2]
+    pair = pairs[FeeOption.FeeOption2]
   })
 
   // this invariant should always hold true.
@@ -407,7 +407,7 @@ describe('UniswapV3Pair', () => {
   // TODO test rest of categories in a loop to reduce code duplication
   describe('post-initialize (fee vote 1 - 0.12%)', () => {
     beforeEach('initialize at zero tick', async () => {
-      pair = pairs[FeeVote.FeeVote1]
+      pair = pairs[FeeOption.FeeOption1]
       await initializeAtZeroTick(pair)
     })
 
@@ -657,7 +657,7 @@ describe('UniswapV3Pair', () => {
 
   describe('post-initialize (fee vote 2 - 0.30%)', () => {
     beforeEach('initialize the pair', async () => {
-      pair = pairs[FeeVote.FeeVote2]
+      pair = pairs[FeeOption.FeeOption2]
       await initializeAtZeroTick(pair)
     })
 
@@ -855,7 +855,7 @@ describe('UniswapV3Pair', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
     beforeEach(async () => {
-      pair = pairs[FeeVote.FeeVote0]
+      pair = pairs[FeeOption.FeeOption0]
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.initialize(0)
@@ -866,14 +866,14 @@ describe('UniswapV3Pair', () => {
       expect(await pair.feeTo()).to.eq(constants.AddressZero)
     })
 
-    it('can be changed by the feeToSetter', async () => {
+    it('can be changed by the owner', async () => {
       await pair.setFeeTo(otherAddress)
       expect(await pair.feeTo()).to.eq(otherAddress)
     })
 
-    it('cannot be changed by addresses that are not feeToSetter', async () => {
+    it('cannot be changed by addresses that are not owner', async () => {
       await expect(pair.connect(other).setFeeTo(otherAddress)).to.be.revertedWith(
-        'UniswapV3Pair::setFeeTo: caller not feeToSetter'
+        'UniswapV3Pair::setFeeTo: caller not owner'
       )
     })
 
@@ -978,9 +978,9 @@ describe('UniswapV3Pair', () => {
       await token2.transfer(pair.address, 10)
     })
 
-    it('is only callable by feeToSetter', async () => {
+    it('is only callable by owner', async () => {
       await expect(pair.connect(other).recover(token2.address, otherAddress, 10)).to.be.revertedWith(
-        'UniswapV3Pair::recover: caller not feeToSetter'
+        'UniswapV3Pair::recover: caller not owner'
       )
     })
 
