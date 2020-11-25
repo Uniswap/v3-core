@@ -5,7 +5,7 @@ import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
 
-const Q112 = BigNumber.from(2).pow(112)
+const Q128 = BigNumber.from(2).pow(128)
 
 describe('TickMath', () => {
   let tickMath: TickMathTest
@@ -31,54 +31,22 @@ describe('TickMath', () => {
   }
 
   describe('matches js implementation', () => {
-    function exactTickRatioQ112x112(tick: number): BigNumberish {
-      const value = Q112.mul(BigNumber.from(101).pow(Math.abs(tick))).div(BigNumber.from(100).pow(Math.abs(tick)))
-      return tick > 0 ? value : Q112.mul(Q112).div(value)
+    function exactTickRatioQ128x128(tick: number): BigNumberish {
+      const value = Q128.mul(BigNumber.from(101).pow(Math.abs(tick))).div(BigNumber.from(100).pow(Math.abs(tick)))
+      return tick > 0 ? value : Q128.mul(Q128).div(value)
     }
-
-    describe('js implementation', () => {
-      it('min tick (math)', () => {
-        // https://www.wolframalpha.com/input/?i=1.01**7351+*+2**112
-        expect(exactTickRatioQ112x112(MIN_TICK).toString()).to.eq('88')
-      })
-
-      it('min tick (impl)', () => {
-        expect(exactTickRatioQ112x112(MIN_TICK).toString()).to.eq('88')
-      })
-
-      it('max tick (math)', () => {
-        // https://www.wolframalpha.com/input/?i=1.01**7351+*+2**112
-        expect(exactTickRatioQ112x112(MAX_TICK).toString()).to.eq(
-          '303234206515492778604670563942879899541683825327377805701311231077'
-        )
-      })
-
-      it('max tick (impl)', () => {
-        expect(exactTickRatioQ112x112(MAX_TICK).toString()).to.eq(
-          '303234206515492778604670563942879899541683825327377805701311231077'
-        )
-      })
-
-      it('-500 tick', () => {
-        expect(exactTickRatioQ112x112(-500).toString()).to.eq('35865147646827690843910198668127')
-      })
-
-      it('-7000 tick', () => {
-        expect(exactTickRatioQ112x112(-7000).toString()).to.eq('2922')
-      })
-    })
 
     const ALLOWED_BIPS_DIFF = 1
     describe('small ticks', () => {
       for (let tick = 0; tick < 20; tick++) {
         it(`tick index: ${tick}`, async () => {
-          await checkApproximatelyEquals(tickMath.getPrice(tick), exactTickRatioQ112x112(tick), ALLOWED_BIPS_DIFF)
+          await checkApproximatelyEquals(tickMath.getPrice(tick), exactTickRatioQ128x128(tick), ALLOWED_BIPS_DIFF)
         })
         if (tick !== 0) {
           it(`tick index: ${tick * -1}`, async () => {
             await checkApproximatelyEquals(
               tickMath.getPrice(tick * -1),
-              exactTickRatioQ112x112(tick * -1),
+              exactTickRatioQ128x128(tick * -1),
               ALLOWED_BIPS_DIFF
             )
           })
@@ -89,12 +57,12 @@ describe('TickMath', () => {
     describe('large ticks', () => {
       for (let tick of [50, 100, 250, 500, 1000, 2500, 3000, 4000, 5000, 6000, 7000, MAX_TICK]) {
         it(`tick index: ${tick}`, async () => {
-          await checkApproximatelyEquals(tickMath.getPrice(tick), exactTickRatioQ112x112(tick), ALLOWED_BIPS_DIFF)
+          await checkApproximatelyEquals(tickMath.getPrice(tick), exactTickRatioQ128x128(tick), ALLOWED_BIPS_DIFF)
         })
         it(`tick index: ${tick * -1}`, async () => {
           await checkApproximatelyEquals(
             tickMath.getPrice(tick * -1),
-            exactTickRatioQ112x112(tick * -1),
+            exactTickRatioQ128x128(tick * -1),
             ALLOWED_BIPS_DIFF
           )
         })
@@ -104,19 +72,19 @@ describe('TickMath', () => {
 
   // these hand written tests make sure we are computing it roughly correctly
   it('returns exactly 1 for tick 0', async () => {
-    await checkApproximatelyEquals(tickMath.getPrice(0), Q112, 0)
+    await checkApproximatelyEquals(tickMath.getPrice(0), Q128, 0)
   })
   it('returns ~2/1 for tick 70', async () => {
-    await checkApproximatelyEquals(tickMath.getPrice(70), BigNumber.from(2).mul(Q112), 34)
+    await checkApproximatelyEquals(tickMath.getPrice(70), BigNumber.from(2).mul(Q128), 34)
   })
   it('returns ~1/2 for tick -70', async () => {
-    await checkApproximatelyEquals(tickMath.getPrice(-70), Q112.div(2), 34)
+    await checkApproximatelyEquals(tickMath.getPrice(-70), Q128.div(2), 34)
   })
   it('returns ~1/4 for tick -140', async () => {
-    await checkApproximatelyEquals(tickMath.getPrice(-140), Q112.div(4), 70)
+    await checkApproximatelyEquals(tickMath.getPrice(-140), Q128.div(4), 70)
   })
   it('returns ~4/1 for tick 140', async () => {
-    await checkApproximatelyEquals(tickMath.getPrice(140), Q112.mul(4), 70)
+    await checkApproximatelyEquals(tickMath.getPrice(140), Q128.mul(4), 70)
   })
 
   it('tick too large', async () => {

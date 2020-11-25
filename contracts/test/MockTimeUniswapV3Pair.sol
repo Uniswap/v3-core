@@ -11,8 +11,9 @@ contract MockTimeUniswapV3Pair is UniswapV3Pair {
     constructor(
         address factory,
         address tokenA,
-        address tokenB
-    ) public UniswapV3Pair(factory, tokenA, tokenB) {}
+        address tokenB,
+        uint24 fee
+    ) public UniswapV3Pair(factory, tokenA, tokenB, fee) {}
 
     function setTime(uint32 _time) external {
         time = _time;

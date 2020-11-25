@@ -1,8 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `18093`;
+exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `17985`;
 
-exports[`PriceMath #getInputToRatio invariants 1:49 to 1:75 at 60bps gas 1`] = `18053`;
+exports[`PriceMath #getInputToRatio invariants 1:49 to 1:75 at 60bps gas 1`] = `17945`;
 
 exports[`PriceMath #getInputToRatio invariants 1:49 to 1:75 at 60bps snapshot 1`] = `
 Object {
@@ -10,13 +10,13 @@ Object {
   "amountInLessFee": "11621778264910705274",
   "amountOut": "191709623134523929",
   "amountOutMax": "191709623134523929",
-  "priceAfterSwap": "389422264390112071812173353037869890",
+  "priceAfterSwap": "25521177519070384738282592864689841148041",
   "reserve0": "1000000000000000000",
   "reserve1": "49000000000000000000",
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:49 to 1:100 at 200bps gas 1`] = `18083`;
+exports[`PriceMath #getInputToRatio invariants 1:49 to 1:100 at 200bps gas 1`] = `17975`;
 
 exports[`PriceMath #getInputToRatio invariants 1:49 to 1:100 at 200bps snapshot 1`] = `
 Object {
@@ -24,13 +24,13 @@ Object {
   "amountInLessFee": "21000000000000000000",
   "amountOut": "300000000000000000",
   "amountOutMax": "300000000000000000",
-  "priceAfterSwap": "519229685853482762853049632922009600",
+  "priceAfterSwap": "34028236692093846346337460743176821145600",
   "reserve0": "1000000000000000000",
   "reserve1": "49000000000000000000",
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `18140`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `18032`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1`] = `
 Object {
@@ -38,13 +38,13 @@ Object {
   "amountInLessFee": "414213562373095049",
   "amountOut": "29289321881345247559",
   "amountOutMax": "29289321881345247559",
-  "priceAfterSwap": "259614842926741381393481241593572539",
+  "priceAfterSwap": "17014118346046923171003186649076369969198",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `18140`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `18032`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1`] = `
 Object {
@@ -52,13 +52,13 @@ Object {
   "amountInLessFee": "414213562373095049",
   "amountOut": "29289321881345247559",
   "amountOutMax": "29289321881345247559",
-  "priceAfterSwap": "259614842926741381393481241593572539",
+  "priceAfterSwap": "17014118346046923171003186649076369969198",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `18140`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `18032`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves snapshot 1`] = `
 Object {
@@ -66,13 +66,13 @@ Object {
   "amountInLessFee": "414213562373095048802",
   "amountOut": "29289321881345247559915",
   "amountOutMax": "29289321881345247559915",
-  "priceAfterSwap": "259614842926741381426469743836225746",
+  "priceAfterSwap": "17014118346046923173165121132050890505126",
   "reserve0": "1000000000000000000000",
   "reserve1": "100000000000000000000000",
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `18043`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `17935`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1`] = `
 Object {
@@ -80,7 +80,7 @@ Object {
   "amountInLessFee": "154700538379251530",
   "amountOut": "13397459621556135323",
   "amountOutMax": "13397459621556135323",
-  "priceAfterSwap": "389422264390112071811530972897372562",
+  "priceAfterSwap": "25521177519070384738240493839802208256451",
   "reserve0": "1000000000000000000",
   "reserve1": "100000000000000000000",
 }

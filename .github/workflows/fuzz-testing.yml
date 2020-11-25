@@ -25,7 +25,7 @@ jobs:
           python-version: 3.8
 
       - name: Install node dependencies
-        run: yarn
+        run: yarn install --frozen-lockfile
 
       - name: Install pip3
         run: |
@@ -35,16 +35,6 @@ jobs:
         run: |
           pip3 install slither-analyzer
 
-      - name: Upgrade crytic-compile
-        run: |
-          pip3 install --upgrade crytic-compile
-
-      # workaround for https://github.com/crytic/crytic-compile/issues/113
-      - name: Install solc
-        run: |
-          sudo wget -O /usr/bin/solc https://github.com/ethereum/solidity/releases/download/v0.6.12/solc-static-linux
-          sudo chmod +x /usr/bin/solc
-
       - name: Install echidna
         run: |
           sudo wget -O /usr/bin/echidna-test https://moody-test-artifact-bucket.s3.amazonaws.com/echidna-test
@@ -52,6 +42,9 @@ jobs:
 
       - name: PriceMathEchidnaTest
         run: echidna-test . --contract PriceMathEchidnaTest --config echidna.config.yml
+
+      - name: TickBitMapEchidnaTest
+        run: echidna-test . --contract TickBitMapEchidnaTest --config echidna.config.yml
 
       - name: UniswapV3PairEchidnaTest
         run: echidna-test . --contract UniswapV3PairEchidnaTest --config echidna.config.yml
