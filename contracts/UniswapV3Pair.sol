@@ -267,7 +267,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return (price0CumulativeLast, price1CumulativeLast);
     }
 
-    /// @notice 
     function getVirtualReservesDeltaAtPrice(FixedPoint.uq112x112 memory price, int112 liquidity)
         public
         pure
@@ -286,8 +285,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    /// @notice The pair constructor
-    /// @dev executed once when a pair is initialized
+    /// @notice The pair constructor.
+    /// @dev executed once when a pair is initialized.
     /// @param _factory The uniswapV3 factory contract address.
     /// @param _token0 The address of the first token you would like to pair.
     /// @param _token1 The address of the second token you would like to pair. 
@@ -308,7 +307,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    /// @notice on the first interaction per block, update the fee and oracle price accumulator
+    /// @notice Updates the fee and oracle price accumulator on the first interaction per block.
     function _update() private {
         uint32 blockTimestamp = _blockTimestamp();
 
@@ -418,6 +417,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     /// @notice add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     /// @notice also sync a position and return accumulated fees from it to user as tokens
     /// @dev liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees
+    /// @param setPositionParams parameters passed from the calling function setPosition.
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _update();
 
