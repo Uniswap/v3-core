@@ -6,36 +6,71 @@ import './interfaces/IUniswapV3Factory.sol';
 import './UniswapV3Pair.sol';
 
 contract UniswapV3Factory is IUniswapV3Factory {
-    address public override feeToSetter;
+    address public override owner;
 
-    mapping(address => mapping(address => address)) public override getPair;
+    mapping(uint16 => bool) public override isFeeOptionEnabled;
+    uint16[] public override allEnabledFeeOptions;
+
+    mapping(address => mapping(address => mapping(uint16 => address))) public override getPair;
     address[] public override allPairs;
-
-    constructor(address _feeToSetter) public {
-        feeToSetter = _feeToSetter;
-    }
 
     function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
 
-    function createPair(address tokenA, address tokenB) external override returns (address pair) {
-        require(tokenA != tokenB, 'UniswapV3::createPair: tokenA cannot be the same as tokenB');
-        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'UniswapV3::createPair: tokens cannot be address 0');
-        require(getPair[token0][token1] == address(0), 'UniswapV3::createPair: pair already exists'); // single check is sufficient
-        // CREATE2 salt is 0 since token0 and token1 are included as constructor arguments
-        pair = address(new UniswapV3Pair{salt: bytes32(0)}(address(this), token0, token1));
-        getPair[token0][token1] = pair;
-        // populate mapping in the reverse direction
-        // this is a deliberate choice to avoid the cost of comparing addresses in a getPair function
-        getPair[token1][token0] = pair;
-        allPairs.push(pair);
-        emit PairCreated(token0, token1, pair, allPairs.length);
+    function allEnabledFeeOptionsLength() external view override returns (uint256) {
+        return allEnabledFeeOptions.length;
     }
 
-    function setFeeToSetter(address _feeToSetter) external override {
-        require(msg.sender == feeToSetter, 'UniswapV3::setFeeToSetter: must be called by feeToSetter');
-        feeToSetter = _feeToSetter;
+    constructor(address _owner) public {
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
+
+        _enableFeeOption(6);
+        _enableFeeOption(12);
+        _enableFeeOption(30);
+        _enableFeeOption(60);
+        _enableFeeOption(120);
+        _enableFeeOption(240);
+    }
+
+    function createPair(
+        address tokenA,
+        address tokenB,
+        uint16 fee
+    ) external override returns (address pair) {
+        require(tokenA != tokenB, 'UniswapV3Factory::createPair: tokenA cannot be the same as tokenB');
+        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        require(token0 != address(0), 'UniswapV3Factory::createPair: tokens cannot be address 0');
+        require(isFeeOptionEnabled[fee], 'UniswapV3Factory::createPair: fee option is not enabled');
+        require(getPair[token0][token1][fee] == address(0), 'UniswapV3Factory::createPair: pair already exists');
+        // CREATE2 salt is 0 since token0, token1, and fee are included as constructor arguments
+        pair = address(new UniswapV3Pair{salt: bytes32(0)}(address(this), token0, token1, fee));
+        allPairs.push(pair);
+        getPair[token0][token1][fee] = pair;
+        // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+        getPair[token1][token0][fee] = pair;
+        emit PairCreated(token0, token1, fee, pair, allPairs.length);
+    }
+
+    function setOwner(address _owner) external override {
+        require(msg.sender == owner, 'UniswapV3Factory::setOwner: must be called by owner');
+        emit OwnerChanged(owner, _owner);
+        owner = _owner;
+    }
+
+    function _enableFeeOption(uint16 fee) private {
+        require(fee < 10000, 'UniswapV3Factory::enableFeeOption: fee cannot be greater than or equal to 100%');
+        require(isFeeOptionEnabled[fee] == false, 'UniswapV3Factory::enableFeeOption: fee option is already enabled');
+
+        isFeeOptionEnabled[fee] = true;
+        allEnabledFeeOptions.push(fee);
+        emit FeeOptionEnabled(fee);
+    }
+
+    function enableFeeOption(uint16 fee) external override {
+        require(msg.sender == owner, 'UniswapV3Factory::enableFeeOption: must be called by owner');
+
+        _enableFeeOption(fee);
     }
 }

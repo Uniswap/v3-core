@@ -24,7 +24,7 @@ contract UniswapV3PairEchidnaTest {
     constructor() public {
         factory = new UniswapV3Factory(address(this));
         initializeTokens();
-        createNewPair();
+        createNewPair(30);
         token0.approve(address(pair), uint256(-1));
         token1.approve(address(pair), uint256(-1));
     }
@@ -35,8 +35,8 @@ contract UniswapV3PairEchidnaTest {
         (token0, token1) = (address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA));
     }
 
-    function createNewPair() private {
-        pair = UniswapV3Pair(factory.createPair(address(token0), address(token1)));
+    function createNewPair(uint16 fee) private {
+        pair = UniswapV3Pair(factory.createPair(address(token0), address(token1), fee));
     }
 
     function initializePair(int16 tick) public {
@@ -56,10 +56,9 @@ contract UniswapV3PairEchidnaTest {
     function setPosition(
         int16 tickLower,
         int16 tickUpper,
-        uint8 feeVote,
         int128 liquidityDelta
     ) external {
-        pair.setPosition(tickLower, tickUpper, feeVote % pair.NUM_FEE_OPTIONS(), liquidityDelta);
+        pair.setPosition(tickLower, tickUpper, liquidityDelta);
     }
 
     function turnOnFee() external {

@@ -1,25 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #getFee gas cost initialized to vote 5 1`] = `6609`;
+exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `266101`;
 
-exports[`UniswapV3Pair #getFee gas cost multiple votes median in middle 1`] = `6369`;
+exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `253274`;
 
-exports[`UniswapV3Pair #getFee gas cost uninitialized 1`] = `5909`;
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `281952`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `266952`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas 1`] = `167702`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `254122`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas large swap 1`] = `167858`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `282903`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas large swap crossing several initialized ticks 1`] = `463629`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas 1`] = `171470`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas 1`] = `146980`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas large swap 1`] = `171626`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas large swap 1`] = `209192`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas large swap crossing several initialized ticks 1`] = `493480`;
-
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas 1`] = `150755`;
-
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas large swap 1`] = `213904`;
-
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas large swap crossing several initialized ticks 1`] = `533653`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas large swap crossing several initialized ticks 1`] = `503954`;

@@ -2,17 +2,35 @@
 pragma solidity >=0.5.0;
 
 interface IUniswapV3Factory {
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
+    event OwnerChanged(address indexed oldOwner, address indexed newOwner);
+    event PairCreated(address indexed token0, address indexed token1, uint16 indexed fee, address pair, uint256);
+    event FeeOptionEnabled(uint16 indexed fee);
 
-    function feeToSetter() external view returns (address);
-
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
+    function owner() external view returns (address);
 
     function allPairs(uint256) external view returns (address pair);
 
     function allPairsLength() external view returns (uint256);
 
-    function createPair(address tokenA, address tokenB) external returns (address pair);
+    function allEnabledFeeOptions(uint256) external view returns (uint16);
 
-    function setFeeToSetter(address) external;
+    function allEnabledFeeOptionsLength() external view returns (uint256);
+
+    function getPair(
+        address tokenA,
+        address tokenB,
+        uint16 fee
+    ) external view returns (address pair);
+
+    function isFeeOptionEnabled(uint16 fee) external view returns (bool);
+
+    function createPair(
+        address tokenA,
+        address tokenB,
+        uint16 fee
+    ) external returns (address pair);
+
+    function setOwner(address) external;
+
+    function enableFeeOption(uint16 fee) external;
 }
