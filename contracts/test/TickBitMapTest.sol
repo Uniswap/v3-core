@@ -5,9 +5,9 @@ import '../libraries/TickBitMap.sol';
 
 // a library for dealing with a bitmap of all ticks
 contract TickBitMapTest {
-    using TickBitMap for uint256[58];
+    using TickBitMap for mapping(uint256 => uint256);
 
-    uint256[58] public bitmap;
+    mapping(uint256 => uint256) public bitmap;
 
     function isInitialized(int32 tick) external view returns (bool) {
         return bitmap.isInitialized(tick);

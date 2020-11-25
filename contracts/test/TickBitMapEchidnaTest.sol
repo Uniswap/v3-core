@@ -4,9 +4,9 @@ pragma solidity =0.6.12;
 import '../libraries/TickBitMap.sol';
 
 contract TickBitMapEchidnaTest {
-    using TickBitMap for uint256[58];
+    using TickBitMap for mapping(uint256 => uint256);
 
-    uint256[58] public bitmap;
+    mapping(uint256 => uint256) public bitmap;
 
     function flipTick(int32 tick) public {
         bitmap.flipTick(tick);

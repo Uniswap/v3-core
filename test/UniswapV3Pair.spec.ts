@@ -599,7 +599,7 @@ describe('UniswapV3Pair', () => {
 
       await expect(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684085616395642018')
+        .withArgs(pair.address, walletAddress, '684085616395642021')
     })
 
     it('swap1For0 gas large swap crossing several initialized ticks', async () => {
