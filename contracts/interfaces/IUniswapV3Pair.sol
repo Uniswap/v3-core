@@ -7,26 +7,18 @@ interface IUniswapV3Pair {
 
     // event PositionSet(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
-    // constants
-    function NUM_FEE_OPTIONS() external pure returns (uint8);
-
-    function FEE_OPTIONS(uint8) external pure returns (uint16);
-
     // immutables
     function factory() external pure returns (address);
-
     function token0() external pure returns (address);
-
     function token1() external pure returns (address);
+    function fee() external pure returns (uint16);
 
     // variables/state
     function feeTo() external view returns (address);
 
     function blockTimestampLast() external view returns (uint64);
 
-    function feeFloor() external view returns (uint16);
-
-    function liquidityCurrent(uint256) external view returns (uint128);
+    function liquidityCurrent() external view returns (uint128);
 
     function tickBitMap(uint256) external view returns (uint256);
 
@@ -45,17 +37,12 @@ interface IUniswapV3Pair {
     // derived state
     function isInitialized() external view returns (bool);
 
-    function getLiquidity() external view returns (uint128);
-
-    function getFee() external view returns (uint16);
-
     // initialize the pair
     function initialize(int16 tick) external;
 
     function setPosition(
         int16 tickLower,
         int16 tickUpper,
-        uint8 feeVote,
         int128 liquidityDelta
     ) external returns (int256 amount0, int256 amount1);
 

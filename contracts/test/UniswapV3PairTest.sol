@@ -9,10 +9,4 @@ contract UniswapV3PairTest {
     constructor(address pair_) public {
         pair = IUniswapV3Pair(pair_);
     }
-
-    function getGasCostOfGetFee() public view returns (uint256) {
-        uint256 gasBefore = gasleft();
-        pair.getFee();
-        return gasBefore - gasleft();
-    }
 }
