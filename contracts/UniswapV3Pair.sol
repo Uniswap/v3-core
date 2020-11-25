@@ -52,7 +52,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // see TickBitMap.sol
     uint256[58] public override tickBitMap;
 
-    uint64 public override blockTimestampLast;
+    uint32 public override blockTimestampLast;
 
     uint128 public override liquidityCurrent; // all in-range liquidity
     FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
@@ -72,7 +72,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 liquidityGross;
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        uint64 secondsOutside;
+        uint32 secondsOutside;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         FixedPoint128.uq128x128 feeGrowthOutside0;
@@ -178,16 +178,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // returns the block timestamp % 2**64
     // overridden for tests
-    function _blockTimestamp() internal view virtual returns (uint64) {
-        return uint64(block.timestamp); // truncation is desired
+    function _blockTimestamp() internal view virtual returns (uint32) {
+        return uint32(block.timestamp); // truncation is desired
     }
 
     // on the first interaction per block, update the oracle price accumulator and fee
     function _update() private {
-        uint64 blockTimestamp = _blockTimestamp();
+        uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
-            // TODO update oracle
             blockTimestampLast = blockTimestamp;
         }
     }

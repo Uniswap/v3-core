@@ -6,7 +6,7 @@ import '../UniswapV3Pair.sol';
 
 // used for testing time dependent behavior
 contract MockTimeUniswapV3Pair is UniswapV3Pair {
-    uint64 public time;
+    uint32 public time;
 
     constructor(
         address factory,
@@ -15,11 +15,11 @@ contract MockTimeUniswapV3Pair is UniswapV3Pair {
         uint24 fee
     ) public UniswapV3Pair(factory, tokenA, tokenB, fee) {}
 
-    function setTime(uint64 _time) external {
+    function setTime(uint32 _time) external {
         time = _time;
     }
 
-    function _blockTimestamp() internal view override returns (uint64) {
+    function _blockTimestamp() internal view override returns (uint32) {
         return time;
     }
 }
