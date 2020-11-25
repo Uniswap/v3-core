@@ -26,6 +26,6 @@ exports[`TickBitMap #nextInitializedTickWithinOneWord lte = false gas cost on bo
 
 exports[`TickBitMap #nextInitializedTickWithinOneWord lte = true gas cost for entire word 1`] = `1247`;
 
-exports[`TickBitMap #nextInitializedTickWithinOneWord lte = true gas cost just below boundary 1`] = `1659`;
+exports[`TickBitMap #nextInitializedTickWithinOneWord lte = true gas cost just below boundary 1`] = `1661`;
 
-exports[`TickBitMap #nextInitializedTickWithinOneWord lte = true gas cost on boundary 1`] = `1661`;
+exports[`TickBitMap #nextInitializedTickWithinOneWord lte = true gas cost on boundary 1`] = `1247`;

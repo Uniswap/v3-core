@@ -239,10 +239,10 @@ describe('TickBitMap', () => {
       })
 
       it('gas cost on boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(78, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(256, true))
       })
       it('gas cost just below boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(77, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(255, true))
       })
       it('gas cost for entire word', async () => {
         await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(1024, true))
