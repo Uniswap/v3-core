@@ -52,21 +52,26 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // TODO figure out the best way to pack state variables
     address public override feeTo;
 
-    // see TickBitMap.sol
+    /// @notice see TickBitMap.sol
     mapping(uint256 => uint256) public override tickBitMap;
 
     uint32 public override blockTimestampLast;
 
-    uint128 public override liquidityCurrent; // all in-range liquidity
-    FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
-    int24 public override tickCurrent; // first tick at or below priceCurrent
+    /// @notice all in-range liquidity.
+    uint128 public override liquidityCurrent;
 
-    // fee growth per unit of liquidity
+    /// @notice (token1 / token0) price.
+    FixedPoint128.uq128x128 public override priceCurrent; 
+
+    /// @notice First tick at or below priceCurrent.
+    int24 public override tickCurrent; 
+
+    /// @notice Fee growth per unit of liquidity.
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
     FixedPoint128.uq128x128 public override feeGrowthGlobal1;
 
-    /// @notice accumulated protocol fees
-    /// @dev there is no value in packing these values, since we only ever set one at a time
+    /// @notice Accumulated protocol fees.
+    /// @dev There is no value in packing these values, since we only ever set one at a time.
     uint256 public override feeToFees0;
     uint256 public override feeToFees1;
 
@@ -87,8 +92,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(int24 => TickInfo) public tickInfos;
 
-    /// @notice a position is a given allocation of liquidity by a user
-    /// @dev uniquely identified by user address/lower tick/upper tick/fee vote
+    /// @notice A position is a given allocation of liquidity by a user.
+    /// @dev Uniquely identified by user address/lower tick/upper tick/fee vote.
     struct Position {
         uint128 liquidity;
         // fee growth per unit of liquidity as of the last modification
@@ -97,7 +102,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(bytes32 => Position) public positions;
 
-    /// @notice reentrancy guard
+    /// @notice Reentrancy guard.
     uint256 private unlocked = 1;
     modifier lock() {
         require(unlocked == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
@@ -177,6 +182,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return priceCurrent._x != 0; // sufficient check
     }
 
+    /// @notice The Pair constructor.
+    /// @dev Executed only once when a pair is initialized.
     constructor(
         address _factory,
         address _token0,
@@ -189,13 +196,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         fee = _fee;
     }
 
-    // returns the block timestamp % 2**64
-    // overridden for tests
+    /// @return The block timestamp % 2**64.
+    /// @notice Overridden for tests.
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    // on the first interaction per block, update the oracle price accumulator and fee
+    /// @notice On the first interaction per block, update the oracle price accumulator and fee.
     function _update() private {
         uint32 blockTimestamp = _blockTimestamp();
 
