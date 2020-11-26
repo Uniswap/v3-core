@@ -7,16 +7,16 @@ import '../libraries/ReverseTickMath.sol';
 contract ReverseTickMathTest {
     function getTickFromPrice(
         FixedPoint128.uq128x128 memory price,
-        int16 lowerBound,
-        int16 upperBound
-    ) external pure returns (int16 tick) {
+        int24 lowerBound,
+        int24 upperBound
+    ) external pure returns (int24 tick) {
         return ReverseTickMath.getTickFromPrice(price, lowerBound, upperBound);
     }
 
     function getGasCostOfGetTickFromPrice(
         FixedPoint128.uq128x128 memory price,
-        int16 lowerBound,
-        int16 upperBound
+        int24 lowerBound,
+        int24 upperBound
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
         ReverseTickMath.getTickFromPrice(price, lowerBound, upperBound);

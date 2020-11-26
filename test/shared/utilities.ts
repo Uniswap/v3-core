@@ -54,7 +54,7 @@ export function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): Big
 }
 
 export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
-  return utils.keccak256(utils.solidityPack(['address', 'int16', 'int16'], [address, lowerTick, upperTick]))
+  return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
 
 // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)

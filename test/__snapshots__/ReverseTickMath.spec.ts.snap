@@ -1,9 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`ReverseTickMath #getTickFromPrice gas cost 0 iterations 1`] = `168`;
+exports[`ReverseTickMath #getTickFromPrice gas cost 0 iterations 1`] = `162`;
 
-exports[`ReverseTickMath #getTickFromPrice gas cost diff of 8 1`] = `2732`;
+exports[`ReverseTickMath #getTickFromPrice gas cost diff of 8 1`] = `2708`;
 
-exports[`ReverseTickMath #getTickFromPrice gas cost diff of 256 1`] = `7123`;
+exports[`ReverseTickMath #getTickFromPrice gas cost diff of 256 1`] = `7069`;
 
-exports[`ReverseTickMath #getTickFromPrice gas cost price exactly at 0 1`] = `7123`;
+exports[`ReverseTickMath #getTickFromPrice gas cost price exactly at 0 1`] = `7069`;

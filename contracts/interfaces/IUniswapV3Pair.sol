@@ -3,9 +3,9 @@ pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
 interface IUniswapV3Pair {
-    event Initialized(int16 tick);
+    event Initialized(int24 tick);
 
-    // event PositionSet(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta);
+    // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
     // immutables
     function factory() external pure returns (address);
@@ -25,7 +25,7 @@ interface IUniswapV3Pair {
 
     function tickBitMap(uint256) external view returns (uint256);
 
-    function tickCurrent() external view returns (int16);
+    function tickCurrent() external view returns (int24);
 
     function priceCurrent() external view returns (uint256);
 
@@ -41,11 +41,11 @@ interface IUniswapV3Pair {
     function isInitialized() external view returns (bool);
 
     // initialize the pair
-    function initialize(int16 tick) external;
+    function initialize(int24 tick) external;
 
     function setPosition(
-        int16 tickLower,
-        int16 tickUpper,
+        int24 tickLower,
+        int24 tickUpper,
         int128 liquidityDelta
     ) external returns (int256 amount0, int256 amount1);
 

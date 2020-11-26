@@ -6,10 +6,10 @@ import './FixedPoint128.sol';
 // calculates prices, encoded as uq112x112 fixed points, corresponding to reserves ratios of 1.01**tick
 library TickMath {
     // this is the smallest tick s.t. all ticks have unique representations as uq112x112 fixed point numbers
-    int16 public constant MIN_TICK = -7351;
-    int16 public constant MAX_TICK = -MIN_TICK;
+    int24 public constant MIN_TICK = -7351;
+    int24 public constant MAX_TICK = -MIN_TICK;
 
-    function getRatioAtTick(int16 tick) internal pure returns (FixedPoint128.uq128x128 memory) {
+    function getRatioAtTick(int24 tick) internal pure returns (FixedPoint128.uq128x128 memory) {
         uint256 absTick = uint256(tick < 0 ? -tick : tick);
         assert(absTick <= uint256(MAX_TICK));
 

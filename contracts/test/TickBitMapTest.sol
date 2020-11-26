@@ -5,49 +5,49 @@ import '../libraries/TickBitMap.sol';
 
 // a library for dealing with a bitmap of all ticks
 contract TickBitMapTest {
-    using TickBitMap for uint256[58];
+    using TickBitMap for mapping(uint256 => uint256);
 
-    uint256[58] public bitmap;
+    mapping(uint256 => uint256) public bitmap;
 
-    function isInitialized(int16 tick) external view returns (bool) {
+    function isInitialized(int24 tick) external view returns (bool) {
         return bitmap.isInitialized(tick);
     }
 
-    function getGasCostOfIsInitialized(int16 tick) external view returns (uint256) {
+    function getGasCostOfIsInitialized(int24 tick) external view returns (uint256) {
         uint256 gasBefore = gasleft();
         bitmap.isInitialized(tick);
         return gasBefore - gasleft();
     }
 
-    function flipTick(int16 tick) external {
+    function flipTick(int24 tick) external {
         bitmap.flipTick(tick);
     }
 
-    function getGasCostOfFlipTick(int16 tick) external returns (uint256) {
+    function getGasCostOfFlipTick(int24 tick) external returns (uint256) {
         uint256 gasBefore = gasleft();
         bitmap.flipTick(tick);
         return gasBefore - gasleft();
     }
 
-    function nextInitializedTickWithinOneWord(int16 tick, bool lte)
+    function nextInitializedTickWithinOneWord(int24 tick, bool lte)
         external
         view
-        returns (int16 next, bool initialized)
+        returns (int24 next, bool initialized)
     {
         return bitmap.nextInitializedTickWithinOneWord(tick, lte);
     }
 
-    function getGasCostOfNextInitializedTickWithinOneWord(int16 tick, bool lte) external view returns (uint256) {
+    function getGasCostOfNextInitializedTickWithinOneWord(int24 tick, bool lte) external view returns (uint256) {
         uint256 gasBefore = gasleft();
         bitmap.nextInitializedTickWithinOneWord(tick, lte);
         return gasBefore - gasleft();
     }
 
-    function nextInitializedTick(int16 tick, bool lte) external view returns (int16 next) {
+    function nextInitializedTick(int24 tick, bool lte) external view returns (int24 next) {
         return bitmap.nextInitializedTick(tick, lte);
     }
 
-    function getGasCostOfNextInitializedTick(int16 tick, bool lte) external view returns (uint256) {
+    function getGasCostOfNextInitializedTick(int24 tick, bool lte) external view returns (uint256) {
         uint256 gasBefore = gasleft();
         bitmap.nextInitializedTick(tick, lte);
         return gasBefore - gasleft();
