@@ -61,10 +61,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint128 public override liquidityCurrent;
 
     /// @notice (token1 / token0) price.
-    FixedPoint128.uq128x128 public override priceCurrent; 
+    FixedPoint128.uq128x128 public override priceCurrent;
 
     /// @notice First tick at or below priceCurrent.
-    int24 public override tickCurrent; 
+    int24 public override tickCurrent;
 
     /// @notice Fee growth per unit of liquidity.
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
@@ -214,7 +214,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     /// @notice Sets the destination where the swap fees are routed to.
     /// @param feeto_ address of the desired destination.
     /// @dev only able to be called by "feeToSetter".
-function setFeeTo(address feeTo_) external override {
+    function setFeeTo(address feeTo_) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::setFeeTo: caller not owner');
         feeTo = feeTo_;
     }
@@ -675,10 +675,10 @@ function setFeeTo(address feeTo_) external override {
         SwapParams memory params = SwapParams({zeroForOne: true, amountIn: amount0In, to: to, data: data});
         return _swap(params);
     }
-    
+
     /// @notice The second main swap function
     /// @notice Used when moving from left to right (token 0 is becoming more valuable)
-    /// @param amount1In amount of token you are sending 
+    /// @param amount1In amount of token you are sending
     /// @param to The destination address of the tokens.
     /// @param calldata The call data of the swap.
     function swap1For0(
