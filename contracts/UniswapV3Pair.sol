@@ -214,26 +214,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     /// @notice Sets the destination where the swap fees are routed to.
     /// @param feeto_ address of the desired destination.
     /// @dev only able to be called by "feeToSetter".
-    function setFeeTo(address feeTo_) external override {
+function setFeeTo(address feeTo_) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::setFeeTo: caller not owner');
         feeTo = feeTo_;
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    /// @notice Initializes a tick. 
-    /// @param tick Tick to be initialized.
-    /// @dev By convention, we assume that all growth before a tick was initialized happened _below_ the tick.
-    function _initializeTick(int16 tick, TickInfo storage tickInfo) private {
-        if (tick <= tickCurrent) {
-            tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
-            tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
-            tickInfo.secondsOutside = _blockTimestamp();
-=======
-    function _updateTick(int16 tick, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
-=======
     function _updateTick(int24 tick, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
->>>>>>> master
         tickInfo = tickInfos[tick];
 
         if (tickInfo.liquidityGross == 0) {
@@ -249,28 +235,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tickBitMap.flipTick(tick);
         } else {
             tickInfo.liquidityGross = uint128(tickInfo.liquidityGross.addi(liquidityDelta));
->>>>>>> master
         }
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    /// @notice initializes a pair.
-    /// @param tick 
-    function initialize(int16 tick, uint8 feeVote) external override lock {
-        require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
-=======
-    function _clearTick(int16 tick) private {
-=======
     function _clearTick(int24 tick) private {
->>>>>>> master
         delete tickInfos[tick];
         tickBitMap.flipTick(tick);
     }
 
     function initialize(int24 tick) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
->>>>>>> master
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
         require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
 
