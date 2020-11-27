@@ -387,6 +387,70 @@ describe('UniswapV3Pair', () => {
     await pair.setPosition(MIN_TICK, MAX_TICK, initializeLiquidityAmount.sub(1))
   }
 
+  describe('#getCumulatives', () => {
+    describe('before initialize', () => {
+      it('blockTimestamp is always current timestamp', async () => {
+        let {blockTimestamp} = await pair.getCumulatives()
+        expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
+        await pair.setTime(TEST_PAIR_START_TIME + 10)
+        ;({blockTimestamp} = await pair.getCumulatives())
+        expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME + 10)
+      })
+      it('liquidity accumulator is zero', async () => {
+        let {liquidityCumulative} = await pair.getCumulatives()
+        expect(liquidityCumulative).to.eq(0)
+        await pair.setTime(TEST_PAIR_START_TIME + 10)
+        ;({liquidityCumulative} = await pair.getCumulatives())
+        expect(liquidityCumulative).to.eq(0)
+      })
+      it('tick accumulator is zero', async () => {
+        let {tickCumulative} = await pair.getCumulatives()
+        expect(tickCumulative).to.eq(tickCumulative)
+        await pair.setTime(TEST_PAIR_START_TIME + 10)
+        ;({tickCumulative} = await pair.getCumulatives())
+        expect(tickCumulative).to.eq(0)
+      })
+    })
+
+    describe('after initialization', () => {
+      beforeEach(() => initializeAtZeroTick(pair))
+
+      it('blockTimestamp is always current timestamp', async () => {
+        let {blockTimestamp} = await pair.getCumulatives()
+        expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
+        await pair.setTime(TEST_PAIR_START_TIME + 10)
+        ;({blockTimestamp} = await pair.getCumulatives())
+        expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME + 10)
+      })
+
+      it('liquidity accumulator increases by liquidity over time', async () => {
+        let {liquidityCumulative} = await pair.getCumulatives()
+        expect(liquidityCumulative).to.eq(0)
+        await pair.setTime(TEST_PAIR_START_TIME + 10)
+        ;({liquidityCumulative} = await pair.getCumulatives())
+        expect(liquidityCumulative).to.eq(initializeLiquidityAmount.mul(10))
+      })
+
+      // zero tick
+      it('tick accumulator increases by tick over time', async () => {
+        let {tickCumulative} = await pair.getCumulatives()
+        expect(tickCumulative).to.eq(0)
+        await pair.setTime(TEST_PAIR_START_TIME + 10)
+        ;({tickCumulative} = await pair.getCumulatives())
+        expect(tickCumulative).to.eq(0)
+      })
+
+      it('tick accumulator after swap', async () => {
+        // moves to tick -1
+        await token0.approve(pair.address, 1000)
+        await pair.swap0For1(1000, walletAddress, '0x')
+        await pair.setTime(TEST_PAIR_START_TIME + 4)
+        let {tickCumulative} = await pair.getCumulatives()
+        expect(tickCumulative).to.eq(-4)
+      })
+    })
+  })
+
   describe('callee', () => {
     beforeEach(() => initializeAtZeroTick(pair))
     it('swap0For1 calls the callee', async () => {

@@ -54,8 +54,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // single storage slot
     uint32 public override blockTimestampLast;
-    uint160 liquidityCumulativeLast;
-    int56 tickCumulativeLast;
+    uint160 public override liquidityCumulativeLast;
+    int56 public override tickCumulativeLast;
     bool private unlocked = true;
     // single storage slot
 
@@ -190,14 +190,32 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // on the first interaction per block, update the oracle price accumulator and fee
-    function _updateCumulatives() private {
+    function _updateAccumulators() private {
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
+            (blockTimestampLast, liquidityCumulativeLast, tickCumulativeLast) = getCumulatives();
+        }
+    }
+
+    function getCumulatives()
+        public
+        view
+        override
+        returns (
+            uint32 blockTimestamp,
+            uint160 liquidityCumulative,
+            int56 tickCumulative
+        )
+    {
+        blockTimestamp = _blockTimestamp();
+
+        if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            blockTimestampLast = blockTimestamp;
-            liquidityCumulativeLast += uint160(timeElapsed) * liquidityCurrent;
-            tickCumulativeLast += int56(int256(tickCurrent) * int256(timeElapsed));
+            liquidityCumulative = liquidityCumulativeLast + uint160(timeElapsed) * liquidityCurrent;
+            tickCumulative = tickCumulativeLast + int56(int256(timeElapsed) * tickCurrent);
+        } else {
+            return (blockTimestamp, liquidityCumulativeLast, tickCumulativeLast);
         }
     }
 
@@ -290,7 +308,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
-        _updateCumulatives();
+        _updateAccumulators();
 
         {
             Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
@@ -609,7 +627,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         if (state.tick != tickCurrent) {
-            _updateCumulatives();
+            _updateAccumulators();
             liquidityCurrent = state.liquidityCurrent;
             tickCurrent = state.tick;
         }
