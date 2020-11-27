@@ -10,9 +10,6 @@ contract TickMathLarge is ITickMath {
     int24 public constant override MIN_TICK = -7351;
     int24 public constant override MAX_TICK = -MIN_TICK;
 
-    // get the ratio from a tick. must satisfy the invariant:
-    // tick := getTickAtRatio(price)
-    // getTickAtRatio(tick) <= price < getTickAtRatio(tick + 1)
     function getRatioAtTick(int24 tick) public pure override returns (uint256 ratio) {
         uint256 absTick = uint256(tick < 0 ? -tick : tick);
         assert(absTick <= uint256(MAX_TICK));
