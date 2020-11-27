@@ -34,7 +34,6 @@ describe('UniswapV3Pair', () => {
   let pairs: {[feeVote in FeeOption]: MockTimeUniswapV3Pair}
   let pair: MockTimeUniswapV3Pair
   let testCallee: TestUniswapV3Callee
-  let tickMath: TickMathTest
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
 
@@ -45,7 +44,7 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy fixture', async () => {
-    ;({token0, token1, token2, factory, pairs, testCallee, tickMath} = await loadFixture(pairFixture))
+    ;({token0, token1, token2, factory, pairs, testCallee} = await loadFixture(pairFixture))
     // default to the 30 bips pair
     pair = pairs[FeeOption.FeeOption2]
   })
@@ -57,9 +56,9 @@ describe('UniswapV3Pair', () => {
     if (priceCurrent.eq(0)) {
       expect(tickCurrent).to.eq(0)
     } else {
-      const [{_x: tickPrice}, {_x: nextPrice}] = await Promise.all([
-        tickMath.getPrice(tickCurrent),
-        tickMath.getPrice(tickCurrent + 1),
+      const [tickPrice, nextPrice] = await Promise.all([
+        pair.getRatioAtTick(tickCurrent),
+        pair.getRatioAtTick(tickCurrent + 1),
       ])
       expect(priceCurrent, 'priceCurrent is within tickCurrent and tickCurrent+1 bounds')
         .to.be.gte(tickPrice)

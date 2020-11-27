@@ -3,8 +3,6 @@ pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
-import '../libraries/TickMath.sol';
-
 // a library for dealing with a bitmap of all ticks initialized states, represented as mapping(uint256 => uint256)
 // the tick's initialization bit position in this map is computed by:
 // word: (tick - type(int24).min) / 256
@@ -14,8 +12,6 @@ library TickBitMap {
     // computes the position in the uint256 array where the initialized state for a tick lives
     // bitPos is the 0 indexed position in the word from most to least significant where the flag is set
     function position(int24 tick) private pure returns (uint256 wordPos, uint256 bitPos) {
-        require(tick >= TickMath.MIN_TICK, 'TickBitMap::position: tick must be greater than or equal to MIN_TICK');
-        require(tick <= TickMath.MAX_TICK, 'TickBitMap::position: tick must be less than or equal to MAX_TICK');
         // moves the tick into positive integer space while making sure all ticks are adjacent
         uint256 bitIndex = uint256(
             int256(tick) + 8388608 /* equivalent to -type(int24).min */
@@ -75,17 +71,23 @@ library TickBitMap {
     function nextInitializedTick(
         mapping(uint256 => uint256) storage self,
         int24 tick,
-        bool lte
+        bool lte,
+        int24 minOrMax
     ) internal view returns (int24 next) {
+        require(
+            lte ? minOrMax <= tick : minOrMax > tick,
+            'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
+        );
+
         bool initialized;
         next = tick;
         if (lte) {
-            while (next >= TickMath.MIN_TICK && !initialized) {
+            while (next >= minOrMax && !initialized) {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, true);
                 if (!initialized) next--;
             }
         } else {
-            while (next < TickMath.MAX_TICK && !initialized) {
+            while (next < minOrMax && !initialized) {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, false);
             }
         }
