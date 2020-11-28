@@ -52,12 +52,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // TODO figure out the best way to pack state variables
     address public override feeTo;
 
-    /// @notice see TickBitMap.sol
+    /// @notice Mapping of tickBitMap to uint - see TickBitMap.sol
     mapping(uint256 => uint256) public override tickBitMap;
 
+    /// @notice The timestamp of the current block, used for safety when initializing positions.
     uint32 public override blockTimestampLast;
 
-    /// @notice all in-range liquidity.
+    /// @notice All in-range liquidity.
     uint128 public override liquidityCurrent;
 
     /// @notice (token1 / token0) price.
@@ -66,7 +67,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     /// @notice First tick at or below priceCurrent.
     int24 public override tickCurrent; 
 
-    /// @notice Fee growth per unit of liquidity.
+    /// @notice Global fee growth per unit of liquidity.
+    /// @dev feeGrowthGlobal on its own is not enough to figure out fees due to a given position, but it is used in the calculation of it.
+    /// @dev This number is used to calculate how many fees are due per liquidity provision in a given tick.
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
     FixedPoint128.uq128x128 public override feeGrowthGlobal1;
 
@@ -102,7 +105,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(bytes32 => Position) public positions;
 
-    /// @notice Reentrancy guard.
+    /// @notice The reentrancy guard.
     uint256 private unlocked = 1;
     modifier lock() {
         require(unlocked == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
@@ -111,12 +114,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         unlocked = 1;
     }
 
-    /// @notice gets a given users position: a given allocation of liquidity by a user as determined by the following parameters.
-    /// @param owner a given liquidity providers address
-    /// @param tickLower the lower boundary tick
-    /// @param tickUppder the upper boundary tick
-    /// @param feeVote the fee Vote.
-    /// @return returns the position struct.
+    /// @notice Gets a given users position: a given allocation of liquidity as determined by owner / tickLower / tickUpper.
+    /// @param owner A given liquidity providers address.
+    /// @param tickLower The lower boundary tick.
+    /// @param tickUppder The upper boundary tick.
+    /// @return The position struct.
     function _getPosition(
         address owner,
         int24 tickLower,
@@ -125,6 +127,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
+    /// @notice Part of the _getFeeGrowthInside function. 
+    /// @notice Calculates the fee growth below a given tick range, in order to calculate the fee growth within a given range.
     function _getFeeGrowthBelow(int24 tick, TickInfo storage tickInfo)
         private
         view
@@ -140,6 +144,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    /// @notice Part of the _getFeeGrowthInside function. 
+    /// @notice Calculates the fee growth above a given tick range, in order to calculate the fee growth within a given range.
     function _getFeeGrowthAbove(int24 tick, TickInfo storage tickInfo)
         private
         view
@@ -155,6 +161,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    /// @notice The main fee growth calculation.
+    /// @dev Called when a user sets a new position. 
+    /// @dev Part of determining the quantity of fees, per liquidity, are due in a given tick range.
+    /// @dev Calculates the fee growth of a given tick range by calling both _getFeeGrowthAbove and _getFeeGrowthBelow.
+    /// @param tickLower The lowest tick of a given range.
+    /// @param tickUpper The highest tick of a given range. 
+    /// @param tickInfoLower The info struct of the lowest tick of a given range.
+    /// @param tickInfoUpper The info struct of the highest tick of a given range.
+    /// @return feeGrowthInside0 The fee growth in the given range of the token0 pool.
+    /// @return feeGrowthInside1 The fee growth in the given range of the token1 pool.
     function _getFeeGrowthInside(
         int24 tickLower,
         int24 tickUpper,
@@ -177,13 +193,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
 
-    /// @notice check for one-time initialization
+    /// @notice Check for one-time initialization. 
+    /// @return bool determining if there is already a price, thus already an initialized pair.
     function isInitialized() public view override returns (bool) {
         return priceCurrent._x != 0; // sufficient check
     }
 
     /// @notice The Pair constructor.
     /// @dev Executed only once when a pair is initialized.
+    /// @param _factory The Uniswap V3 factory address.
+    /// @param _token0 The first token of the desired pair.
+    /// @param _token1 The second token of the desired pair.
+    /// @param _fee The fee of the desired pair.
     constructor(
         address _factory,
         address _token0,
@@ -196,13 +217,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         fee = _fee;
     }
 
-    /// @return The block timestamp % 2**64.
     /// @notice Overridden for tests.
+    /// @return The block timestamp % 2**64.
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    /// @notice On the first interaction per block, update the oracle price accumulator and fee.
+    /// @notice Updates the oracle price accumulator and fee on the first interaction per block.
     function _update() private {
         uint32 blockTimestamp = _blockTimestamp();
 
@@ -213,12 +234,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     /// @notice Sets the destination where the swap fees are routed to.
     /// @param feeto_ address of the desired destination.
-    /// @dev only able to be called by "feeToSetter".
+    /// @dev Only able to be called by "feeToSetter".
 function setFeeTo(address feeTo_) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::setFeeTo: caller not owner');
         feeTo = feeTo_;
     }
 
+    /// @notice Updates the tick information upon liquidity provision or removal.
+    /// @param tick The given tick.
+    /// @param liquidityDelta The delta of the liquidity, which is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees.
+    /// @return The TickInfo struct.
     function _updateTick(int24 tick, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
         tickInfo = tickInfos[tick];
 
@@ -238,11 +263,15 @@ function setFeeTo(address feeTo_) external override {
         }
     }
 
+    /// @notice Deletes tick info struct.
+    /// @param tick The given tick to delete.
     function _clearTick(int24 tick) private {
         delete tickInfos[tick];
         tickBitMap.flipTick(tick);
     }
 
+    /// @notice Initializes a new tick. 
+    /// @param tick The given tick to initialize.
     function initialize(int24 tick) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
@@ -268,6 +297,7 @@ function setFeeTo(address feeTo_) external override {
         emit Initialized(tick);
     }
 
+    /// @notice The parameters of a given liquidity position.
     struct SetPositionParams {
         address owner;
         int24 tickLower;
@@ -275,6 +305,12 @@ function setFeeTo(address feeTo_) external override {
         int128 liquidityDelta;
     }
 
+    /// @notice Sets the position of a given liquidity provision.
+    /// @param  tickLower The lower boundary of the position.
+    /// @param tickUpper The upper boundary of the position.
+    /// @param liquidityDelta The liquidity delta. (TODO what is it).
+    /// @return amount0, the amount of the first token.
+    /// @return amount1, the amount of the second token.
     function setPosition(
         int24 tickLower,
         int24 tickUpper,
@@ -299,10 +335,12 @@ function setFeeTo(address feeTo_) external override {
             );
     }
 
-    /// @notice add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
-    /// @notice also sync a position and return accumulated fees from it to user as tokens
-    /// @dev liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees
+    /// @notice Add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range.
+    /// @notice Also sync a position and return accumulated fees from it to user as tokens.
+    /// @dev LiquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees.
     /// @param setPositionParams parameters passed from the calling function setPosition.
+    /// @return amount0 The amount of token zero.
+    /// @return amount1 The amount of token one.
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _update();
 
@@ -437,6 +475,8 @@ function setFeeTo(address feeTo_) external override {
         }
     }
 
+    /// @notice The swap parameters struct
+    /// @dev Used on every swap.
     struct SwapParams {
         // whether the swap is from token 0 to 1, or 1 for 0
         bool zeroForOne;
@@ -448,7 +488,7 @@ function setFeeTo(address feeTo_) external override {
         bytes data;
     }
 
-    // the top level state of the swap, the results of which are recorded in storage at the end
+    /// @notice The top level state of the swap, the results of which are recorded in storage at the end.
     struct SwapState {
         // the amount in remaining to be swapped of the input asset
         uint256 amountInRemaining;
@@ -466,6 +506,7 @@ function setFeeTo(address feeTo_) external override {
         uint128 liquidityCurrent;
     }
 
+    /// @notice The StepComputations struct.
     struct StepComputations {
         // the next initialized tick from the tickCurrent in the swap direction
         int24 tickNext;
@@ -481,6 +522,9 @@ function setFeeTo(address feeTo_) external override {
         uint256 amountOut;
     }
 
+    /// @notice The internal swap function.
+    /// @param params The SwapParams struct.
+    /// @return Returns the outbound amount of tokens.
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
         _update(); // update the oracle and feeFloor
 
@@ -676,11 +720,11 @@ function setFeeTo(address feeTo_) external override {
         return _swap(params);
     }
     
-    /// @notice The second main swap function
-    /// @notice Used when moving from left to right (token 0 is becoming more valuable)
-    /// @param amount1In amount of token you are sending 
+    /// @notice The second main swap function.
+    /// @notice Used when moving from left to right (token 0 is becoming more valuable).
+    /// @param amount1In amount of token you are sending.
     /// @param to The destination address of the tokens.
-    /// @param calldata The call data of the swap.
+    /// @param data The call data of the swap.
     function swap1For0(
         uint256 amount1In,
         address to,
@@ -692,10 +736,10 @@ function setFeeTo(address feeTo_) external override {
         return _swap(params);
     }
 
-    /// @notice Recovers tokens accidentally sent to the pair contract
-    /// @param token The token address
-    /// @param to The destination address of the transfer
-    /// @param amount The amount of the token to be recovered
+    /// @notice Recovers tokens accidentally sent to the pair contract.
+    /// @param token The token address.
+    /// @param to The destination address of the transfer.
+    /// @param amount The amount of the token to be recovered.
     function recover(
         address token,
         address to,
