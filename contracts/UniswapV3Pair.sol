@@ -193,8 +193,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
 
-    /// @notice Check for one-time initialization. 
-    /// @return bool determining if there is already a price, thus already an initialized pair.
+    /// @inheritdoc IUniswapV3Pair
     function isInitialized() public view override returns (bool) {
         return priceCurrent._x != 0; // sufficient check
     }
@@ -270,8 +269,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickBitMap.flipTick(tick);
     }
 
-    /// @notice Initializes a new tick. 
-    /// @param tick The given tick to initialize.
+    /// @inheritdoc IUniswapV3Pair
     function initialize(int24 tick) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
         require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
@@ -306,11 +304,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     /// @notice Sets the position of a given liquidity provision.
-    /// @param  tickLower The lower boundary of the position.
-    /// @param tickUpper The upper boundary of the position.
-    /// @param liquidityDelta The liquidity delta. (TODO what is it).
-    /// @return amount0, the amount of the first token.
-    /// @return amount1, the amount of the second token.
+    /// @inheritdoc IUniswapV3Pair
     function setPosition(
         int24 tickLower,
         int24 tickUpper,
@@ -704,11 +698,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    /// @notice The first main swap function.
-    /// @notice Used when moving from right to left (token 1 is becoming more valuable).
-    /// @param amount0In Amount of token you are sending.
-    /// @param to The destination address of the tokens.
-    /// @param calldata The call data of the swap.
+    /// @inheritdoc IUniswapV3Pair
     function swap0For1(
         uint256 amount0In,
         address to,
@@ -720,11 +710,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return _swap(params);
     }
 
-    /// @notice The second main swap function.
-    /// @notice Used when moving from left to right (token 0 is becoming more valuable).
-    /// @param amount1In amount of token you are sending.
-    /// @param to The destination address of the tokens.
-    /// @param data The call data of the swap.
+    /// @inheritdoc IUniswapV3Pair
     function swap1For0(
         uint256 amount1In,
         address to,
@@ -736,10 +722,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return _swap(params);
     }
 
-    /// @notice Recovers tokens accidentally sent to the pair contract.
-    /// @param token The token address.
-    /// @param to The destination address of the transfer.
-    /// @param amount The amount of the token to be recovered.
+    /// @inheritdoc IUniswapV3Pair
     function recover(
         address token,
         address to,
