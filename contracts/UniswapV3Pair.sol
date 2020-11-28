@@ -127,7 +127,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    /// @notice Part of the _getFeeGrowthInside function. 
+    /// @notice Part of the _getFeeGrowthInside function.
     /// @notice Calculates the fee growth below a given tick range, in order to calculate the fee growth within a given range.
     function _getFeeGrowthBelow(int24 tick, TickInfo storage tickInfo)
         private
@@ -144,7 +144,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    /// @notice Part of the _getFeeGrowthInside function. 
+    /// @notice Part of the _getFeeGrowthInside function.
     /// @notice Calculates the fee growth above a given tick range, in order to calculate the fee growth within a given range.
     function _getFeeGrowthAbove(int24 tick, TickInfo storage tickInfo)
         private
@@ -162,11 +162,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     /// @notice The main fee growth calculation.
-    /// @dev Called when a user sets a new position. 
+    /// @dev Called when a user sets a new position.
     /// @dev Part of determining the quantity of fees, per liquidity, are due in a given tick range.
     /// @dev Calculates the fee growth of a given tick range by calling both _getFeeGrowthAbove and _getFeeGrowthBelow.
     /// @param tickLower The lowest tick of a given range.
-    /// @param tickUpper The highest tick of a given range. 
+    /// @param tickUpper The highest tick of a given range.
     /// @param tickInfoLower The info struct of the lowest tick of a given range.
     /// @param tickInfoUpper The info struct of the highest tick of a given range.
     /// @return feeGrowthInside0 The fee growth in the given range of the token0 pool.
