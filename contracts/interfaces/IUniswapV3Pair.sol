@@ -37,11 +37,11 @@ interface IUniswapV3Pair {
 
     function feeToFees1() external view returns (uint256);
 
-    /// @notice Check for one-time initialization. 
+    /// @notice Check for one-time initialization.
     /// @return bool determining if there is already a price, thus already an initialized pair.
     function isInitialized() external view returns (bool);
 
-    /// @notice Initializes a new pair. 
+    /// @notice Initializes a new pair.
     /// @param tick The nearest tick to the estimated price, given the ratio of token0 / token1.
     function initialize(int24 tick) external;
 
