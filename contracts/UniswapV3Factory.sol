@@ -16,14 +16,12 @@ contract UniswapV3Factory is IUniswapV3Factory {
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPair;
     address[] public override allPairs;
 
-    /// @notice Gets length of allPairs array.
-    /// @return length of allPairs address array.
+    /// @inheritdoc IUniswapV3Factory
     function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
 
-    /// @notice Gets length of allEnabledFeeOptions array.
-    /// @return Length of allEnabledFeeOptions array.
+    /// @inheritdoc IUniswapV3Factory
     function allEnabledFeeOptionsLength() external view override returns (uint256) {
         return allEnabledFeeOptions.length;
     }
@@ -42,11 +40,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         _enableFeeOption(24000);
     }
 
-    /// @notice Deploys a new trading pair.
-    /// @param tokenA the first token of the desired pair.
-    /// @param tokenB the second token of the desired pair.
-    /// @param fee the desired fee.
-    /// @return The address of the newly deployed pair.
+    /// @inheritdoc IUniswapV3Factory
     function createPair(
         address tokenA,
         address tokenB,
@@ -66,7 +60,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         emit PairCreated(token0, token1, fee, pair, allPairs.length);
     }
 
-    /// @notice Sets Factory contract owner to a new address.
+    /// @inheritdoc IUniswapV3Factory
     function setOwner(address _owner) external override {
         require(msg.sender == owner, 'UniswapV3Factory::setOwner: must be called by owner');
         emit OwnerChanged(owner, _owner);
@@ -83,8 +77,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         emit FeeOptionEnabled(fee);
     }
 
-    /// @notice If chosen, enables the fee option when a pair is deployed.
-    /// @param fee The chosen fee option - passed via createPair.
+    /// @inheritdoc IUniswapV3Factory\
     function enableFeeOption(uint24 fee) external override {
         require(msg.sender == owner, 'UniswapV3Factory::enableFeeOption: must be called by owner');
 
