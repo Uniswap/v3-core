@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
+/// @title the Uniswap V3 Pair Interface.
 interface IUniswapV3Pair {
     event Initialized(int24 tick);
 
