@@ -720,9 +720,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return _swap(params);
     }
 
-    /// @notice The second main swap function
-    /// @notice Used when moving from left to right (token 0 is becoming more valuable)
-    /// @param amount1In amount of token you are sending
+    /// @notice The second main swap function.
+    /// @notice Used when moving from left to right (token 0 is becoming more valuable).
+    /// @param amount1In amount of token you are sending.
     /// @param to The destination address of the tokens.
     /// @param data The call data of the swap.
     function swap1For0(
