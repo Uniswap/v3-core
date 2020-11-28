@@ -23,7 +23,7 @@ interface IUniswapV3Factory {
     function allEnabledFeeOptionsLength() external view returns (uint256);
 
     /// @notice Gets the address of a trading pair.
-    /// @param tokenA The first token of the pair. 
+    /// @param tokenA The first token of the pair.
     /// @param tokenB The second token of the pair.
     /// @param fee The fee of the pair.
     /// @return address of the pair given the previous arguments.
