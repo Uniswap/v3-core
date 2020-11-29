@@ -117,8 +117,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     /// @notice Gets a given users position: a given allocation of liquidity as determined by owner / tickLower / tickUpper.
     /// @param owner A given liquidity providers address.
     /// @param tickLower The lower boundary tick.
-    /// @param tickUppder The upper boundary tick.
-    /// @return The position struct.
+    /// @param tickUpper The upper boundary tick.
+    /// @return position The position struct.
     function _getPosition(
         address owner,
         int24 tickLower,
@@ -232,7 +232,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     /// @notice Sets the destination where the swap fees are routed to.
-    /// @param feeto_ address of the desired destination.
+    /// @param feeTo_ address of the desired destination.
     /// @dev only able to be called by "feeToSetter".
     function setFeeTo(address feeTo_) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::setFeeTo: caller not owner');
@@ -242,7 +242,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     /// @notice Updates the tick information upon liquidity provision or removal.
     /// @param tick The given tick.
     /// @param liquidityDelta The delta of the liquidity, which is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees.
-    /// @return The TickInfo struct.
+    /// @return tickInfo The TickInfo struct.
     function _updateTick(int24 tick, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
         tickInfo = tickInfos[tick];
 
@@ -332,7 +332,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     /// @notice Add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range.
     /// @notice Also sync a position and return accumulated fees from it to user as tokens.
     /// @dev LiquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees.
-    /// @param setPositionParams parameters passed from the calling function setPosition.
+    /// @param params Parameters passed from the calling function setPosition.
     /// @return amount0 The amount of token zero.
     /// @return amount1 The amount of token one.
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
@@ -518,7 +518,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     /// @notice The internal swap function.
     /// @param params The SwapParams struct.
-    /// @return Returns the outbound amount of tokens.
+    /// @return amountOut Returns the outbound amount of tokens.
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
         _update(); // update the oracle and feeFloor
 

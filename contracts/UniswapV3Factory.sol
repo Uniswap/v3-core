@@ -77,7 +77,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         emit FeeOptionEnabled(fee);
     }
 
-    /// @inheritdoc IUniswapV3Factory\
+    /// @inheritdoc IUniswapV3Factory
     function enableFeeOption(uint24 fee) external override {
         require(msg.sender == owner, 'UniswapV3Factory::enableFeeOption: must be called by owner');
 
