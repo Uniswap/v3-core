@@ -50,8 +50,8 @@ interface IUniswapV3Pair {
     /// @param  tickLower The lower boundary of the position.
     /// @param tickUpper The upper boundary of the position.
     /// @param liquidityDelta The liquidity delta. (TODO what is it).
-    /// @return amount0, the amount of the first token.
-    /// @return amount1, the amount of the second token.
+    /// @return amount0 The amount of the first token.
+    /// @return amount1 The amount of the second token.
     function setPosition(
         int24 tickLower,
         int24 tickUpper,
@@ -62,7 +62,7 @@ interface IUniswapV3Pair {
     /// @notice Used when moving from right to left (token 1 is becoming more valuable).
     /// @param amount0In Amount of token you are sending.
     /// @param to The destination address of the tokens.
-    /// @param calldata The call data of the swap.
+    /// @param data The call data of the swap.
     function swap0For1(
         uint256 amount0In,
         address to,

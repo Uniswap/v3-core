@@ -26,7 +26,7 @@ interface IUniswapV3Factory {
     /// @param tokenA The first token of the pair. 
     /// @param tokenB The second token of the pair.
     /// @param fee The fee of the pair.
-    /// @return address of the pair given the previous arguments.
+    /// @return pair Returns address of the pair given the previous arguments.
     function getPair(
         address tokenA,
         address tokenB,
@@ -39,7 +39,7 @@ interface IUniswapV3Factory {
     /// @param tokenA the first token of the desired pair.
     /// @param tokenB the second token of the desired pair.
     /// @param fee the desired fee.
-    /// @return The address of the newly deployed pair.
+    /// @return pair Returns the address of the newly deployed pair.
     function createPair(
         address tokenA,
         address tokenB,
