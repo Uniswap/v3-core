@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`TickMath all tick values 1`] = `
+exports[`TickMath #getRatioAtTick all tick values 1`] = `
 Array [
   Array [
     -7351,
@@ -58817,20 +58817,26 @@ Array [
 ]
 `;
 
-exports[`TickMath gas tick -50 1`] = `686`;
+exports[`TickMath #getRatioAtTick gas tick -50 1`] = `2605`;
 
-exports[`TickMath gas tick -500 1`] = `728`;
+exports[`TickMath #getRatioAtTick gas tick -500 1`] = `2674`;
 
-exports[`TickMath gas tick -1000 1`] = `728`;
+exports[`TickMath #getRatioAtTick gas tick -1000 1`] = `2674`;
 
-exports[`TickMath gas tick -7351 1`] = `740`;
+exports[`TickMath #getRatioAtTick gas tick -7351 1`] = `2704`;
 
-exports[`TickMath gas tick 0 1`] = `648`;
+exports[`TickMath #getRatioAtTick gas tick 0 1`] = `2540`;
 
-exports[`TickMath gas tick 50 1`] = `726`;
+exports[`TickMath #getRatioAtTick gas tick 50 1`] = `2645`;
 
-exports[`TickMath gas tick 500 1`] = `768`;
+exports[`TickMath #getRatioAtTick gas tick 500 1`] = `2714`;
 
-exports[`TickMath gas tick 1000 1`] = `768`;
+exports[`TickMath #getRatioAtTick gas tick 1000 1`] = `2714`;
 
-exports[`TickMath gas tick 7351 1`] = `780`;
+exports[`TickMath #getRatioAtTick gas tick 7351 1`] = `2744`;
+
+exports[`TickMath #getTickAtRatio gas cost another random price 1`] = `3652`;
+
+exports[`TickMath #getTickAtRatio gas cost price exactly at 0 1`] = `3567`;
+
+exports[`TickMath #getTickAtRatio gas cost random price 1`] = `3702`;

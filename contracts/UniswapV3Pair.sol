@@ -12,8 +12,6 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
-import './libraries/TickMath.sol';
-import './libraries/ReverseTickMath.sol';
 import './libraries/PriceMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
@@ -21,8 +19,9 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
 import './libraries/TickBitMap.sol';
 import './libraries/FixedPoint128.sol';
+import './TickMath1r01.sol';
 
-contract UniswapV3Pair is IUniswapV3Pair {
+contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     using SafeMath for uint128;
     using SafeMath for uint256;
     using SignedSafeMath for int128;
@@ -250,24 +249,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function initialize(int24 tick) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
-        require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
-        require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
+        require(tick >= MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
+        require(tick < MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
 
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
 
         // initialize current price and tick
-        priceCurrent = TickMath.getRatioAtTick(tick);
+        priceCurrent = FixedPoint128.uq128x128(getRatioAtTick(tick));
         tickCurrent = tick;
 
         // set permanent 1 wei position
         _setPosition(
-            SetPositionParams({
-                owner: address(0),
-                tickLower: TickMath.MIN_TICK,
-                tickUpper: TickMath.MAX_TICK,
-                liquidityDelta: 1
-            })
+            SetPositionParams({owner: address(0), tickLower: MIN_TICK, tickUpper: MAX_TICK, liquidityDelta: 1})
         );
 
         emit Initialized(tick);
@@ -287,11 +281,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (int256 amount0, int256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::setPosition: pair not initialized');
         require(tickLower < tickUpper, 'UniswapV3Pair::setPosition: tickLower must be less than tickUpper');
-        require(tickLower >= TickMath.MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
-        require(
-            tickUpper <= TickMath.MAX_TICK,
-            'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick'
-        );
+        require(tickLower >= MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
+        require(tickUpper <= MAX_TICK, 'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick');
 
         return
             _setPosition(
@@ -394,8 +385,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (tickCurrent < params.tickLower) {
             amount0 = amount0.add(
                 PriceMath.getAmount0Delta(
-                    TickMath.getRatioAtTick(params.tickLower),
-                    TickMath.getRatioAtTick(params.tickUpper),
+                    FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
+                    FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
                     params.liquidityDelta
                 )
             );
@@ -404,13 +395,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount0 = amount0.add(
                 PriceMath.getAmount0Delta(
                     priceCurrent,
-                    TickMath.getRatioAtTick(params.tickUpper),
+                    FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
                     params.liquidityDelta
                 )
             );
             amount1 = amount1.add(
                 PriceMath.getAmount1Delta(
-                    TickMath.getRatioAtTick(params.tickLower),
+                    FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
                     priceCurrent,
                     params.liquidityDelta
                 )
@@ -422,8 +413,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
             amount1 = amount1.add(
                 PriceMath.getAmount1Delta(
-                    TickMath.getRatioAtTick(params.tickLower),
-                    TickMath.getRatioAtTick(params.tickUpper),
+                    FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
+                    FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
                     params.liquidityDelta
                 )
             );
@@ -499,7 +490,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             (step.tickNext, ) = tickBitMap.nextInitializedTickWithinOneWord(state.tick, params.zeroForOne);
 
             // get the price for the next tick we're moving toward
-            step.priceNext = TickMath.getRatioAtTick(step.tickNext);
+            step.priceNext = FixedPoint128.uq128x128(getRatioAtTick(step.tickNext));
 
             // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
             // similarly, if it's false we should be below the target price
@@ -620,9 +611,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                state.tick = params.zeroForOne
-                    ? ReverseTickMath.getTickFromPrice(state.price, step.tickNext, state.tick + 1)
-                    : ReverseTickMath.getTickFromPrice(state.price, state.tick, step.tickNext);
+                state.tick = getTickAtRatio(state.price._x);
             }
         }
 
@@ -634,8 +623,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         priceCurrent = state.price;
 
-        if (params.zeroForOne) require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
-        else require(state.tick < TickMath.MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
+        if (params.zeroForOne) require(state.tick >= MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
+        else require(state.tick < MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
         if (params.zeroForOne) {
             feeToFees0 = state.feeToFees;

@@ -33,8 +33,12 @@ contract TickBitMapEchidnaTest {
         }
     }
 
-    function checkNextInitializedTickInvariants(int24 tick, bool lte) public view {
-        int24 next = bitmap.nextInitializedTick(tick, lte);
+    function checkNextInitializedTickInvariants(
+        int24 tick,
+        bool lte,
+        int24 minOrMax
+    ) public view {
+        int24 next = bitmap.nextInitializedTick(tick, lte, minOrMax);
         if (lte) {
             assert(next <= tick);
             // all the ticks between the input tick and the next tick should be uninitialized

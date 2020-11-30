@@ -5,7 +5,6 @@ import '@openzeppelin/contracts/math/Math.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import '../libraries/PriceMath.sol';
-import '../libraries/TickMath.sol';
 
 contract PriceMathEchidnaTest {
     using SafeMath for uint256;
@@ -28,9 +27,6 @@ contract PriceMathEchidnaTest {
     }
 
     function roundingCanBeGreaterThan1(uint224 price, uint112 liquidity) external pure {
-        require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK)._x);
-        require(price <= TickMath.getRatioAtTick(TickMath.MAX_TICK)._x);
-
         (uint256 amount0Up, uint256 amount1Up) = PriceMath.getVirtualReservesAtPrice(
             FixedPoint128.uq128x128(price),
             liquidity,
@@ -73,12 +69,11 @@ contract PriceMathEchidnaTest {
     }
 
     function getInputToRatioInvariants(
-        uint224 priceRaw,
-        int24 tickTarget,
-        uint112 liquidity,
+        uint256 priceRaw,
+        uint256 priceTargetRaw,
+        uint128 liquidity,
         uint24 lpFee
     ) external pure {
-        require(tickTarget >= TickMath.MIN_TICK && tickTarget < TickMath.MAX_TICK);
         require(liquidity > 0);
         require(lpFee > 0 && lpFee < PriceMath.LP_FEE_BASE);
 
@@ -87,7 +82,7 @@ contract PriceMathEchidnaTest {
 
         require(reserve0 > 0 && reserve1 > 0);
 
-        FixedPoint128.uq128x128 memory priceTarget = TickMath.getRatioAtTick(tickTarget);
+        FixedPoint128.uq128x128 memory priceTarget = FixedPoint128.uq128x128(priceTargetRaw);
         bool zeroForOne = price._x >= priceTarget._x;
 
         (uint256 amountIn, uint256 amountOutMax) = PriceMath.getInputToRatio(
