@@ -43,13 +43,21 @@ contract TickBitMapTest {
         return gasBefore - gasleft();
     }
 
-    function nextInitializedTick(int24 tick, bool lte) external view returns (int24 next) {
-        return bitmap.nextInitializedTick(tick, lte);
+    function nextInitializedTick(
+        int24 tick,
+        bool lte,
+        int24 minOrMax
+    ) external view returns (int24 next) {
+        return bitmap.nextInitializedTick(tick, lte, minOrMax);
     }
 
-    function getGasCostOfNextInitializedTick(int24 tick, bool lte) external view returns (uint256) {
+    function getGasCostOfNextInitializedTick(
+        int24 tick,
+        bool lte,
+        int24 minOrMax
+    ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        bitmap.nextInitializedTick(tick, lte);
+        bitmap.nextInitializedTick(tick, lte, minOrMax);
         return gasBefore - gasleft();
     }
 }

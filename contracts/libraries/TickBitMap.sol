@@ -3,8 +3,6 @@ pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
-import '../libraries/TickMath.sol';
-
 // a library for dealing with a bitmap of all ticks initialized states, represented as mapping(int16 => uint256)
 // the mapping uses int16 for keys since ticks are represented as int24 and there are 256 (2^8) bits per word
 library TickBitMap {
@@ -12,8 +10,6 @@ library TickBitMap {
     // wordPos is the position in the mapping containing the word in which the bit is set
     // bitPos is the position in the word from most to least significant where the flag is set
     function position(int24 tick) private pure returns (int16 wordPos, uint8 bitPos) {
-        require(tick >= TickMath.MIN_TICK, 'TickBitMap::position: tick must be greater than or equal to MIN_TICK');
-        require(tick <= TickMath.MAX_TICK, 'TickBitMap::position: tick must be less than or equal to MAX_TICK');
         wordPos = int16(tick >> 8);
         bitPos = uint8(255) - uint8(tick % 256);
     }
@@ -69,17 +65,23 @@ library TickBitMap {
     function nextInitializedTick(
         mapping(int16 => uint256) storage self,
         int24 tick,
-        bool lte
+        bool lte,
+        int24 minOrMax
     ) internal view returns (int24 next) {
+        require(
+            lte ? minOrMax <= tick : minOrMax > tick,
+            'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
+        );
+
         bool initialized;
         next = tick;
         if (lte) {
-            while (next >= TickMath.MIN_TICK && !initialized) {
+            while (next >= minOrMax && !initialized) {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, true);
                 if (!initialized) next--;
             }
         } else {
-            while (next < TickMath.MAX_TICK && !initialized) {
+            while (next < minOrMax && !initialized) {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, false);
             }
         }
