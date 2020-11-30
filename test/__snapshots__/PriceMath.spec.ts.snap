@@ -1,8 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `17985`;
+exports[`PriceMath #getInputToRatio edge cases gas: returns 0 if price is equal 1`] = `4163`;
 
-exports[`PriceMath #getInputToRatio invariants 1:49 to 1:75 at 60bps gas 1`] = `17945`;
+exports[`PriceMath #getInputToRatio invariants 1:49 to 1:75 at 60bps gas 1`] = `4113`;
 
 exports[`PriceMath #getInputToRatio invariants 1:49 to 1:75 at 60bps snapshot 1`] = `
 Object {
@@ -16,7 +16,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:49 to 1:100 at 200bps gas 1`] = `17975`;
+exports[`PriceMath #getInputToRatio invariants 1:49 to 1:100 at 200bps gas 1`] = `4153`;
 
 exports[`PriceMath #getInputToRatio invariants 1:49 to 1:100 at 200bps snapshot 1`] = `
 Object {
@@ -30,7 +30,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `18032`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps gas 1`] = `4097`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 30bps snapshot 1`] = `
 Object {
@@ -44,7 +44,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `18032`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps gas 1`] = `4097`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps snapshot 1`] = `
 Object {
@@ -58,7 +58,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `18032`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves gas 1`] = `4097`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:50 at 60bps with small reserves snapshot 1`] = `
 Object {
@@ -72,7 +72,7 @@ Object {
 }
 `;
 
-exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `17935`;
+exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps gas 1`] = `4103`;
 
 exports[`PriceMath #getInputToRatio invariants 1:100 to 1:75 at 45bps snapshot 1`] = `
 Object {
