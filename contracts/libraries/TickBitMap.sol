@@ -13,27 +13,24 @@ import '../libraries/TickMath.sol';
 library TickBitMap {
     // computes the position in the uint256 array where the initialized state for a tick lives
     // bitPos is the 0 indexed position in the word from most to least significant where the flag is set
-    function position(int24 tick) private pure returns (uint256 wordPos, uint256 bitPos) {
+    function position(int24 tick) private pure returns (int16 wordPos, uint8 bitPos) {
         require(tick >= TickMath.MIN_TICK, 'TickBitMap::position: tick must be greater than or equal to MIN_TICK');
         require(tick <= TickMath.MAX_TICK, 'TickBitMap::position: tick must be less than or equal to MAX_TICK');
         // moves the tick into positive integer space while making sure all ticks are adjacent
-        uint256 bitIndex = uint256(
-            int256(tick) + 8388608 /* equivalent to -type(int24).min */
-        );
-        wordPos = bitIndex / 256;
-        bitPos = 255 - (bitIndex % 256);
+        wordPos = int16(tick >> 8);
+        bitPos = uint8(255) - uint8(tick % 256);
     }
 
     // returns whether the given tick is initialized
-    function isInitialized(mapping(uint256 => uint256) storage self, int24 tick) internal view returns (bool) {
-        (uint256 wordPos, uint256 bitPos) = position(tick);
+    function isInitialized(mapping(int16 => uint256) storage self, int24 tick) internal view returns (bool) {
+        (int16 wordPos, uint8 bitPos) = position(tick);
         uint256 mask = uint256(1) << bitPos;
         return self[wordPos] & mask != 0;
     }
 
     // flips the tick from uninitialized to initialized, or vice versa
-    function flipTick(mapping(uint256 => uint256) storage self, int24 tick) internal {
-        (uint256 wordPos, uint256 bitPos) = position(tick);
+    function flipTick(mapping(int16 => uint256) storage self, int24 tick) internal {
+        (int16 wordPos, uint8 bitPos) = position(tick);
         uint256 mask = uint256(1) << bitPos;
         self[wordPos] ^= mask;
     }
@@ -41,12 +38,12 @@ library TickBitMap {
     // returns the next initialized tick contained in the same word as the current tick that is either lte this tick
     // or greater than this tick
     function nextInitializedTickWithinOneWord(
-        mapping(uint256 => uint256) storage self,
+        mapping(int16 => uint256) storage self,
         int24 tick,
         bool lte
     ) internal view returns (int24 next, bool initialized) {
         if (lte) {
-            (uint256 wordPos, uint256 bitPos) = position(tick);
+            (int16 wordPos, uint8 bitPos) = position(tick);
             uint256 word = self[wordPos];
             // all the 1s at or to the left of the current bitPos
             uint256 mask = uint256(-1) - ((uint256(1) << bitPos) - 1);
@@ -58,7 +55,7 @@ library TickBitMap {
             return (tick + (int24(bitPos) - int24(BitMath.leastSignificantBit(masked))), true);
         } else {
             // start from the word of the next tick, since the current tick state doesn't matter
-            (uint256 wordPos, uint256 bitPos) = position(tick + 1);
+            (int16 wordPos, uint8 bitPos) = position(tick + 1);
             uint256 word = self[wordPos];
             // all the 1s at or to the right of the bitPos
             uint256 mask = bitPos == 255 ? uint256(-1) : (uint256(1) << (bitPos + 1)) - 1;
@@ -73,7 +70,7 @@ library TickBitMap {
 
     // same as above, but iterates until it finds the next initialized tick
     function nextInitializedTick(
-        mapping(uint256 => uint256) storage self,
+        mapping(int16 => uint256) storage self,
         int24 tick,
         bool lte
     ) internal view returns (int24 next) {

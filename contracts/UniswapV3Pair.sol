@@ -31,7 +31,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeCast for uint256;
     using MixedSafeMath for uint128;
     using FixedPoint128 for FixedPoint128.uq128x128;
-    using TickBitMap for mapping(uint256 => uint256);
+    using TickBitMap for mapping(int16 => uint256);
 
     // if we constrain the liquidity associated to a single tick, then we can guarantee that the total
     // liquidityCurrent never exceeds uint128
@@ -50,7 +50,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     address public override feeTo;
 
     // see TickBitMap.sol
-    mapping(uint256 => uint256) public override tickBitMap;
+    mapping(int16 => uint256) public override tickBitMap;
 
     uint32 public override blockTimestampLast;
 
