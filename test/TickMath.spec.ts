@@ -1,7 +1,7 @@
 import {ethers} from 'hardhat'
 import {BigNumber, BigNumberish} from 'ethers'
 import {TickMathTest} from '../typechain/TickMathTest'
-import {TickMathLarge} from '../typechain/TickMathLarge'
+import {TickMath1r01} from '../typechain/TickMath1r01'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
@@ -9,14 +9,14 @@ import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
 const Q128 = BigNumber.from(2).pow(128)
 
 describe('TickMath', () => {
-  let tickMathLarge: TickMathLarge
+  let tickMath1r01: TickMath1r01
   let tickMathTest: TickMathTest
 
   before('deploy TickMathTest', async () => {
-    const tickMath1_01Factory = await ethers.getContractFactory('TickMathLarge')
+    const tickMath1r01Factory = await ethers.getContractFactory('TickMath1r01')
     const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
-    tickMathLarge = (await tickMath1_01Factory.deploy()) as TickMathLarge
-    tickMathTest = (await tickMathTestFactory.deploy(tickMathLarge.address)) as TickMathTest
+    tickMath1r01 = (await tickMath1r01Factory.deploy()) as TickMath1r01
+    tickMathTest = (await tickMathTestFactory.deploy(tickMath1r01.address)) as TickMathTest
   })
 
   describe('#getRatioAtTick', () => {

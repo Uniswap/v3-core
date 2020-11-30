@@ -6,7 +6,7 @@ import './interfaces/ITickMath.sol';
 // 1% ticks
 // min tick is -7351
 // max tick is 7351
-contract TickMathLarge is ITickMath {
+contract TickMath1r01 is ITickMath {
     int24 public constant override MIN_TICK = -7351;
     int24 public constant override MAX_TICK = -MIN_TICK;
 

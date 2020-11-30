@@ -19,9 +19,9 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
 import './libraries/TickBitMap.sol';
 import './libraries/FixedPoint128.sol';
-import './TickMathLarge.sol';
+import './TickMath1r01.sol';
 
-contract UniswapV3Pair is IUniswapV3Pair, TickMathLarge {
+contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     using SafeMath for uint128;
     using SafeMath for uint256;
     using SignedSafeMath for int128;
