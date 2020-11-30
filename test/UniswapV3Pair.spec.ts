@@ -448,6 +448,20 @@ describe('UniswapV3Pair', () => {
         let {tickCumulative} = await pair.getCumulatives()
         expect(tickCumulative).to.eq(-4)
       })
+
+      it('tick accumulator after two swaps', async () => {
+        await token0.approve(pair.address, constants.MaxUint256)
+        await token1.approve(pair.address, constants.MaxUint256)
+        await pair.swap0For1(expandTo18Decimals(1).div(2), walletAddress, '0x')
+        expect(await pair.tickCurrent()).to.eq(-45)
+        await pair.setTime(TEST_PAIR_START_TIME + 4)
+        await pair.swap1For0(expandTo18Decimals(1).div(4), walletAddress, '0x')
+        expect(await pair.tickCurrent()).to.eq(-16)
+        await pair.setTime(TEST_PAIR_START_TIME + 10)
+        let {tickCumulative} = await pair.getCumulatives()
+        // -45*4 + -16*6
+        expect(tickCumulative).to.eq(-276)
+      })
     })
   })
 
