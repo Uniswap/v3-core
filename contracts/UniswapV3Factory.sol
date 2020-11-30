@@ -5,8 +5,9 @@ import './interfaces/IUniswapV3Factory.sol';
 
 import './UniswapV3Pair.sol';
 
-/// @title The Uniswap V3 Factory contract.
-/// @dev Creates new trading pairs at deterministic addresses.
+/// @title The Uniswap V3 Factory.
+/// @notice A factory for creating new V3 trading pairs.
+/// @dev Creates new pairs at deterministic addresses.
 contract UniswapV3Factory is IUniswapV3Factory {
     address public override owner;
 
@@ -67,7 +68,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         owner = _owner;
     }
 
-    /// @notice see enableFeeOption.
+    /// @dev see enableFeeOption.
     function _enableFeeOption(uint24 fee) private {
         require(fee < 1000000, 'UniswapV3Factory::enableFeeOption: fee cannot be greater than or equal to 100%');
         require(isFeeOptionEnabled[fee] == false, 'UniswapV3Factory::enableFeeOption: fee option is already enabled');

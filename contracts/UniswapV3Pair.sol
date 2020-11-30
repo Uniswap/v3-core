@@ -22,9 +22,9 @@ import './interfaces/IUniswapV3Callee.sol';
 import './libraries/TickBitMap.sol';
 import './libraries/FixedPoint128.sol';
 
-/// @title The Uniswap V3 Pair Contract.
-/// @notice The V3 pair allows liquidity provisioning within user specified positions.
-/// @dev Liquidity positions are partitioned into "ticks", each tick is equally spaced and may have an arbitrary depth of liquidity.
+/// @title The Uniswap V3 Pair.
+/// @notice The V3 pair allows for liquidity provisioning within user specified positions and swapping between two assets.
+/// @dev Liquidity positions are partitioned into "ticks", each tick is equally spaced and may have a nearly arbitrary depth of liquidity. A limitation is enabled for tokens with a total supply of > 2**128.
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
     using SafeMath for uint256;
@@ -55,7 +55,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     /// @notice Mapping of tickBitMap to uint - see TickBitMap.sol
     mapping(uint256 => uint256) public override tickBitMap;
 
-    /// @notice The timestamp of the current block, used for safety when initializing positions.
+    /// @notice The timestamp of the last block since the oracle price accumulator was last updated.
     uint32 public override blockTimestampLast;
 
     /// @notice All in-range liquidity.
@@ -68,8 +68,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int24 public override tickCurrent;
 
     /// @notice Global fee growth per unit of liquidity.
-    /// @dev feeGrowthGlobal on its own is not enough to figure out fees due to a given position, but it is used in the calculation of it.
-    /// @dev This number is used to calculate how many fees are due per liquidity provision in a given tick.
+    /// @dev This number is part of the calculation process to find how many fees are due, per liquidity provision, in a given tick.
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
     FixedPoint128.uq128x128 public override feeGrowthGlobal1;
 
