@@ -15,7 +15,7 @@ interface ITickMath {
     function getRatioAtTick(int24 tick) external pure returns (uint256 ratio);
 
     // get the tick from a ratio. must satisfy the invariant:
-    // tick := getTickAtRatio(price)
-    // getTickAtRatio(tick) <= price < getTickAtRatio(tick + 1)
+    // tick := getTickAtRatio(ratio)
+    // getRatioAtTick(tick) <= ratio < getRatioAtTick(tick + 1)
     function getTickAtRatio(uint256 ratio) external pure returns (int24 tick);
 }
