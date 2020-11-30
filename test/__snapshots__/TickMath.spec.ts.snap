@@ -58817,26 +58817,26 @@ Array [
 ]
 `;
 
-exports[`TickMath #getRatioAtTick gas tick -50 1`] = `2547`;
+exports[`TickMath #getRatioAtTick gas tick -50 1`] = `2605`;
 
-exports[`TickMath #getRatioAtTick gas tick -500 1`] = `2616`;
+exports[`TickMath #getRatioAtTick gas tick -500 1`] = `2674`;
 
-exports[`TickMath #getRatioAtTick gas tick -1000 1`] = `2616`;
+exports[`TickMath #getRatioAtTick gas tick -1000 1`] = `2674`;
 
-exports[`TickMath #getRatioAtTick gas tick -7351 1`] = `2646`;
+exports[`TickMath #getRatioAtTick gas tick -7351 1`] = `2704`;
 
-exports[`TickMath #getRatioAtTick gas tick 0 1`] = `2482`;
+exports[`TickMath #getRatioAtTick gas tick 0 1`] = `2540`;
 
-exports[`TickMath #getRatioAtTick gas tick 50 1`] = `2587`;
+exports[`TickMath #getRatioAtTick gas tick 50 1`] = `2645`;
 
-exports[`TickMath #getRatioAtTick gas tick 500 1`] = `2656`;
+exports[`TickMath #getRatioAtTick gas tick 500 1`] = `2714`;
 
-exports[`TickMath #getRatioAtTick gas tick 1000 1`] = `2656`;
+exports[`TickMath #getRatioAtTick gas tick 1000 1`] = `2714`;
 
-exports[`TickMath #getRatioAtTick gas tick 7351 1`] = `2686`;
+exports[`TickMath #getRatioAtTick gas tick 7351 1`] = `2744`;
 
-exports[`TickMath #getTickAtRatio gas cost another random price 1`] = `3589`;
+exports[`TickMath #getTickAtRatio gas cost another random price 1`] = `3652`;
 
-exports[`TickMath #getTickAtRatio gas cost price exactly at 0 1`] = `3504`;
+exports[`TickMath #getTickAtRatio gas cost price exactly at 0 1`] = `3567`;
 
-exports[`TickMath #getTickAtRatio gas cost random price 1`] = `3639`;
+exports[`TickMath #getTickAtRatio gas cost random price 1`] = `3702`;

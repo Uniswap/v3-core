@@ -102,10 +102,14 @@ describe('TickMath', () => {
     })
 
     it('tick too large', async () => {
-      await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith('')
+      await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith(
+        'TickMath1r01::getRatioAtTick: invalid tick'
+      )
     })
     it('tick too small', async () => {
-      await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith('')
+      await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith(
+        'TickMath1r01::getRatioAtTick: invalid tick'
+      )
     })
 
     if (process.env.UPDATE_SNAPSHOT) {
@@ -130,17 +134,40 @@ describe('TickMath', () => {
   })
 
   describe('#getTickAtRatio', () => {
-    const priceExactlyAtTickZero = {_x: BigNumber.from('340282366920938463463374607431768211456')}
-    const priceCloseToTickZero = {_x: priceExactlyAtTickZero._x.add(1)}
+    const ratioExactlyAtTickZero = {_x: BigNumber.from('340282366920938463463374607431768211456')}
+    const ratioCloseToTickZero = {_x: ratioExactlyAtTickZero._x.add(1)}
+
+    it('ratio too large', async () => {
+      await expect(
+        tickMathTest.getTickAtRatio({
+          _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867417'),
+        })
+      ).to.be.revertedWith('TickMath1r01::getTickAtRatio: invalid ratio')
+    })
+    it('ratio too small', async () => {
+      await expect(tickMathTest.getTickAtRatio({_x: BigNumber.from('5826673')})).to.be.revertedWith(
+        'TickMath1r01::getTickAtRatio: invalid ratio'
+      )
+    })
+    it('ratio at min tick boundary', async () => {
+      expect(await tickMathTest.getTickAtRatio({_x: BigNumber.from('5826674')})).to.eq(MIN_TICK)
+    })
+    it('ratio at max tick boundary', async () => {
+      expect(
+        await tickMathTest.getTickAtRatio({
+          _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867416'),
+        })
+      ).to.eq(MAX_TICK)
+    })
 
     it('lowerBound = upperBound - 1', async () => {
-      expect(await tickMathTest.getTickAtRatio(priceCloseToTickZero)).to.eq(0)
+      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
     })
 
     it('lowerBound = upperBound - 4', async () => {
-      expect(await tickMathTest.getTickAtRatio(priceCloseToTickZero)).to.eq(0)
-      expect(await tickMathTest.getTickAtRatio(priceCloseToTickZero)).to.eq(0)
-      expect(await tickMathTest.getTickAtRatio(priceCloseToTickZero)).to.eq(0)
+      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
+      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
+      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
     })
 
     it('works for arbitrary prices', async () => {
@@ -150,14 +177,14 @@ describe('TickMath', () => {
     })
 
     it('lowerBound and upper bound are both off', async () => {
-      expect(await tickMathTest.getTickAtRatio(priceCloseToTickZero)).to.eq(0)
+      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
     })
 
     it('lowerBound and upper bound off by 128', async () => {
-      expect(await tickMathTest.getTickAtRatio(priceCloseToTickZero)).to.eq(0)
+      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
     })
     it('price is at a tick below lower bound', async () => {
-      expect(await tickMathTest.getTickAtRatio(priceCloseToTickZero)).to.eq(0)
+      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
     })
 
     it('accuracy', async () => {
@@ -165,7 +192,7 @@ describe('TickMath', () => {
     })
 
     it('gas cost price exactly at 0', async () => {
-      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed(priceExactlyAtTickZero))
+      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed(ratioExactlyAtTickZero))
     })
     it('gas cost random price', async () => {
       await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed({_x: '12857036465196691992791697221653775109723'}))

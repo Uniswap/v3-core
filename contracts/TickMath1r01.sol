@@ -11,8 +11,9 @@ contract TickMath1r01 is ITickMath {
     int24 public constant override MAX_TICK = -MIN_TICK;
 
     function getRatioAtTick(int24 tick) public pure override returns (uint256 ratio) {
+        require(tick >= MIN_TICK && tick <= MAX_TICK, 'TickMath1r01::getRatioAtTick: invalid tick');
+
         uint256 absTick = uint256(tick < 0 ? -tick : tick);
-        assert(absTick <= uint256(MAX_TICK));
 
         ratio = absTick & 0x1 != 0 ? 0xfd7720f353a4c0a237c32b16cfd7720f : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfaf4ae9099c9241ccf4a1b745e424d72) >> 128;
@@ -34,9 +35,11 @@ contract TickMath1r01 is ITickMath {
 
     // get the ratio from the tick as a 128x128 represented as a uint256
     function getTickAtRatio(uint256 ratio) public pure override returns (int24 tick) {
-        require(ratio >= 65536);
-
-        if (ratio >= 2**240) return 7802;
+        // the ratio must be between the ratio at MIN_TICK and the ratio at MAX_TICK
+        require(
+            ratio >= 5826674 && ratio <= 19872759182565593239568746253641083721737304106191725165927866224867416,
+            'TickMath1r01::getTickAtRatio: invalid ratio'
+        );
 
         uint256 r = ratio;
         uint256 msb = 0;
