@@ -21,6 +21,10 @@ interface IUniswapV3Pair {
 
     function blockTimestampLast() external view returns (uint32);
 
+    function liquidityCumulativeLast() external view returns (uint160);
+
+    function tickCumulativeLast() external view returns (int56);
+
     function liquidityCurrent() external view returns (uint128);
 
     function tickBitMap(uint256) external view returns (uint256);
@@ -39,6 +43,15 @@ interface IUniswapV3Pair {
 
     // derived state
     function isInitialized() external view returns (bool);
+
+    function getCumulatives()
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            uint160 liquidityCumulative,
+            int56 tickCumulative
+        );
 
     // initialize the pair
     function initialize(int24 tick) external;

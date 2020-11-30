@@ -52,11 +52,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // see TickBitMap.sol
     mapping(uint256 => uint256) public override tickBitMap;
 
+    // single storage slot
     uint32 public override blockTimestampLast;
+    uint160 public override liquidityCumulativeLast;
+    int56 public override tickCumulativeLast;
+    bool private unlocked = true;
+    // single storage slot
 
+    // single storage slot (104 bits empty)
     uint128 public override liquidityCurrent; // all in-range liquidity
-    FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
     int24 public override tickCurrent; // first tick at or below priceCurrent
+    // single storage slot
+
+    FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
 
     // fee growth per unit of liquidity
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
@@ -91,12 +99,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(bytes32 => Position) public positions;
 
-    uint256 private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
-        unlocked = 0;
+        require(unlocked, 'UniswapV3Pair::lock: reentrancy prohibited');
+        unlocked = false;
         _;
-        unlocked = 1;
+        unlocked = true;
     }
 
     function _getPosition(
@@ -183,11 +190,32 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // on the first interaction per block, update the oracle price accumulator and fee
-    function _update() private {
+    function _updateAccumulators() private {
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
-            blockTimestampLast = blockTimestamp;
+            (blockTimestampLast, liquidityCumulativeLast, tickCumulativeLast) = getCumulatives();
+        }
+    }
+
+    function getCumulatives()
+        public
+        view
+        override
+        returns (
+            uint32 blockTimestamp,
+            uint160 liquidityCumulative,
+            int56 tickCumulative
+        )
+    {
+        blockTimestamp = _blockTimestamp();
+
+        if (blockTimestampLast != blockTimestamp) {
+            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+            liquidityCumulative = liquidityCumulativeLast + uint160(timeElapsed) * liquidityCurrent;
+            tickCumulative = tickCumulativeLast + int56(timeElapsed) * tickCurrent;
+        } else {
+            return (blockTimestamp, liquidityCumulativeLast, tickCumulativeLast);
         }
     }
 
@@ -280,7 +308,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
-        _update();
+        _updateAccumulators();
 
         {
             Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
@@ -436,8 +464,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 feeToFees;
         // the global fee growth of the input token
         FixedPoint128.uq128x128 feeGrowthGlobal;
-        // whether the swap has crossed an initialized tick
-        bool crossedInitializedTick;
         // the liquidity in range
         uint128 liquidityCurrent;
     }
@@ -458,15 +484,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
-        _update(); // update the oracle and feeFloor
-
         SwapState memory state = SwapState({
             amountInRemaining: params.amountIn,
             tick: tickCurrent,
             price: priceCurrent,
             feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
-            crossedInitializedTick: false,
             liquidityCurrent: liquidityCurrent
         });
 
@@ -591,7 +614,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     } else {
                         state.liquidityCurrent = uint128(state.liquidityCurrent.addi(tickInfo.liquidityDelta));
                     }
-                    state.crossedInitializedTick = true;
                 }
 
                 // this is ok because we still have amountInRemaining so price is guaranteed to be less than the tick
@@ -604,14 +626,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
         }
 
+        if (state.tick != tickCurrent) {
+            _updateAccumulators();
+            liquidityCurrent = state.liquidityCurrent;
+            tickCurrent = state.tick;
+        }
+
         priceCurrent = state.price;
+
         if (params.zeroForOne) require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
         else require(state.tick < TickMath.MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
-        tickCurrent = state.tick;
-
-        if (state.crossedInitializedTick) {
-            liquidityCurrent = state.liquidityCurrent;
-        }
 
         if (params.zeroForOne) {
             feeToFees0 = state.feeToFees;
