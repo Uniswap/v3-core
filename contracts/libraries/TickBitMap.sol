@@ -5,18 +5,14 @@ import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
 import '../libraries/TickMath.sol';
 
-// a library for dealing with a bitmap of all ticks initialized states, represented as mapping(uint256 => uint256)
-// the tick's initialization bit position in this map is computed by:
-// word: (tick - type(int24).min) / 256
-// bit in word: (tick - type(int24).min) % 256
-// mask: uint256(1) << (tick - type(int24).min) % 256
+// a library for dealing with a bitmap of all ticks initialized states, represented as mapping(int16 => uint256)
 library TickBitMap {
-    // computes the position in the uint256 array where the initialized state for a tick lives
-    // bitPos is the 0 indexed position in the word from most to least significant where the flag is set
+    // computes the position in the mapping where the initialized bit for a tick lives
+    // bitPos is the position in the word from most to least significant where the flag is set
+    // wordPos is the position in the mapping containing the word in which the bit is set
     function position(int24 tick) private pure returns (int16 wordPos, uint8 bitPos) {
         require(tick >= TickMath.MIN_TICK, 'TickBitMap::position: tick must be greater than or equal to MIN_TICK');
         require(tick <= TickMath.MAX_TICK, 'TickBitMap::position: tick must be less than or equal to MAX_TICK');
-        // moves the tick into positive integer space while making sure all ticks are adjacent
         wordPos = int16(tick >> 8);
         bitPos = uint8(255) - uint8(tick % 256);
     }
