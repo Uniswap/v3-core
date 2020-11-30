@@ -212,8 +212,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            liquidityCumulative += uint160(timeElapsed) * liquidityCurrent;
-            tickCumulative += int56(timeElapsed) * tickCurrent;
+            liquidityCumulative = liquidityCumulativeLast + uint160(timeElapsed) * liquidityCurrent;
+            tickCumulative = tickCumulativeLast + int56(timeElapsed) * tickCurrent;
         } else {
             return (blockTimestamp, liquidityCumulativeLast, tickCumulativeLast);
         }
