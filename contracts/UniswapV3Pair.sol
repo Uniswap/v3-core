@@ -247,24 +247,22 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         tickBitMap.flipTick(tick);
     }
 
-    function initialize(int24 tick) external override lock {
+    function initialize(uint256 price) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
-        require(tick >= MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
-        require(tick < MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
 
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
 
         // initialize current price and tick
-        priceCurrent = FixedPoint128.uq128x128(getRatioAtTick(tick));
-        tickCurrent = tick;
+        priceCurrent = FixedPoint128.uq128x128(price);
+        tickCurrent = getTickAtRatio(price);
+
+        emit Initialized(price, tickCurrent);
 
         // set permanent 1 wei position
         _setPosition(
             SetPositionParams({owner: address(0), tickLower: MIN_TICK, tickUpper: MAX_TICK, liquidityDelta: 1})
         );
-
-        emit Initialized(tick);
     }
 
     struct SetPositionParams {

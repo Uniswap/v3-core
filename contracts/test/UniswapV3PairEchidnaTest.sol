@@ -38,8 +38,8 @@ contract UniswapV3PairEchidnaTest {
         pair = UniswapV3Pair(factory.createPair(address(token0), address(token1), fee));
     }
 
-    function initializePair(int24 tick) public {
-        pair.initialize(tick);
+    function initializePair(uint256 price) public {
+        pair.initialize(price);
     }
 
     function swap0For1(uint256 amount0In) external {
