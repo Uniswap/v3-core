@@ -35,9 +35,9 @@ contract TickMath1r01 is ITickMath {
 
     // get the ratio from the tick as a 128x128 represented as a uint256
     function getTickAtRatio(uint256 ratio) public pure override returns (int24 tick) {
-        // the ratio must be between the ratio at MIN_TICK and the ratio at MAX_TICK
+        // the ratio must be gte the ratio at MIN_TICK and lt the ratio at MAX_TICK
         require(
-            ratio >= 5826674 && ratio <= 19872759182565593239568746253641083721737304106191725165927866224867416,
+            ratio >= 5826674 && ratio < 19872759182565593239568746253641083721737304106191725165927866224867416,
             'TickMath1r01::getTickAtRatio: invalid ratio'
         );
 

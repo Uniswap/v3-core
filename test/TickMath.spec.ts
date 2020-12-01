@@ -140,7 +140,7 @@ describe('TickMath', () => {
     it('ratio too large', async () => {
       await expect(
         tickMathTest.getTickAtRatio({
-          _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867417'),
+          _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867416'),
         })
       ).to.be.revertedWith('TickMath1r01::getTickAtRatio: invalid ratio')
     })
@@ -155,9 +155,9 @@ describe('TickMath', () => {
     it('ratio at max tick boundary', async () => {
       expect(
         await tickMathTest.getTickAtRatio({
-          _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867416'),
+          _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867415'),
         })
-      ).to.eq(MAX_TICK)
+      ).to.eq(MAX_TICK - 1)
     })
 
     it('lowerBound = upperBound - 1', async () => {
