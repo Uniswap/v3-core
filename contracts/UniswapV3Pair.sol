@@ -422,13 +422,14 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             amount0 = -feesOwed0.toInt256();
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = feesOwed1.toInt256().add(
-                PriceMath.getAmount1Delta(
-                    FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
-                    FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
-                    params.liquidityDelta
-                )
-            );
+            amount1 = PriceMath
+                .getAmount1Delta(
+                FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
+                FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
+                params
+                    .liquidityDelta
+            )
+                .sub(feesOwed1.toInt256());
         }
 
         if (amount0 > 0) {

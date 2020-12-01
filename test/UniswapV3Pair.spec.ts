@@ -1,5 +1,5 @@
 import {ethers, waffle} from 'hardhat'
-import {BigNumber, constants, Signer} from 'ethers'
+import {BigNumber, BigNumberish, constants, Signer} from 'ethers'
 import {TestERC20} from '../typechain/TestERC20'
 import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
 import {MockTimeUniswapV3Pair} from '../typechain/MockTimeUniswapV3Pair'
@@ -935,7 +935,61 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('feeTo', () => {
+  describe('limit orders', () => {
+    beforeEach('initialize at tick 0', () => initializeAtZeroTick(pair))
+
+    beforeEach('approve the pair', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await token1.approve(pair.address, constants.MaxUint256)
+    })
+
+    it('selling 1 for 0 at tick 0 thru 1', async () => {
+      await expect(pair.setPosition(0, 1, expandTo18Decimals(1)))
+        .to.emit(token0, 'Transfer')
+        .withArgs(walletAddress, pair.address, '4962809790010865')
+      // somebody takes the limit order
+      await pair.swap1For0(expandTo18Decimals(2), otherAddress, '0x')
+      await expect(pair.setPosition(0, 1, expandTo18Decimals(1).mul(-1)))
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair.address, walletAddress, '5002569821553688')
+    })
+    it('selling 0 for 1 at tick 0 thru -1', async () => {
+      await expect(pair.setPosition(-1, 0, expandTo18Decimals(1)))
+        .to.emit(token1, 'Transfer')
+        .withArgs(walletAddress, pair.address, '4962809790010865')
+      // somebody takes the limit order
+      await pair.swap0For1(expandTo18Decimals(2), otherAddress, '0x')
+      await expect(pair.setPosition(-1, 0, expandTo18Decimals(1).mul(-1)))
+        .to.emit(token0, 'Transfer')
+        .withArgs(pair.address, walletAddress, '5002569821553688')
+    })
+
+    describe('fee is on', () => {
+      beforeEach(() => pair.setFeeTo(walletAddress))
+      it('selling 1 for 0 at tick 0 thru 1', async () => {
+        await expect(pair.setPosition(0, 1, expandTo18Decimals(1)))
+          .to.emit(token0, 'Transfer')
+          .withArgs(walletAddress, pair.address, '4962809790010865')
+        // somebody takes the limit order
+        await pair.swap1For0(expandTo18Decimals(2), otherAddress, '0x')
+        await expect(pair.setPosition(0, 1, expandTo18Decimals(1).mul(-1)))
+          .to.emit(token1, 'Transfer')
+          .withArgs(pair.address, walletAddress, '5000068536642912')
+      })
+      it('selling 0 for 1 at tick 0 thru -1', async () => {
+        await expect(pair.setPosition(-1, 0, expandTo18Decimals(1)))
+          .to.emit(token1, 'Transfer')
+          .withArgs(walletAddress, pair.address, '4962809790010865')
+        // somebody takes the limit order
+        await pair.swap0For1(expandTo18Decimals(2), otherAddress, '0x')
+        await expect(pair.setPosition(-1, 0, expandTo18Decimals(1).mul(-1)))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, walletAddress, '5000068536642912')
+      })
+    })
+  })
+
+  describe('#feeTo', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
     beforeEach(async () => {
@@ -961,9 +1015,10 @@ describe('UniswapV3Pair', () => {
       )
     })
 
-    async function swapAndGetFeesOwed() {
-      const swapAmount = expandTo18Decimals(1)
-      await pair.swap0For1(swapAmount, walletAddress, '0x')
+    async function swapAndGetFeesOwed(swapAmount: BigNumberish = expandTo18Decimals(1), zeroForOne: boolean = true) {
+      await (zeroForOne
+        ? pair.swap0For1(swapAmount, walletAddress, '0x')
+        : pair.swap1For0(swapAmount, walletAddress, '0x'))
 
       const {amount0, amount1} = await pair.callStatic.setPosition(MIN_TICK, MAX_TICK, 0)
 
