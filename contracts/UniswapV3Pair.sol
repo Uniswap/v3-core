@@ -548,8 +548,8 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         uint128 liquidityBefore,
         uint128 liquidityAfter
     ) private pure returns (int256) {
-        return balanceAfter.toInt256()
-            .sub(balanceBefore.toInt256().sub(qBefore).mul(liquidityAfter).div(liquidityBefore));
+        return
+            balanceAfter.toInt256().sub(balanceBefore.toInt256().sub(qBefore).mul(liquidityAfter).div(liquidityBefore));
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
@@ -561,9 +561,9 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             q1: q1,
             balance0: IERC20(token0).balanceOf(address(this)),
             balance1: IERC20(token1).balanceOf(address(this)),
-            // feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
+            liquidityCurrent: // feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
             // feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
-            liquidityCurrent: liquidityCurrent
+            liquidityCurrent
         });
 
         while (state.amountInRemaining > 0) {
@@ -709,11 +709,35 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
 
                     // TODO clean this up
                     if (params.zeroForOne) {
-                        state.q0 = _computeQNext(state.q0, state.balance0.sub(step.amountIn), state.balance0, uint128(state.liquidityCurrent.addi(tickInfo.liquidityDelta)), state.liquidityCurrent);
-                        state.q1 = _computeQNext(state.q1, state.balance1.add(step.amountOut), state.balance1, uint128(state.liquidityCurrent.addi(tickInfo.liquidityDelta)), state.liquidityCurrent);
+                        state.q0 = _computeQNext(
+                            state.q0,
+                            state.balance0.sub(step.amountIn),
+                            state.balance0,
+                            uint128(state.liquidityCurrent.addi(tickInfo.liquidityDelta)),
+                            state.liquidityCurrent
+                        );
+                        state.q1 = _computeQNext(
+                            state.q1,
+                            state.balance1.add(step.amountOut),
+                            state.balance1,
+                            uint128(state.liquidityCurrent.addi(tickInfo.liquidityDelta)),
+                            state.liquidityCurrent
+                        );
                     } else {
-                        state.q0 = _computeQNext(state.q0, state.balance0.add(step.amountOut), state.balance0, uint128(state.liquidityCurrent.subi(tickInfo.liquidityDelta)), liquidityCurrent);
-                        state.q1 = _computeQNext(state.q1, state.balance1.sub(step.amountIn), state.balance1, uint128(state.liquidityCurrent.subi(tickInfo.liquidityDelta)), liquidityCurrent);
+                        state.q0 = _computeQNext(
+                            state.q0,
+                            state.balance0.add(step.amountOut),
+                            state.balance0,
+                            uint128(state.liquidityCurrent.subi(tickInfo.liquidityDelta)),
+                            liquidityCurrent
+                        );
+                        state.q1 = _computeQNext(
+                            state.q1,
+                            state.balance1.sub(step.amountIn),
+                            state.balance1,
+                            uint128(state.liquidityCurrent.subi(tickInfo.liquidityDelta)),
+                            liquidityCurrent
+                        );
                     }
                 }
 
