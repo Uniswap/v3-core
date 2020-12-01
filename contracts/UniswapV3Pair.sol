@@ -537,7 +537,6 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 // handle the fee accounting
                 uint256 feePaid = step.amountIn - amountInLessFee;
 
-                // todo: is feePaid ever zero?
                 if (feePaid > 0) {
                     // update global fee tracker
                     state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, state.liquidityCurrent)._x;
