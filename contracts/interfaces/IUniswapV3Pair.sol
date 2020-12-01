@@ -27,7 +27,7 @@ interface IUniswapV3Pair {
 
     function liquidityCurrent() external view returns (uint128);
 
-    function tickBitMap(uint256) external view returns (uint256);
+    function tickBitMap(int16) external view returns (uint256);
 
     function tickCurrent() external view returns (int24);
 
