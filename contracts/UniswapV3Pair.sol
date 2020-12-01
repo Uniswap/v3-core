@@ -313,7 +313,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
                 tickInfo.secondsOutside = _blockTimestamp();
             }
-            // save because of the prior assert
+            // safe because we know liquidityDelta is >0
             tickInfo.liquidityGross = uint128(liquidityDelta);
             tickBitMap.flipTick(tick);
         } else {
@@ -393,30 +393,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
     }
 
-    struct SetPositionState {
-        // balances of token0 and token1
-        uint256 balance0;
-        uint256 balance1;
-        // computed fee growth global
-        FixedPoint128.uq128x128 feeGrowthGlobal0;
-        FixedPoint128.uq128x128 feeGrowthGlobal1;
-        // the total liquidity currently in range
-        uint128 liquidity;
-        // the virtual reserves of the pair
-        uint256 reserve0Virtual;
-        uint256 reserve1Virtual;
-        // updated values of q0 and q1
-        int256 q0;
-        int256 q1;
-        // the amount by which to change the caller's balance
-        int256 amount0;
-        int256 amount1;
-    }
-
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
-    function _setPosition(SetPositionParams memory params) private returns (int256, int256) {
+    function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _update();
 
         Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper, params.feeVote);
@@ -432,44 +412,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        SetPositionState memory state;
-        state.balance0 = IERC20(token0).balanceOf(address(this));
-        state.balance1 = IERC20(token1).balanceOf(address(this));
-        state.liquidity = getLiquidity();
-        (state.reserve0Virtual, state.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
-            params.price,
-            state.liquidity,
-            /* todo: round up or down? */
-            true
-        );
-        (state.q0, state.q1) = (q0, q1);
-        if (state.liquidity > 0) {
-            state.feeGrowthGlobal0 = _computeFeeGrowthGlobal(
-                state.q0,
-                state.balance0,
-                state.reserve0Virtual,
-                state.liquidity
+        uint256 balance0 = IERC20(token0).balanceOf(address(this));
+        uint256 balance1 = IERC20(token1).balanceOf(address(this));
+        uint128 liquidity = getLiquidity();
+
+        // calculate global fee growth
+        FixedPoint128.uq128x128 memory feeGrowthGlobal0;
+        FixedPoint128.uq128x128 memory feeGrowthGlobal1;
+        {
+            (uint256 reserve0Virtual, uint256 reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
+                params.price,
+                liquidity,
+                // TODO needs work, ideally we round down for tick snapshots + calcs, and up for liquidity snapshots
+                false // round down to bias cumulative global fee growth down
             );
-            state.feeGrowthGlobal1 = _computeFeeGrowthGlobal(
-                state.q1,
-                state.balance1,
-                state.reserve1Virtual,
-                state.liquidity
-            );
+
+            // short-circuiting to prevent div by 0
+            if (liquidity > 0) {
+                (feeGrowthGlobal0, feeGrowthGlobal1) = (
+                    _computeFeeGrowthGlobal(q0, balance0, reserve0Virtual, liquidity),
+                    _computeFeeGrowthGlobal(q1, balance1, reserve1Virtual, liquidity)
+                );
+            }
         }
 
         {
-            TickInfo storage tickInfoLower = _updateTick(
-                params.tickLower,
-                params.liquidityDelta,
-                state.feeGrowthGlobal0,
-                state.feeGrowthGlobal1
-            );
-            TickInfo storage tickInfoUpper = _updateTick(
-                params.tickUpper,
-                params.liquidityDelta,
-                state.feeGrowthGlobal0,
-                state.feeGrowthGlobal1
+            (TickInfo storage tickInfoLower, TickInfo storage tickInfoUpper) = (
+                _updateTick(params.tickLower, params.liquidityDelta, feeGrowthGlobal0, feeGrowthGlobal1),
+                _updateTick(params.tickUpper, params.liquidityDelta, feeGrowthGlobal0, feeGrowthGlobal1)
             );
 
             require(
@@ -481,47 +451,48 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 'UniswapV3Pair::_setPosition: liquidity overflow in upper tick'
             );
 
-            (
-                FixedPoint128.uq128x128 memory feeGrowthInside0,
-                FixedPoint128.uq128x128 memory feeGrowthInside1
-            ) = _getFeeGrowthInside(
-                params.tickLower,
-                params.tickUpper,
-                tickInfoLower,
-                tickInfoUpper,
-                state.feeGrowthGlobal0,
-                state.feeGrowthGlobal1
-            );
+            {
+                (
+                    FixedPoint128.uq128x128 memory feeGrowthInside0,
+                    FixedPoint128.uq128x128 memory feeGrowthInside1
+                ) = _getFeeGrowthInside(
+                    params.tickLower,
+                    params.tickUpper,
+                    tickInfoLower,
+                    tickInfoUpper,
+                    feeGrowthGlobal0,
+                    feeGrowthGlobal1
+                );
 
-            // check if this condition has accrued any untracked fees and credit them to the caller
-            // TODO is this right?
-            if (position.liquidity > 0) {
-                if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                    state.amount0 = -FullMath
-                        .mulDiv(
-                        feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                        position
-                            .liquidity,
-                        uint256(1) << 128
-                    )
-                        .toInt256();
+                // check if this condition has accrued any untracked fees and credit them to the caller
+                if (position.liquidity > 0) {
+                    if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
+                        amount0 = -FullMath
+                            .mulDiv(
+                            feeGrowthInside0._x - position.feeGrowthInside0Last._x,
+                            position
+                                .liquidity,
+                            uint256(1) << 128
+                        )
+                            .toInt256();
+                    }
+                    if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
+                        amount1 = -FullMath
+                            .mulDiv(
+                            feeGrowthInside1._x - position.feeGrowthInside1Last._x,
+                            position
+                                .liquidity,
+                            uint256(1) << 128
+                        )
+                            .toInt256();
+                    }
                 }
-                if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
-                    state.amount1 = -FullMath
-                        .mulDiv(
-                        feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                        position
-                            .liquidity,
-                        uint256(1) << 128
-                    )
-                        .toInt256();
-                }
+
+                // update the position
+                position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint128();
+                position.feeGrowthInside0Last = feeGrowthInside0;
+                position.feeGrowthInside1Last = feeGrowthInside1;
             }
-
-            // update the position
-            position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint128();
-            position.feeGrowthInside0Last = feeGrowthInside0;
-            position.feeGrowthInside1Last = feeGrowthInside1;
 
             // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
             tickInfoLower.liquidityDelta[params.feeVote] = tickInfoLower.liquidityDelta[params.feeVote]
@@ -545,7 +516,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tickCurrent < params.tickLower) {
-            state.amount0 = state.amount0.add(
+            amount0 = amount0.add(
                 PriceMath.getAmount0Delta(
                     TickMath.getRatioAtTick(params.tickLower),
                     TickMath.getRatioAtTick(params.tickUpper),
@@ -554,14 +525,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
-            state.amount0 = state.amount0.add(
+            amount0 = amount0.add(
                 PriceMath.getAmount0Delta(
                     priceCurrent,
                     TickMath.getRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 )
             );
-            state.amount1 = state.amount1.add(
+            amount1 = amount1.add(
                 PriceMath.getAmount1Delta(
                     TickMath.getRatioAtTick(params.tickLower),
                     priceCurrent,
@@ -570,16 +541,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             liquidityCurrent[params.feeVote] = liquidityCurrent[params.feeVote].addi(params.liquidityDelta).toUint128();
-            state.liquidity = state.liquidity.addi(params.liquidityDelta).toUint128();
-
-            if (state.liquidity > 0) {
-                state.q0 = _computeQNext(state.q0, state.balance0, state.liquidity, params.liquidityDelta);
-                state.q1 = _computeQNext(state.q1, state.balance1, state.liquidity, params.liquidityDelta);
-            }
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            state.amount1 = state.amount1.add(
+            amount1 = amount1.add(
                 PriceMath.getAmount1Delta(
                     TickMath.getRatioAtTick(params.tickLower),
                     TickMath.getRatioAtTick(params.tickUpper),
@@ -588,20 +553,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        q0 = state.q0.sub(state.amount0);
-        q1 = state.q1.sub(state.amount1);
+        if (amount0 > 0) {
+            TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
+        } else if (amount0 < 0) {
+            TransferHelper.safeTransfer(token0, msg.sender, uint256(-amount0));
+        }
+        if (amount1 > 0) {
+            TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
+        } else if (amount1 < 0) {
+            TransferHelper.safeTransfer(token1, msg.sender, uint256(-amount1));
+        }
 
-        if (state.amount0 > 0) {
-            TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(state.amount0));
-        } else if (state.amount0 < 0) {
-            TransferHelper.safeTransfer(token0, msg.sender, uint256(-state.amount0));
+        // short-circuiting to prevent div by 0
+        if (liquidity > 0) {
+            q0 = _computeQNext(q0, balance0, IERC20(token0).balanceOf(address(this)), liquidity, getLiquidity());
+            q1 = _computeQNext(q1, balance1, IERC20(token1).balanceOf(address(this)), liquidity, getLiquidity());
         }
-        if (state.amount1 > 0) {
-            TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(state.amount1));
-        } else if (state.amount1 < 0) {
-            TransferHelper.safeTransfer(token1, msg.sender, uint256(-state.amount1));
-        }
-        return (state.amount0, state.amount1);
     }
 
     struct SwapParams {
@@ -663,19 +630,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 liquidity
     ) private pure returns (FixedPoint128.uq128x128 memory) {
         // todo: handle underflow on the subtraction better
-        return FixedPoint128.fraction(balance.toInt256().sub(q).sub(reserveVirtual.toInt256()).toUint256(), liquidity);
+        int256 intermediate = balance.toInt256().sub(q).sub(reserveVirtual.toInt256());
+        return FixedPoint128.fraction(intermediate < 0 ? 0 : intermediate.toUint256(), liquidity);
     }
 
     function _computeQNext(
-        int256 q,
-        uint256 balance,
-        uint128 liquidityStart,
-        int128 liquidityDelta
+        int256 qBefore,
+        uint256 balanceBefore,
+        uint256 balanceAfter,
+        uint128 liquidityBefore,
+        uint128 liquidityAfter
     ) private pure returns (int256) {
-        // todo: overflow safe mulDiv
-        // liquidityDelta can be as great as 2**112
-        // balance can be full 256 bits
-        return q.add(q.sub(balance.toInt256()).mul(liquidityDelta).div(uint256(liquidityStart).toInt256()));
+        return balanceAfter.toInt256()
+            .sub(balanceBefore.toInt256().sub(qBefore).mul(liquidityAfter).div(liquidityBefore));
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
@@ -844,8 +811,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         }
                     }
 
-                    state.q0 = _computeQNext(state.q0, state.balance0, step.liquidity, liquidityDeltaNet);
-                    state.q1 = _computeQNext(state.q1, state.balance1, step.liquidity, liquidityDeltaNet);
+                    // TODO clean this up
+                    if (params.zeroForOne) {
+                        state.q0 = _computeQNext(state.q0, state.balance0.sub(step.amountIn), state.balance0, step.liquidity, uint128(step.liquidity.addi(liquidityDeltaNet)));
+                        state.q1 = _computeQNext(state.q1, state.balance1.add(step.amountOut), state.balance1, step.liquidity, uint128(step.liquidity.addi(liquidityDeltaNet)));
+                    } else {
+                        state.q0 = _computeQNext(state.q0, state.balance0.add(step.amountOut), state.balance0, step.liquidity, uint128(step.liquidity.addi(liquidityDeltaNet)));
+                        state.q1 = _computeQNext(state.q1, state.balance1.sub(step.amountIn), state.balance1, step.liquidity, uint128(step.liquidity.addi(liquidityDeltaNet)));
+                    }
+
                     state.crossedInitializedTick = true;
                 }
 
