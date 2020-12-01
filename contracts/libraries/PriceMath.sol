@@ -15,7 +15,7 @@ library PriceMath {
     using SafeMath for uint256;
     using SafeCast for uint256;
 
-    uint16 public constant LP_FEE_BASE = 1e4; // i.e. 10k bips, 100%
+    uint24 public constant LP_FEE_BASE = 1e6; // i.e. 10k bips, 100%
 
     function mulDivRoundingUp(
         uint256 x,
@@ -65,7 +65,7 @@ library PriceMath {
         uint256 reserve1,
         uint128 liquidity,
         FixedPoint128.uq128x128 memory priceTarget, // always reserve1/reserve0
-        uint16 lpFee,
+        uint24 fee,
         bool zeroForOne
     ) internal pure returns (uint256 amountIn, uint256 amountOut) {
         // estimate value of reserves at target price, rounding up
@@ -76,7 +76,7 @@ library PriceMath {
             : (reserve1Target - reserve1, reserve0 - reserve0Target);
 
         // scale amountIn by the current fee (rounding up)
-        amountIn = mulDivRoundingUp(amountIn, LP_FEE_BASE, LP_FEE_BASE - lpFee);
+        amountIn = mulDivRoundingUp(amountIn, LP_FEE_BASE, LP_FEE_BASE - fee);
     }
 
     function getAmount0Delta(

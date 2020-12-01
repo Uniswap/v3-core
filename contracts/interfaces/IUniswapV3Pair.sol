@@ -3,14 +3,9 @@ pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
 interface IUniswapV3Pair {
-    event Initialized(int16 tick);
+    event Initialized(int24 tick);
 
-    // event PositionSet(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta);
-
-    // constants
-    function NUM_FEE_OPTIONS() external pure returns (uint8);
-
-    function FEE_OPTIONS(uint8) external pure returns (uint16);
+    // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
     // immutables
     function factory() external pure returns (address);
@@ -19,18 +14,22 @@ interface IUniswapV3Pair {
 
     function token1() external pure returns (address);
 
+    function fee() external pure returns (uint24);
+
     // variables/state
     function feeTo() external view returns (address);
 
-    function blockTimestampLast() external view returns (uint64);
+    function blockTimestampLast() external view returns (uint32);
 
-    function feeFloor() external view returns (uint16);
+    function liquidityCumulativeLast() external view returns (uint160);
 
-    function liquidityCurrent(uint256) external view returns (uint128);
+    function tickCumulativeLast() external view returns (int56);
 
-    function tickBitMap(uint256) external view returns (uint256);
+    function liquidityCurrent() external view returns (uint128);
 
-    function tickCurrent() external view returns (int16);
+    function tickBitMap(int16) external view returns (uint256);
+
+    function tickCurrent() external view returns (int24);
 
     function priceCurrent() external view returns (uint256);
 
@@ -41,17 +40,21 @@ interface IUniswapV3Pair {
     // derived state
     function isInitialized() external view returns (bool);
 
-    function getLiquidity() external view returns (uint128);
-
-    function getFee() external view returns (uint16);
+    function getCumulatives()
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            uint160 liquidityCumulative,
+            int56 tickCumulative
+        );
 
     // initialize the pair
-    function initialize(int16 tick) external;
+    function initialize(int24 tick) external;
 
     function setPosition(
-        int16 tickLower,
-        int16 tickUpper,
-        uint8 feeVote,
+        int24 tickLower,
+        int24 tickUpper,
         int128 liquidityDelta
     ) external returns (int256 amount0, int256 amount1);
 
@@ -70,7 +73,7 @@ interface IUniswapV3Pair {
 
     function setFeeTo(address) external;
 
-    // allows the factory feeToSetter address to recover any tokens other than token0 and token1 held by the contract
+    // allows the factory owner address to recover any tokens other than token0 and token1 held by the contract
     function recover(
         address token,
         address to,

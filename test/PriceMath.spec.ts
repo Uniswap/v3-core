@@ -122,7 +122,7 @@ describe('PriceMath', () => {
           liquidity: expandTo18Decimals(10000),
           priceStarting: encodePrice(expandTo18Decimals(100000), expandTo18Decimals(1000)),
           priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
-          lpFee: 60,
+          lpFee: 6000,
           zeroForOne: true,
           summary: '1:100 to 1:50 at 60bps with small reserves',
         },
@@ -130,7 +130,7 @@ describe('PriceMath', () => {
           liquidity: expandTo18Decimals(10),
           priceStarting: encodePrice(expandTo18Decimals(100), expandTo18Decimals(1)),
           priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
-          lpFee: 60,
+          lpFee: 6000,
           zeroForOne: true,
           summary: '1:100 to 1:50 at 60bps',
         },
@@ -138,7 +138,7 @@ describe('PriceMath', () => {
           liquidity: expandTo18Decimals(10),
           priceStarting: encodePrice(expandTo18Decimals(100), expandTo18Decimals(1)),
           priceTarget: encodePrice(expandTo18Decimals(75), expandTo18Decimals(1)),
-          lpFee: 45,
+          lpFee: 4500,
           zeroForOne: true,
           summary: '1:100 to 1:75 at 45bps',
         },
@@ -146,7 +146,7 @@ describe('PriceMath', () => {
           liquidity: expandTo18Decimals(10),
           priceStarting: encodePrice(expandTo18Decimals(100), expandTo18Decimals(1)),
           priceTarget: encodePrice(expandTo18Decimals(50), expandTo18Decimals(1)),
-          lpFee: 30,
+          lpFee: 3000,
           zeroForOne: true,
           summary: '1:100 to 1:50 at 30bps',
         },
@@ -154,7 +154,7 @@ describe('PriceMath', () => {
           liquidity: expandTo18Decimals(7),
           priceStarting: encodePrice(expandTo18Decimals(49), expandTo18Decimals(1)),
           priceTarget: encodePrice(expandTo18Decimals(100), expandTo18Decimals(1)),
-          lpFee: 200,
+          lpFee: 20000,
           zeroForOne: false,
           summary: '1:49 to 1:100 at 200bps',
         },
@@ -162,7 +162,7 @@ describe('PriceMath', () => {
           liquidity: expandTo18Decimals(7),
           priceStarting: encodePrice(expandTo18Decimals(49), expandTo18Decimals(1)),
           priceTarget: encodePrice(expandTo18Decimals(75), expandTo18Decimals(1)),
-          lpFee: 60,
+          lpFee: 6000,
           zeroForOne: false,
           summary: '1:49 to 1:75 at 60bps',
         },
@@ -187,7 +187,7 @@ describe('PriceMath', () => {
               zeroForOne
             ))
 
-            amountInLessFee = amountIn.mul(BigNumber.from(10000).sub(lpFee)).div(10000)
+            amountInLessFee = amountIn.mul(BigNumber.from(1000000).sub(lpFee)).div(1000000)
             amountOut = await (zeroForOne
               ? priceMath.getAmountOut(reserve0, reserve1, amountInLessFee)
               : priceMath.getAmountOut(reserve1, reserve0, amountInLessFee))

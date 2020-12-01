@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "3.1.0",
-    "@uniswap/lib": "2.2.0-alpha"
+    "@uniswap/lib": "4.0.0-alpha"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",

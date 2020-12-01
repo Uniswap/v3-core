@@ -40,22 +40,6 @@ describe('TickBitMap', () => {
       expect(await tickBitMap.isInitialized(257)).to.eq(true)
       expect(await tickBitMap.isInitialized(1)).to.eq(false)
     })
-    it('works for MIN_TICK', async () => {
-      expect(await tickBitMap.isInitialized(MIN_TICK)).to.eq(false)
-    })
-    it('works for MAX_TICK', async () => {
-      expect(await tickBitMap.isInitialized(MAX_TICK)).to.eq(false)
-    })
-    it('throws on less than MIN_TICK', async () => {
-      await expect(tickBitMap.isInitialized(MIN_TICK - 1)).to.be.revertedWith(
-        'TickBitMap::position: tick must be greater than or equal to MIN_TICK'
-      )
-    })
-    it('throws on greater than MAX_TICK', async () => {
-      await expect(tickBitMap.isInitialized(MAX_TICK + 1)).to.be.revertedWith(
-        'TickBitMap::position: tick must be less than or equal to MAX_TICK'
-      )
-    })
     it('gas if tick is not initialized', async () => {
       await snapshotGasCost(tickBitMap.getGasCostOfIsInitialized(1))
     })
@@ -94,25 +78,6 @@ describe('TickBitMap', () => {
       expect(await tickBitMap.isInitialized(-229)).to.eq(false)
     })
 
-    it('works for MIN_TICK', async () => {
-      await tickBitMap.flipTick(MIN_TICK)
-      expect(await tickBitMap.isInitialized(MIN_TICK)).to.eq(true)
-    })
-    it('works for MAX_TICK', async () => {
-      await tickBitMap.flipTick(MAX_TICK)
-      expect(await tickBitMap.isInitialized(MAX_TICK)).to.eq(true)
-    })
-    it('throws on less than MIN_TICK', async () => {
-      await expect(tickBitMap.flipTick(MIN_TICK - 1)).to.be.revertedWith(
-        'TickBitMap::position: tick must be greater than or equal to MIN_TICK'
-      )
-    })
-    it('throws on greater than MAX_TICK', async () => {
-      await expect(tickBitMap.flipTick(MAX_TICK + 1)).to.be.revertedWith(
-        'TickBitMap::position: tick must be less than or equal to MAX_TICK'
-      )
-    })
-
     it('gas cost of flipping first tick in word to initialized', async () => {
       await snapshotGasCost(await tickBitMap.getGasCostOfFlipTick(1))
     })
@@ -128,8 +93,8 @@ describe('TickBitMap', () => {
 
   describe('#nextInitializedTickWithinOneWord', () => {
     beforeEach('set up some ticks', async () => {
-      // 73 is the first positive tick at the start of a word
-      await initTicks([70, 78, 84, 139, 240])
+      // word boundaries are at multiples of 256
+      await initTicks([70, 78, 84, 139, 240, 535])
     })
 
     describe('lte = false', async () => {
@@ -144,8 +109,8 @@ describe('TickBitMap', () => {
         expect(initialized).to.eq(true)
       })
       it('returns the next words initialized tick if on the right boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(328, false)
-        expect(next).to.eq(584)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(255, false)
+        expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('returns the next initialized tick from the next word', async () => {
@@ -155,29 +120,29 @@ describe('TickBitMap', () => {
         expect(initialized).to.eq(true)
       })
       it('does not exceed boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(70, false)
-        expect(next).to.eq(72)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(508, false)
+        expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('skips entire word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(329, false)
-        expect(next).to.eq(584)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(255, false)
+        expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('skips half word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(456, false)
-        expect(next).to.eq(584)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(383, false)
+        expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
 
       it('gas cost on boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(78, false))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(255, false))
       })
       it('gas cost just below boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(77, false))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(254, false))
       })
       it('gas cost for entire word', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(329, false))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(768, false))
       })
     })
 
@@ -195,15 +160,15 @@ describe('TickBitMap', () => {
         expect(initialized).to.eq(true)
       })
       it('will not exceed the word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(73, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(258, true)
 
-        expect(next).to.eq(73)
+        expect(next).to.eq(256)
         expect(initialized).to.eq(false)
       })
       it('at the word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(73, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(256, true)
 
-        expect(next).to.eq(73)
+        expect(next).to.eq(256)
         expect(initialized).to.eq(false)
       })
       it('word boundary less 1 (next initialized tick in next word)', async () => {
@@ -213,21 +178,21 @@ describe('TickBitMap', () => {
         expect(initialized).to.eq(true)
       })
       it('word boundary', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(69, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(-1, true)
 
-        expect(next).to.eq(-183)
+        expect(next).to.eq(-256)
         expect(initialized).to.eq(false)
       })
       it('entire empty word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(584, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(1023, true)
 
-        expect(next).to.eq(329)
+        expect(next).to.eq(768)
         expect(initialized).to.eq(false)
       })
       it('halfway through empty word', async () => {
-        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(456, true)
+        const {next, initialized} = await tickBitMap.nextInitializedTickWithinOneWord(900, true)
 
-        expect(next).to.eq(329)
+        expect(next).to.eq(768)
         expect(initialized).to.eq(false)
       })
       it('boundary is initialized', async () => {
@@ -239,93 +204,89 @@ describe('TickBitMap', () => {
       })
 
       it('gas cost on boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(78, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(256, true))
       })
       it('gas cost just below boundary', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(77, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(255, true))
       })
       it('gas cost for entire word', async () => {
-        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(584, true))
+        await snapshotGasCost(await tickBitMap.getGasCostOfNextInitializedTickWithinOneWord(1024, true))
       })
     })
   })
 
   describe('#nextInitializedTick', () => {
     it('fails if not initialized', async () => {
-      await expect(tickBitMap.nextInitializedTick(0, true)).to.be.revertedWith(
+      await expect(tickBitMap.nextInitializedTick(0, true, -99999)).to.be.revertedWith(
         'TickMath::nextInitializedTick: no initialized next tick'
       )
-      await expect(tickBitMap.nextInitializedTick(0, false)).to.be.revertedWith(
+      await expect(tickBitMap.nextInitializedTick(0, false, 99999)).to.be.revertedWith(
         'TickMath::nextInitializedTick: no initialized next tick'
+      )
+    })
+    it('fails if minOrMax not in right direction', async () => {
+      await expect(tickBitMap.nextInitializedTick(0, true, 1)).to.be.revertedWith(
+        'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
+      )
+      await expect(tickBitMap.nextInitializedTick(0, false, 0)).to.be.revertedWith(
+        'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
       )
     })
     it('succeeds if initialized only to the left', async () => {
       await initTicks([MIN_TICK])
-      expect(await tickBitMap.nextInitializedTick(0, true)).to.eq(MIN_TICK)
-      expect(await tickBitMap.nextInitializedTick(MIN_TICK + 1, true)).to.eq(MIN_TICK)
-      expect(await tickBitMap.nextInitializedTick(MIN_TICK, true)).to.eq(MIN_TICK)
+      expect(await tickBitMap.nextInitializedTick(0, true, MIN_TICK)).to.eq(MIN_TICK)
+      expect(await tickBitMap.nextInitializedTick(MIN_TICK + 1, true, MIN_TICK)).to.eq(MIN_TICK)
+      expect(await tickBitMap.nextInitializedTick(MIN_TICK, true, MIN_TICK)).to.eq(MIN_TICK)
     })
     it('succeeds if initialized only to the right', async () => {
       await initTicks([MAX_TICK])
-      expect(await tickBitMap.nextInitializedTick(0, false)).to.eq(MAX_TICK)
-      expect(await tickBitMap.nextInitializedTick(MAX_TICK - 1, false)).to.eq(MAX_TICK)
-    })
-    it('reverts if called with MAX_TICK', async () => {
-      await initTicks([MAX_TICK])
-      await expect(tickBitMap.nextInitializedTick(MAX_TICK, false)).to.be.revertedWith(
-        'TickMath::nextInitializedTick: no initialized next tick'
-      )
-    })
-    it('reverts if called with MIN_TICK - 1', async () => {
-      await initTicks([MIN_TICK])
-      await expect(tickBitMap.nextInitializedTick(MIN_TICK - 1, true)).to.be.revertedWith(
-        'TickMath::nextInitializedTick: no initialized next tick'
-      )
+      expect(await tickBitMap.nextInitializedTick(0, false, MAX_TICK)).to.eq(MAX_TICK)
+      expect(await tickBitMap.nextInitializedTick(MAX_TICK - 1, false, MAX_TICK)).to.eq(MAX_TICK)
     })
 
     describe('initialized', () => {
       beforeEach(() => initTicks([MIN_TICK, -1259, 73, 529, 2350, MAX_TICK]))
       describe('lte = false', () => {
         it('one iteration', async () => {
-          expect(await tickBitMap.nextInitializedTick(480, false)).to.eq(529)
+          expect(await tickBitMap.nextInitializedTick(480, false, MAX_TICK)).to.eq(529)
         })
         it('starting from initialized tick', async () => {
-          expect(await tickBitMap.nextInitializedTick(529, false)).to.eq(2350)
-          expect(await tickBitMap.nextInitializedTick(2350, false)).to.eq(MAX_TICK)
+          expect(await tickBitMap.nextInitializedTick(529, false, MAX_TICK)).to.eq(2350)
+          expect(await tickBitMap.nextInitializedTick(2350, false, MAX_TICK)).to.eq(MAX_TICK)
         })
         it('starting from just before initialized tick', async () => {
-          expect(await tickBitMap.nextInitializedTick(72, false)).to.eq(73)
-          expect(await tickBitMap.nextInitializedTick(528, false)).to.eq(529)
+          expect(await tickBitMap.nextInitializedTick(72, false, MAX_TICK)).to.eq(73)
+          expect(await tickBitMap.nextInitializedTick(528, false, MAX_TICK)).to.eq(529)
         })
         it('multiple iterations', async () => {
-          expect(await tickBitMap.nextInitializedTick(120, false)).to.eq(529)
+          expect(await tickBitMap.nextInitializedTick(120, false, MAX_TICK)).to.eq(529)
         })
         it('gas cost single iteration', async () => {
-          await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(400, false))
+          await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(400, false, MAX_TICK))
         })
         it('gas cost many iterations', async () => {
-          await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(2350, false))
+          await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(2350, false, MAX_TICK))
         })
       })
       describe('lte = true', () => {
         it('one iteration', async () => {
-          expect(await tickBitMap.nextInitializedTick(-1230, true)).to.eq(-1259)
+          expect(await tickBitMap.nextInitializedTick(-1230, true, MIN_TICK)).to.eq(-1259)
         })
         it('starting from initialized tick', async () => {
-          expect(await tickBitMap.nextInitializedTick(529, true)).to.eq(529)
+          expect(await tickBitMap.nextInitializedTick(529, true, MIN_TICK)).to.eq(529)
         })
         it('getting to MIN_TICK', async () => {
-          expect(await tickBitMap.nextInitializedTick(-1260, true)).to.eq(MIN_TICK)
+          expect(await tickBitMap.nextInitializedTick(-1260, true, MIN_TICK)).to.eq(MIN_TICK)
         })
         it('multiple iterations', async () => {
-          expect(await tickBitMap.nextInitializedTick(528, true)).to.eq(73)
-          expect(await tickBitMap.nextInitializedTick(2349, true)).to.eq(529)
+          expect(await tickBitMap.nextInitializedTick(528, true, MIN_TICK)).to.eq(73)
+          expect(await tickBitMap.nextInitializedTick(2349, true, MIN_TICK)).to.eq(529)
         })
         it('gas cost single iteration', async () => {
-          await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(124, true))
+          await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(124, true, MIN_TICK))
         })
         it('gas cost many iterations', async () => {
-          await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(2349, true))
+          await snapshotGasCost(tickBitMap.getGasCostOfNextInitializedTick(2349, true, MIN_TICK))
         })
       })
     })
