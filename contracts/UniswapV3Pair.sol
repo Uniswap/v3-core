@@ -335,10 +335,13 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 // check if this condition has accrued any untracked fees and credit them to the caller
                 if (position.liquidity > 0) {
                     if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                        amount0 = -FullMath.mulDiv(
+                        amount0 = -FullMath
+                            .mulDiv(
                             feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                            position.liquidity,
-                            FixedPoint128.Q128
+                            position
+                                .liquidity,
+                            FixedPoint128
+                                .Q128
                         )
                             .toInt256();
                     }
@@ -346,8 +349,10 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                         amount1 = -FullMath
                             .mulDiv(
                             feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                            position.liquidity,
-                            FixedPoint128.Q128
+                            position
+                                .liquidity,
+                            FixedPoint128
+                                .Q128
                         )
                             .toInt256();
                     }
