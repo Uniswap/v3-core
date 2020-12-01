@@ -12,7 +12,7 @@ library FixedPoint128 {
     }
 
     uint8 private constant RESOLUTION = 128;
-    uint256 private constant Q128 = 0x100000000000000000000000000000000;
+    uint256 internal constant Q128 = 0x100000000000000000000000000000000;
 
     // returns a uq128x128 which represents the ratio of the numerator to the denominator
     function fraction(uint256 numerator, uint256 denominator) internal pure returns (uq128x128 memory) {
