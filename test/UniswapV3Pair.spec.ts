@@ -1026,8 +1026,12 @@ describe('UniswapV3Pair', () => {
       expect(token0FeesNext).to.eq('500000000000000')
       expect(token1FeesNext).to.eq(0)
 
-      // measure how much the new protocol liquidity is worth
+      // the fee to fees do not account for uncollected fees yet
       expect(await pair.feeToFees0()).to.be.eq('99999999999999')
+      expect(await pair.feeToFees1()).to.be.eq(0)
+
+      await pair.setPosition(MIN_TICK, MAX_TICK, 0)
+      expect(await pair.feeToFees0()).to.be.eq('199999999999998')
       expect(await pair.feeToFees1()).to.be.eq(0)
     })
   })
