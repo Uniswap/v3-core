@@ -60,7 +60,6 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
 
     // single storage slot (104 bits empty)
     uint128 public override liquidityCurrent; // all in-range liquidity
-    int24 public override tickCurrent; // first tick at or below priceCurrent
     // single storage slot
 
     FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
@@ -113,7 +112,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    function _getFeeGrowthBelow(int24 tick, TickInfo storage tickInfo)
+    function _getFeeGrowthBelow(int24 tick, int24 tickCurrent, TickInfo storage tickInfo)
         private
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1)
@@ -128,7 +127,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         }
     }
 
-    function _getFeeGrowthAbove(int24 tick, TickInfo storage tickInfo)
+    function _getFeeGrowthAbove(int24 tick, int24 tickCurrent, TickInfo storage tickInfo)
         private
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1)
@@ -146,6 +145,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     function _getFeeGrowthInside(
         int24 tickLower,
         int24 tickUpper,
+        int24 tickCurrent,
         TickInfo storage tickInfoLower,
         TickInfo storage tickInfoUpper
     )
@@ -156,11 +156,11 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         (
             FixedPoint128.uq128x128 memory feeGrowthBelow0,
             FixedPoint128.uq128x128 memory feeGrowthBelow1
-        ) = _getFeeGrowthBelow(tickLower, tickInfoLower);
+        ) = _getFeeGrowthBelow(tickLower, tickCurrent, tickInfoLower);
         (
             FixedPoint128.uq128x128 memory feeGrowthAbove0,
             FixedPoint128.uq128x128 memory feeGrowthAbove1
-        ) = _getFeeGrowthAbove(tickUpper, tickInfoUpper);
+        ) = _getFeeGrowthAbove(tickUpper, tickCurrent, tickInfoUpper);
         feeGrowthInside0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - feeGrowthBelow0._x - feeGrowthAbove0._x);
         feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
@@ -207,12 +207,13 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             int56 tickCumulative
         )
     {
+        require(isInitialized(), 'UniswapV3Pair::getCumulatives: pair not initialized');
         blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
             liquidityCumulative = liquidityCumulativeLast + uint160(timeElapsed) * liquidityCurrent;
-            tickCumulative = tickCumulativeLast + int56(timeElapsed) * tickCurrent;
+            tickCumulative = tickCumulativeLast + int56(timeElapsed) * getTickAtRatio(priceCurrent._x);
         } else {
             return (blockTimestamp, liquidityCumulativeLast, tickCumulativeLast);
         }
@@ -223,7 +224,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         feeTo = feeTo_;
     }
 
-    function _updateTick(int24 tick, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
+    function _updateTick(int24 tick, int24 tickCurrent, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
         tickInfo = tickInfos[tick];
 
         if (tickInfo.liquidityGross == 0) {
@@ -253,11 +254,10 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
 
-        // initialize current price and tick
+        // initialize current price
         priceCurrent = FixedPoint128.uq128x128(price);
-        tickCurrent = getTickAtRatio(price);
 
-        emit Initialized(price, tickCurrent);
+        emit Initialized(price);
 
         // set permanent 1 wei position
         _setPosition(
@@ -299,6 +299,8 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _updateAccumulators();
 
+        int24 tickCurrent = getTickAtRatio(priceCurrent._x);
+
         {
             Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
 
@@ -314,8 +316,8 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 );
             }
 
-            TickInfo storage tickInfoLower = _updateTick(params.tickLower, params.liquidityDelta);
-            TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, params.liquidityDelta);
+            TickInfo storage tickInfoLower = _updateTick(params.tickLower, tickCurrent, params.liquidityDelta);
+            TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, tickCurrent, params.liquidityDelta);
 
             require(
                 tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
@@ -330,7 +332,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 (
                     FixedPoint128.uq128x128 memory feeGrowthInside0,
                     FixedPoint128.uq128x128 memory feeGrowthInside1
-                ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickInfoLower, tickInfoUpper);
+                ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickCurrent, tickInfoLower, tickInfoUpper);
 
                 // check if this condition has accrued any untracked fees and credit them to the caller
                 if (position.liquidity > 0) {
@@ -471,7 +473,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
         SwapState memory state = SwapState({
             amountInRemaining: params.amountIn,
-            tick: tickCurrent,
+            tick: getTickAtRatio(priceCurrent._x),
             price: priceCurrent,
             feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
@@ -609,10 +611,10 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             }
         }
 
-        if (state.tick != tickCurrent) {
+        // TODO could probably be optimized
+        if (state.tick != getTickAtRatio(priceCurrent._x)) {
             _updateAccumulators();
             liquidityCurrent = state.liquidityCurrent;
-            tickCurrent = state.tick;
         }
 
         priceCurrent = state.price;
