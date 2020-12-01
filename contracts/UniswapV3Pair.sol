@@ -234,7 +234,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
                 tickInfo.secondsOutside = _blockTimestamp();
             }
-            // save because of the prior assert
+            // safe because we know liquidityDelta is > 0
             tickInfo.liquidityGross = uint128(liquidityDelta);
             tickBitMap.flipTick(tick);
         } else {
@@ -304,7 +304,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
 
             if (params.liquidityDelta == 0) {
                 require(
-                    position.liquidity != 0,
+                    position.liquidity > 0,
                     'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
                 );
             } else if (params.liquidityDelta < 0) {
@@ -333,7 +333,6 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickInfoLower, tickInfoUpper);
 
                 // check if this condition has accrued any untracked fees and credit them to the caller
-                // TODO is this right?
                 if (position.liquidity > 0) {
                     if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
                         amount0 = -FullMath
@@ -639,6 +638,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 ? IUniswapV3Callee(params.to).swap0For1Callback(msg.sender, amountOut, params.data)
                 : IUniswapV3Callee(params.to).swap1For0Callback(msg.sender, amountOut, params.data);
         }
+        // to *only* support callback style payment, remove the following transferFrom call.
         TransferHelper.safeTransferFrom(
             params.zeroForOne ? token0 : token1,
             msg.sender,
