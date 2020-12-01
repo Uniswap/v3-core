@@ -112,7 +112,11 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    function _getFeeGrowthBelow(int24 tick, int24 tickCurrent, TickInfo storage tickInfo)
+    function _getFeeGrowthBelow(
+        int24 tick,
+        int24 tickCurrent,
+        TickInfo storage tickInfo
+    )
         private
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1)
@@ -127,7 +131,11 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         }
     }
 
-    function _getFeeGrowthAbove(int24 tick, int24 tickCurrent, TickInfo storage tickInfo)
+    function _getFeeGrowthAbove(
+        int24 tick,
+        int24 tickCurrent,
+        TickInfo storage tickInfo
+    )
         private
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1)
@@ -224,7 +232,11 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         feeTo = feeTo_;
     }
 
-    function _updateTick(int24 tick, int24 tickCurrent, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
+    function _updateTick(
+        int24 tick,
+        int24 tickCurrent,
+        int128 liquidityDelta
+    ) private returns (TickInfo storage tickInfo) {
         tickInfo = tickInfos[tick];
 
         if (tickInfo.liquidityGross == 0) {
@@ -337,10 +349,13 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 // check if this condition has accrued any untracked fees and credit them to the caller
                 if (position.liquidity > 0) {
                     if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                        amount0 = -FullMath.mulDiv(
+                        amount0 = -FullMath
+                            .mulDiv(
                             feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                            position.liquidity,
-                            FixedPoint128.Q128
+                            position
+                                .liquidity,
+                            FixedPoint128
+                                .Q128
                         )
                             .toInt256();
                     }
@@ -348,8 +363,10 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                         amount1 = -FullMath
                             .mulDiv(
                             feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                            position.liquidity,
-                            FixedPoint128.Q128
+                            position
+                                .liquidity,
+                            FixedPoint128
+                                .Q128
                         )
                             .toInt256();
                     }
