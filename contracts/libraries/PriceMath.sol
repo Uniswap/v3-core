@@ -61,19 +61,27 @@ library PriceMath {
     }
 
     function getInputToRatio(
-        uint256 reserve0,
-        uint256 reserve1,
+        uint256 reserve0, // a hack until we get the proper formula for amountOut
+        uint256 reserve1, // a hack until we get the proper formula for amountOut
+        uint128 priceRoot, // always reserve1/reserve0 (really a uq64x64)
+        uint128 priceTargetRoot, // always reserve1/reserve0 (really a uq64x64)
         uint128 liquidity,
-        FixedPoint128.uq128x128 memory priceTarget, // always reserve1/reserve0
         uint24 fee,
         bool zeroForOne
     ) internal pure returns (uint256 amountIn, uint256 amountOut) {
-        // estimate value of reserves at target price, rounding up
-        (uint256 reserve0Target, uint256 reserve1Target) = getVirtualReservesAtPrice(priceTarget, liquidity, true);
-
-        (amountIn, amountOut) = zeroForOne
-            ? (reserve0Target - reserve0, reserve1 - reserve1Target)
-            : (reserve1Target - reserve1, reserve0 - reserve0Target);
+        if (zeroForOne) {
+            // calculate liquidity * (sqrt(price) - sqrt(priceTarget)) / (sqrt(price) * sqrt(priceTarget)), rounding up
+            amountIn = mulDivRoundingUp(
+                uint256(liquidity) * uint256(1) << 64,
+                priceRoot - priceTargetRoot,
+                uint256(priceRoot) * priceTargetRoot
+            );
+            amountOut = getAmountOut(reserve0, reserve1, amountIn);
+        } else {
+            // calculate liquidity * (sqrt(priceTarget) - sqrt(price)), rounding up
+            amountIn = mulDivRoundingUp(liquidity, priceTargetRoot - priceRoot, uint256(1) << 64);
+            amountOut = getAmountOut(reserve1, reserve0, amountIn);
+        }
 
         // scale amountIn by the current fee (rounding up)
         amountIn = mulDivRoundingUp(amountIn, LP_FEE_BASE, LP_FEE_BASE - fee);

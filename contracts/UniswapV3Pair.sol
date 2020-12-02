@@ -520,8 +520,9 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 (uint256 amountInMax, uint256 amountOutMax) = PriceMath.getInputToRatio(
                     step.reserve0Virtual,
                     step.reserve1Virtual,
+                    uint128(Babylonian.sqrt(state.price._x)),
+                    uint128(Babylonian.sqrt(step.priceNext._x)),
                     state.liquidityCurrent,
-                    step.priceNext,
                     fee,
                     params.zeroForOne
                 );
