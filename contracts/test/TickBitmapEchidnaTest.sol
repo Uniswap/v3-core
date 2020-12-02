@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.6.12;
 
-import '../libraries/TickBitMap.sol';
+import '../libraries/TickBitmap.sol';
 
-contract TickBitMapEchidnaTest {
-    using TickBitMap for mapping(int16 => uint256);
+contract TickBitmapEchidnaTest {
+    using TickBitmap for mapping(int16 => uint256);
 
     mapping(int16 => uint256) public bitmap;
 

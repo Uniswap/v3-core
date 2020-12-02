@@ -1,31 +1,31 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`TickBitMap #flipTick gas cost of flipping a tick that results in deleting a word 1`] = `13794`;
+exports[`TickBitmap #flipTick gas cost of flipping a tick that results in deleting a word 1`] = `13794`;
 
-exports[`TickBitMap #flipTick gas cost of flipping first tick in word to initialized 1`] = `42600`;
+exports[`TickBitmap #flipTick gas cost of flipping first tick in word to initialized 1`] = `42600`;
 
-exports[`TickBitMap #flipTick gas cost of flipping second tick in word to initialized 1`] = `27600`;
+exports[`TickBitmap #flipTick gas cost of flipping second tick in word to initialized 1`] = `27600`;
 
-exports[`TickBitMap #isInitialized gas if tick is initialized 1`] = `1067`;
+exports[`TickBitmap #isInitialized gas if tick is initialized 1`] = `1067`;
 
-exports[`TickBitMap #isInitialized gas if tick is not initialized 1`] = `1067`;
+exports[`TickBitmap #isInitialized gas if tick is not initialized 1`] = `1067`;
 
-exports[`TickBitMap #nextInitializedTick initialized lte = false gas cost many iterations 1`] = `26220`;
+exports[`TickBitmap #nextInitializedTick initialized lte = false gas cost many iterations 1`] = `26220`;
 
-exports[`TickBitMap #nextInitializedTick initialized lte = false gas cost single iteration 1`] = `3206`;
+exports[`TickBitmap #nextInitializedTick initialized lte = false gas cost single iteration 1`] = `3206`;
 
-exports[`TickBitMap #nextInitializedTick initialized lte = true gas cost many iterations 1`] = `11042`;
+exports[`TickBitmap #nextInitializedTick initialized lte = true gas cost many iterations 1`] = `11042`;
 
-exports[`TickBitMap #nextInitializedTick initialized lte = true gas cost single iteration 1`] = `1951`;
+exports[`TickBitmap #nextInitializedTick initialized lte = true gas cost single iteration 1`] = `1951`;
 
-exports[`TickBitMap #nextInitializedTickWithinOneWord lte = false gas cost for entire word 1`] = `1234`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost for entire word 1`] = `1234`;
 
-exports[`TickBitMap #nextInitializedTickWithinOneWord lte = false gas cost just below boundary 1`] = `1234`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost just below boundary 1`] = `1234`;
 
-exports[`TickBitMap #nextInitializedTickWithinOneWord lte = false gas cost on boundary 1`] = `1200`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost on boundary 1`] = `1200`;
 
-exports[`TickBitMap #nextInitializedTickWithinOneWord lte = true gas cost for entire word 1`] = `1178`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost for entire word 1`] = `1178`;
 
-exports[`TickBitMap #nextInitializedTickWithinOneWord lte = true gas cost just below boundary 1`] = `1590`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost just below boundary 1`] = `1590`;
 
-exports[`TickBitMap #nextInitializedTickWithinOneWord lte = true gas cost on boundary 1`] = `1178`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost on boundary 1`] = `1178`;

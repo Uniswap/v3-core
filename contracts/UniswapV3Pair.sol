@@ -17,7 +17,7 @@ import './libraries/PriceMath.sol';
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
-import './libraries/TickBitMap.sol';
+import './libraries/TickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './TickMath1r01.sol';
 
@@ -30,7 +30,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     using SafeCast for uint256;
     using MixedSafeMath for uint128;
     using FixedPoint128 for FixedPoint128.uq128x128;
-    using TickBitMap for mapping(int16 => uint256);
+    using TickBitmap for mapping(int16 => uint256);
 
     // if we constrain the liquidity associated to a single tick, then we can guarantee that the total
     // liquidityCurrent never exceeds uint128
@@ -48,7 +48,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     // TODO figure out the best way to pack state variables
     address public override feeTo;
 
-    // see TickBitMap.sol
+    // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitMap;
 
     // single storage slot

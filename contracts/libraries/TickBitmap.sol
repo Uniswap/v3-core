@@ -5,7 +5,7 @@ import '@uniswap/lib/contracts/libraries/BitMath.sol';
 
 // a library for dealing with a bitmap of all ticks initialized states, represented as mapping(int16 => uint256)
 // the mapping uses int16 for keys since ticks are represented as int24 and there are 256 (2^8) bits per word
-library TickBitMap {
+library TickBitmap {
     // computes the position in the mapping where the initialized bit for a tick lives
     // wordPos is the position in the mapping containing the word in which the bit is set
     // bitPos is the position in the word from most to least significant where the flag is set
@@ -70,7 +70,7 @@ library TickBitMap {
     ) internal view returns (int24 next) {
         require(
             lte ? minOrMax <= tick : minOrMax > tick,
-            'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
+            'TickBitmap::nextInitializedTick: minOrMax must be in the direction of lte'
         );
 
         bool initialized;

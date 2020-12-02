@@ -1,15 +1,15 @@
 import {ethers} from 'hardhat'
-import {TickBitMapTest} from '../typechain/TickBitMapTest'
+import {TickBitmapTest} from '../typechain/TickBitmapTest'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {MAX_TICK, MIN_TICK} from './shared/utilities'
 
-describe('TickBitMap', () => {
-  let tickBitMap: TickBitMapTest
+describe('TickBitmap', () => {
+  let tickBitMap: TickBitmapTest
 
-  beforeEach('deploy TickBitMapTest', async () => {
-    const tickBitMapTestFactory = await ethers.getContractFactory('TickBitMapTest')
-    tickBitMap = (await tickBitMapTestFactory.deploy()) as TickBitMapTest
+  beforeEach('deploy TickBitmapTest', async () => {
+    const tickBitMapTestFactory = await ethers.getContractFactory('TickBitmapTest')
+    tickBitMap = (await tickBitMapTestFactory.deploy()) as TickBitmapTest
   })
 
   async function initTicks(ticks: number[]): Promise<void> {
@@ -226,10 +226,10 @@ describe('TickBitMap', () => {
     })
     it('fails if minOrMax not in right direction', async () => {
       await expect(tickBitMap.nextInitializedTick(0, true, 1)).to.be.revertedWith(
-        'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
+        'TickBitmap::nextInitializedTick: minOrMax must be in the direction of lte'
       )
       await expect(tickBitMap.nextInitializedTick(0, false, 0)).to.be.revertedWith(
-        'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
+        'TickBitmap::nextInitializedTick: minOrMax must be in the direction of lte'
       )
     })
     it('succeeds if initialized only to the left', async () => {

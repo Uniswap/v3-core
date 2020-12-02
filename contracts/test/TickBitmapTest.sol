@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-import '../libraries/TickBitMap.sol';
+import '../libraries/TickBitmap.sol';
 
 // a library for dealing with a bitmap of all ticks
-contract TickBitMapTest {
-    using TickBitMap for mapping(int16 => uint256);
+contract TickBitmapTest {
+    using TickBitmap for mapping(int16 => uint256);
 
     mapping(int16 => uint256) public bitmap;
 
