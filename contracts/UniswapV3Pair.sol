@@ -293,6 +293,97 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             );
     }
 
+    function _updatePosition(SetPositionParams memory params) private returns (uint256 feesOwed0, uint256 feesOwed1) {
+        Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
+
+        if (params.liquidityDelta == 0) {
+            require(
+                position.liquidity > 0,
+                'UniswapV3Pair::_updatePosition: cannot collect fees on 0 liquidity position'
+            );
+        } else if (params.liquidityDelta < 0) {
+            require(
+                position.liquidity >= uint128(-params.liquidityDelta),
+                'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
+            );
+        }
+
+        TickInfo storage tickInfoLower = _updateTick(params.tickLower, params.liquidityDelta);
+        TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, params.liquidityDelta);
+
+        require(
+            tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
+            'UniswapV3Pair::_updatePosition: liquidity overflow in lower tick'
+        );
+        require(
+            tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
+            'UniswapV3Pair::_updatePosition: liquidity overflow in upper tick'
+        );
+
+        {
+            (
+                FixedPoint128.uq128x128 memory feeGrowthInside0,
+                FixedPoint128.uq128x128 memory feeGrowthInside1
+            ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickInfoLower, tickInfoUpper);
+
+            // check if this condition has accrued any untracked fees and credit them to the caller
+            if (position.liquidity > 0) {
+                if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
+                    feesOwed0 = FullMath.mulDiv(
+                        feeGrowthInside0._x - position.feeGrowthInside0Last._x,
+                        position.liquidity,
+                        FixedPoint128.Q128
+                    );
+                }
+                if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
+                    feesOwed1 = FullMath.mulDiv(
+                        feeGrowthInside1._x - position.feeGrowthInside1Last._x,
+                        position.liquidity,
+                        FixedPoint128.Q128
+                    );
+                }
+
+                // collect protocol fee
+                if (feeTo != address(0)) {
+                    uint256 fee0 = feesOwed0 / 6;
+                    feesOwed0 -= fee0;
+                    feeToFees0 += fee0;
+
+                    uint256 fee1 = feesOwed1 / 6;
+                    feesOwed1 -= fee1;
+                    feeToFees1 += fee1;
+                }
+            }
+
+            // update the position
+            position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint128();
+            position.feeGrowthInside0Last = feeGrowthInside0;
+            position.feeGrowthInside1Last = feeGrowthInside1;
+        }
+
+        // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
+        tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(params.liquidityDelta).toInt128();
+        tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(params.liquidityDelta).toInt128();
+
+        // clear any tick or position data that is no longer needed
+        if (params.liquidityDelta < 0) {
+            if (tickInfoLower.liquidityGross == 0) _clearTick(params.tickLower);
+            if (tickInfoUpper.liquidityGross == 0) _clearTick(params.tickUpper);
+            if (position.liquidity == 0) {
+                delete position.feeGrowthInside0Last;
+                delete position.feeGrowthInside1Last;
+            }
+        }
+    }
+
+    function _transferDelta(address token, int256 delta) private {
+        if (delta > 0) {
+            TransferHelper.safeTransferFrom(token, msg.sender, address(this), uint256(delta));
+        } else if (delta < 0) {
+            TransferHelper.safeTransfer(token, msg.sender, uint256(-delta));
+        }
+    }
+
     // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
     // also sync a position and return accumulated fees from it to user as tokens
     // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
@@ -300,91 +391,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         _updateAccumulators();
 
         // how many fees are owed to the position owner
-        uint256 feesOwed0;
-        uint256 feesOwed1;
-
-        {
-            Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
-
-            if (params.liquidityDelta == 0) {
-                require(
-                    position.liquidity > 0,
-                    'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
-                );
-            } else if (params.liquidityDelta < 0) {
-                require(
-                    position.liquidity >= uint128(-params.liquidityDelta),
-                    'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
-                );
-            }
-
-            TickInfo storage tickInfoLower = _updateTick(params.tickLower, params.liquidityDelta);
-            TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, params.liquidityDelta);
-
-            require(
-                tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
-                'UniswapV3Pair::_setPosition: liquidity overflow in lower tick'
-            );
-            require(
-                tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
-                'UniswapV3Pair::_setPosition: liquidity overflow in upper tick'
-            );
-
-            {
-                (
-                    FixedPoint128.uq128x128 memory feeGrowthInside0,
-                    FixedPoint128.uq128x128 memory feeGrowthInside1
-                ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickInfoLower, tickInfoUpper);
-
-                // check if this condition has accrued any untracked fees and credit them to the caller
-                if (position.liquidity > 0) {
-                    if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                        feesOwed0 = FullMath.mulDiv(
-                            feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                            position.liquidity,
-                            FixedPoint128.Q128
-                        );
-                    }
-                    if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
-                        feesOwed1 = FullMath.mulDiv(
-                            feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                            position.liquidity,
-                            FixedPoint128.Q128
-                        );
-                    }
-
-                    // collect protocol fee
-                    if (feeTo != address(0)) {
-                        uint256 fee0 = feesOwed0 / 6;
-                        feesOwed0 -= fee0;
-                        feeToFees0 += fee0;
-
-                        uint256 fee1 = feesOwed1 / 6;
-                        feesOwed1 -= fee1;
-                        feeToFees1 += fee1;
-                    }
-                }
-
-                // update the position
-                position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint128();
-                position.feeGrowthInside0Last = feeGrowthInside0;
-                position.feeGrowthInside1Last = feeGrowthInside1;
-            }
-
-            // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-            tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(params.liquidityDelta).toInt128();
-            tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(params.liquidityDelta).toInt128();
-
-            // clear any tick or position data that is no longer needed
-            if (params.liquidityDelta < 0) {
-                if (tickInfoLower.liquidityGross == 0) _clearTick(params.tickLower);
-                if (tickInfoUpper.liquidityGross == 0) _clearTick(params.tickUpper);
-                if (position.liquidity == 0) {
-                    delete position.feeGrowthInside0Last;
-                    delete position.feeGrowthInside1Last;
-                }
-            }
-        }
+        (uint256 feesOwed0, uint256 feesOwed1) = _updatePosition(params);
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
@@ -432,16 +439,8 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 .sub(feesOwed1.toInt256());
         }
 
-        if (amount0 > 0) {
-            TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
-        } else if (amount0 < 0) {
-            TransferHelper.safeTransfer(token0, msg.sender, uint256(-amount0));
-        }
-        if (amount1 > 0) {
-            TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
-        } else if (amount1 < 0) {
-            TransferHelper.safeTransfer(token1, msg.sender, uint256(-amount1));
-        }
+        _transferDelta(token0, amount0);
+        _transferDelta(token1, amount1);
     }
 
     struct SwapParams {
