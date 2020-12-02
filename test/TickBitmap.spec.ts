@@ -218,10 +218,10 @@ describe('TickBitmap', () => {
   describe('#nextInitializedTick', () => {
     it('fails if not initialized', async () => {
       await expect(tickBitmap.nextInitializedTick(0, true, -99999)).to.be.revertedWith(
-        'TickMath::nextInitializedTick: no initialized next tick'
+        'TickBitmap::nextInitializedTick: no initialized next tick'
       )
       await expect(tickBitmap.nextInitializedTick(0, false, 99999)).to.be.revertedWith(
-        'TickMath::nextInitializedTick: no initialized next tick'
+        'TickBitmap::nextInitializedTick: no initialized next tick'
       )
     })
     it('fails if minOrMax not in right direction', async () => {
