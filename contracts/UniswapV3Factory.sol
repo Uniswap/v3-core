@@ -17,12 +17,14 @@ contract UniswapV3Factory is IUniswapV3Factory {
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPair;
     address[] public override allPairs;
 
-    /// @inheritdoc IUniswapV3Factory
+    /// @notice Gets length of allPairs array.
+    /// @return length of allPairs address array.
     function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
 
-    /// @inheritdoc IUniswapV3Factory
+    /// @notice Gets length of allEnabledFeeOptions array.
+    /// @return Length of allEnabledFeeOptions array.
     function allEnabledFeeOptionsLength() external view override returns (uint256) {
         return allEnabledFeeOptions.length;
     }
@@ -41,7 +43,11 @@ contract UniswapV3Factory is IUniswapV3Factory {
         _enableFeeOption(24000);
     }
 
-    /// @inheritdoc IUniswapV3Factory
+    /// @notice Deploys a new trading pair.
+    /// @param tokenA the first token of the desired pair.
+    /// @param tokenB the second token of the desired pair.
+    /// @param fee the desired fee.
+    /// @return pair Returns the address of the newly deployed pair.
     function createPair(
         address tokenA,
         address tokenB,
@@ -61,7 +67,9 @@ contract UniswapV3Factory is IUniswapV3Factory {
         emit PairCreated(token0, token1, fee, pair, allPairs.length);
     }
 
-    /// @inheritdoc IUniswapV3Factory
+    /// @notice Sets Factory contract owner to a new address.
+    /// @param _owner The new owner of the factory contract.
+    /// @dev only callable by current owner of factory contract.
     function setOwner(address _owner) external override {
         require(msg.sender == owner, 'UniswapV3Factory::setOwner: must be called by owner');
         emit OwnerChanged(owner, _owner);
@@ -78,7 +86,8 @@ contract UniswapV3Factory is IUniswapV3Factory {
         emit FeeOptionEnabled(fee);
     }
 
-    /// @inheritdoc IUniswapV3Factory
+    /// @notice If chosen, enables the fee option when a pair is deployed.
+    /// @param fee The chosen fee option - passed via createPair.
     function enableFeeOption(uint24 fee) external override {
         require(msg.sender == owner, 'UniswapV3Factory::enableFeeOption: must be called by owner');
 

@@ -7,12 +7,15 @@ interface IUniswapV3Factory {
     event PairCreated(address indexed token0, address indexed token1, uint24 indexed fee, address pair, uint256);
     event FeeOptionEnabled(uint24 indexed fee);
 
-    /// @return The owner address.
+    /// @return Returns the owner address.
     function owner() external view returns (address);
 
+    /// @notice Gets the address of a given pair contract.
+    /// @dev Pass the uint representing the pair address in the allPairs array.
+    /// @return pair Returns the pair address.
     function allPairs(uint256) external view returns (address pair);
 
-    /// @notice Gets length of allPairs array.
+    /// @notice Gets length of the allPairs array.
     /// @return length of allPairs address array.
     function allPairsLength() external view returns (uint256);
 
