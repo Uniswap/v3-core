@@ -385,10 +385,8 @@ describe('UniswapV3Pair', () => {
   }
 
   describe('#getCumulatives', () => {
-    describe('before initialize', () => {
-      it('blockTimestamp is always current timestamp', async () => {
-        await expect(pair.getCumulatives()).to.be.revertedWith('UniswapV3Pair::getCumulatives: pair not initialized')
-      })
+    it('reverts before initialization', async () => {
+      await expect(pair.getCumulatives()).to.be.revertedWith('UniswapV3Pair::getCumulatives: pair not initialized')
     })
 
     describe('after initialization', () => {
