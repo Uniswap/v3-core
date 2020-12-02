@@ -191,23 +191,23 @@ describe('UniswapV3Pair', () => {
         })
         it('fails if called with 0 liquidityDelta for empty position', async () => {
           await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0)).to.be.revertedWith(
-            'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
+            'UniswapV3Pair::_updatePosition: cannot collect fees on 0 liquidity position'
           )
         })
         it('fails if called with 0 liquidityDelta for empty position', async () => {
           await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 0)).to.be.revertedWith(
-            'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
+            'UniswapV3Pair::_updatePosition: cannot collect fees on 0 liquidity position'
           )
         })
         it('fails if called with negative liquidityDelta gt position liquidity', async () => {
           await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, -1)).to.be.revertedWith(
-            'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
+            'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
           )
         })
         it('fails if liquidityDelta exceeds the max', async () => {
           await expect(
             pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, MAX_LIQUIDITY_GROSS_PER_TICK.add(1))
-          ).to.be.revertedWith('UniswapV3Pair::_setPosition: liquidity overflow in lower tick')
+          ).to.be.revertedWith('UniswapV3Pair::_updatePosition: liquidity overflow in lower tick')
         })
       })
 
@@ -595,7 +595,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.setPosition(lowerTick, upperTick, expandTo18Decimals(1000))
       await expect(pair.setPosition(lowerTick, upperTick, expandTo18Decimals(-1001))).to.be.revertedWith(
-        'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
+        'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
       )
     })
 

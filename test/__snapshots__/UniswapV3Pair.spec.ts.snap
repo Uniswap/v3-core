@@ -1,19 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `240602`;
+exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `240717`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `227720`;
+exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `227835`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `239766`;
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `239877`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas 1`] = `122858`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas 1`] = `122834`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas large swap 1`] = `122275`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas large swap 1`] = `122251`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas large swap crossing several initialized ticks 1`] = `302824`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap0For1 gas large swap crossing several initialized ticks 1`] = `302704`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas 1`] = `111945`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas 1`] = `111921`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas large swap 1`] = `119043`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas large swap 1`] = `119019`;
 
-exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas large swap crossing several initialized ticks 1`] = `298888`;
+exports[`UniswapV3Pair post-initialize (fee vote 1 - 0.12%) swap1For0 gas large swap crossing several initialized ticks 1`] = `298768`;
