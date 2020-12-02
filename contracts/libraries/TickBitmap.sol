@@ -85,6 +85,6 @@ library TickBitmap {
                 (next, initialized) = nextInitializedTickWithinOneWord(self, next, false);
             }
         }
-        require(initialized, 'TickMath::nextInitializedTick: no initialized next tick');
+        require(initialized, 'TickBitMap::nextInitializedTick: no initialized next tick');
     }
 }

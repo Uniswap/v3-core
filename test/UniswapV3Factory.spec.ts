@@ -30,7 +30,7 @@ describe('UniswapV3Factory', () => {
   })
 
   async function createPair(tokens: [string, string], feeOption: FeeOption) {
-    const create2Address = getCreate2Address(factory.address, tokens, FEES[feeOption], pairBytecode)
+    const create2Address = getCreate2Address(factory.address, tokens, FEES[feeOption], 1, pairBytecode)
     const create = factory.createPair(tokens[0], tokens[1], FEES[feeOption])
 
     await expect(create)

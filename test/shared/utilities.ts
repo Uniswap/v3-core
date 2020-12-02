@@ -30,12 +30,13 @@ export function getCreate2Address(
   factoryAddress: string,
   [tokenA, tokenB]: [string, string],
   fee: number,
+  tickSpacing: number,
   bytecode: string
 ): string {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
   const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address', 'uint24'],
-    [factoryAddress, token0, token1, fee]
+    ['address', 'address', 'address', 'uint24', 'int24'],
+    [factoryAddress, token0, token1, fee, tickSpacing]
   )
   const create2Inputs = [
     '0xff',
