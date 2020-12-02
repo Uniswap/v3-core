@@ -72,7 +72,7 @@ library PriceMath {
         if (zeroForOne) {
             // calculate liquidity * (sqrt(price) - sqrt(priceTarget)) / (sqrt(price) * sqrt(priceTarget)), rounding up
             amountIn = mulDivRoundingUp(
-                uint256(liquidity) * uint256(1) << 64,
+                (uint256(liquidity) * uint256(1)) << 64,
                 priceRoot - priceTargetRoot,
                 uint256(priceRoot) * priceTargetRoot
             );
