@@ -226,10 +226,10 @@ describe('TickBitmap', () => {
     })
     it('fails if minOrMax not in right direction', async () => {
       await expect(tickBitmap.nextInitializedTick(0, true, 1)).to.be.revertedWith(
-        'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
+        'TickBitmap::nextInitializedTick: minOrMax must be in the direction of lte'
       )
       await expect(tickBitmap.nextInitializedTick(0, false, 0)).to.be.revertedWith(
-        'TickBitMap::nextInitializedTick: minOrMax must be in the direction of lte'
+        'TickBitmap::nextInitializedTick: minOrMax must be in the direction of lte'
       )
     })
     it('succeeds if initialized only to the left', async () => {
