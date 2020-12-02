@@ -82,7 +82,7 @@ interface IUniswapV3Pair {
 
     function setFeeTo(address) external;
 
-    /// @notice Allows factory contract owner to recover tokens other than token0 and token1 accidentally sent to the pair contract.
+    /// @notice Allows factory contract owner to recover tokens, other than token0 and token1, accidentally sent to the pair contract.
     /// @param token The token address.
     /// @param to The destination address of the transfer.
     /// @param amount The amount of the token to be recovered.
