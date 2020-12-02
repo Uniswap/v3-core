@@ -13,7 +13,7 @@ contract MockTimeUniswapV3Pair is UniswapV3Pair {
         address tokenA,
         address tokenB,
         uint24 fee
-    ) public UniswapV3Pair(factory, tokenA, tokenB, fee) {}
+    ) public UniswapV3Pair(factory, tokenA, tokenB, fee, int24(1)) {}
 
     function setTime(uint32 _time) external {
         require(_time > time, 'MockTimeUniswapV3Pair::setTime: time can only be advanced');

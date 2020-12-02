@@ -17,7 +17,7 @@ import './libraries/PriceMath.sol';
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
-import './libraries/TickBitMap.sol';
+import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './TickMath1r01.sol';
 
@@ -30,7 +30,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     using SafeCast for uint256;
     using MixedSafeMath for uint128;
     using FixedPoint128 for FixedPoint128.uq128x128;
-    using TickBitMap for mapping(int16 => uint256);
+    using SpacedTickBitmap for mapping(int16 => uint256);
 
     // if we constrain the liquidity associated to a single tick, then we can guarantee that the total
     // liquidityCurrent never exceeds uint128
@@ -45,11 +45,16 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     address public immutable override token1;
     uint24 public immutable override fee;
 
+    // how tightly spaced ticks can be
+    // e.g. a tickSpacing of 3 means ticks can be initialized every 3rd tick
+    // int24 to avoid casting, even though it's always positive
+    int24 public immutable override tickSpacing;
+
     // TODO figure out the best way to pack state variables
     address public override feeTo;
 
-    // see TickBitMap.sol
-    mapping(int16 => uint256) public override tickBitMap;
+    // see TickBitmap.sol
+    mapping(int16 => uint256) public override tickBitmap;
 
     // single storage slot
     uint32 public override blockTimestampLast;
@@ -174,12 +179,16 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         address _factory,
         address _token0,
         address _token1,
-        uint24 _fee
+        uint24 _fee,
+        int24 _tickSpacing
     ) public {
+        require(_tickSpacing > 0, 'UniswapV3Pair::constructor: _tickSpacing must be greater than 0');
+
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
         fee = _fee;
+        tickSpacing = _tickSpacing;
     }
 
     // returns the block timestamp % 2**64
@@ -236,7 +245,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             }
             // safe because we know liquidityDelta is > 0
             tickInfo.liquidityGross = uint128(liquidityDelta);
-            tickBitMap.flipTick(tick);
+            tickBitmap.flipTick(tick, tickSpacing);
         } else {
             tickInfo.liquidityGross = uint128(tickInfo.liquidityGross.addi(liquidityDelta));
         }
@@ -244,7 +253,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
 
     function _clearTick(int24 tick) private {
         delete tickInfos[tick];
-        tickBitMap.flipTick(tick);
+        tickBitmap.flipTick(tick, tickSpacing);
     }
 
     function initialize(uint256 price) external override lock {
@@ -495,7 +504,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         while (state.amountInRemaining > 0) {
             StepComputations memory step;
 
-            (step.tickNext, ) = tickBitMap.nextInitializedTickWithinOneWord(state.tick, params.zeroForOne);
+            (step.tickNext, ) = tickBitmap.nextInitializedTickWithinOneWord(state.tick, params.zeroForOne, tickSpacing);
 
             // get the price for the next tick we're moving toward
             step.priceNext = FixedPoint128.uq128x128(getRatioAtTick(step.tickNext));
