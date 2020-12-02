@@ -49,7 +49,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     address public override feeTo;
 
     // see TickBitmap.sol
-    mapping(int16 => uint256) public override tickBitMap;
+    mapping(int16 => uint256) public override tickBitmap;
 
     // single storage slot
     uint32 public override blockTimestampLast;
@@ -236,7 +236,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             }
             // safe because we know liquidityDelta is > 0
             tickInfo.liquidityGross = uint128(liquidityDelta);
-            tickBitMap.flipTick(tick);
+            tickBitmap.flipTick(tick);
         } else {
             tickInfo.liquidityGross = uint128(tickInfo.liquidityGross.addi(liquidityDelta));
         }
@@ -244,7 +244,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
 
     function _clearTick(int24 tick) private {
         delete tickInfos[tick];
-        tickBitMap.flipTick(tick);
+        tickBitmap.flipTick(tick);
     }
 
     function initialize(uint256 price) external override lock {
@@ -495,7 +495,7 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         while (state.amountInRemaining > 0) {
             StepComputations memory step;
 
-            (step.tickNext, ) = tickBitMap.nextInitializedTickWithinOneWord(state.tick, params.zeroForOne);
+            (step.tickNext, ) = tickBitmap.nextInitializedTickWithinOneWord(state.tick, params.zeroForOne);
 
             // get the price for the next tick we're moving toward
             step.priceNext = FixedPoint128.uq128x128(getRatioAtTick(step.tickNext));
