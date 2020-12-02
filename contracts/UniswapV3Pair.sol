@@ -299,6 +299,10 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _updateAccumulators();
 
+        // how many fees are owed to the position owner
+        uint256 feesOwed0;
+        uint256 feesOwed1;
+
         {
             Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
 
@@ -335,26 +339,29 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 // check if this condition has accrued any untracked fees and credit them to the caller
                 if (position.liquidity > 0) {
                     if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                        amount0 = -FullMath
-                            .mulDiv(
+                        feesOwed0 = FullMath.mulDiv(
                             feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                            position
-                                .liquidity,
-                            FixedPoint128
-                                .Q128
-                        )
-                            .toInt256();
+                            position.liquidity,
+                            FixedPoint128.Q128
+                        );
                     }
                     if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
-                        amount1 = -FullMath
-                            .mulDiv(
+                        feesOwed1 = FullMath.mulDiv(
                             feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                            position
-                                .liquidity,
-                            FixedPoint128
-                                .Q128
-                        )
-                            .toInt256();
+                            position.liquidity,
+                            FixedPoint128.Q128
+                        );
+                    }
+
+                    // collect protocol fee
+                    if (feeTo != address(0)) {
+                        uint256 fee0 = feesOwed0 / 6;
+                        feesOwed0 -= fee0;
+                        feeToFees0 += fee0;
+
+                        uint256 fee1 = feesOwed1 / 6;
+                        feesOwed1 -= fee1;
+                        feeToFees1 += fee1;
                     }
                 }
 
@@ -382,41 +389,47 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tickCurrent < params.tickLower) {
-            amount0 = amount0.add(
-                PriceMath.getAmount0Delta(
-                    FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
-                    FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
-                    params.liquidityDelta
-                )
-            );
+            amount0 = PriceMath
+                .getAmount0Delta(
+                FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
+                FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
+                params
+                    .liquidityDelta
+            )
+                .sub(feesOwed0.toInt256());
+            amount1 = -feesOwed1.toInt256();
         } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
-            amount0 = amount0.add(
-                PriceMath.getAmount0Delta(
-                    priceCurrent,
-                    FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
-                    params.liquidityDelta
-                )
-            );
-            amount1 = amount1.add(
-                PriceMath.getAmount1Delta(
-                    FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
-                    priceCurrent,
-                    params.liquidityDelta
-                )
-            );
+            amount0 = PriceMath
+                .getAmount0Delta(
+                priceCurrent,
+                FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
+                params
+                    .liquidityDelta
+            )
+                .sub(feesOwed0.toInt256());
+            amount1 = PriceMath
+                .getAmount1Delta(
+                FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
+                priceCurrent,
+                params
+                    .liquidityDelta
+            )
+                .sub(feesOwed1.toInt256());
 
             liquidityCurrent = liquidityCurrent.addi(params.liquidityDelta).toUint128();
         } else {
+            amount0 = -feesOwed0.toInt256();
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = amount1.add(
-                PriceMath.getAmount1Delta(
-                    FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
-                    FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
-                    params.liquidityDelta
-                )
-            );
+            amount1 = PriceMath
+                .getAmount1Delta(
+                FixedPoint128.uq128x128(getRatioAtTick(params.tickLower)),
+                FixedPoint128.uq128x128(getRatioAtTick(params.tickUpper)),
+                params
+                    .liquidityDelta
+            )
+                .sub(feesOwed1.toInt256());
         }
 
         if (amount0 > 0) {
@@ -450,8 +463,6 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         int24 tick;
         // the price
         FixedPoint128.uq128x128 price;
-        // protocol fees of the input token
-        uint256 feeToFees;
         // the global fee growth of the input token
         FixedPoint128.uq128x128 feeGrowthGlobal;
         // the liquidity in range
@@ -478,7 +489,6 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             amountInRemaining: params.amountIn,
             tick: tickCurrent,
             price: priceCurrent,
-            feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
             liquidityCurrent: liquidityCurrent
         });
@@ -527,16 +537,8 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
 
                 // handle the fee accounting
                 uint256 feePaid = step.amountIn - amountInLessFee;
-                if (feePaid > 0) {
-                    // take the protocol fee if it's on
-                    if (feeTo != address(0)) {
-                        uint256 feeToFee = feePaid / 6;
-                        // decrement feePaid
-                        feePaid -= feeToFee;
-                        // increment feeToFees--overflow is not possible
-                        state.feeToFees += feeToFee;
-                    }
 
+                if (feePaid > 0) {
                     // update global fee tracker
                     state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, state.liquidityCurrent)._x;
                 }
@@ -626,10 +628,8 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
         else require(state.tick < MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
         if (params.zeroForOne) {
-            feeToFees0 = state.feeToFees;
             feeGrowthGlobal0 = state.feeGrowthGlobal;
         } else {
-            feeToFees1 = state.feeToFees;
             feeGrowthGlobal1 = state.feeGrowthGlobal;
         }
 
