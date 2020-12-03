@@ -48,6 +48,8 @@ interface IUniswapV3Pair {
     // derived state
     function isInitialized() external view returns (bool);
 
+    function tickCurrent() external view returns (int24);
+
     function getCumulatives()
         external
         view

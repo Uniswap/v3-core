@@ -123,7 +123,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function _getFeeGrowthBelow(
         int24 tick,
-        int24 tickCurrent,
+        int24 current,
         TickInfo storage tickInfo
     )
         private
@@ -131,7 +131,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1)
     {
         // tick is above the current tick, meaning growth outside represents growth above, not below
-        if (tick > tickCurrent) {
+        if (tick > current) {
             feeGrowthBelow0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
             feeGrowthBelow1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
         } else {
@@ -142,7 +142,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function _getFeeGrowthAbove(
         int24 tick,
-        int24 tickCurrent,
+        int24 current,
         TickInfo storage tickInfo
     )
         private
@@ -150,7 +150,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         returns (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1)
     {
         // tick is above current tick, meaning growth outside represents growth above
-        if (tick > tickCurrent) {
+        if (tick > current) {
             feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
             feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
         } else {
@@ -162,7 +162,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _getFeeGrowthInside(
         int24 tickLower,
         int24 tickUpper,
-        int24 tickCurrent,
+        int24 current,
         TickInfo storage tickInfoLower,
         TickInfo storage tickInfoUpper
     )
@@ -173,11 +173,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (
             FixedPoint128.uq128x128 memory feeGrowthBelow0,
             FixedPoint128.uq128x128 memory feeGrowthBelow1
-        ) = _getFeeGrowthBelow(tickLower, tickCurrent, tickInfoLower);
+        ) = _getFeeGrowthBelow(tickLower, current, tickInfoLower);
         (
             FixedPoint128.uq128x128 memory feeGrowthAbove0,
             FixedPoint128.uq128x128 memory feeGrowthAbove1
-        ) = _getFeeGrowthAbove(tickUpper, tickCurrent, tickInfoUpper);
+        ) = _getFeeGrowthAbove(tickUpper, current, tickInfoUpper);
         feeGrowthInside0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - feeGrowthBelow0._x - feeGrowthAbove0._x);
         feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
@@ -185,6 +185,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // check for one-time initialization
     function isInitialized() public view override returns (bool) {
         return priceCurrent._x != 0; // sufficient check
+    }
+
+    function tickCurrent() public view override returns (int24) {
+        return TickMath.getTickAtRatio(priceCurrent._x);
     }
 
     constructor(
@@ -249,7 +253,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function _updateTick(
         int24 tick,
-        int24 tickCurrent,
+        int24 current,
         int128 liquidityDelta
     ) private returns (TickInfo storage tickInfo) {
         tickInfo = tickInfos[tick];
@@ -257,7 +261,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (tickInfo.liquidityGross == 0) {
             assert(liquidityDelta > 0);
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
-            if (tick <= tickCurrent) {
+            if (tick <= current) {
                 tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
                 tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
                 tickInfo.secondsOutside = _blockTimestamp();
@@ -324,7 +328,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
     }
 
-    function _updatePosition(SetPositionParams memory params, int24 tickCurrent)
+    function _updatePosition(SetPositionParams memory params, int24 tick)
         private
         returns (uint256 feesOwed0, uint256 feesOwed1)
     {
@@ -342,8 +346,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        TickInfo storage tickInfoLower = _updateTick(params.tickLower, tickCurrent, params.liquidityDelta);
-        TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, tickCurrent, params.liquidityDelta);
+        TickInfo storage tickInfoLower = _updateTick(params.tickLower, tick, params.liquidityDelta);
+        TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, tick, params.liquidityDelta);
 
         require(
             tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
@@ -358,7 +362,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             (
                 FixedPoint128.uq128x128 memory feeGrowthInside0,
                 FixedPoint128.uq128x128 memory feeGrowthInside1
-            ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickCurrent, tickInfoLower, tickInfoUpper);
+            ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tick, tickInfoLower, tickInfoUpper);
 
             // check if this condition has accrued any untracked fees and credit them to the caller
             if (position.liquidity > 0) {
@@ -424,14 +428,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _updateAccumulators();
 
-        int24 tickCurrent = TickMath.getTickAtRatio(priceCurrent._x);
+        int24 tick = tickCurrent();
 
         // how many fees are owed to the position owner
-        (uint256 feesOwed0, uint256 feesOwed1) = _updatePosition(params, tickCurrent);
+        (uint256 feesOwed0, uint256 feesOwed1) = _updatePosition(params, tick);
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
-        if (tickCurrent < params.tickLower) {
+        if (tick < params.tickLower) {
             amount0 = PriceMath
                 .getAmount0Delta(
                 FixedPoint128.uq128x128(TickMath.getRatioAtTick(params.tickLower)),
@@ -441,7 +445,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             )
                 .sub(feesOwed0.toInt256());
             amount1 = -feesOwed1.toInt256();
-        } else if (tickCurrent < params.tickUpper) {
+        } else if (tick < params.tickUpper) {
             // the current price is inside the passed range
             amount0 = PriceMath
                 .getAmount0Delta(
@@ -507,7 +511,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct StepComputations {
-        // the next initialized tick from the tickCurrent in the swap direction
+        // the next initialized tick from the current tick in the swap direction
         int24 tickNext;
         // price for the target tick (1/0)
         FixedPoint128.uq128x128 priceNext;
@@ -703,16 +707,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount1Out) {
         require(amount0In > 0, 'UniswapV3Pair::swap0For1: amountIn must be greater than 0');
 
-        return
-            _swap(
-                SwapParams({
-                    tickStart: TickMath.getTickAtRatio(priceCurrent._x),
-                    zeroForOne: true,
-                    amountIn: amount0In,
-                    to: to,
-                    data: data
-                })
-            );
+        return _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: true, amountIn: amount0In, to: to, data: data}));
     }
 
     // move from left to right (token 0 is becoming more valuable)
@@ -724,15 +719,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(amount1In > 0, 'UniswapV3Pair::swap1For0: amountIn must be greater than 0');
 
         return
-            _swap(
-                SwapParams({
-                    tickStart: TickMath.getTickAtRatio(priceCurrent._x),
-                    zeroForOne: false,
-                    amountIn: amount1In,
-                    to: to,
-                    data: data
-                })
-            );
+            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: false, amountIn: amount1In, to: to, data: data}));
     }
 
     function recover(
