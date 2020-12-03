@@ -50,7 +50,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // int24 to avoid casting, even though it's always positive
     int24 public immutable override tickSpacing;
 
-    // TODO figure out the best way to pack state variables
+    // the minimum and maximum tick for the pair
+    // always a multiple of tickSpacing
+    int24 public immutable override MIN_TICK;
+    int24 public immutable override MAX_TICK;
+
     address public override feeTo;
 
     // see TickBitmap.sol
@@ -197,6 +201,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         token1 = _token1;
         fee = _fee;
         tickSpacing = _tickSpacing;
+        MIN_TICK = (TickMath.MIN_TICK / _tickSpacing) * _tickSpacing;
+        MAX_TICK = (TickMath.MAX_TICK / _tickSpacing) * _tickSpacing;
     }
 
     // returns the block timestamp % 2**64
@@ -282,12 +288,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // set permanent 1 wei position
         _setPosition(
-            SetPositionParams({
-                owner: address(0),
-                tickLower: TickMath.MIN_TICK,
-                tickUpper: TickMath.MAX_TICK,
-                liquidityDelta: 1
-            })
+            SetPositionParams({owner: address(0), tickLower: MIN_TICK, tickUpper: MAX_TICK, liquidityDelta: 1})
         );
     }
 
@@ -305,11 +306,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (int256 amount0, int256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::setPosition: pair not initialized');
         require(tickLower < tickUpper, 'UniswapV3Pair::setPosition: tickLower must be less than tickUpper');
-        require(tickLower >= TickMath.MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
-        require(
-            tickUpper <= TickMath.MAX_TICK,
-            'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick'
-        );
+        require(tickLower >= MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
+        require(tickUpper <= MAX_TICK, 'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick');
         require(
             tickLower % tickSpacing == 0 && tickUpper % tickSpacing == 0,
             'UniswapV3Pair::setPosition: tickLower and tickUpper must be multiples of tickSpacing'
@@ -661,8 +659,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         priceCurrent = state.price;
 
-        if (params.zeroForOne) require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
-        else require(state.tick < TickMath.MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
+        if (params.zeroForOne) require(state.tick >= MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
+        else require(state.tick < MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;
