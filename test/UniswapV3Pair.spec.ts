@@ -50,23 +50,6 @@ describe('UniswapV3Pair', () => {
     pair = pairs[FeeOption.FeeOption2]
   })
 
-  // this invariant should always hold true.
-  afterEach('check tick matches price', async () => {
-    // ensure that the tick always matches the price given by virtual reserves
-    const [priceCurrent, tickCurrent] = await Promise.all([pair.priceCurrent(), pair.tickCurrent()])
-    if (priceCurrent.eq(0)) {
-      expect(tickCurrent).to.eq(0)
-    } else {
-      const [tickPrice, nextPrice] = await Promise.all([
-        pair.getRatioAtTick(tickCurrent),
-        pair.getRatioAtTick(tickCurrent + 1),
-      ])
-      expect(priceCurrent, 'priceCurrent is within tickCurrent and tickCurrent+1 bounds')
-        .to.be.gte(tickPrice)
-        .and.lt(nextPrice)
-    }
-  })
-
   it('constructor initializes immutables', async () => {
     expect(await pair.factory()).to.eq(factory.address)
     expect(await pair.token0()).to.eq(token0.address)
@@ -83,12 +66,10 @@ describe('UniswapV3Pair', () => {
       )
     })
     it('fails if starting price is too low', async () => {
-      await expect(pair.initialize(0)).to.be.revertedWith('TickMath1r01::getTickAtRatio: invalid ratio')
+      await expect(pair.initialize(0)).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
     it('fails if starting price is too high', async () => {
-      await expect(pair.initialize(constants.MaxUint256)).to.be.revertedWith(
-        'TickMath1r01::getTickAtRatio: invalid ratio'
-      )
+      await expect(pair.initialize(constants.MaxUint256)).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
     it('fails if cannot transfer from user', async () => {
       await expect(pair.initialize(encodePrice(1, 1))).to.be.revertedWith(

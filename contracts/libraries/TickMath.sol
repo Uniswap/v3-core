@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-import './interfaces/ITickMath.sol';
-
 // 1% ticks
 // min tick is -7351
 // max tick is 7351
-contract TickMath1r01 is ITickMath {
-    int24 public constant override MIN_TICK = -7351;
-    int24 public constant override MAX_TICK = -MIN_TICK;
+library TickMath {
+    int24 public constant MIN_TICK = -7351;
+    int24 public constant MAX_TICK = -MIN_TICK;
 
-    function getRatioAtTick(int24 tick) public pure override returns (uint256 ratio) {
-        require(tick >= MIN_TICK && tick <= MAX_TICK, 'TickMath1r01::getRatioAtTick: invalid tick');
+    function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
+        require(tick >= MIN_TICK && tick <= MAX_TICK, 'TickMath::getRatioAtTick: invalid tick');
 
         uint256 absTick = uint256(tick < 0 ? -tick : tick);
 
@@ -34,11 +32,11 @@ contract TickMath1r01 is ITickMath {
     }
 
     // get the ratio from the tick as a 128x128 represented as a uint256
-    function getTickAtRatio(uint256 ratio) public pure override returns (int24 tick) {
+    function getTickAtRatio(uint256 ratio) internal pure returns (int24 tick) {
         // the ratio must be gte the ratio at MIN_TICK and lt the ratio at MAX_TICK
         require(
             ratio >= 5826674 && ratio < 19872759182565593239568746253641083721737304106191725165927866224867416,
-            'TickMath1r01::getTickAtRatio: invalid ratio'
+            'TickMath::getTickAtRatio: invalid ratio'
         );
 
         uint256 r = ratio;
