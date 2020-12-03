@@ -525,8 +525,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountOut;
     }
 
+    // returns the closest parent tick that could be initialized
+    // the parent tick is the tick s.t. the input tick is gte parent tick and lt parent tick + tickSpacing
     function closestTick(int24 tick) private view returns (int24) {
-        return tick / tickSpacing - (tick < 0 && tick % tickSpacing != 0 ? 1 : 0);
+        int24 compressed = tick / tickSpacing;
+        // round towards negative infinity
+        if (tick < 0 && tick % tickSpacing != 0) compressed--;
+        return compressed * tickSpacing;
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
@@ -546,6 +551,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 params.zeroForOne,
                 tickSpacing
             );
+
+            if (params.zeroForOne) require(step.tickNext >= MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
+            else require(step.tickNext <= MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
             // get the price for the next tick we're moving toward
             step.priceNext = FixedPoint128.uq128x128(TickMath.getRatioAtTick(step.tickNext));
@@ -673,9 +681,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         priceCurrent = state.price;
-
-        if (params.zeroForOne) require(state.tick >= MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
-        else require(state.tick < MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;
