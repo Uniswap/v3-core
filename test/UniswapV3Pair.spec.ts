@@ -1119,7 +1119,7 @@ describe('UniswapV3Pair', () => {
           await pair.setPosition(12, 24, 1)
           await pair.setPosition(-144, -120, 1)
         })
-        it.only('swapping across gaps works in 1 for 0 direction', async () => {
+        it.skip('swapping across gaps works in 1 for 0 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await pair.setPosition(1200, 1212, liquidityAmount)
           await pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x')
@@ -1130,7 +1130,7 @@ describe('UniswapV3Pair', () => {
             .withArgs(pair.address, walletAddress, '1000000000000006503')
           expect(await pair.tickCurrent()).to.eq(1200)
         })
-        it.only('swapping across gaps works in 0 for 1 direction', async () => {
+        it.skip('swapping across gaps works in 0 for 1 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await pair.setPosition(-1212, -1200, liquidityAmount)
           await pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x')
