@@ -6,6 +6,7 @@ import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
 import {UniswapV3Factory} from '../../typechain/UniswapV3Factory'
 
 import {expandTo18Decimals, FEES, FeeOption} from './utilities'
+import {TickMathTest} from '../../typechain/TickMathTest'
 
 interface FactoryFixture {
   factory: UniswapV3Factory
@@ -41,6 +42,7 @@ type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 interface PairFixture extends TokensAndFactoryFixture {
   pairs: {[feeVote in FeeOption]: MockTimeUniswapV3Pair}
   testCallee: TestUniswapV3Callee
+  tickMath: TickMathTest
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
@@ -52,6 +54,7 @@ export async function pairFixture([owner]: [Signer]): Promise<PairFixture> {
 
   const mockTimePairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
   const testCalleeFactory = await ethers.getContractFactory('TestUniswapV3Callee')
+  const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
 
   const pairs: {[feeVote in FeeOption]?: MockTimeUniswapV3Pair} = {}
   for (const feeVote of [
@@ -75,5 +78,7 @@ export async function pairFixture([owner]: [Signer]): Promise<PairFixture> {
 
   const testCallee = (await testCalleeFactory.deploy()) as TestUniswapV3Callee
 
-  return {token0, token1, token2, pairs: pairs as any, factory, testCallee}
+  const tickMath = (await tickMathTestFactory.deploy()) as TickMathTest
+
+  return {token0, token1, token2, pairs: pairs as any, factory, testCallee, tickMath}
 }

@@ -34,13 +34,14 @@ describe('UniswapV3Pair', () => {
   let factory: UniswapV3Factory
   let pairs: {[feeVote in FeeOption]: MockTimeUniswapV3Pair}
   let pair: MockTimeUniswapV3Pair
+  let tickMath: TickMathTest
   let testCallee: TestUniswapV3Callee
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
 
   async function tickCurrent() {
     const priceCurrent = await pair.priceCurrent()
-    return pair.getTickAtRatio(priceCurrent)
+    return tickMath.getTickAtRatio({_x: priceCurrent})
   }
 
   before('get wallet and other', async () => {
@@ -50,7 +51,7 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy fixture', async () => {
-    ;({token0, token1, token2, factory, pairs, testCallee} = await loadFixture(pairFixture))
+    ;({token0, token1, token2, factory, pairs, testCallee, tickMath} = await loadFixture(pairFixture))
     // default to the 30 bips pair
     pair = pairs[FeeOption.FeeOption2]
   })

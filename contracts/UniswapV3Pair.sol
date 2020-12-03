@@ -230,7 +230,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
             liquidityCumulative = liquidityCumulativeLast + uint160(timeElapsed) * liquidityCurrent;
-            tickCumulative = tickCumulativeLast + int56(timeElapsed) * getTickAtRatio(priceCurrent._x);
+            tickCumulative = tickCumulativeLast + int56(timeElapsed) * TickMath.getTickAtRatio(priceCurrent._x);
         } else {
             return (blockTimestamp, liquidityCumulativeLast, tickCumulativeLast);
         }
@@ -426,7 +426,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         _updateAccumulators();
 
-        int24 tickCurrent = getTickAtRatio(priceCurrent._x);
+        int24 tickCurrent = TickMath.getTickAtRatio(priceCurrent._x);
 
         // how many fees are owed to the position owner
         (uint256 feesOwed0, uint256 feesOwed1) = _updatePosition(params, tickCurrent);
@@ -524,7 +524,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
         SwapState memory state = SwapState({
             amountInRemaining: params.amountIn,
-            tick: getTickAtRatio(priceCurrent._x),
+            tick: TickMath.getTickAtRatio(priceCurrent._x),
             price: priceCurrent,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
             liquidityCurrent: liquidityCurrent
@@ -654,7 +654,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // TODO could probably be optimized
-        if (state.tick != getTickAtRatio(priceCurrent._x)) {
+        if (state.tick != TickMath.getTickAtRatio(priceCurrent._x)) {
             _updateAccumulators();
             liquidityCurrent = state.liquidityCurrent;
         }
