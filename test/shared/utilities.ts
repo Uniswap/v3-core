@@ -4,22 +4,16 @@ export const MIN_TICK = -7351
 export const MAX_TICK = 7351
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('5192296858534827628530496329220095')
 
-export enum FactoryFeeOption {
-  FeeOption0 = 'FeeOption0',
-  FeeOption1 = 'FeeOption1',
-  FeeOption2 = 'FeeOption2',
-  FeeOption3 = 'FeeOption3',
-  FeeOption4 = 'FeeOption4',
-  FeeOption5 = 'FeeOption5',
+export enum FeeAmount {
+  LOW = 600,
+  MEDIUM = 3000,
+  HIGH = 9000,
 }
 
-export const FEE_OPTION_PIPS: {[vote in FactoryFeeOption]: number} = {
-  [FactoryFeeOption.FeeOption0]: 600,
-  [FactoryFeeOption.FeeOption1]: 1200,
-  [FactoryFeeOption.FeeOption2]: 3000,
-  [FactoryFeeOption.FeeOption3]: 6000,
-  [FactoryFeeOption.FeeOption4]: 12000,
-  [FactoryFeeOption.FeeOption5]: 24000,
+export const TICK_SPACINGS: {[vote in FeeAmount]: number} = {
+  [FeeAmount.LOW]: 1,
+  [FeeAmount.MEDIUM]: 1,
+  [FeeAmount.HIGH]: 1,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {

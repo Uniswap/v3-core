@@ -12,13 +12,12 @@ import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
   expandTo18Decimals,
-  FactoryFeeOption,
+  FeeAmount,
   getPositionKey,
   MAX_TICK,
   MIN_TICK,
   MAX_LIQUIDITY_GROSS_PER_TICK,
   encodePrice,
-  FEE_OPTION_PIPS,
 } from './shared/utilities'
 
 const createFixtureLoader = waffle.createFixtureLoader
@@ -51,7 +50,7 @@ describe('UniswapV3Pair', () => {
   beforeEach('deploy fixture', async () => {
     ;({token0, token1, token2, factory, createPair, testCallee, tickMath} = await loadFixture(pairFixture))
     // default to the 30 bips pair
-    pair = await createPair(FEE_OPTION_PIPS[FactoryFeeOption.FeeOption2], 1)
+    pair = await createPair(FeeAmount.MEDIUM, 1)
   })
 
   it('constructor initializes immutables', async () => {
@@ -144,7 +143,7 @@ describe('UniswapV3Pair', () => {
       await expect(pair.setPosition(-1, 1, 0)).to.be.revertedWith('UniswapV3Pair::setPosition: pair not initialized')
     })
     describe('after initialization', () => {
-      beforeEach('initialize the pair at price of 10:1 with fee vote 1', async () => {
+      beforeEach('initialize the pair at price of 10:1', async () => {
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
         await pair.initialize(encodePrice(1, 10))
@@ -458,9 +457,9 @@ describe('UniswapV3Pair', () => {
   })
 
   // TODO test rest of categories in a loop to reduce code duplication
-  describe('post-initialize (fee vote 1 - 0.12%)', () => {
+  describe('post-initialize for low fee', () => {
     beforeEach('initialize at zero tick', async () => {
-      pair = await createPair(FEE_OPTION_PIPS[FactoryFeeOption.FeeOption1], 1)
+      pair = await createPair(FeeAmount.LOW, 1)
       await initializeAtZeroTick(pair)
     })
 
@@ -578,7 +577,7 @@ describe('UniswapV3Pair', () => {
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
 
       expect(token0BalanceBefore.sub(token0BalanceAfter), 'token0 balance decreases by amount in').to.eq(amount0In)
-      expect(token1BalanceAfter.sub(token1BalanceBefore), 'token1 balance increases by expected amount out').to.eq(997)
+      expect(token1BalanceAfter.sub(token1BalanceBefore), 'token1 balance increases by expected amount out').to.eq(998)
 
       expect(await pair.tickCurrent()).to.eq(-1)
     })
@@ -602,7 +601,7 @@ describe('UniswapV3Pair', () => {
 
       await expect(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684085616395642021')
+        .withArgs(pair.address, walletAddress, '684358904605133181')
     })
 
     it('swap0For1 gas large swap crossing several initialized ticks', async () => {
@@ -627,7 +626,7 @@ describe('UniswapV3Pair', () => {
       const token0BalanceAfter = await token0.balanceOf(walletAddress)
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
 
-      expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(997)
+      expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(998)
       expect(token1BalanceBefore.sub(token1BalanceAfter), 'input amount decreased by amount in').to.eq(amount1In)
 
       expect(await pair.tickCurrent()).to.eq(0)
@@ -652,7 +651,7 @@ describe('UniswapV3Pair', () => {
 
       await expect(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684085616395642021')
+        .withArgs(pair.address, walletAddress, '684358904605133181')
     })
 
     it('swap1For0 gas large swap crossing several initialized ticks', async () => {
@@ -708,7 +707,7 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('post-initialize (fee vote 2 - 0.30%)', () => {
+  describe('post-initialize at medium fee', () => {
     beforeEach('initialize the pair', async () => {
       await initializeAtZeroTick(pair)
     })
@@ -952,7 +951,7 @@ describe('UniswapV3Pair', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
     beforeEach(async () => {
-      pair = await createPair(FEE_OPTION_PIPS[FactoryFeeOption.FeeOption0], 1)
+      pair = await createPair(FeeAmount.LOW, 1)
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.initialize(encodePrice(1, 1))
@@ -1086,7 +1085,7 @@ describe('UniswapV3Pair', () => {
 
     describe('tickSpacing = 12', () => {
       beforeEach('deploy pair', async () => {
-        pair = await createPair(FEE_OPTION_PIPS[FactoryFeeOption.FeeOption2], 12)
+        pair = await createPair(FeeAmount.MEDIUM, 12)
       })
       it('min and max tick are multiples of 12', async () => {
         expect(await pair.MIN_TICK()).to.eq(-7344)
@@ -1101,7 +1100,7 @@ describe('UniswapV3Pair', () => {
         expect(minTickLiquidityGross).to.eq(1)
         expect(minTickLiquidityGross).to.eq(maxTickLiquidityGross)
       })
-      describe.only('post initialize', () => {
+      describe('post initialize', () => {
         beforeEach('initialize pair', async () => {
           await token0.approve(pair.address, constants.MaxUint256)
           await token1.approve(pair.address, constants.MaxUint256)

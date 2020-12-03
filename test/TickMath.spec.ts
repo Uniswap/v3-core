@@ -108,16 +108,6 @@ describe('TickMath', () => {
       )
     })
 
-    if (process.env.UPDATE_SNAPSHOT) {
-      it('all tick values', async () => {
-        const promises: Promise<{_x: BigNumber}>[] = []
-        for (let tick = MIN_TICK; tick < MAX_TICK + 1; tick++) {
-          promises.push(tickMathTest.getRatioAtTick(tick))
-        }
-        expect((await Promise.all(promises)).map(({_x: x}, i) => [MIN_TICK + i, x.toString()])).toMatchSnapshot()
-      }).timeout(300000)
-    }
-
     describe('gas', () => {
       const ticks = [MIN_TICK, -1000, -500, -50, 0, 50, 500, 1000, MAX_TICK]
 
