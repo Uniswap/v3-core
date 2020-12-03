@@ -12,15 +12,18 @@ import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
   expandTo18Decimals,
-  FeeOption,
+  FactoryFeeOption,
   getPositionKey,
   MAX_TICK,
   MIN_TICK,
   MAX_LIQUIDITY_GROSS_PER_TICK,
   encodePrice,
+  FEE_OPTION_PIPS,
 } from './shared/utilities'
 
 const createFixtureLoader = waffle.createFixtureLoader
+
+type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
 describe('UniswapV3Pair', () => {
   let wallet: Signer
@@ -32,12 +35,12 @@ describe('UniswapV3Pair', () => {
   let token1: TestERC20
   let token2: TestERC20
   let factory: UniswapV3Factory
-  let pairs: {[feeVote in FeeOption]: MockTimeUniswapV3Pair}
   let pair: MockTimeUniswapV3Pair
   let tickMath: TickMathTest
   let testCallee: TestUniswapV3Callee
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
+  let createPair: ThenArg<ReturnType<typeof pairFixture>>['createPair']
 
   async function tickCurrent() {
     const priceCurrent = await pair.priceCurrent()
@@ -51,9 +54,9 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy fixture', async () => {
-    ;({token0, token1, token2, factory, pairs, testCallee, tickMath} = await loadFixture(pairFixture))
+    ;({token0, token1, token2, factory, createPair, testCallee, tickMath} = await loadFixture(pairFixture))
     // default to the 30 bips pair
-    pair = pairs[FeeOption.FeeOption2]
+    pair = await createPair(FEE_OPTION_PIPS[FactoryFeeOption.FeeOption2], 1)
   })
 
   it('constructor initializes immutables', async () => {
@@ -380,7 +383,8 @@ describe('UniswapV3Pair', () => {
     await token0.approve(pair.address, initializeLiquidityAmount)
     await token1.approve(pair.address, initializeLiquidityAmount)
     await pair.initialize(encodePrice(1, 1))
-    await pair.setPosition(MIN_TICK, MAX_TICK, initializeLiquidityAmount.sub(1))
+    const [min, max] = await Promise.all([pair.MIN_TICK(), pair.MAX_TICK()])
+    await pair.setPosition(min, max, initializeLiquidityAmount.sub(1))
   }
 
   describe('#getCumulatives', () => {
@@ -461,7 +465,7 @@ describe('UniswapV3Pair', () => {
   // TODO test rest of categories in a loop to reduce code duplication
   describe('post-initialize (fee vote 1 - 0.12%)', () => {
     beforeEach('initialize at zero tick', async () => {
-      pair = pairs[FeeOption.FeeOption1]
+      pair = await createPair(FEE_OPTION_PIPS[FactoryFeeOption.FeeOption1], 1)
       await initializeAtZeroTick(pair)
     })
 
@@ -711,7 +715,6 @@ describe('UniswapV3Pair', () => {
 
   describe('post-initialize (fee vote 2 - 0.30%)', () => {
     beforeEach('initialize the pair', async () => {
-      pair = pairs[FeeOption.FeeOption2]
       await initializeAtZeroTick(pair)
     })
 
@@ -954,7 +957,7 @@ describe('UniswapV3Pair', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
     beforeEach(async () => {
-      pair = pairs[FeeOption.FeeOption0]
+      pair = await createPair(FEE_OPTION_PIPS[FactoryFeeOption.FeeOption0], 1)
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.initialize(encodePrice(1, 1))
@@ -1075,6 +1078,52 @@ describe('UniswapV3Pair', () => {
       await expect(pair.recover(token2.address, otherAddress, 10))
         .to.emit(token2, 'Transfer')
         .withArgs(pair.address, otherAddress, 10)
+    })
+  })
+
+  describe('#tickSpacing', () => {
+    it('a tickSpacing of 1 means MIN_TICK = TickMath.MIN_TICK', async () => {
+      expect(await pair.MIN_TICK()).to.eq(await tickMath.MIN_TICK())
+    })
+    it('a tickSpacing of 1 means MAX_TICK = TickMath.MAX_TICK', async () => {
+      expect(await pair.MAX_TICK()).to.eq(await tickMath.MAX_TICK())
+    })
+
+    describe('tickSpacing = 12', () => {
+      beforeEach('deploy pair', async () => {
+        pair = await createPair(FEE_OPTION_PIPS[FactoryFeeOption.FeeOption2], 12)
+      })
+      it('min and max tick are multiples of 12', async () => {
+        expect(await pair.MIN_TICK()).to.eq(-7344)
+        expect(await pair.MAX_TICK()).to.eq(7344)
+      })
+      it('initialize sets min and max ticks', async () => {
+        await token0.approve(pair.address, constants.MaxUint256)
+        await token1.approve(pair.address, constants.MaxUint256)
+        await pair.initialize(encodePrice(1, 1))
+        const {liquidityGross: minTickLiquidityGross} = await pair.tickInfos(-7344)
+        const {liquidityGross: maxTickLiquidityGross} = await pair.tickInfos(7344)
+        expect(minTickLiquidityGross).to.eq(1)
+        expect(minTickLiquidityGross).to.eq(maxTickLiquidityGross)
+      })
+      describe('post initialize', () => {
+        beforeEach('initialize pair', async () => {
+          await token0.approve(pair.address, constants.MaxUint256)
+          await token1.approve(pair.address, constants.MaxUint256)
+          await pair.initialize(encodePrice(1, 1))
+        })
+        it('setPosition can only be called for multiples of 12', async () => {
+          await expect(pair.setPosition(-6, 0, 1)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: tickLower and tickUpper must be multiples of tickSpacing'
+          )
+          await expect(pair.setPosition(0, 6, 1)).to.be.revertedWith(
+            'UniswapV3Pair::setPosition: tickLower and tickUpper must be multiples of tickSpacing'
+          )
+        })
+        it('setPosition can be called with multiples of 12', async () => {
+          await pair.setPosition(12, 24, 1)
+        })
+      })
     })
   })
 })
