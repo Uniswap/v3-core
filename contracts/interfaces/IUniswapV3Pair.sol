@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
 interface IUniswapV3Pair {
-    event Initialized(uint256 price, int24 tick);
+    event Initialized(uint256 price);
 
     // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
@@ -28,8 +28,6 @@ interface IUniswapV3Pair {
     function liquidityCurrent() external view returns (uint128);
 
     function tickBitmap(int16) external view returns (uint256);
-
-    function tickCurrent() external view returns (int24);
 
     function priceCurrent() external view returns (uint256);
 
