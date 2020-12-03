@@ -45,9 +45,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     address public immutable override token1;
     uint24 public immutable override fee;
 
-    // how tightly spaced ticks can be
-    // e.g. a tickSpacing of 3 means ticks can be initialized every 3rd tick
-    // int24 to avoid casting, even though it's always positive
+    // minimum absolute difference between initialized ticks
+    // e.g. a tickSpacing of 3 means ticks can be initialized every 3rd tick, i.e. ..., -6, -3, 0, 3, 6, ...
+    // int24 to avoid casting even though it's always positive
     int24 public immutable override tickSpacing;
 
     // the minimum and maximum tick for the pair
