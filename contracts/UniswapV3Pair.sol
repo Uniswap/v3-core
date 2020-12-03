@@ -21,6 +21,8 @@ import './libraries/TickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './TickMath1r01.sol';
 
+import 'hardhat/console.sol';
+
 contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
     using SafeMath for uint128;
     using SafeMath for uint256;
@@ -455,6 +457,9 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
             )
                 .sub(feesOwed1.toInt256());
         }
+
+        console.log('_setPosition token0 amount', amount0 < 0 ? '-' : '+', uint256(amount0 < 0 ? -amount0 : amount0));
+        console.log('_setPosition token1 amount', amount1 < 0 ? '-' : '+', uint256(amount1 < 0 ? -amount1 : amount1));
 
         _transferDelta(token0, amount0);
         _transferDelta(token1, amount1);

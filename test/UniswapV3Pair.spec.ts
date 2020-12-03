@@ -1079,7 +1079,7 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('failing insolvency edge case', () => {
+  describe.only('failing insolvency edge case', () => {
     beforeEach(async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
@@ -1089,22 +1089,28 @@ describe('UniswapV3Pair', () => {
       const liquidityAmount = expandTo18Decimals(1).div(4)
       await pair.setPosition(1200, 1212, liquidityAmount)
       await pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x')
+      const [balance0, balance1] = await Promise.all([token0.balanceOf(pair.address), token1.balanceOf(pair.address)])
+      console.log('balances after swap', 'token0', balance0.toString(), 'token1', balance1.toString())
       await expect(pair.setPosition(1200, 1212, liquidityAmount.mul(-1)))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '30563825225600')
+        .withArgs(pair.address, walletAddress, balance0.sub(2))
+        // the amount of input token is insufficient
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '1000000000000006503')
+        .withArgs(pair.address, walletAddress, balance1.sub(2))
       expect(await pair.tickCurrent()).to.eq(1200)
     })
     it('swapping across gaps works in 0 for 1 direction', async () => {
       const liquidityAmount = expandTo18Decimals(1).div(4)
       await pair.setPosition(-1212, -1200, liquidityAmount)
       await pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x')
+      const [balance0, balance1] = await Promise.all([token0.balanceOf(pair.address), token1.balanceOf(pair.address)])
+      console.log('balances after swap', 'token0', balance0.toString(), 'token1', balance1.toString())
       await expect(pair.setPosition(-1212, -1200, liquidityAmount.mul(-1)))
+        // the amount of input token is insufficient
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '1000000000000006503')
+        .withArgs(pair.address, walletAddress, balance0.sub(2))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '30563825225600')
+        .withArgs(pair.address, walletAddress, balance1.sub(2))
       expect(await pair.tickCurrent()).to.eq(-1201)
     })
   })
