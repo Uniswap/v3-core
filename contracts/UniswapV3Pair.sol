@@ -480,6 +480,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct SwapParams {
+        // the tick where the price starts
+        int24 tickStart;
         // whether the swap is from token 0 to 1, or 1 for 0
         bool zeroForOne;
         // how much is being swapped in
@@ -519,10 +521,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountOut;
     }
 
+    function closestTick(int24 tick) private view returns (int24) {
+        return tick / tickSpacing - (tick < 0 && tick % tickSpacing != 0 ? 1 : 0);
+    }
+
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
         SwapState memory state = SwapState({
             amountInRemaining: params.amountIn,
-            tick: TickMath.getTickAtRatio(priceCurrent._x),
+            tick: params.tickStart,
             price: priceCurrent,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
             liquidityCurrent: liquidityCurrent
@@ -531,7 +537,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         while (state.amountInRemaining > 0) {
             StepComputations memory step;
 
-            (step.tickNext, ) = tickBitmap.nextInitializedTickWithinOneWord(state.tick, params.zeroForOne, tickSpacing);
+            (step.tickNext, ) = tickBitmap.nextInitializedTickWithinOneWord(
+                closestTick(state.tick),
+                params.zeroForOne,
+                tickSpacing
+            );
 
             // get the price for the next tick we're moving toward
             step.priceNext = FixedPoint128.uq128x128(TickMath.getRatioAtTick(step.tickNext));
@@ -647,12 +657,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
+                // todo: this getTickAtRatio call may not be necessary, since we only use it to determine if we crossed a tick
                 state.tick = TickMath.getTickAtRatio(state.price._x);
             }
         }
 
-        // TODO could probably be optimized
-        if (state.tick != TickMath.getTickAtRatio(priceCurrent._x)) {
+        if (state.tick != params.tickStart) {
+            // must be called before updating the price or liquidity
             _updateAccumulators();
             liquidityCurrent = state.liquidityCurrent;
         }
@@ -692,8 +703,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount1Out) {
         require(amount0In > 0, 'UniswapV3Pair::swap0For1: amountIn must be greater than 0');
 
-        SwapParams memory params = SwapParams({zeroForOne: true, amountIn: amount0In, to: to, data: data});
-        return _swap(params);
+        return
+            _swap(
+                SwapParams({
+                    tickStart: TickMath.getTickAtRatio(priceCurrent._x),
+                    zeroForOne: true,
+                    amountIn: amount0In,
+                    to: to,
+                    data: data
+                })
+            );
     }
 
     // move from left to right (token 0 is becoming more valuable)
@@ -704,8 +723,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount0Out) {
         require(amount1In > 0, 'UniswapV3Pair::swap1For0: amountIn must be greater than 0');
 
-        SwapParams memory params = SwapParams({zeroForOne: false, amountIn: amount1In, to: to, data: data});
-        return _swap(params);
+        return
+            _swap(
+                SwapParams({
+                    tickStart: TickMath.getTickAtRatio(priceCurrent._x),
+                    zeroForOne: false,
+                    amountIn: amount1In,
+                    to: to,
+                    data: data
+                })
+            );
     }
 
     function recover(
