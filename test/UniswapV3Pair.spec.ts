@@ -1131,7 +1131,7 @@ describe('UniswapV3Pair', () => {
           expect(await pair.tickCurrent()).to.eq(1200)
         })
         it.skip('swapping across gaps works in 0 for 1 direction', async () => {
-          const liquidityAmount = expandTo18Decimals(1).div(4)
+          const liquidityAmount = expandTo18Decimals(1).div(4)π
           await pair.setPosition(-1212, -1200, liquidityAmount)
           await pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x')
           await expect(pair.setPosition(-1212, -1200, liquidityAmount.mul(-1)))
