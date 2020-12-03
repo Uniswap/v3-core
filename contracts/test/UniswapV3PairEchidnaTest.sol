@@ -77,12 +77,12 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function echidna_tickIsWithinBounds() external view returns (bool) {
-        int24 tick = pair.tickCurrent();
+        int24 tick = pair.getTickAtRatio(pair.priceCurrent());
         return (tick < TickMath.MAX_TICK && tick >= TickMath.MIN_TICK);
     }
 
     function echidna_priceIsWithinTickCurrent() external view returns (bool) {
-        int24 tick = pair.tickCurrent();
+        int24 tick = pair.getTickAtRatio(pair.priceCurrent());
         FixedPoint128.uq128x128 memory priceCurrent = FixedPoint128.uq128x128(pair.priceCurrent());
         return (TickMath.getRatioAtTick(tick) <= priceCurrent._x &&
             TickMath.getRatioAtTick(tick + 1) > priceCurrent._x);
