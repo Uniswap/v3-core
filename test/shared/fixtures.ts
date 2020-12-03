@@ -66,7 +66,8 @@ export async function pairFixture([owner]: [Signer]): Promise<PairFixture> {
       factory.address,
       token0.address,
       token1.address,
-      FEES[feeVote]
+      FEES[feeVote],
+      1
     )) as MockTimeUniswapV3Pair
     await pair.setTime(TEST_PAIR_START_TIME)
     pairs[feeVote] = pair

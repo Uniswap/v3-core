@@ -298,6 +298,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             tickUpper <= TickMath.MAX_TICK,
             'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick'
         );
+        require(
+            tickLower % tickSpacing == 0 && tickUpper % tickSpacing == 0,
+            'UniswapV3Pair::setPosition: tickLower and tickUpper must be multiples of tickSpacing'
+        );
 
         return
             _setPosition(
