@@ -24,7 +24,7 @@ const createFixtureLoader = waffle.createFixtureLoader
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
-describe('UniswapV3Pair', () => {
+describe.only('UniswapV3Pair', () => {
   let wallet: Signer
   let other: Signer
   let walletAddress: string
@@ -86,7 +86,7 @@ describe('UniswapV3Pair', () => {
       await pair.initialize(price)
       expect(await pair.priceCurrent()).to.eq(price)
       expect(await pair.blockTimestampLast()).to.eq(TEST_PAIR_START_TIME)
-      expect(await pair.tickCurrent()).to.eq(-70)
+      expect(await pair.tickCurrent()).to.eq(-6932)
       expect(await pair.liquidityCurrent()).to.eq(1)
     })
     it('initializes MIN_TICK and MAX_TICK', async () => {
@@ -203,7 +203,7 @@ describe('UniswapV3Pair', () => {
 
         describe('below current price', () => {
           it('transfers token0 only', async () => {
-            await expect(pair.setPosition(-231, 0, 10000))
+            await expect(pair.setPosition(-23028, 0, 10000))
               .to.emit(token0, 'Transfer')
               .withArgs(walletAddress, pair.address, 21559)
             expect(await token0.balanceOf(pair.address)).to.eq(10000 + 21559)
@@ -211,7 +211,7 @@ describe('UniswapV3Pair', () => {
           })
 
           it('works for max tick', async () => {
-            await expect(pair.setPosition(-231, MAX_TICK, 10000))
+            await expect(pair.setPosition(-23028, MAX_TICK, 10000))
               .to.emit(token0, 'Transfer')
               .withArgs(walletAddress, pair.address, 31559)
             expect(await token0.balanceOf(pair.address)).to.eq(10000 + 31559)

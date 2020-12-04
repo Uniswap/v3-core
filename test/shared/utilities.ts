@@ -1,7 +1,7 @@
 import {BigNumber, BigNumberish, utils, constants} from 'ethers'
 
-export const MIN_TICK = -7351
-export const MAX_TICK = 7351
+export const MIN_TICK = -734773
+export const MAX_TICK = 734773
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('5192296858534827628530496329220095')
 
 export enum FeeAmount {
@@ -11,9 +11,9 @@ export enum FeeAmount {
 }
 
 export const TICK_SPACINGS: {[amount in FeeAmount]: number} = {
-  [FeeAmount.LOW]: 1,
-  [FeeAmount.MEDIUM]: 1,
-  [FeeAmount.HIGH]: 1,
+  [FeeAmount.LOW]: 12,
+  [FeeAmount.MEDIUM]: 60,
+  [FeeAmount.HIGH]: 180,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {

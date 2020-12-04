@@ -34,7 +34,7 @@ describe('TickMath', () => {
 
     describe('matches js implementation', () => {
       function exactTickRatioQ128x128(tick: number): BigNumberish {
-        const value = Q128.mul(BigNumber.from(101).pow(Math.abs(tick))).div(BigNumber.from(100).pow(Math.abs(tick)))
+        const value = Q128.mul(BigNumber.from(10001).pow(Math.abs(tick))).div(BigNumber.from(10000).pow(Math.abs(tick)))
         return tick > 0 ? value : Q128.mul(Q128).div(value)
       }
 
@@ -60,8 +60,8 @@ describe('TickMath', () => {
         }
       })
 
-      describe('large ticks', () => {
-        for (let tick of [50, 100, 250, 500, 1000, 2500, 3000, 4000, 5000, 6000, 7000, MAX_TICK]) {
+      describe('larger ticks', () => {
+        for (let tick of [50, 100, 250, 500, 1000, 2500, 3000, 4000, 5000, 6000, 7000]) {
           it(`tick index: ${tick}`, async () => {
             await checkApproximatelyEquals(
               tickMathTest.getRatioAtTick(tick),
@@ -85,16 +85,16 @@ describe('TickMath', () => {
       await checkApproximatelyEquals(tickMathTest.getRatioAtTick(0), Q128, 0)
     })
     it('returns ~2/1 for tick 70', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(70), BigNumber.from(2).mul(Q128), 34)
+      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(6932), BigNumber.from(2).mul(Q128), 1)
     })
     it('returns ~1/2 for tick -70', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-70), Q128.div(2), 34)
+      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-6932), Q128.div(2), 1)
     })
     it('returns ~1/4 for tick -140', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-140), Q128.div(4), 70)
+      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-13864), Q128.div(4), 1)
     })
     it('returns ~4/1 for tick 140', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(140), Q128.mul(4), 70)
+      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(13864), Q128.mul(4), 1)
     })
 
     it('tick too large', async () => {
@@ -136,14 +136,14 @@ describe('TickMath', () => {
       )
     })
     it('ratio at min tick boundary', async () => {
-      expect(await tickMathTest.getTickAtRatio({_x: BigNumber.from('5826674')})).to.eq(MIN_TICK)
+      expect(await tickMathTest.getTickAtRatio({_x: BigNumber.from('5826674')})).to.eq(-731486)
     })
     it('ratio at max tick boundary', async () => {
       expect(
         await tickMathTest.getTickAtRatio({
           _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867415'),
         })
-      ).to.eq(MAX_TICK - 1)
+      ).to.eq(731485)
     })
 
     it('lowerBound = upperBound - 1', async () => {
@@ -159,7 +159,7 @@ describe('TickMath', () => {
     it('works for arbitrary prices', async () => {
       // got this tick from the spec
       const randomPriceAtTick365 = {_x: '12857036465196691992791697221653775109723'}
-      expect(await tickMathTest.getTickAtRatio(randomPriceAtTick365)).to.eq(365)
+      expect(await tickMathTest.getTickAtRatio(randomPriceAtTick365)).to.eq(36320)
     })
 
     it('lowerBound and upper bound are both off', async () => {
@@ -174,7 +174,7 @@ describe('TickMath', () => {
     })
 
     it('accuracy', async () => {
-      expect(await tickMathTest.getTickAtRatio({_x: '5192296858534827628530496329220095'})).to.eq(-1115)
+      expect(await tickMathTest.getTickAtRatio({_x: '5192296858534827628530496329220095'})).to.eq(-110910)
     })
 
     it('gas cost price exactly at 0', async () => {

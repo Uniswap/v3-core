@@ -30,7 +30,7 @@ describe('UniswapV3Factory', () => {
   })
 
   async function createAndCheckPair(tokens: [string, string], feeAmount: FeeAmount) {
-    const create2Address = getCreate2Address(factory.address, tokens, feeAmount, 1, pairBytecode)
+    const create2Address = getCreate2Address(factory.address, tokens, feeAmount, TICK_SPACINGS[feeAmount], pairBytecode)
     const create = factory.createPair(tokens[0], tokens[1], feeAmount)
 
     await expect(create)
@@ -58,10 +58,15 @@ describe('UniswapV3Factory', () => {
   }
 
   describe('#createPair', () => {
-    it('succeeds', async () => {
+    it('succeeds for low fee', async () => {
+      await createAndCheckPair(TEST_ADDRESSES, FeeAmount.LOW)
+    })
+    it('succeeds for medium fee', async () => {
       await createAndCheckPair(TEST_ADDRESSES, FeeAmount.MEDIUM)
     })
-
+    it('succeeds for high fee', async () => {
+      await createAndCheckPair(TEST_ADDRESSES, FeeAmount.HIGH)
+    })
     it('succeeds in reverse', async () => {
       await createAndCheckPair([TEST_ADDRESSES[1], TEST_ADDRESSES[0]], FeeAmount.MEDIUM)
     })

@@ -26,9 +26,9 @@ contract UniswapV3Factory is IUniswapV3Factory {
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
 
-        _enableFeeAmount(600, 1);
-        _enableFeeAmount(3000, 1);
-        _enableFeeAmount(9000, 1);
+        _enableFeeAmount(600, 12);
+        _enableFeeAmount(3000, 60);
+        _enableFeeAmount(9000, 180);
     }
 
     function createPair(
