@@ -10,7 +10,7 @@ exports[`TickBitmap #isInitialized gas if tick is initialized 1`] = `1067`;
 
 exports[`TickBitmap #isInitialized gas if tick is not initialized 1`] = `1067`;
 
-exports[`TickBitmap #nextInitializedTick initialized lte = false gas cost many iterations 1`] = `26220`;
+exports[`TickBitmap #nextInitializedTick initialized lte = false gas cost many iterations 1`] = `3672542`;
 
 exports[`TickBitmap #nextInitializedTick initialized lte = false gas cost single iteration 1`] = `3206`;
 
