@@ -10,7 +10,7 @@ export enum FeeAmount {
   HIGH = 9000,
 }
 
-export const TICK_SPACINGS: {[vote in FeeAmount]: number} = {
+export const TICK_SPACINGS: {[amount in FeeAmount]: number} = {
   [FeeAmount.LOW]: 1,
   [FeeAmount.MEDIUM]: 1,
   [FeeAmount.HIGH]: 1,
