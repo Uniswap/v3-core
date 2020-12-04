@@ -30,7 +30,7 @@ describe('UniswapV3Factory', () => {
   })
 
   async function createAndCheckPair(tokens: [string, string], feeAmount: FeeAmount) {
-    const create2Address = getCreate2Address(factory.address, tokens, feeAmount, 1, pairBytecode)
+    const create2Address = getCreate2Address(factory.address, tokens, feeAmount, TICK_SPACINGS[feeAmount], pairBytecode)
     const create = factory.createPair(tokens[0], tokens[1], feeAmount)
 
     await expect(create)
@@ -58,16 +58,24 @@ describe('UniswapV3Factory', () => {
   }
 
   describe('#createPair', () => {
-    it('succeeds', async () => {
+    it('succeeds for low fee pair', async () => {
+      await createAndCheckPair(TEST_ADDRESSES, FeeAmount.LOW)
+    })
+
+    it('succeeds for medium fee pair', async () => {
       await createAndCheckPair(TEST_ADDRESSES, FeeAmount.MEDIUM)
     })
 
-    it('succeeds in reverse', async () => {
+    it('succeeds for high fee pair', async () => {
+      await createAndCheckPair(TEST_ADDRESSES, FeeAmount.HIGH)
+    })
+
+    it('succeeds if tokens are passed in reverse', async () => {
       await createAndCheckPair([TEST_ADDRESSES[1], TEST_ADDRESSES[0]], FeeAmount.MEDIUM)
     })
 
     it('gas', async () => {
-      await snapshotGasCost(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.LOW))
+      await snapshotGasCost(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM))
     })
   })
 
