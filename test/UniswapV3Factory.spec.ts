@@ -58,21 +58,23 @@ describe('UniswapV3Factory', () => {
   }
 
   describe('#createPair', () => {
-    it('succeeds for low fee', async () => {
+    it('succeeds for low fee pair', async () => {
       await createAndCheckPair(TEST_ADDRESSES, FeeAmount.LOW)
     })
-    it('succeeds for medium fee', async () => {
+
+    it('succeeds for medium fee pair', async () => {
       await createAndCheckPair(TEST_ADDRESSES, FeeAmount.MEDIUM)
     })
-    it('succeeds for high fee', async () => {
+    it('succeeds for high fee pair', async () => {
       await createAndCheckPair(TEST_ADDRESSES, FeeAmount.HIGH)
     })
-    it('succeeds in reverse', async () => {
+
+    it('succeeds if tokens are passed in reverse', async () => {
       await createAndCheckPair([TEST_ADDRESSES[1], TEST_ADDRESSES[0]], FeeAmount.MEDIUM)
     })
 
     it('gas', async () => {
-      await snapshotGasCost(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.LOW))
+      await snapshotGasCost(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM))
     })
   })
 
