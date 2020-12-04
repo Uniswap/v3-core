@@ -10,7 +10,7 @@ exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas 1`] = `190654`;
 
 exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap 1`] = `790324`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap crossing several initialized ticks 1`] = `997970`;
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap crossing several initialized ticks 1`] = `978511`;
 
 exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas 1`] = `182261`;
 
