@@ -5,13 +5,19 @@
 
 
 
-### `constructor(uint256 amountToMint)` (public)
+## `constructor(uint256 amountToMint)` (public)
 
 
 
 
 
-### `mint(address to, uint256 amount)` (public)
+
+
+## `mint(address to, uint256 amount)` (public)
+
+
+
+
 
 
 

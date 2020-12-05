@@ -5,19 +5,27 @@
 
 
 
-### `constructor(address factory, address tokenA, address tokenB, uint24 fee)` (public)
+## `constructor(address factory, address tokenA, address tokenB, uint24 fee)` (public)
 
 
 
 
 
-### `setTime(uint32 _time)` (external)
+
+
+## `setTime(uint32 _time)` (external)
 
 
 
 
 
-### `_blockTimestamp() → uint32` (internal)
+
+
+## `_blockTimestamp() → uint32` (internal)
+
+
+
+
 
 
 

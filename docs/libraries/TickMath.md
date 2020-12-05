@@ -5,7 +5,11 @@
 
 
 
-### `getRatioAtTick(int24 tick) → struct FixedPoint128.uq128x128` (internal)
+## `getRatioAtTick(int24 tick) → struct FixedPoint128.uq128x128` (internal)
+
+
+
+
 
 
 

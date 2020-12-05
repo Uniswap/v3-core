@@ -5,13 +5,16 @@
 
 
 
-### `owner() → address` (external)
+## `owner() → address` (external)
 
 
 
 
 
-### `allPairs(uint256) → address pair` (external)
+
+# : the owner address.
+
+## `allPairs(uint256) → address pair` (external)
 
 Gets the address of a given pair contract.
 
@@ -19,55 +22,93 @@ Gets the address of a given pair contract.
 Pass the uint representing the pair address in the allPairs array.
 
 
-### `allPairsLength() → uint256` (external)
+
+# : Returns the pair address.
+
+## `allPairsLength() → uint256` (external)
 
 Gets length of the allPairs array.
 
 
 
 
-### `allEnabledFeeOptions(uint256) → uint24` (external)
+
+# : of allPairs address array.
+
+## `allEnabledFeeOptions(uint256) → uint24` (external)
 
 
 
 
 
-### `allEnabledFeeOptionsLength() → uint256` (external)
+
+
+## `allEnabledFeeOptionsLength() → uint256` (external)
 
 Gets length of allEnabledFeeOptions array.
 
 
 
 
-### `getPair(address tokenA, address tokenB, uint24 fee) → address pair` (external)
+
+# : of allEnabledFeeOptions array.
+
+## `getPair(address tokenA, address tokenB, uint24 fee) → address pair` (external)
 
 Gets the address of a trading pair.
 
 
 
 
-### `isFeeOptionEnabled(uint24 fee) → bool` (external)
+# tokenA: The first token of the pair.
+
+# tokenB: The second token of the pair.
+
+# fee: The fee of the pair.
+
+
+# : Returns address of the pair given the previous arguments.
+
+## `isFeeOptionEnabled(uint24 fee) → bool` (external)
 
 
 
 
 
-### `createPair(address tokenA, address tokenB, uint24 fee) → address pair` (external)
+
+
+## `createPair(address tokenA, address tokenB, uint24 fee) → address pair` (external)
 
 Deploys a new trading pair.
 
 
 
 
-### `setOwner(address)` (external)
+# tokenA: the first token of the desired pair.
+
+# tokenB: the second token of the desired pair.
+
+# fee: the desired fee.
+
+
+# : Returns the address of the newly deployed pair.
+
+## `setOwner(address)` (external)
 
 Sets Factory contract owner to a new address.
 
 
 
-### `enableFeeOption(uint24 fee)` (external)
+
+
+## `enableFeeOption(uint24 fee)` (external)
 
 If chosen, enables the fee option when a pair is deployed.
+
+
+
+
+# fee: The chosen fee option - passed via createPair.
 
 
 
