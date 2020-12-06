@@ -13,4 +13,12 @@ contract SqrtPriceMathTest {
     ) external pure returns (uint128 sqrtQ) {
         return SqrtPriceMath.getPriceAfterSwap(sqrtP, liquidity, amountIn, zeroForOne);
     }
+
+    function getAmountDeltas(
+        uint128 sqrtP,
+        uint128 sqrtQ,
+        uint128 liquidity
+    ) external pure returns (int256 amount0, int256 amount1) {
+        return SqrtPriceMath.getAmountDeltas(sqrtP, sqrtQ, liquidity);
+    }
 }
