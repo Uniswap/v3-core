@@ -146,7 +146,7 @@ describe.only('SqrtPriceMath', () => {
       expect(amount0).to.eq('-90909090909090910')
       expect(amount1).to.eq('99999999999999999')
     })
-    it('returns 0.1 amount0 for pirce of 1 to 1/1.21', async () => {
+    it('returns 0.1 amount0 for price of 1 to 1/1.21', async () => {
       const {amount0, amount1} = await sqrtPriceMath.getAmountDeltas(
         encodePriceSqrt(1, 1),
         encodePriceSqrt(100, 121),
