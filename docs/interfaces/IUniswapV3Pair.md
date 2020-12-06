@@ -129,7 +129,7 @@ Check for one-time initialization.
 
 
 
-# : determining if there is already a price, thus already an initialized pair.
+: determining if there is already a price, thus already an initialized pair.
 
 ## `initialize(int24 tick)` (external)
 
@@ -138,7 +138,7 @@ Initializes a new pair.
 
 
 
-# tick: The nearest tick to the estimated price, given the ratio of token0 / token1.
+tick: The nearest tick to the estimated price, given the ratio of token0 / token1.
 
 
 ## `setPosition(int24 tickLower, int24 tickUpper, int128 liquidityDelta) → int256 amount0, int256 amount1` (external)
@@ -148,16 +148,16 @@ Sets the position of a given liquidity provision.
 
 
 
-# tickLower: The lower boundary of the position.
+tickLower: The lower boundary of the position.
 
-# tickUpper: The upper boundary of the position.
+tickUpper: The upper boundary of the position.
 
-# liquidityDelta: The liquidity delta. (TODO what is it).
+liquidityDelta: The liquidity delta. (TODO what is it).
 
 
-# : The amount of the first token.
+: The amount of the first token.
 
-# : The amount of the second token.
+: The amount of the second token.
 
 ## `swap0For1(uint256 amount0In, address to, bytes data) → uint256 amount1Out` (external)
 
@@ -167,11 +167,11 @@ Used when moving from right to left (token 1 is becoming more valuable).
 
 
 
-# amount0In: Amount of token you are sending.
+amount0In: Amount of token you are sending.
 
-# to: The destination address of the tokens.
+to: The destination address of the tokens.
 
-# data: The call data of the swap.
+data: The call data of the swap.
 
 
 ## `swap1For0(uint256 amount1In, address to, bytes data) → uint256 amount0Out` (external)
@@ -182,11 +182,11 @@ Used when moving from left to right (token 0 is becoming more valuable).
 
 
 
-# amount1In: amount of token you are sending.
+amount1In: amount of token you are sending.
 
-# to: The destination address of the tokens.
+to: The destination address of the tokens.
 
-# data: The call data of the swap.
+data: The call data of the swap.
 
 
 ## `setFeeTo(address)` (external)
@@ -204,17 +204,15 @@ Allows factory contract owner to recover tokens, other than token0 and token1, a
 
 
 
-# token: The token address.
+token: The token address.
 
-# to: The destination address of the transfer.
+to: The destination address of the transfer.
 
-# amount: The amount of the token to be recovered.
-
-
+amount: The amount of the token to be recovered.
 
 
 
-### `Initialized(int24 tick)`
+## `Initialized(int24 tick)`
 
 
 

@@ -14,7 +14,7 @@ Gets length of allPairs array.
 
 
 
-# : of allPairs address array.
+: of allPairs address array.
 
 ## `allEnabledFeeOptionsLength() → uint256` (external)
 
@@ -24,7 +24,7 @@ Gets length of allEnabledFeeOptions array.
 
 
 
-# : of allEnabledFeeOptions array.
+: of allEnabledFeeOptions array.
 
 ## `constructor(address _owner)` (public)
 
@@ -33,7 +33,7 @@ The Factory contract constructor.
 
 
 
-# _owner: The owner of the Factory contract.
+_owner: The owner of the Factory contract.
 
 
 ## `createPair(address tokenA, address tokenB, uint24 fee) → address pair` (external)
@@ -43,14 +43,14 @@ Deploys a new trading pair.
 
 
 
-# tokenA: the first token of the desired pair.
+tokenA: the first token of the desired pair.
 
-# tokenB: the second token of the desired pair.
+tokenB: the second token of the desired pair.
 
-# fee: the desired fee.
+fee: the desired fee.
 
 
-# : Returns the address of the newly deployed pair.
+: Returns the address of the newly deployed pair.
 
 ## `setOwner(address _owner)` (external)
 
@@ -59,7 +59,7 @@ Sets Factory contract owner to a new address.
 
 only callable by current owner of factory contract.
 
-# _owner: The new owner of the factory contract.
+_owner: The new owner of the factory contract.
 
 
 
@@ -70,9 +70,7 @@ If chosen, enables the fee option when a pair is deployed.
 
 
 
-# fee: The chosen fee option - passed via createPair.
-
-
+fee: The chosen fee option - passed via createPair.
 
 
 

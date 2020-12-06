@@ -7,6 +7,7 @@ interface IUniswapV3Factory {
     event PairCreated(address indexed token0, address indexed token1, uint24 indexed fee, address pair, uint256);
     event FeeOptionEnabled(uint24 indexed fee);
 
+    /// @notice Gets the owner address of the factory contract.
     /// @return Returns the owner address.
     function owner() external view returns (address);
 
