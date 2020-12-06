@@ -5,7 +5,7 @@ import {SqrtPriceMathTest} from '../typechain/SqrtPriceMathTest'
 import {expect} from './shared/expect'
 import {encodePriceSqrt, expandTo18Decimals} from './shared/utilities'
 
-describe.only('SqrtPriceMath', () => {
+describe('SqrtPriceMath', () => {
   let sqrtPriceMath: SqrtPriceMathTest
   before(async () => {
     const sqrtPriceMathTestFactory = await ethers.getContractFactory('SqrtPriceMathTest')

@@ -2,14 +2,18 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
+import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 
 import './FixedPoint128.sol';
 import './SafeCast.sol';
 
+import 'hardhat/console.sol';
+
 library SqrtPriceMath {
     using SafeCast for uint256;
+    using SafeCast for int256;
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
@@ -43,5 +47,54 @@ library SqrtPriceMath {
 
         amount0 = (int256(liquidity << 64) / int256(sqrtQ)).sub((int256(liquidity) << 64) / int256(sqrtP));
         amount1 = int256(liquidity).mul(int256(sqrtQ) - int256(sqrtP)).div(int256(Q64));
+    }
+
+    function mulDivRoundingUp(
+        uint256 x,
+        uint256 y,
+        uint256 d
+    ) internal pure returns (uint256) {
+        return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
+    }
+
+    function computeSwap(
+        FixedPoint128.uq128x128 memory price,
+        FixedPoint128.uq128x128 memory target,
+        uint128 liquidity,
+        uint256 amountInMax,
+        uint24 feePips,
+        bool zeroForOne
+    )
+        internal
+        pure
+        returns (
+            FixedPoint128.uq128x128 memory priceAfter,
+            uint256 amountIn,
+            uint256 amountOut
+        )
+    {
+        uint128 sqrtP = uint128(Babylonian.sqrt(price._x));
+        uint128 targetRoot = uint128(Babylonian.sqrt(target._x));
+        uint256 amountInLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
+
+        uint128 sqrtQ = getPriceAfterSwap(sqrtP, liquidity, amountInLessFee, zeroForOne);
+
+        // max the q out to not exceed the target price
+        sqrtQ = zeroForOne ? (sqrtQ < targetRoot ? targetRoot : sqrtQ) : (sqrtQ > targetRoot ? targetRoot : sqrtQ);
+        priceAfter = sqrtQ == targetRoot ? target : FixedPoint128.uq128x128(uint256(sqrtQ)**2);
+
+        (int256 amount0, int256 amount1) = getAmountDeltas(sqrtP, sqrtQ, liquidity);
+        if (zeroForOne) {
+            require(amount0 >= 0 && amount1 <= 0, 'blah1');
+            amountIn = uint256(amount0);
+            amountOut = uint256(-amount1);
+        } else {
+            require(amount0 <= 0 && amount1 >= 0, 'blah2');
+            amountIn = uint256(amount1);
+            amountOut = uint256(-amount0);
+        }
+        amountIn = FullMath.mulDiv(amountIn, 1e6, 1e6 - feePips).add(2);
+        if (amountIn > amountInMax) amountIn = amountInMax;
+        if (amountOut > 0) amountOut--;
     }
 }

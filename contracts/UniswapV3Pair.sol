@@ -13,6 +13,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/PriceMath.sol';
+import './libraries/SqrtPriceMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -525,28 +526,20 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                // recompute reserves given the current price/liquidity
-                (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
+                (state.price, step.amountIn, step.amountOut) = SqrtPriceMath.computeSwap(
                     state.price,
-                    state.liquidityCurrent,
-                    false
-                );
-
-                // compute the amount of input token required to push the price to the target (and max output token)
-                (uint256 amountInMax, uint256 amountOutMax) = PriceMath.getInputToRatio(
-                    step.reserve0Virtual,
-                    step.reserve1Virtual,
-                    state.liquidityCurrent,
                     step.priceNext,
+                    state.liquidityCurrent,
+                    state.amountInRemaining,
                     fee,
                     params.zeroForOne
                 );
 
-                // swap to the next tick, or stop early if we've exhausted all the input
-                step.amountIn = Math.min(amountInMax, state.amountInRemaining);
-
                 // decrement remaining input amount
-                state.amountInRemaining -= step.amountIn;
+                state.amountInRemaining = state.amountInRemaining.sub(
+                    step.amountIn,
+                    'computed step amount in is greater than remaining'
+                );
 
                 // discount the input amount by the fee
                 uint256 amountInLessFee = step.amountIn.mul(PriceMath.LP_FEE_BASE - fee) / PriceMath.LP_FEE_BASE;
@@ -560,38 +553,9 @@ contract UniswapV3Pair is IUniswapV3Pair, TickMath1r01 {
                 }
 
                 // handle the swap
-                if (amountInLessFee > 0) {
-                    // calculate the owed output amount on the discounted input amount
-                    step.amountOut = params.zeroForOne
-                        ? PriceMath.getAmountOut(step.reserve0Virtual, step.reserve1Virtual, amountInLessFee)
-                        : PriceMath.getAmountOut(step.reserve1Virtual, step.reserve0Virtual, amountInLessFee);
-
-                    // cap the output amount
-                    step.amountOut = Math.min(step.amountOut, amountOutMax);
-
+                if (step.amountOut > 0) {
                     // increment amountOut
                     amountOut = amountOut.add(step.amountOut);
-                }
-
-                // update the price
-                // if we've consumed the input required to get to the target price, that's the price now!
-                if (step.amountIn == amountInMax) {
-                    state.price = step.priceNext;
-                } else {
-                    // if not, the price is the new ratio of (computed) reserves, capped at the target price
-                    if (params.zeroForOne) {
-                        FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
-                            step.reserve1Virtual.sub(step.amountOut),
-                            step.reserve0Virtual.add(amountInLessFee)
-                        );
-                        state.price = FixedPoint128.uq128x128(Math.max(step.priceNext._x, priceEstimate._x));
-                    } else {
-                        FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
-                            step.reserve1Virtual.add(amountInLessFee),
-                            step.reserve0Virtual.sub(step.amountOut)
-                        );
-                        state.price = FixedPoint128.uq128x128(Math.min(step.priceNext._x, priceEstimate._x));
-                    }
                 }
             }
 

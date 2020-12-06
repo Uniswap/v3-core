@@ -1,10 +1,9 @@
 import {ethers, waffle} from 'hardhat'
-import {BigNumber, BigNumberish, constants, Signer} from 'ethers'
+import {BigNumberish, constants, Signer} from 'ethers'
 import {TestERC20} from '../typechain/TestERC20'
 import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
 import {MockTimeUniswapV3Pair} from '../typechain/MockTimeUniswapV3Pair'
 import {TestUniswapV3Callee} from '../typechain/TestUniswapV3Callee'
-import {TickMathTest} from '../typechain/TickMathTest'
 import {expect} from './shared/expect'
 
 import {pairFixture, TEST_PAIR_START_TIME} from './shared/fixtures'
@@ -22,7 +21,7 @@ import {
 
 const createFixtureLoader = waffle.createFixtureLoader
 
-describe('UniswapV3Pair', () => {
+describe.only('UniswapV3Pair', () => {
   let wallet: Signer
   let other: Signer
   let walletAddress: string
@@ -604,7 +603,7 @@ describe('UniswapV3Pair', () => {
 
       await expect(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684085616395642021')
+        .withArgs(pair.address, walletAddress, '684085616395642019')
     })
 
     it('swap0For1 gas large swap crossing several initialized ticks', async () => {
@@ -654,7 +653,7 @@ describe('UniswapV3Pair', () => {
 
       await expect(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684085616395642021')
+        .withArgs(pair.address, walletAddress, '684085616395642022')
     })
 
     it('swap1For0 gas large swap crossing several initialized ticks', async () => {
@@ -740,7 +739,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, walletAddress, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '94965947516311854')
+        .withArgs(pair.address, walletAddress, '94965947516311853')
 
       expect(await tickCurrent()).to.eq(-10)
     })
@@ -758,7 +757,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, walletAddress, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '95298218973436071')
+        .withArgs(pair.address, walletAddress, '95298218973436070')
 
       expect(await tickCurrent()).to.eq(-10)
     })
@@ -805,7 +804,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '95298218973436071')
+        .withArgs(pair.address, walletAddress, '95298218973436073')
 
       expect(await tickCurrent()).to.eq(9)
     })
