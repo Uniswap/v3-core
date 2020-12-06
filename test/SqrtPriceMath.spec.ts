@@ -8,8 +8,8 @@ import {encodePriceSqrt, expandTo18Decimals} from './shared/utilities'
 describe.only('SqrtPriceMath', () => {
   let sqrtPriceMath: SqrtPriceMathTest
   before(async () => {
-    const priceMathTestFactory = await ethers.getContractFactory('SqrtPriceMathTest')
-    sqrtPriceMath = (await priceMathTestFactory.deploy()) as SqrtPriceMathTest
+    const sqrtPriceMathTestFactory = await ethers.getContractFactory('SqrtPriceMathTest')
+    sqrtPriceMath = (await sqrtPriceMathTestFactory.deploy()) as SqrtPriceMathTest
   })
 
   describe('#getPriceAfterSwap', () => {
@@ -96,7 +96,7 @@ describe.only('SqrtPriceMath', () => {
     })
   })
 
-  describe.only('#getAmountDeltas', () => {
+  describe('#getAmountDeltas', () => {
     it('throws if either price is 0', async () => {
       await expect(sqrtPriceMath.getAmountDeltas(0, encodePriceSqrt(1, 1), 1)).to.be.revertedWith(
         'SqrtPriceMath::getAmountDeltas: price cannot be 0'
