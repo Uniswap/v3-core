@@ -143,7 +143,7 @@ describe.only('SqrtPriceMath', () => {
         encodePriceSqrt(121, 100),
         expandTo18Decimals(1)
       )
-      expect(amount0).to.eq('-90909090909090910')
+      expect(amount0).to.eq('-90909090909090909')
       expect(amount1).to.eq('99999999999999999')
     })
     it('returns 0.1 amount0 for price of 1 to 1/1.21', async () => {

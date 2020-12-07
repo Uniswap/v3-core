@@ -42,10 +42,13 @@ library SqrtPriceMath {
         require(sqrtP != 0 && sqrtQ != 0, 'SqrtPriceMath::getAmountDeltas: price cannot be 0');
         if (sqrtP == sqrtQ || liquidity == 0) return (0, 0);
 
-        int256 divisibleLiquidity = int256(liquidity) << 64;
-
-        // todo: precision loss on amount0
-        amount0 = (divisibleLiquidity / int256(sqrtQ)).sub(divisibleLiquidity / int256(sqrtP));
+        uint256 denom = uint256(sqrtP).mul(sqrtQ);
+        uint256 amount0Abs = FullMath.mulDiv(
+            liquidity,
+            uint256(sqrtP < sqrtQ ? sqrtQ - sqrtP : sqrtP - sqrtQ) << 64,
+            denom
+        );
+        amount0 = sqrtP < sqrtQ ? -amount0Abs.toInt256() : amount0Abs.toInt256();
 
         amount1 = int256(liquidity).mul(int256(sqrtQ) - int256(sqrtP)).div(int256(Q64));
     }
