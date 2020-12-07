@@ -18,12 +18,13 @@ import {
   MAX_LIQUIDITY_GROSS_PER_TICK,
   encodePrice,
 } from './shared/utilities'
+import {TickMathTest} from '../typechain/TickMathTest'
 
 const createFixtureLoader = waffle.createFixtureLoader
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
-describe.only('UniswapV3Pair', () => {
+describe('UniswapV3Pair', () => {
   let wallet: Signer
   let other: Signer
   let walletAddress: string
@@ -600,7 +601,7 @@ describe.only('UniswapV3Pair', () => {
 
       await expect(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684085616395642019')
+        .withArgs(pair.address, walletAddress, '684358904605133179')
     })
 
     it('swap0For1 gas large swap crossing several initialized ticks', async () => {
@@ -650,7 +651,7 @@ describe.only('UniswapV3Pair', () => {
 
       await expect(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684085616395642022')
+        .withArgs(pair.address, walletAddress, '684358904605133182')
     })
 
     it('swap1For0 gas large swap crossing several initialized ticks', async () => {
@@ -1125,7 +1126,7 @@ describe.only('UniswapV3Pair', () => {
             .to.emit(token0, 'Transfer')
             .withArgs(pair.address, walletAddress, '15281912612800')
             .to.emit(token1, 'Transfer')
-            .withArgs(pair.address, walletAddress, '501500000000003250')
+            .withArgs(pair.address, walletAddress, '501499999999999799')
           expect(await pair.tickCurrent()).to.eq(1202)
         })
         it('swapping across gaps works in 0 for 1 direction', async () => {
@@ -1134,7 +1135,7 @@ describe.only('UniswapV3Pair', () => {
           await pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x')
           await expect(pair.setPosition(-1212, -1200, liquidityAmount.div(-2)))
             .to.emit(token0, 'Transfer')
-            .withArgs(pair.address, walletAddress, '501500000000003250')
+            .withArgs(pair.address, walletAddress, '501500000000000359')
             .to.emit(token1, 'Transfer')
             .withArgs(pair.address, walletAddress, '15281912612800')
           expect(await pair.tickCurrent()).to.eq(-1203)
