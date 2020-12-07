@@ -39,16 +39,4 @@ library SpacedTickBitmap {
         (next, initialized) = self.nextInitializedTickWithinOneWord(compressed, lte);
         next = tick + (next - compressed) * tickSpacing;
     }
-
-    function nextInitializedTick(
-        mapping(int16 => uint256) storage self,
-        int24 tick,
-        bool lte,
-        int24 minOrMax,
-        int24 tickSpacing
-    ) internal view returns (int24 next) {
-        int24 compressed = compressedTick(tick, tickSpacing);
-        next = self.nextInitializedTick(compressed, lte, compressedTick(minOrMax, tickSpacing));
-        next = tick + (next - compressed) * tickSpacing;
-    }
 }

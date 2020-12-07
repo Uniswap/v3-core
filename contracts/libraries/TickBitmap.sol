@@ -60,31 +60,4 @@ library TickBitmap {
             return ((tick + 1) + (int24(bitPos) - int24(BitMath.mostSignificantBit(masked))), true);
         }
     }
-
-    // same as above, but iterates until it finds the next initialized tick
-    function nextInitializedTick(
-        mapping(int16 => uint256) storage self,
-        int24 tick,
-        bool lte,
-        int24 minOrMax
-    ) internal view returns (int24 next) {
-        require(
-            lte ? minOrMax <= tick : minOrMax > tick,
-            'TickBitmap::nextInitializedTick: minOrMax must be in the direction of lte'
-        );
-
-        bool initialized;
-        next = tick;
-        if (lte) {
-            while (next >= minOrMax && !initialized) {
-                (next, initialized) = nextInitializedTickWithinOneWord(self, next, true);
-                if (!initialized) next--;
-            }
-        } else {
-            while (next < minOrMax && !initialized) {
-                (next, initialized) = nextInitializedTickWithinOneWord(self, next, false);
-            }
-        }
-        require(initialized, 'TickBitmap::nextInitializedTick: no initialized next tick');
-    }
 }
