@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SqrtPriceMath #getAmountDeltas gas cost for amount0/false 1`] = `971`;
+
+exports[`SqrtPriceMath #getAmountDeltas gas cost for amount0/true 1`] = `1087`;
+
+exports[`SqrtPriceMath #getAmountDeltas gas cost for amount1/false 1`] = `282`;
+
+exports[`SqrtPriceMath #getAmountDeltas gas cost for amount1/true 1`] = `282`;
+
+exports[`SqrtPriceMath #getPriceAfterSwap zeroForOne = false gas 1`] = `672`;
+
+exports[`SqrtPriceMath #getPriceAfterSwap zeroForOne = true gas 1`] = `1415`;
