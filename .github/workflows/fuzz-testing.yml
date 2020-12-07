@@ -5,7 +5,6 @@ on:
     branches:
       - master
   pull_request:
-  workflow_dispatch:
 
 jobs:
   echidna:
@@ -38,7 +37,8 @@ jobs:
 
       - name: Install echidna
         run: |
-          sudo wget -O /usr/bin/echidna-test https://moody-test-artifact-bucket.s3.amazonaws.com/echidna-test
+          sudo wget -O /tmp/echidna-test.tar.gz https://github.com/crytic/echidna/releases/download/v1.6.0/echidna-test-v1.6.0-Ubuntu-18.04.tar.gz
+          sudo tar -xf /tmp/echidna-test.tar.gz -C /usr/bin
           sudo chmod +x /usr/bin/echidna-test
 
       - name: PriceMathEchidnaTest
