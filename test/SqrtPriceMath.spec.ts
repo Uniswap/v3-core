@@ -6,7 +6,7 @@ import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {encodePriceSqrt, expandTo18Decimals} from './shared/utilities'
 
-describe.only('SqrtPriceMath', () => {
+describe('SqrtPriceMath', () => {
   let sqrtPriceMath: SqrtPriceMathTest
   before(async () => {
     const sqrtPriceMathTestFactory = await ethers.getContractFactory('SqrtPriceMathTest')
