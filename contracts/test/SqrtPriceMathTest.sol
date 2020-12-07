@@ -35,7 +35,7 @@ contract SqrtPriceMathTest {
     }
 
     function getAmount1Delta(
-        FixedPoint64.uq64x64 memory sqrtP, 
+        FixedPoint64.uq64x64 memory sqrtP,
         FixedPoint64.uq64x64 memory sqrtQ,
         uint128 liquidity
     ) external pure returns (uint256 amount1) {
