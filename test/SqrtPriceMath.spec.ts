@@ -3,6 +3,7 @@ import {ethers} from 'hardhat'
 import {SqrtPriceMathTest} from '../typechain/SqrtPriceMathTest'
 
 import {expect} from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
 import {encodePriceSqrt, expandTo18Decimals} from './shared/utilities'
 
 describe.only('SqrtPriceMath', () => {
@@ -94,6 +95,27 @@ describe.only('SqrtPriceMath', () => {
       )
       expect(sqrtQ).to.eq(encodePriceSqrt(100, 121))
     })
+
+    it('zeroForOne = true gas', async () => {
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetPriceAfterSwap(
+          encodePriceSqrt(1, 1),
+          expandTo18Decimals(1),
+          expandTo18Decimals(1).div(10),
+          true
+        )
+      )
+    })
+    it('zeroForOne = false gas', async () => {
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetPriceAfterSwap(
+          encodePriceSqrt(1, 1),
+          expandTo18Decimals(1),
+          expandTo18Decimals(1).div(10),
+          false
+        )
+      )
+    })
   })
 
   describe('#getAmountDeltas', () => {
@@ -154,6 +176,26 @@ describe.only('SqrtPriceMath', () => {
       )
       expect(amount0).to.eq('100000000000000000')
       expect(amount1).to.eq('-90909090909090909')
+    })
+
+    it('gas cost for zeroForOne = true', async () => {
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetAmountDeltas(
+          encodePriceSqrt(1, 1),
+          encodePriceSqrt(100, 121),
+          expandTo18Decimals(1)
+        )
+      )
+    })
+
+    it('gas cost for zeroForOne = false', async () => {
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetAmountDeltas(
+          encodePriceSqrt(1, 1),
+          encodePriceSqrt(121, 100),
+          expandTo18Decimals(1)
+        )
+      )
     })
   })
 })
