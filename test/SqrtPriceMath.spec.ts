@@ -16,90 +16,90 @@ describe.only('SqrtPriceMath', () => {
   describe('#getPriceAfterSwap', () => {
     it('fails if price is zero', async () => {
       await expect(
-        sqrtPriceMath.getPriceAfterSwap(0, expandTo18Decimals(1), expandTo18Decimals(1).div(10), false)
+        sqrtPriceMath.getPriceAfterSwap({_x: 0}, expandTo18Decimals(1), expandTo18Decimals(1).div(10), false)
       ).to.be.revertedWith('SqrtPriceMath::getPriceAfterSwap: sqrtP cannot be zero')
       await expect(
-        sqrtPriceMath.getPriceAfterSwap(0, expandTo18Decimals(1), expandTo18Decimals(1).div(10), true)
+        sqrtPriceMath.getPriceAfterSwap({_x: 0}, expandTo18Decimals(1), expandTo18Decimals(1).div(10), true)
       ).to.be.revertedWith('SqrtPriceMath::getPriceAfterSwap: sqrtP cannot be zero')
     })
 
     it('fails if price is zero', async () => {
       await expect(
-        sqrtPriceMath.getPriceAfterSwap(encodePriceSqrt(1, 1), 0, expandTo18Decimals(1).div(10), false)
+        sqrtPriceMath.getPriceAfterSwap({_x: encodePriceSqrt(1, 1)}, 0, expandTo18Decimals(1).div(10), false)
       ).to.be.revertedWith('SqrtPriceMath::getPriceAfterSwap: liquidity cannot be zero')
       await expect(
-        sqrtPriceMath.getPriceAfterSwap(encodePriceSqrt(1, 1), 0, expandTo18Decimals(1).div(10), true)
+        sqrtPriceMath.getPriceAfterSwap({_x: encodePriceSqrt(1, 1)}, 0, expandTo18Decimals(1).div(10), true)
       ).to.be.revertedWith('SqrtPriceMath::getPriceAfterSwap: liquidity cannot be zero')
     })
 
     it('returns input price if amount in is zero', async () => {
       expect(
-        await sqrtPriceMath.getPriceAfterSwap(encodePriceSqrt(1, 1), expandTo18Decimals(1).div(10), 0, false)
+        (await sqrtPriceMath.getPriceAfterSwap({_x: encodePriceSqrt(1, 1)}, expandTo18Decimals(1).div(10), 0, false))._x
       ).to.eq(encodePriceSqrt(1, 1))
       expect(
-        await sqrtPriceMath.getPriceAfterSwap(encodePriceSqrt(1, 1), expandTo18Decimals(1).div(10), 0, true)
+        (await sqrtPriceMath.getPriceAfterSwap({_x: encodePriceSqrt(1, 1)}, expandTo18Decimals(1).div(10), 0, true))._x
       ).to.eq(encodePriceSqrt(1, 1))
     })
 
     it('sqrtQ is greater than sqrtP if one for zero', async () => {
       const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
-        encodePriceSqrt(1, 1),
+        {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         expandTo18Decimals(1).div(10),
         false
       )
-      expect(sqrtQ).to.be.gt(encodePriceSqrt(1, 1))
+      expect(sqrtQ._x).to.be.gt(encodePriceSqrt(1, 1))
     })
     it('sqrtQ is less than sqrtP if zero for one', async () => {
       const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
-        encodePriceSqrt(1, 1),
+        {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         expandTo18Decimals(1).div(10),
         true
       )
-      expect(sqrtQ).to.be.lt(encodePriceSqrt(1, 1))
+      expect(sqrtQ._x).to.be.lt(encodePriceSqrt(1, 1))
     })
     it('sqrtQ is equal to sqrtP if amount in is zero and swapping one for zero', async () => {
       const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
-        encodePriceSqrt(1, 1),
+        {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         BigNumber.from(0),
         false
       )
-      expect(sqrtQ).to.eq(encodePriceSqrt(1, 1))
+      expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 1))
     })
     it('sqrtQ is equal to sqrtP if amount in is zero and swapping zero for one', async () => {
       const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
-        encodePriceSqrt(1, 1),
+        {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         BigNumber.from(0),
         true
       )
-      expect(sqrtQ).to.eq(encodePriceSqrt(1, 1))
+      expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 1))
     })
     it('price of 1 to 1.21', async () => {
       const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
-        encodePriceSqrt(1, 1),
+        {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         expandTo18Decimals(1).div(10),
         false
       )
-      expect(sqrtQ).to.eq(encodePriceSqrt(121, 100))
+      expect(sqrtQ._x).to.eq(encodePriceSqrt(121, 100))
     })
     it('price of 1 to 1/1.21', async () => {
       const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
-        encodePriceSqrt(1, 1),
+        {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         expandTo18Decimals(1).div(10),
         true
       )
-      expect(sqrtQ).to.eq(encodePriceSqrt(100, 121))
+      expect(sqrtQ._x).to.eq(encodePriceSqrt(100, 121))
     })
 
     it('zeroForOne = true gas', async () => {
       await snapshotGasCost(
         sqrtPriceMath.getGasCostOfGetPriceAfterSwap(
-          encodePriceSqrt(1, 1),
+          {_x: encodePriceSqrt(1, 1)},
           expandTo18Decimals(1),
           expandTo18Decimals(1).div(10),
           true
@@ -109,7 +109,7 @@ describe.only('SqrtPriceMath', () => {
     it('zeroForOne = false gas', async () => {
       await snapshotGasCost(
         sqrtPriceMath.getGasCostOfGetPriceAfterSwap(
-          encodePriceSqrt(1, 1),
+          {_x: encodePriceSqrt(1, 1)},
           expandTo18Decimals(1),
           expandTo18Decimals(1).div(10),
           false
@@ -118,7 +118,7 @@ describe.only('SqrtPriceMath', () => {
     })
   })
 
-  describe('#getAmountDeltas', () => {
+  describe.skip('#getAmountDeltas', () => {
     it('throws if either price is 0', async () => {
       await expect(sqrtPriceMath.getAmountDeltas(0, encodePriceSqrt(1, 1), 1)).to.be.revertedWith(
         'SqrtPriceMath::getAmountDeltas: price cannot be 0'
@@ -180,9 +180,17 @@ describe.only('SqrtPriceMath', () => {
 
     it('gas cost for zeroForOne = true', async () => {
       await snapshotGasCost(
-        sqrtPriceMath.getGasCostOfGetAmountDeltas(
-          encodePriceSqrt(1, 1),
-          encodePriceSqrt(100, 121),
+        sqrtPriceMath.getGasCostOfGetAmount0Delta(
+          {_x: encodePriceSqrt(1, 1)},
+          {_x: encodePriceSqrt(100, 121)},
+          expandTo18Decimals(1)
+        )
+      )
+
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetAmount1Delta(
+          {_x: encodePriceSqrt(100, 121)},
+          {_x: encodePriceSqrt(1, 1)},
           expandTo18Decimals(1)
         )
       )
@@ -190,9 +198,17 @@ describe.only('SqrtPriceMath', () => {
 
     it('gas cost for zeroForOne = false', async () => {
       await snapshotGasCost(
-        sqrtPriceMath.getGasCostOfGetAmountDeltas(
-          encodePriceSqrt(1, 1),
-          encodePriceSqrt(121, 100),
+        sqrtPriceMath.getGasCostOfGetAmount0Delta(
+          {_x: encodePriceSqrt(1, 1)},
+          {_x: encodePriceSqrt(121, 100)},
+          expandTo18Decimals(1)
+        )
+      )
+
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetAmount1Delta(
+          {_x: encodePriceSqrt(121, 100)},
+          {_x: encodePriceSqrt(1, 1)},
           expandTo18Decimals(1)
         )
       )

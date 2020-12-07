@@ -1,11 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`SqrtPriceMath #computeSwap gas 1`] = `6131`;
+exports[`SqrtPriceMath #getPriceAfterSwap zeroForOne = false gas 1`] = `672`;
 
-exports[`SqrtPriceMath #getAmountDeltas gas cost for zeroForOne = false 1`] = `1734`;
-
-exports[`SqrtPriceMath #getAmountDeltas gas cost for zeroForOne = true 1`] = `1748`;
-
-exports[`SqrtPriceMath #getPriceAfterSwap zeroForOne = false gas 1`] = `1074`;
-
-exports[`SqrtPriceMath #getPriceAfterSwap zeroForOne = true gas 1`] = `448`;
+exports[`SqrtPriceMath #getPriceAfterSwap zeroForOne = true gas 1`] = `1405`;
