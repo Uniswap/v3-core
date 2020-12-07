@@ -86,9 +86,17 @@ library SqrtPriceMath {
         uint256 amountInLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
 
         uint128 sqrtQ = getPriceAfterSwap(sqrtP, liquidity, amountInLessFee, zeroForOne);
+        if (zeroForOne) {
+            require(target._x <= price._x, 'SqrtPriceMath::computeSwap: target price must be less than current price');
+            sqrtQ = sqrtQ < targetRoot ? targetRoot : sqrtQ;
+        } else {
+            require(
+                target._x >= price._x,
+                'SqrtPriceMath::computeSwap: target price must be greater than current price'
+            );
+            sqrtQ = sqrtQ > targetRoot ? targetRoot : sqrtQ;
+        }
 
-        // max the q out to not exceed the target price
-        sqrtQ = zeroForOne ? (sqrtQ < targetRoot ? targetRoot : sqrtQ) : (sqrtQ > targetRoot ? targetRoot : sqrtQ);
         priceAfter = sqrtQ == targetRoot ? target : FixedPoint128.uq128x128(uint256(sqrtQ)**2);
 
         (int256 amount0, int256 amount1) = getAmountDeltas(sqrtP, sqrtQ, liquidity);
@@ -101,8 +109,6 @@ library SqrtPriceMath {
             amountIn = uint256(amount1);
             amountOut = uint256(-amount0);
         }
-        amountIn = FullMath.mulDiv(amountIn, 1e6, 1e6 - feePips).add(2);
-        if (amountIn > amountInMax) amountIn = amountInMax;
-        if (amountOut > 0) amountOut--;
+        amountIn = FullMath.mulDiv(amountIn, 1e6, 1e6 - feePips).add(1);
     }
 }
