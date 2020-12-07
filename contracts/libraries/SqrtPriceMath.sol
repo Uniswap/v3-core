@@ -17,7 +17,7 @@ library SqrtPriceMath {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
-    uint256 public constant Q64 = uint256(1) << 64;
+    uint256 public constant Q64 = 0x10000000000000000;
 
     function getPriceAfterSwap(
         uint128 sqrtP,
@@ -31,7 +31,8 @@ library SqrtPriceMath {
 
         if (zeroForOne) {
             uint256 divisibleLiquidity = uint256(liquidity) << 64;
-            sqrtQ = (divisibleLiquidity / ((divisibleLiquidity / sqrtP).add(amountIn))).toUint128();
+            // todo: precision loss in division
+            sqrtQ = (divisibleLiquidity / (divisibleLiquidity / sqrtP).add(amountIn)).toUint128();
         } else {
             sqrtQ = uint256(sqrtP).add(FullMath.mulDiv(amountIn, Q64, liquidity)).toUint128();
         }
@@ -45,7 +46,14 @@ library SqrtPriceMath {
         require(sqrtP != 0 && sqrtQ != 0, 'SqrtPriceMath::getAmountDeltas: price cannot be 0');
         if (sqrtP == sqrtQ || liquidity == 0) return (0, 0);
 
-        amount0 = (int256(liquidity << 64) / int256(sqrtQ)).sub((int256(liquidity) << 64) / int256(sqrtP));
+        uint256 denom = uint256(sqrtP).mul(sqrtQ);
+        uint256 amount0Abs = FullMath.mulDiv(
+            liquidity,
+            uint256(sqrtP < sqrtQ ? sqrtQ - sqrtP : sqrtP - sqrtQ) << 64,
+            denom
+        );
+        amount0 = sqrtP < sqrtQ ? -amount0Abs.toInt256() : amount0Abs.toInt256();
+
         amount1 = int256(liquidity).mul(int256(sqrtQ) - int256(sqrtP)).div(int256(Q64));
     }
 
