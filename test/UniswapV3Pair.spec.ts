@@ -205,24 +205,24 @@ describe('UniswapV3Pair', () => {
           it('transfers token0 only', async () => {
             await expect(pair.setPosition(-231, 0, 10000))
               .to.emit(token0, 'Transfer')
-              .withArgs(walletAddress, pair.address, 21559)
-            expect(await token0.balanceOf(pair.address)).to.eq(10000 + 21559)
-            expect(await token1.balanceOf(pair.address)).to.eq(1001)
+              .withArgs(walletAddress, pair.address, 21558)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998 + 21558)
+            expect(await token1.balanceOf(pair.address)).to.eq(999)
           })
 
           it('works for max tick', async () => {
             await expect(pair.setPosition(-231, MAX_TICK, 10000))
               .to.emit(token0, 'Transfer')
-              .withArgs(walletAddress, pair.address, 31559)
-            expect(await token0.balanceOf(pair.address)).to.eq(10000 + 31559)
-            expect(await token1.balanceOf(pair.address)).to.eq(1001)
+              .withArgs(walletAddress, pair.address, 31558)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998 + 31558)
+            expect(await token1.balanceOf(pair.address)).to.eq(999)
           })
 
           it('removing works', async () => {
             await pair.setPosition(-231, 0, 10000)
             await pair.setPosition(-231, 0, -10000)
-            expect(await token0.balanceOf(pair.address)).to.eq(10001) // 1 dust is left over
-            expect(await token1.balanceOf(pair.address)).to.eq(1001)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998)
+            expect(await token1.balanceOf(pair.address)).to.eq(999)
           })
 
           it('adds liquidity to liquidityGross', async () => {
@@ -296,11 +296,11 @@ describe('UniswapV3Pair', () => {
           it('price within range: transfers current price of both tokens', async () => {
             await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 100))
               .to.emit(token0, 'Transfer')
-              .withArgs(walletAddress, pair.address, 317)
+              .withArgs(walletAddress, pair.address, 316)
               .to.emit(token1, 'Transfer')
-              .withArgs(walletAddress, pair.address, 32)
-            expect(await token0.balanceOf(pair.address)).to.eq(10000 + 317)
-            expect(await token1.balanceOf(pair.address)).to.eq(1001 + 32)
+              .withArgs(walletAddress, pair.address, 31)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998 + 316)
+            expect(await token1.balanceOf(pair.address)).to.eq(999 + 31)
           })
 
           it('initializes lower tick', async () => {
@@ -320,18 +320,18 @@ describe('UniswapV3Pair', () => {
           it('works for min/max tick', async () => {
             await expect(pair.setPosition(MIN_TICK, MAX_TICK, 10000))
               .to.emit(token0, 'Transfer')
-              .withArgs(walletAddress, pair.address, 31623)
+              .withArgs(walletAddress, pair.address, 31622)
               .to.emit(token1, 'Transfer')
-              .withArgs(walletAddress, pair.address, 3163)
-            expect(await token0.balanceOf(pair.address)).to.eq(10000 + 31623)
-            expect(await token1.balanceOf(pair.address)).to.eq(1000 + 3164)
+              .withArgs(walletAddress, pair.address, 3162)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998 + 31622)
+            expect(await token1.balanceOf(pair.address)).to.eq(999 + 3162)
           })
 
           it('removing works', async () => {
             await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 100)
             await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, -100)
-            expect(await token0.balanceOf(pair.address)).to.eq(10001)
-            expect(await token1.balanceOf(pair.address)).to.eq(1002)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998)
+            expect(await token1.balanceOf(pair.address)).to.eq(999)
           })
 
           it('gas', async () => {
@@ -343,24 +343,24 @@ describe('UniswapV3Pair', () => {
           it('transfers token1 only', async () => {
             await expect(pair.setPosition(-500, -233, 10000))
               .to.emit(token1, 'Transfer')
-              .withArgs(walletAddress, pair.address, 2307)
-            expect(await token0.balanceOf(pair.address)).to.eq(10000)
-            expect(await token1.balanceOf(pair.address)).to.eq(1000 + 2308)
+              .withArgs(walletAddress, pair.address, 2306)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998)
+            expect(await token1.balanceOf(pair.address)).to.eq(999 + 2306)
           })
 
           it('works for min tick', async () => {
             await expect(pair.setPosition(MIN_TICK, -233, 10000))
               .to.emit(token1, 'Transfer')
-              .withArgs(walletAddress, pair.address, 3138)
-            expect(await token0.balanceOf(pair.address)).to.eq(10000)
-            expect(await token1.balanceOf(pair.address)).to.eq(1000 + 3139)
+              .withArgs(walletAddress, pair.address, 3137)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998)
+            expect(await token1.balanceOf(pair.address)).to.eq(999 + 3137)
           })
 
           it('removing works', async () => {
             await pair.setPosition(-500, -233, 10000)
             await pair.setPosition(-500, -233, -10000)
-            expect(await token0.balanceOf(pair.address)).to.eq(10000)
-            expect(await token1.balanceOf(pair.address)).to.eq(1002)
+            expect(await token0.balanceOf(pair.address)).to.eq(9998)
+            expect(await token1.balanceOf(pair.address)).to.eq(999)
           })
 
           it('gas', async () => {

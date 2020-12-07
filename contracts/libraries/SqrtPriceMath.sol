@@ -76,6 +76,26 @@ library SqrtPriceMath {
         return numerator / FixedPoint64.Q64 + (add1 ? 1 : 0);
     }
 
+    // helpers to get signed deltas for use in setPosition
+    // TODO not clear this is the right thing to do
+    function getAmount0Delta(
+        FixedPoint64.uq64x64 memory sqrtP, // square root of current price
+        FixedPoint64.uq64x64 memory sqrtQ, // square root of target price
+        int128 liquidity
+    ) internal pure returns (int256 amount0) {
+        if (liquidity < 0) return -getAmount0Delta(sqrtP, sqrtQ, uint128(-liquidity), false).toInt256();
+        else return getAmount0Delta(sqrtP, sqrtQ, uint128(liquidity), false).toInt256();
+    }
+
+    function getAmount1Delta(
+        FixedPoint64.uq64x64 memory sqrtP, // square root of current price
+        FixedPoint64.uq64x64 memory sqrtQ, // square root of target price
+        int128 liquidity
+    ) internal pure returns (int256 amount0) {
+        if (liquidity < 0) return -getAmount1Delta(sqrtP, sqrtQ, uint128(-liquidity), false).toInt256();
+        else return getAmount1Delta(sqrtP, sqrtQ, uint128(liquidity), false).toInt256();
+    }
+
     function computeSwap(
         FixedPoint128.uq128x128 memory price,
         FixedPoint128.uq128x128 memory target,
