@@ -15,8 +15,19 @@ contract SqrtPriceMathTest {
         return SqrtPriceMath.getPriceAfterSwap(sqrtP, liquidity, amountIn, zeroForOne);
     }
 
+    function getGasCostOfGetPriceAfterSwap(
+        FixedPoint64.uq64x64 memory sqrtP,
+        uint128 liquidity,
+        uint256 amountIn,
+        bool zeroForOne
+    ) external view returns (uint256) {
+        uint256 gasBefore = gasleft();
+        SqrtPriceMath.getPriceAfterSwap(sqrtP, liquidity, amountIn, zeroForOne);
+        return gasBefore - gasleft();
+    }
+
     function getAmount0Delta(
-        FixedPoint64.uq64x64 memory sqrtP, 
+        FixedPoint64.uq64x64 memory sqrtP,
         FixedPoint64.uq64x64 memory sqrtQ,
         uint128 liquidity
     ) external pure returns (uint256 amount0) {
@@ -29,5 +40,25 @@ contract SqrtPriceMathTest {
         uint128 liquidity
     ) external pure returns (uint256 amount1) {
         return SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity);
+    }
+
+    function getGasCostOfGetAmount0Delta(
+        FixedPoint64.uq64x64 memory sqrtP,
+        FixedPoint64.uq64x64 memory sqrtQ,
+        uint128 liquidity
+    ) external view returns (uint256) {
+        uint256 gasBefore = gasleft();
+        SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity);
+        return gasBefore - gasleft();
+    }
+
+    function getGasCostOfGetAmount1Delta(
+        FixedPoint64.uq64x64 memory sqrtP,
+        FixedPoint64.uq64x64 memory sqrtQ,
+        uint128 liquidity
+    ) external view returns (uint256) {
+        uint256 gasBefore = gasleft();
+        SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity);
+        return gasBefore - gasleft();
     }
 }
