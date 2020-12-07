@@ -1,7 +1,6 @@
 import {ethers} from 'hardhat'
 import {BigNumber, BigNumberish} from 'ethers'
 import {TickMathTest} from '../typechain/TickMathTest'
-import {TickMath1r01} from '../typechain/TickMath1r01'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
@@ -9,14 +8,11 @@ import {bnify2, MAX_TICK, MIN_TICK} from './shared/utilities'
 const Q128 = BigNumber.from(2).pow(128)
 
 describe('TickMath', () => {
-  let tickMath1r01: TickMath1r01
   let tickMathTest: TickMathTest
 
   before('deploy TickMathTest', async () => {
-    const tickMath1r01Factory = await ethers.getContractFactory('TickMath1r01')
     const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
-    tickMath1r01 = (await tickMath1r01Factory.deploy()) as TickMath1r01
-    tickMathTest = (await tickMathTestFactory.deploy(tickMath1r01.address)) as TickMathTest
+    tickMathTest = (await tickMathTestFactory.deploy()) as TickMathTest
   })
 
   describe('#getRatioAtTick', () => {
@@ -103,24 +99,14 @@ describe('TickMath', () => {
 
     it('tick too large', async () => {
       await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith(
-        'TickMath1r01::getRatioAtTick: invalid tick'
+        'TickMath::getRatioAtTick: invalid tick'
       )
     })
     it('tick too small', async () => {
       await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith(
-        'TickMath1r01::getRatioAtTick: invalid tick'
+        'TickMath::getRatioAtTick: invalid tick'
       )
     })
-
-    if (process.env.UPDATE_SNAPSHOT) {
-      it('all tick values', async () => {
-        const promises: Promise<{_x: BigNumber}>[] = []
-        for (let tick = MIN_TICK; tick < MAX_TICK + 1; tick++) {
-          promises.push(tickMathTest.getRatioAtTick(tick))
-        }
-        expect((await Promise.all(promises)).map(({_x: x}, i) => [MIN_TICK + i, x.toString()])).toMatchSnapshot()
-      }).timeout(300000)
-    }
 
     describe('gas', () => {
       const ticks = [MIN_TICK, -1000, -500, -50, 0, 50, 500, 1000, MAX_TICK]
@@ -142,11 +128,11 @@ describe('TickMath', () => {
         tickMathTest.getTickAtRatio({
           _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867416'),
         })
-      ).to.be.revertedWith('TickMath1r01::getTickAtRatio: invalid ratio')
+      ).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
     it('ratio too small', async () => {
       await expect(tickMathTest.getTickAtRatio({_x: BigNumber.from('5826673')})).to.be.revertedWith(
-        'TickMath1r01::getTickAtRatio: invalid ratio'
+        'TickMath::getTickAtRatio: invalid ratio'
       )
     })
     it('ratio at min tick boundary', async () => {
