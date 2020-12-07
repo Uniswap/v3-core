@@ -32,13 +32,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using FixedPoint128 for FixedPoint128.uq128x128;
     using SpacedTickBitmap for mapping(int16 => uint256);
 
-    // if we constrain the liquidity associated to a single tick, then we can guarantee that the total
+    // if we constrain the gross liquidity associated to a single tick, then we can guarantee that the total
     // liquidityCurrent never exceeds uint128
     // the max liquidity for a single tick fee vote is then:
     //   floor(type(uint128).max / (number of ticks))
-    //     = (2n ** 128n - 1n) / (2n ** 16n)
-    // this is about 112 bits
-    uint128 private constant MAX_LIQUIDITY_GROSS_PER_TICK = 5192296858534827628530496329220095;
+    //     = (2n ** 128n - 1n) / (2n ** 24n)
+    // this is about 104 bits
+    uint128 private constant MAX_LIQUIDITY_GROSS_PER_TICK = 20282409603651670423947251286015;
 
     address public immutable override factory;
     address public immutable override token0;

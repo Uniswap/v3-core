@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `238020`;
+exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `237996`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `226027`;
+exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `226003`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `237176`;
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `237152`;
 
 exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas 1`] = `120279`;
 
