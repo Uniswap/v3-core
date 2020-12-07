@@ -233,7 +233,7 @@ describe('SqrtPriceMath', () => {
       )
       expect(amountIn).to.eq('9981112891913202')
       expect(amountOut).to.eq('9925619580021728')
-      expect(priceAfter._x).to.eq(encodePrice(101, 100))
+      expect(priceAfter._x).to.eq('3402823669209384611586652709905761105')
     })
 
     it('gas', async () => {
