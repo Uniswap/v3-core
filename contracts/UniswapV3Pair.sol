@@ -437,25 +437,31 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tick < params.tickLower) {
-            amount0 = SqrtPriceMath.getAmount0Delta(
+            amount0 = SqrtPriceMath
+                .getAmount0Delta(
                 FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
                 FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
-                params.liquidityDelta
+                params
+                    .liquidityDelta
             )
                 .sub(feesOwed0.toInt256());
             amount1 = -feesOwed1.toInt256();
         } else if (tick < params.tickUpper) {
             // the current price is inside the passed range
-            amount0 = SqrtPriceMath.getAmount0Delta(
+            amount0 = SqrtPriceMath
+                .getAmount0Delta(
                 FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
                 FixedPoint64.uq64x64(uint128(Babylonian.sqrt(priceCurrent._x))),
-                params.liquidityDelta
+                params
+                    .liquidityDelta
             )
                 .sub(feesOwed0.toInt256());
-            amount1 = SqrtPriceMath.getAmount1Delta(
+            amount1 = SqrtPriceMath
+                .getAmount1Delta(
                 FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
                 FixedPoint64.uq64x64(uint128(Babylonian.sqrt(priceCurrent._x))),
-                params.liquidityDelta
+                params
+                    .liquidityDelta
             )
                 .sub(feesOwed1.toInt256());
 
@@ -464,10 +470,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount0 = -feesOwed0.toInt256();
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = SqrtPriceMath.getAmount1Delta(
+            amount1 = SqrtPriceMath
+                .getAmount1Delta(
                 FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
                 FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
-                params.liquidityDelta
+                params
+                    .liquidityDelta
             )
                 .sub(feesOwed1.toInt256());
         }
