@@ -13,7 +13,7 @@ library SqrtPriceMath {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
-    uint256 public constant Q64 = uint256(1) << 64;
+    uint256 public constant Q64 = 0x10000000000000000;
 
     function getPriceAfterSwap(
         uint128 sqrtP,
