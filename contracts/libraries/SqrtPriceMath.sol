@@ -27,8 +27,7 @@ library SqrtPriceMath {
             // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
             // liquidity * sqrt(P) / (liquidity + x * sqrt(P))
             // TODO can revert from overflow
-            uint256 divisibleLiquidity = uint256(liquidity) << FixedPoint64.RESOLUTION;
-            uint256 denominator = divisibleLiquidity.add(amountIn.mul(sqrtP._x));
+            uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).add(amountIn.mul(sqrtP._x));
             sqrtQ = FixedPoint64.uq64x64(
                 FullMath.mulDiv(uint256(liquidity) * sqrtP._x, FixedPoint64.Q64, denominator).toUint128()
             );
