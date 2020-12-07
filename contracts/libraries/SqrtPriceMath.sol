@@ -31,8 +31,7 @@ library SqrtPriceMath {
             // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
             // liquidity * sqrt(P) / (liquidity + x * sqrt(P))
             // TODO can revert from overflow
-            uint256 divisibleLiquidity = uint256(liquidity) << FixedPoint64.RESOLUTION;
-            uint256 denominator = divisibleLiquidity.add(amountIn.mul(sqrtP._x));
+            uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).add(amountIn.mul(sqrtP._x));
             sqrtQ = FixedPoint64.uq64x64(
                 FullMath.mulDiv(uint256(liquidity) * sqrtP._x, FixedPoint64.Q64, denominator).toUint128()
             );
@@ -49,23 +48,34 @@ library SqrtPriceMath {
     function getAmount0Delta(
         FixedPoint64.uq64x64 memory sqrtP, // square root of current price
         FixedPoint64.uq64x64 memory sqrtQ, // square root of target price
-        uint128 liquidity
+        uint128 liquidity,
+        bool roundUp
     ) internal pure returns (uint256 amount0) {
         assert(sqrtP._x >= sqrtQ._x);
+
         // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
         // liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q)), rounding up
-        return
-            PriceMath.mulDivRoundingUp(liquidity << FixedPoint64.RESOLUTION, sqrtP._x - sqrtQ._x, sqrtP._x * sqrtQ._x);
+        uint256 numerator1 = uint256(liquidity) << FixedPoint64.RESOLUTION;
+        uint128 numerator2 = sqrtP._x - sqrtQ._x;
+        uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
+
+        if (roundUp) return PriceMath.mulDivRoundingUp(numerator1, numerator2, denominator);
+        else return FullMath.mulDiv(numerator1, numerator2, denominator);
     }
 
     function getAmount1Delta(
         FixedPoint64.uq64x64 memory sqrtP, // square root of current price
         FixedPoint64.uq64x64 memory sqrtQ, // square root of target price
-        uint128 liquidity
+        uint128 liquidity,
+        bool roundUp
     ) internal pure returns (uint256 amount1) {
         assert(sqrtP._x <= sqrtQ._x);
+
         // calculate liquidity * (sqrt(Q) - sqrt(P)), rounding up
-        return PriceMath.mulDivRoundingUp(liquidity, sqrtQ._x - sqrtP._x, FixedPoint64.Q64);
+        uint256 numerator = uint256(liquidity) * (sqrtQ._x - sqrtP._x);
+
+        bool add1 = roundUp ? (numerator % FixedPoint64.Q64 > 0) : false;
+        return numerator / FixedPoint64.Q64 + (add1 ? 1 : 0);
     }
 
     function mulDivRoundingUp(
