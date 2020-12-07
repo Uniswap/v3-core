@@ -84,7 +84,7 @@ library SqrtPriceMath {
         int128 liquidity
     ) internal pure returns (int256 amount0) {
         if (liquidity < 0) return -getAmount0Delta(sqrtP, sqrtQ, uint128(-liquidity), false).toInt256();
-        else return getAmount0Delta(sqrtP, sqrtQ, uint128(liquidity), false).toInt256();
+        else return getAmount0Delta(sqrtP, sqrtQ, uint128(liquidity), true).toInt256();
     }
 
     function getAmount1Delta(
@@ -93,7 +93,7 @@ library SqrtPriceMath {
         int128 liquidity
     ) internal pure returns (int256 amount0) {
         if (liquidity < 0) return -getAmount1Delta(sqrtP, sqrtQ, uint128(-liquidity), false).toInt256();
-        else return getAmount1Delta(sqrtP, sqrtQ, uint128(liquidity), false).toInt256();
+        else return getAmount1Delta(sqrtP, sqrtQ, uint128(liquidity), true).toInt256();
     }
 
     function computeSwap(

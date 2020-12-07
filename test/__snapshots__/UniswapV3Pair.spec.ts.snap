@@ -2,6 +2,16 @@
 
 exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `236648`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `225323`;
+exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `225439`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `235211`;
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `235327`;
+
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas 1`] = `117886`;
+
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap 1`] = `117304`;
+
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap crossing several initialized ticks 1`] = `293961`;
+
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas 1`] = `112564`;
+
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap 1`] = `112612`;
