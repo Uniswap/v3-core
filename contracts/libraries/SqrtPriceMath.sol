@@ -9,8 +9,6 @@ import './SafeCast.sol';
 import './FixedPoint64.sol';
 import './PriceMath.sol';
 
-import 'hardhat/console.sol';
-
 library SqrtPriceMath {
     using SafeMath for uint128;
     using SafeCast for int256;
@@ -78,14 +76,6 @@ library SqrtPriceMath {
         return numerator / FixedPoint64.Q64 + (add1 ? 1 : 0);
     }
 
-    function mulDivRoundingUp(
-        uint256 x,
-        uint256 y,
-        uint256 d
-    ) internal pure returns (uint256) {
-        return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
-    }
-
     function computeSwap(
         FixedPoint128.uq128x128 memory price,
         FixedPoint128.uq128x128 memory target,
@@ -102,34 +92,30 @@ library SqrtPriceMath {
             uint256 amountOut
         )
     {
-        uint128 sqrtP = uint128(Babylonian.sqrt(price._x));
-        uint128 targetRoot = uint128(Babylonian.sqrt(target._x));
-        uint256 amountInLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
+        FixedPoint64.uq64x64 memory sqrtP = FixedPoint64.uq64x64(uint128(Babylonian.sqrt(price._x)));
+        FixedPoint64.uq64x64 memory sqrtQ = FixedPoint64.uq64x64(uint128(Babylonian.sqrt(target._x)));
 
-        uint128 sqrtQ = getPriceAfterSwap(sqrtP, liquidity, amountInLessFee, zeroForOne);
+        // get the input required to reach or surpass the target price
         if (zeroForOne) {
-            require(target._x <= price._x, 'SqrtPriceMath::computeSwap: target price must be less than current price');
-            sqrtQ = sqrtQ < targetRoot ? targetRoot : sqrtQ;
+            assert(price._x >= target._x);
+            amountIn = getAmount0Delta(sqrtP, sqrtQ, liquidity, true);
         } else {
-            require(
-                target._x >= price._x,
-                'SqrtPriceMath::computeSwap: target price must be greater than current price'
-            );
-            sqrtQ = sqrtQ > targetRoot ? targetRoot : sqrtQ;
+            assert(price._x <= target._x);
+            amountIn = getAmount1Delta(sqrtP, sqrtQ, liquidity, true);
         }
 
-        priceAfter = sqrtQ == targetRoot ? target : FixedPoint128.uq128x128(uint256(sqrtQ)**2);
+        // scale the input amount up by the fee, rounding up
+        amountIn = PriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
 
-        (int256 amount0, int256 amount1) = getAmountDeltas(sqrtP, sqrtQ, liquidity);
-        if (zeroForOne) {
-            require(amount0 >= 0 && amount1 <= 0, 'blah1');
-            amountIn = uint256(amount0);
-            amountOut = uint256(-amount1);
-        } else {
-            require(amount0 <= 0 && amount1 >= 0, 'blah2');
-            amountIn = uint256(amount1);
-            amountOut = uint256(-amount0);
-        }
-        amountIn = FullMath.mulDiv(amountIn, 1e6, 1e6 - feePips).add(1);
+        // cap the input amount
+        amountIn = Math.min(amountIn, amountInMax);
+
+        // get the post-swap price
+        sqrtQ = getPriceAfterSwap(sqrtP, liquidity, FullMath.mulDiv(amountIn, 1e6 - feePips, 1e6), zeroForOne);
+        priceAfter = FixedPoint128.uq128x128(sqrtQ._x**2);
+
+        // get the output amount, rounding down
+        if (zeroForOne) amountOut = getAmount1Delta(sqrtQ, sqrtP, liquidity, false);
+        else amountOut = getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
     }
 }
