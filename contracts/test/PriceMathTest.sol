@@ -3,6 +3,7 @@ pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
 import '../libraries/PriceMath.sol';
+import '../libraries/FixedPoint128.sol';
 
 contract PriceMathTest {
     function getAmountOut(

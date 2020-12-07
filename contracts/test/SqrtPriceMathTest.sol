@@ -3,22 +3,31 @@ pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
 import '../libraries/SqrtPriceMath.sol';
+import '../libraries/FixedPoint64.sol';
 
 contract SqrtPriceMathTest {
     function getPriceAfterSwap(
-        uint128 sqrtP,
+        FixedPoint64.uq64x64 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
-    ) external pure returns (uint128 sqrtQ) {
+    ) external pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
         return SqrtPriceMath.getPriceAfterSwap(sqrtP, liquidity, amountIn, zeroForOne);
     }
 
-    function getAmountDeltas(
-        uint128 sqrtP,
-        uint128 sqrtQ,
+    function getAmount0Delta(
+        FixedPoint64.uq64x64 memory sqrtP, 
+        FixedPoint64.uq64x64 memory sqrtQ,
         uint128 liquidity
-    ) external pure returns (int256 amount0, int256 amount1) {
-        return SqrtPriceMath.getAmountDeltas(sqrtP, sqrtQ, liquidity);
+    ) external pure returns (uint256 amount0) {
+        return SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity);
+    }
+
+    function getAmount1Delta(
+        FixedPoint64.uq64x64 memory sqrtP, 
+        FixedPoint64.uq64x64 memory sqrtQ,
+        uint128 liquidity
+    ) external pure returns (uint256 amount1) {
+        return SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity);
     }
 }
