@@ -231,7 +231,7 @@ describe('SqrtPriceMath', () => {
         600,
         false
       )
-      expect(amountIn).to.eq('9981112891913201')
+      expect(amountIn).to.eq('9981112891913202')
       expect(amountOut).to.eq('9925619580021728')
       expect(priceAfter._x).to.eq(encodePrice(101, 100))
     })
