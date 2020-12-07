@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import '../libraries/TickBitmap.sol';
 
-// a library for dealing with a bitmap of all ticks
 contract TickBitmapTest {
     using TickBitmap for mapping(int16 => uint256);
 
