@@ -4,22 +4,16 @@ export const MIN_TICK = -7351
 export const MAX_TICK = 7351
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('5192296858534827628530496329220095')
 
-export enum FeeOption {
-  FeeOption0 = 'FeeOption0',
-  FeeOption1 = 'FeeOption1',
-  FeeOption2 = 'FeeOption2',
-  FeeOption3 = 'FeeOption3',
-  FeeOption4 = 'FeeOption4',
-  FeeOption5 = 'FeeOption5',
+export enum FeeAmount {
+  LOW = 600,
+  MEDIUM = 3000,
+  HIGH = 9000,
 }
 
-export const FEES: {[vote in FeeOption]: number} = {
-  [FeeOption.FeeOption0]: 600,
-  [FeeOption.FeeOption1]: 1200,
-  [FeeOption.FeeOption2]: 3000,
-  [FeeOption.FeeOption3]: 6000,
-  [FeeOption.FeeOption4]: 12000,
-  [FeeOption.FeeOption5]: 24000,
+export const TICK_SPACINGS: {[amount in FeeAmount]: number} = {
+  [FeeAmount.LOW]: 1,
+  [FeeAmount.MEDIUM]: 1,
+  [FeeAmount.HIGH]: 1,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -30,12 +24,13 @@ export function getCreate2Address(
   factoryAddress: string,
   [tokenA, tokenB]: [string, string],
   fee: number,
+  tickSpacing: number,
   bytecode: string
 ): string {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
   const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address', 'uint24'],
-    [factoryAddress, token0, token1, fee]
+    ['address', 'address', 'address', 'uint24', 'int24'],
+    [factoryAddress, token0, token1, fee, tickSpacing]
   )
   const create2Inputs = [
     '0xff',

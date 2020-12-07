@@ -16,6 +16,12 @@ interface IUniswapV3Pair {
 
     function fee() external pure returns (uint24);
 
+    function tickSpacing() external pure returns (int24);
+
+    function MIN_TICK() external pure returns (int24);
+
+    function MAX_TICK() external pure returns (int24);
+
     // variables/state
     function feeTo() external view returns (address);
 
@@ -41,6 +47,8 @@ interface IUniswapV3Pair {
 
     // derived state
     function isInitialized() external view returns (bool);
+
+    function tickCurrent() external view returns (int24);
 
     function getCumulatives()
         external
