@@ -601,7 +601,7 @@ describe('UniswapV3Pair', () => {
 
       await expect(pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684358904605133184')
+        .withArgs(pair.address, walletAddress, '684344452370530265')
     })
 
     it('swap0For1 gas large swap crossing several initialized ticks', async () => {
@@ -651,7 +651,7 @@ describe('UniswapV3Pair', () => {
 
       await expect(pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '684358904605133184')
+        .withArgs(pair.address, walletAddress, '684344452370530264')
     })
 
     it('swap1For0 gas large swap crossing several initialized ticks', async () => {
@@ -736,7 +736,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, walletAddress, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '94965947516311847')
+        .withArgs(pair.address, walletAddress, '94965947516311850')
 
       expect(await pair.tickCurrent()).to.eq(-973)
     })
@@ -754,7 +754,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap0For1(amount0In, walletAddress, '0x'))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '95298218973436073')
+        .withArgs(pair.address, walletAddress, '95299696652496122')
 
       expect(await pair.tickCurrent()).to.eq(-925)
     })
@@ -783,7 +783,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '94965947516311848')
+        .withArgs(pair.address, walletAddress, '94965947516311850')
 
       expect(await pair.tickCurrent()).to.eq(972)
     })
@@ -801,7 +801,7 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swap1For0(amount1In, walletAddress, '0x'))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, walletAddress, '95298218973436073')
+        .withArgs(pair.address, walletAddress, '95299696652496122')
 
       expect(await pair.tickCurrent()).to.eq(924)
     })
@@ -909,7 +909,7 @@ describe('UniswapV3Pair', () => {
       await pair.swap1For0(expandTo18Decimals(2), otherAddress, '0x')
       await expect(pair.setPosition(0, 100, expandTo18Decimals(1).mul(-1)))
         .to.emit(token1, 'Transfer')
-        .withArgs(pair.address, walletAddress, '5002569821553687')
+        .withArgs(pair.address, walletAddress, '5027351678085459')
     })
     it('selling 0 for 1 at tick 0 thru -1', async () => {
       await expect(pair.setPosition(-100, 0, expandTo18Decimals(1)))
@@ -932,7 +932,7 @@ describe('UniswapV3Pair', () => {
         await pair.swap1For0(expandTo18Decimals(2), otherAddress, '0x')
         await expect(pair.setPosition(0, 100, expandTo18Decimals(1).mul(-1)))
           .to.emit(token1, 'Transfer')
-          .withArgs(pair.address, walletAddress, '5000068536642911')
+          .withArgs(pair.address, walletAddress, '5024838002246417')
       })
       it('selling 0 for 1 at tick 0 thru -1', async () => {
         await expect(pair.setPosition(-100, 0, expandTo18Decimals(1)))
@@ -1124,10 +1124,10 @@ describe('UniswapV3Pair', () => {
           await pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x')
           await expect(pair.setPosition(120000, 121200, liquidityAmount.mul(-1)))
             .to.emit(token0, 'Transfer')
-            .withArgs(pair.address, walletAddress, '30563825225600')
+            .withArgs(pair.address, walletAddress, '30027458295511')
             .to.emit(token1, 'Transfer')
-            .withArgs(pair.address, walletAddress, '999999999999999602')
-          expect(await pair.tickCurrent()).to.eq(1202)
+            .withArgs(pair.address, walletAddress, '999999999999999533')
+          expect(await pair.tickCurrent()).to.eq(120196)
         })
         it('swapping across gaps works in 0 for 1 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
@@ -1135,10 +1135,10 @@ describe('UniswapV3Pair', () => {
           await pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x')
           await expect(pair.setPosition(-121200, -120000, liquidityAmount.mul(-1)))
             .to.emit(token0, 'Transfer')
-            .withArgs(pair.address, walletAddress, '999999999999999601')
+            .withArgs(pair.address, walletAddress, '999999999999999532')
             .to.emit(token1, 'Transfer')
-            .withArgs(pair.address, walletAddress, '30563825225600')
-          expect(await pair.tickCurrent()).to.eq(-1203)
+            .withArgs(pair.address, walletAddress, '30027458295511')
+          expect(await pair.tickCurrent()).to.eq(-120197)
         })
       })
     })
