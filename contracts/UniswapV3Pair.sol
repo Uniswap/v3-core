@@ -594,7 +594,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 1) a positive input amount remains
             // 2) if we're moving right and the price is exactly on the target tick
             // TODO ensure that there's no off-by-one error here while transitioning ticks in either direction
-            if (state.amountInRemaining > 0 || (params.zeroForOne == false && state.sqrtPrice._x == step.sqrtPriceNext._x)) {
+            if (
+                state.amountInRemaining > 0 ||
+                (params.zeroForOne == false && state.sqrtPrice._x == step.sqrtPriceNext._x)
+            ) {
                 TickInfo storage tickInfo = tickInfos[step.tickNext];
 
                 // if the tick is initialized, update it
