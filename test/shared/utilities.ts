@@ -1,8 +1,8 @@
 import {BigNumber, BigNumberish, utils, constants} from 'ethers'
-
+import bn from 'bignumber.js'
 export const MIN_TICK = -734773
 export const MAX_TICK = 734773
-export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('5192296858534827628530496329220095')
+export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
 
 export enum FeeAmount {
   LOW = 600,
@@ -46,6 +46,10 @@ export function getCreate2Address(
 
 export function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
   return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(128)).div(reserve0)
+}
+
+export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
+  return BigNumber.from(new bn(encodePrice(reserve1, reserve0).toString()).sqrt().integerValue(3).toString())
 }
 
 export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
