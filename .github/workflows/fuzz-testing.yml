@@ -8,6 +8,7 @@ jobs:
     name: Echidna
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         testName:
           - TickBitmapEchidnaTest
@@ -30,7 +31,9 @@ jobs:
           python-version: 3.8
 
       - name: Install node dependencies
-        run: yarn install --frozen-lockfile
+        uses: bahmutov/npm-install@44b9e76df0949f3df6616b334af42e055ce24831
+        with:
+          install-command: yarn --immutable
 
       - name: Install pip3
         run: |
