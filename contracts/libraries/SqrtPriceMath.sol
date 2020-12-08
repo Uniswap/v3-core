@@ -36,8 +36,8 @@ library SqrtPriceMath {
 
         if (zeroForOne) {
             // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
-            // liquidity * sqrt(P) / (liquidity + x * sqrt(P))
-            // TODO can revert from overflow
+            // liquidity * sqrt(P) / (liquidity + x * sqrt(P)), rounding up
+            // TODO can technically revert from overflow
             uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).add(amountIn.mul(sqrtP._x));
             sqrtQ = FixedPoint64.uq64x64(
                 mulDivRoundingUp(uint256(liquidity) * sqrtP._x, FixedPoint64.Q64, denominator).toUint128()
@@ -45,7 +45,7 @@ library SqrtPriceMath {
         } else {
             // calculate sqrt(P) + y / liquidity, i.e.
             // calculate (liquidity * sqrt(P) + y) / liquidity
-            // TODO can revert from overflow
+            // TODO can technically revert from overflow
             sqrtQ = FixedPoint64.uq64x64(
                 ((uint256(liquidity) * sqrtP._x).add(amountIn.mul(FixedPoint64.Q64)) / liquidity).toUint128()
             );
