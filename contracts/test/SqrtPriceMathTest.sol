@@ -6,23 +6,23 @@ import '../libraries/SqrtPriceMath.sol';
 import '../libraries/FixedPoint64.sol';
 
 contract SqrtPriceMathTest {
-    function getPriceAfterSwap(
+    function getNextPrice(
         FixedPoint64.uq64x64 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
-        return SqrtPriceMath.getPriceAfterSwap(sqrtP, liquidity, amountIn, zeroForOne);
+        return SqrtPriceMath.getNextPrice(sqrtP, liquidity, amountIn, zeroForOne);
     }
 
-    function getGasCostOfGetPriceAfterSwap(
+    function getGasCostOfGetNextPrice(
         FixedPoint64.uq64x64 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        SqrtPriceMath.getPriceAfterSwap(sqrtP, liquidity, amountIn, zeroForOne);
+        SqrtPriceMath.getNextPrice(sqrtP, liquidity, amountIn, zeroForOne);
         return gasBefore - gasleft();
     }
 

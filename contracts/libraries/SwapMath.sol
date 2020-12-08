@@ -30,12 +30,7 @@ library SwapMath {
 
         uint256 amountInLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
 
-        FixedPoint64.uq64x64 memory sqrtQ = SqrtPriceMath.getPriceAfterSwap(
-            sqrtP,
-            liquidity,
-            amountInLessFee,
-            zeroForOne
-        );
+        FixedPoint64.uq64x64 memory sqrtQ = SqrtPriceMath.getNextPrice(sqrtP, liquidity, amountInLessFee, zeroForOne);
 
         // get the output amount, rounding down
         if (zeroForOne) {

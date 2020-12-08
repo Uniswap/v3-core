@@ -24,14 +24,14 @@ library SqrtPriceMath {
         return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
     }
 
-    function getPriceAfterSwap(
+    function getNextPrice(
         FixedPoint64.uq64x64 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) internal pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
-        require(sqrtP._x > 0, 'SqrtPriceMath::getPriceAfterSwap: sqrtP cannot be zero');
-        require(liquidity > 0, 'SqrtPriceMath::getPriceAfterSwap: liquidity cannot be zero');
+        require(sqrtP._x > 0, 'SqrtPriceMath::getNextPrice: sqrtP cannot be zero');
+        require(liquidity > 0, 'SqrtPriceMath::getNextPrice: liquidity cannot be zero');
         if (amountIn == 0) return sqrtP;
 
         if (zeroForOne) {
