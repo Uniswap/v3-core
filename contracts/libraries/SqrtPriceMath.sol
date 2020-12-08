@@ -141,7 +141,7 @@ library SqrtPriceMath {
 
         // get the post-swap price
         sqrtQ = getPriceAfterSwap(sqrtP, liquidity, FullMath.mulDiv(amountIn, 1e6 - feePips, 1e6), zeroForOne);
-        priceAfter = FixedPoint128.uq128x128(sqrtQ._x**2);
+        priceAfter = FixedPoint128.uq128x128(uint256(sqrtQ._x)**2);
 
         // get the output amount, rounding down
         if (zeroForOne) amountOut = getAmount1Delta(sqrtQ, sqrtP, liquidity, false);

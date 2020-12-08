@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`SqrtPriceMath #computeSwap gas 1`] = `5482`;
+exports[`SqrtPriceMath #computeSwap gas 1`] = `5478`;
 
 exports[`SqrtPriceMath #getAmountDeltas gas cost for amount0/false 1`] = `971`;
 
