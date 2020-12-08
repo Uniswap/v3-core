@@ -22,7 +22,7 @@ library SwapMath {
         internal
         pure
         returns (
-            FixedPoint64.uq64x64 memory priceAfter,
+            FixedPoint64.uq64x64 memory sqrtQ,
             uint256 amountIn,
             uint256 amountOut,
             uint256 feeAmount
@@ -30,7 +30,7 @@ library SwapMath {
     {
         uint256 amountInLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
 
-        FixedPoint64.uq64x64 memory sqrtQ = SqrtPriceMath.getNextPrice(sqrtP, liquidity, amountInLessFee, zeroForOne);
+        sqrtQ = SqrtPriceMath.getNextPrice(sqrtP, liquidity, amountInLessFee, zeroForOne);
 
         // get the input/output amounts
         if (zeroForOne) {
@@ -51,7 +51,6 @@ library SwapMath {
             amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
         }
 
-        priceAfter = sqrtQ;
         // if we didn't reach the target, take the remainder of the maximum input as fee
         if (sqrtQ._x != sqrtQTarget._x) {
             assert(amountInMax >= SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips));
