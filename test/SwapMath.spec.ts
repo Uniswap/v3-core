@@ -12,7 +12,7 @@ describe('SwapMath', () => {
     swapMath = (await swapMathTestFactory.deploy()) as SwapMathTest
   })
 
-  describe('#computeSwap', () => {
+  describe.skip('#computeSwap', () => {
     it('after swapping amounts, price is price after', async () => {
       const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
         {_x: encodePrice(1, 1)},
