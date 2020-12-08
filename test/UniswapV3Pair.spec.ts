@@ -1,5 +1,5 @@
 import {ethers, waffle} from 'hardhat'
-import {BigNumberish, constants, Signer} from 'ethers'
+import {BigNumber, BigNumberish, constants, Signer} from 'ethers'
 import {TestERC20} from '../typechain/TestERC20'
 import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
 import {MockTimeUniswapV3Pair} from '../typechain/MockTimeUniswapV3Pair'
@@ -13,12 +13,20 @@ import {
   expandTo18Decimals,
   FeeAmount,
   getPositionKey,
-  MAX_TICK,
-  MIN_TICK,
+  getMAX_TICK,
+  getMIN_TICK,
   MAX_LIQUIDITY_GROSS_PER_TICK,
   encodePrice,
+  encodePriceSqrt,
+  TICK_SPACINGS,
 } from './shared/utilities'
 import {TickMathTest} from '../typechain/TickMathTest'
+
+const feeAmount = FeeAmount.MEDIUM
+const tickSpacing = TICK_SPACINGS[feeAmount]
+
+const MIN_TICK = getMIN_TICK(tickSpacing)
+const MAX_TICK = getMAX_TICK(tickSpacing)
 
 const createFixtureLoader = waffle.createFixtureLoader
 
@@ -50,7 +58,7 @@ describe('UniswapV3Pair', () => {
   beforeEach('deploy fixture', async () => {
     ;({token0, token1, token2, factory, createPair, testCallee, tickMath} = await loadFixture(pairFixture))
     // default to the 30 bips pair
-    pair = await createPair(FeeAmount.MEDIUM, 1)
+    pair = await createPair(feeAmount, tickSpacing)
   })
 
   it('constructor initializes immutables', async () => {
@@ -63,8 +71,8 @@ describe('UniswapV3Pair', () => {
     it('fails if already initialized', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(encodePrice(1, 1))
-      await expect(pair.initialize(encodePrice(1, 1))).to.be.revertedWith(
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await expect(pair.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith(
         'UniswapV3Pair::initialize: pair already initialized'
       )
     })
@@ -72,19 +80,21 @@ describe('UniswapV3Pair', () => {
       await expect(pair.initialize(0)).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
     it('fails if starting price is too high', async () => {
-      await expect(pair.initialize(constants.MaxUint256)).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
+      await expect(
+        pair.initialize(constants.MaxUint256.add(1).div(BigNumber.from(2).pow(128)).sub(1))
+      ).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
     it('fails if cannot transfer from user', async () => {
-      await expect(pair.initialize(encodePrice(1, 1))).to.be.revertedWith(
+      await expect(pair.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith(
         'TransferHelper::transferFrom: transferFrom failed'
       )
     })
     it('sets initial variables', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      const price = encodePrice(1, 2)
+      const price = encodePriceSqrt(1, 2)
       await pair.initialize(price)
-      expect(await pair.priceCurrent()).to.eq(price)
+      expect(await pair.sqrtPriceCurrent()).to.eq(price)
       expect(await pair.blockTimestampLast()).to.eq(TEST_PAIR_START_TIME)
       expect(await pair.tickCurrent()).to.eq(-6932)
       expect(await pair.liquidityCurrent()).to.eq(1)
@@ -92,13 +102,13 @@ describe('UniswapV3Pair', () => {
     it('initializes MIN_TICK and MAX_TICK', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      const price = encodePrice(1, 2)
+      const price = encodePriceSqrt(1, 2)
       await pair.initialize(price)
 
       {
         const {liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1} = await pair.tickInfos(MIN_TICK)
         expect(liquidityGross).to.eq(1)
-        expect(secondsOutside).to.eq(1601906400)
+        expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
         expect(feeGrowthOutside0._x).to.eq(0)
         expect(feeGrowthOutside1._x).to.eq(0)
       }
@@ -113,7 +123,7 @@ describe('UniswapV3Pair', () => {
     it('creates a position for address 0 for min liquidity', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      const price = encodePrice(1, 2)
+      const price = encodePriceSqrt(1, 2)
       await pair.initialize(price)
       const {liquidity} = await pair.positions(getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK))
       expect(liquidity).to.eq(1)
@@ -121,13 +131,13 @@ describe('UniswapV3Pair', () => {
     it('emits a Initialized event with the input tick', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      const price = encodePrice(1, 2)
+      const price = encodePriceSqrt(1, 2)
       await expect(pair.initialize(price)).to.emit(pair, 'Initialized').withArgs(price)
     })
     it('transfers the token', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      const price = encodePrice(1, 2)
+      const price = encodePriceSqrt(1, 2)
       await expect(pair.initialize(price))
         .to.emit(token0, 'Transfer')
         .withArgs(walletAddress, pair.address, 2)
@@ -146,7 +156,7 @@ describe('UniswapV3Pair', () => {
       beforeEach('initialize the pair at price of 10:1', async () => {
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
-        await pair.initialize(encodePrice(1, 10))
+        await pair.initialize(encodePriceSqrt(1, 10))
         await pair.setPosition(MIN_TICK, MAX_TICK, 3161)
         await token0.approve(pair.address, 0)
         await token1.approve(pair.address, 0)
@@ -376,7 +386,7 @@ describe('UniswapV3Pair', () => {
   async function initializeAtZeroTick(pair: MockTimeUniswapV3Pair): Promise<void> {
     await token0.approve(pair.address, initializeLiquidityAmount)
     await token1.approve(pair.address, initializeLiquidityAmount)
-    await pair.initialize(encodePrice(1, 1))
+    await pair.initialize(encodePriceSqrt(1, 1))
     const [min, max] = await Promise.all([pair.MIN_TICK(), pair.MAX_TICK()])
     await pair.setPosition(min, max, initializeLiquidityAmount.sub(1))
   }
@@ -954,7 +964,7 @@ describe('UniswapV3Pair', () => {
       pair = await createPair(FeeAmount.LOW, 1)
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.initialize(encodePrice(1, 1))
+      await pair.initialize(encodePriceSqrt(1, 1))
       await pair.setPosition(MIN_TICK, MAX_TICK, liquidityAmount)
     })
 
@@ -1094,7 +1104,7 @@ describe('UniswapV3Pair', () => {
       it('initialize sets min and max ticks', async () => {
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
-        await pair.initialize(encodePrice(1, 1))
+        await pair.initialize(encodePriceSqrt(1, 1))
         const {liquidityGross: minTickLiquidityGross} = await pair.tickInfos(-734772)
         const {liquidityGross: maxTickLiquidityGross} = await pair.tickInfos(734772)
         expect(minTickLiquidityGross).to.eq(1)
@@ -1104,7 +1114,7 @@ describe('UniswapV3Pair', () => {
         beforeEach('initialize pair', async () => {
           await token0.approve(pair.address, constants.MaxUint256)
           await token1.approve(pair.address, constants.MaxUint256)
-          await pair.initialize(encodePrice(1, 1))
+          await pair.initialize(encodePriceSqrt(1, 1))
         })
         it('setPosition can only be called for multiples of 12', async () => {
           await expect(pair.setPosition(-6, 0, 1)).to.be.revertedWith(
