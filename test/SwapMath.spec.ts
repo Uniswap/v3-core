@@ -36,7 +36,7 @@ describe('SwapMath', () => {
         FeeAmount.MEDIUM,
         true
       )
-      expect(amountIn).to.eq('999999999999998206')
+      expect(amountIn).to.eq('999999999999999607')
       expect(amountOut).to.eq('6436444186929')
       expect(priceAfter._x).to.eq('2174651570564491698575021936594929')
     })

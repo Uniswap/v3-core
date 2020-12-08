@@ -63,8 +63,8 @@ library SwapMath {
         amountIn = SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
         assert(amountIn <= amountInMax);
 
-        // burn the remaining amount
-        if (amountIn == 0 && priceAfter._x == price._x) {
+        // burn the remaining amount if we didn't reach the target
+        if (priceAfter._x != target._x && amountIn < amountInMax) {
             amountIn = amountInMax;
         }
     }

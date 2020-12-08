@@ -990,7 +990,7 @@ describe('UniswapV3Pair', () => {
       const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
 
       // 6 bips * 1e18
-      expect(token0Fees).to.eq('600000000000000')
+      expect(token0Fees).to.eq('599999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1008,7 +1008,7 @@ describe('UniswapV3Pair', () => {
       const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
 
       // 6 bips * 2e18
-      expect(token0Fees).to.eq('1200000000000001')
+      expect(token0Fees).to.eq('1199999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1019,7 +1019,7 @@ describe('UniswapV3Pair', () => {
 
       const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
 
-      expect(token0Fees).to.eq('1000000000000001')
+      expect(token0Fees).to.eq('1000000000000000')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1040,11 +1040,11 @@ describe('UniswapV3Pair', () => {
       expect(token1FeesNext).to.eq(0)
 
       // the fee to fees do not account for uncollected fees yet
-      expect(await pair.feeToFees0()).to.be.eq('100000000000000')
+      expect(await pair.feeToFees0()).to.be.eq('99999999999999')
       expect(await pair.feeToFees1()).to.be.eq(0)
 
       await pair.setPosition(MIN_TICK, MAX_TICK, 0)
-      expect(await pair.feeToFees0()).to.be.eq('200000000000000')
+      expect(await pair.feeToFees0()).to.be.eq('199999999999998')
       expect(await pair.feeToFees1()).to.be.eq(0)
     })
   })
@@ -1135,9 +1135,9 @@ describe('UniswapV3Pair', () => {
           await pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x')
           await expect(pair.setPosition(-1212, -1200, liquidityAmount.mul(-1)))
             .to.emit(token0, 'Transfer')
-            .withArgs(pair.address, walletAddress, '501500000000000359')
+            .withArgs(pair.address, walletAddress, '999999999999998204')
             .to.emit(token1, 'Transfer')
-            .withArgs(pair.address, walletAddress, '15281912612800')
+            .withArgs(pair.address, walletAddress, '30563825225600')
           expect(await pair.tickCurrent()).to.eq(-1203)
         })
       })
