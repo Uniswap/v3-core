@@ -313,7 +313,7 @@ describe('UniswapV3Pair', () => {
 
         describe('including current price', () => {
           it('price within range: transfers current price of both tokens', async () => {
-            await expect(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 100))
+            await expect(pair.setPosition(MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100))
               .to.emit(token0, 'Transfer')
               .withArgs(walletAddress, pair.address, 317)
               .to.emit(token1, 'Transfer')
@@ -323,15 +323,15 @@ describe('UniswapV3Pair', () => {
           })
 
           it('initializes lower tick', async () => {
-            await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 100)
-            const {liquidityGross, secondsOutside} = await pair.tickInfos(MIN_TICK + 1)
+            await pair.setPosition(MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100)
+            const {liquidityGross, secondsOutside} = await pair.tickInfos(MIN_TICK + tickSpacing)
             expect(liquidityGross).to.eq(100)
             expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
           })
 
           it('initializes upper tick', async () => {
-            await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 100)
-            const {liquidityGross, secondsOutside} = await pair.tickInfos(MAX_TICK - 1)
+            await pair.setPosition(MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100)
+            const {liquidityGross, secondsOutside} = await pair.tickInfos(MAX_TICK - tickSpacing)
             expect(liquidityGross).to.eq(100)
             expect(secondsOutside).to.eq(0)
           })
@@ -347,43 +347,43 @@ describe('UniswapV3Pair', () => {
           })
 
           it('removing works', async () => {
-            await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 100)
-            await pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, -100)
+            await pair.setPosition(MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100)
+            await pair.setPosition(MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, -100)
             expect(await token0.balanceOf(pair.address)).to.eq(10001)
             expect(await token1.balanceOf(pair.address)).to.eq(1002)
           })
 
           it('gas', async () => {
-            await snapshotGasCost(pair.setPosition(MIN_TICK + 1, MAX_TICK - 1, 100))
+            await snapshotGasCost(pair.setPosition(MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100))
           })
         })
 
         describe('above current price', () => {
           it('transfers token1 only', async () => {
-            await expect(pair.setPosition(-49755, -23186, 10000))
+            await expect(pair.setPosition(-46080, -23040, 10000))
               .to.emit(token1, 'Transfer')
-              .withArgs(walletAddress, pair.address, 2307)
+              .withArgs(walletAddress, pair.address, 2162)
             expect(await token0.balanceOf(pair.address)).to.eq(10000)
-            expect(await token1.balanceOf(pair.address)).to.eq(1001 + 2307)
+            expect(await token1.balanceOf(pair.address)).to.eq(1001 + 2162)
           })
 
           it('works for min tick', async () => {
-            await expect(pair.setPosition(MIN_TICK, -23186, 10000))
+            await expect(pair.setPosition(MIN_TICK, -23040, 10000))
               .to.emit(token1, 'Transfer')
-              .withArgs(walletAddress, pair.address, 3138)
+              .withArgs(walletAddress, pair.address, 3161)
             expect(await token0.balanceOf(pair.address)).to.eq(10000)
-            expect(await token1.balanceOf(pair.address)).to.eq(1001 + 3138)
+            expect(await token1.balanceOf(pair.address)).to.eq(1001 + 3161)
           })
 
           it('removing works', async () => {
-            await pair.setPosition(-500, -233, 10000)
-            await pair.setPosition(-500, -233, -10000)
-            expect(await token0.balanceOf(pair.address)).to.eq(10001)
-            expect(await token1.balanceOf(pair.address)).to.eq(1001)
+            await pair.setPosition(-46080, -46020, 10000)
+            await pair.setPosition(-46080, -46020, -10000)
+            expect(await token0.balanceOf(pair.address)).to.eq(10000)
+            expect(await token1.balanceOf(pair.address)).to.eq(1002)
           })
 
           it('gas', async () => {
-            await snapshotGasCost(await pair.setPosition(-500, -233, 10000))
+            await snapshotGasCost(await pair.setPosition(-46080, -46020, 10000))
           })
         })
       })
