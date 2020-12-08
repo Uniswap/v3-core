@@ -12,7 +12,8 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
-import './libraries/PriceMath.sol';
+import './libraries/SqrtPriceMath.sol';
+import './libraries/SwapMath.sol';
 import './libraries/TickMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
@@ -436,10 +437,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tick < params.tickLower) {
-            amount0 = PriceMath
+            amount0 = SqrtPriceMath
                 .getAmount0Delta(
-                FixedPoint128.uq128x128(TickMath.getRatioAtTick(params.tickLower)),
-                FixedPoint128.uq128x128(TickMath.getRatioAtTick(params.tickUpper)),
+                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
+                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
                 params
                     .liquidityDelta
             )
@@ -447,18 +448,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount1 = -feesOwed1.toInt256();
         } else if (tick < params.tickUpper) {
             // the current price is inside the passed range
-            amount0 = PriceMath
+            amount0 = SqrtPriceMath
                 .getAmount0Delta(
-                priceCurrent,
-                FixedPoint128.uq128x128(TickMath.getRatioAtTick(params.tickUpper)),
+                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
+                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(priceCurrent._x))),
                 params
                     .liquidityDelta
             )
                 .sub(feesOwed0.toInt256());
-            amount1 = PriceMath
+            amount1 = SqrtPriceMath
                 .getAmount1Delta(
-                FixedPoint128.uq128x128(TickMath.getRatioAtTick(params.tickLower)),
-                priceCurrent,
+                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
+                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(priceCurrent._x))),
                 params
                     .liquidityDelta
             )
@@ -469,10 +470,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             amount0 = -feesOwed0.toInt256();
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = PriceMath
+            amount1 = SqrtPriceMath
                 .getAmount1Delta(
-                FixedPoint128.uq128x128(TickMath.getRatioAtTick(params.tickLower)),
-                FixedPoint128.uq128x128(TickMath.getRatioAtTick(params.tickUpper)),
+                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
+                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
                 params
                     .liquidityDelta
             )
@@ -523,6 +524,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountIn;
         // how much is being swapped out in the current step
         uint256 amountOut;
+        // how much fee is paid from the amount in
+        uint256 feeAmount;
     }
 
     // returns the closest parent tick that could be initialized
@@ -566,74 +569,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                // recompute reserves given the current price/liquidity
-                (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
+                (state.price, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                     state.price,
-                    state.liquidityCurrent,
-                    false
-                );
-
-                // compute the amount of input token required to push the price to the target (and max output token)
-                (uint256 amountInMax, uint256 amountOutMax) = PriceMath.getInputToRatio(
-                    step.reserve0Virtual,
-                    step.reserve1Virtual,
-                    state.liquidityCurrent,
                     step.priceNext,
+                    state.liquidityCurrent,
+                    state.amountInRemaining,
                     fee,
                     params.zeroForOne
                 );
 
-                // swap to the next tick, or stop early if we've exhausted all the input
-                step.amountIn = Math.min(amountInMax, state.amountInRemaining);
-
                 // decrement remaining input amount
-                state.amountInRemaining -= step.amountIn;
+                state.amountInRemaining -= step.amountIn + step.feeAmount;
 
-                // discount the input amount by the fee
-                uint256 amountInLessFee = step.amountIn.mul(PriceMath.LP_FEE_BASE - fee) / PriceMath.LP_FEE_BASE;
-
-                // handle the fee accounting
-                uint256 feePaid = step.amountIn - amountInLessFee;
-
-                if (feePaid > 0) {
+                if (step.feeAmount > 0) {
                     // update global fee tracker
-                    state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, state.liquidityCurrent)._x;
+                    state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidityCurrent)._x;
                 }
 
-                // handle the swap
-                if (amountInLessFee > 0) {
-                    // calculate the owed output amount on the discounted input amount
-                    step.amountOut = params.zeroForOne
-                        ? PriceMath.getAmountOut(step.reserve0Virtual, step.reserve1Virtual, amountInLessFee)
-                        : PriceMath.getAmountOut(step.reserve1Virtual, step.reserve0Virtual, amountInLessFee);
-
-                    // cap the output amount
-                    step.amountOut = Math.min(step.amountOut, amountOutMax);
-
-                    // increment amountOut
-                    amountOut = amountOut.add(step.amountOut);
-                }
-
-                // update the price
-                // if we've consumed the input required to get to the target price, that's the price now!
-                if (step.amountIn == amountInMax) {
-                    state.price = step.priceNext;
-                } else {
-                    // if not, the price is the new ratio of (computed) reserves, capped at the target price
-                    if (params.zeroForOne) {
-                        FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
-                            step.reserve1Virtual.sub(step.amountOut),
-                            step.reserve0Virtual.add(amountInLessFee)
-                        );
-                        state.price = FixedPoint128.uq128x128(Math.max(step.priceNext._x, priceEstimate._x));
-                    } else {
-                        FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
-                            step.reserve1Virtual.add(amountInLessFee),
-                            step.reserve0Virtual.sub(step.amountOut)
-                        );
-                        state.price = FixedPoint128.uq128x128(Math.min(step.priceNext._x, priceEstimate._x));
-                    }
-                }
+                amountOut = amountOut.add(step.amountOut);
             }
 
             // we have to shift to the next tick if either of two conditions are true:

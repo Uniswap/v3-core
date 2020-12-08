@@ -13,36 +13,36 @@ describe('SqrtPriceMath', () => {
     sqrtPriceMath = (await sqrtPriceMathTestFactory.deploy()) as SqrtPriceMathTest
   })
 
-  describe('#getPriceAfterSwap', () => {
+  describe('#getNextPrice', () => {
     it('fails if price is zero', async () => {
       await expect(
-        sqrtPriceMath.getPriceAfterSwap({_x: 0}, expandTo18Decimals(1), expandTo18Decimals(1).div(10), false)
-      ).to.be.revertedWith('SqrtPriceMath::getPriceAfterSwap: sqrtP cannot be zero')
+        sqrtPriceMath.getNextPrice({_x: 0}, expandTo18Decimals(1), expandTo18Decimals(1).div(10), false)
+      ).to.be.revertedWith('SqrtPriceMath::getNextPrice: sqrtP cannot be zero')
       await expect(
-        sqrtPriceMath.getPriceAfterSwap({_x: 0}, expandTo18Decimals(1), expandTo18Decimals(1).div(10), true)
-      ).to.be.revertedWith('SqrtPriceMath::getPriceAfterSwap: sqrtP cannot be zero')
+        sqrtPriceMath.getNextPrice({_x: 0}, expandTo18Decimals(1), expandTo18Decimals(1).div(10), true)
+      ).to.be.revertedWith('SqrtPriceMath::getNextPrice: sqrtP cannot be zero')
     })
 
     it('fails if price is zero', async () => {
       await expect(
-        sqrtPriceMath.getPriceAfterSwap({_x: encodePriceSqrt(1, 1)}, 0, expandTo18Decimals(1).div(10), false)
-      ).to.be.revertedWith('SqrtPriceMath::getPriceAfterSwap: liquidity cannot be zero')
+        sqrtPriceMath.getNextPrice({_x: encodePriceSqrt(1, 1)}, 0, expandTo18Decimals(1).div(10), false)
+      ).to.be.revertedWith('SqrtPriceMath::getNextPrice: liquidity cannot be zero')
       await expect(
-        sqrtPriceMath.getPriceAfterSwap({_x: encodePriceSqrt(1, 1)}, 0, expandTo18Decimals(1).div(10), true)
-      ).to.be.revertedWith('SqrtPriceMath::getPriceAfterSwap: liquidity cannot be zero')
+        sqrtPriceMath.getNextPrice({_x: encodePriceSqrt(1, 1)}, 0, expandTo18Decimals(1).div(10), true)
+      ).to.be.revertedWith('SqrtPriceMath::getNextPrice: liquidity cannot be zero')
     })
 
     it('returns input price if amount in is zero', async () => {
       expect(
-        (await sqrtPriceMath.getPriceAfterSwap({_x: encodePriceSqrt(1, 1)}, expandTo18Decimals(1).div(10), 0, false))._x
+        (await sqrtPriceMath.getNextPrice({_x: encodePriceSqrt(1, 1)}, expandTo18Decimals(1).div(10), 0, false))._x
       ).to.eq(encodePriceSqrt(1, 1))
       expect(
-        (await sqrtPriceMath.getPriceAfterSwap({_x: encodePriceSqrt(1, 1)}, expandTo18Decimals(1).div(10), 0, true))._x
+        (await sqrtPriceMath.getNextPrice({_x: encodePriceSqrt(1, 1)}, expandTo18Decimals(1).div(10), 0, true))._x
       ).to.eq(encodePriceSqrt(1, 1))
     })
 
     it('sqrtQ is greater than sqrtP if one for zero', async () => {
-      const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
+      const sqrtQ = await sqrtPriceMath.getNextPrice(
         {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         expandTo18Decimals(1).div(10),
@@ -51,7 +51,7 @@ describe('SqrtPriceMath', () => {
       expect(sqrtQ._x).to.be.gt(encodePriceSqrt(1, 1))
     })
     it('sqrtQ is less than sqrtP if zero for one', async () => {
-      const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
+      const sqrtQ = await sqrtPriceMath.getNextPrice(
         {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         expandTo18Decimals(1).div(10),
@@ -60,7 +60,7 @@ describe('SqrtPriceMath', () => {
       expect(sqrtQ._x).to.be.lt(encodePriceSqrt(1, 1))
     })
     it('sqrtQ is equal to sqrtP if amount in is zero and swapping one for zero', async () => {
-      const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
+      const sqrtQ = await sqrtPriceMath.getNextPrice(
         {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         BigNumber.from(0),
@@ -69,7 +69,7 @@ describe('SqrtPriceMath', () => {
       expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 1))
     })
     it('sqrtQ is equal to sqrtP if amount in is zero and swapping zero for one', async () => {
-      const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
+      const sqrtQ = await sqrtPriceMath.getNextPrice(
         {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         BigNumber.from(0),
@@ -78,7 +78,7 @@ describe('SqrtPriceMath', () => {
       expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 1))
     })
     it('price of 1 to 1.21', async () => {
-      const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
+      const sqrtQ = await sqrtPriceMath.getNextPrice(
         {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         expandTo18Decimals(1).div(10),
@@ -87,18 +87,19 @@ describe('SqrtPriceMath', () => {
       expect(sqrtQ._x).to.eq(encodePriceSqrt(121, 100))
     })
     it('price of 1 to 1/1.21', async () => {
-      const sqrtQ = await sqrtPriceMath.getPriceAfterSwap(
+      const sqrtQ = await sqrtPriceMath.getNextPrice(
         {_x: encodePriceSqrt(1, 1)},
         expandTo18Decimals(1),
         expandTo18Decimals(1).div(10),
         true
       )
-      expect(sqrtQ._x).to.eq(encodePriceSqrt(100, 121))
+      // add 1 because we do not go all the way to the next price root
+      expect(sqrtQ._x).to.eq(encodePriceSqrt(100, 121).add(1))
     })
 
     it('zeroForOne = true gas', async () => {
       await snapshotGasCost(
-        sqrtPriceMath.getGasCostOfGetPriceAfterSwap(
+        sqrtPriceMath.getGasCostOfGetNextPrice(
           {_x: encodePriceSqrt(1, 1)},
           expandTo18Decimals(1),
           expandTo18Decimals(1).div(10),
@@ -108,7 +109,7 @@ describe('SqrtPriceMath', () => {
     })
     it('zeroForOne = false gas', async () => {
       await snapshotGasCost(
-        sqrtPriceMath.getGasCostOfGetPriceAfterSwap(
+        sqrtPriceMath.getGasCostOfGetNextPrice(
           {_x: encodePriceSqrt(1, 1)},
           expandTo18Decimals(1),
           expandTo18Decimals(1).div(10),
