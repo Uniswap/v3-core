@@ -7,15 +7,15 @@ import '../libraries/TickBitmap.sol';
 contract TickBitmapEchidnaTest {
     using TickBitmap for mapping(int16 => uint256);
 
-    mapping(int16 => uint256) public bitmap;
+    mapping(int16 => uint256) private bitmap;
 
-    function flipTick(int24 tick) public {
+    function flipTick(int24 tick) external {
         bool before = bitmap.isInitialized(tick);
         bitmap.flipTick(tick);
         assert(bitmap.isInitialized(tick) == !before);
     }
 
-    function checkNextInitializedTickWithinOneWordInvariants(int24 tick, bool lte) public view {
+    function checkNextInitializedTickWithinOneWordInvariants(int24 tick, bool lte) external view {
         (int24 next, bool initialized) = bitmap.nextInitializedTickWithinOneWord(tick, lte);
         if (lte) {
             require(tick >= TickMath.MIN_TICK);
