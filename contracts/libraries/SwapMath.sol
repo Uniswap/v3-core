@@ -62,6 +62,7 @@ library SwapMath {
 
         amountIn = SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
         if (amountIn > amountInMax) {
+            // todo: this is the cause of the failing test.
             amountIn = amountInMax;
         }
     }
