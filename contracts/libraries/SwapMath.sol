@@ -61,8 +61,10 @@ library SwapMath {
         priceAfter = sqrtQ._x == targetSqrtQ._x ? target : FixedPoint128.uq128x128(uint256(sqrtQ._x)**2);
 
         amountIn = SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
-        if (amountIn > amountInMax) {
-            // todo: this is the cause of the failing test.
+        assert(amountIn <= amountInMax);
+
+        // burn the remaining amount
+        if (amountIn == 0 && priceAfter._x == price._x) {
             amountIn = amountInMax;
         }
     }

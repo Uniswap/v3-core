@@ -40,7 +40,7 @@ library SqrtPriceMath {
             // TODO can revert from overflow
             uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).add(amountIn.mul(sqrtP._x));
             sqrtQ = FixedPoint64.uq64x64(
-                FullMath.mulDiv(uint256(liquidity) * sqrtP._x, FixedPoint64.Q64, denominator).toUint128()
+                mulDivRoundingUp(uint256(liquidity) * sqrtP._x, FixedPoint64.Q64, denominator).toUint128()
             );
         } else {
             // calculate sqrt(P) + y / liquidity, i.e.
