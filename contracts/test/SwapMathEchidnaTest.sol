@@ -6,14 +6,14 @@ import '../libraries/TickMath.sol';
 import '../libraries/SwapMath.sol';
 
 contract SwapMathEchidnaTest {
-    function requirePriceWithinBounds(uint256 price) private pure {
-        require(price < TickMath.getRatioAtTick(TickMath.MAX_TICK));
-        require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK));
+    function requirePriceWithinBounds(uint128 price) private pure {
+        require(price < TickMath.getRatioAtTick(TickMath.MAX_TICK / 2));
+        require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK / 2));
     }
 
     function checkComputeSwapStepInvariants(
-        uint256 priceRaw,
-        uint256 priceTargetRaw,
+        uint128 priceRaw,
+        uint128 priceTargetRaw,
         uint128 liquidity,
         uint256 amountInMax,
         uint24 feePips,
@@ -34,13 +34,13 @@ contract SwapMathEchidnaTest {
         require(amountInMax > 0);
 
         (
-            FixedPoint128.uq128x128 memory priceAfter,
+            FixedPoint64.uq64x64 memory priceAfter,
             uint256 amountIn, /*uint256 amountOut*/
             ,
             uint256 feeAmount
         ) = SwapMath.computeSwapStep(
-            FixedPoint128.uq128x128(priceRaw),
-            FixedPoint128.uq128x128(priceTargetRaw),
+            FixedPoint64.uq64x64(priceRaw),
+            FixedPoint64.uq64x64(priceTargetRaw),
             liquidity,
             amountInMax,
             feePips,
