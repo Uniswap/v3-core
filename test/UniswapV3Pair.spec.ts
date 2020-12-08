@@ -1126,7 +1126,7 @@ describe('UniswapV3Pair', () => {
             .to.emit(token0, 'Transfer')
             .withArgs(pair.address, walletAddress, '30563825225600')
             .to.emit(token1, 'Transfer')
-            .withArgs(pair.address, walletAddress, '999999999999999601')
+            .withArgs(pair.address, walletAddress, '999999999999999602')
           expect(await pair.tickCurrent()).to.eq(1202)
         })
         it('swapping across gaps works in 0 for 1 direction', async () => {

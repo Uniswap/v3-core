@@ -24,7 +24,7 @@ describe('SwapMath', () => {
       )
       expect(amountIn).to.eq('9981112891913202')
       expect(amountOut).to.eq('9925619580021728')
-      expect(priceAfter._x).to.eq('343685190590147848074961260141673972561')
+      expect(priceAfter._x).to.eq('343685190590147848098008353506085893570')
     })
 
     it('gas', async () => {

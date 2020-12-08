@@ -26,34 +26,43 @@ library SwapMath {
         )
     {
         FixedPoint64.uq64x64 memory sqrtP = FixedPoint64.uq64x64(uint128(Babylonian.sqrt(price._x)));
-        FixedPoint64.uq64x64 memory sqrtQ = FixedPoint64.uq64x64(uint128(Babylonian.sqrt(target._x)));
+        FixedPoint64.uq64x64 memory targetSqrtQ = FixedPoint64.uq64x64(uint128(Babylonian.sqrt(target._x)));
 
-        // get the input required to reach or surpass the target price
-        if (zeroForOne) {
-            assert(price._x >= target._x);
-            amountIn = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true);
-        } else {
-            assert(price._x <= target._x);
-            amountIn = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true);
-        }
+        uint256 amountInLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
 
-        // scale the input amount up by the fee, rounding up
-        amountIn = SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
-
-        // cap the input amount
-        amountIn = Math.min(amountIn, amountInMax);
-
-        // get the post-swap price
-        sqrtQ = SqrtPriceMath.getPriceAfterSwap(
+        FixedPoint64.uq64x64 memory sqrtQ = SqrtPriceMath.getPriceAfterSwap(
             sqrtP,
             liquidity,
-            FullMath.mulDiv(amountIn, 1e6 - feePips, 1e6),
+            amountInLessFee,
             zeroForOne
         );
-        priceAfter = FixedPoint128.uq128x128(uint256(sqrtQ._x)**2);
 
         // get the output amount, rounding down
-        if (zeroForOne) amountOut = SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, false);
-        else amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
+        if (zeroForOne) {
+            assert(price._x >= target._x);
+
+            if (sqrtQ._x < targetSqrtQ._x) {
+                sqrtQ = targetSqrtQ;
+            }
+
+            amountIn = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true);
+            amountOut = SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, false);
+        } else {
+            assert(price._x <= target._x);
+
+            if (sqrtQ._x > targetSqrtQ._x) {
+                sqrtQ = targetSqrtQ;
+            }
+
+            amountIn = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true);
+            amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
+        }
+
+        priceAfter = sqrtQ._x == targetSqrtQ._x ? target : FixedPoint128.uq128x128(uint256(sqrtQ._x)**2);
+
+        amountIn = SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
+        if (amountIn > amountInMax) {
+            amountIn = amountInMax;
+        }
     }
 }
