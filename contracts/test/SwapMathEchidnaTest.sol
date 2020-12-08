@@ -23,6 +23,8 @@ contract SwapMathEchidnaTest {
             }
         }
 
+        require(amountInMax > 0);
+
         (
             FixedPoint128.uq128x128 memory priceAfter,
             uint256 amountIn, /*uint256 amountOut*/
