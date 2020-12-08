@@ -13,6 +13,7 @@ contract SqrtPriceMathEchidnaTest {
         uint256 y,
         uint256 z
     ) external pure {
+        require(z > 0);
         uint256 notRoundedUp = FullMath.mulDiv(x, y, z);
         uint256 roundedUp = SqrtPriceMath.mulDivRoundingUp(x, y, z);
         assert(roundedUp >= notRoundedUp);
