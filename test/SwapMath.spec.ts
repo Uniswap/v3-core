@@ -1,0 +1,43 @@
+import {ethers} from 'hardhat'
+import {SwapMathTest} from '../typechain/SwapMathTest'
+
+import {expect} from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
+import {encodePrice, expandTo18Decimals} from './shared/utilities'
+
+describe('SwapMath', () => {
+  let swapMath: SwapMathTest
+  before(async () => {
+    const swapMathTestFactory = await ethers.getContractFactory('SwapMathTest')
+    swapMath = (await swapMathTestFactory.deploy()) as SwapMathTest
+  })
+
+  describe('#computeSwap', () => {
+    it('after swapping amounts, price is price after', async () => {
+      const {amountIn, amountOut, priceAfter} = await swapMath.computeSwap(
+        {_x: encodePrice(1, 1)},
+        {_x: encodePrice(101, 100)},
+        expandTo18Decimals(2),
+        expandTo18Decimals(1),
+        600,
+        false
+      )
+      expect(amountIn).to.eq('9981112891913202')
+      expect(amountOut).to.eq('9925619580021728')
+      expect(priceAfter._x).to.eq('343685190590147848074961260141673972561')
+    })
+
+    it('gas', async () => {
+      await snapshotGasCost(
+        swapMath.getGasCostOfComputeSwap(
+          {_x: encodePrice(1, 1)},
+          {_x: encodePrice(101, 100)},
+          expandTo18Decimals(2),
+          expandTo18Decimals(1),
+          600,
+          false
+        )
+      )
+    })
+  })
+})

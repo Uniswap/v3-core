@@ -13,6 +13,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/SqrtPriceMath.sol';
+import './libraries/SwapMath.sol';
 import './libraries/TickMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
@@ -566,7 +567,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                (state.price, step.amountIn, step.amountOut) = SqrtPriceMath.computeSwap(
+                (state.price, step.amountIn, step.amountOut) = SwapMath.computeSwap(
                     state.price,
                     step.priceNext,
                     state.liquidityCurrent,
@@ -576,10 +577,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // decrement remaining input amount
-                state.amountInRemaining = state.amountInRemaining.sub(
-                    step.amountIn,
-                    'computed step amount in is greater than remaining'
-                );
+                state.amountInRemaining -= step.amountIn;
 
                 // discount the input amount by the fee
                 uint256 amountInLessFee = step.amountIn.mul(1e6 - fee) / 1e6;
