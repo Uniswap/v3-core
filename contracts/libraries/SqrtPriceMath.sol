@@ -4,16 +4,25 @@ pragma solidity >=0.5.0;
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/math/Math.sol';
 
 import './SafeCast.sol';
 import './FixedPoint64.sol';
-import './PriceMath.sol';
+import './FixedPoint128.sol';
 
 library SqrtPriceMath {
     using SafeMath for uint128;
     using SafeCast for int256;
     using SafeMath for uint256;
     using SafeCast for uint256;
+
+    function mulDivRoundingUp(
+        uint256 x,
+        uint256 y,
+        uint256 d
+    ) internal pure returns (uint256) {
+        return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
+    }
 
     function getPriceAfterSwap(
         FixedPoint64.uq64x64 memory sqrtP,
@@ -57,7 +66,7 @@ library SqrtPriceMath {
         uint128 numerator2 = sqrtP._x - sqrtQ._x;
         uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
 
-        if (roundUp) return PriceMath.mulDivRoundingUp(numerator1, numerator2, denominator);
+        if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
         else return FullMath.mulDiv(numerator1, numerator2, denominator);
     }
 
@@ -125,7 +134,7 @@ library SqrtPriceMath {
         }
 
         // scale the input amount up by the fee, rounding up
-        amountIn = PriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
+        amountIn = mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
 
         // cap the input amount
         amountIn = Math.min(amountIn, amountInMax);

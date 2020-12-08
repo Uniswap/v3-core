@@ -12,7 +12,6 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
-import './libraries/PriceMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/TickMath.sol';
 
@@ -583,7 +582,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // discount the input amount by the fee
-                uint256 amountInLessFee = step.amountIn.mul(PriceMath.LP_FEE_BASE - fee) / PriceMath.LP_FEE_BASE;
+                uint256 amountInLessFee = step.amountIn.mul(1e6 - fee) / 1e6;
 
                 // handle the fee accounting
                 uint256 feePaid = step.amountIn - amountInLessFee;
