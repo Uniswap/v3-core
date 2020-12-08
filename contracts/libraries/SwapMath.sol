@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
+import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 
@@ -9,7 +10,9 @@ import './FixedPoint128.sol';
 import './SqrtPriceMath.sol';
 
 library SwapMath {
-    function computeSwap(
+    using SafeMath for uint256;
+
+    function computeSwapStep(
         FixedPoint128.uq128x128 memory price,
         FixedPoint128.uq128x128 memory target,
         uint128 liquidity,
@@ -22,7 +25,8 @@ library SwapMath {
         returns (
             FixedPoint128.uq128x128 memory priceAfter,
             uint256 amountIn,
-            uint256 amountOut
+            uint256 amountOut,
+            uint256 feeAmount
         )
     {
         FixedPoint64.uq64x64 memory sqrtP = FixedPoint64.uq64x64(uint128(Babylonian.sqrt(price._x)));
@@ -53,14 +57,15 @@ library SwapMath {
             amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
         }
 
-        priceAfter = sqrtQ._x == targetSqrtQ._x ? target : FixedPoint128.uq128x128(uint256(sqrtQ._x)**2);
-
-        amountIn = SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips);
-        assert(amountIn <= amountInMax);
-
         // burn the remaining amount if we didn't reach the target
-        if (priceAfter._x != target._x && amountIn < amountInMax) {
-            amountIn = amountInMax;
+        if (sqrtQ._x != targetSqrtQ._x) {
+            priceAfter = FixedPoint128.uq128x128(uint256(sqrtQ._x)**2);
+            feeAmount = amountInMax.sub(amountIn);
+        } else {
+            priceAfter = target;
+            feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips).sub(amountIn);
         }
+
+        assert(amountIn + feeAmount <= amountInMax);
     }
 }

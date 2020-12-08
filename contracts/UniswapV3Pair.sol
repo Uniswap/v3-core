@@ -524,6 +524,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountIn;
         // how much is being swapped out in the current step
         uint256 amountOut;
+        // how much fee is paid from the amount in
+        uint256 feeAmount;
     }
 
     // returns the closest parent tick that could be initialized
@@ -567,7 +569,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                (state.price, step.amountIn, step.amountOut) = SwapMath.computeSwap(
+                (state.price, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                     state.price,
                     step.priceNext,
                     state.liquidityCurrent,
@@ -577,24 +579,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // decrement remaining input amount
-                state.amountInRemaining -= step.amountIn;
+                state.amountInRemaining -= step.amountIn + step.feeAmount;
 
-                // discount the input amount by the fee
-                uint256 amountInLessFee = step.amountIn.mul(1e6 - fee) / 1e6;
-
-                // handle the fee accounting
-                uint256 feePaid = step.amountIn - amountInLessFee;
-
-                if (feePaid > 0) {
+                if (step.feeAmount > 0) {
                     // update global fee tracker
-                    state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, state.liquidityCurrent)._x;
+                    state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidityCurrent)._x;
                 }
 
-                // handle the swap
-                if (step.amountOut > 0) {
-                    // increment amountOut
-                    amountOut = amountOut.add(step.amountOut);
-                }
+                amountOut = amountOut.add(step.amountOut);
             }
 
             // we have to shift to the next tick if either of two conditions are true:

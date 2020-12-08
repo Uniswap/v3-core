@@ -6,7 +6,7 @@ import '../libraries/SwapMath.sol';
 import '../libraries/FixedPoint64.sol';
 
 contract SwapMathTest {
-    function computeSwap(
+    function computeSwapStep(
         FixedPoint128.uq128x128 memory price,
         FixedPoint128.uq128x128 memory target,
         uint128 liquidity,
@@ -19,13 +19,14 @@ contract SwapMathTest {
         returns (
             FixedPoint128.uq128x128 memory priceAfter,
             uint256 amountIn,
-            uint256 amountOut
+            uint256 amountOut,
+            uint256 feeAmount
         )
     {
-        return SwapMath.computeSwap(price, target, liquidity, amountInMax, feePips, zeroForOne);
+        return SwapMath.computeSwapStep(price, target, liquidity, amountInMax, feePips, zeroForOne);
     }
 
-    function getGasCostOfComputeSwap(
+    function getGasCostOfComputeSwapStep(
         FixedPoint128.uq128x128 memory price,
         FixedPoint128.uq128x128 memory target,
         uint128 liquidity,
@@ -34,7 +35,7 @@ contract SwapMathTest {
         bool zeroForOne
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        SwapMath.computeSwap(price, target, liquidity, amountInMax, feePips, zeroForOne);
+        SwapMath.computeSwapStep(price, target, liquidity, amountInMax, feePips, zeroForOne);
         return gasBefore - gasleft();
     }
 }
