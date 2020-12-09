@@ -8497,7 +8497,7 @@ solhint@^3.2.1:
   optionalDependencies:
     prettier "^1.14.3"
 
-solidity-docgen@^0.5.9:
+solidity-docgen@^0.5.10:
   version "0.5.10"
   resolved "https://registry.yarnpkg.com/solidity-docgen/-/solidity-docgen-0.5.10.tgz#8c98faf2334c16b57ce84123b6ba0ff128172848"
   integrity sha512-poeLQBywOFqo0u2nozaJ1H4vtGGLJ/iewUvnXrz8IywkC9LEAFBov4tvNsl19iKfRjsHCZqbxKfMoRH2AP1EMg==
