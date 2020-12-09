@@ -1,21 +1,15 @@
 name: Fuzz Testing
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   echidna:
     name: Echidna
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        testName:
-          - TickBitmapEchidnaTest
-          - TickMathEchidnaTest
-          - SqrtPriceMathEchidnaTest
-          - SwapMathEchidnaTest
-    #          - UniswapV3PairEchidnaTest
 
     steps:
       - uses: actions/checkout@v2
@@ -43,9 +37,14 @@ jobs:
 
       - name: Install echidna
         run: |
-          sudo wget -O /tmp/echidna-test.tar.gz https://github.com/crytic/echidna/releases/download/v1.6.0/echidna-test-v1.6.0-Ubuntu-18.04.tar.gz
-          sudo tar -xf /tmp/echidna-test.tar.gz -C /usr/bin
+          sudo wget -O /usr/bin/echidna-test https://moody-test-artifact-bucket.s3.amazonaws.com/echidna-test
           sudo chmod +x /usr/bin/echidna-test
 
-      - name: Run ${{ matrix.testName }}
-        run: echidna-test . --contract ${{ matrix.testName }} --config echidna.config.yml
+      - name: PriceMathEchidnaTest
+        run: echidna-test . --contract PriceMathEchidnaTest --config echidna.config.yml
+
+      - name: TickBitMapEchidnaTest
+        run: echidna-test . --contract TickBitMapEchidnaTest --config echidna.config.yml
+
+      - name: UniswapV3PairEchidnaTest
+        run: echidna-test . --contract UniswapV3PairEchidnaTest --config echidna.config.yml

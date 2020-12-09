@@ -12,16 +12,19 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
-import './libraries/SqrtPriceMath.sol';
-import './libraries/SwapMath.sol';
 import './libraries/TickMath.sol';
+import './libraries/ReverseTickMath.sol';
+import './libraries/PriceMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3Callee.sol';
-import './libraries/SpacedTickBitmap.sol';
+import './libraries/TickBitMap.sol';
 import './libraries/FixedPoint128.sol';
 
+/// @title The Uniswap V3 Pair.
+/// @notice The V3 pair allows for liquidity provisioning within user specified positions and swapping between two assets.
+/// @dev Liquidity positions are partitioned into "ticks", each tick is equally spaced and may have arbitrary depth of liquidity providing the token has a total supply of < 2**128.
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
     using SafeMath for uint256;
@@ -31,58 +34,50 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeCast for uint256;
     using MixedSafeMath for uint128;
     using FixedPoint128 for FixedPoint128.uq128x128;
-    using SpacedTickBitmap for mapping(int16 => uint256);
+    using TickBitMap for mapping(uint256 => uint256);
 
-    // if we constrain the gross liquidity associated to a single tick, then we can guarantee that the total
+    // if we constrain the liquidity associated to a single tick, then we can guarantee that the total
     // liquidityCurrent never exceeds uint128
     // the max liquidity for a single tick fee vote is then:
     //   floor(type(uint128).max / (number of ticks))
-    //     = (2n ** 128n - 1n) / (2n ** 24n)
-    // this is about 104 bits
-    uint128 private constant MAX_LIQUIDITY_GROSS_PER_TICK = 20282409603651670423947251286015;
+    //     = (2n ** 128n - 1n) / (2n ** 16n)
+    // this is about 112 bits
+    uint128 private constant MAX_LIQUIDITY_GROSS_PER_TICK = 5192296858534827628530496329220095;
 
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
     uint24 public immutable override fee;
 
-    // how far apart initialized ticks must be
-    // e.g. a tickSpacing of 3 means ticks can be initialized every 3rd tick, i.e. ..., -6, -3, 0, 3, 6, ...
-    // int24 to avoid casting even though it's always positive
-    int24 public immutable override tickSpacing;
-
-    // the minimum and maximum tick for the pair
-    // always a multiple of tickSpacing
-    int24 public immutable override MIN_TICK;
-    int24 public immutable override MAX_TICK;
-
+    // TODO figure out the best way to pack state variables
     address public override feeTo;
 
-    // see TickBitmap.sol
-    mapping(int16 => uint256) public override tickBitmap;
+    /// @notice Mapping of tickBitMap to uint - see TickBitMap.sol
+    mapping(uint256 => uint256) public override tickBitMap;
 
-    // single storage slot
+    /// @notice The timestamp of the last block since the oracle price accumulator was last updated.
     uint32 public override blockTimestampLast;
-    uint160 public override liquidityCumulativeLast;
-    int56 public override tickCumulativeLast;
-    bool private unlocked = true;
-    // single storage slot
 
-    // single storage slot (104 bits empty)
-    uint128 public override liquidityCurrent; // all in-range liquidity
-    // single storage slot
+    /// @notice All in-range liquidity.
+    uint128 public override liquidityCurrent;
 
-    FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
+    /// @notice (token1 / token0) price.
+    FixedPoint128.uq128x128 public override priceCurrent;
 
-    // fee growth per unit of liquidity
+    /// @notice First tick at or below priceCurrent.
+    int24 public override tickCurrent;
+
+    /// @notice Global fee growth per unit of liquidity.
+    /// @dev This number is part of the calculation process to find how many fees are due, per liquidity provision, in a given tick.
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
     FixedPoint128.uq128x128 public override feeGrowthGlobal1;
 
-    // accumulated protocol fees
-    // there is no value in packing these values, since we only ever set one at a time
+    /// @notice Accumulated protocol fees.
+    /// @dev There is no value in packing these values, since we only ever set one at a time.
     uint256 public override feeToFees0;
     uint256 public override feeToFees1;
 
+    /// @notice The TickInfo struct.
     struct TickInfo {
         // the total position liquidity that references this tick
         uint128 liquidityGross;
@@ -99,6 +94,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(int24 => TickInfo) public tickInfos;
 
+    /// @notice A position is a given allocation of liquidity by a user.
+    /// @dev Uniquely identified by user address/lower tick/upper tick/fee vote.
     struct Position {
         uint128 liquidity;
         // fee growth per unit of liquidity as of the last modification
@@ -107,13 +104,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(bytes32 => Position) public positions;
 
+    /// @notice The reentrancy guard.
+    uint256 private unlocked = 1;
+
+    /// @dev The Reentrancy guard modifier, function code is executed where _; is placed in modifier process, requiring external function calls to be performed after modified function has finished.
     modifier lock() {
-        require(unlocked, 'UniswapV3Pair::lock: reentrancy prohibited');
-        unlocked = false;
+        require(unlocked == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
+        unlocked = 0;
         _;
-        unlocked = true;
+        unlocked = 1;
     }
 
+    /// @notice Gets a given users position: a given allocation of liquidity as determined by owner / tickLower / tickUpper.
+    /// @param owner A given liquidity providers address.
+    /// @param tickLower The lower boundary tick.
+    /// @param tickUpper The upper boundary tick.
+    /// @return position The position struct.
     function _getPosition(
         address owner,
         int24 tickLower,
@@ -122,17 +128,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    function _getFeeGrowthBelow(
-        int24 tick,
-        int24 current,
-        TickInfo storage tickInfo
-    )
+    /// @notice Part of the _getFeeGrowthInside function.
+    /// @notice Calculates the fee growth below a given tick range, in order to calculate the fee growth within a given range.
+    function _getFeeGrowthBelow(int24 tick, TickInfo storage tickInfo)
         private
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1)
     {
         // tick is above the current tick, meaning growth outside represents growth above, not below
-        if (tick > current) {
+        if (tick > tickCurrent) {
             feeGrowthBelow0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
             feeGrowthBelow1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
         } else {
@@ -141,17 +145,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function _getFeeGrowthAbove(
-        int24 tick,
-        int24 current,
-        TickInfo storage tickInfo
-    )
+    /// @notice Part of the _getFeeGrowthInside function.
+    /// @notice Calculates the fee growth above a given tick range, in order to calculate the fee growth within a given range.
+    function _getFeeGrowthAbove(int24 tick, TickInfo storage tickInfo)
         private
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1)
     {
         // tick is above current tick, meaning growth outside represents growth above
-        if (tick > current) {
+        if (tick > tickCurrent) {
             feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
             feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
         } else {
@@ -160,10 +162,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    /// @notice The main fee growth calculation.
+    /// @dev Called when a user sets a new position.
+    /// @dev Part of determining the quantity of fees, per liquidity, are due in a given tick range.
+    /// @dev Calculates the fee growth of a given tick range by calling both _getFeeGrowthAbove and _getFeeGrowthBelow.
+    /// @param tickLower The lowest tick of a given range.
+    /// @param tickUpper The highest tick of a given range.
+    /// @param tickInfoLower The info struct of the lowest tick of a given range.
+    /// @param tickInfoUpper The info struct of the highest tick of a given range.
+    /// @return feeGrowthInside0 The fee growth in the given range of the token0 pool.
+    /// @return feeGrowthInside1 The fee growth in the given range of the token1 pool.
     function _getFeeGrowthInside(
         int24 tickLower,
         int24 tickUpper,
-        int24 current,
         TickInfo storage tickInfoLower,
         TickInfo storage tickInfoUpper
     )
@@ -174,129 +185,120 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (
             FixedPoint128.uq128x128 memory feeGrowthBelow0,
             FixedPoint128.uq128x128 memory feeGrowthBelow1
-        ) = _getFeeGrowthBelow(tickLower, current, tickInfoLower);
+        ) = _getFeeGrowthBelow(tickLower, tickInfoLower);
         (
             FixedPoint128.uq128x128 memory feeGrowthAbove0,
             FixedPoint128.uq128x128 memory feeGrowthAbove1
-        ) = _getFeeGrowthAbove(tickUpper, current, tickInfoUpper);
+        ) = _getFeeGrowthAbove(tickUpper, tickInfoUpper);
         feeGrowthInside0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - feeGrowthBelow0._x - feeGrowthAbove0._x);
         feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
 
-    // check for one-time initialization
+    /// @notice Check for one-time initialization.
+    /// @return bool determining if there is already a price, thus already an initialized pair.
     function isInitialized() public view override returns (bool) {
         return priceCurrent._x != 0; // sufficient check
     }
 
-    function tickCurrent() public view override returns (int24) {
-        return TickMath.getTickAtRatio(priceCurrent._x);
-    }
-
+    /// @notice The Pair constructor.
+    /// @dev Executed only once when a pair is initialized.
+    /// @param _factory The Uniswap V3 factory address.
+    /// @param _token0 The first token of the desired pair.
+    /// @param _token1 The second token of the desired pair.
+    /// @param _fee The fee of the desired pair.
     constructor(
         address _factory,
         address _token0,
         address _token1,
-        uint24 _fee,
-        int24 _tickSpacing
+        uint24 _fee
     ) public {
-        require(_tickSpacing > 0, 'UniswapV3Pair::constructor: _tickSpacing must be greater than 0');
-
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
         fee = _fee;
-        tickSpacing = _tickSpacing;
-        MIN_TICK = (TickMath.MIN_TICK / _tickSpacing) * _tickSpacing;
-        MAX_TICK = (TickMath.MAX_TICK / _tickSpacing) * _tickSpacing;
     }
 
-    // returns the block timestamp % 2**64
-    // overridden for tests
+    /// @notice Overridden for tests.
+    /// @return The block timestamp % 2**64.
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    // on the first interaction per block, update the oracle price accumulator and fee
-    function _updateAccumulators() private {
+    /// @notice Updates the oracle price accumulator and fee on the first interaction per block.
+    function _update() private {
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
-            (blockTimestampLast, liquidityCumulativeLast, tickCumulativeLast) = getCumulatives();
+            blockTimestampLast = blockTimestamp;
         }
     }
 
-    function getCumulatives()
-        public
-        view
-        override
-        returns (
-            uint32 blockTimestamp,
-            uint160 liquidityCumulative,
-            int56 tickCumulative
-        )
-    {
-        require(isInitialized(), 'UniswapV3Pair::getCumulatives: pair not initialized');
-        blockTimestamp = _blockTimestamp();
-
-        if (blockTimestampLast != blockTimestamp) {
-            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            liquidityCumulative = liquidityCumulativeLast + uint160(timeElapsed) * liquidityCurrent;
-            tickCumulative = tickCumulativeLast + int56(timeElapsed) * TickMath.getTickAtRatio(priceCurrent._x);
-        } else {
-            return (blockTimestamp, liquidityCumulativeLast, tickCumulativeLast);
-        }
-    }
-
+    /// @notice Sets the destination where the swap fees are routed to.
+    /// @param feeTo_ address of the desired destination.
+    /// @dev only able to be called by "feeToSetter".
     function setFeeTo(address feeTo_) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::setFeeTo: caller not owner');
         feeTo = feeTo_;
     }
 
-    function _updateTick(
-        int24 tick,
-        int24 current,
-        int128 liquidityDelta
-    ) private returns (TickInfo storage tickInfo) {
+    /// @notice Updates the tick information upon liquidity provision or removal.
+    /// @param tick The given tick.
+    /// @param liquidityDelta The delta of the liquidity, which is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees.
+    /// @return tickInfo The TickInfo struct.
+    function _updateTick(int24 tick, int128 liquidityDelta) private returns (TickInfo storage tickInfo) {
         tickInfo = tickInfos[tick];
 
         if (tickInfo.liquidityGross == 0) {
             assert(liquidityDelta > 0);
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
-            if (tick <= current) {
+            if (tick <= tickCurrent) {
                 tickInfo.feeGrowthOutside0 = feeGrowthGlobal0;
                 tickInfo.feeGrowthOutside1 = feeGrowthGlobal1;
                 tickInfo.secondsOutside = _blockTimestamp();
             }
-            // safe because we know liquidityDelta is > 0
+            // save because of the prior assert
             tickInfo.liquidityGross = uint128(liquidityDelta);
-            tickBitmap.flipTick(tick, tickSpacing);
+            tickBitMap.flipTick(tick);
         } else {
             tickInfo.liquidityGross = uint128(tickInfo.liquidityGross.addi(liquidityDelta));
         }
     }
 
+    /// @notice Deletes tick info struct.
+    /// @param tick The given tick to delete.
     function _clearTick(int24 tick) private {
         delete tickInfos[tick];
-        tickBitmap.flipTick(tick, tickSpacing);
+        tickBitMap.flipTick(tick);
     }
 
-    function initialize(uint256 price) external override lock {
+    /// @notice Initializes a new pair.
+    /// @param tick The nearest tick to the estimated price, given the ratio of token0 / token1.
+    function initialize(int24 tick) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
+        require(tick >= TickMath.MIN_TICK, 'UniswapV3Pair::initialize: tick must be greater than or equal to min tick');
+        require(tick < TickMath.MAX_TICK, 'UniswapV3Pair::initialize: tick must be less than max tick');
 
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
 
-        // initialize current price
-        priceCurrent = FixedPoint128.uq128x128(price);
-
-        emit Initialized(price);
+        // initialize current price and tick
+        priceCurrent = TickMath.getRatioAtTick(tick);
+        tickCurrent = tick;
 
         // set permanent 1 wei position
         _setPosition(
-            SetPositionParams({owner: address(0), tickLower: MIN_TICK, tickUpper: MAX_TICK, liquidityDelta: 1})
+            SetPositionParams({
+                owner: address(0),
+                tickLower: TickMath.MIN_TICK,
+                tickUpper: TickMath.MAX_TICK,
+                liquidityDelta: 1
+            })
         );
+
+        emit Initialized(tick);
     }
 
+    /// @notice The parameters of a given liquidity position.
     struct SetPositionParams {
         address owner;
         int24 tickLower;
@@ -304,6 +306,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int128 liquidityDelta;
     }
 
+    /// @notice Sets the position of a given liquidity provision.
+    /// @param  tickLower The lower boundary of the position.
+    /// @param tickUpper The upper boundary of the position.
+    /// @param liquidityDelta The liquidity delta. (TODO what is it).
+    /// @return amount0 The amount of the first token.
+    /// @return amount1 The amount of the second token.
     function setPosition(
         int24 tickLower,
         int24 tickUpper,
@@ -311,11 +319,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (int256 amount0, int256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::setPosition: pair not initialized');
         require(tickLower < tickUpper, 'UniswapV3Pair::setPosition: tickLower must be less than tickUpper');
-        require(tickLower >= MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
-        require(tickUpper <= MAX_TICK, 'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick');
+        require(tickLower >= TickMath.MIN_TICK, 'UniswapV3Pair::setPosition: tickLower cannot be less than min tick');
         require(
-            tickLower % tickSpacing == 0 && tickUpper % tickSpacing == 0,
-            'UniswapV3Pair::setPosition: tickLower and tickUpper must be multiples of tickSpacing'
+            tickUpper <= TickMath.MAX_TICK,
+            'UniswapV3Pair::setPosition: tickUpper cannot be greater than max tick'
         );
 
         return
@@ -329,164 +336,149 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
     }
 
-    function _updatePosition(SetPositionParams memory params, int24 tick)
-        private
-        returns (uint256 feesOwed0, uint256 feesOwed1)
-    {
-        Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
-
-        if (params.liquidityDelta == 0) {
-            require(
-                position.liquidity > 0,
-                'UniswapV3Pair::_updatePosition: cannot collect fees on 0 liquidity position'
-            );
-        } else if (params.liquidityDelta < 0) {
-            require(
-                position.liquidity >= uint128(-params.liquidityDelta),
-                'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
-            );
-        }
-
-        TickInfo storage tickInfoLower = _updateTick(params.tickLower, tick, params.liquidityDelta);
-        TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, tick, params.liquidityDelta);
-
-        require(
-            tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
-            'UniswapV3Pair::_updatePosition: liquidity overflow in lower tick'
-        );
-        require(
-            tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
-            'UniswapV3Pair::_updatePosition: liquidity overflow in upper tick'
-        );
+    /// @notice Add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range.
+    /// @notice Also sync a position and return accumulated fees from it to user as tokens.
+    /// @dev LiquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees.
+    /// @param params Parameters passed from the calling function setPosition.
+    /// @return amount0 The amount of token zero.
+    /// @return amount1 The amount of token one.
+    function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
+        _update();
 
         {
-            (
-                FixedPoint128.uq128x128 memory feeGrowthInside0,
-                FixedPoint128.uq128x128 memory feeGrowthInside1
-            ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tick, tickInfoLower, tickInfoUpper);
+            Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
 
-            // check if this condition has accrued any untracked fees and credit them to the caller
-            if (position.liquidity > 0) {
-                if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
-                    feesOwed0 = FullMath.mulDiv(
-                        feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-                        position.liquidity,
-                        FixedPoint128.Q128
-                    );
-                }
-                if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
-                    feesOwed1 = FullMath.mulDiv(
-                        feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-                        position.liquidity,
-                        FixedPoint128.Q128
-                    );
-                }
-
-                // collect protocol fee
-                if (feeTo != address(0)) {
-                    uint256 fee0 = feesOwed0 / 6;
-                    feesOwed0 -= fee0;
-                    feeToFees0 += fee0;
-
-                    uint256 fee1 = feesOwed1 / 6;
-                    feesOwed1 -= fee1;
-                    feeToFees1 += fee1;
-                }
+            if (params.liquidityDelta == 0) {
+                require(
+                    position.liquidity != 0,
+                    'UniswapV3Pair::_setPosition: cannot collect fees on 0 liquidity position'
+                );
+            } else if (params.liquidityDelta < 0) {
+                require(
+                    position.liquidity >= uint128(-params.liquidityDelta),
+                    'UniswapV3Pair::_setPosition: cannot remove more than current position liquidity'
+                );
             }
 
-            // update the position
-            position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint128();
-            position.feeGrowthInside0Last = feeGrowthInside0;
-            position.feeGrowthInside1Last = feeGrowthInside1;
-        }
+            TickInfo storage tickInfoLower = _updateTick(params.tickLower, params.liquidityDelta);
+            TickInfo storage tickInfoUpper = _updateTick(params.tickUpper, params.liquidityDelta);
 
-        // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-        tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(params.liquidityDelta).toInt128();
-        tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(params.liquidityDelta).toInt128();
+            require(
+                tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
+                'UniswapV3Pair::_setPosition: liquidity overflow in lower tick'
+            );
+            require(
+                tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
+                'UniswapV3Pair::_setPosition: liquidity overflow in upper tick'
+            );
 
-        // clear any tick or position data that is no longer needed
-        if (params.liquidityDelta < 0) {
-            if (tickInfoLower.liquidityGross == 0) _clearTick(params.tickLower);
-            if (tickInfoUpper.liquidityGross == 0) _clearTick(params.tickUpper);
-            if (position.liquidity == 0) {
-                delete position.feeGrowthInside0Last;
-                delete position.feeGrowthInside1Last;
+            {
+                (
+                    FixedPoint128.uq128x128 memory feeGrowthInside0,
+                    FixedPoint128.uq128x128 memory feeGrowthInside1
+                ) = _getFeeGrowthInside(params.tickLower, params.tickUpper, tickInfoLower, tickInfoUpper);
+
+                // check if this condition has accrued any untracked fees and credit them to the caller
+                // TODO is this right?
+                if (position.liquidity > 0) {
+                    if (feeGrowthInside0._x > position.feeGrowthInside0Last._x) {
+                        amount0 = -FullMath
+                            .mulDiv(
+                            feeGrowthInside0._x - position.feeGrowthInside0Last._x,
+                            position
+                                .liquidity,
+                            uint256(1) << 128
+                        )
+                            .toInt256();
+                    }
+                    if (feeGrowthInside1._x > position.feeGrowthInside1Last._x) {
+                        amount1 = -FullMath
+                            .mulDiv(
+                            feeGrowthInside1._x - position.feeGrowthInside1Last._x,
+                            position
+                                .liquidity,
+                            uint256(1) << 128
+                        )
+                            .toInt256();
+                    }
+                }
+
+                // update the position
+                position.liquidity = position.liquidity.addi(params.liquidityDelta).toUint128();
+                position.feeGrowthInside0Last = feeGrowthInside0;
+                position.feeGrowthInside1Last = feeGrowthInside1;
+            }
+
+            // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
+            tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(params.liquidityDelta).toInt128();
+            tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(params.liquidityDelta).toInt128();
+
+            // clear any tick or position data that is no longer needed
+            if (params.liquidityDelta < 0) {
+                if (tickInfoLower.liquidityGross == 0) _clearTick(params.tickLower);
+                if (tickInfoUpper.liquidityGross == 0) _clearTick(params.tickUpper);
+                if (position.liquidity == 0) {
+                    delete position.feeGrowthInside0Last;
+                    delete position.feeGrowthInside1Last;
+                }
             }
         }
-    }
-
-    function _transferDelta(address token, int256 delta) private {
-        if (delta > 0) {
-            TransferHelper.safeTransferFrom(token, msg.sender, address(this), uint256(delta));
-        } else if (delta < 0) {
-            TransferHelper.safeTransfer(token, msg.sender, uint256(-delta));
-        }
-    }
-
-    // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
-    // also sync a position and return accumulated fees from it to user as tokens
-    // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
-    function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
-        _updateAccumulators();
-
-        int24 tick = tickCurrent();
-
-        // how many fees are owed to the position owner
-        (uint256 feesOwed0, uint256 feesOwed1) = _updatePosition(params, tick);
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
-        if (tick < params.tickLower) {
-            amount0 = SqrtPriceMath
-                .getAmount0Delta(
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
-                params
-                    .liquidityDelta
-            )
-                .sub(feesOwed0.toInt256());
-            amount1 = -feesOwed1.toInt256();
-        } else if (tick < params.tickUpper) {
+        if (tickCurrent < params.tickLower) {
+            amount0 = amount0.add(
+                PriceMath.getAmount0Delta(
+                    TickMath.getRatioAtTick(params.tickLower),
+                    TickMath.getRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                )
+            );
+        } else if (tickCurrent < params.tickUpper) {
             // the current price is inside the passed range
-            amount0 = SqrtPriceMath
-                .getAmount0Delta(
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(priceCurrent._x))),
-                params
-                    .liquidityDelta
-            )
-                .sub(feesOwed0.toInt256());
-            amount1 = SqrtPriceMath
-                .getAmount1Delta(
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(priceCurrent._x))),
-                params
-                    .liquidityDelta
-            )
-                .sub(feesOwed1.toInt256());
+            amount0 = amount0.add(
+                PriceMath.getAmount0Delta(
+                    priceCurrent,
+                    TickMath.getRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                )
+            );
+            amount1 = amount1.add(
+                PriceMath.getAmount1Delta(
+                    TickMath.getRatioAtTick(params.tickLower),
+                    priceCurrent,
+                    params.liquidityDelta
+                )
+            );
 
             liquidityCurrent = liquidityCurrent.addi(params.liquidityDelta).toUint128();
         } else {
-            amount0 = -feesOwed0.toInt256();
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
-            amount1 = SqrtPriceMath
-                .getAmount1Delta(
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
-                params
-                    .liquidityDelta
-            )
-                .sub(feesOwed1.toInt256());
+            amount1 = amount1.add(
+                PriceMath.getAmount1Delta(
+                    TickMath.getRatioAtTick(params.tickLower),
+                    TickMath.getRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                )
+            );
         }
 
-        _transferDelta(token0, amount0);
-        _transferDelta(token1, amount1);
+        if (amount0 > 0) {
+            TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
+        } else if (amount0 < 0) {
+            TransferHelper.safeTransfer(token0, msg.sender, uint256(-amount0));
+        }
+        if (amount1 > 0) {
+            TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
+        } else if (amount1 < 0) {
+            TransferHelper.safeTransfer(token1, msg.sender, uint256(-amount1));
+        }
     }
 
+    /// @notice The swap parameters struct
+    /// @dev Used on every swap.
     struct SwapParams {
-        // the tick where the price starts
-        int24 tickStart;
         // whether the swap is from token 0 to 1, or 1 for 0
         bool zeroForOne;
         // how much is being swapped in
@@ -497,7 +489,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes data;
     }
 
-    // the top level state of the swap, the results of which are recorded in storage at the end
+    /// @notice The top level state of the swap, the results of which are recorded in storage at the end.
     struct SwapState {
         // the amount in remaining to be swapped of the input asset
         uint256 amountInRemaining;
@@ -505,14 +497,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tick;
         // the price
         FixedPoint128.uq128x128 price;
+        // protocol fees of the input token
+        uint256 feeToFees;
         // the global fee growth of the input token
         FixedPoint128.uq128x128 feeGrowthGlobal;
+        // whether the swap has crossed an initialized tick
+        bool crossedInitializedTick;
         // the liquidity in range
         uint128 liquidityCurrent;
     }
 
+    /// @notice The StepComputations struct.
     struct StepComputations {
-        // the next initialized tick from the current tick in the swap direction
+        // the next initialized tick from the tickCurrent in the swap direction
         int24 tickNext;
         // price for the target tick (1/0)
         FixedPoint128.uq128x128 priceNext;
@@ -524,42 +521,31 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountIn;
         // how much is being swapped out in the current step
         uint256 amountOut;
-        // how much fee is paid from the amount in
-        uint256 feeAmount;
     }
 
-    // returns the closest parent tick that could be initialized
-    // the parent tick is the tick s.t. the input tick is gte parent tick and lt parent tick + tickSpacing
-    function closestTick(int24 tick) private view returns (int24) {
-        int24 compressed = tick / tickSpacing;
-        // round towards negative infinity
-        if (tick < 0 && tick % tickSpacing != 0) compressed--;
-        return compressed * tickSpacing;
-    }
-
+    /// @notice The internal swap function.
+    /// @param params The SwapParams struct.
+    /// @return amountOut Returns the outbound amount of tokens.
     function _swap(SwapParams memory params) private returns (uint256 amountOut) {
+        _update(); // update the oracle and feeFloor
+
         SwapState memory state = SwapState({
             amountInRemaining: params.amountIn,
-            tick: params.tickStart,
+            tick: tickCurrent,
             price: priceCurrent,
+            feeToFees: params.zeroForOne ? feeToFees0 : feeToFees1,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
+            crossedInitializedTick: false,
             liquidityCurrent: liquidityCurrent
         });
 
         while (state.amountInRemaining > 0) {
             StepComputations memory step;
 
-            (step.tickNext, ) = tickBitmap.nextInitializedTickWithinOneWord(
-                closestTick(state.tick),
-                params.zeroForOne,
-                tickSpacing
-            );
-
-            if (params.zeroForOne) require(step.tickNext >= MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
-            else require(step.tickNext <= MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
+            (step.tickNext, ) = tickBitMap.nextInitializedTickWithinOneWord(state.tick, params.zeroForOne);
 
             // get the price for the next tick we're moving toward
-            step.priceNext = FixedPoint128.uq128x128(TickMath.getRatioAtTick(step.tickNext));
+            step.priceNext = TickMath.getRatioAtTick(step.tickNext);
 
             // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
             // similarly, if it's false we should be below the target price
@@ -569,24 +555,82 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                (state.price, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
+                // recompute reserves given the current price/liquidity
+                (step.reserve0Virtual, step.reserve1Virtual) = PriceMath.getVirtualReservesAtPrice(
                     state.price,
-                    step.priceNext,
                     state.liquidityCurrent,
-                    state.amountInRemaining,
+                    false
+                );
+
+                // compute the amount of input token required to push the price to the target (and max output token)
+                (uint256 amountInMax, uint256 amountOutMax) = PriceMath.getInputToRatio(
+                    step.reserve0Virtual,
+                    step.reserve1Virtual,
+                    state.liquidityCurrent,
+                    step.priceNext,
                     fee,
                     params.zeroForOne
                 );
 
-                // decrement remaining input amount
-                state.amountInRemaining -= step.amountIn + step.feeAmount;
+                // swap to the next tick, or stop early if we've exhausted all the input
+                step.amountIn = Math.min(amountInMax, state.amountInRemaining);
 
-                if (step.feeAmount > 0) {
+                // decrement remaining input amount
+                state.amountInRemaining -= step.amountIn;
+
+                // discount the input amount by the fee
+                uint256 amountInLessFee = step.amountIn.mul(PriceMath.LP_FEE_BASE - fee) / PriceMath.LP_FEE_BASE;
+
+                // handle the fee accounting
+                uint256 feePaid = step.amountIn - amountInLessFee;
+                if (feePaid > 0) {
+                    // take the protocol fee if it's on
+                    if (feeTo != address(0)) {
+                        uint256 feeToFee = feePaid / 6;
+                        // decrement feePaid
+                        feePaid -= feeToFee;
+                        // increment feeToFees--overflow is not possible
+                        state.feeToFees += feeToFee;
+                    }
+
                     // update global fee tracker
-                    state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidityCurrent)._x;
+                    state.feeGrowthGlobal._x += FixedPoint128.fraction(feePaid, state.liquidityCurrent)._x;
                 }
 
-                amountOut = amountOut.add(step.amountOut);
+                // handle the swap
+                if (amountInLessFee > 0) {
+                    // calculate the owed output amount on the discounted input amount
+                    step.amountOut = params.zeroForOne
+                        ? PriceMath.getAmountOut(step.reserve0Virtual, step.reserve1Virtual, amountInLessFee)
+                        : PriceMath.getAmountOut(step.reserve1Virtual, step.reserve0Virtual, amountInLessFee);
+
+                    // cap the output amount
+                    step.amountOut = Math.min(step.amountOut, amountOutMax);
+
+                    // increment amountOut
+                    amountOut = amountOut.add(step.amountOut);
+                }
+
+                // update the price
+                // if we've consumed the input required to get to the target price, that's the price now!
+                if (step.amountIn == amountInMax) {
+                    state.price = step.priceNext;
+                } else {
+                    // if not, the price is the new ratio of (computed) reserves, capped at the target price
+                    if (params.zeroForOne) {
+                        FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
+                            step.reserve1Virtual.sub(step.amountOut),
+                            step.reserve0Virtual.add(amountInLessFee)
+                        );
+                        state.price = FixedPoint128.uq128x128(Math.max(step.priceNext._x, priceEstimate._x));
+                    } else {
+                        FixedPoint128.uq128x128 memory priceEstimate = FixedPoint128.fraction(
+                            step.reserve1Virtual.add(amountInLessFee),
+                            step.reserve0Virtual.sub(step.amountOut)
+                        );
+                        state.price = FixedPoint128.uq128x128(Math.min(step.priceNext._x, priceEstimate._x));
+                    }
+                }
             }
 
             // we have to shift to the next tick if either of two conditions are true:
@@ -616,28 +660,33 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     } else {
                         state.liquidityCurrent = uint128(state.liquidityCurrent.addi(tickInfo.liquidityDelta));
                     }
+                    state.crossedInitializedTick = true;
                 }
 
                 // this is ok because we still have amountInRemaining so price is guaranteed to be less than the tick
                 // after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                // todo: this getTickAtRatio call may not be necessary, since we only use it to determine if we crossed a tick
-                state.tick = TickMath.getTickAtRatio(state.price._x);
+                state.tick = params.zeroForOne
+                    ? ReverseTickMath.getTickFromPrice(state.price, step.tickNext, state.tick + 1)
+                    : ReverseTickMath.getTickFromPrice(state.price, state.tick, step.tickNext);
             }
         }
 
-        if (state.tick != params.tickStart) {
-            // must be called before updating the price or liquidity
-            _updateAccumulators();
+        priceCurrent = state.price;
+        if (params.zeroForOne) require(state.tick >= TickMath.MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
+        else require(state.tick < TickMath.MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
+        tickCurrent = state.tick;
+
+        if (state.crossedInitializedTick) {
             liquidityCurrent = state.liquidityCurrent;
         }
 
-        priceCurrent = state.price;
-
         if (params.zeroForOne) {
+            feeToFees0 = state.feeToFees;
             feeGrowthGlobal0 = state.feeGrowthGlobal;
         } else {
+            feeToFees1 = state.feeToFees;
             feeGrowthGlobal1 = state.feeGrowthGlobal;
         }
 
@@ -648,7 +697,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? IUniswapV3Callee(params.to).swap0For1Callback(msg.sender, amountOut, params.data)
                 : IUniswapV3Callee(params.to).swap1For0Callback(msg.sender, amountOut, params.data);
         }
-        // to *only* support callback style payment, remove the following transferFrom call.
         TransferHelper.safeTransferFrom(
             params.zeroForOne ? token0 : token1,
             msg.sender,
@@ -657,7 +705,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    // move from right to left (token 1 is becoming more valuable)
+    /// @notice The first main swap function.
+    /// @notice Used when moving from right to left (token 1 is becoming more valuable).
+    /// @param amount0In Amount of token you are sending.
+    /// @param to The destination address of the tokens.
+    /// @param data The call data of the swap.
     function swap0For1(
         uint256 amount0In,
         address to,
@@ -665,10 +717,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount1Out) {
         require(amount0In > 0, 'UniswapV3Pair::swap0For1: amountIn must be greater than 0');
 
-        return _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: true, amountIn: amount0In, to: to, data: data}));
+        SwapParams memory params = SwapParams({zeroForOne: true, amountIn: amount0In, to: to, data: data});
+        return _swap(params);
     }
 
-    // move from left to right (token 0 is becoming more valuable)
+    /// @notice The second main swap function.
+    /// @notice Used when moving from left to right (token 0 is becoming more valuable).
+    /// @param amount1In amount of token you are sending.
+    /// @param to The destination address of the tokens.
+    /// @param data The call data of the swap.
     function swap1For0(
         uint256 amount1In,
         address to,
@@ -676,10 +733,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount0Out) {
         require(amount1In > 0, 'UniswapV3Pair::swap1For0: amountIn must be greater than 0');
 
-        return
-            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: false, amountIn: amount1In, to: to, data: data}));
+        SwapParams memory params = SwapParams({zeroForOne: false, amountIn: amount1In, to: to, data: data});
+        return _swap(params);
     }
 
+    /// @notice Allows factory contract owner to recover tokens, other than token0 and token1, accidentally sent to the pair contract.
+    /// @param token The token address.
+    /// @param to The destination address of the transfer.
+    /// @param amount The amount of the token to be recovered.
     function recover(
         address token,
         address to,

@@ -22,8 +22,13 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "3.1.0",
+<<<<<<< HEAD
     "@uniswap/lib": "4.0.0-alpha",
     "solidity-docgen": "^0.5.10"
+=======
+    "@uniswap/lib": "2.2.0-alpha",
+    "solidity-docgen": "^0.5.9"
+>>>>>>> parent of 952dc3a... Merge branch 'master' into NatSpec
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",

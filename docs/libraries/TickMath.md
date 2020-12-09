@@ -1,3 +1,55 @@
 ## `TickMath`
 
-## `getRatioAtTick(int24 tick) → struct FixedPoint128.uq128x128` (internal)
+
+
+
+
+
+-
+
+## `getRatioAtTick(int24 tick) → uint256 ratio` (internal)
+
+
+
+
+
+## `getTickAtRatio(uint256 ratio) → int24 tick` (internal)
+
+
+
+
+
+
+-
+
+## `getRatioAtTick(int24 tick) → uint256 ratio` (internal)
+
+
+
+
+
+## `getTickAtRatio(uint256 ratio) → int24 tick` (internal)
+
+
+
+
+
+
+-
+
+## `MIN_TICK()`
+
+
+
+
+
+## `MAX_TICK()`
+
+
+
+
+
+
+-
+
+
