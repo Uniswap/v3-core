@@ -442,7 +442,7 @@ describe('UniswapV3Pair', () => {
         expect(tickCumulative).to.eq(-4)
       })
 
-      it.skip('tick accumulator after two swaps', async () => {
+      it.only('tick accumulator after two swaps', async () => {
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
         await pair.swap0For1(expandTo18Decimals(1).div(2), walletAddress, '0x')
@@ -852,7 +852,7 @@ describe('UniswapV3Pair', () => {
         await pair.setPosition(-tickSpacing * 2, -tickSpacing, expandTo18Decimals(3))
         expect(await pair.liquidityCurrent()).to.eq(expandTo18Decimals(2))
       })
-      it.skip('updates correctly when exiting range', async () => {
+      it.only('updates correctly when exiting range', async () => {
         const kBefore = await pair.liquidityCurrent()
         expect(kBefore).to.be.eq(expandTo18Decimals(2))
 
@@ -865,9 +865,9 @@ describe('UniswapV3Pair', () => {
         await pair.setPosition(lowerTick, upperTick, liquidityDelta)
 
         // ensure virtual supply has increased appropriately
-        const kAFter = await pair.liquidityCurrent()
-        expect(kAFter.gt(kBefore)).to.be.true
-        expect(kAFter).to.be.eq(expandTo18Decimals(3))
+        const kAfter = await pair.liquidityCurrent()
+        expect(kAfter).to.be.gt(kBefore)
+        expect(kAfter).to.be.eq(expandTo18Decimals(3))
 
         // swap toward the left (just enough for the tick transition function to trigger)
         // TODO if the input amount is 1 here, the tick transition fires incorrectly!
@@ -876,12 +876,12 @@ describe('UniswapV3Pair', () => {
         const tick = await pair.tickCurrent()
         expect(tick).to.be.eq(-1)
 
-        const kAFterSwap = await pair.liquidityCurrent()
-        expect(kAFterSwap.lt(kAFter)).to.be.true
+        const kAfterSwap = await pair.liquidityCurrent()
+        expect(kAfterSwap).to.be.lt(kAfter)
         // TODO not sure this is right
-        expect(kAFterSwap).to.be.eq(expandTo18Decimals(2))
+        expect(kAfterSwap).to.be.eq(expandTo18Decimals(2))
       })
-      it.skip('updates correctly when entering range', async () => {
+      it.only('updates correctly when entering range', async () => {
         const kBefore = await pair.liquidityCurrent()
         expect(kBefore).to.be.eq(expandTo18Decimals(2))
 
@@ -905,7 +905,7 @@ describe('UniswapV3Pair', () => {
         expect(tick).to.be.eq(-1)
 
         const kAfterSwap = await pair.liquidityCurrent()
-        expect(kAfterSwap.gt(kAfter)).to.be.true
+        expect(kAfterSwap).to.be.gt(kAfter)
         // TODO not sure this is right
         expect(kAfterSwap).to.be.eq(expandTo18Decimals(3))
       })
@@ -1135,7 +1135,7 @@ describe('UniswapV3Pair', () => {
           await pair.setPosition(12, 24, 1)
           await pair.setPosition(-144, -120, 1)
         })
-        it.skip('swapping across gaps works in 1 for 0 direction', async () => {
+        it.only('swapping across gaps works in 1 for 0 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await pair.setPosition(120000, 121200, liquidityAmount)
           await pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x')
@@ -1146,7 +1146,7 @@ describe('UniswapV3Pair', () => {
             .withArgs(pair.address, walletAddress, '999999999999999533')
           expect(await pair.tickCurrent()).to.eq(120196)
         })
-        it.skip('swapping across gaps works in 0 for 1 direction', async () => {
+        it.only('swapping across gaps works in 0 for 1 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await pair.setPosition(-121200, -120000, liquidityAmount)
           await pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x')
