@@ -7,10 +7,7 @@ import './TickMath.sol';
 
 library SqrtTickMath {
     function getSqrtRatioAtTick(int24 tick) internal pure returns (FixedPoint64.uq64x64 memory) {
-        assert(tick % 2 == 0);
-
         uint256 ratio = TickMath.getRatioAtTick(tick) >> FixedPoint64.RESOLUTION;
-
         return FixedPoint64.uq64x64(uint128(ratio));
     }
 

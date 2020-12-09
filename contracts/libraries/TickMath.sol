@@ -1174,7 +1174,7 @@ library TickMath {
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
         require(tick >= MIN_TICK && tick <= MAX_TICK, 'TickMath::getRatioAtTick: invalid tick');
 
-        bytes16 tickQuad = ABDKMathQuad.fromInt(int256(tick));
+        bytes16 tickQuad = ABDKMathQuad.fromInt(tick);
         bytes16 result = base().mul(tickQuad).pow_2();
         ratio = uint256(ABDKMathQuad.to128x128(result));
     }

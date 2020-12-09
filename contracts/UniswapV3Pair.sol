@@ -189,7 +189,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function tickCurrent() public view override returns (int24) {
-        // TODO hmm...is this ok?
         return SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent);
     }
 
