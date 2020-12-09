@@ -3,7 +3,7 @@ import {TickBitmapTest} from '../typechain/TickBitmapTest'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 
-describe('TickBitmap', () => {
+describe.skip('TickBitmap', () => {
   let tickBitmap: TickBitmapTest
 
   beforeEach('deploy TickBitmapTest', async () => {

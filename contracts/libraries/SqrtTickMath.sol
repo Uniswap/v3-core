@@ -6,13 +6,15 @@ import './FixedPoint64.sol';
 import './TickMath.sol';
 
 library SqrtTickMath {
-    function getSqrtPriceFromTick(int24 tick) internal pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
+    function getSqrtRatioAtTick(int24 tick) internal pure returns (FixedPoint64.uq64x64 memory) {
         assert(tick % 2 == 0);
 
-        uint256 ratio = TickMath.getRatioAtTick(tick / 2) >> FixedPoint64.RESOLUTION;
-        // TODO hopefully we can convince ourselves that this never happens
-        require(ratio < uint128(-1), 'TODO');
+        uint256 ratio = TickMath.getRatioAtTick(tick) >> FixedPoint64.RESOLUTION;
 
         return FixedPoint64.uq64x64(uint128(ratio));
+    }
+
+    function getTickAtSqrtRatio(FixedPoint64.uq64x64 memory sqrtP) internal pure returns (int24) {
+        return TickMath.getTickAtRatio(uint256(sqrtP._x) << 64);
     }
 }

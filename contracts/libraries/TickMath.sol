@@ -1158,24 +1158,22 @@ library ABDKMathQuad {
     }
 }
 
-// 1 bips ticks
-// min tick is -734773
-// max tick is 734773
+// sqrt(1.00001) ticks
 library TickMath {
     using ABDKMathQuad for bytes16;
 
-    // log_2(1.0001) represented in 128-bit floating point
-    // ABDKMathQuad.log_2(ABDKMathQuad.from128x128(int256(10001 << 128) / 10000));
-    bytes16 private constant TICK_MULTIPLIER = 0x3ff22e8a3a504218b0777ee4f3ff131c;
-
     int24 public constant MIN_TICK = -734773;
     int24 public constant MAX_TICK = -MIN_TICK;
+
+    function base() internal pure returns (bytes16) {
+        return 0x3ff12e8a3a504218b0777ee4f3fef468; //ABDKMathQuad.from128x128(int256(10001 << 128) / 10000).sqrt().log_2();
+    }
 
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
         require(tick >= MIN_TICK && tick <= MAX_TICK, 'TickMath::getRatioAtTick: invalid tick');
 
         bytes16 tickQuad = ABDKMathQuad.fromInt(int256(tick));
-        bytes16 result = ABDKMathQuad.pow_2(TICK_MULTIPLIER.mul(tickQuad));
+        bytes16 result = base().mul(tickQuad).pow_2();
         ratio = uint256(ABDKMathQuad.to128x128(result));
     }
 
@@ -1187,9 +1185,8 @@ library TickMath {
             'TickMath::getTickAtRatio: invalid ratio'
         );
 
-        bytes16 divisor = ABDKMathQuad.from128x128(int256(10001 << 128) / 10000).log_2();
         bytes16 dividend = ABDKMathQuad.from128x128(int256(ratio)).log_2();
-        int256 result = dividend.div(divisor).toInt();
+        int256 result = dividend.div(base()).toInt();
         if (getRatioAtTick(int24(result)) > ratio) {
             result --;
         }

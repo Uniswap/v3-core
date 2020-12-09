@@ -442,7 +442,7 @@ describe('UniswapV3Pair', () => {
         expect(tickCumulative).to.eq(-4)
       })
 
-      it.only('tick accumulator after two swaps', async () => {
+      it('tick accumulator after two swaps', async () => {
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
         await pair.swap0For1(expandTo18Decimals(1).div(2), walletAddress, '0x')
@@ -852,7 +852,7 @@ describe('UniswapV3Pair', () => {
         await pair.setPosition(-tickSpacing * 2, -tickSpacing, expandTo18Decimals(3))
         expect(await pair.liquidityCurrent()).to.eq(expandTo18Decimals(2))
       })
-      it.only('updates correctly when exiting range', async () => {
+      it('updates correctly when exiting range', async () => {
         const kBefore = await pair.liquidityCurrent()
         expect(kBefore).to.be.eq(expandTo18Decimals(2))
 
@@ -881,7 +881,7 @@ describe('UniswapV3Pair', () => {
         // TODO not sure this is right
         expect(kAfterSwap).to.be.eq(expandTo18Decimals(2))
       })
-      it.only('updates correctly when entering range', async () => {
+      it('updates correctly when entering range', async () => {
         const kBefore = await pair.liquidityCurrent()
         expect(kBefore).to.be.eq(expandTo18Decimals(2))
 
@@ -1135,7 +1135,7 @@ describe('UniswapV3Pair', () => {
           await pair.setPosition(12, 24, 1)
           await pair.setPosition(-144, -120, 1)
         })
-        it.only('swapping across gaps works in 1 for 0 direction', async () => {
+        it('swapping across gaps works in 1 for 0 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await pair.setPosition(120000, 121200, liquidityAmount)
           await pair.swap1For0(expandTo18Decimals(1), walletAddress, '0x')
@@ -1146,7 +1146,7 @@ describe('UniswapV3Pair', () => {
             .withArgs(pair.address, walletAddress, '999999999999999533')
           expect(await pair.tickCurrent()).to.eq(120196)
         })
-        it.only('swapping across gaps works in 0 for 1 direction', async () => {
+        it('swapping across gaps works in 0 for 1 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await pair.setPosition(-121200, -120000, liquidityAmount)
           await pair.swap0For1(expandTo18Decimals(1), walletAddress, '0x')

@@ -190,7 +190,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function tickCurrent() public view override returns (int24) {
         // TODO hmm...is this ok?
-        return TickMath.getTickAtRatio(uint256(sqrtPriceCurrent._x)**2);
+        return SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent);
     }
 
     constructor(
@@ -440,8 +440,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (tick < params.tickLower) {
             amount0 = SqrtPriceMath
                 .getAmount0Delta(
-                SqrtTickMath.getSqrtPriceFromTick(params.tickUpper),
-                SqrtTickMath.getSqrtPriceFromTick(params.tickLower),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
                 params
                     .liquidityDelta
             )
@@ -451,7 +451,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // the current price is inside the passed range
             amount0 = SqrtPriceMath
                 .getAmount0Delta(
-                SqrtTickMath.getSqrtPriceFromTick(params.tickUpper),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
                 sqrtPriceCurrent,
                 params
                     .liquidityDelta
@@ -459,7 +459,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 .sub(feesOwed0.toInt256());
             amount1 = SqrtPriceMath
                 .getAmount1Delta(
-                SqrtTickMath.getSqrtPriceFromTick(params.tickLower),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
                 sqrtPriceCurrent,
                 params
                     .liquidityDelta
@@ -473,8 +473,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
             amount1 = SqrtPriceMath
                 .getAmount1Delta(
-                SqrtTickMath.getSqrtPriceFromTick(params.tickLower),
-                SqrtTickMath.getSqrtPriceFromTick(params.tickUpper),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
                 params
                     .liquidityDelta
             )
@@ -560,7 +560,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             else require(step.tickNext <= MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
             // get the price for the next tick we're moving toward
-            step.sqrtPriceNext = SqrtTickMath.getSqrtPriceFromTick(step.tickNext);
+            step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
             // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
             // similarly, if it's false we should be below the target price
@@ -628,7 +628,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             } else {
                 // todo: this may not be necessary, since we only use it to determine if we crossed a tick
                 // TODO same potential issue as in tickCurrent
-                state.tick = TickMath.getTickAtRatio(uint256(sqrtPriceCurrent._x)**2);
+                state.tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent);
             }
         }
 

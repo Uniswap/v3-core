@@ -6,6 +6,10 @@ import '../libraries/FixedPoint128.sol';
 import '../libraries/TickMath.sol';
 
 contract TickMathTest {
+    function base() external pure returns (bytes16) {
+        return TickMath.base();
+    }
+
     function MIN_TICK() external pure returns (int24) {
         return TickMath.MIN_TICK;
     }
