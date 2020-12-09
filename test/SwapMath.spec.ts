@@ -43,6 +43,22 @@ describe('SwapMath', () => {
       expect(priceAfter._x).to.eq('2174651570564491698575021936594929')
     })
 
+    it('price can decrease from input price', async () => {
+      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
+        {_x: '5826772'},
+        {_x: '6382030740050482259795205363447594'},
+        '1985041575832132834610021537970',
+        '10',
+        1872,
+        false
+      )
+      expect(amountIn).to.eq('0')
+      expect(feeAmount).to.eq('10')
+      expect(amountOut).to.eq('0')
+      // floor(sqrt(5826772))**2 which is less than the input price 5826772
+      expect(priceAfter._x).to.eq('5822569')
+    })
+
     it('gas', async () => {
       await snapshotGasCost(
         swapMath.getGasCostOfComputeSwapStep(
