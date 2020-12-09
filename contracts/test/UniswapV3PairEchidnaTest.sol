@@ -9,6 +9,7 @@ import './TestERC20.sol';
 import '../UniswapV3Pair.sol';
 import '../UniswapV3Factory.sol';
 import '../libraries/SafeCast.sol';
+import '../libraries/TickMath.sol';
 
 contract UniswapV3PairEchidnaTest {
     using SafeMath for uint256;
@@ -38,8 +39,8 @@ contract UniswapV3PairEchidnaTest {
         pair = UniswapV3Pair(factory.createPair(address(token0), address(token1), fee));
     }
 
-    function initializePair(uint256 price) public {
-        pair.initialize(price);
+    function initializePair(int24 tick) public {
+        pair.initialize(tick);
     }
 
     function swap0For1(uint256 amount0In) external {
@@ -77,15 +78,15 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function echidna_tickIsWithinBounds() external view returns (bool) {
-        int24 tick = TickMath.getTickAtRatio(pair.priceCurrent());
+        int24 tick = pair.tickCurrent();
         return (tick < TickMath.MAX_TICK && tick >= TickMath.MIN_TICK);
     }
 
     function echidna_priceIsWithinTickCurrent() external view returns (bool) {
-        int24 tick = TickMath.getTickAtRatio(pair.priceCurrent());
+        int24 tick = pair.tickCurrent();
         FixedPoint128.uq128x128 memory priceCurrent = FixedPoint128.uq128x128(pair.priceCurrent());
-        return (TickMath.getRatioAtTick(tick) <= priceCurrent._x &&
-            TickMath.getRatioAtTick(tick + 1) > priceCurrent._x);
+        return (TickMath.getRatioAtTick(tick)._x <= priceCurrent._x &&
+            TickMath.getRatioAtTick(tick + 1)._x > priceCurrent._x);
     }
 
     function echidna_isInitialized() external view returns (bool) {

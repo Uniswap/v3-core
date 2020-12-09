@@ -1,32 +1,43 @@
-## `TickBitMapEchidnaTest`
+## `TickBitmapEchidnaTest`
 
 
 
 
 
 
-## `flipTick(int24 tick)` (public)
+-
+
+## `flipTick(int24 tick)` (external)
+
+
+
+
+
+## `checkNextInitializedTickWithinOneWordInvariants(int24 tick, bool lte)` (external)
 
 
 
 
 
 
+-
 
-## `checkNextInitializedTickWithinOneWordInvariants(int24 tick, bool lte)` (public)
-
-
-
-
-
-
-
-## `checkNextInitializedTickInvariants(int24 tick, bool lte)` (public)
+## `flipTick(int24 tick)` (external)
 
 
 
 
 
+## `checkNextInitializedTickWithinOneWordInvariants(int24 tick, bool lte)` (external)
 
+
+
+
+
+
+-
+
+
+-
 
 
