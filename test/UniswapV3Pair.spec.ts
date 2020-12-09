@@ -985,9 +985,7 @@ describe('UniswapV3Pair', () => {
     })
 
     async function swapAndGetFeesOwed(swapAmount: BigNumberish = expandTo18Decimals(1), zeroForOne: boolean = true) {
-      await (zeroForOne
-        ? swap0For1(swapAmount, walletAddress)
-        : swap1For0(swapAmount, walletAddress))
+      await (zeroForOne ? swap0For1(swapAmount, walletAddress) : swap1For0(swapAmount, walletAddress))
 
       const {amount0, amount1} = await pair.callStatic.setPosition(MIN_TICK, MAX_TICK, 0)
 
