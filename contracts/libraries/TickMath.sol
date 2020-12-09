@@ -1162,8 +1162,10 @@ library ABDKMathQuad {
 library TickMath {
     using ABDKMathQuad for bytes16;
 
-    int24 public constant MIN_TICK = -734773;
-    int24 public constant MAX_TICK = -MIN_TICK;
+    // todo: these limits come from the sqrt tick math
+    // they should probably have different limits if this one produces 128.128 and the other produces 64.64
+    int24 public constant MIN_TICK = -887272;
+    int24 public constant MAX_TICK = 887272;
 
     function base() internal pure returns (bytes16) {
         return 0x3ff12e8a3a504218b0777ee4f3fef468; //ABDKMathQuad.from128x128(int256(10001 << 128) / 10000).sqrt().log_2();
@@ -1181,7 +1183,7 @@ library TickMath {
     function getTickAtRatio(uint256 ratio) internal pure returns (int24 tick) {
         // the ratio must be gte the ratio at MIN_TICK and lt the ratio at MAX_TICK
         require(
-            ratio >= 5826674 && ratio < 19872759182565593239568746253641083721737304106191725165927866224867416,
+            ratio >= uint256(2)**64 && ratio < uint256(2)**192,
             'TickMath::getTickAtRatio: invalid ratio'
         );
 

@@ -3,10 +3,10 @@ import {BigNumber, BigNumberish} from 'ethers'
 import {TickMathTest} from '../typechain/TickMathTest'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {bnify2, getMIN_TICK, getMAX_TICK} from './shared/utilities'
+import {bnify2, getMinTick, getMaxTick} from './shared/utilities'
 
-const MIN_TICK = getMIN_TICK(1)
-const MAX_TICK = getMAX_TICK(1)
+const MIN_TICK = getMinTick(1)
+const MAX_TICK = getMaxTick(1)
 
 const Q128 = BigNumber.from(2).pow(128)
 

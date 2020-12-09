@@ -13,8 +13,8 @@ import {
   expandTo18Decimals,
   FeeAmount,
   getPositionKey,
-  getMAX_TICK,
-  getMIN_TICK,
+  getMaxTick,
+  getMinTick,
   MAX_LIQUIDITY_GROSS_PER_TICK,
   encodePrice,
   encodePriceSqrt,
@@ -25,8 +25,8 @@ import {TickMathTest} from '../typechain/TickMathTest'
 const feeAmount = FeeAmount.MEDIUM
 const tickSpacing = TICK_SPACINGS[feeAmount]
 
-const MIN_TICK = getMIN_TICK(tickSpacing)
-const MAX_TICK = getMAX_TICK(tickSpacing)
+const MIN_TICK = getMinTick(tickSpacing)
+const MAX_TICK = getMaxTick(tickSpacing)
 
 const createFixtureLoader = waffle.createFixtureLoader
 
@@ -692,7 +692,6 @@ describe('UniswapV3Pair', () => {
       await token1.approve(pair.address, constants.MaxUint256)
 
       await pair.setPosition(lowerTick, upperTick, liquidityDelta)
-      await pair.setTime(TEST_PAIR_START_TIME + 1) // so the swap uses the new fee
 
       const k = await pair.liquidityCurrent()
 
@@ -1105,15 +1104,15 @@ describe('UniswapV3Pair', () => {
         pair = await createPair(FeeAmount.MEDIUM, 12)
       })
       it('min and max tick are multiples of 12', async () => {
-        expect(await pair.MIN_TICK()).to.eq(-734772)
-        expect(await pair.MAX_TICK()).to.eq(734772)
+        expect(await pair.MIN_TICK()).to.eq(-887268)
+        expect(await pair.MAX_TICK()).to.eq(887268)
       })
       it('initialize sets min and max ticks', async () => {
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
         await pair.initialize(encodePriceSqrt(1, 1))
-        const {liquidityGross: minTickLiquidityGross} = await pair.tickInfos(-734772)
-        const {liquidityGross: maxTickLiquidityGross} = await pair.tickInfos(734772)
+        const {liquidityGross: minTickLiquidityGross} = await pair.tickInfos(-887268)
+        const {liquidityGross: maxTickLiquidityGross} = await pair.tickInfos(887268)
         expect(minTickLiquidityGross).to.eq(1)
         expect(minTickLiquidityGross).to.eq(maxTickLiquidityGross)
       })
