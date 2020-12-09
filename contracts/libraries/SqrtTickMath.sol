@@ -5,6 +5,7 @@ pragma solidity >=0.5.0;
 import './FixedPoint64.sol';
 import './TickMath.sol';
 
+// 1 bips ticks
 library SqrtTickMath {
     function getSqrtRatioAtTick(int24 tick) internal pure returns (FixedPoint64.uq64x64 memory) {
         uint256 ratio = TickMath.getRatioAtTick(tick) >> FixedPoint64.RESOLUTION;
