@@ -5,7 +5,7 @@ import './interfaces/IUniswapV3Factory.sol';
 
 import './UniswapV3Pair.sol';
 
-/// @title The Uniswap V3 Factory.
+/// @notice The Uniswap V3 Factory.
 /// @notice A factory for creating new V3 trading pairs.
 /// @dev Creates new pairs at deterministic addresses.
 contract UniswapV3Factory is IUniswapV3Factory {
@@ -18,7 +18,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
     address[] public override allPairs;
 
     /// @notice Gets length of allPairs array.
-    /// @return length of allPairs address array.
+    /// @return The length of allPairs address array.
     function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }

@@ -9,7 +9,7 @@ Liquidity positions are partitioned into "ticks", each tick is equally spaced an
 
 
 
-
+The Reentrancy guard modifier, function code is executed where _; is placed in modifier process, requiring external function calls to be performed after modified function has finished.
 
 
 ## `isInitialized() → bool` (public)

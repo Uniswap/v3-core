@@ -106,6 +106,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     /// @notice The reentrancy guard.
     uint256 private unlocked = 1;
+
+    /// @dev The Reentrancy guard modifier, function code is executed where _; is placed in modifier process, requiring external function calls to be performed after modified function has finished.
     modifier lock() {
         require(unlocked == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
         unlocked = 0;

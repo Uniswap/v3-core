@@ -1,5 +1,6 @@
 ## `UniswapV3Factory`
 
+The Uniswap V3 Factory.
 A factory for creating new V3 trading pairs.
 
 
@@ -14,7 +15,7 @@ Gets length of allPairs array.
 
 
 
-: of allPairs address array.
+: length of allPairs address array.
 
 ## `allEnabledFeeOptionsLength() → uint256` (external)
 
