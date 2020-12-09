@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SwapMath #computeSwap gas 1`] = `3927`;
+
+exports[`SwapMath #computeSwapStep gas 1`] = `3927`;
