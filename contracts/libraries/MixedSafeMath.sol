@@ -9,6 +9,6 @@ library MixedSafeMath {
     }
 
     function subi(uint256 x, int256 y) internal pure returns (uint256 z) {
-        z = y < 0 ? SafeMath.add(x, uint256(-y)) : SafeMath.sub(x, uint256(y), 'MixedSafeMath::subi: overflow');
+        z = y < 0 ? SafeMath.add(x, uint256(-y)) : SafeMath.sub(x, uint256(y), 'MixedSafeMath::subi: underflow');
     }
 }

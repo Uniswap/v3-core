@@ -1,27 +1,19 @@
 import {BigNumber, BigNumberish, utils, constants, Contract, Wallet, ContractTransaction} from 'ethers'
-import {Decimal} from 'decimal.js'
-import {assert} from 'chai'
+import bn from 'bignumber.js'
+export const MIN_TICK = -7351
+export const MAX_TICK = 7351
+export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
 
-export const MIN_TICK = -7732
-export const MAX_TICK = 7732
-
-export const LIQUIDITY_MIN = 10 ** 3
-
-export enum FeeVote {
-  FeeVote0 = 0,
-  FeeVote1 = 1,
-  FeeVote2 = 2,
-  FeeVote3 = 3,
-  FeeVote4 = 4,
-  FeeVote5 = 5,
+export enum FeeAmount {
+  LOW = 600,
+  MEDIUM = 3000,
+  HIGH = 9000,
 }
-export const FEES: {[vote in FeeVote]: number} = {
-  [FeeVote.FeeVote0]: 5,
-  [FeeVote.FeeVote1]: 10,
-  [FeeVote.FeeVote2]: 30,
-  [FeeVote.FeeVote3]: 60,
-  [FeeVote.FeeVote4]: 100,
-  [FeeVote.FeeVote5]: 200,
+
+export const TICK_SPACINGS: {[amount in FeeAmount]: number} = {
+  [FeeAmount.LOW]: 1,
+  [FeeAmount.MEDIUM]: 1,
+  [FeeAmount.HIGH]: 1,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -31,12 +23,14 @@ export function expandTo18Decimals(n: number): BigNumber {
 export function getCreate2Address(
   factoryAddress: string,
   [tokenA, tokenB]: [string, string],
+  fee: number,
+  tickSpacing: number,
   bytecode: string
 ): string {
-  const [token0, token1] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA]
+  const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
   const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address'],
-    [factoryAddress, token0, token1]
+    ['address', 'address', 'address', 'uint24', 'int24'],
+    [factoryAddress, token0, token1, fee, tickSpacing]
   )
   const create2Inputs = [
     '0xff',
@@ -50,34 +44,20 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-export function encodePrice(reserve1: BigNumber, reserve0: BigNumber): BigNumber {
-  return reserve1.mul(BigNumber.from(2).pow(112)).div(reserve0)
+export function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
+  return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(128)).div(reserve0)
 }
 
-export function getPositionKey(address: string, lowerTick: number, upperTick: number, feeVote: FeeVote): string {
-  return utils.keccak256(
-    utils.solidityPack(['address', 'int16', 'int16', 'uint8'], [address, lowerTick, upperTick, feeVote])
-  )
+export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
+  return BigNumber.from(new bn(encodePrice(reserve1, reserve0).toString()).sqrt().integerValue(3).toString())
 }
 
-const LN101 = Decimal.ln('1.01')
-export function getExpectedTick(reserve0: BigNumber, reserve1: BigNumber): number {
-  if (reserve0.isZero() && reserve1.isZero()) return 0
-
-  const price = new Decimal(reserve1.toString()).div(new Decimal(reserve0.toString()))
-  // log_1.01(price) = ln(price) / ln(1.01) by the base change rule
-  const rawTick = Decimal.ln(price).div(LN101)
-  const tick = rawTick.floor().toNumber()
-
-  // verify
-  assert(new Decimal('1.01').pow(tick).lte(price))
-  assert(new Decimal('1.01').pow(tick + 1).gt(price))
-
-  return tick
+export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
+  return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
 
 // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-export function bnify2(a: BigNumberish | [BigNumberish]): BigNumber {
+export function bnify2(a: BigNumberish | [BigNumberish] | {0: BigNumberish}): BigNumber {
   if (Array.isArray(a)) {
     return BigNumber.from(a[0])
   } else {

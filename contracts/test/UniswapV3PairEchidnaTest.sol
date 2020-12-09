@@ -2,7 +2,7 @@
 pragma solidity =0.6.12;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import './TestERC20.sol';
@@ -26,10 +26,9 @@ contract UniswapV3PairEchidnaTest {
         payer = new PayAndForwardContract();
         factory = new UniswapV3Factory(address(this));
         initializeTokens();
-        createNewPair();
+        createNewPair(30);
         token0.approve(address(pair), uint256(-1));
         token1.approve(address(pair), uint256(-1));
-        initializePair(0, 1e18, 2);
     }
 
     function initializeTokens() private {
@@ -38,39 +37,60 @@ contract UniswapV3PairEchidnaTest {
         (token0, token1) = (address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA));
     }
 
-    function createNewPair() private {
-        pair = UniswapV3Pair(factory.createPair(address(token0), address(token1)));
+    function createNewPair(uint24 fee) private {
+        pair = UniswapV3Pair(factory.createPair(address(token0), address(token1), fee));
     }
 
-    function initializePair(
-        int16 tick,
-        uint112 amount0,
-        uint8 feeVote
-    ) private {
-        FixedPoint.uq112x112 memory price = TickMath.getRatioAtTick(tick);
-        uint112 amount1 = FullMath.mulDiv(amount0, price._x, uint256(1) << 112).toUint112();
-        pair.initialize(amount0, amount1, tick, feeVote % pair.NUM_FEE_OPTIONS());
+    function initializePair(uint256 price) public {
+        pair.initialize(price);
     }
 
-    function swap0For1(uint112 amount0In) external {
+    function swap0For1(uint256 amount0In) external {
         require(amount0In < 1e18);
         token0.transfer(address(payer), amount0In);
         pair.swap0For1(amount0In, address(payer), abi.encode(uint112(amount0In), address(this)));
     }
 
-    function swap1For0(uint112 amount1In) external {
+    function swap1For0(uint256 amount1In) external {
         require(amount1In < 1e18);
         token1.transfer(address(payer), amount1In);
         pair.swap1For0(amount1In, address(payer), abi.encode(uint112(amount1In), address(this)));
     }
 
     function setPosition(
-        int16 tickLower,
-        int16 tickUpper,
-        uint8 feeVote,
-        int112 liquidityDelta
+        int24 tickLower,
+        int24 tickUpper,
+        int128 liquidityDelta
     ) external {
-        pair.setPosition(tickLower, tickUpper, feeVote % pair.NUM_FEE_OPTIONS(), liquidityDelta);
+        pair.setPosition(tickLower, tickUpper, liquidityDelta);
+    }
+
+    function turnOnFee() external {
+        pair.setFeeTo(address(this));
+    }
+
+    function turnOffFee() external {
+        pair.setFeeTo(address(0));
+    }
+
+    function recoverToken0() external {
+        pair.recover(address(token0), address(this), 1);
+    }
+
+    function recoverToken1() external {
+        pair.recover(address(token1), address(this), 1);
+    }
+
+    function echidna_tickIsWithinBounds() external view returns (bool) {
+        int24 tick = TickMath.getTickAtRatio(pair.priceCurrent());
+        return (tick < TickMath.MAX_TICK && tick >= TickMath.MIN_TICK);
+    }
+
+    function echidna_priceIsWithinTickCurrent() external view returns (bool) {
+        int24 tick = TickMath.getTickAtRatio(pair.priceCurrent());
+        FixedPoint128.uq128x128 memory priceCurrent = FixedPoint128.uq128x128(pair.priceCurrent());
+        return (TickMath.getRatioAtTick(tick) <= priceCurrent._x &&
+            TickMath.getRatioAtTick(tick + 1) > priceCurrent._x);
     }
 
     function echidna_isInitialized() external view returns (bool) {

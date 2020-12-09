@@ -1,76 +1,89 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
+pragma experimental ABIEncoderV2;
 
 interface IUniswapV3Pair {
-    event Initialized(uint256 amount0, uint256 amount1, int16 tick, uint8 feeVote);
-    // TODO liquidityDelta or liquidity?
-    event PositionSet(address owner, int16 tickLower, int16 tickUpper, uint8 feeVote, int112 liquidityDelta);
+    event Initialized(uint256 price);
 
-    // constants
-    function NUM_FEE_OPTIONS() external pure returns (uint8);
-
-    function FEE_OPTIONS(uint8) external pure returns (uint16);
-
-    function LIQUIDITY_MIN() external pure returns (uint112);
-
-    function TOKEN_MIN() external pure returns (uint8);
+    // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
     // immutables
-    function factory() external view returns (address);
+    function factory() external pure returns (address);
 
-    function token0() external view returns (address);
+    function token0() external pure returns (address);
 
-    function token1() external view returns (address);
+    function token1() external pure returns (address);
+
+    function fee() external pure returns (uint24);
+
+    function tickSpacing() external pure returns (int24);
+
+    function MIN_TICK() external pure returns (int24);
+
+    function MAX_TICK() external pure returns (int24);
 
     // variables/state
-    function reserve0Virtual() external view returns (uint112);
-
-    function reserve1Virtual() external view returns (uint112);
+    function feeTo() external view returns (address);
 
     function blockTimestampLast() external view returns (uint32);
 
-    function tickCurrent() external view returns (int16);
+    function liquidityCumulativeLast() external view returns (uint160);
 
-    function virtualSupplies(uint256) external view returns (uint112);
+    function tickCumulativeLast() external view returns (int56);
 
-    function price0CumulativeLast() external view returns (uint256);
+    function liquidityCurrent() external view returns (uint128);
 
-    function price1CumulativeLast() external view returns (uint256);
+    function tickBitmap(int16) external view returns (uint256);
+
+    function priceCurrent() external view returns (uint256);
+
+    function feeGrowthGlobal0() external view returns (uint256);
+
+    function feeGrowthGlobal1() external view returns (uint256);
+
+    function feeToFees0() external view returns (uint256);
+
+    function feeToFees1() external view returns (uint256);
 
     // derived state
-    function getFee() external view returns (uint16 fee);
+    function isInitialized() external view returns (bool);
 
-    function getVirtualSupply() external view returns (uint112 virtualSupply);
+    function tickCurrent() external view returns (int24);
 
-    function getCumulativePrices() external view returns (uint256 price0Cumulative, uint256 price1Cumulative);
+    function getCumulatives()
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            uint160 liquidityCumulative,
+            int56 tickCumulative
+        );
 
     // initialize the pair
-    function initialize(
-        uint112 amount0,
-        uint112 amount1,
-        int16 tick,
-        uint8 feeVote
-    ) external returns (uint112 liquidity);
+    function initialize(uint256 price) external;
+
+    function setPosition(
+        int24 tickLower,
+        int24 tickUpper,
+        int128 liquidityDelta
+    ) external returns (int256 amount0, int256 amount1);
 
     // swapping
     function swap0For1(
-        uint112 amount0In,
+        uint256 amount0In,
         address to,
         bytes calldata data
-    ) external returns (uint112 amount1Out);
+    ) external returns (uint256 amount1Out);
 
     function swap1For0(
-        uint112 amount1In,
+        uint256 amount1In,
         address to,
         bytes calldata data
-    ) external returns (uint112 amount0Out);
-
-    // called by feeToSetter of the factory
-    function feeTo() external view returns (address);
+    ) external returns (uint256 amount0Out);
 
     function setFeeTo(address) external;
 
-    // allows the factory feeToSetter address to recover any tokens other than token0 and token1 held by the contract
+    // allows the factory owner address to recover any tokens other than token0 and token1 held by the contract
     function recover(
         address token,
         address to,

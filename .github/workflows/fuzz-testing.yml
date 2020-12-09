@@ -1,15 +1,21 @@
 name: Fuzz Testing
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   echidna:
     name: Echidna
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        testName:
+          - TickBitmapEchidnaTest
+          - TickMathEchidnaTest
+          - SqrtPriceMathEchidnaTest
+          - SwapMathEchidnaTest
+    #          - UniswapV3PairEchidnaTest
 
     steps:
       - uses: actions/checkout@v2
@@ -25,26 +31,21 @@ jobs:
           python-version: 3.8
 
       - name: Install node dependencies
-        run: yarn
+        run: yarn install --frozen-lockfile
+
+      - name: Install pip3
+        run: |
+          python -m pip install --upgrade pip
 
       - name: Install slither
         run: |
-          python -m pip install --upgrade pip
           pip3 install slither-analyzer
-
-      # workaround for https://github.com/crytic/crytic-compile/issues/113
-      - name: Install solc
-        run: |
-          sudo wget -O /usr/bin/solc https://github.com/ethereum/solidity/releases/download/v0.6.12/solc-static-linux
-          sudo chmod +x /usr/bin/solc
 
       - name: Install echidna
         run: |
-          sudo wget -O /usr/bin/echidna-test https://moody-test-artifact-bucket.s3.amazonaws.com/echidna-test
+          sudo wget -O /tmp/echidna-test.tar.gz https://github.com/crytic/echidna/releases/download/v1.6.0/echidna-test-v1.6.0-Ubuntu-18.04.tar.gz
+          sudo tar -xf /tmp/echidna-test.tar.gz -C /usr/bin
           sudo chmod +x /usr/bin/echidna-test
 
-      - name: PriceMathEchidnaTest
-        run: echidna-test . --contract PriceMathEchidnaTest --config echidna.config.yml
-
-      - name: UniswapV3PairEchidnaTest
-        run: echidna-test . --contract UniswapV3PairEchidnaTest --config echidna.config.yml
+      - name: Run ${{ matrix.testName }}
+        run: echidna-test . --contract ${{ matrix.testName }} --config echidna.config.yml
