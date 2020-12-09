@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 /// @title the Uniswap V3 Pair Interface.
 interface IUniswapV3Pair {
-    event Initialized(int24 tick);
+    event Initialized(uint256 price);
 
     // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
@@ -25,6 +25,12 @@ interface IUniswapV3Pair {
     /// @dev This variable is immutable.
     function fee() external pure returns (uint24);
 
+    function tickSpacing() external pure returns (int24);
+
+    function MIN_TICK() external pure returns (int24);
+
+    function MAX_TICK() external pure returns (int24);
+
     // variables/state
     /// @dev Gets the destination address of the pair fees.
     function feeTo() external view returns (address);
@@ -32,15 +38,16 @@ interface IUniswapV3Pair {
     /// @dev Gets the last time since the oracle price accumulator updated.
     function blockTimestampLast() external view returns (uint32);
 
+    function liquidityCumulativeLast() external view returns (uint160);
+
+    function tickCumulativeLast() external view returns (int56);
+
     /// @dev Gets current amount of liquidity of a given pair.
     function liquidityCurrent() external view returns (uint128);
 
     // TODO clarify
     /// @dev Gets the tick bit map 
-    function tickBitMap(uint256) external view returns (uint256);
-
-    /// @dev Gets the current tick of the pair.
-    function tickCurrent() external view returns (int24);
+    function tickBitmap(int16) external view returns (uint256);
 
     /// @dev Gets the current price of the pair.
     function priceCurrent() external view returns (uint256);
@@ -61,9 +68,20 @@ interface IUniswapV3Pair {
     /// @return bool determining if there is already a price, thus already an initialized pair.
     function isInitialized() external view returns (bool);
 
+    function tickCurrent() external view returns (int24);
+
+    function getCumulatives()
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            uint160 liquidityCumulative,
+            int56 tickCumulative
+        );
+
     /// @notice Initializes a new pair.
-    /// @param tick The nearest tick to the estimated price, given the ratio of token0 / token1.
-    function initialize(int24 tick) external;
+    /// @param price The nearest tick to the estimated price, given the ratio of token0 / token1.
+    function initialize(uint256 price) external;
 
     /// @notice Sets the position of a given liquidity provision.
     /// @param  tickLower The lower boundary of the position.

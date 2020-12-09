@@ -3,10 +3,10 @@ import {ethers} from 'hardhat'
 import {MockTimeUniswapV3Pair} from '../../typechain/MockTimeUniswapV3Pair'
 import {TestERC20} from '../../typechain/TestERC20'
 import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
-import {TickMathTest} from '../../typechain/TickMathTest'
 import {UniswapV3Factory} from '../../typechain/UniswapV3Factory'
 
-import {expandTo18Decimals, FEES, FeeOption} from './utilities'
+import {expandTo18Decimals} from './utilities'
+import {TickMathTest} from '../../typechain/TickMathTest'
 
 interface FactoryFixture {
   factory: UniswapV3Factory
@@ -40,9 +40,9 @@ export async function tokensFixture(): Promise<TokensFixture> {
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
 interface PairFixture extends TokensAndFactoryFixture {
-  pairs: {[feeVote in FeeOption]: MockTimeUniswapV3Pair}
   testCallee: TestUniswapV3Callee
   tickMath: TickMathTest
+  createPair(fee: number, tickSpacing: number): Promise<MockTimeUniswapV3Pair>
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
@@ -56,28 +56,27 @@ export async function pairFixture([owner]: [Signer]): Promise<PairFixture> {
   const testCalleeFactory = await ethers.getContractFactory('TestUniswapV3Callee')
   const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
 
-  const pairs: {[feeVote in FeeOption]?: MockTimeUniswapV3Pair} = {}
-  for (const feeVote of [
-    FeeOption.FeeOption0,
-    FeeOption.FeeOption1,
-    FeeOption.FeeOption2,
-    FeeOption.FeeOption3,
-    FeeOption.FeeOption4,
-    FeeOption.FeeOption5,
-  ]) {
-    const pair = (await mockTimePairFactory.deploy(
-      factory.address,
-      token0.address,
-      token1.address,
-      FEES[feeVote]
-    )) as MockTimeUniswapV3Pair
-    await pair.setTime(TEST_PAIR_START_TIME)
-    pairs[feeVote] = pair
-  }
-
   const testCallee = (await testCalleeFactory.deploy()) as TestUniswapV3Callee
 
   const tickMath = (await tickMathTestFactory.deploy()) as TickMathTest
 
-  return {token0, token1, token2, pairs: pairs as any, factory, testCallee, tickMath}
+  return {
+    token0,
+    token1,
+    token2,
+    factory,
+    testCallee,
+    tickMath,
+    createPair: async (fee, tickSpacing) => {
+      const pair = (await mockTimePairFactory.deploy(
+        factory.address,
+        token0.address,
+        token1.address,
+        fee,
+        tickSpacing
+      )) as MockTimeUniswapV3Pair
+      await pair.setTime(TEST_PAIR_START_TIME)
+      return pair
+    },
+  }
 }
