@@ -72,7 +72,7 @@ library SwapMath {
         if (sqrtQ._x != sqrtQTarget._x) {
             priceAfter = FixedPoint128.uq128x128(uint256(sqrtQ._x)**2);
             if (amountInMax > 0) {
-                // ensure that we can pay for the calculated input amount 
+                // ensure that we can pay for the calculated input amount
                 assert(SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips) <= amountInMax);
                 // we didn't reach the target, so take the remainder of the maximum input as fee
                 feeAmount = amountInMax - amountIn;

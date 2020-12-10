@@ -593,8 +593,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 1) a positive input amount remains
             // 2) if we're moving right and the price is exactly on the target tick
             if (
-                state.amountSpecifiedRemaining != 0
-                || (params.zeroForOne == false && state.price._x == step.priceNext._x)
+                state.amountSpecifiedRemaining != 0 ||
+                (params.zeroForOne == false && state.price._x == step.priceNext._x)
             ) {
                 TickInfo storage tickInfo = tickInfos[step.tickNext];
 
@@ -661,12 +661,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 : IUniswapV3Callee(params.to).swap1For0Callback(msg.sender, amountOut, params.data);
         }
         // to *only* support callback style payment, remove the following transferFrom call.
-        TransferHelper.safeTransferFrom(
-            params.zeroForOne ? token0 : token1,
-            msg.sender,
-            address(this),
-            amountIn
-        );
+        TransferHelper.safeTransferFrom(params.zeroForOne ? token0 : token1, msg.sender, address(this), amountIn);
     }
 
     // move from right to left (token 1 is becoming more valuable)
@@ -677,9 +672,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount1Out) {
         require(amount0In > 1, 'UniswapV3Pair::swapExact0For1: amountIn must be greater than 1');
 
-        return _swap(SwapParams({
-            tickStart: tickCurrent(), zeroForOne: true, amountSpecified: amount0In.toInt256(), to: to, data: data
-        }));
+        return
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: true,
+                    amountSpecified: amount0In.toInt256(),
+                    to: to,
+                    data: data
+                })
+            );
     }
 
     function swap0ForExact1(
@@ -689,9 +691,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount0In) {
         require(amount1Out > 0, 'UniswapV3Pair::swap0ForExact1: amountOut must be greater than 0');
 
-        return _swap(SwapParams({
-            tickStart: tickCurrent(), zeroForOne: true, amountSpecified: -amount1Out.toInt256(), to: to, data: data
-        }));
+        return
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: true,
+                    amountSpecified: -amount1Out.toInt256(),
+                    to: to,
+                    data: data
+                })
+            );
     }
 
     // move from left to right (token 0 is becoming more valuable)
@@ -702,9 +711,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount0Out) {
         require(amount1In > 1, 'UniswapV3Pair::swapExact1For0: amountIn must be greater than 1');
 
-        return _swap(SwapParams({
-            tickStart: tickCurrent(), zeroForOne: false, amountSpecified: amount1In.toInt256(), to: to, data: data
-        }));
+        return
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: false,
+                    amountSpecified: amount1In.toInt256(),
+                    to: to,
+                    data: data
+                })
+            );
     }
 
     function swap1ForExact0(
@@ -714,9 +730,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount1In) {
         require(amount0Out > 0, 'UniswapV3Pair::swap1ForExact0: amountIn must be greater than 0');
 
-        return _swap(SwapParams({
-            tickStart: tickCurrent(), zeroForOne: false, amountSpecified: -amount0Out.toInt256(), to: to, data: data
-        }));
+        return
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: false,
+                    amountSpecified: -amount0Out.toInt256(),
+                    to: to,
+                    data: data
+                })
+            );
     }
 
     function recover(
