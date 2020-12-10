@@ -32,6 +32,6 @@ jobs:
           # WIKI_DIR's default is wiki/
           WIKI_DIR: docs/
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_MAIL: ${{ secrets.YOUR_EMAIL }}
-          GH_NAME: ${{ github.repository_owner }}
+          GH_MAIL: ${{ contact@uniswap.org }}
+          GH_NAME: ${{ Docs Updater }}
           EXCLUDED_FILES:
