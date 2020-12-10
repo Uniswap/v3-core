@@ -1,0 +1,48 @@
+name: Doc-gen
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  Doc-gen:
+    name: Doc-gen
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Generate docs from comments
+        run: yarn solidity-docgen
+
+      - name: GitHub Wiki Action
+        uses: Andrew-Chen-Wang/github-wiki-action@v2
+
+        # need to save solidity-docgen output as artifact and use in wiki gen command, then delete artifact
+        
+  deploy-wiki:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Push Wiki Changes
+      uses: Andrew-Chen-Wang/github-wiki-action@v2
+      env:
+        # Make sure you have that / at the end. We use rsync 
+        # WIKI_DIR's default is wiki/
+        WIKI_DIR: wiki/
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_MAIL: ${{ secrets.YOUR_EMAIL }}
+        GH_NAME: ${{ github.repository_owner }}
+        EXCLUDED_FILES: "a/ b.md"
