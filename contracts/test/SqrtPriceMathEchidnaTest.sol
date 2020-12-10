@@ -20,16 +20,36 @@ contract SqrtPriceMathEchidnaTest {
         assert(roundedUp - notRoundedUp < 2);
     }
 
-    function getNextPriceInvariants(
+    function getNextPriceFromInputInvariants(
         uint128 sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external pure {
-        FixedPoint64.uq64x64 memory sqrtQ = SqrtPriceMath.getNextPrice(
+        FixedPoint64.uq64x64 memory sqrtQ = SqrtPriceMath.getNextPriceFromInput(
             FixedPoint64.uq64x64(sqrtP),
             liquidity,
             amountIn,
+            zeroForOne
+        );
+
+        if (zeroForOne) {
+            assert(sqrtQ._x <= sqrtP);
+        } else {
+            assert(sqrtQ._x >= sqrtP);
+        }
+    }
+
+    function getNextPriceFromOutputInvariants(
+        uint128 sqrtP,
+        uint128 liquidity,
+        uint256 amountOut,
+        bool zeroForOne
+    ) external pure {
+        FixedPoint64.uq64x64 memory sqrtQ = SqrtPriceMath.getNextPriceFromOutput(
+            FixedPoint64.uq64x64(sqrtP),
+            liquidity,
+            amountOut,
             zeroForOne
         );
 

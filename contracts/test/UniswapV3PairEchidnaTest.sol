@@ -42,14 +42,26 @@ contract UniswapV3PairEchidnaTest {
         pair.initialize(price);
     }
 
-    function swap0For1(uint256 amount0In) external {
+    function swapExact0For1(uint256 amount0In) external {
+        require(amount0In > 1);
         require(amount0In < 1e18);
-        pair.swap0For1(amount0In, address(this), '');
+        pair.swapExact0For1(amount0In, address(this), '');
     }
 
-    function swap1For0(uint256 amount1In) external {
+    function swap0ForExact1(uint256 amount1Out) external {
+        require(amount1Out < 1e18);
+        pair.swap0ForExact1(amount1Out, address(this), '');
+    }
+
+    function swapExact1For0(uint256 amount1In) external {
+        require(amount1In > 1);
         require(amount1In < 1e18);
-        pair.swap1For0(amount1In, address(this), '');
+        pair.swapExact1For0(amount1In, address(this), '');
+    }
+
+    function swap1ForExact0(uint256 amount0Out) external {
+        require(amount0Out < 1e18);
+        pair.swap1ForExact0(amount0Out, address(this), '');
     }
 
     function setPosition(

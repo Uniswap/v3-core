@@ -24,7 +24,7 @@ library SqrtPriceMath {
         return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
     }
 
-    function getNextPrice(
+    function getNextPriceFromInput(
         FixedPoint64.uq64x64 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
@@ -48,6 +48,34 @@ library SqrtPriceMath {
             // TODO can technically revert from overflow
             sqrtQ = FixedPoint64.uq64x64(
                 ((uint256(liquidity) * sqrtP._x).add(amountIn.mul(FixedPoint64.Q64)) / liquidity).toUint128()
+            );
+        }
+    }
+
+    function getNextPriceFromOutput(
+        FixedPoint64.uq64x64 memory sqrtP,
+        uint128 liquidity,
+        uint256 amountOut,
+        bool zeroForOne
+    ) internal pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
+        require(sqrtP._x > 0, 'SqrtPriceMath::getNextPrice: sqrtP cannot be zero');
+        require(liquidity > 0, 'SqrtPriceMath::getNextPrice: liquidity cannot be zero');
+        if (amountOut == 0) return sqrtP;
+
+        if (zeroForOne) {
+            // calculate sqrt(P) + y / liquidity, i.e.
+            // calculate (liquidity * sqrt(P) + y) / liquidity
+            // TODO can technically revert from overflow
+            sqrtQ = FixedPoint64.uq64x64(
+                ((uint256(liquidity) * sqrtP._x).add(amountOut.mul(FixedPoint64.Q64)) / liquidity).toUint128()
+            );
+        } else {
+            // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
+            // liquidity * sqrt(P) / (liquidity + x * sqrt(P)), rounding up
+            // TODO can technically revert from overflow
+            uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).add(amountOut.mul(sqrtP._x));
+            sqrtQ = FixedPoint64.uq64x64(
+                mulDivRoundingUp(uint256(liquidity) * sqrtP._x, FixedPoint64.Q64, denominator).toUint128()
             );
         }
     }
