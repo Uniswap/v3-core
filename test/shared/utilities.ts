@@ -1,5 +1,8 @@
-import {BigNumber, BigNumberish, utils, constants, Contract, Wallet, ContractTransaction} from 'ethers'
+import {BigNumber, BigNumberish, utils, constants, Contract, Wallet, ContractTransaction, Signer} from 'ethers'
 import bn from 'bignumber.js'
+import {TestERC20} from '../../typechain/TestERC20'
+import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
+import {PayAndForwardContract} from '../../typechain/PayAndForwardContract'
 export const MIN_TICK = -7351
 export const MAX_TICK = 7351
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
@@ -66,32 +69,32 @@ export function bnify2(a: BigNumberish | [BigNumberish] | {0: BigNumberish}): Bi
 }
 
 export type SwapFunction = (
-  amount: number | string | BigNumber,
+  amount: BigNumberish,
   to: Wallet | string
 ) => Promise<{amountOut: BigNumber; tx: ContractTransaction}>
 export interface SwapFunctions {
   swap0For1: SwapFunction
   swap1For0: SwapFunction
 }
-export function swapFunctions({
+export function createSwapFunctions({
   token0,
   token1,
   swapTarget,
   pair,
   from,
 }: {
-  from: Wallet
-  swapTarget: Contract
-  token0: Contract
-  token1: Contract
-  pair: Contract
+  from: Signer
+  swapTarget: PayAndForwardContract
+  token0: TestERC20
+  token1: TestERC20
+  pair: UniswapV3Pair
 }): SwapFunctions {
   /**
    * Execute a swap against the pair of the input token in the input amount, sending proceeds to the given to address
    */
   async function _swap(
     inputToken: Contract,
-    amountIn: number | string | BigNumber,
+    amountIn: BigNumberish,
     to: Wallet | string
   ): Promise<{amountOut: BigNumber; tx: ContractTransaction}> {
     const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
@@ -107,11 +110,11 @@ export function swapFunctions({
     return {tx, amountOut}
   }
 
-  function swap0For1(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
+  const swap0For1: SwapFunction = (amount, to) => {
     return _swap(token0, amount, to)
   }
 
-  function swap1For0(amount: number | string | BigNumber, to: Wallet | string): ReturnType<typeof _swap> {
+  const swap1For0: SwapFunction = (amount, to) => {
     return _swap(token1, amount, to)
   }
 

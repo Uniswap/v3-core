@@ -1,9 +1,8 @@
 import {ethers, waffle} from 'hardhat'
-import {BigNumberish, constants, Signer} from 'ethers'
+import {BigNumberish, constants, ContractTransaction, Signer} from 'ethers'
 import {TestERC20} from '../typechain/TestERC20'
 import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
 import {MockTimeUniswapV3Pair} from '../typechain/MockTimeUniswapV3Pair'
-import {TestUniswapV3Callee} from '../typechain/TestUniswapV3Callee'
 import {expect} from './shared/expect'
 
 import {pairFixture, TEST_PAIR_START_TIME} from './shared/fixtures'
@@ -17,10 +16,11 @@ import {
   MIN_TICK,
   MAX_LIQUIDITY_GROSS_PER_TICK,
   encodePrice,
-  swapFunctions,
+  createSwapFunctions,
   SwapFunction,
 } from './shared/utilities'
 import {TickMathTest} from '../typechain/TickMathTest'
+import {PayAndForwardContract} from '../typechain/PayAndForwardContract'
 
 const createFixtureLoader = waffle.createFixtureLoader
 
@@ -38,7 +38,6 @@ describe('UniswapV3Pair', () => {
   let factory: UniswapV3Factory
   let pair: MockTimeUniswapV3Pair
   let tickMath: TickMathTest
-  let testCallee: TestUniswapV3Callee
 
   let swapTarget: PayAndForwardContract
 
@@ -55,7 +54,15 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy fixture', async () => {
-    ;({token0, token1, token2, factory, createPair, testCallee, tickMath} = await loadFixture(pairFixture))
+    ;({token0, token1, token2, factory, createPair, tickMath, swapTarget} = await loadFixture(pairFixture))
+
+    const oldCreatePair = createPair
+    createPair = async (amount, spacing) => {
+      const pair = await oldCreatePair(amount, spacing)
+      ;({swap0For1, swap1For0} = createSwapFunctions({token0, token1, swapTarget, pair, from: wallet}))
+      return pair
+    }
+
     // default to the 30 bips pair
     pair = await createPair(FeeAmount.MEDIUM, 1)
   })
@@ -446,23 +453,6 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('callee', () => {
-    beforeEach(() => initializeAtZeroTick(pair))
-    it('swap0For1 calls the callee', async () => {
-      await token0.approve(pair.address, constants.MaxUint256)
-      await expect(pair.swap0For1(1000, testCallee.address, '0xabcd'))
-        .to.emit(testCallee, 'Swap0For1Callback')
-        .withArgs(pair.address, walletAddress, 996, '0xabcd')
-    })
-
-    it('swap1For0 calls the callee', async () => {
-      await token1.approve(pair.address, constants.MaxUint256)
-      await expect(pair.swap1For0(1000, testCallee.address, '0xdeff'))
-        .to.emit(testCallee, 'Swap1For0Callback')
-        .withArgs(pair.address, walletAddress, 996, '0xdeff')
-    })
-  })
-
   // TODO test rest of categories in a loop to reduce code duplication
   describe('post-initialize for low fee', () => {
     beforeEach('initialize at zero tick', async () => {
@@ -591,7 +581,7 @@ describe('UniswapV3Pair', () => {
 
     it('swap0For1 gas', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
-      const tx: Promise<ContractTransaction> = swap0For1(1000, wallet).then(({tx}) => tx)
+      const tx: Promise<ContractTransaction> = swap0For1(1000, walletAddress).then(({tx}) => tx)
       await snapshotGasCost(tx)
     })
 

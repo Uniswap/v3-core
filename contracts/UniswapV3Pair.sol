@@ -641,11 +641,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             feeGrowthGlobal1 = state.feeGrowthGlobal;
         }
 
-        // this is different than v2
-        // transfers
+        // perform the token transfers
         {
             (address tokenIn, address tokenOut) = params.zeroForOne ? (token0, token1) : (token1, token0);
-            TransferHelper.safeTransfer(tokenOut, params.to, amountOut); // optimistically transfer tokens
+            TransferHelper.safeTransfer(tokenOut, params.to, amountOut);
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
             params.zeroForOne
                 ? IUniswapV3Callee(params.to).swap0For1Callback(msg.sender, amountOut, params.data)
