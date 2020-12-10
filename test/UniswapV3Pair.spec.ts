@@ -416,14 +416,6 @@ describe('UniswapV3Pair', () => {
         expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME + 10)
       })
 
-      it('liquidity accumulator increases by liquidity over time', async () => {
-        let {liquidityCumulative} = await pair.getCumulatives()
-        expect(liquidityCumulative).to.eq(0)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        ;({liquidityCumulative} = await pair.getCumulatives())
-        expect(liquidityCumulative).to.eq(initializeLiquidityAmount.mul(10))
-      })
-
       // zero tick
       it('tick accumulator increases by tick over time', async () => {
         let {tickCumulative} = await pair.getCumulatives()
