@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-  pull_request:
 
 jobs:
   Doc-gen:
@@ -26,33 +25,13 @@ jobs:
       - name: Generate docs from comments
         run: yarn solidity-docgen
 
-      - name: Archive doc-gen artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: docs-directory
-          path: |
-            docs/
-
-  deploy-wiki:
-    name: deploy-wiki
-    needs: Doc-gen
-    runs-on: ubuntu-latest
-    steps:
-    - name: Download doc-gen results
-      uses: actions/download-artifact@v2
-      with:
-        name: docs/
-
-    - name: create-wiki
-      uses: actions/checkout@v2
-
-    - name: Push Wiki Changes
-      uses: Andrew-Chen-Wang/github-wiki-action@v2
-      env:
-        # Make sure you have that / at the end. We use rsync 
-        # WIKI_DIR's default is wiki/
-        WIKI_DIR: docs/
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GH_MAIL: ${{ secrets.YOUR_EMAIL }}
-        GH_NAME: ${{ github.repository_owner }}
-        EXCLUDED_FILES: "a/ b.md"
+      - name: Push Wiki Changes
+        uses: Andrew-Chen-Wang/github-wiki-action@1d09cae6d4a4ecf0f9c794972aec063a6fb7a95f
+        env:
+          # Make sure you have that / at the end. We use rsync 
+          # WIKI_DIR's default is wiki/
+          WIKI_DIR: docs/
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_MAIL: ${{ secrets.YOUR_EMAIL }}
+          GH_NAME: ${{ github.repository_owner }}
+          EXCLUDED_FILES:
