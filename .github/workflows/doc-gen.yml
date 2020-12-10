@@ -23,14 +23,14 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Generate docs from comments
-        run: yarn solidity-docgen
+        run: yarn solidity-docgen -t ./V3-docgen-template.hbs
 
       - name: Push Wiki Changes
         uses: Andrew-Chen-Wang/github-wiki-action@1d09cae6d4a4ecf0f9c794972aec063a6fb7a95f
         env:
           # Make sure you have that / at the end. We use rsync 
           # WIKI_DIR's default is wiki/
-          WIKI_DIR: docs/
+          WIKI_DIR: ./docs
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_MAIL: ${{ contact@uniswap.org }}
           GH_NAME: ${{ Docs updater }}
