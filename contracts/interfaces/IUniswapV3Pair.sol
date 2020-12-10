@@ -71,13 +71,15 @@ interface IUniswapV3Pair {
     // swapping
     function swap0For1(
         uint256 amount0In,
-        address to,
+        address payer,
+        address recipient,
         bytes calldata data
     ) external returns (uint256 amount1Out);
 
     function swap1For0(
         uint256 amount1In,
-        address to,
+        address payer,
+        address recipient,
         bytes calldata data
     ) external returns (uint256 amount0Out);
 

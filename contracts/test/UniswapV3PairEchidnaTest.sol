@@ -6,7 +6,7 @@ import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import './TestERC20.sol';
-import './PayAndForwardContract.sol';
+import './TestUniswapV3Callee.sol';
 import '../UniswapV3Pair.sol';
 import '../UniswapV3Factory.sol';
 import '../libraries/SafeCast.sol';
@@ -20,10 +20,10 @@ contract UniswapV3PairEchidnaTest {
 
     UniswapV3Factory factory;
     UniswapV3Pair pair;
-    PayAndForwardContract payer;
+    TestUniswapV3Callee payer;
 
     constructor() public {
-        payer = new PayAndForwardContract();
+        payer = new TestUniswapV3Callee();
         factory = new UniswapV3Factory(address(this));
         initializeTokens();
         createNewPair(30);
@@ -48,13 +48,13 @@ contract UniswapV3PairEchidnaTest {
     function swap0For1(uint256 amount0In) external {
         require(amount0In < 1e18);
         token0.transfer(address(payer), amount0In);
-        pair.swap0For1(amount0In, address(payer), abi.encode(uint112(amount0In), address(this)));
+        pair.swap0For1(amount0In, address(payer), address(this), '0x');
     }
 
     function swap1For0(uint256 amount1In) external {
         require(amount1In < 1e18);
         token1.transfer(address(payer), amount1In);
-        pair.swap1For0(amount1In, address(payer), abi.encode(uint112(amount1In), address(this)));
+        pair.swap1For0(amount1In, address(payer), address(this), '0x');
     }
 
     function setPosition(

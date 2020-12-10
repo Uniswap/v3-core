@@ -491,8 +491,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bool zeroForOne;
         // how much is being swapped in
         uint256 amountIn;
-        // the recipient address
-        address to;
+        // the address that gets the callback
+        address payer;
+        // the address that receives amount out
+        address recipient;
         // any data that should be sent to the address with the call
         bytes data;
     }
@@ -644,11 +646,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // perform the token transfers
         {
             (address tokenIn, address tokenOut) = params.zeroForOne ? (token0, token1) : (token1, token0);
-            TransferHelper.safeTransfer(tokenOut, params.to, amountOut);
+            TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
             params.zeroForOne
-                ? IUniswapV3Callee(params.to).swap0For1Callback(msg.sender, amountOut, params.data)
-                : IUniswapV3Callee(params.to).swap1For0Callback(msg.sender, amountOut, params.data);
+                ? IUniswapV3Callee(params.payer).swapCallback(
+                    msg.sender,
+                    params.recipient,
+                    -params.amountIn.toInt256(),
+                    amountOut.toInt256(),
+                    params.data
+                )
+                : IUniswapV3Callee(params.payer).swapCallback(
+                    msg.sender,
+                    params.recipient,
+                    amountOut.toInt256(),
+                    -params.amountIn.toInt256(),
+                    params.data
+                );
             uint256 balanceAfter = IERC20(tokenIn).balanceOf(address(this));
             require(
                 balanceAfter.sub(balanceBefore) >= params.amountIn,
@@ -660,24 +674,45 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // move from right to left (token 1 is becoming more valuable)
     function swap0For1(
         uint256 amount0In,
-        address to,
+        address payer,
+        address recipient,
         bytes calldata data
     ) external override lock returns (uint256 amount1Out) {
         require(amount0In > 0, 'UniswapV3Pair::swap0For1: amountIn must be greater than 0');
 
-        return _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: true, amountIn: amount0In, to: to, data: data}));
+        return
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: true,
+                    amountIn: amount0In,
+                    recipient: recipient,
+                    payer: payer,
+                    data: data
+                })
+            );
     }
 
     // move from left to right (token 0 is becoming more valuable)
     function swap1For0(
         uint256 amount1In,
-        address to,
+        address payer,
+        address recipient,
         bytes calldata data
     ) external override lock returns (uint256 amount0Out) {
         require(amount1In > 0, 'UniswapV3Pair::swap1For0: amountIn must be greater than 0');
 
         return
-            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: false, amountIn: amount1In, to: to, data: data}));
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: false,
+                    amountIn: amount1In,
+                    recipient: recipient,
+                    payer: payer,
+                    data: data
+                })
+            );
     }
 
     function recover(

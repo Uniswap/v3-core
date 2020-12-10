@@ -3,10 +3,10 @@ import {ethers} from 'hardhat'
 import {MockTimeUniswapV3Pair} from '../../typechain/MockTimeUniswapV3Pair'
 import {TestERC20} from '../../typechain/TestERC20'
 import {UniswapV3Factory} from '../../typechain/UniswapV3Factory'
-import {PayAndForwardContract} from '../../typechain/PayAndForwardContract'
+import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
+import {TickMathTest} from '../../typechain/TickMathTest'
 
 import {expandTo18Decimals} from './utilities'
-import {TickMathTest} from '../../typechain/TickMathTest'
 
 interface FactoryFixture {
   factory: UniswapV3Factory
@@ -41,7 +41,7 @@ type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
 interface PairFixture extends TokensAndFactoryFixture {
   tickMath: TickMathTest
-  swapTarget: PayAndForwardContract
+  swapTarget: TestUniswapV3Callee
   createPair(fee: number, tickSpacing: number): Promise<MockTimeUniswapV3Pair>
 }
 
@@ -54,10 +54,10 @@ export async function pairFixture([owner]: [Signer]): Promise<PairFixture> {
 
   const mockTimePairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
   const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
-  const payAndForwardContractFactory = await ethers.getContractFactory('PayAndForwardContract')
+  const payAndForwardContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
 
   const tickMath = (await tickMathTestFactory.deploy()) as TickMathTest
-  const swapTarget = (await payAndForwardContractFactory.deploy()) as PayAndForwardContract
+  const swapTarget = (await payAndForwardContractFactory.deploy()) as TestUniswapV3Callee
 
   return {
     token0,

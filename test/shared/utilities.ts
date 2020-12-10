@@ -2,7 +2,7 @@ import {BigNumber, BigNumberish, utils, constants, Contract, Wallet, ContractTra
 import bn from 'bignumber.js'
 import {TestERC20} from '../../typechain/TestERC20'
 import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
-import {PayAndForwardContract} from '../../typechain/PayAndForwardContract'
+import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
 export const MIN_TICK = -7351
 export const MAX_TICK = 7351
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
@@ -84,7 +84,7 @@ export function createSwapFunctions({
   from,
 }: {
   from: Signer
-  swapTarget: PayAndForwardContract
+  swapTarget: TestUniswapV3Callee
   token0: TestERC20
   token1: TestERC20
   pair: UniswapV3Pair
@@ -101,12 +101,11 @@ export function createSwapFunctions({
 
     await inputToken.connect(from).transfer(swapTarget.address, amountIn)
 
-    const data = utils.defaultAbiCoder.encode(
-      ['uint256', 'address'],
-      [amountIn, typeof to === 'string' ? to : to.address]
-    )
-    const amountOut = await pair.connect(from).callStatic[method](amountIn, swapTarget.address, data)
-    const tx = await pair.connect(from)[method](amountIn, swapTarget.address, data)
+    const toAddress = typeof to === 'string' ? to : to.address
+
+    const data = '0x' // utils.defaultAbiCoder.encode(['uint256', 'address'], [amountIn, toAddress])
+    const amountOut = await pair.connect(from).callStatic[method](amountIn, swapTarget.address, toAddress, data)
+    const tx = await pair.connect(from)[method](amountIn, swapTarget.address, toAddress, data)
     return {tx, amountOut}
   }
 

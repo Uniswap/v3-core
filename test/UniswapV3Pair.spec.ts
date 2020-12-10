@@ -20,7 +20,7 @@ import {
   SwapFunction,
 } from './shared/utilities'
 import {TickMathTest} from '../typechain/TickMathTest'
-import {PayAndForwardContract} from '../typechain/PayAndForwardContract'
+import {TestUniswapV3Callee} from '../typechain/TestUniswapV3Callee'
 
 const createFixtureLoader = waffle.createFixtureLoader
 
@@ -39,7 +39,7 @@ describe('UniswapV3Pair', () => {
   let pair: MockTimeUniswapV3Pair
   let tickMath: TickMathTest
 
-  let swapTarget: PayAndForwardContract
+  let swapTarget: TestUniswapV3Callee
 
   let swap0For1: SwapFunction
   let swap1For0: SwapFunction
@@ -735,9 +735,7 @@ describe('UniswapV3Pair', () => {
       await token0.approve(pair.address, constants.MaxUint256)
       const txPromise = swap0For1(amount0In, walletAddress).then(({tx}) => tx)
 
-      await expect(txPromise)
-        .to.emit(token1, 'Transfer')
-        .withArgs(swapTarget.address, walletAddress, '94965947516311854')
+      await expect(txPromise).to.emit(token1, 'Transfer').withArgs(pair.address, walletAddress, '94965947516311854')
 
       expect(await pair.tickCurrent()).to.eq(-10)
     })
@@ -784,7 +782,7 @@ describe('UniswapV3Pair', () => {
 
       await token1.approve(pair.address, constants.MaxUint256)
       const tx = swap1For0(amount1In, walletAddress).then(({tx}) => tx)
-      await expect(tx).to.emit(token0, 'Transfer').withArgs(swapTarget.address, walletAddress, '94965947516311854')
+      await expect(tx).to.emit(token0, 'Transfer').withArgs(pair.address, walletAddress, '94965947516311854')
 
       expect(await pair.tickCurrent()).to.eq(9)
     })
@@ -801,7 +799,7 @@ describe('UniswapV3Pair', () => {
 
       await token1.approve(pair.address, constants.MaxUint256)
       const tx = swap1For0(amount1In, walletAddress).then(({tx}) => tx)
-      await expect(tx).to.emit(token0, 'Transfer').withArgs(swapTarget.address, walletAddress, '95298218973436073')
+      await expect(tx).to.emit(token0, 'Transfer').withArgs(pair.address, walletAddress, '95298218973436073')
 
       expect(await pair.tickCurrent()).to.eq(9)
     })

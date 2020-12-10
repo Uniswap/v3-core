@@ -2,15 +2,21 @@
 pragma solidity >=0.5.0;
 
 interface IUniswapV3Callee {
-    function swap0For1Callback(
+    // called on the payer of setPosition
+    function setPositionCallback(
         address sender,
-        uint256 amount1Out,
+        address recipient,
+        int256 amount0Delta,
+        int256 amount1Delta,
         bytes calldata data
     ) external;
 
-    function swap1For0Callback(
+    // called on the payer of a swap
+    function swapCallback(
         address sender,
-        uint256 amount0Out,
+        address recipient,
+        int256 amount0Delta,
+        int256 amount1Delta,
         bytes calldata data
     ) external;
 }

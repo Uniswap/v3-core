@@ -1,19 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `236613`;
+exports[`UniswapV3Pair #setPosition after initialization success cases above current price gas 1`] = `236615`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `225404`;
+exports[`UniswapV3Pair #setPosition after initialization success cases below current price gas 1`] = `225406`;
 
-exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `235269`;
+exports[`UniswapV3Pair #setPosition after initialization success cases including current price gas 1`] = `235287`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas 1`] = `117961`;
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas 1`] = `113075`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap 1`] = `117437`;
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap 1`] = `112503`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap crossing several initialized ticks 1`] = `293575`;
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap crossing several initialized ticks 1`] = `288713`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas 1`] = `109736`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas 1`] = `104809`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap 1`] = `112611`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap 1`] = `107636`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap crossing several initialized ticks 1`] = `283764`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap crossing several initialized ticks 1`] = `278860`;
