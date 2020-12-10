@@ -26,11 +26,6 @@ jobs:
       - name: Generate docs from comments
         run: yarn solidity-docgen
 
-      - name: GitHub Wiki Action
-        uses: Andrew-Chen-Wang/github-wiki-action@v2
-
-        # need to save solidity-docgen output as artifact and use in wiki gen command, then delete artifact
-
       - name: Archive doc-gen artifacts
         uses: actions/upload-artifact@v2
         with:
