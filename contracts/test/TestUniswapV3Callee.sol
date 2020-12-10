@@ -7,15 +7,6 @@ import '../interfaces/IUniswapV3Callee.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
 contract TestUniswapV3Callee is IUniswapV3Callee {
-    // called on the payer of setPosition
-    function setPositionCallback(
-        address sender,
-        address recipient,
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata data
-    ) external override {}
-
     event SwapCallback(
         address msgSender,
         address sender,
