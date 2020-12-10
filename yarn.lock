@@ -919,10 +919,10 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@uniswap/lib@2.2.0-alpha":
-  version "2.2.0-alpha"
-  resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-2.2.0-alpha.tgz#998e294d214668f2e9ed346e78242c61c3c68cb8"
-  integrity sha512-9YSm0ILeun19ID1ZoFolXOT0M9ooho9G91L3/tTMfXv+6MgfHMF5EBH5B/5vapd3LjubX+WGzz00IUscBliHeg==
+"@uniswap/lib@4.0.0-alpha":
+  version "4.0.0-alpha"
+  resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-4.0.0-alpha.tgz#1df2872992e7317adb1afc12b3e9e9475f18caa5"
+  integrity sha512-oE6LZChPkbX4fd24sptkoGuEiSiDMhgfS1CgTK2krIr2E0coaNTfEXs0KcdaRSQcLfeOMjcKce5AJSa8FPMXEw==
 
 "@web3-js/scrypt-shim@^0.1.0":
   version "0.1.0"
@@ -8497,10 +8497,10 @@ solhint@^3.2.1:
   optionalDependencies:
     prettier "^1.14.3"
 
-solidity-docgen@^0.5.10:
-  version "0.5.10"
-  resolved "https://registry.yarnpkg.com/solidity-docgen/-/solidity-docgen-0.5.10.tgz#8c98faf2334c16b57ce84123b6ba0ff128172848"
-  integrity sha512-poeLQBywOFqo0u2nozaJ1H4vtGGLJ/iewUvnXrz8IywkC9LEAFBov4tvNsl19iKfRjsHCZqbxKfMoRH2AP1EMg==
+solidity-docgen@^0.5.9:
+  version "0.5.11"
+  resolved "https://registry.yarnpkg.com/solidity-docgen/-/solidity-docgen-0.5.11.tgz#96e03d9bd6cbf16b856e07d90f596af19ab7e447"
+  integrity sha512-yi1FAKd7obY7WwXc1DI9OSA7K55tPfPbz/SYsfEM5vcxl3CEhgMgEvjw6PapwyIpvz9H+ymEFsYwo0F1pHUDCg==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1.17.0"
