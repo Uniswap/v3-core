@@ -37,21 +37,19 @@ library SqrtPriceMath {
         if (zeroForOne) {
             // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
             // liquidity * sqrt(P) / (liquidity + x * sqrt(P)), rounding up
-            // TODO can technically revert from overflow
+            uint256 numerator = uint256(liquidity) * sqrtP._x;
             uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).add(amountIn.mul(sqrtP._x));
-            sqrtQ = FixedPoint64.uq64x64(
-                mulDivRoundingUp(uint256(liquidity) * sqrtP._x, FixedPoint64.Q64, denominator).toUint128()
-            );
+            sqrtQ = FixedPoint64.uq64x64(mulDivRoundingUp(numerator, FixedPoint64.Q64, denominator).toUint128());
         } else {
             // calculate sqrt(P) + y / liquidity, i.e.
             // calculate (liquidity * sqrt(P) + y) / liquidity
-            // TODO can technically revert from overflow
             sqrtQ = FixedPoint64.uq64x64(
                 ((uint256(liquidity) * sqrtP._x).add(amountIn.mul(FixedPoint64.Q64)) / liquidity).toUint128()
             );
         }
     }
 
+    // TODO make sure overflow isn't a problem here
     function getNextPriceFromOutput(
         FixedPoint64.uq64x64 memory sqrtP,
         uint128 liquidity,
@@ -63,20 +61,16 @@ library SqrtPriceMath {
         if (amountOut == 0) return sqrtP;
 
         if (zeroForOne) {
-            // calculate sqrt(P) + y / liquidity, i.e.
-            // calculate (liquidity * sqrt(P) + y) / liquidity
-            // TODO can technically revert from overflow
+            // calculate sqrt(P) - y / liquidity, i.e.
+            // calculate (liquidity * sqrt(P) - y) / liquidity
             sqrtQ = FixedPoint64.uq64x64(
-                ((uint256(liquidity) * sqrtP._x).add(amountOut.mul(FixedPoint64.Q64)) / liquidity).toUint128()
+                ((uint256(liquidity) * sqrtP._x).sub(amountOut.mul(FixedPoint64.Q64)) / liquidity).toUint128()
             );
         } else {
-            // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
-            // liquidity * sqrt(P) / (liquidity + x * sqrt(P)), rounding up
-            // TODO can technically revert from overflow
-            uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).add(amountOut.mul(sqrtP._x));
-            sqrtQ = FixedPoint64.uq64x64(
-                mulDivRoundingUp(uint256(liquidity) * sqrtP._x, FixedPoint64.Q64, denominator).toUint128()
-            );
+            // calculate liquidity * sqrt(P) / (liquidity - x * sqrt(P)), rounding up
+            uint256 numerator = uint256(liquidity) * sqrtP._x;
+            uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).sub(amountOut.mul(sqrtP._x));
+            sqrtQ = FixedPoint64.uq64x64(mulDivRoundingUp(numerator, FixedPoint64.Q64, denominator).toUint128());
         }
     }
 

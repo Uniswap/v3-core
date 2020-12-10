@@ -564,20 +564,40 @@ describe('UniswapV3Pair', () => {
       )
     })
 
-    it('swap0For1', async () => {
+    it.only('swapExact0For1', async () => {
       const amount0In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
       const token1BalanceBefore = await token1.balanceOf(walletAddress)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      await pair.swap0For1(amount0In, walletAddress, '0x')
+      await pair.swapExact0For1(amount0In, walletAddress, '0x')
 
       const token0BalanceAfter = await token0.balanceOf(walletAddress)
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
 
       expect(token0BalanceBefore.sub(token0BalanceAfter), 'token0 balance decreases by amount in').to.eq(amount0In)
       expect(token1BalanceAfter.sub(token1BalanceBefore), 'token1 balance increases by expected amount out').to.eq(998)
+
+      expect(await pair.tickCurrent()).to.eq(-1)
+    })
+
+    it.only('swap0ForExact1', async () => {
+      const amount1Out = 998
+
+      const token0BalanceBefore = await token0.balanceOf(walletAddress)
+      const token1BalanceBefore = await token1.balanceOf(walletAddress)
+
+      await token0.approve(pair.address, constants.MaxUint256)
+      await pair.swap0ForExact1(amount1Out, walletAddress, '0x')
+
+      const token0BalanceAfter = await token0.balanceOf(walletAddress)
+      const token1BalanceAfter = await token1.balanceOf(walletAddress)
+
+      expect(token0BalanceBefore.sub(token0BalanceAfter), 'token0 balance decreases by amount in').to.eq(1000)
+      expect(token1BalanceAfter.sub(token1BalanceBefore), 'token1 balance increases by expected amount out').to.eq(
+        amount1Out
+      )
 
       expect(await pair.tickCurrent()).to.eq(-1)
     })
