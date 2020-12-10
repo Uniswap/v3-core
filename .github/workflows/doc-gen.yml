@@ -33,5 +33,5 @@ jobs:
           WIKI_DIR: docs/
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_MAIL: ${{ contact@uniswap.org }}
-          GH_NAME: ${{ Docs Updater }}
+          GH_NAME: ${{ Docs updater }}
           EXCLUDED_FILES:
