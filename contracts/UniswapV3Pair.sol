@@ -622,7 +622,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             liquidityCurrent = state.liquidityCurrent;
 
             // must be called before updating the price
-            // todo: the sstores in this function should be packed with the update of price below
             _updateAccumulators();
         }
 
