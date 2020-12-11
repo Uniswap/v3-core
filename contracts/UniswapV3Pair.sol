@@ -614,8 +614,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                // todo: this may not be necessary, since we only use it to determine if we crossed a tick
-                // TODO same potential issue as in tickCurrent
                 state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice);
             }
         }
