@@ -18,7 +18,7 @@ library SqrtTickMath {
 
     function getTickAtSqrtRatio(FixedPoint64.uq64x64 memory sqrtP) internal pure returns (int24) {
         require(
-            sqrtP._x >= 19997 && sqrtP._x <= 17017438448674477402236614712524090,
+            sqrtP._x >= 19997 && sqrtP._x < 17017438448674477402236614712524090,
             'SqrtTickMath::getSqrtRatioAtTick: invalid sqrtP'
         );
         return TickMath.getTickAtRatio(uint256(sqrtP._x) << FixedPoint64.RESOLUTION);

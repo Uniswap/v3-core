@@ -7,7 +7,7 @@ library TickMath {
     int24 internal constant MIN_TICK = -887272;
     int24 internal constant MAX_TICK = -MIN_TICK;
 
-    // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > 887272.
+    // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > max tick.
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
         uint256 absTick = uint256(tick < 0 ? -tick : tick);
         require(absTick <= uint256(MAX_TICK), 'TickMath::getRatioAtTick: invalid tick');
