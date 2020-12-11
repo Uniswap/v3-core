@@ -700,11 +700,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function collect() external override returns (uint256 amount0, uint256 amount1) {
-        amount0 = feeToFees0;
-        feeToFees0 = 0;
-        amount1 = feeToFees1;
-        feeToFees1 = 0;
+    function collect(
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external override returns (uint256 amount0, uint256 amount1) {
+        if (amount0Requested == uint256(-1)) {
+            amount0 = feeToFees0;
+        } else {
+            require(amount0Requested <= feeToFees0, 'UniswapV3Pair::collect: too much token0 requested');
+            amount0 = amount0Requested;
+        }
+        if (amount1Requested == uint256(-1)) {
+            amount1 = feeToFees1;
+        } else {
+            require(amount1Requested <= feeToFees1, 'UniswapV3Pair::collect: too much token1 requested');
+            amount1 = amount1Requested;
+        }
+
+        feeToFees0 -= amount0;
+        feeToFees1 -= amount1;
         if (amount0 > 0) TransferHelper.safeTransfer(token0, feeTo, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
     }

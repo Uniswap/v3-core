@@ -90,6 +90,9 @@ interface IUniswapV3Pair {
         uint256 amount
     ) external;
 
-    // allows anyone to collect protocol fees
-    function collect() external returns (uint256 amount0, uint256 amount1);
+    // allows anyone to collect protocol fees to feeTo
+    function collect(
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external returns (uint256 amount0, uint256 amount1);
 }

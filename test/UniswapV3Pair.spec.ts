@@ -1006,7 +1006,7 @@ describe('UniswapV3Pair', () => {
     describe('#collect', () => {
       it('returns 0 if no fees', async () => {
         await pair.setFeeTo(otherAddress)
-        const {amount0, amount1} = await pair.callStatic.collect()
+        const {amount0, amount1} = await pair.callStatic.collect(constants.MaxUint256, constants.MaxUint256)
         expect(amount0).to.be.eq(0)
         expect(amount1).to.be.eq(0)
       })
@@ -1017,7 +1017,9 @@ describe('UniswapV3Pair', () => {
         await swapAndGetFeesOwed()
         await pair.setPosition(MIN_TICK, MAX_TICK, liquidityAmount.mul(-1))
 
-        await expect(pair.collect()).to.emit(token0, 'Transfer').withArgs(pair.address, otherAddress, '100000000000001')
+        await expect(pair.collect(constants.MaxUint256, constants.MaxUint256))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, otherAddress, '100000000000001')
       })
     })
 
