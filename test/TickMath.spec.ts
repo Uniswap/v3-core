@@ -36,15 +36,18 @@ describe('TickMath', () => {
     }
 
     describe('matches js implementation', () => {
+      const factor = BigNumber.from(10).pow(64)
+      // ~sqrt(1.0001) * factor
+      const base = BigNumber.from('10000499987500624960940234169937986972154989506568647884368700658')
+
       function exactTickRatioQ128x128(tick: number): BigNumberish {
-        const value = Q128.mul(BigNumber.from(100005).pow(Math.abs(tick))).div(
-          BigNumber.from(100000).pow(Math.abs(tick))
-        )
+        const value = Q128.mul(base.pow(Math.abs(tick))).div(factor.pow(Math.abs(tick)))
         return tick > 0 ? value : Q128.mul(Q128).div(value)
       }
 
       const ALLOWED_BIPS_DIFF = 1
       describe('small ticks', () => {
+        console.log(exactTickRatioQ128x128(1).toString())
         for (let tick = 0; tick < 20; tick++) {
           it(`tick index: ${tick}`, async () => {
             await checkApproximatelyEquals(
@@ -102,12 +105,12 @@ describe('TickMath', () => {
       await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-27726), Q128.div(4), 1)
     })
 
-    it('tick too large', async () => {
+    it('tick too small', async () => {
       await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith(
         'TickMath::getRatioAtTick: invalid tick'
       )
     })
-    it('tick too small', async () => {
+    it('tick too large', async () => {
       await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith(
         'TickMath::getRatioAtTick: invalid tick'
       )
@@ -140,24 +143,25 @@ describe('TickMath', () => {
     it('ratio too large', async () => {
       await expect(
         tickMathTest.getTickAtRatio({
-          _x: BigNumber.from('6276865796315986613307619852238232712866172378830071145883'),
+          _x: BigNumber.from('6276865796315986613307619852238232712866172378830071145882'),
         })
       ).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
     it('ratio too small', async () => {
-      await expect(tickMathTest.getTickAtRatio({_x: BigNumber.from('5826673')})).to.be.revertedWith(
+      await expect(tickMathTest.getTickAtRatio({_x: BigNumber.from('18447437462383981825').sub(1)})).to.be.revertedWith(
         'TickMath::getTickAtRatio: invalid ratio'
       )
     })
+
     it('ratio at min tick boundary', async () => {
       expect(await tickMathTest.getTickAtRatio({_x: BigNumber.from('18447437462383981825')})).to.eq(MIN_TICK)
     })
-    it('ratio at max tick boundary', async () => {
+    it('ratio at max tick - 1 boundary', async () => {
       expect(
         await tickMathTest.getTickAtRatio({
-          _x: BigNumber.from('6276865796315986613307619852238232712866172378830071145882'),
+          _x: BigNumber.from('6276865796315986613307619852238232712866172378830071145882').sub(1),
         })
-      ).to.eq(MAX_TICK)
+      ).to.eq(MAX_TICK - 1)
     })
 
     it('lowerBound = upperBound - 1', async () => {

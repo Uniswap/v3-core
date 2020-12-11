@@ -60,7 +60,6 @@ contract UniswapV3Factory is IUniswapV3Factory {
     function _enableFeeAmount(uint24 fee, int24 tickSpacing) private {
         require(fee < 1000000, 'UniswapV3Factory::_enableFeeAmount: fee amount be greater than or equal to 100%');
         require(tickSpacing > 0, 'UniswapV3Factory::_enableFeeAmount: tick spacing must be greater than 0');
-        require(tickSpacing % 2 == 0, 'UniswapV3Factory::_enableFeeAmount: tick spacing must be even');
         require(feeAmountTickSpacing[fee] == 0, 'UniswapV3Factory::_enableFeeAmount: fee amount is already enabled');
 
         feeAmountTickSpacing[fee] = tickSpacing;
