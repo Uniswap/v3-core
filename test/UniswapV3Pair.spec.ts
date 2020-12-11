@@ -584,8 +584,9 @@ describe('UniswapV3Pair', () => {
 
     it('swap0For1 gas second swap in block', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
-      await pair.swap0For1(1000, walletAddress, '0x')
-      await snapshotGasCost(pair.swap0For1(1000, walletAddress, '0x'))
+      await swap0For1(1000, walletAddress)
+      const tx = swap0For1(1000, walletAddress).then(({tx}) => tx)
+      await snapshotGasCost(tx)
     })
 
     it('swap0For1 gas large swap', async () => {
@@ -641,8 +642,9 @@ describe('UniswapV3Pair', () => {
 
     it('swap1For0 gas second swap in block', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.swap1For0(1000, walletAddress, '0x')
-      await snapshotGasCost(pair.swap1For0(1000, walletAddress, '0x'))
+      await swap1For0(1000, walletAddress)
+      const tx = swap1For0(1000, walletAddress).then(({tx}) => tx)
+      await snapshotGasCost(tx)
     })
 
     it('swap1For0 gas large swap', async () => {
