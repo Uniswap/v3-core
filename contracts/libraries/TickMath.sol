@@ -5,12 +5,12 @@ pragma solidity >=0.5.0;
 // sqrt(1.0001) ticks
 library TickMath {
     int24 internal constant MIN_TICK = -887272;
-    int24 internal constant MAX_TICK = 887272;
+    int24 internal constant MAX_TICK = -MIN_TICK;
 
-    // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > 887272.
+    // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > max tick.
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
-        uint256 absTick = uint256(tick >= 0 ? tick : -tick);
-        require(absTick <= 887272, 'TickMath::getRatioAtTick: invalid tick');
+        uint256 absTick = uint256(tick < 0 ? -tick : tick);
+        require(absTick <= uint256(MAX_TICK), 'TickMath::getRatioAtTick: invalid tick');
 
         ratio = absTick & 0x1 != 0 ? 0xfffcb933bd6fad37aa2d162d1a594001 : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfff97272373d413259a46990580e213a) >> 128;
@@ -37,11 +37,12 @@ library TickMath {
     }
 
     // Calculate the highest tick value such that getRatioAtTick(tick) <= ratio.
-    // Throw in case ratio < 0x1000276a221a17501, as 0x1000276a221a17501 is the
+    // Throw in case ratio < 18447437462383981825, as 18447437462383981825 is the
     // lowest value getRatioAtTick may ever return.
     function getTickAtRatio(uint256 ratio) internal pure returns (int24 tick) {
+        // second inequality must be < because the price can never reach the price at the max tick
         require(
-            ratio >= 0x1000276a221a17501 && ratio <= 6276865796315986613307619852238232712866172378830071145882,
+            ratio >= 18447437462383981825 && ratio < 6276865796315986613307619852238232712866172378830071145882,
             'TickMath::getTickAtRatio: invalid ratio'
         );
 
@@ -184,6 +185,6 @@ library TickMath {
         int24 tickLow = int24((log_sqrt10001 - 3402992956809132418596140100660247210) >> 128);
         int24 tickHi = int24((log_sqrt10001 + 291339464771989622907027621153398088495) >> 128);
 
-        return tickLow == tickHi ? tickLow : getRatioAtTick(tickHi) <= ratio ? tickHi : tickLow;
+        tick = tickLow == tickHi ? tickLow : getRatioAtTick(tickHi) <= ratio ? tickHi : tickLow;
     }
 }

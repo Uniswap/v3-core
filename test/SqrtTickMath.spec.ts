@@ -1,3 +1,4 @@
+import {BigNumber} from 'ethers'
 import {ethers} from 'hardhat'
 import {SqrtTickMathTest} from '../typechain/SqrtTickMathTest'
 import {expect} from './shared/expect'
@@ -14,6 +15,18 @@ describe('SqrtTickMath', () => {
   })
 
   describe('#getSqrtRatioAtTick', () => {
+    it('throws for too low', async () => {
+      await expect(sqrtTickMath.getSqrtRatioAtTick(MIN_TICK - 1)).to.be.revertedWith(
+        'SqrtTickMath::getSqrtRatioAtTick: invalid tick'
+      )
+    })
+
+    it('throws for too low', async () => {
+      await expect(sqrtTickMath.getSqrtRatioAtTick(MAX_TICK + 1)).to.be.revertedWith(
+        'SqrtTickMath::getSqrtRatioAtTick: invalid tick'
+      )
+    })
+
     it('min tick', async () => {
       expect((await sqrtTickMath.getSqrtRatioAtTick(MIN_TICK))._x).to.eq('19997')
     })
@@ -31,6 +44,18 @@ describe('SqrtTickMath', () => {
   })
 
   describe('#getTickAtSqrtRatio', () => {
+    it('throws for too low', async () => {
+      await expect(sqrtTickMath.getTickAtSqrtRatio({_x: BigNumber.from('19997').sub(1)})).to.be.revertedWith(
+        'SqrtTickMath::getSqrtRatioAtTick: invalid sqrtP'
+      )
+    })
+
+    it('throws for too high', async () => {
+      await expect(
+        sqrtTickMath.getTickAtSqrtRatio({_x: BigNumber.from('17017438448674477402236614712524090')})
+      ).to.be.revertedWith('SqrtTickMath::getSqrtRatioAtTick: invalid sqrtP')
+    })
+
     it('ratio of min tick', async () => {
       expect(await sqrtTickMath.getTickAtSqrtRatio({_x: 19997})).to.eq(MIN_TICK)
     })
@@ -40,8 +65,10 @@ describe('SqrtTickMath', () => {
     it('ratio of max tick - 1', async () => {
       expect(await sqrtTickMath.getTickAtSqrtRatio({_x: '17016587640562120376659286132668963'})).to.eq(MAX_TICK - 1)
     })
-    it('ratio of max tick', async () => {
-      expect(await sqrtTickMath.getTickAtSqrtRatio({_x: '17017438448674477402236614712524090'})).to.eq(MAX_TICK)
+    it('ratio closest to max tick', async () => {
+      expect(
+        await sqrtTickMath.getTickAtSqrtRatio({_x: BigNumber.from('17017438448674477402236614712524090').sub(1)})
+      ).to.eq(MAX_TICK - 1)
     })
   })
 })

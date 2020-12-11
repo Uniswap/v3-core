@@ -197,18 +197,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint24 _fee,
         int24 _tickSpacing
     ) public {
-        require(_tickSpacing > 0, 'UniswapV3Pair::constructor: _tickSpacing must be greater than 0');
-
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
         fee = _fee;
         tickSpacing = _tickSpacing;
+
         MIN_TICK = (SqrtTickMath.MIN_TICK / _tickSpacing) * _tickSpacing;
         MAX_TICK = (SqrtTickMath.MAX_TICK / _tickSpacing) * _tickSpacing;
     }
 
-    // returns the block timestamp % 2**64
+    // returns the block timestamp % 2**32
     // overridden for tests
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
