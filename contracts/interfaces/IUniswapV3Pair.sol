@@ -62,11 +62,22 @@ interface IUniswapV3Pair {
     // initialize the pair
     function initialize(uint256 price) external;
 
-    function setPosition(
+    // mint some liquidity to an address
+    function mint(
         int24 tickLower,
         int24 tickUpper,
-        int128 liquidityDelta
-    ) external returns (int256 amount0, int256 amount1);
+        uint128 amount
+    ) external returns (uint256 amount0, uint256 amount1);
+
+    // burn the sender's liquidity
+    function burn(
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external returns (uint256 amount0, uint256 amount1);
+
+    // collect fees
+    function collectFees(int24 tickLower, int24 tickUpper) external returns (uint256 fees0, uint256 fees1);
 
     // swapping
     function swap0For1(

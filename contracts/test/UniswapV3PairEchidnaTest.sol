@@ -52,12 +52,20 @@ contract UniswapV3PairEchidnaTest {
         pair.swap1For0(amount1In, address(this), '');
     }
 
-    function setPosition(
+    function mint(
         int24 tickLower,
         int24 tickUpper,
-        int128 liquidityDelta
+        uint128 amount
     ) external {
-        pair.setPosition(tickLower, tickUpper, liquidityDelta);
+        pair.mint(tickLower, tickUpper, amount);
+    }
+
+    function burn(
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        pair.burn(tickLower, tickUpper, amount);
     }
 
     function turnOnFee() external {
