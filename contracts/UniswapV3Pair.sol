@@ -619,9 +619,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         if (state.tick != params.tickStart) {
-            // must be called before updating the price or liquidity
-            _updateAccumulators();
             liquidityCurrent = state.liquidityCurrent;
+
+            // must be called before updating the price
+            // todo: the sstores in this function should be packed with the update of price below
+            _updateAccumulators();
         }
 
         sqrtPriceCurrent = state.sqrtPrice;
