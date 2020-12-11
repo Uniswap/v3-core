@@ -26,9 +26,9 @@ contract UniswapV3Factory is IUniswapV3Factory {
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
 
-        _enableFeeAmount(600, 1);
-        _enableFeeAmount(3000, 1);
-        _enableFeeAmount(9000, 1);
+        _enableFeeAmount(600, 12);
+        _enableFeeAmount(3000, 60);
+        _enableFeeAmount(9000, 180);
     }
 
     function createPair(
@@ -59,8 +59,9 @@ contract UniswapV3Factory is IUniswapV3Factory {
 
     function _enableFeeAmount(uint24 fee, int24 tickSpacing) private {
         require(fee < 1000000, 'UniswapV3Factory::_enableFeeAmount: fee amount be greater than or equal to 100%');
-        require(feeAmountTickSpacing[fee] == 0, 'UniswapV3Factory::_enableFeeAmount: fee amount is already enabled');
         require(tickSpacing > 0, 'UniswapV3Factory::_enableFeeAmount: tick spacing must be greater than 0');
+        require(tickSpacing % 2 == 0, 'UniswapV3Factory::_enableFeeAmount: tick spacing must be even');
+        require(feeAmountTickSpacing[fee] == 0, 'UniswapV3Factory::_enableFeeAmount: fee amount is already enabled');
 
         feeAmountTickSpacing[fee] = tickSpacing;
         allEnabledFeeAmounts.push(fee);
