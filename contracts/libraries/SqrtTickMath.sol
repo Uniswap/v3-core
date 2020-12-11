@@ -13,6 +13,6 @@ library SqrtTickMath {
     }
 
     function getTickAtSqrtRatio(FixedPoint64.uq64x64 memory sqrtP) internal pure returns (int24) {
-        return TickMath.getTickAtRatio(uint256(sqrtP._x) << 64);
+        return TickMath.getTickAtRatio(uint256(sqrtP._x) << FixedPoint64.RESOLUTION);
     }
 }
