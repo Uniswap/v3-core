@@ -284,9 +284,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Initialized(sqrtPrice);
 
         // set permanent 1 wei position
-        _setPosition(SetPositionParams({
-            owner: address(0), to: address(0), tickLower: MIN_TICK, tickUpper: MAX_TICK, liquidityDelta: 1
-        })
+        _setPosition(
+            SetPositionParams({
+                owner: address(0),
+                to: address(0),
+                tickLower: MIN_TICK,
+                tickUpper: MAX_TICK,
+                liquidityDelta: 1
+            })
         );
     }
 
@@ -386,7 +391,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function _transferDelta(address token, address to, int256 delta) private {
+    function _transferDelta(
+        address token,
+        address to,
+        int256 delta
+    ) private {
         if (delta > 0) {
             assert(to == address(0));
             TransferHelper.safeTransferFrom(token, msg.sender, address(this), uint256(delta));
@@ -459,7 +468,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(amount > 0, 'UniswapV3Pair::burn: amount must be greater than 0');
 
         _updateAccumulators();
-        
+
         (int256 amount0Int, int256 amount1Int) = _setPosition(
             SetPositionParams({
                 owner: msg.sender,
