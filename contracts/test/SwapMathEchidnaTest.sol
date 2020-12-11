@@ -1,41 +1,39 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.6.12;
 
-import '@uniswap/lib/contracts/libraries/Babylonian.sol';
-
 import '../libraries/FixedPoint128.sol';
 import '../libraries/TickMath.sol';
 import '../libraries/SwapMath.sol';
 
 contract SwapMathEchidnaTest {
-    function requirePriceWithinBounds(uint256 price) private pure {
-        require(price < TickMath.getRatioAtTick(TickMath.MAX_TICK));
-        require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK));
+    function requirePriceWithinBounds(uint128 price) private pure {
+        require(price < TickMath.getRatioAtTick(TickMath.MAX_TICK / 2));
+        require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK / 2));
     }
 
     function checkComputeSwapStepInvariants(
-        uint256 priceRaw,
-        uint256 priceTargetRaw,
+        uint128 sqrtPriceRaw,
+        uint128 sqrtPriceTargetRaw,
         uint128 liquidity,
         uint256 amountInMax,
         uint24 feePips
     ) external pure {
-        requirePriceWithinBounds(priceRaw);
-        requirePriceWithinBounds(priceTargetRaw);
+        requirePriceWithinBounds(sqrtPriceRaw);
+        requirePriceWithinBounds(sqrtPriceTargetRaw);
         require(feePips < 1e6);
 
-        bool zeroForOne = priceRaw >= priceTargetRaw;
+        bool zeroForOne = sqrtPriceRaw >= sqrtPriceTargetRaw;
 
         require(amountInMax > 0);
 
         (
-            FixedPoint128.uq128x128 memory priceAfter,
+            FixedPoint64.uq64x64 memory sqrtQ,
             uint256 amountIn, /*uint256 amountOut*/
             ,
             uint256 feeAmount
         ) = SwapMath.computeSwapStep(
-            FixedPoint128.uq128x128(priceRaw),
-            FixedPoint128.uq128x128(priceTargetRaw),
+            FixedPoint64.uq64x64(sqrtPriceRaw),
+            FixedPoint64.uq64x64(sqrtPriceTargetRaw),
             liquidity,
             amountInMax,
             feePips,
@@ -43,11 +41,11 @@ contract SwapMathEchidnaTest {
         );
 
         if (zeroForOne) {
-            assert(Babylonian.sqrt(priceAfter._x) <= Babylonian.sqrt(priceRaw));
-            assert(Babylonian.sqrt(priceAfter._x) >= Babylonian.sqrt(priceTargetRaw));
+            assert(sqrtQ._x <= sqrtPriceRaw);
+            assert(sqrtQ._x >= sqrtPriceTargetRaw);
         } else {
-            assert(Babylonian.sqrt(priceAfter._x) >= Babylonian.sqrt(priceRaw));
-            assert(Babylonian.sqrt(priceAfter._x) <= Babylonian.sqrt(priceTargetRaw));
+            assert(sqrtQ._x >= sqrtPriceRaw);
+            assert(sqrtQ._x <= sqrtPriceTargetRaw);
         }
 
         assert(amountIn + feeAmount <= amountInMax);

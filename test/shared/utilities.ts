@@ -3,8 +3,8 @@ import bn from 'bignumber.js'
 import {TestERC20} from '../../typechain/TestERC20'
 import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
 import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
-export const MIN_TICK = -7351
-export const MAX_TICK = 7351
+export const getMinTick = (tickSpacing: number) => Math.ceil(-689197 / tickSpacing) * tickSpacing
+export const getMaxTick = (tickSpacing: number) => Math.floor(689197 / tickSpacing) * tickSpacing
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
 
 export enum FeeAmount {
@@ -14,9 +14,9 @@ export enum FeeAmount {
 }
 
 export const TICK_SPACINGS: {[amount in FeeAmount]: number} = {
-  [FeeAmount.LOW]: 1,
-  [FeeAmount.MEDIUM]: 1,
-  [FeeAmount.HIGH]: 1,
+  [FeeAmount.LOW]: 12,
+  [FeeAmount.MEDIUM]: 60,
+  [FeeAmount.HIGH]: 180,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -47,12 +47,13 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-export function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
+function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
   return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(128)).div(reserve0)
 }
 
 export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
-  return BigNumber.from(new bn(encodePrice(reserve1, reserve0).toString()).sqrt().integerValue(3).toString())
+  const price = encodePrice(reserve1, reserve0)
+  return BigNumber.from(new bn(price.toString()).sqrt().integerValue(3).toString())
 }
 
 export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {

@@ -2,7 +2,6 @@ import {ethers} from 'hardhat'
 import {TickBitmapTest} from '../typechain/TickBitmapTest'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {MAX_TICK, MIN_TICK} from './shared/utilities'
 
 describe('TickBitmap', () => {
   let tickBitmap: TickBitmapTest
