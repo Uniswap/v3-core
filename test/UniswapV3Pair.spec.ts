@@ -76,11 +76,11 @@ describe('UniswapV3Pair', () => {
       )
     })
     it('fails if starting price is too low', async () => {
-      await expect(pair.initialize(0)).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
+      await expect(pair.initialize(0)).to.be.revertedWith('SqrtTickMath::getSqrtRatioAtTick: invalid sqrtP')
     })
     it('fails if starting price is too high', async () => {
       await expect(pair.initialize(BigNumber.from(2).pow(128).sub(1))).to.be.revertedWith(
-        'TickMath::getTickAtRatio: invalid ratio'
+        'SqrtTickMath::getSqrtRatioAtTick: invalid sqrtP'
       )
     })
     it('fails if cannot transfer from user', async () => {
@@ -1095,15 +1095,15 @@ describe('UniswapV3Pair', () => {
         pair = await createPair(FeeAmount.MEDIUM, 12)
       })
       it('min and max tick are multiples of 12', async () => {
-        expect(await pair.MIN_TICK()).to.eq(-887268)
-        expect(await pair.MAX_TICK()).to.eq(887268)
+        expect(await pair.MIN_TICK()).to.eq(-689196)
+        expect(await pair.MAX_TICK()).to.eq(689196)
       })
       it('initialize sets min and max ticks', async () => {
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
         await pair.initialize(encodePriceSqrt(1, 1))
-        const {liquidityGross: minTickLiquidityGross} = await pair.tickInfos(-887268)
-        const {liquidityGross: maxTickLiquidityGross} = await pair.tickInfos(887268)
+        const {liquidityGross: minTickLiquidityGross} = await pair.tickInfos(-689196)
+        const {liquidityGross: maxTickLiquidityGross} = await pair.tickInfos(689196)
         expect(minTickLiquidityGross).to.eq(1)
         expect(minTickLiquidityGross).to.eq(maxTickLiquidityGross)
       })

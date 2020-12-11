@@ -15,6 +15,7 @@ jobs:
           - TickMathEchidnaTest
           - SqrtPriceMathEchidnaTest
           - SwapMathEchidnaTest
+          - SqrtTickMathEchidnaTest
     #          - UniswapV3PairEchidnaTest
 
     steps:
