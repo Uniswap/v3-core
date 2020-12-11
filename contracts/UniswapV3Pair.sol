@@ -63,15 +63,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(int16 => uint256) public override tickBitmap;
 
     // single storage slot
+    FixedPoint64.uq64x64 public override sqrtPriceCurrent; // sqrt(token1 / token0) price
     uint32 public override blockTimestampLast;
-    uint160 public override liquidityCumulativeLast;
     int56 public override tickCumulativeLast;
     bool private unlocked = true;
     // single storage slot
 
     // single storage slot
     uint128 public override liquidityCurrent; // all in-range liquidity
-    FixedPoint64.uq64x64 public override sqrtPriceCurrent; // sqrt(token1 / token0) price
     // single storage slot
 
     // fee growth per unit of liquidity
@@ -221,29 +220,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
-            (blockTimestampLast, liquidityCumulativeLast, tickCumulativeLast) = getCumulatives();
+            (blockTimestampLast, tickCumulativeLast) = getCumulatives();
         }
     }
 
-    function getCumulatives()
-        public
-        view
-        override
-        returns (
-            uint32 blockTimestamp,
-            uint160 liquidityCumulative,
-            int56 tickCumulative
-        )
-    {
+    function getCumulatives() public view override returns (uint32 blockTimestamp, int56 tickCumulative) {
         require(isInitialized(), 'UniswapV3Pair::getCumulatives: pair not initialized');
         blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            liquidityCumulative = liquidityCumulativeLast + uint160(timeElapsed) * liquidityCurrent;
             tickCumulative = tickCumulativeLast + int56(timeElapsed) * tickCurrent();
         } else {
-            return (blockTimestamp, liquidityCumulativeLast, tickCumulativeLast);
+            return (blockTimestamp, tickCumulativeLast);
         }
     }
 
