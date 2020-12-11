@@ -79,7 +79,7 @@ describe('UniswapV3Pair', () => {
     it('fails if starting price is too low', async () => {
       await expect(pair.initialize(0)).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
-    it.skip('fails if starting price is too high', async () => {
+    it('fails if starting price is too high', async () => {
       await expect(pair.initialize(BigNumber.from(2).pow(128).sub(1))).to.be.revertedWith(
         'TickMath::getTickAtRatio: invalid ratio'
       )

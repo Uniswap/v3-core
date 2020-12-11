@@ -10,18 +10,12 @@ const MAX_TICK = getMaxTick(1)
 
 const Q128 = BigNumber.from(2).pow(128)
 
-describe.skip('TickMath', () => {
+describe('TickMath', () => {
   let tickMathTest: TickMathTest
 
   before('deploy TickMathTest', async () => {
     const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
     tickMathTest = (await tickMathTestFactory.deploy()) as TickMathTest
-  })
-
-  describe('#base', () => {
-    it('returns expected value', async () => {
-      expect(await tickMathTest.base()).to.eq('0x3ff12e8a3a504218b0777ee4f3fef468')
-    })
   })
 
   describe('#getRatioAtTick', () => {
@@ -43,7 +37,9 @@ describe.skip('TickMath', () => {
 
     describe('matches js implementation', () => {
       function exactTickRatioQ128x128(tick: number): BigNumberish {
-        const value = Q128.mul(BigNumber.from(10001).pow(Math.abs(tick))).div(BigNumber.from(10000).pow(Math.abs(tick)))
+        const value = Q128.mul(BigNumber.from(100005).pow(Math.abs(tick))).div(
+          BigNumber.from(100000).pow(Math.abs(tick))
+        )
         return tick > 0 ? value : Q128.mul(Q128).div(value)
       }
 
@@ -93,17 +89,17 @@ describe.skip('TickMath', () => {
     it('returns exactly 1 for tick 0', async () => {
       await checkApproximatelyEquals(tickMathTest.getRatioAtTick(0), Q128, 0)
     })
-    it('returns ~2/1 for tick 70', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(6932), BigNumber.from(2).mul(Q128), 1)
+    it('tick for ratio ~2/1', async () => {
+      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(13863), BigNumber.from(2).mul(Q128), 1)
     })
-    it('returns ~1/2 for tick -70', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-6932), Q128.div(2), 1)
+    it('tick for ratio ~1/2', async () => {
+      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-13863), Q128.div(2), 1)
     })
-    it('returns ~1/4 for tick -140', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-13864), Q128.div(4), 1)
+    it('tick for ratio ~4/1', async () => {
+      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(27726), Q128.mul(4), 1)
     })
-    it('returns ~4/1 for tick 140', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(13864), Q128.mul(4), 1)
+    it('tick for ratio ~1/4', async () => {
+      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-27726), Q128.div(4), 1)
     })
 
     it('tick too large', async () => {
@@ -114,6 +110,15 @@ describe.skip('TickMath', () => {
     it('tick too small', async () => {
       await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith(
         'TickMath::getRatioAtTick: invalid tick'
+      )
+    })
+
+    it('ratio at min tick boundary', async () => {
+      expect((await tickMathTest.getRatioAtTick(MIN_TICK)).toString()).to.eq('18447437462383981825')
+    })
+    it('ratio at max tick boundary', async () => {
+      expect((await tickMathTest.getRatioAtTick(MAX_TICK)).toString()).to.eq(
+        '6276865796315986613307619852238232712866172378830071145882'
       )
     })
 
@@ -135,7 +140,7 @@ describe.skip('TickMath', () => {
     it('ratio too large', async () => {
       await expect(
         tickMathTest.getTickAtRatio({
-          _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867416'),
+          _x: BigNumber.from('6276865796315986613307619852238232712866172378830071145883'),
         })
       ).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
@@ -145,14 +150,14 @@ describe.skip('TickMath', () => {
       )
     })
     it('ratio at min tick boundary', async () => {
-      expect(await tickMathTest.getTickAtRatio({_x: BigNumber.from('5826674')})).to.eq(-731486)
+      expect(await tickMathTest.getTickAtRatio({_x: BigNumber.from('18447437462383981825')})).to.eq(MIN_TICK)
     })
     it('ratio at max tick boundary', async () => {
       expect(
         await tickMathTest.getTickAtRatio({
-          _x: BigNumber.from('19872759182565593239568746253641083721737304106191725165927866224867415'),
+          _x: BigNumber.from('6276865796315986613307619852238232712866172378830071145882'),
         })
-      ).to.eq(731485)
+      ).to.eq(MAX_TICK)
     })
 
     it('lowerBound = upperBound - 1', async () => {
