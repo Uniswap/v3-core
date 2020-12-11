@@ -14,7 +14,6 @@ import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
-import './libraries/TickMath.sol';
 import './libraries/SqrtTickMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
@@ -123,8 +122,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         token1 = _token1;
         fee = _fee;
         tickSpacing = _tickSpacing;
-        MIN_TICK = (TickMath.MIN_TICK / _tickSpacing) * _tickSpacing;
-        MAX_TICK = (TickMath.MAX_TICK / _tickSpacing) * _tickSpacing;
+        MIN_TICK = (SqrtTickMath.MIN_TICK / _tickSpacing) * _tickSpacing;
+        MAX_TICK = (SqrtTickMath.MAX_TICK / _tickSpacing) * _tickSpacing;
     }
 
     modifier lock() {

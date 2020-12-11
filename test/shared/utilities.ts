@@ -1,7 +1,7 @@
 import {BigNumber, BigNumberish, utils, constants} from 'ethers'
 import bn from 'bignumber.js'
-export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
-export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
+export const getMinTick = (tickSpacing: number) => Math.ceil(-689197 / tickSpacing) * tickSpacing
+export const getMaxTick = (tickSpacing: number) => Math.floor(689197 / tickSpacing) * tickSpacing
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
 
 export enum FeeAmount {
