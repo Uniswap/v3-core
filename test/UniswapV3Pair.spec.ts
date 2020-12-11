@@ -16,7 +16,6 @@ import {
   getMaxTick,
   getMinTick,
   MAX_LIQUIDITY_GROSS_PER_TICK,
-  encodePrice,
   encodePriceSqrt,
   TICK_SPACINGS,
 } from './shared/utilities'

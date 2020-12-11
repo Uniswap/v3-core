@@ -44,7 +44,7 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-export function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
+function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
   return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(128)).div(reserve0)
 }
 
