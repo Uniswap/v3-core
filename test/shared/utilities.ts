@@ -60,15 +60,6 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
   return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
 
-// handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-export function bnify2(a: BigNumberish | [BigNumberish] | {0: BigNumberish}): BigNumber {
-  if (Array.isArray(a)) {
-    return BigNumber.from(a[0])
-  } else {
-    return BigNumber.from(a)
-  }
-}
-
 export type SwapFunction = (
   amount: BigNumberish,
   to: Wallet | string
