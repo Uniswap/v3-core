@@ -4,11 +4,14 @@ import {TickMathTest} from '../typechain/TickMathTest'
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import {bnify2} from './shared/utilities'
+import {Decimal} from 'decimal.js'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
 
 const Q128 = BigNumber.from(2).pow(128)
+
+Decimal.config({toExpNeg: -500, toExpPos: 500})
 
 describe('TickMath', () => {
   let tickMathTest: TickMathTest
@@ -36,13 +39,8 @@ describe('TickMath', () => {
     }
 
     describe('matches js implementation', () => {
-      const factor = BigNumber.from(10).pow(64)
-      // ~sqrt(1.0001) * factor
-      const base = BigNumber.from('10000499987500624960940234169937986972154989506568647884368700658')
-
       function exactTickRatioQ128x128(tick: number): BigNumberish {
-        const value = Q128.mul(base.pow(Math.abs(tick))).div(factor.pow(Math.abs(tick)))
-        return tick > 0 ? value : Q128.mul(Q128).div(value)
+        return BigNumber.from(new Decimal(1.0001).sqrt().pow(tick).mul(new Decimal(2).pow(128)).round().toString())
       }
 
       const ALLOWED_BIPS_DIFF = 1
