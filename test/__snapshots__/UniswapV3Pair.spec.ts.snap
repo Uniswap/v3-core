@@ -6,7 +6,9 @@ exports[`UniswapV3Pair #mint after initialization success cases below current pr
 
 exports[`UniswapV3Pair #mint after initialization success cases including current price gas 1`] = `238995`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas 1`] = `119355`;
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas first swap ever 1`] = `119355`;
+
+exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas first swap in block 1`] = `96556`;
 
 exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap 1`] = `139623`;
 
@@ -14,7 +16,9 @@ exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap cros
 
 exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas second swap in block 1`] = `96556`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas 1`] = `110748`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap ever 1`] = `110748`;
+
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap in block 1`] = `95748`;
 
 exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap 1`] = `132600`;
 

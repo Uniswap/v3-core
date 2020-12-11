@@ -579,8 +579,15 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(-1)
     })
 
-    it('swap0For1 gas', async () => {
+    it('swap0For1 gas first swap ever', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
+      await snapshotGasCost(pair.swap0For1(1000, walletAddress, '0x'))
+    })
+
+    it('swap0For1 gas first swap in block', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await pair.swap0For1(1000, walletAddress, '0x')
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
       await snapshotGasCost(pair.swap0For1(1000, walletAddress, '0x'))
     })
 
@@ -635,8 +642,15 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(0)
     })
 
-    it('swap1For0 gas', async () => {
+    it('swap1For0 gas first swap ever', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
+      await snapshotGasCost(pair.swap1For0(1000, walletAddress, '0x'))
+    })
+
+    it('swap1For0 gas first swap in block', async () => {
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.swap1For0(1000, walletAddress, '0x')
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
       await snapshotGasCost(pair.swap1For0(1000, walletAddress, '0x'))
     })
 
