@@ -15,6 +15,7 @@ import './libraries/MixedSafeMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/TickMath.sol';
+import './libraries/SqrtTickMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -62,17 +63,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(int16 => uint256) public override tickBitmap;
 
     // single storage slot
+    FixedPoint64.uq64x64 public override sqrtPriceCurrent; // sqrt(token1 / token0) price
     uint32 public override blockTimestampLast;
-    uint160 public override liquidityCumulativeLast;
     int56 public override tickCumulativeLast;
     bool private unlocked = true;
     // single storage slot
 
-    // single storage slot (104 bits empty)
+    // single storage slot
     uint128 public override liquidityCurrent; // all in-range liquidity
     // single storage slot
-
-    FixedPoint128.uq128x128 public override priceCurrent; // (token1 / token0) price
 
     // fee growth per unit of liquidity
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
@@ -185,11 +184,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // check for one-time initialization
     function isInitialized() public view override returns (bool) {
-        return priceCurrent._x != 0; // sufficient check
+        return sqrtPriceCurrent._x != 0; // sufficient check
     }
 
     function tickCurrent() public view override returns (int24) {
-        return TickMath.getTickAtRatio(priceCurrent._x);
+        return SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent);
     }
 
     constructor(
@@ -221,29 +220,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
-            (blockTimestampLast, liquidityCumulativeLast, tickCumulativeLast) = getCumulatives();
+            (blockTimestampLast, tickCumulativeLast) = getCumulatives();
         }
     }
 
-    function getCumulatives()
-        public
-        view
-        override
-        returns (
-            uint32 blockTimestamp,
-            uint160 liquidityCumulative,
-            int56 tickCumulative
-        )
-    {
+    function getCumulatives() public view override returns (uint32 blockTimestamp, int56 tickCumulative) {
         require(isInitialized(), 'UniswapV3Pair::getCumulatives: pair not initialized');
         blockTimestamp = _blockTimestamp();
 
         if (blockTimestampLast != blockTimestamp) {
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            liquidityCumulative = liquidityCumulativeLast + uint160(timeElapsed) * liquidityCurrent;
-            tickCumulative = tickCumulativeLast + int56(timeElapsed) * TickMath.getTickAtRatio(priceCurrent._x);
+            tickCumulative = tickCumulativeLast + int56(timeElapsed) * tickCurrent();
         } else {
-            return (blockTimestamp, liquidityCumulativeLast, tickCumulativeLast);
+            return (blockTimestamp, tickCumulativeLast);
         }
     }
 
@@ -280,16 +269,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickBitmap.flipTick(tick, tickSpacing);
     }
 
-    function initialize(uint256 price) external override lock {
+    function initialize(uint128 sqrtPrice) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
 
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
 
         // initialize current price
-        priceCurrent = FixedPoint128.uq128x128(price);
+        sqrtPriceCurrent = FixedPoint64.uq64x64(sqrtPrice);
 
-        emit Initialized(price);
+        emit Initialized(sqrtPrice);
 
         // set permanent 1 wei position
         _setPosition(
@@ -439,8 +428,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (tick < params.tickLower) {
             amount0 = SqrtPriceMath
                 .getAmount0Delta(
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
                 params
                     .liquidityDelta
             )
@@ -450,16 +439,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // the current price is inside the passed range
             amount0 = SqrtPriceMath
                 .getAmount0Delta(
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(priceCurrent._x))),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
+                sqrtPriceCurrent,
                 params
                     .liquidityDelta
             )
                 .sub(feesOwed0.toInt256());
             amount1 = SqrtPriceMath
                 .getAmount1Delta(
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(priceCurrent._x))),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
+                sqrtPriceCurrent,
                 params
                     .liquidityDelta
             )
@@ -472,8 +461,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
             amount1 = SqrtPriceMath
                 .getAmount1Delta(
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickLower)))),
-                FixedPoint64.uq64x64(uint128(Babylonian.sqrt(TickMath.getRatioAtTick(params.tickUpper)))),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
+                SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
                 params
                     .liquidityDelta
             )
@@ -503,8 +492,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amountInRemaining;
         // the tick associated with the current price
         int24 tick;
-        // the price
-        FixedPoint128.uq128x128 price;
+        // current sqrt(price)
+        FixedPoint64.uq64x64 sqrtPrice;
         // the global fee growth of the input token
         FixedPoint128.uq128x128 feeGrowthGlobal;
         // the liquidity in range
@@ -514,8 +503,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     struct StepComputations {
         // the next initialized tick from the current tick in the swap direction
         int24 tickNext;
-        // price for the target tick (1/0)
-        FixedPoint128.uq128x128 priceNext;
+        // sqrt(price) for the target tick (1/0)
+        FixedPoint64.uq64x64 sqrtPriceNext;
         // (computed) virtual reserves of token0
         uint256 reserve0Virtual;
         // (computed) virtual reserves of token1
@@ -541,7 +530,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         SwapState memory state = SwapState({
             amountInRemaining: params.amountIn,
             tick: params.tickStart,
-            price: priceCurrent,
+            sqrtPrice: sqrtPriceCurrent,
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
             liquidityCurrent: liquidityCurrent
         });
@@ -559,19 +548,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
             else require(step.tickNext <= MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
             // get the price for the next tick we're moving toward
-            step.priceNext = FixedPoint128.uq128x128(TickMath.getRatioAtTick(step.tickNext));
+            step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
             // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
             // similarly, if it's false we should be below the target price
             // TODO we can remove this if/when we're confident they never trigger
-            if (params.zeroForOne) assert(state.price._x >= step.priceNext._x);
-            else assert(state.price._x < step.priceNext._x);
+            if (params.zeroForOne) assert(state.sqrtPrice._x >= step.sqrtPriceNext._x);
+            else assert(state.sqrtPrice._x < step.sqrtPriceNext._x);
 
             // if there might be room to move in the current tick, continue calculations
-            if (params.zeroForOne == false || (state.price._x > step.priceNext._x)) {
-                (state.price, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
-                    state.price,
-                    step.priceNext,
+            if (params.zeroForOne == false || (state.sqrtPrice._x > step.sqrtPriceNext._x)) {
+                (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
+                    state.sqrtPrice,
+                    step.sqrtPriceNext,
                     state.liquidityCurrent,
                     state.amountInRemaining,
                     fee,
@@ -593,7 +582,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 1) a positive input amount remains
             // 2) if we're moving right and the price is exactly on the target tick
             // TODO ensure that there's no off-by-one error here while transitioning ticks in either direction
-            if (state.amountInRemaining > 0 || (params.zeroForOne == false && state.price._x == step.priceNext._x)) {
+            if (
+                state.amountInRemaining > 0 ||
+                (params.zeroForOne == false && state.sqrtPrice._x == step.sqrtPriceNext._x)
+            ) {
                 TickInfo storage tickInfo = tickInfos[step.tickNext];
 
                 // if the tick is initialized, update it
@@ -622,18 +614,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                // todo: this getTickAtRatio call may not be necessary, since we only use it to determine if we crossed a tick
-                state.tick = TickMath.getTickAtRatio(state.price._x);
+                state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice);
             }
         }
 
         if (state.tick != params.tickStart) {
-            // must be called before updating the price or liquidity
-            _updateAccumulators();
             liquidityCurrent = state.liquidityCurrent;
+
+            // must be called before updating the price
+            _updateAccumulators();
         }
 
-        priceCurrent = state.price;
+        sqrtPriceCurrent = state.sqrtPrice;
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;

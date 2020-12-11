@@ -7,8 +7,8 @@ import '../libraries/FixedPoint64.sol';
 
 contract SwapMathTest {
     function computeSwapStep(
-        FixedPoint128.uq128x128 memory price,
-        FixedPoint128.uq128x128 memory target,
+        FixedPoint64.uq64x64 memory price,
+        FixedPoint64.uq64x64 memory target,
         uint128 liquidity,
         uint256 amountInMax,
         uint24 feePips,
@@ -17,7 +17,7 @@ contract SwapMathTest {
         external
         pure
         returns (
-            FixedPoint128.uq128x128 memory priceAfter,
+            FixedPoint64.uq64x64 memory priceAfter,
             uint256 amountIn,
             uint256 amountOut,
             uint256 feeAmount
@@ -27,8 +27,8 @@ contract SwapMathTest {
     }
 
     function getGasCostOfComputeSwapStep(
-        FixedPoint128.uq128x128 memory price,
-        FixedPoint128.uq128x128 memory target,
+        FixedPoint64.uq64x64 memory price,
+        FixedPoint64.uq64x64 memory target,
         uint128 liquidity,
         uint256 amountInMax,
         uint24 feePips,
