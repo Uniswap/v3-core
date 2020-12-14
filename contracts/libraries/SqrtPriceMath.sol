@@ -44,7 +44,7 @@ library SqrtPriceMath {
             // rounds up in the division because we do not want to go past the next price
             uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
             if (amountIn <= uint96(-1) && numerator1 <= uint256(-1) - amountIn * sqrtP._x) {
-                uint256 denominator = numerator1.add(amountIn * sqrtP._x);
+                uint256 denominator = numerator1 + amountIn * sqrtP._x;
                 sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
             } else {
                 sqrtQ = FixedPoint96.uq64x96(
@@ -52,18 +52,25 @@ library SqrtPriceMath {
                 );
             }
         } else {
-            // calculate sqrt(P) + y / liquidity
+            // calculate sqrt(P) + y / liquidity, i.e.
+            // (liquidity * sqrt(P) + y) / liquidity
             // rounds down in the division because we do not want to go past the next price
-
-            // avoid a mulDiv for most inputs
-            if (amountIn <= uint160(-1)) {
-                sqrtQ = FixedPoint96.uq64x96(
-                    uint256(sqrtP._x).add((amountIn << FixedPoint96.RESOLUTION) / liquidity).toUint160()
-                );
+            uint256 numerator1 = uint256(liquidity) * sqrtP._x;
+            uint256 numerator2 = amountIn << FixedPoint96.RESOLUTION;
+            if (
+                numerator1 / liquidity == sqrtP._x && // ensure numerator1 was calculated safely
+                amountIn <= uint160(-1) && // ensure numerator2 was calculated safely
+                numerator1 <= uint256(-1) - numerator2  // ensure we're going to be able to add safely
+            ) {
+                sqrtQ = FixedPoint96.uq64x96(((numerator1 + numerator2) / liquidity).toUint160());
             } else {
-                sqrtQ = FixedPoint96.uq64x96(
-                    uint256(sqrtP._x).add(FullMath.mulDiv(amountIn, FixedPoint96.Q96, liquidity)).toUint160()
-                );
+                if (amountIn <= uint160(-1)) {
+                    sqrtQ = FixedPoint96.uq64x96(uint256(sqrtP._x).add(numerator2 / liquidity).toUint160());
+                } else {
+                    sqrtQ = FixedPoint96.uq64x96(
+                        uint256(sqrtP._x).add(FullMath.mulDiv(amountIn, FixedPoint96.Q96, liquidity)).toUint160()
+                    );
+                }
             }
         }
     }
