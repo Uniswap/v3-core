@@ -578,27 +578,27 @@ describe('UniswapV3Pair', () => {
 
     it('swap0For1 gas first swap ever', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
-      await snapshotGasCost(pair.swap0For1(1000, walletAddress, '0x'))
+      await snapshotGasCost(swap0For1(1000, walletAddress))
     })
 
     it('swap0For1 gas first swap in block', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await swap0For1(1000, walletAddress)
       await pair.setTime(TEST_PAIR_START_TIME + 10)
-      const tx: Promise<ContractTransaction> = swap0For1(1000, walletAddress).then(({tx}) => tx)
+      const tx: Promise<ContractTransaction> = swap0For1(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
     it('swap0For1 gas second swap in block', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await swap0For1(1000, walletAddress)
-      const tx = swap0For1(1000, walletAddress).then(({tx}) => tx)
+      const tx = swap0For1(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
     it('swap0For1 gas large swap', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
-      const tx: Promise<ContractTransaction> = swap0For1(expandTo18Decimals(1), walletAddress).then(({tx}) => tx)
+      const tx: Promise<ContractTransaction> = swap0For1(expandTo18Decimals(1), walletAddress)
       await snapshotGasCost(tx)
     })
 
@@ -608,7 +608,7 @@ describe('UniswapV3Pair', () => {
 
       await pair.mint(walletAddress, -tickSpacing * 2, -tickSpacing, expandTo18Decimals(1))
       await pair.mint(walletAddress, -tickSpacing * 4, -tickSpacing * 2, expandTo18Decimals(1))
-      const tx = swap0For1(expandTo18Decimals(1), walletAddress).then(({tx}) => tx)
+      const tx = swap0For1(expandTo18Decimals(1), walletAddress)
       await expect(tx).to.emit(token1, 'Transfer').withArgs(pair.address, walletAddress, '671288525725295030')
     })
 
@@ -619,7 +619,7 @@ describe('UniswapV3Pair', () => {
       await pair.mint(walletAddress, -tickSpacing * 2, -tickSpacing, expandTo18Decimals(1))
       await pair.mint(walletAddress, -tickSpacing * 4, -tickSpacing * 2, expandTo18Decimals(1))
 
-      const tx = swap0For1(expandTo18Decimals(1), walletAddress).then(({tx}) => tx)
+      const tx = swap0For1(expandTo18Decimals(1), walletAddress)
       await snapshotGasCost(tx)
     })
 
@@ -643,27 +643,28 @@ describe('UniswapV3Pair', () => {
 
     it('swap1For0 gas first swap ever', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
-      const tx: ContractTransaction = await swap1For0(1000, walletAddress).then(({tx}) => tx)
+      const tx: ContractTransaction = await swap1For0(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
     it('swap1For0 gas first swap in block', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
-      await pair.swap1For0(1000, walletAddress, '0x')
+      await swap1For0(1000, walletAddress)
       await pair.setTime(TEST_PAIR_START_TIME + 10)
-      await snapshotGasCost(pair.swap1For0(1000, walletAddress, '0x'))
+      const tx = swap1For0(1000, walletAddress)
+      await snapshotGasCost(tx)
     })
 
     it('swap1For0 gas second swap in block', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await swap1For0(1000, walletAddress)
-      const tx = swap1For0(1000, walletAddress).then(({tx}) => tx)
+      const tx = swap1For0(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
     it('swap1For0 gas large swap', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
-      const tx = swap1For0(expandTo18Decimals(1), walletAddress).then(({tx}) => tx)
+      const tx = swap1For0(expandTo18Decimals(1), walletAddress)
       await snapshotGasCost(tx)
     })
 
@@ -674,7 +675,7 @@ describe('UniswapV3Pair', () => {
       await pair.mint(walletAddress, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
       await pair.mint(walletAddress, tickSpacing * 2, tickSpacing * 4, expandTo18Decimals(1))
 
-      const tx = swap1For0(expandTo18Decimals(1), walletAddress).then(({tx}) => tx)
+      const tx = swap1For0(expandTo18Decimals(1), walletAddress)
       await expect(tx).to.emit(token0, 'Transfer').withArgs(pair.address, walletAddress, '671288525725295030')
     })
 
@@ -685,7 +686,7 @@ describe('UniswapV3Pair', () => {
       await pair.mint(walletAddress, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
       await pair.mint(walletAddress, tickSpacing * 2, tickSpacing * 4, expandTo18Decimals(1))
 
-      const tx = swap1For0(expandTo18Decimals(1), walletAddress).then(({tx}) => tx)
+      const tx = swap1For0(expandTo18Decimals(1), walletAddress)
       await snapshotGasCost(tx)
     })
 
@@ -763,7 +764,7 @@ describe('UniswapV3Pair', () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      const txPromise = swap0For1(amount0In, walletAddress).then(({tx}) => tx)
+      const txPromise = swap0For1(amount0In, walletAddress)
 
       await expect(txPromise).to.emit(token1, 'Transfer').withArgs(pair.address, walletAddress, '94965947516311854')
 
@@ -781,7 +782,7 @@ describe('UniswapV3Pair', () => {
       await pair.mint(walletAddress, lowerTick, upperTick, liquidityDelta)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      const tx = swap0For1(amount0In, walletAddress).then(({tx}) => tx)
+      const tx = swap0For1(amount0In, walletAddress)
       await expect(tx).to.emit(token1, 'Transfer').withArgs(pair.address, walletAddress, '95214395213460208')
 
       expect(await pair.tickCurrent()).to.eq(-945)
@@ -811,7 +812,7 @@ describe('UniswapV3Pair', () => {
       const amount1In = expandTo18Decimals(1).div(10)
 
       await token1.approve(pair.address, constants.MaxUint256)
-      const tx = swap1For0(amount1In, walletAddress).then(({tx}) => tx)
+      const tx = swap1For0(amount1In, walletAddress)
       await expect(tx).to.emit(token0, 'Transfer').withArgs(pair.address, walletAddress, '94965947516311854')
 
       expect(await pair.tickCurrent()).to.eq(972)
@@ -828,7 +829,7 @@ describe('UniswapV3Pair', () => {
       await pair.mint(walletAddress, lowerTick, upperTick, liquidityDelta)
 
       await token1.approve(pair.address, constants.MaxUint256)
-      const tx = swap1For0(amount1In, walletAddress).then(({tx}) => tx)
+      const tx = swap1For0(amount1In, walletAddress)
       await expect(tx).to.emit(token0, 'Transfer').withArgs(pair.address, walletAddress, '95214395213460208')
 
       expect(await pair.tickCurrent()).to.eq(944)

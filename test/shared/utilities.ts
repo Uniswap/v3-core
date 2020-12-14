@@ -1,8 +1,9 @@
-import {BigNumber, BigNumberish, utils, constants, Contract, Wallet, ContractTransaction, Signer} from 'ethers'
 import bn from 'bignumber.js'
+import {BigNumber, BigNumberish, constants, Contract, ContractTransaction, Signer, utils, Wallet} from 'ethers'
 import {TestERC20} from '../../typechain/TestERC20'
-import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
 import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
+import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
+
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
@@ -65,10 +66,7 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
   return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
 
-export type SwapFunction = (
-  amount: BigNumberish,
-  to: Wallet | string
-) => Promise<{amountOut: BigNumber; tx: ContractTransaction}>
+export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
 export interface SwapFunctions {
   swap0For1: SwapFunction
   swap1For0: SwapFunction
@@ -93,7 +91,7 @@ export function createSwapFunctions({
     inputToken: Contract,
     amountIn: BigNumberish,
     to: Wallet | string
-  ): Promise<{amountOut: BigNumber; tx: ContractTransaction}> {
+  ): Promise<ContractTransaction> {
     const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
 
     await inputToken.connect(from).transfer(swapTarget.address, amountIn)
@@ -101,9 +99,7 @@ export function createSwapFunctions({
     const toAddress = typeof to === 'string' ? to : to.address
 
     const data = '0x' // utils.defaultAbiCoder.encode(['uint256', 'address'], [amountIn, toAddress])
-    const amountOut = await pair.connect(from).callStatic[method](amountIn, swapTarget.address, toAddress, data)
-    const tx = await pair.connect(from)[method](amountIn, swapTarget.address, toAddress, data)
-    return {tx, amountOut}
+    return await pair.connect(from)[method](amountIn, swapTarget.address, toAddress, data)
   }
 
   const swap0For1: SwapFunction = (amount, to) => {
