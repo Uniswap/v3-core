@@ -9,6 +9,7 @@ import './TestERC20.sol';
 import '../UniswapV3Pair.sol';
 import '../UniswapV3Factory.sol';
 import '../libraries/SafeCast.sol';
+import '../libraries/SqrtTickMath.sol';
 
 contract UniswapV3PairEchidnaTest {
     using SafeMath for uint256;
@@ -38,8 +39,8 @@ contract UniswapV3PairEchidnaTest {
         pair = UniswapV3Pair(factory.createPair(address(token0), address(token1), fee));
     }
 
-    function initializePair(uint256 price) public {
-        pair.initialize(price);
+    function initializePair(uint160 sqrtPrice) public {
+        pair.initialize(sqrtPrice);
     }
 
     function swap0For1(uint256 amount0In) external {
@@ -52,12 +53,22 @@ contract UniswapV3PairEchidnaTest {
         pair.swap1For0(amount1In, address(this), '');
     }
 
-    function setPosition(
+    function mint(
+        address owner,
         int24 tickLower,
         int24 tickUpper,
-        int128 liquidityDelta
+        uint128 amount
     ) external {
-        pair.setPosition(tickLower, tickUpper, liquidityDelta);
+        pair.mint(owner, tickLower, tickUpper, amount);
+    }
+
+    function burn(
+        address to,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        pair.burn(to, tickLower, tickUpper, amount);
     }
 
     function turnOnFee() external {
@@ -77,15 +88,15 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function echidna_tickIsWithinBounds() external view returns (bool) {
-        int24 tick = TickMath.getTickAtRatio(pair.priceCurrent());
-        return (tick < TickMath.MAX_TICK && tick >= TickMath.MIN_TICK);
+        int24 tick = pair.tickCurrent();
+        return (tick >= SqrtTickMath.MIN_TICK && tick < SqrtTickMath.MAX_TICK);
     }
 
     function echidna_priceIsWithinTickCurrent() external view returns (bool) {
-        int24 tick = TickMath.getTickAtRatio(pair.priceCurrent());
-        FixedPoint128.uq128x128 memory priceCurrent = FixedPoint128.uq128x128(pair.priceCurrent());
-        return (TickMath.getRatioAtTick(tick) <= priceCurrent._x &&
-            TickMath.getRatioAtTick(tick + 1) > priceCurrent._x);
+        int24 tick = pair.tickCurrent();
+        FixedPoint96.uq64x96 memory sqrtPriceCurrent = FixedPoint96.uq64x96(pair.sqrtPriceCurrent());
+        return (SqrtTickMath.getSqrtRatioAtTick(tick)._x <= sqrtPriceCurrent._x &&
+            SqrtTickMath.getSqrtRatioAtTick(tick + 1)._x > sqrtPriceCurrent._x);
     }
 
     function echidna_isInitialized() external view returns (bool) {
