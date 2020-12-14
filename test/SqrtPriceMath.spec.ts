@@ -164,7 +164,7 @@ describe('SqrtPriceMath', () => {
       expect(amount0RoundedDown).to.eq(amount0.sub(1))
     })
 
-    it.only('works for prices that overflow', async () => {
+    it('works for prices that overflow', async () => {
       const amount0Up = await sqrtPriceMath.getAmount0Delta(
         {_x: encodePriceSqrt(BigNumber.from(2).pow(96), 1)},
         {_x: encodePriceSqrt(BigNumber.from(2).pow(90), 1)},
@@ -269,6 +269,22 @@ describe('SqrtPriceMath', () => {
           false
         )
       )
+    })
+  })
+
+  describe('swap computation', () => {
+    it('sqrtP * sqrtQ overflows', async () => {
+      // getNextPriceInvariants(1025574284609383690408304870162715216695788925244,50015962439936049619261659728067971248,406,true)
+      const sqrtP = {_x: '1025574284609383690408304870162715216695788925244'}
+      const liquidity = '50015962439936049619261659728067971248'
+      const zeroForOne = true
+      const amountIn = '406'
+
+      const sqrtQ = await sqrtPriceMath.getNextPrice(sqrtP, liquidity, amountIn, zeroForOne)
+      expect(sqrtQ._x).to.eq('1025574284609383582644711336373707553698163132913')
+
+      const amount0Delta = await sqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true)
+      expect(amount0Delta).to.eq('406')
     })
   })
 })

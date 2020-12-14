@@ -40,7 +40,7 @@ library SqrtPriceMath {
         if (zeroForOne) {
             // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
             // liquidity * sqrt(P) / (liquidity + x * sqrt(P)), rounding up
-            uint256 numerator1 = (uint256(liquidity) << FixedPoint96.RESOLUTION);
+            uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
             // TODO the max sqrtP value of uint160(-1) can limit the amountIn to 96 bits
             uint256 denominator = numerator1.add(amountIn.mul(sqrtP._x));
             sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
@@ -72,7 +72,7 @@ library SqrtPriceMath {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = uint256(sqrtP._x) - sqrtQ._x;
         uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
-        if (denominator >= sqrtP._x) {
+        if (denominator / sqrtP._x == sqrtP._x) {
             if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
             else return FullMath.mulDiv(numerator1, numerator2, denominator);
         } else {
