@@ -40,10 +40,10 @@ contract SqrtPriceMathEchidnaTest {
 
         if (zeroForOne) {
             assert(sqrtQ._x <= sqrtP);
-            assert(amountIn >= SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true));
+            assert(amountIn >= SqrtPriceMath.getAmount0Delta(FixedPoint96.uq64x96(sqrtP), sqrtQ, liquidity, true));
         } else {
             assert(sqrtQ._x >= sqrtP);
-            assert(amountIn >= SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true));
+            assert(amountIn >= SqrtPriceMath.getAmount1Delta(FixedPoint96.uq64x96(sqrtP), sqrtQ, liquidity, true));
         }
     }
 }
