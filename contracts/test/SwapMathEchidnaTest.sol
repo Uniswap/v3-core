@@ -2,13 +2,13 @@
 pragma solidity =0.6.12;
 
 import '../libraries/FixedPoint128.sol';
-import '../libraries/TickMath.sol';
+import '../libraries/SqrtTickMath.sol';
 import '../libraries/SwapMath.sol';
 
 contract SwapMathEchidnaTest {
-    function requirePriceWithinBounds(uint128 price) private pure {
-        require(price < TickMath.getRatioAtTick(TickMath.MAX_TICK / 2));
-        require(price >= TickMath.getRatioAtTick(TickMath.MIN_TICK / 2));
+    function requirePriceWithinBounds(uint160 price) private pure {
+        require(price < SqrtTickMath.getSqrtRatioAtTick(SqrtTickMath.MAX_TICK)._x);
+        require(price >= SqrtTickMath.getSqrtRatioAtTick(SqrtTickMath.MIN_TICK)._x);
     }
 
     function checkComputeSwapStepInvariants(

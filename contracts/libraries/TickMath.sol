@@ -4,8 +4,8 @@ pragma solidity >=0.5.0;
 
 // sqrt(1.0001) ticks
 library TickMath {
-    int24 internal constant MIN_TICK = -887272;
-    int24 internal constant MAX_TICK = -MIN_TICK;
+    int24 private constant MIN_TICK = -887272;
+    int24 private constant MAX_TICK = -MIN_TICK;
 
     // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > max tick.
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {

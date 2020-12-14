@@ -9,7 +9,6 @@ import './TestERC20.sol';
 import '../UniswapV3Pair.sol';
 import '../UniswapV3Factory.sol';
 import '../libraries/SafeCast.sol';
-import '../libraries/TickMath.sol';
 import '../libraries/SqrtTickMath.sol';
 
 contract UniswapV3PairEchidnaTest {
@@ -90,7 +89,7 @@ contract UniswapV3PairEchidnaTest {
 
     function echidna_tickIsWithinBounds() external view returns (bool) {
         int24 tick = pair.tickCurrent();
-        return (tick >= TickMath.MIN_TICK && tick < TickMath.MAX_TICK);
+        return (tick >= SqrtTickMath.MIN_TICK && tick < SqrtTickMath.MAX_TICK);
     }
 
     function echidna_priceIsWithinTickCurrent() external view returns (bool) {
