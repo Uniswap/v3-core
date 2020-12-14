@@ -20,6 +20,8 @@ contract SqrtPriceMathEchidnaTest {
         assert(roundedUp - notRoundedUp < 2);
         if (roundedUp - notRoundedUp == 1) {
             assert(mulmod(x, y, z) > 0);
+        } else {
+            assert(mulmod(x, y, z) == 0);
         }
     }
 
