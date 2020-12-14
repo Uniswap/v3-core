@@ -10,4 +10,4 @@ exports[`SqrtPriceMath #getAmountDeltas gas cost for amount1/true 1`] = `971`;
 
 exports[`SqrtPriceMath #getNextPrice zeroForOne = false gas 1`] = `760`;
 
-exports[`SqrtPriceMath #getNextPrice zeroForOne = true gas 1`] = `1532`;
+exports[`SqrtPriceMath #getNextPrice zeroForOne = true gas 1`] = `1508`;
