@@ -19,7 +19,7 @@ library SqrtPriceMath {
     }
 
     function mulIsSafe(uint256 x, uint256 y) private pure returns (bool) {
-        return x * y / x == y;
+        return (x * y) / x == y;
     }
 
     function addIsSafe(uint256 x, uint256 y) private pure returns (bool) {
