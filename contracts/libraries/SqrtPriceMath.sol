@@ -18,11 +18,11 @@ library SqrtPriceMath {
         return (x / d) + (x % d > 0 ? 1 : 0);
     }
 
-    function mulIsSafe(uint256 x, uint256 y) private pure returns (bool) {
+    function isMulSafe(uint256 x, uint256 y) private pure returns (bool) {
         return (x * y) / x == y;
     }
 
-    function addIsSafe(uint256 x, uint256 y) private pure returns (bool) {
+    function isAddSafe(uint256 x, uint256 y) private pure returns (bool) {
         return x <= uint256(-1) - y;
     }
 
@@ -48,7 +48,7 @@ library SqrtPriceMath {
 
         if (zeroForOne) {
             uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-            if (mulIsSafe(amountIn, sqrtP._x) && addIsSafe(numerator1, amountIn * sqrtP._x)) {
+            if (isMulSafe(amountIn, sqrtP._x) && isAddSafe(numerator1, amountIn * sqrtP._x)) {
                 uint256 denominator = numerator1 + amountIn * sqrtP._x;
                 // calculate liquidity * sqrt(P) / (liquidity + x * sqrt(P))
                 sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
@@ -60,7 +60,8 @@ library SqrtPriceMath {
             }
         } else {
             // calculate sqrt(P) + y / liquidity
-            // TODO is this as accurate as we can get? i.e. always equal to (sqrt(P) * liquidity + y) / liquidity?
+            // TODO verify that this functional form introduces as little loss as possible
+            // avoid a mulDiv for most inputs
             if (amountIn <= uint160(-1)) {
                 sqrtQ = FixedPoint96.uq64x96(
                     uint256(sqrtP._x).add((amountIn << FixedPoint96.RESOLUTION) / liquidity).toUint160()
@@ -84,13 +85,14 @@ library SqrtPriceMath {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtP._x - sqrtQ._x;
 
-        if (mulIsSafe(sqrtP._x, sqrtQ._x)) {
+        // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
+        // calculate liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
+
+        if (isMulSafe(sqrtP._x, sqrtQ._x)) {
             uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
-            // calculate liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
             if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
             else return FullMath.mulDiv(numerator1, numerator2, denominator);
         } else {
-            // calculate liquidity / sqrt(Q) - liquidity / sqrt(P)
             if (roundUp) return divRoundingUp(mulDivRoundingUp(numerator1, numerator2, sqrtP._x), sqrtQ._x);
             else return FullMath.mulDiv(numerator1, numerator2, sqrtP._x) / sqrtQ._x;
         }
