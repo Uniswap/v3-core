@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
-import './FixedPoint64.sol';
+import './FixedPoint96.sol';
 import './FixedPoint128.sol';
 import './SqrtPriceMath.sol';
 
@@ -12,8 +12,8 @@ library SwapMath {
     using SafeMath for uint256;
 
     function computeSwapStep(
-        FixedPoint64.uq64x64 memory sqrtP,
-        FixedPoint64.uq64x64 memory sqrtQTarget,
+        FixedPoint96.uq64x96 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtQTarget,
         uint128 liquidity,
         uint256 amountInMax,
         uint24 feePips,
@@ -22,7 +22,7 @@ library SwapMath {
         internal
         pure
         returns (
-            FixedPoint64.uq64x64 memory sqrtQ,
+            FixedPoint96.uq64x96 memory sqrtQ,
             uint256 amountIn,
             uint256 amountOut,
             uint256 feeAmount
