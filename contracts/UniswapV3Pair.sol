@@ -756,10 +756,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function collect(
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external override returns (uint256 amount0, uint256 amount1) {
+    function collect(uint256 amount0Requested, uint256 amount1Requested)
+        external
+        override
+        returns (uint256 amount0, uint256 amount1)
+    {
         if (amount0Requested == uint256(-1)) {
             amount0 = feeToFees0;
         } else {
