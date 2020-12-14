@@ -46,4 +46,50 @@ contract SqrtPriceMathEchidnaTest {
             assert(amountIn >= SqrtPriceMath.getAmount1Delta(FixedPoint96.uq64x96(sqrtP), sqrtQ, liquidity, true));
         }
     }
+
+    function getAmount0DeltaInvariants(
+        uint160 sqrtP,
+        uint160 sqrtQ,
+        uint128 liquidity
+    ) external pure {
+        require(sqrtP >= sqrtQ);
+        uint256 amount0Down = SqrtPriceMath.getAmount0Delta(
+            FixedPoint96.uq64x96(sqrtP),
+            FixedPoint96.uq64x96(sqrtQ),
+            liquidity,
+            false
+        );
+        uint256 amount0Up = SqrtPriceMath.getAmount0Delta(
+            FixedPoint96.uq64x96(sqrtP),
+            FixedPoint96.uq64x96(sqrtQ),
+            liquidity,
+            true
+        );
+        assert(amount0Down <= amount0Up);
+        // diff is no greater than 2
+        assert(amount0Up - amount0Down < 2);
+    }
+
+    function getAmount1DeltaInvariants(
+        uint160 sqrtP,
+        uint160 sqrtQ,
+        uint128 liquidity
+    ) external pure {
+        require(sqrtP <= sqrtQ);
+        uint256 amount1Down = SqrtPriceMath.getAmount1Delta(
+            FixedPoint96.uq64x96(sqrtP),
+            FixedPoint96.uq64x96(sqrtQ),
+            liquidity,
+            false
+        );
+        uint256 amount1Up = SqrtPriceMath.getAmount1Delta(
+            FixedPoint96.uq64x96(sqrtP),
+            FixedPoint96.uq64x96(sqrtQ),
+            liquidity,
+            true
+        );
+        assert(amount1Down <= amount1Up);
+        // diff is no greater than 2
+        assert(amount1Up - amount1Down < 2);
+    }
 }

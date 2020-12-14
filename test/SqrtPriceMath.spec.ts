@@ -164,6 +164,22 @@ describe('SqrtPriceMath', () => {
       expect(amount0RoundedDown).to.eq(amount0.sub(1))
     })
 
+    it.only('works for prices that overflow', async () => {
+      const amount0Up = await sqrtPriceMath.getAmount0Delta(
+        {_x: encodePriceSqrt(BigNumber.from(2).pow(96), 1)},
+        {_x: encodePriceSqrt(BigNumber.from(2).pow(90), 1)},
+        expandTo18Decimals(1),
+        true
+      )
+      const amount0Down = await sqrtPriceMath.getAmount0Delta(
+        {_x: encodePriceSqrt(BigNumber.from(2).pow(96), 1)},
+        {_x: encodePriceSqrt(BigNumber.from(2).pow(90), 1)},
+        expandTo18Decimals(1),
+        false
+      )
+      expect(amount0Up).to.eq(amount0Down.add(1))
+    })
+
     it(`gas cost for amount0 where roundUp = true`, async () => {
       await snapshotGasCost(
         sqrtPriceMath.getGasCostOfGetAmount0Delta(
