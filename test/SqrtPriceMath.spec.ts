@@ -108,7 +108,7 @@ describe('SqrtPriceMath', () => {
         )._x
         // perfect answer:
         // https://www.wolframalpha.com/input/?i=624999999995069620+-+%28%281e19+*+1+%2F+%281e19+%2B+2%5E100+*+1%29%29+*+2%5E96%29
-      ).to.eq(624999999995069620)
+      ).to.eq('624999999995069620')
     })
 
     it('can return 1 with enough amountIn and zeroForOne = true', async () => {
