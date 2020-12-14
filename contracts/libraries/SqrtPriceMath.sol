@@ -39,17 +39,20 @@ library SqrtPriceMath {
 
         if (zeroForOne) {
             // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
-            // liquidity * sqrt(P) / (liquidity + x * sqrt(P)), rounding up
+            // liquidity * sqrt(P) / (liquidity + x * sqrt(P))
+            // rounds up in the division because we do not want to go past the next price
             uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
             // TODO the max sqrtP value of uint160(-1) can limit the amountIn to 96 bits
             uint256 denominator = numerator1.add(amountIn.mul(sqrtP._x));
             sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
         } else {
-            // calculate sqrt(P) + y / liquidity, i.e.
-            // (liquidity * sqrt(P) + y) / liquidity
-            if (sqrtP._x < uint128(-1)) {
+            // calculate sqrt(P) + y / liquidity
+            // rounds down in the division because we do not want to go past the next price
+
+            // avoid a mulDiv for most inputs
+            if (amountIn <= uint160(-1)) {
                 sqrtQ = FixedPoint96.uq64x96(
-                    ((uint256(liquidity) * sqrtP._x).add(amountIn.mul(FixedPoint96.Q96)) / liquidity).toUint160()
+                    uint256(sqrtP._x).add((amountIn << FixedPoint96.RESOLUTION) / liquidity).toUint160()
                 );
             } else {
                 sqrtQ = FixedPoint96.uq64x96(

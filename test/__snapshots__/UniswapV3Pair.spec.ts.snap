@@ -16,12 +16,12 @@ exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap cros
 
 exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas second swap in block 1`] = `97111`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap ever 1`] = `111299`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap ever 1`] = `111131`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap in block 1`] = `96299`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap in block 1`] = `96131`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap 1`] = `134741`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap 1`] = `134237`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap crossing several initialized ticks 1`] = `261370`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap crossing several initialized ticks 1`] = `260362`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas second swap in block 1`] = `96299`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas second swap in block 1`] = `96131`;
