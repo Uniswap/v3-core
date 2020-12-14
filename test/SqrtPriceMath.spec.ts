@@ -93,8 +93,7 @@ describe('SqrtPriceMath', () => {
         expandTo18Decimals(1).div(10),
         true
       )
-      // add 1 because we do not go all the way to the next price root
-      expect(sqrtQ._x).to.eq(encodePriceSqrt(100, 121).add(1))
+      expect(sqrtQ._x).to.eq('72025602285694852357767227579')
     })
 
     it('zeroForOne = true gas', async () => {

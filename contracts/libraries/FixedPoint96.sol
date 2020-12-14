@@ -2,13 +2,13 @@
 pragma solidity >=0.4.0;
 
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
-library FixedPoint64 {
+library FixedPoint96 {
     // range: [0, 2*64 - 1]
-    // resolution: 1 / 2**64
-    struct uq64x64 {
-        uint128 _x;
+    // resolution: 1 / 2**96
+    struct uq64x96 {
+        uint160 _x;
     }
 
-    uint8 internal constant RESOLUTION = 64;
-    uint256 internal constant Q64 = 0x10000000000000000;
+    uint8 internal constant RESOLUTION = 96;
+    uint256 internal constant Q96 = 0x1000000000000000000000000;
 }

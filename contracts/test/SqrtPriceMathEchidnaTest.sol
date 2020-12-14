@@ -3,7 +3,7 @@ pragma solidity =0.6.12;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
-import '../libraries/FixedPoint64.sol';
+import '../libraries/FixedPoint96.sol';
 import '../libraries/SqrtPriceMath.sol';
 
 contract SqrtPriceMathEchidnaTest {
@@ -26,8 +26,8 @@ contract SqrtPriceMathEchidnaTest {
         uint256 amountIn,
         bool zeroForOne
     ) external pure {
-        FixedPoint64.uq64x64 memory sqrtQ = SqrtPriceMath.getNextPrice(
-            FixedPoint64.uq64x64(sqrtP),
+        FixedPoint96.uq64x96 memory sqrtQ = SqrtPriceMath.getNextPrice(
+            FixedPoint96.uq64x96(sqrtP),
             liquidity,
             amountIn,
             zeroForOne

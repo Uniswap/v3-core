@@ -40,7 +40,7 @@ contract UniswapV3PairEchidnaTest {
         pair = UniswapV3Pair(factory.createPair(address(token0), address(token1), fee));
     }
 
-    function initializePair(uint128 sqrtPrice) public {
+    function initializePair(uint160 sqrtPrice) public {
         pair.initialize(sqrtPrice);
     }
 
@@ -95,7 +95,7 @@ contract UniswapV3PairEchidnaTest {
 
     function echidna_priceIsWithinTickCurrent() external view returns (bool) {
         int24 tick = pair.tickCurrent();
-        FixedPoint64.uq64x64 memory sqrtPriceCurrent = FixedPoint64.uq64x64(pair.sqrtPriceCurrent());
+        FixedPoint96.uq64x96 memory sqrtPriceCurrent = FixedPoint96.uq64x96(pair.sqrtPriceCurrent());
         return (SqrtTickMath.getSqrtRatioAtTick(tick)._x <= sqrtPriceCurrent._x &&
             SqrtTickMath.getSqrtRatioAtTick(tick + 1)._x > sqrtPriceCurrent._x);
     }

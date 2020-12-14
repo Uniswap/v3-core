@@ -1,7 +1,7 @@
 import {BigNumber, BigNumberish, utils, constants} from 'ethers'
 import bn from 'bignumber.js'
-export const getMinTick = (tickSpacing: number) => Math.ceil(-689197 / tickSpacing) * tickSpacing
-export const getMaxTick = (tickSpacing: number) => Math.floor(689197 / tickSpacing) * tickSpacing
+export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
+export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
 
 export enum FeeAmount {
@@ -44,13 +44,18 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
-  return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(128)).div(reserve0)
-}
+bn.config({EXPONENTIAL_AT: 999999})
 
+// returns the sqrt price as a 64x96
 export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
-  const price = encodePrice(reserve1, reserve0)
-  return BigNumber.from(new bn(price.toString()).sqrt().integerValue(3).toString())
+  return BigNumber.from(
+    new bn(reserve1.toString())
+      .div(reserve0.toString())
+      .sqrt()
+      .multipliedBy(new bn(2).pow(96))
+      .integerValue(3)
+      .toString()
+  )
 }
 
 export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {

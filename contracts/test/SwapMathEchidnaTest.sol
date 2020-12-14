@@ -27,13 +27,13 @@ contract SwapMathEchidnaTest {
         require(amountInMax > 0);
 
         (
-            FixedPoint64.uq64x64 memory sqrtQ,
+            FixedPoint96.uq64x96 memory sqrtQ,
             uint256 amountIn, /*uint256 amountOut*/
             ,
             uint256 feeAmount
         ) = SwapMath.computeSwapStep(
-            FixedPoint64.uq64x64(sqrtPriceRaw),
-            FixedPoint64.uq64x64(sqrtPriceTargetRaw),
+            FixedPoint96.uq64x96(sqrtPriceRaw),
+            FixedPoint96.uq64x96(sqrtPriceTargetRaw),
             liquidity,
             amountInMax,
             feePips,

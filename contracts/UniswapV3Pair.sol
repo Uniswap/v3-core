@@ -62,7 +62,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(int16 => uint256) public override tickBitmap;
 
     // single storage slot
-    FixedPoint64.uq64x64 public override sqrtPriceCurrent; // sqrt(token1 / token0) price
+    FixedPoint96.uq64x96 public override sqrtPriceCurrent; // sqrt(token1 / token0) price
     uint32 public override blockTimestampLast;
     int56 public override tickCumulativeLast;
     bool private unlocked = true;
@@ -272,14 +272,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickBitmap.flipTick(tick, tickSpacing);
     }
 
-    function initialize(uint128 sqrtPrice) external override lock {
+    function initialize(uint160 sqrtPrice) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
 
         // initialize oracle timestamp and fee
         blockTimestampLast = _blockTimestamp();
 
         // initialize current price
-        sqrtPriceCurrent = FixedPoint64.uq64x64(sqrtPrice);
+        sqrtPriceCurrent = FixedPoint96.uq64x96(sqrtPrice);
 
         emit Initialized(sqrtPrice);
 
@@ -557,7 +557,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the tick associated with the current price
         int24 tick;
         // current sqrt(price)
-        FixedPoint64.uq64x64 sqrtPrice;
+        FixedPoint96.uq64x96 sqrtPrice;
         // the global fee growth of the input token
         FixedPoint128.uq128x128 feeGrowthGlobal;
         // the liquidity in range
@@ -568,7 +568,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the next initialized tick from the current tick in the swap direction
         int24 tickNext;
         // sqrt(price) for the target tick (1/0)
-        FixedPoint64.uq64x64 sqrtPriceNext;
+        FixedPoint96.uq64x96 sqrtPriceNext;
         // (computed) virtual reserves of token0
         uint256 reserve0Virtual;
         // (computed) virtual reserves of token1
