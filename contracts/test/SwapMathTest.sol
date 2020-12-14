@@ -3,12 +3,12 @@ pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
 import '../libraries/SwapMath.sol';
-import '../libraries/FixedPoint64.sol';
+import '../libraries/FixedPoint96.sol';
 
 contract SwapMathTest {
     function computeSwapStep(
-        FixedPoint64.uq64x64 memory price,
-        FixedPoint64.uq64x64 memory target,
+        FixedPoint96.uq64x96 memory price,
+        FixedPoint96.uq64x96 memory target,
         uint128 liquidity,
         uint256 amountInMax,
         uint24 feePips,
@@ -17,7 +17,7 @@ contract SwapMathTest {
         external
         pure
         returns (
-            FixedPoint64.uq64x64 memory priceAfter,
+            FixedPoint96.uq64x96 memory priceAfter,
             uint256 amountIn,
             uint256 amountOut,
             uint256 feeAmount
@@ -27,8 +27,8 @@ contract SwapMathTest {
     }
 
     function getGasCostOfComputeSwapStep(
-        FixedPoint64.uq64x64 memory price,
-        FixedPoint64.uq64x64 memory target,
+        FixedPoint96.uq64x96 memory price,
+        FixedPoint96.uq64x96 memory target,
         uint128 liquidity,
         uint256 amountInMax,
         uint24 feePips,

@@ -1,3 +1,4 @@
+import {BigNumber} from 'ethers'
 import {ethers} from 'hardhat'
 import {SwapMathTest} from '../typechain/SwapMathTest'
 
@@ -22,25 +23,25 @@ describe('SwapMath', () => {
         600,
         false
       )
-      expect(amountIn).to.eq('9975124224178054')
+      expect(amountIn).to.eq('9975124224178055')
       expect(feeAmount).to.eq('5988667735148')
       expect(amountOut).to.eq('9925619580021728')
-      expect(priceAfter._x).to.eq('18538748355542988169')
+      expect(priceAfter._x).to.eq('79623317895830914510487008059')
     })
 
     it('example from failing test', async () => {
       const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
-        {_x: '47108085314816337'},
-        {_x: '44377947312771397'},
+        {_x: BigNumber.from('47108085314816337').shl(32)},
+        {_x: BigNumber.from('44377947312771397').shl(32)},
         '250000000000000001',
         '999999999999999607',
         FeeAmount.MEDIUM,
         true
       )
-      expect(amountIn).to.eq('996999999999998211')
-      expect(feeAmount).to.eq('3000000000001396')
+      expect(amountIn).to.eq('996999999999999608')
+      expect(feeAmount).to.eq('2999999999999999')
       expect(amountOut).to.eq('6436444186929')
-      expect(priceAfter._x).to.eq('46633159560172327')
+      expect(priceAfter._x).to.eq('200287895220089885758853514')
     })
 
     it('price can decrease from input price', async () => {

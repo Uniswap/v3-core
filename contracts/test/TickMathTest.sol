@@ -6,14 +6,6 @@ import '../libraries/FixedPoint128.sol';
 import '../libraries/TickMath.sol';
 
 contract TickMathTest {
-    function MIN_TICK() external pure returns (int24) {
-        return TickMath.MIN_TICK;
-    }
-
-    function MAX_TICK() external pure returns (int24) {
-        return TickMath.MAX_TICK;
-    }
-
     function getRatioAtTick(int24 tick) public pure returns (FixedPoint128.uq128x128 memory) {
         return FixedPoint128.uq128x128(TickMath.getRatioAtTick(tick));
     }
