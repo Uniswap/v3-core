@@ -18,10 +18,13 @@ contract SqrtPriceMathEchidnaTest {
         uint256 roundedUp = SqrtPriceMath.mulDivRoundingUp(x, y, z);
         assert(roundedUp >= notRoundedUp);
         assert(roundedUp - notRoundedUp < 2);
+        if (roundedUp - notRoundedUp == 1) {
+            assert(mulmod(x, y, z) > 0);
+        }
     }
 
     function getNextPriceInvariants(
-        uint128 sqrtP,
+        uint160 sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
