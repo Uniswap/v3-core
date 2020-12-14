@@ -1,4 +1,4 @@
-import {BigNumber} from 'ethers'
+import {BigNumber, constants} from 'ethers'
 import {ethers} from 'hardhat'
 import {SqrtPriceMathTest} from '../typechain/SqrtPriceMathTest'
 
@@ -94,6 +94,27 @@ describe('SqrtPriceMath', () => {
         true
       )
       expect(sqrtQ._x).to.eq('72025602285694852357767227579')
+    })
+
+    it('amountIn > uint96(-1) and zeroForOne = true', async () => {
+      expect(
+        (
+          await sqrtPriceMath.getNextPrice(
+            {_x: encodePriceSqrt(1, 1)},
+            expandTo18Decimals(10),
+            BigNumber.from(2).pow(100),
+            true
+          )
+        )._x
+        // perfect answer:
+        // https://www.wolframalpha.com/input/?i=624999999995069620+-+%28%281e19+*+1+%2F+%281e19+%2B+2%5E100+*+1%29%29+*+2%5E96%29
+      ).to.eq(624999999995069620)
+    })
+
+    it('can return 1 with enough amountIn and zeroForOne = true', async () => {
+      expect(
+        (await sqrtPriceMath.getNextPrice({_x: encodePriceSqrt(1, 1)}, 1, constants.MaxUint256.div(2), true))._x
+      ).to.eq(1)
     })
 
     it('zeroForOne = true gas', async () => {
