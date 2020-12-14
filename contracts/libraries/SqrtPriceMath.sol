@@ -43,8 +43,8 @@ library SqrtPriceMath {
             // liquidity * sqrt(P) / (liquidity + x * sqrt(P))
             // rounds up in the division because we do not want to go past the next price
             uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-            if (amountIn <= uint96(-1)) {
-                uint256 denominator = numerator1.add(amountIn.mul(sqrtP._x));
+            if (amountIn <= uint96(-1) && numerator1 <= uint256(-1) - amountIn * sqrtP._x) {
+                uint256 denominator = numerator1.add(amountIn * sqrtP._x);
                 sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
             } else {
                 sqrtQ = FixedPoint96.uq64x96(
@@ -79,9 +79,9 @@ library SqrtPriceMath {
         // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
         // liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q)), rounding up
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-        uint256 numerator2 = uint256(sqrtP._x) - sqrtQ._x;
+        uint256 numerator2 = sqrtP._x - sqrtQ._x;
         uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
-        if (denominator / sqrtP._x == sqrtP._x) {
+        if (denominator / sqrtP._x == sqrtQ._x) {
             if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
             else return FullMath.mulDiv(numerator1, numerator2, denominator);
         } else {
