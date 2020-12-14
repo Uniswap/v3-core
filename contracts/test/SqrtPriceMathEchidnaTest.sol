@@ -53,6 +53,7 @@ contract SqrtPriceMathEchidnaTest {
         uint128 liquidity
     ) external pure {
         require(sqrtP >= sqrtQ);
+        require(sqrtP > 0 && sqrtQ > 0);
         uint256 amount0Down = SqrtPriceMath.getAmount0Delta(
             FixedPoint96.uq64x96(sqrtP),
             FixedPoint96.uq64x96(sqrtQ),
@@ -76,6 +77,7 @@ contract SqrtPriceMathEchidnaTest {
         uint128 liquidity
     ) external pure {
         require(sqrtP <= sqrtQ);
+        require(sqrtP > 0 && sqrtQ > 0);
         uint256 amount1Down = SqrtPriceMath.getAmount1Delta(
             FixedPoint96.uq64x96(sqrtP),
             FixedPoint96.uq64x96(sqrtQ),
