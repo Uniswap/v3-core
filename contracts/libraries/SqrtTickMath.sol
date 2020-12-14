@@ -7,7 +7,7 @@ import './TickMath.sol';
 // returns and takes sqrt prices for 1 bips ticks
 library SqrtTickMath {
     int24 internal constant MIN_TICK = -887272;
-    int24 internal constant MAX_TICK = 887272;
+    int24 internal constant MAX_TICK = -MIN_TICK;
 
     function getSqrtRatioAtTick(int24 tick) internal pure returns (FixedPoint96.uq64x96 memory) {
         uint256 ratio = TickMath.getRatioAtTick(tick);
