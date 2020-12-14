@@ -10,4 +10,4 @@ exports[`SqrtPriceMath #getAmount1Delta gas cost for amount0 where roundUp = tru
 
 exports[`SqrtPriceMath #getNextPrice zeroForOne = false gas 1`] = `588`;
 
-exports[`SqrtPriceMath #getNextPrice zeroForOne = true gas 1`] = `1508`;
+exports[`SqrtPriceMath #getNextPrice zeroForOne = true gas 1`] = `1539`;
