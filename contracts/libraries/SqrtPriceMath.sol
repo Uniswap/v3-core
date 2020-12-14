@@ -60,7 +60,7 @@ library SqrtPriceMath {
             if (
                 numerator1 / liquidity == sqrtP._x && // ensure numerator1 was calculated safely
                 amountIn <= uint160(-1) && // ensure numerator2 was calculated safely
-                numerator1 <= uint256(-1) - numerator2  // ensure we're going to be able to add safely
+                numerator1 <= uint256(-1) - numerator2 // ensure we're going to be able to add safely
             ) {
                 sqrtQ = FixedPoint96.uq64x96(((numerator1 + numerator2) / liquidity).toUint160());
             } else {
