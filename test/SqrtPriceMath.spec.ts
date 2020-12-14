@@ -118,13 +118,10 @@ describe('SqrtPriceMath', () => {
     })
   })
 
-  describe('#getAmountDeltas', () => {
+  describe('#getAmount0Delta', () => {
     it('reverts if prices have the wrong relation', async () => {
       await expect(
         sqrtPriceMath.getAmount0Delta({_x: encodePriceSqrt(1, 1).sub(1)}, {_x: encodePriceSqrt(1, 1)}, 0, true)
-      ).to.be.reverted
-      await expect(
-        sqrtPriceMath.getAmount1Delta({_x: encodePriceSqrt(1, 1)}, {_x: encodePriceSqrt(1, 1).sub(1)}, 0, true)
       ).to.be.reverted
     })
     it('returns 0 if liquidity is 0', async () => {
@@ -134,15 +131,8 @@ describe('SqrtPriceMath', () => {
         0,
         true
       )
-      const amount1 = await sqrtPriceMath.getAmount1Delta(
-        {_x: encodePriceSqrt(1, 1)},
-        {_x: encodePriceSqrt(2, 1)},
-        0,
-        true
-      )
 
       expect(amount0).to.eq(0)
-      expect(amount1).to.eq(0)
     })
     it('returns 0 if prices are equal', async () => {
       const amount0 = await sqrtPriceMath.getAmount0Delta(
@@ -151,15 +141,8 @@ describe('SqrtPriceMath', () => {
         0,
         true
       )
-      const amount1 = await sqrtPriceMath.getAmount0Delta(
-        {_x: encodePriceSqrt(1, 1)},
-        {_x: encodePriceSqrt(1, 1)},
-        0,
-        true
-      )
 
       expect(amount0).to.eq(0)
-      expect(amount1).to.eq(0)
     })
 
     it('returns 0.1 amount1 for price of 1 to 1.21', async () => {
@@ -169,15 +152,7 @@ describe('SqrtPriceMath', () => {
         expandTo18Decimals(1),
         true
       )
-      const amount1 = await sqrtPriceMath.getAmount1Delta(
-        {_x: encodePriceSqrt(1, 1)},
-        {_x: encodePriceSqrt(121, 100)},
-        expandTo18Decimals(1),
-        true
-      )
-
       expect(amount0).to.eq('90909090909090910')
-      expect(amount1).to.eq('100000000000000000')
 
       const amount0RoundedDown = await sqrtPriceMath.getAmount0Delta(
         {_x: encodePriceSqrt(121, 100)},
@@ -185,6 +160,69 @@ describe('SqrtPriceMath', () => {
         expandTo18Decimals(1),
         false
       )
+
+      expect(amount0RoundedDown).to.eq(amount0.sub(1))
+    })
+
+    it(`gas cost for amount0 where roundUp = true`, async () => {
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetAmount0Delta(
+          {_x: encodePriceSqrt(1, 1)},
+          {_x: encodePriceSqrt(100, 121)},
+          expandTo18Decimals(1),
+          true
+        )
+      )
+    })
+
+    it(`gas cost for amount0 where roundUp = true`, async () => {
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetAmount0Delta(
+          {_x: encodePriceSqrt(1, 1)},
+          {_x: encodePriceSqrt(100, 121)},
+          expandTo18Decimals(1),
+          false
+        )
+      )
+    })
+  })
+
+  describe('#getAmount1Delta', () => {
+    it('reverts if prices have the wrong relation', async () => {
+      await expect(
+        sqrtPriceMath.getAmount1Delta({_x: encodePriceSqrt(1, 1)}, {_x: encodePriceSqrt(1, 1).sub(1)}, 0, true)
+      ).to.be.reverted
+    })
+    it('returns 0 if liquidity is 0', async () => {
+      const amount1 = await sqrtPriceMath.getAmount1Delta(
+        {_x: encodePriceSqrt(1, 1)},
+        {_x: encodePriceSqrt(2, 1)},
+        0,
+        true
+      )
+
+      expect(amount1).to.eq(0)
+    })
+    it('returns 0 if prices are equal', async () => {
+      const amount1 = await sqrtPriceMath.getAmount0Delta(
+        {_x: encodePriceSqrt(1, 1)},
+        {_x: encodePriceSqrt(1, 1)},
+        0,
+        true
+      )
+
+      expect(amount1).to.eq(0)
+    })
+
+    it('returns 0.1 amount1 for price of 1 to 1.21', async () => {
+      const amount1 = await sqrtPriceMath.getAmount1Delta(
+        {_x: encodePriceSqrt(1, 1)},
+        {_x: encodePriceSqrt(121, 100)},
+        expandTo18Decimals(1),
+        true
+      )
+
+      expect(amount1).to.eq('100000000000000000')
       const amount1RoundedDown = await sqrtPriceMath.getAmount1Delta(
         {_x: encodePriceSqrt(1, 1)},
         {_x: encodePriceSqrt(121, 100)},
@@ -192,32 +230,29 @@ describe('SqrtPriceMath', () => {
         false
       )
 
-      expect(amount0RoundedDown).to.eq(amount0.sub(1))
       expect(amount1RoundedDown).to.eq(amount1.sub(1))
     })
 
-    for (const roundUp of [true, false]) {
-      it(`gas cost for amount0/${roundUp}`, async () => {
-        await snapshotGasCost(
-          sqrtPriceMath.getGasCostOfGetAmount0Delta(
-            {_x: encodePriceSqrt(1, 1)},
-            {_x: encodePriceSqrt(100, 121)},
-            expandTo18Decimals(1),
-            roundUp
-          )
+    it(`gas cost for amount0 where roundUp = true`, async () => {
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetAmount0Delta(
+          {_x: encodePriceSqrt(1, 1)},
+          {_x: encodePriceSqrt(100, 121)},
+          expandTo18Decimals(1),
+          true
         )
-      })
+      )
+    })
 
-      it(`gas cost for amount1/${roundUp}`, async () => {
-        await snapshotGasCost(
-          sqrtPriceMath.getGasCostOfGetAmount1Delta(
-            {_x: encodePriceSqrt(100, 121)},
-            {_x: encodePriceSqrt(1, 1)},
-            expandTo18Decimals(1),
-            roundUp
-          )
+    it(`gas cost for amount0 where roundUp = false`, async () => {
+      await snapshotGasCost(
+        sqrtPriceMath.getGasCostOfGetAmount0Delta(
+          {_x: encodePriceSqrt(1, 1)},
+          {_x: encodePriceSqrt(100, 121)},
+          expandTo18Decimals(1),
+          false
         )
-      })
-    }
+      )
+    })
   })
 })
