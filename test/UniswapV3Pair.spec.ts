@@ -1037,6 +1037,27 @@ describe('UniswapV3Pair', () => {
       expect(token1Fees).to.be.eq(0)
     })
 
+    describe('#collect', () => {
+      it('returns 0 if no fees', async () => {
+        await pair.setFeeTo(otherAddress)
+        const {amount0, amount1} = await pair.callStatic.collect(constants.MaxUint256, constants.MaxUint256)
+        expect(amount0).to.be.eq(0)
+        expect(amount1).to.be.eq(0)
+      })
+
+      it('can collect fees', async () => {
+        await pair.setFeeTo(otherAddress)
+
+        await swapAndGetFeesOwed()
+        // collect fees to trigger collection of the protocol fee
+        await pair.collectFees(MIN_TICK, MAX_TICK, walletAddress, constants.MaxUint256, constants.MaxUint256)
+
+        await expect(pair.collect(constants.MaxUint256, constants.MaxUint256))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, otherAddress, '99999999999999')
+      })
+    })
+
     it('fees collected by lp after two swaps should be double one swap', async () => {
       await swapAndGetFeesOwed()
       const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
