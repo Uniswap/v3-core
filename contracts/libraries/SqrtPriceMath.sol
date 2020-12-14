@@ -15,6 +15,10 @@ library SqrtPriceMath {
     using SafeMath for uint256;
     using SafeCast for uint256;
 
+    function divRoundingUp(uint256 x, uint256 d) internal pure returns (uint256) {
+        return (x / d) + (x % d > 0 ? 1 : 0);
+    }
+
     function mulDivRoundingUp(
         uint256 x,
         uint256 y,
@@ -66,11 +70,15 @@ library SqrtPriceMath {
         // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
         // liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q)), rounding up
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-        uint160 numerator2 = sqrtP._x - sqrtQ._x;
-        uint256 denominator = uint256(sqrtP._x).mul(sqrtQ._x);
-
-        if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
-        else return FullMath.mulDiv(numerator1, numerator2, denominator);
+        uint256 numerator2 = uint256(sqrtP._x) - sqrtQ._x;
+        uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
+        if (denominator >= sqrtP._x) {
+            if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
+            else return FullMath.mulDiv(numerator1, numerator2, denominator);
+        } else {
+            if (roundUp) return divRoundingUp(mulDivRoundingUp(numerator1, numerator2, sqrtP._x), sqrtQ._x);
+            else return FullMath.mulDiv(numerator1, numerator2, sqrtP._x) / sqrtQ._x;
+        }
     }
 
     function getAmount1Delta(
