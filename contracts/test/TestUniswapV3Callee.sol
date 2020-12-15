@@ -3,10 +3,11 @@ pragma solidity =0.6.12;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import '../interfaces/IUniswapV3Callee.sol';
+import '../interfaces/IUniswapV3MintCallback.sol';
+import '../interfaces/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
-contract TestUniswapV3Callee is IUniswapV3Callee {
+contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
     address sender;
 
     function swap0For1(

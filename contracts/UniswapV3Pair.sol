@@ -18,7 +18,8 @@ import './libraries/SqrtTickMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
-import './interfaces/IUniswapV3Callee.sol';
+import './interfaces/IUniswapV3MintCallback.sol';
+import './interfaces/IUniswapV3SwapCallback.sol';
 import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 
@@ -443,7 +444,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 IERC20(token0).balanceOf(address(this)),
                 IERC20(token1).balanceOf(address(this))
             );
-            IUniswapV3Callee(msg.sender).mintCallback(amount0, amount1);
+            IUniswapV3MintCallback(msg.sender).mintCallback(amount0, amount1);
             require(
                 balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
                 'UniswapV3Pair::mint: insufficient token0 amount'
@@ -694,8 +695,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
             params.zeroForOne
-                ? IUniswapV3Callee(msg.sender).swapCallback(-params.amountIn.toInt256(), amountOut.toInt256())
-                : IUniswapV3Callee(msg.sender).swapCallback(amountOut.toInt256(), -params.amountIn.toInt256());
+                ? IUniswapV3SwapCallback(msg.sender).swapCallback(-params.amountIn.toInt256(), amountOut.toInt256())
+                : IUniswapV3SwapCallback(msg.sender).swapCallback(amountOut.toInt256(), -params.amountIn.toInt256());
             uint256 balanceAfter = IERC20(tokenIn).balanceOf(address(this));
             require(
                 balanceAfter.sub(balanceBefore) >= params.amountIn,
