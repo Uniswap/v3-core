@@ -272,7 +272,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickBitmap.flipTick(tick, tickSpacing);
     }
 
-    function initialize(address payer, uint160 sqrtPrice) external override lock {
+    function initialize(address payer, uint160 sqrtPrice) external override {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
 
         // initialize oracle timestamp and fee
@@ -389,7 +389,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
-    ) external override returns (uint256 amount0, uint256 amount1) {
+    ) external override lock returns (uint256 amount0, uint256 amount1) {
         Position storage position = _updatePosition(msg.sender, tickLower, tickUpper, 0, tickCurrent());
 
         if (amount0Requested == uint256(-1)) {
@@ -418,7 +418,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount,
         bytes memory data
-    ) public override returns (uint256 amount0, uint256 amount1) {
+    ) public override lock returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
 
@@ -460,7 +460,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override returns (uint256 amount0, uint256 amount1) {
+    ) external override lock returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::burn: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::burn: amount must be greater than 0');
 
