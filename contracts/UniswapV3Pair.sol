@@ -446,8 +446,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 IERC20(token1).balanceOf(address(this))
             );
             IUniswapV3Callee(payer).mintCallback(msg.sender, recipient, amount0, amount1, data);
-            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'UniswapV3Pair::mint: insufficient token0 amount');
-            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'UniswapV3Pair::mint: insufficient token1 amount');
+            require(
+                balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
+                'UniswapV3Pair::mint: insufficient token0 amount'
+            );
+            require(
+                balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)),
+                'UniswapV3Pair::mint: insufficient token1 amount'
+            );
         }
     }
 
