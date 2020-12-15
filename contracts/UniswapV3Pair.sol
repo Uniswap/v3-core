@@ -284,13 +284,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Initialized(sqrtPrice);
 
         // set permanent 1 wei position
-        (int256 amount0, int256 amount1) = _setPosition(
-            SetPositionParams({owner: address(0), tickLower: MIN_TICK, tickUpper: MAX_TICK, liquidityDelta: 1})
-        );
-        // todo: replace with callback pay
-        assert(amount0 > 0 && amount1 > 0);
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
+        mint(payer, address(0), MIN_TICK, MAX_TICK, 1);
     }
 
     // gets and updates and gets a position with the given liquidity delta
@@ -423,7 +417,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override returns (uint256 amount0, uint256 amount1) {
+    ) public override returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
 
