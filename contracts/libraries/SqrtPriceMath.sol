@@ -38,7 +38,6 @@ library SqrtPriceMath {
         return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
     }
 
-
     function getNextPriceRoundingUp(
         FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
@@ -49,20 +48,19 @@ library SqrtPriceMath {
 
         if (
             isMulSafe(amount, sqrtP._x) &&
-            (add
-                ? isAddSafe(numerator1, amount * sqrtP._x)
-                : isSubSafe(numerator1, amount * sqrtP._x)
-            )
+            (add ? isAddSafe(numerator1, amount * sqrtP._x) : isSubSafe(numerator1, amount * sqrtP._x))
         ) {
             uint256 denominator = add ? (numerator1 + amount * sqrtP._x) : (numerator1 - amount * sqrtP._x);
             // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
             return FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
         } else {
             // calculate liquidity / (liquidity / sqrt(P) +- x)
-            return FixedPoint96.uq64x96(add
-                ? divRoundingUp(numerator1, (numerator1 / sqrtP._x).add(amount)).toUint160()
-                : divRoundingUp(numerator1, (numerator1 / sqrtP._x).sub(amount)).toUint160()
-            );
+            return
+                FixedPoint96.uq64x96(
+                    add
+                        ? divRoundingUp(numerator1, (numerator1 / sqrtP._x).add(amount)).toUint160()
+                        : divRoundingUp(numerator1, (numerator1 / sqrtP._x).sub(amount)).toUint160()
+                );
         }
     }
 
@@ -78,10 +76,8 @@ library SqrtPriceMath {
         uint256 quotient = amount <= uint160(-1)
             ? (amount << FixedPoint96.RESOLUTION) / liquidity
             : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity);
-        return FixedPoint96.uq64x96((add
-            ? uint256(sqrtP._x).add(quotient)
-            : uint256(sqrtP._x).sub(quotient)
-        ).toUint160());
+        return
+            FixedPoint96.uq64x96((add ? uint256(sqrtP._x).add(quotient) : uint256(sqrtP._x).sub(quotient)).toUint160());
     }
 
     function getNextPriceFromInput(

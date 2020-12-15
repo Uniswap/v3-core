@@ -597,7 +597,7 @@ describe('UniswapV3Pair', () => {
       )
 
       expect(await pair.tickCurrent()).to.eq(-1)
-    })    
+    })
 
     it('swap0For1 gas first swap ever', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
