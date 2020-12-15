@@ -434,7 +434,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 owner: recipient,
                 tickLower: tickLower,
                 tickUpper: tickUpper,
-                liquidityDelta: uint256(amount).toInt256().toInt128()
+                liquidityDelta: int256(amount).toInt128()
             })
         );
 
