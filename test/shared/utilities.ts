@@ -119,11 +119,15 @@ export function createPairFunctions({
     return _swap(token1, amount, to)
   }
 
-  const mint: MintFunction = (recipient, tickLower, tickUpper, liquidity) => {
+  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
+    await token0.approve(swapTarget.address, constants.MaxUint256)
+    await token1.approve(swapTarget.address, constants.MaxUint256)
     return pair.mint(swapTarget.address, recipient, tickLower, tickUpper, liquidity)
   }
 
-  const initialize: InitializeFunction = (price) => {
+  const initialize: InitializeFunction = async (price) => {
+    await token0.approve(swapTarget.address, constants.MaxUint256)
+    await token1.approve(swapTarget.address, constants.MaxUint256)
     return pair.initialize(swapTarget.address, price)
   }
 

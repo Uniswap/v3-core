@@ -107,11 +107,6 @@ describe('UniswapV3Pair', () => {
         'TickMath::getTickAtRatio: invalid ratio'
       )
     })
-    it('fails if cannot transfer from user', async () => {
-      await expect(initialize(encodePriceSqrt(1, 1))).to.be.revertedWith(
-        'TransferHelper::transferFrom: transferFrom failed'
-      )
-    })
     it('sets initial variables', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
@@ -201,11 +196,6 @@ describe('UniswapV3Pair', () => {
         it('fails if tickUpper greater than max tick', async () => {
           await expect(mint(walletAddress, 0, MAX_TICK + 1, 1)).to.be.revertedWith(
             'UniswapV3Pair::_updatePosition: tickUpper cannot be greater than max tick'
-          )
-        })
-        it('fails if cannot transfer', async () => {
-          await expect(mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100)).to.be.revertedWith(
-            'TransferHelper::transferFrom: transferFrom failed'
           )
         })
         it('fails if called with 0 amount', async () => {

@@ -60,7 +60,9 @@ contract TestUniswapV3Callee is IUniswapV3Callee {
         bytes calldata data
     ) external override {
         emit MintCallback(msg.sender, sender, recipient, amount0Owed, amount1Owed, data);
-        if (amount0Owed > 0) IERC20(IUniswapV3Pair(msg.sender).token0()).transfer(msg.sender, uint256(amount0Owed));
-        if (amount1Owed > 0) IERC20(IUniswapV3Pair(msg.sender).token1()).transfer(msg.sender, uint256(amount1Owed));
+        if (amount0Owed > 0)
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Owed));
+        if (amount1Owed > 0)
+            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Owed));
     }
 }

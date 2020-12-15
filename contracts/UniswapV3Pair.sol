@@ -438,9 +438,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         amount0 = uint256(amount0Int);
         amount1 = uint256(amount1Int);
 
-        // todo: replace with callback pay
-        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
-        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
+        // collect payment via callback
+        {
+            (uint256 balance0, uint256 balance1) = (
+                IERC20(token0).balanceOf(address(this)),
+                IERC20(token1).balanceOf(address(this))
+            );
+            IUniswapV3Callee(payer).mintCallback(msg.sender, recipient, amount0, amount1, '');
+            (uint256 balance0After, uint256 balance1After) = (
+                IERC20(token0).balanceOf(address(this)),
+                IERC20(token1).balanceOf(address(this))
+            );
+            require(balance0.add(amount0) == balance0After, 'UniswapV3Pair::mint: insufficient token0 amount');
+            require(balance1.add(amount1) == balance1After, 'UniswapV3Pair::mint: insufficient token1 amount');
+        }
     }
 
     function burn(
