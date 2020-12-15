@@ -38,7 +38,6 @@ library SqrtPriceMath {
         return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
     }
 
-
     function getNextPriceRoundingUp(
         FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
@@ -53,10 +52,7 @@ library SqrtPriceMath {
 
         if (
             isMulSafe(amount, sqrtP._x) &&
-            (add
-                ? isAddSafe(numerator1, amount * sqrtP._x)
-                : isSubSafe(numerator1, amount * sqrtP._x)
-            )
+            (add ? isAddSafe(numerator1, amount * sqrtP._x) : isSubSafe(numerator1, amount * sqrtP._x))
         ) {
             uint256 denominator = add ? (numerator1 + amount * sqrtP._x) : (numerator1 - amount * sqrtP._x);
             return FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
