@@ -444,7 +444,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 IERC20(token0).balanceOf(address(this)),
                 IERC20(token1).balanceOf(address(this))
             );
-            IUniswapV3MintCallback(msg.sender).mintCallback(amount0, amount1);
+            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1);
             require(
                 balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
                 'UniswapV3Pair::mint: insufficient token0 amount'
@@ -695,8 +695,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
             params.zeroForOne
-                ? IUniswapV3SwapCallback(msg.sender).swapCallback(-params.amountIn.toInt256(), amountOut.toInt256())
-                : IUniswapV3SwapCallback(msg.sender).swapCallback(amountOut.toInt256(), -params.amountIn.toInt256());
+                ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
+                    -params.amountIn.toInt256(),
+                    amountOut.toInt256()
+                )
+                : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
+                    amountOut.toInt256(),
+                    -params.amountIn.toInt256()
+                );
             require(
                 balanceBefore.add(params.amountIn) >= IERC20(tokenIn).balanceOf(address(this)),
                 'UniswapV3Pair::_swap: insufficient input amount'

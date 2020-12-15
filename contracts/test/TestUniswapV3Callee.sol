@@ -36,7 +36,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
 
-    function swapCallback(int256 amount0Delta, int256 amount1Delta) external override {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta) external override {
         require(sender != address(0));
 
         emit SwapCallback(amount0Delta, amount1Delta);
@@ -73,7 +73,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
 
     event MintCallback(uint256 amount0Owed, uint256 amount1Owed);
 
-    function mintCallback(uint256 amount0Owed, uint256 amount1Owed) external override {
+    function uniswapV3MintCallback(uint256 amount0Owed, uint256 amount1Owed) external override {
         require(sender != address(0));
 
         emit MintCallback(amount0Owed, amount1Owed);
