@@ -284,7 +284,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Initialized(sqrtPrice);
 
         // set permanent 1 wei position
-        mint(payer, address(0), MIN_TICK, MAX_TICK, 1);
+        mint(payer, address(0), MIN_TICK, MAX_TICK, 1, '');
     }
 
     // gets and updates and gets a position with the given liquidity delta
@@ -416,7 +416,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount
+        uint128 amount,
+        bytes memory data
     ) public override returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
@@ -444,7 +445,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 IERC20(token0).balanceOf(address(this)),
                 IERC20(token1).balanceOf(address(this))
             );
-            IUniswapV3Callee(payer).mintCallback(msg.sender, recipient, amount0, amount1, '');
+            IUniswapV3Callee(payer).mintCallback(msg.sender, recipient, amount0, amount1, data);
             (uint256 balance0After, uint256 balance1After) = (
                 IERC20(token0).balanceOf(address(this)),
                 IERC20(token1).balanceOf(address(this))

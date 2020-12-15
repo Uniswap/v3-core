@@ -71,7 +71,8 @@ export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
   tickUpper: BigNumberish,
-  liquidity: BigNumberish
+  liquidity: BigNumberish,
+  data?: string
 ) => Promise<ContractTransaction>
 export type InitializeFunction = (price: BigNumberish) => Promise<ContractTransaction>
 export interface PairFunctions {
@@ -119,10 +120,10 @@ export function createPairFunctions({
     return _swap(token1, amount, to)
   }
 
-  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
+  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
-    return pair.mint(swapTarget.address, recipient, tickLower, tickUpper, liquidity)
+    return pair.mint(swapTarget.address, recipient, tickLower, tickUpper, liquidity, data)
   }
 
   const initialize: InitializeFunction = async (price) => {

@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #mint after initialization success cases above current price gas 1`] = `242041`;
+exports[`UniswapV3Pair #mint after initialization success cases above current price gas 1`] = `242850`;
 
-exports[`UniswapV3Pair #mint after initialization success cases below current price gas 1`] = `249408`;
+exports[`UniswapV3Pair #mint after initialization success cases below current price gas 1`] = `250217`;
 
-exports[`UniswapV3Pair #mint after initialization success cases including current price gas 1`] = `260332`;
+exports[`UniswapV3Pair #mint after initialization success cases including current price gas 1`] = `261141`;
 
 exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas first swap ever 1`] = `115045`;
 
@@ -16,12 +16,12 @@ exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas large swap cros
 
 exports[`UniswapV3Pair post-initialize for low fee swap0For1 gas second swap in block 1`] = `92343`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap ever 1`] = `106445`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap ever 1`] = `106510`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap in block 1`] = `91445`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas first swap in block 1`] = `91510`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap 1`] = `129737`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap 1`] = `129802`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap crossing several initialized ticks 1`] = `256143`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas large swap crossing several initialized ticks 1`] = `256208`;
 
-exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas second swap in block 1`] = `91445`;
+exports[`UniswapV3Pair post-initialize for low fee swap1For0 gas second swap in block 1`] = `91510`;

@@ -64,7 +64,7 @@ contract UniswapV3PairEchidnaTest {
         int24 tickUpper,
         uint128 amount
     ) external {
-        pair.mint(address(payer), owner, tickLower, tickUpper, amount);
+        pair.mint(address(payer), owner, tickLower, tickUpper, amount, '');
     }
 
     function burn(

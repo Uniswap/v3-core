@@ -68,7 +68,8 @@ interface IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount
+        uint128 amount,
+        bytes calldata data
     ) external returns (uint256 amount0, uint256 amount1);
 
     // burn the sender's liquidity
