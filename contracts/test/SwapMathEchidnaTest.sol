@@ -20,6 +20,7 @@ contract SwapMathEchidnaTest {
     ) external pure {
         requirePriceWithinBounds(sqrtPriceRaw);
         requirePriceWithinBounds(sqrtPriceTargetRaw);
+        require(feePips > 0);
         require(feePips < 1e6);
 
         bool zeroForOne = sqrtPriceRaw >= sqrtPriceTargetRaw;
