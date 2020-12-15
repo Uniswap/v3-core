@@ -19,7 +19,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         sender = msg.sender;
 
         IUniswapV3Pair(pair).swapExact0For1(amount0In, recipient);
-        
+
         sender = address(0);
     }
 

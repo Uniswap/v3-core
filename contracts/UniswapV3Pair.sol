@@ -703,14 +703,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
             params.zeroForOne
-                ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
-                    -amountIn.toInt256(),
-                    amountOut.toInt256()
-                )
-                : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
-                    amountOut.toInt256(),
-                    -amountIn.toInt256()
-                );
+                ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(-amountIn.toInt256(), amountOut.toInt256())
+                : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut.toInt256(), -amountIn.toInt256());
             require(
                 balanceBefore.add(amountIn) >= IERC20(tokenIn).balanceOf(address(this)),
                 'UniswapV3Pair::_swap: insufficient input amount'
@@ -722,28 +716,56 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(amount0In > 1, 'UniswapV3Pair::swapExact0For1: amountIn must be greater than 1');
 
         return
-            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: true, amountSpecified: amount0In.toInt256(), recipient: recipient}));
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: true,
+                    amountSpecified: amount0In.toInt256(),
+                    recipient: recipient
+                })
+            );
     }
 
     function swap0ForExact1(uint256 amount1Out, address recipient) external override lock returns (uint256 amount0In) {
         require(amount1Out > 0, 'UniswapV3Pair::swap0ForExact1: amountOut must be greater than 0');
 
         return
-            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: true, amountSpecified: -amount1Out.toInt256(), recipient: recipient}));
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: true,
+                    amountSpecified: -amount1Out.toInt256(),
+                    recipient: recipient
+                })
+            );
     }
 
     function swapExact1For0(uint256 amount1In, address recipient) external override lock returns (uint256 amount0Out) {
         require(amount1In > 1, 'UniswapV3Pair::swapExact1For0: amountIn must be greater than 1');
 
         return
-            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: false, amountSpecified: amount1In.toInt256(), recipient: recipient}));
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: false,
+                    amountSpecified: amount1In.toInt256(),
+                    recipient: recipient
+                })
+            );
     }
 
     function swap1ForExact0(uint256 amount0Out, address recipient) external override lock returns (uint256 amount1In) {
         require(amount0Out > 0, 'UniswapV3Pair::swap1ForExact0: amountOut must be greater than 0');
 
         return
-            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: false, amountSpecified: -amount0Out.toInt256(), recipient: recipient}));
+            _swap(
+                SwapParams({
+                    tickStart: tickCurrent(),
+                    zeroForOne: false,
+                    amountSpecified: -amount0Out.toInt256(),
+                    recipient: recipient
+                })
+            );
     }
 
     function recover(
