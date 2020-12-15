@@ -272,7 +272,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickBitmap.flipTick(tick, tickSpacing);
     }
 
-    function initialize(uint160 sqrtPrice) external override lock {
+    function initialize(address payer, uint160 sqrtPrice) external override lock {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
 
         // initialize oracle timestamp and fee
@@ -284,15 +284,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Initialized(sqrtPrice);
 
         // set permanent 1 wei position
-        _setPosition(
-            SetPositionParams({
-                owner: address(0),
-                to: address(0),
-                tickLower: MIN_TICK,
-                tickUpper: MAX_TICK,
-                liquidityDelta: 1
-            })
+        (int256 amount0, int256 amount1) = _setPosition(
+            SetPositionParams({owner: address(0), tickLower: MIN_TICK, tickUpper: MAX_TICK, liquidityDelta: 1})
         );
+        // todo: replace with callback pay
+        assert(amount0 > 0 && amount1 > 0);
+        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), uint256(amount0));
+        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), uint256(amount1));
     }
 
     // gets and updates and gets a position with the given liquidity delta
@@ -391,23 +389,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function _transferDelta(
-        address token,
-        address to,
-        int256 delta
-    ) private {
-        if (delta > 0) {
-            assert(to == address(0));
-            TransferHelper.safeTransferFrom(token, msg.sender, address(this), uint256(delta));
-        } else if (delta < 0) {
-            TransferHelper.safeTransfer(token, to, uint256(-delta));
-        }
-    }
-
     function collectFees(
         int24 tickLower,
         int24 tickUpper,
-        address to,
+        address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external override returns (uint256 amount0, uint256 amount1) {
@@ -428,15 +413,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         position.feesOwed0 -= amount0;
         position.feesOwed1 -= amount1;
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, to, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, to, amount1);
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
     }
 
     function mint(
-        address owner,
+        address payer,
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount
+        uint128 amount
     ) external override returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
@@ -445,24 +431,29 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         (int256 amount0Int, int256 amount1Int) = _setPosition(
             SetPositionParams({
-                owner: owner,
-                to: address(0),
+                owner: recipient,
                 tickLower: tickLower,
                 tickUpper: tickUpper,
-                liquidityDelta: amount.toInt256().toInt128()
+                liquidityDelta: uint256(amount).toInt256().toInt128()
             })
         );
+
         assert(amount0Int >= 0);
         assert(amount1Int >= 0);
-        assert(amount0Int > 0 || amount1Int > 0);
-        return (uint256(amount0Int), uint256(amount1Int));
+
+        amount0 = uint256(amount0Int);
+        amount1 = uint256(amount1Int);
+
+        // todo: replace with callback pay
+        TransferHelper.safeTransferFrom(token0, msg.sender, address(this), amount0);
+        TransferHelper.safeTransferFrom(token1, msg.sender, address(this), amount1);
     }
 
     function burn(
-        address to,
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount
+        uint128 amount
     ) external override returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::burn: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::burn: amount must be greater than 0');
@@ -472,33 +463,36 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (int256 amount0Int, int256 amount1Int) = _setPosition(
             SetPositionParams({
                 owner: msg.sender,
-                to: to,
                 tickLower: tickLower,
                 tickUpper: tickUpper,
-                liquidityDelta: -amount.toInt256().toInt128()
+                liquidityDelta: -int256(amount).toInt128()
             })
         );
+
         assert(amount0Int <= 0);
         assert(amount1Int <= 0);
-        assert(amount0Int < 0 || amount1Int < 0);
-        return (uint256(-amount0Int), uint256(-amount1Int));
+
+        amount0 = uint256(-amount0Int);
+        amount1 = uint256(-amount1Int);
+
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
     }
 
     struct SetPositionParams {
+        // the address that will pay for the mint
         address owner;
-        address to;
+        // the lower and upper tick of the position
         int24 tickLower;
         int24 tickUpper;
+        // the change in liquidity to effect
         int128 liquidityDelta;
     }
 
-    // add or remove a specified amount of liquidity from a specified range, and/or change feeVote for that range
-    // also sync a position and return accumulated fees from it to user as tokens
-    // liquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so does not incorporate fees
+    // effect some changes to a position
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         int24 tick = tickCurrent();
 
-        // accrue fees to the position owner
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
@@ -532,9 +526,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 params.liquidityDelta
             );
         }
-
-        _transferDelta(token0, params.to, amount0);
-        _transferDelta(token1, params.to, amount1);
     }
 
     struct SwapParams {
@@ -773,7 +764,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function recover(
         address token,
-        address to,
+        address recipient,
         uint256 amount
     ) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::recover: caller not owner');
@@ -781,7 +772,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
         uint256 token1Balance = IERC20(token1).balanceOf(address(this));
 
-        TransferHelper.safeTransfer(token, to, amount);
+        TransferHelper.safeTransfer(token, recipient, amount);
 
         // check the balance hasn't changed
         require(

@@ -43,7 +43,7 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function initializePair(uint160 sqrtPrice) public {
-        pair.initialize(sqrtPrice);
+        pair.initialize(address(payer), sqrtPrice);
     }
 
     function swap0For1(uint256 amount0In) external {
@@ -64,7 +64,7 @@ contract UniswapV3PairEchidnaTest {
         int24 tickUpper,
         uint128 amount
     ) external {
-        pair.mint(owner, tickLower, tickUpper, amount);
+        pair.mint(address(payer), owner, tickLower, tickUpper, amount);
     }
 
     function burn(

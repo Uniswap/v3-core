@@ -67,11 +67,20 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
-export interface SwapFunctions {
+export type MintFunction = (
+  recipient: string,
+  tickLower: BigNumberish,
+  tickUpper: BigNumberish,
+  liquidity: BigNumberish
+) => Promise<ContractTransaction>
+export type InitializeFunction = (price: BigNumberish) => Promise<ContractTransaction>
+export interface PairFunctions {
   swap0For1: SwapFunction
   swap1For0: SwapFunction
+  mint: MintFunction
+  initialize: InitializeFunction
 }
-export function createSwapFunctions({
+export function createPairFunctions({
   token0,
   token1,
   swapTarget,
@@ -83,7 +92,7 @@ export function createSwapFunctions({
   token0: TestERC20
   token1: TestERC20
   pair: UniswapV3Pair
-}): SwapFunctions {
+}): PairFunctions {
   /**
    * Execute a swap against the pair of the input token in the input amount, sending proceeds to the given to address
    */
@@ -110,5 +119,13 @@ export function createSwapFunctions({
     return _swap(token1, amount, to)
   }
 
-  return {swap0For1, swap1For0}
+  const mint: MintFunction = (recipient, tickLower, tickUpper, liquidity) => {
+    return pair.mint(swapTarget.address, recipient, tickLower, tickUpper, liquidity)
+  }
+
+  const initialize: InitializeFunction = (price) => {
+    return pair.initialize(swapTarget.address, price)
+  }
+
+  return {swap0For1, swap1For0, mint, initialize}
 }

@@ -51,31 +51,32 @@ interface IUniswapV3Pair {
     function getCumulatives() external view returns (uint32 blockTimestamp, int56 tickCumulative);
 
     // initialize the pair
-    function initialize(uint160 sqrtPrice) external;
+    function initialize(address payer, uint160 sqrtPrice) external;
 
     // collect fees
     function collectFees(
         int24 tickLower,
         int24 tickUpper,
-        address to,
+        address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external returns (uint256 amount0, uint256 amount1);
 
     // mint some liquidity to an address
     function mint(
-        address owner,
+        address payer,
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount
+        uint128 amount
     ) external returns (uint256 amount0, uint256 amount1);
 
     // burn the sender's liquidity
     function burn(
-        address to,
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount
+        uint128 amount
     ) external returns (uint256 amount0, uint256 amount1);
 
     // swapping
@@ -98,7 +99,7 @@ interface IUniswapV3Pair {
     // allows the factory owner address to recover any tokens other than token0 and token1 held by the contract
     function recover(
         address token,
-        address to,
+        address recipient,
         uint256 amount
     ) external;
 
