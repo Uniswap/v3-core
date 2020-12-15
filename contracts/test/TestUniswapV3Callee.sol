@@ -7,59 +7,75 @@ import '../interfaces/IUniswapV3Callee.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
 contract TestUniswapV3Callee is IUniswapV3Callee {
-    event SwapCallback(
-        address msgSender,
-        address sender,
-        address recipient,
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes data
-    );
+    address sender;
 
-    function swapCallback(
-        address sender,
-        address recipient,
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata data
-    ) external override {
-        emit SwapCallback(msg.sender, sender, recipient, amount0Delta, amount1Delta, data);
+    function swap0For1(
+        address pair,
+        uint256 amount0In,
+        address recipient
+    ) external {
+        require(sender == address(0));
+
+        sender = msg.sender;
+        IUniswapV3Pair(pair).swap0For1(amount0In, recipient);
+        sender = address(0);
+    }
+
+    function swap1For0(
+        address pair,
+        uint256 amount1In,
+        address recipient
+    ) external {
+        require(sender == address(0));
+
+        sender = msg.sender;
+        IUniswapV3Pair(pair).swap1For0(amount1In, recipient);
+        sender = address(0);
+    }
+
+    event SwapCallback(int256 amount0Delta, int256 amount1Delta);
+
+    function swapCallback(int256 amount0Delta, int256 amount1Delta) external override {
+        require(sender != address(0));
+
+        emit SwapCallback(amount0Delta, amount1Delta);
 
         if (amount0Delta < 0) {
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transfer(msg.sender, uint256(-amount0Delta));
-        } else {
-            require(
-                IERC20(IUniswapV3Pair(msg.sender).token0()).balanceOf(recipient) >= uint256(amount0Delta),
-                'recipient did not receive enough token0'
-            );
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(-amount0Delta));
         }
         if (amount1Delta < 0) {
-            IERC20(IUniswapV3Pair(msg.sender).token1()).transfer(msg.sender, uint256(-amount1Delta));
-        } else {
-            require(
-                IERC20(IUniswapV3Pair(msg.sender).token1()).balanceOf(recipient) >= uint256(amount1Delta),
-                'recipient did not receive enough token1'
-            );
+            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(-amount1Delta));
         }
     }
 
-    event MintCallback(
-        address msgSender,
-        address sender,
-        address recipient,
-        uint256 amount0Owed,
-        uint256 amount1Owed,
-        bytes data
-    );
+    function initialize(address pair, uint160 sqrtPrice) external {
+        require(sender == address(0));
 
-    function mintCallback(
-        address sender,
+        sender = msg.sender;
+        IUniswapV3Pair(pair).initialize(sqrtPrice);
+        sender = address(0);
+    }
+
+    function mint(
+        address pair,
         address recipient,
-        uint256 amount0Owed,
-        uint256 amount1Owed,
-        bytes calldata data
-    ) external override {
-        emit MintCallback(msg.sender, sender, recipient, amount0Owed, amount1Owed, data);
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        require(sender == address(0));
+
+        sender = msg.sender;
+        IUniswapV3Pair(pair).mint(recipient, tickLower, tickUpper, amount);
+        sender = address(0);
+    }
+
+    event MintCallback(uint256 amount0Owed, uint256 amount1Owed);
+
+    function mintCallback(uint256 amount0Owed, uint256 amount1Owed) external override {
+        require(sender != address(0));
+
+        emit MintCallback(amount0Owed, amount1Owed);
         if (amount0Owed > 0)
             IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Owed));
         if (amount1Owed > 0)

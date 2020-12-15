@@ -272,7 +272,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickBitmap.flipTick(tick, tickSpacing);
     }
 
-    function initialize(address payer, uint160 sqrtPrice) external override {
+    function initialize(uint160 sqrtPrice) external override {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
 
         // initialize oracle timestamp and fee
@@ -284,7 +284,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Initialized(sqrtPrice);
 
         // set permanent 1 wei position
-        mint(payer, address(0), MIN_TICK, MAX_TICK, 1, '');
+        mint(address(0), MIN_TICK, MAX_TICK, 1);
     }
 
     // gets and updates and gets a position with the given liquidity delta
@@ -412,12 +412,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function mint(
-        address payer,
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount,
-        bytes memory data
+        uint128 amount
     ) public override lock returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
@@ -445,7 +443,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 IERC20(token0).balanceOf(address(this)),
                 IERC20(token1).balanceOf(address(this))
             );
-            IUniswapV3Callee(payer).mintCallback(msg.sender, recipient, amount0, amount1, data);
+            IUniswapV3Callee(msg.sender).mintCallback(amount0, amount1);
             require(
                 balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
                 'UniswapV3Pair::mint: insufficient token0 amount'
@@ -543,12 +541,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bool zeroForOne;
         // how much is being swapped in
         uint256 amountIn;
-        // the address that gets the callback
-        address payer;
         // the address that receives amount out
         address recipient;
-        // any data that should be sent to the address with the call
-        bytes data;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
@@ -700,20 +694,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
             params.zeroForOne
-                ? IUniswapV3Callee(params.payer).swapCallback(
-                    msg.sender,
-                    params.recipient,
-                    -params.amountIn.toInt256(),
-                    amountOut.toInt256(),
-                    params.data
-                )
-                : IUniswapV3Callee(params.payer).swapCallback(
-                    msg.sender,
-                    params.recipient,
-                    amountOut.toInt256(),
-                    -params.amountIn.toInt256(),
-                    params.data
-                );
+                ? IUniswapV3Callee(msg.sender).swapCallback(-params.amountIn.toInt256(), amountOut.toInt256())
+                : IUniswapV3Callee(msg.sender).swapCallback(amountOut.toInt256(), -params.amountIn.toInt256());
             uint256 balanceAfter = IERC20(tokenIn).balanceOf(address(this));
             require(
                 balanceAfter.sub(balanceBefore) >= params.amountIn,
@@ -723,47 +705,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // move from right to left (token 1 is becoming more valuable)
-    function swap0For1(
-        uint256 amount0In,
-        address payer,
-        address recipient,
-        bytes calldata data
-    ) external override lock returns (uint256 amount1Out) {
+    function swap0For1(uint256 amount0In, address recipient) external override lock returns (uint256 amount1Out) {
         require(amount0In > 0, 'UniswapV3Pair::swap0For1: amountIn must be greater than 0');
 
         return
-            _swap(
-                SwapParams({
-                    tickStart: tickCurrent(),
-                    zeroForOne: true,
-                    amountIn: amount0In,
-                    recipient: recipient,
-                    payer: payer,
-                    data: data
-                })
-            );
+            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: true, amountIn: amount0In, recipient: recipient}));
     }
 
     // move from left to right (token 0 is becoming more valuable)
-    function swap1For0(
-        uint256 amount1In,
-        address payer,
-        address recipient,
-        bytes calldata data
-    ) external override lock returns (uint256 amount0Out) {
+    function swap1For0(uint256 amount1In, address recipient) external override lock returns (uint256 amount0Out) {
         require(amount1In > 0, 'UniswapV3Pair::swap1For0: amountIn must be greater than 0');
 
         return
-            _swap(
-                SwapParams({
-                    tickStart: tickCurrent(),
-                    zeroForOne: false,
-                    amountIn: amount1In,
-                    recipient: recipient,
-                    payer: payer,
-                    data: data
-                })
-            );
+            _swap(SwapParams({tickStart: tickCurrent(), zeroForOne: false, amountIn: amount1In, recipient: recipient}));
     }
 
     function recover(

@@ -102,14 +102,13 @@ export function createPairFunctions({
     amountIn: BigNumberish,
     to: Wallet | string
   ): Promise<ContractTransaction> {
-    const method = inputToken === token0 ? 'swap0For1' : 'swap1For0'
+    const method = inputToken === token0 ? swapTarget.swap0For1 : swapTarget.swap1For0
 
-    await inputToken.connect(from).transfer(swapTarget.address, amountIn)
+    await inputToken.approve(swapTarget.address, amountIn)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    const data = '0x' // utils.defaultAbiCoder.encode(['uint256', 'address'], [amountIn, toAddress])
-    return await pair.connect(from)[method](amountIn, swapTarget.address, toAddress, data)
+    return await method(pair.address, amountIn, toAddress)
   }
 
   const swap0For1: SwapFunction = (amount, to) => {
@@ -123,13 +122,13 @@ export function createPairFunctions({
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
-    return pair.mint(swapTarget.address, recipient, tickLower, tickUpper, liquidity, data)
+    return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
   }
 
   const initialize: InitializeFunction = async (price) => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
-    return pair.initialize(swapTarget.address, price)
+    return swapTarget.initialize(pair.address, price)
   }
 
   return {swap0For1, swap1For0, mint, initialize}
