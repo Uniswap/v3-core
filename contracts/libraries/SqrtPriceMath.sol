@@ -57,10 +57,12 @@ library SqrtPriceMath {
             uint256 denominator = add ? (numerator1 + amount * sqrtP._x) : (numerator1 - amount * sqrtP._x);
             return FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
         } else {
-            return FixedPoint96.uq64x96(add
-                ? divRoundingUp(numerator1, (numerator1 / sqrtP._x).add(amount)).toUint160()
-                : divRoundingUp(numerator1, (numerator1 / sqrtP._x).sub(amount)).toUint160()
-            );
+            return
+                FixedPoint96.uq64x96(
+                    add
+                        ? divRoundingUp(numerator1, (numerator1 / sqrtP._x).add(amount)).toUint160()
+                        : divRoundingUp(numerator1, (numerator1 / sqrtP._x).sub(amount)).toUint160()
+                );
         }
     }
 
@@ -77,17 +79,15 @@ library SqrtPriceMath {
             // avoid a mulDiv for most inputs
             quotient = amount <= uint160(-1)
                 ? (amount << FixedPoint96.RESOLUTION) / liquidity
-                : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity);            
+                : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity);
         } else {
             // avoid a mulDiv for most inputs
             quotient = amount <= uint160(-1)
                 ? divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
                 : mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity);
         }
-        return FixedPoint96.uq64x96((add
-            ? uint256(sqrtP._x).add(quotient)
-            : uint256(sqrtP._x).sub(quotient)
-        ).toUint160());
+        return
+            FixedPoint96.uq64x96((add ? uint256(sqrtP._x).add(quotient) : uint256(sqrtP._x).sub(quotient)).toUint160());
     }
 
     function getNextPriceFromInput(
@@ -101,9 +101,10 @@ library SqrtPriceMath {
         if (amountIn == 0) return sqrtP;
 
         // round to make sure that we don't pass the target price
-        return zeroForOne
-            ? getNextPriceRoundingUp(sqrtP, liquidity, amountIn, true)
-            : getNextPriceRoundingDown(sqrtP, liquidity, amountIn, true);
+        return
+            zeroForOne
+                ? getNextPriceRoundingUp(sqrtP, liquidity, amountIn, true)
+                : getNextPriceRoundingDown(sqrtP, liquidity, amountIn, true);
     }
 
     function getNextPriceFromOutput(
@@ -117,9 +118,10 @@ library SqrtPriceMath {
         if (amountOut == 0) return sqrtP;
 
         // round to make sure that we pass the target price
-        return zeroForOne
-            ? getNextPriceRoundingDown(sqrtP, liquidity, amountOut, false)
-            : getNextPriceRoundingUp(sqrtP, liquidity, amountOut, false);
+        return
+            zeroForOne
+                ? getNextPriceRoundingDown(sqrtP, liquidity, amountOut, false)
+                : getNextPriceRoundingUp(sqrtP, liquidity, amountOut, false);
     }
 
     function getAmount0Delta(
