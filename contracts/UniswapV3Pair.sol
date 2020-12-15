@@ -569,10 +569,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickNext;
         // sqrt(price) for the target tick (1/0)
         FixedPoint96.uq64x96 sqrtPriceNext;
-        // (computed) virtual reserves of token0
-        uint256 reserve0Virtual;
-        // (computed) virtual reserves of token1
-        uint256 reserve1Virtual;
         // how much is being swapped in in this step
         uint256 amountIn;
         // how much is being swapped out in the current step
