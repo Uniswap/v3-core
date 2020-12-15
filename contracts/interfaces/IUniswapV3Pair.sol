@@ -57,58 +57,42 @@ interface IUniswapV3Pair {
     function collectFees(
         int24 tickLower,
         int24 tickUpper,
-        address to,
+        address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external returns (uint256 amount0, uint256 amount1);
 
     // mint some liquidity to an address
     function mint(
-        address owner,
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount
+        uint128 amount
     ) external returns (uint256 amount0, uint256 amount1);
 
     // burn the sender's liquidity
     function burn(
-        address to,
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount
+        uint128 amount
     ) external returns (uint256 amount0, uint256 amount1);
 
     // swapping
-    function swapExact0For1(
-        uint256 amount0In,
-        address to,
-        bytes calldata data
-    ) external returns (uint256 amount1Out);
+    function swapExact0For1(uint256 amount0In, address recipient) external returns (uint256 amount1Out);
 
-    function swap0ForExact1(
-        uint256 amount1Out,
-        address to,
-        bytes calldata data
-    ) external returns (uint256 amount0In);
+    function swap0ForExact1(uint256 amount1Out, address recipient) external returns (uint256 amount0In);
 
-    function swapExact1For0(
-        uint256 amount1In,
-        address to,
-        bytes calldata data
-    ) external returns (uint256 amount0Out);
+    function swapExact1For0(uint256 amount1In, address recipient) external returns (uint256 amount0Out);
 
-    function swap1ForExact0(
-        uint256 amount0Out,
-        address to,
-        bytes calldata data
-    ) external returns (uint256 amount1In);
+    function swap1ForExact0(uint256 amount0Out, address recipient) external returns (uint256 amount1In);
 
     function setFeeTo(address) external;
 
     // allows the factory owner address to recover any tokens other than token0 and token1 held by the contract
     function recover(
         address token,
-        address to,
+        address recipient,
         uint256 amount
     ) external;
 
