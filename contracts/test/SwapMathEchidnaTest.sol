@@ -11,43 +11,47 @@ contract SwapMathEchidnaTest {
         require(price >= SqrtTickMath.getSqrtRatioAtTick(SqrtTickMath.MIN_TICK)._x);
     }
 
-    // function checkComputeSwapStepInvariants(
-    //     uint160 sqrtPriceRaw,
-    //     uint160 sqrtPriceTargetRaw,
-    //     uint128 liquidity,
-    //     uint256 amountInMax,
-    //     uint24 feePips
-    // ) external pure {
-    //     requirePriceWithinBounds(sqrtPriceRaw);
-    //     requirePriceWithinBounds(sqrtPriceTargetRaw);
-    //     require(feePips < 1e6);
+    function checkComputeSwapStepInvariants(
+        uint160 sqrtPriceRaw,
+        uint160 sqrtPriceTargetRaw,
+        uint128 liquidity,
+        int256 amount,
+        uint24 feePips
+    ) external pure {
+        requirePriceWithinBounds(sqrtPriceRaw);
+        requirePriceWithinBounds(sqrtPriceTargetRaw);
+        require(feePips < 1e6);
 
-    //     bool zeroForOne = sqrtPriceRaw >= sqrtPriceTargetRaw;
+        bool zeroForOne = sqrtPriceRaw >= sqrtPriceTargetRaw;
 
-    //     require(amountInMax > 0);
+        require(amount != 0);
 
-    //     (
-    //         FixedPoint96.uq64x96 memory sqrtQ,
-    //         uint256 amountIn, /*uint256 amountOut*/
-    //         ,
-    //         uint256 feeAmount
-    //     ) = SwapMath.computeSwapStep(
-    //         FixedPoint96.uq64x96(sqrtPriceRaw),
-    //         FixedPoint96.uq64x96(sqrtPriceTargetRaw),
-    //         liquidity,
-    //         amountInMax,
-    //         feePips,
-    //         zeroForOne
-    //     );
+        (
+            FixedPoint96.uq64x96 memory sqrtQ,
+            uint256 amountIn,
+            uint256 amountOut,
+            uint256 feeAmount
+        ) = SwapMath.computeSwapStep(
+            FixedPoint96.uq64x96(sqrtPriceRaw),
+            FixedPoint96.uq64x96(sqrtPriceTargetRaw),
+            liquidity,
+            amount,
+            feePips,
+            zeroForOne
+        );
 
-    //     if (zeroForOne) {
-    //         assert(sqrtQ._x <= sqrtPriceRaw);
-    //         assert(sqrtQ._x >= sqrtPriceTargetRaw);
-    //     } else {
-    //         assert(sqrtQ._x >= sqrtPriceRaw);
-    //         assert(sqrtQ._x <= sqrtPriceTargetRaw);
-    //     }
+        if (zeroForOne) {
+            assert(sqrtQ._x <= sqrtPriceRaw);
+            assert(sqrtQ._x >= sqrtPriceTargetRaw);
+        } else {
+            assert(sqrtQ._x >= sqrtPriceRaw);
+            assert(sqrtQ._x <= sqrtPriceTargetRaw);
+        }
 
-    //     assert(amountIn + feeAmount <= amountInMax);
-    // }
+        if (amount < 0) {
+            assert(amountOut <= uint256(-amount));
+        } else {
+            assert(amountIn + feeAmount <= uint256(amount));
+        }
+    }
 }
