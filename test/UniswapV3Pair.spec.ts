@@ -446,14 +446,14 @@ describe('UniswapV3Pair', () => {
 
   describe('callee', () => {
     beforeEach(() => initializeAtZeroTick(pair))
-    it('swap0For1 calls the callee', async () => {
+    it('swapExact0For1 calls the callee', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await expect(pair.swapExact0For1(1000, testCallee.address, '0xabcd'))
         .to.emit(testCallee, 'Swap0For1Callback')
         .withArgs(pair.address, walletAddress, 996, '0xabcd')
     })
 
-    it('swap1For0 calls the callee', async () => {
+    it('swapExact1For0 calls the callee', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await expect(pair.swapExact1For0(1000, testCallee.address, '0xdeff'))
         .to.emit(testCallee, 'Swap1For0Callback')
@@ -599,30 +599,30 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(-1)
     })
 
-    it('swap0For1 gas first swap ever', async () => {
+    it('swapExact0For1 gas first swap ever', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swapExact0For1(1000, walletAddress, '0x'))
     })
 
-    it('swap0For1 gas first swap in block', async () => {
+    it('swapExact0For1 gas first swap in block', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await pair.swapExact0For1(1000, walletAddress, '0x')
       await pair.setTime(TEST_PAIR_START_TIME + 10)
       await snapshotGasCost(pair.swapExact0For1(1000, walletAddress, '0x'))
     })
 
-    it('swap0For1 gas second swap in block', async () => {
+    it('swapExact0For1 gas second swap in block', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await pair.swapExact0For1(1000, walletAddress, '0x')
       await snapshotGasCost(pair.swapExact0For1(1000, walletAddress, '0x'))
     })
 
-    it('swap0For1 gas large swap', async () => {
+    it('swapExact0For1 gas large swap', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swapExact0For1(expandTo18Decimals(1), walletAddress, '0x'))
     })
 
-    it('swap0For1 large swap crossing several initialized ticks', async () => {
+    it('swapExact0For1 large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
@@ -634,7 +634,7 @@ describe('UniswapV3Pair', () => {
         .withArgs(pair.address, walletAddress, '671288525725295030')
     })
 
-    it('swap0For1 gas large swap crossing several initialized ticks', async () => {
+    it('swapExact0For1 gas large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
@@ -644,7 +644,7 @@ describe('UniswapV3Pair', () => {
       await snapshotGasCost(pair.swapExact0For1(expandTo18Decimals(1), walletAddress, '0x'))
     })
 
-    it('swap1For0', async () => {
+    it('swapExact1For0', async () => {
       const amount1In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
@@ -662,30 +662,50 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(0)
     })
 
-    it('swap1For0 gas first swap ever', async () => {
+    it('swap1ForExact0', async () => {
+      const amount0Out = 998
+
+      const token0BalanceBefore = await token0.balanceOf(walletAddress)
+      const token1BalanceBefore = await token1.balanceOf(walletAddress)
+
+      await token1.approve(pair.address, constants.MaxUint256)
+      await pair.swap1ForExact0(amount0Out, walletAddress, '0x')
+
+      const token0BalanceAfter = await token0.balanceOf(walletAddress)
+      const token1BalanceAfter = await token1.balanceOf(walletAddress)
+
+      expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(
+        amount0Out
+      )
+      expect(token1BalanceBefore.sub(token1BalanceAfter), 'input amount decreased by amount in').to.eq(1000)
+
+      expect(await pair.tickCurrent()).to.eq(0)
+    })
+
+    it('swapExact1For0 gas first swap ever', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swapExact1For0(1000, walletAddress, '0x'))
     })
 
-    it('swap1For0 gas first swap in block', async () => {
+    it('swapExact1For0 gas first swap in block', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.swapExact1For0(1000, walletAddress, '0x')
       await pair.setTime(TEST_PAIR_START_TIME + 10)
       await snapshotGasCost(pair.swapExact1For0(1000, walletAddress, '0x'))
     })
 
-    it('swap1For0 gas second swap in block', async () => {
+    it('swapExact1For0 gas second swap in block', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await pair.swapExact1For0(1000, walletAddress, '0x')
       await snapshotGasCost(pair.swapExact1For0(1000, walletAddress, '0x'))
     })
 
-    it('swap1For0 gas large swap', async () => {
+    it('swapExact1For0 gas large swap', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
       await snapshotGasCost(pair.swapExact1For0(expandTo18Decimals(1), walletAddress, '0x'))
     })
 
-    it('swap1For0 large swap crossing several initialized ticks', async () => {
+    it('swapExact1For0 large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
@@ -697,7 +717,7 @@ describe('UniswapV3Pair', () => {
         .withArgs(pair.address, walletAddress, '671288525725295030')
     })
 
-    it('swap1For0 gas large swap crossing several initialized ticks', async () => {
+    it('swapExact1For0 gas large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
@@ -760,7 +780,7 @@ describe('UniswapV3Pair', () => {
       await initializeAtZeroTick(pair)
     })
 
-    it('swap0For1', async () => {
+    it('swapExact0For1', async () => {
       const amount0In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
@@ -778,7 +798,7 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(-1)
     })
 
-    it('swap0For1 to tick -1k', async () => {
+    it('swapExact0For1 to tick -1k', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       await token0.approve(pair.address, constants.MaxUint256)
@@ -789,7 +809,7 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(-973)
     })
 
-    it('swap0For1 to tick -1k with intermediate liquidity', async () => {
+    it('swapExact0For1 to tick -1k with intermediate liquidity', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       // add liquidity between -3 and -2 (to the left of the current price)
@@ -807,7 +827,7 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(-945)
     })
 
-    it('swap1For0', async () => {
+    it('swapExact1For0', async () => {
       const amount1In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
@@ -825,7 +845,7 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(0)
     })
 
-    it('swap1For0 to tick 1k', async () => {
+    it('swapExact1For0 to tick 1k', async () => {
       const amount1In = expandTo18Decimals(1).div(10)
 
       await token1.approve(pair.address, constants.MaxUint256)
@@ -836,7 +856,7 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(972)
     })
 
-    it('swap1For0 to tick 1k with intermediate liquidity', async () => {
+    it('swapExact1For0 to tick 1k with intermediate liquidity', async () => {
       const amount1In = expandTo18Decimals(1).div(10)
 
       // add liquidity between 2 and 3 (to the right of the current price)

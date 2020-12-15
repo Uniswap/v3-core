@@ -697,15 +697,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             feeGrowthGlobal1 = state.feeGrowthGlobal;
         }
 
-        uint256 amountIn;
-        uint256 amountOut;
-        if (params.amountSpecified > 0) {
-            amountIn = uint256(params.amountSpecified);
-            amountOut = amountCalculated;
-        } else {
-            amountIn = amountCalculated;
-            amountOut = uint256(-params.amountSpecified);
-        }
+        (uint256 amountIn, uint256 amountOut) = params.amountSpecified > 0
+            ? (uint256(params.amountSpecified), amountCalculated)
+            : (amountCalculated, uint256(-params.amountSpecified));
 
         // this is different than v2
         TransferHelper.safeTransfer(params.zeroForOne ? token1 : token0, params.to, amountOut);

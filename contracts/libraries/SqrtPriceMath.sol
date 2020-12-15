@@ -45,7 +45,7 @@ library SqrtPriceMath {
         bool add
     ) internal pure returns (FixedPoint96.uq64x96 memory) {
         // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
-        // or, if this is impossible because of overlow,
+        // or, if this is impossible because of overflow,
         // calculate liquidity / (liquidity / sqrt(P) +- x)
 
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
