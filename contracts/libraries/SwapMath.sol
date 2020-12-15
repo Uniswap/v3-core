@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
-import './FixedPoint64.sol';
+import './FixedPoint96.sol';
 import './FixedPoint128.sol';
 import './SqrtPriceMath.sol';
 
@@ -12,8 +12,8 @@ library SwapMath {
     using SafeMath for uint256;
 
     function computeSwapStep(
-        FixedPoint128.uq128x128 memory price,
-        FixedPoint128.uq128x128 memory target,
+        FixedPoint96.uq64x96 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtQTarget,
         uint128 liquidity,
         int256 amountSpecifiedMax,
         uint24 feePips,
@@ -22,19 +22,15 @@ library SwapMath {
         internal
         pure
         returns (
-            FixedPoint128.uq128x128 memory priceAfter,
+            FixedPoint96.uq64x96 memory sqrtQ,
             uint256 amountIn,
             uint256 amountOut,
             uint256 feeAmount
         )
     {
-        FixedPoint64.uq64x64 memory sqrtP = FixedPoint64.uq64x64(uint128(Babylonian.sqrt(price._x)));
-        FixedPoint64.uq64x64 memory sqrtQTarget = FixedPoint64.uq64x64(uint128(Babylonian.sqrt(target._x)));
-
         uint256 amountInMax = amountSpecifiedMax > 0 ? uint256(amountSpecifiedMax) : 0;
         uint256 amountOutMax = amountSpecifiedMax < 0 ? uint256(-amountSpecifiedMax) : 0;
 
-        FixedPoint64.uq64x64 memory sqrtQ;
         if (amountInMax > 0) {
             uint256 amountInMaxLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
             sqrtQ = SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountInMaxLessFee, zeroForOne);
@@ -70,7 +66,6 @@ library SwapMath {
         }
 
         if (sqrtQ._x != sqrtQTarget._x) {
-            priceAfter = FixedPoint128.uq128x128(uint256(sqrtQ._x)**2);
             if (amountInMax > 0) {
                 // ensure that we can pay for the calculated input amount
                 assert(SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips) <= amountInMax);
@@ -82,7 +77,6 @@ library SwapMath {
                 feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
             }
         } else {
-            priceAfter = target;
             feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
             if (amountInMax > 0) assert(amountIn.add(feeAmount) <= amountInMax);
         }

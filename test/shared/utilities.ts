@@ -1,7 +1,7 @@
 import {BigNumber, BigNumberish, utils, constants} from 'ethers'
 import bn from 'bignumber.js'
-export const MIN_TICK = -7351
-export const MAX_TICK = 7351
+export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
+export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
 
 export enum FeeAmount {
@@ -11,9 +11,9 @@ export enum FeeAmount {
 }
 
 export const TICK_SPACINGS: {[amount in FeeAmount]: number} = {
-  [FeeAmount.LOW]: 1,
-  [FeeAmount.MEDIUM]: 1,
-  [FeeAmount.HIGH]: 1,
+  [FeeAmount.LOW]: 12,
+  [FeeAmount.MEDIUM]: 60,
+  [FeeAmount.HIGH]: 180,
 }
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -44,23 +44,20 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-export function encodePrice(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
-  return BigNumber.from(reserve1).mul(BigNumber.from(2).pow(128)).div(reserve0)
-}
+bn.config({EXPONENTIAL_AT: 999999})
 
+// returns the sqrt price as a 64x96
 export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
-  return BigNumber.from(new bn(encodePrice(reserve1, reserve0).toString()).sqrt().integerValue(3).toString())
+  return BigNumber.from(
+    new bn(reserve1.toString())
+      .div(reserve0.toString())
+      .sqrt()
+      .multipliedBy(new bn(2).pow(96))
+      .integerValue(3)
+      .toString()
+  )
 }
 
 export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
   return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
-}
-
-// handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-export function bnify2(a: BigNumberish | [BigNumberish] | {0: BigNumberish}): BigNumber {
-  if (Array.isArray(a)) {
-    return BigNumber.from(a[0])
-  } else {
-    return BigNumber.from(a)
-  }
 }

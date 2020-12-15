@@ -65,7 +65,6 @@ describe('UniswapV3Factory', () => {
     it('succeeds for medium fee pair', async () => {
       await createAndCheckPair(TEST_ADDRESSES, FeeAmount.MEDIUM)
     })
-
     it('succeeds for high fee pair', async () => {
       await createAndCheckPair(TEST_ADDRESSES, FeeAmount.HIGH)
     })

@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
 interface IUniswapV3Pair {
-    event Initialized(uint256 price);
+    event Initialized(uint160 sqrtPrice);
 
     // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
@@ -27,15 +27,13 @@ interface IUniswapV3Pair {
 
     function blockTimestampLast() external view returns (uint32);
 
-    function liquidityCumulativeLast() external view returns (uint160);
-
     function tickCumulativeLast() external view returns (int56);
-
-    function liquidityCurrent() external view returns (uint128);
 
     function tickBitmap(int16) external view returns (uint256);
 
-    function priceCurrent() external view returns (uint256);
+    function liquidityCurrent() external view returns (uint128);
+
+    function sqrtPriceCurrent() external view returns (uint160);
 
     function feeGrowthGlobal0() external view returns (uint256);
 
@@ -50,23 +48,35 @@ interface IUniswapV3Pair {
 
     function tickCurrent() external view returns (int24);
 
-    function getCumulatives()
-        external
-        view
-        returns (
-            uint32 blockTimestamp,
-            uint160 liquidityCumulative,
-            int56 tickCumulative
-        );
+    function getCumulatives() external view returns (uint32 blockTimestamp, int56 tickCumulative);
 
     // initialize the pair
-    function initialize(uint256 price) external;
+    function initialize(uint160 sqrtPrice) external;
 
-    function setPosition(
+    // collect fees
+    function collectFees(
         int24 tickLower,
         int24 tickUpper,
-        int128 liquidityDelta
-    ) external returns (int256 amount0, int256 amount1);
+        address to,
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external returns (uint256 amount0, uint256 amount1);
+
+    // mint some liquidity to an address
+    function mint(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 amount
+    ) external returns (uint256 amount0, uint256 amount1);
+
+    // burn the sender's liquidity
+    function burn(
+        address to,
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 amount
+    ) external returns (uint256 amount0, uint256 amount1);
 
     // swapping
     function swapExact0For1(
@@ -101,4 +111,9 @@ interface IUniswapV3Pair {
         address to,
         uint256 amount
     ) external;
+
+    // allows anyone to collect protocol fees to feeTo
+    function collect(uint256 amount0Requested, uint256 amount1Requested)
+        external
+        returns (uint256 amount0, uint256 amount1);
 }

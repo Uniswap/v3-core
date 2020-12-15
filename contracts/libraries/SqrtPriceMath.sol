@@ -2,19 +2,29 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/Math.sol';
 
 import './SafeCast.sol';
-import './FixedPoint64.sol';
+import './FixedPoint96.sol';
 import './FixedPoint128.sol';
 
 library SqrtPriceMath {
-    using SafeMath for uint128;
-    using SafeCast for int256;
     using SafeMath for uint256;
     using SafeCast for uint256;
+
+    function divRoundingUp(uint256 x, uint256 d) private pure returns (uint256) {
+        // addition is safe because (uint256(-1) / 1) + (uint256(-1) % 1 > 0 ? 1 : 0) == uint256(-1)
+        return (x / d) + (x % d > 0 ? 1 : 0);
+    }
+
+    function isMulSafe(uint256 x, uint256 y) private pure returns (bool) {
+        return (x * y) / x == y;
+    }
+
+    function isAddSafe(uint256 x, uint256 y) private pure returns (bool) {
+        return x <= uint256(-1) - y;
+    }
 
     function mulDivRoundingUp(
         uint256 x,
@@ -25,93 +35,127 @@ library SqrtPriceMath {
     }
 
     function getNextPriceFromInput(
-        FixedPoint64.uq64x64 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
-    ) internal pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
+    ) internal pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
         require(sqrtP._x > 0, 'SqrtPriceMath::getNextPrice: sqrtP cannot be zero');
         require(liquidity > 0, 'SqrtPriceMath::getNextPrice: liquidity cannot be zero');
         if (amountIn == 0) return sqrtP;
 
+        // the following rounds up/down in the division to ensure we don't go past the next price
+
         if (zeroForOne) {
-            // calculate liquidity / ((liquidity / sqrt(P)) + x), i.e.
-            // liquidity * sqrt(P) / (liquidity + x * sqrt(P)), rounding up
-            uint256 numerator = uint256(liquidity) * sqrtP._x;
-            uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).add(amountIn.mul(sqrtP._x));
-            sqrtQ = FixedPoint64.uq64x64(mulDivRoundingUp(numerator, FixedPoint64.Q64, denominator).toUint128());
+            uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
+            if (isMulSafe(amountIn, sqrtP._x) && isAddSafe(numerator1, amountIn * sqrtP._x)) {
+                uint256 denominator = numerator1 + amountIn * sqrtP._x;
+                // calculate liquidity * sqrt(P) / (liquidity + x * sqrt(P))
+                sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
+            } else {
+                // calculate liquidity / (liquidity / sqrt(P) + x)
+                sqrtQ = FixedPoint96.uq64x96(
+                    divRoundingUp(numerator1, (numerator1 / sqrtP._x).add(amountIn)).toUint160()
+                );
+            }
         } else {
-            // calculate sqrt(P) + y / liquidity, i.e.
-            // calculate (liquidity * sqrt(P) + y) / liquidity
-            sqrtQ = FixedPoint64.uq64x64(
-                ((uint256(liquidity) * sqrtP._x).add(amountIn.mul(FixedPoint64.Q64)) / liquidity).toUint128()
-            );
+            // calculate sqrt(P) + y / liquidity
+            // TODO verify that this functional form introduces as little loss as possible
+            // avoid a mulDiv for most inputs
+            if (amountIn <= uint160(-1)) {
+                sqrtQ = FixedPoint96.uq64x96(
+                    uint256(sqrtP._x).add((amountIn << FixedPoint96.RESOLUTION) / liquidity).toUint160()
+                );
+            } else {
+                sqrtQ = FixedPoint96.uq64x96(
+                    uint256(sqrtP._x).add(FullMath.mulDiv(amountIn, FixedPoint96.Q96, liquidity)).toUint160()
+                );
+            }
         }
     }
 
-    // TODO make sure overflow isn't a problem here
     function getNextPriceFromOutput(
-        FixedPoint64.uq64x64 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amountOut,
         bool zeroForOne
-    ) internal pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
+    ) internal pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
         require(sqrtP._x > 0, 'SqrtPriceMath::getNextPrice: sqrtP cannot be zero');
         require(liquidity > 0, 'SqrtPriceMath::getNextPrice: liquidity cannot be zero');
         if (amountOut == 0) return sqrtP;
 
+        // the following rounds down/up in the division to ensure we don't go past the next price
+
         if (zeroForOne) {
-            // calculate sqrt(P) - y / liquidity, i.e.
-            // calculate (liquidity * sqrt(P) - y) / liquidity
-            sqrtQ = FixedPoint64.uq64x64(
-                ((uint256(liquidity) * sqrtP._x).sub(amountOut.mul(FixedPoint64.Q64)) / liquidity).toUint128()
-            );
+            // calculate sqrt(P) - y / liquidity
+            // TODO verify that this functional form introduces as little loss as possible
+            // avoid a mulDiv for most inputs
+            if (amountOut <= uint160(-1)) {
+                sqrtQ = FixedPoint96.uq64x96(
+                    uint256(sqrtP._x).sub((amountOut << FixedPoint96.RESOLUTION) / liquidity).toUint160()
+                );
+            } else {
+                sqrtQ = FixedPoint96.uq64x96(
+                    uint256(sqrtP._x).sub(FullMath.mulDiv(amountOut, FixedPoint96.Q96, liquidity)).toUint160()
+                );
+            }
         } else {
-            // calculate liquidity * sqrt(P) / (liquidity - x * sqrt(P)), rounding up
-            uint256 numerator = uint256(liquidity) * sqrtP._x;
-            uint256 denominator = (uint256(liquidity) << FixedPoint64.RESOLUTION).sub(amountOut.mul(sqrtP._x));
-            sqrtQ = FixedPoint64.uq64x64(mulDivRoundingUp(numerator, FixedPoint64.Q64, denominator).toUint128());
+            uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
+            if (isMulSafe(amountOut, sqrtP._x) && numerator1 > amountOut * sqrtP._x) {
+                uint256 denominator = numerator1 - amountOut * sqrtP._x;
+                // calculate liquidity * sqrt(P) / (liquidity - x * sqrt(P))
+                sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
+            } else {
+                // calculate liquidity / (liquidity / sqrt(P) - x)
+                sqrtQ = FixedPoint96.uq64x96(
+                    divRoundingUp(numerator1, (numerator1 / sqrtP._x).sub(amountOut)).toUint160()
+                );
+            }
         }
     }
 
     function getAmount0Delta(
-        FixedPoint64.uq64x64 memory sqrtP, // square root of current price
-        FixedPoint64.uq64x64 memory sqrtQ, // square root of target price
+        FixedPoint96.uq64x96 memory sqrtP, // square root of current price
+        FixedPoint96.uq64x96 memory sqrtQ, // square root of target price
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount0) {
         assert(sqrtP._x >= sqrtQ._x);
 
-        // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
-        // liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q)), rounding up
-        uint256 numerator1 = uint256(liquidity) << FixedPoint64.RESOLUTION;
-        uint128 numerator2 = sqrtP._x - sqrtQ._x;
-        uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
+        uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
+        uint256 numerator2 = sqrtP._x - sqrtQ._x;
 
-        if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
-        else return FullMath.mulDiv(numerator1, numerator2, denominator);
+        // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
+        // calculate liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
+
+        if (isMulSafe(sqrtP._x, sqrtQ._x)) {
+            uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
+            if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
+            else return FullMath.mulDiv(numerator1, numerator2, denominator);
+        } else {
+            if (roundUp) return divRoundingUp(mulDivRoundingUp(numerator1, numerator2, sqrtP._x), sqrtQ._x);
+            else return FullMath.mulDiv(numerator1, numerator2, sqrtP._x) / sqrtQ._x;
+        }
     }
 
     function getAmount1Delta(
-        FixedPoint64.uq64x64 memory sqrtP, // square root of current price
-        FixedPoint64.uq64x64 memory sqrtQ, // square root of target price
+        FixedPoint96.uq64x96 memory sqrtP, // square root of current price
+        FixedPoint96.uq64x96 memory sqrtQ, // square root of target price
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount1) {
-        assert(sqrtP._x <= sqrtQ._x);
+        assert(sqrtQ._x >= sqrtP._x);
 
-        // calculate liquidity * (sqrt(Q) - sqrt(P)), rounding up
-        uint256 numerator = uint256(liquidity) * (sqrtQ._x - sqrtP._x);
-
-        bool add1 = roundUp ? (numerator % FixedPoint64.Q64 > 0) : false;
-        return numerator / FixedPoint64.Q64 + (add1 ? 1 : 0);
+        // calculate liquidity * (sqrt(Q) - sqrt(P))
+        if (roundUp) return mulDivRoundingUp(liquidity, sqrtQ._x - sqrtP._x, FixedPoint96.Q96);
+        else return FullMath.mulDiv(liquidity, sqrtQ._x - sqrtP._x, FixedPoint96.Q96);
     }
 
     // helpers to get signed deltas for use in setPosition
     // TODO not clear this is the right thing to do
     function getAmount0Delta(
-        FixedPoint64.uq64x64 memory sqrtP, // square root of current price
-        FixedPoint64.uq64x64 memory sqrtQ, // square root of target price
+        FixedPoint96.uq64x96 memory sqrtP, // square root of current price
+        FixedPoint96.uq64x96 memory sqrtQ, // square root of target price
         int128 liquidity
     ) internal pure returns (int256 amount0) {
         if (liquidity < 0) return -getAmount0Delta(sqrtP, sqrtQ, uint128(-liquidity), false).toInt256();
@@ -119,8 +163,8 @@ library SqrtPriceMath {
     }
 
     function getAmount1Delta(
-        FixedPoint64.uq64x64 memory sqrtP, // square root of current price
-        FixedPoint64.uq64x64 memory sqrtQ, // square root of target price
+        FixedPoint96.uq64x96 memory sqrtP, // square root of current price
+        FixedPoint96.uq64x96 memory sqrtQ, // square root of target price
         int128 liquidity
     ) internal pure returns (int256 amount0) {
         if (liquidity < 0) return -getAmount1Delta(sqrtP, sqrtQ, uint128(-liquidity), false).toInt256();

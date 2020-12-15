@@ -3,20 +3,20 @@ pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
 import '../libraries/SqrtPriceMath.sol';
-import '../libraries/FixedPoint64.sol';
+import '../libraries/FixedPoint96.sol';
 
 contract SqrtPriceMathTest {
     function getNextPriceFromInput(
-        FixedPoint64.uq64x64 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
-    ) external pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
+    ) external pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
         return SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
     }
 
     function getGasCostOfGetNextPriceFromInput(
-        FixedPoint64.uq64x64 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
@@ -27,16 +27,16 @@ contract SqrtPriceMathTest {
     }
 
     function getNextPriceFromOutput(
-        FixedPoint64.uq64x64 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amountOut,
         bool zeroForOne
-    ) external pure returns (FixedPoint64.uq64x64 memory sqrtQ) {
+    ) external pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
         return SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
     }
 
     function getGasCostOfGetNextPriceFromOutput(
-        FixedPoint64.uq64x64 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amountOut,
         bool zeroForOne
@@ -47,8 +47,8 @@ contract SqrtPriceMathTest {
     }
 
     function getAmount0Delta(
-        FixedPoint64.uq64x64 memory sqrtP,
-        FixedPoint64.uq64x64 memory sqrtQ,
+        FixedPoint96.uq64x96 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtQ,
         uint128 liquidity,
         bool roundUp
     ) external pure returns (uint256 amount0) {
@@ -56,8 +56,8 @@ contract SqrtPriceMathTest {
     }
 
     function getAmount1Delta(
-        FixedPoint64.uq64x64 memory sqrtP,
-        FixedPoint64.uq64x64 memory sqrtQ,
+        FixedPoint96.uq64x96 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtQ,
         uint128 liquidity,
         bool roundUp
     ) external pure returns (uint256 amount1) {
@@ -65,8 +65,8 @@ contract SqrtPriceMathTest {
     }
 
     function getGasCostOfGetAmount0Delta(
-        FixedPoint64.uq64x64 memory sqrtP,
-        FixedPoint64.uq64x64 memory sqrtQ,
+        FixedPoint96.uq64x96 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtQ,
         uint128 liquidity,
         bool roundUp
     ) external view returns (uint256) {
@@ -76,8 +76,8 @@ contract SqrtPriceMathTest {
     }
 
     function getGasCostOfGetAmount1Delta(
-        FixedPoint64.uq64x64 memory sqrtP,
-        FixedPoint64.uq64x64 memory sqrtQ,
+        FixedPoint96.uq64x96 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtQ,
         uint128 liquidity,
         bool roundUp
     ) external view returns (uint256) {
