@@ -12,8 +12,8 @@ contract SwapMathEchidnaTest {
     }
 
     function checkComputeSwapStepInvariants(
-        uint128 sqrtPriceRaw,
-        uint128 sqrtPriceTargetRaw,
+        uint160 sqrtPriceRaw,
+        uint160 sqrtPriceTargetRaw,
         uint128 liquidity,
         uint256 amountInMax,
         uint24 feePips
