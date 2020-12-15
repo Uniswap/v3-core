@@ -697,9 +697,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             params.zeroForOne
                 ? IUniswapV3SwapCallback(msg.sender).swapCallback(-params.amountIn.toInt256(), amountOut.toInt256())
                 : IUniswapV3SwapCallback(msg.sender).swapCallback(amountOut.toInt256(), -params.amountIn.toInt256());
-            uint256 balanceAfter = IERC20(tokenIn).balanceOf(address(this));
             require(
-                balanceAfter.sub(balanceBefore) >= params.amountIn,
+                balanceBefore.add(params.amountIn) >= IERC20(tokenIn).balanceOf(address(this)),
                 'UniswapV3Pair::_swap: insufficient input amount'
             );
         }
