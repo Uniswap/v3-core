@@ -45,6 +45,10 @@ library SqrtPriceMath {
         uint256 amount,
         bool add
     ) internal pure returns (FixedPoint96.uq64x96 memory) {
+        // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
+        // or, if this is impossible because of overlow,
+        // calculate liquidity / (liquidity / sqrt(P) +- x)
+
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
         if (
@@ -55,10 +59,8 @@ library SqrtPriceMath {
             )
         ) {
             uint256 denominator = add ? (numerator1 + amount * sqrtP._x) : (numerator1 - amount * sqrtP._x);
-            // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
             return FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
         } else {
-            // calculate liquidity / (liquidity / sqrt(P) +- x)
             return FixedPoint96.uq64x96(add
                 ? divRoundingUp(numerator1, (numerator1 / sqrtP._x).add(amount)).toUint160()
                 : divRoundingUp(numerator1, (numerator1 / sqrtP._x).sub(amount)).toUint160()
@@ -72,12 +74,20 @@ library SqrtPriceMath {
         uint256 amount,
         bool add
     ) internal pure returns (FixedPoint96.uq64x96 memory) {
-        // TODO verify that this functional form introduces as little loss as possible
         // calculate sqrt(P) +- y / liquidity
-        // avoid a mulDiv for most inputs
-        uint256 quotient = amount <= uint160(-1)
-            ? (amount << FixedPoint96.RESOLUTION) / liquidity
-            : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity);
+
+        uint256 quotient;
+        if (add) {
+            // avoid a mulDiv for most inputs
+            quotient = amount <= uint160(-1)
+                ? (amount << FixedPoint96.RESOLUTION) / liquidity
+                : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity);            
+        } else {
+            // avoid a mulDiv for most inputs
+            quotient = amount <= uint160(-1)
+                ? divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                : mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity);
+        }
         return FixedPoint96.uq64x96((add
             ? uint256(sqrtP._x).add(quotient)
             : uint256(sqrtP._x).sub(quotient)
@@ -90,13 +100,14 @@ library SqrtPriceMath {
         uint256 amountIn,
         bool zeroForOne
     ) internal pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
-        require(sqrtP._x > 0, 'SqrtPriceMath::getNextPrice: sqrtP cannot be zero');
-        require(liquidity > 0, 'SqrtPriceMath::getNextPrice: liquidity cannot be zero');
+        assert(sqrtP._x != 0);
+        assert(liquidity != 0);
         if (amountIn == 0) return sqrtP;
 
         // round to make sure that we don't pass the target price
-        if (zeroForOne) return getNextPriceRoundingUp(sqrtP, liquidity, amountIn, true);
-        else return getNextPriceRoundingDown(sqrtP, liquidity, amountIn, true);
+        return zeroForOne
+            ? getNextPriceRoundingUp(sqrtP, liquidity, amountIn, true)
+            : getNextPriceRoundingDown(sqrtP, liquidity, amountIn, true);
     }
 
     function getNextPriceFromOutput(
@@ -105,13 +116,14 @@ library SqrtPriceMath {
         uint256 amountOut,
         bool zeroForOne
     ) internal pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
-        require(sqrtP._x > 0, 'SqrtPriceMath::getNextPrice: sqrtP cannot be zero');
-        require(liquidity > 0, 'SqrtPriceMath::getNextPrice: liquidity cannot be zero');
+        assert(sqrtP._x != 0);
+        assert(liquidity != 0);
         if (amountOut == 0) return sqrtP;
 
         // round to make sure that we pass the target price
-        if (zeroForOne) return getNextPriceRoundingDown(sqrtP, liquidity, amountOut, false);
-        else return getNextPriceRoundingUp(sqrtP, liquidity, amountOut, false);
+        return zeroForOne
+            ? getNextPriceRoundingDown(sqrtP, liquidity, amountOut, false)
+            : getNextPriceRoundingUp(sqrtP, liquidity, amountOut, false);
     }
 
     function getAmount0Delta(
