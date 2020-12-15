@@ -26,12 +26,62 @@ library SqrtPriceMath {
         return x <= uint256(-1) - y;
     }
 
+    function isSubSafe(uint256 x, uint256 y) private pure returns (bool) {
+        return x >= y;
+    }
+
     function mulDivRoundingUp(
         uint256 x,
         uint256 y,
         uint256 d
     ) internal pure returns (uint256) {
         return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
+    }
+
+
+    function getNextPriceRoundingUp(
+        FixedPoint96.uq64x96 memory sqrtP,
+        uint128 liquidity,
+        uint256 amount,
+        bool add
+    ) internal pure returns (FixedPoint96.uq64x96 memory) {
+        uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
+
+        if (
+            isMulSafe(amount, sqrtP._x) &&
+            (add
+                ? isAddSafe(numerator1, amount * sqrtP._x)
+                : isSubSafe(numerator1, amount * sqrtP._x)
+            )
+        ) {
+            uint256 denominator = add ? (numerator1 + amount * sqrtP._x) : (numerator1 - amount * sqrtP._x);
+            // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
+            return FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
+        } else {
+            // calculate liquidity / (liquidity / sqrt(P) +- x)
+            return FixedPoint96.uq64x96(add
+                ? divRoundingUp(numerator1, (numerator1 / sqrtP._x).add(amount)).toUint160()
+                : divRoundingUp(numerator1, (numerator1 / sqrtP._x).sub(amount)).toUint160()
+            );
+        }
+    }
+
+    function getNextPriceRoundingDown(
+        FixedPoint96.uq64x96 memory sqrtP,
+        uint128 liquidity,
+        uint256 amount,
+        bool add
+    ) internal pure returns (FixedPoint96.uq64x96 memory) {
+        // TODO verify that this functional form introduces as little loss as possible
+        // calculate sqrt(P) +- y / liquidity
+        // avoid a mulDiv for most inputs
+        uint256 quotient = amount <= uint160(-1)
+            ? (amount << FixedPoint96.RESOLUTION) / liquidity
+            : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity);
+        return FixedPoint96.uq64x96((add
+            ? uint256(sqrtP._x).add(quotient)
+            : uint256(sqrtP._x).sub(quotient)
+        ).toUint160());
     }
 
     function getNextPriceFromInput(
@@ -44,34 +94,9 @@ library SqrtPriceMath {
         require(liquidity > 0, 'SqrtPriceMath::getNextPrice: liquidity cannot be zero');
         if (amountIn == 0) return sqrtP;
 
-        // the following rounds up/down in the division to ensure we don't go past the next price
-
-        if (zeroForOne) {
-            uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-            if (isMulSafe(amountIn, sqrtP._x) && isAddSafe(numerator1, amountIn * sqrtP._x)) {
-                uint256 denominator = numerator1 + amountIn * sqrtP._x;
-                // calculate liquidity * sqrt(P) / (liquidity + x * sqrt(P))
-                sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
-            } else {
-                // calculate liquidity / (liquidity / sqrt(P) + x)
-                sqrtQ = FixedPoint96.uq64x96(
-                    divRoundingUp(numerator1, (numerator1 / sqrtP._x).add(amountIn)).toUint160()
-                );
-            }
-        } else {
-            // calculate sqrt(P) + y / liquidity
-            // TODO verify that this functional form introduces as little loss as possible
-            // avoid a mulDiv for most inputs
-            if (amountIn <= uint160(-1)) {
-                sqrtQ = FixedPoint96.uq64x96(
-                    uint256(sqrtP._x).add((amountIn << FixedPoint96.RESOLUTION) / liquidity).toUint160()
-                );
-            } else {
-                sqrtQ = FixedPoint96.uq64x96(
-                    uint256(sqrtP._x).add(FullMath.mulDiv(amountIn, FixedPoint96.Q96, liquidity)).toUint160()
-                );
-            }
-        }
+        // round to make sure that we don't pass the target price
+        if (zeroForOne) return getNextPriceRoundingUp(sqrtP, liquidity, amountIn, true);
+        else return getNextPriceRoundingDown(sqrtP, liquidity, amountIn, true);
     }
 
     function getNextPriceFromOutput(
@@ -84,34 +109,9 @@ library SqrtPriceMath {
         require(liquidity > 0, 'SqrtPriceMath::getNextPrice: liquidity cannot be zero');
         if (amountOut == 0) return sqrtP;
 
-        // the following rounds down/up in the division to ensure we don't go past the next price
-
-        if (zeroForOne) {
-            // calculate sqrt(P) - y / liquidity
-            // TODO verify that this functional form introduces as little loss as possible
-            // avoid a mulDiv for most inputs
-            if (amountOut <= uint160(-1)) {
-                sqrtQ = FixedPoint96.uq64x96(
-                    uint256(sqrtP._x).sub((amountOut << FixedPoint96.RESOLUTION) / liquidity).toUint160()
-                );
-            } else {
-                sqrtQ = FixedPoint96.uq64x96(
-                    uint256(sqrtP._x).sub(FullMath.mulDiv(amountOut, FixedPoint96.Q96, liquidity)).toUint160()
-                );
-            }
-        } else {
-            uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-            if (isMulSafe(amountOut, sqrtP._x) && numerator1 > amountOut * sqrtP._x) {
-                uint256 denominator = numerator1 - amountOut * sqrtP._x;
-                // calculate liquidity * sqrt(P) / (liquidity - x * sqrt(P))
-                sqrtQ = FixedPoint96.uq64x96(mulDivRoundingUp(numerator1, sqrtP._x, denominator).toUint160());
-            } else {
-                // calculate liquidity / (liquidity / sqrt(P) - x)
-                sqrtQ = FixedPoint96.uq64x96(
-                    divRoundingUp(numerator1, (numerator1 / sqrtP._x).sub(amountOut)).toUint160()
-                );
-            }
-        }
+        // round to make sure that we pass the target price
+        if (zeroForOne) return getNextPriceRoundingDown(sqrtP, liquidity, amountOut, false);
+        else return getNextPriceRoundingUp(sqrtP, liquidity, amountOut, false);
     }
 
     function getAmount0Delta(
@@ -127,7 +127,6 @@ library SqrtPriceMath {
 
         // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
         // calculate liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
-
         if (isMulSafe(sqrtP._x, sqrtQ._x)) {
             uint256 denominator = uint256(sqrtP._x) * sqrtQ._x;
             if (roundUp) return mulDivRoundingUp(numerator1, numerator2, denominator);
