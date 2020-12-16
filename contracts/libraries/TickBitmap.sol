@@ -11,7 +11,7 @@ library TickBitmap {
     // bitPos is the position in the word from most to least significant where the flag is set
     function position(int24 tick) private pure returns (int16 wordPos, uint8 bitPos) {
         wordPos = int16(tick >> 8);
-        bitPos = uint8(255) - uint8(tick % 256);
+        bitPos = uint8(255) - uint8(uint24(tick < 0 ? -tick : tick) % 256);
     }
 
     // returns whether the given tick is initialized
@@ -39,7 +39,7 @@ library TickBitmap {
             (int16 wordPos, uint8 bitPos) = position(tick);
             uint256 word = self[wordPos];
             // all the 1s at or to the left of the current bitPos
-            uint256 mask = uint256(-1) - ((1 << bitPos) - 1);
+            uint256 mask = type(uint256).max - ((1 << bitPos) - 1);
             uint256 masked = word & mask;
 
             // there are no initialized ticks to the left or at of the current tick, return the leftmost in the word
@@ -51,7 +51,7 @@ library TickBitmap {
             (int16 wordPos, uint8 bitPos) = position(tick + 1);
             uint256 word = self[wordPos];
             // all the 1s at or to the right of the bitPos
-            uint256 mask = bitPos == 255 ? uint256(-1) : (1 << (bitPos + 1)) - 1;
+            uint256 mask = bitPos == 255 ? type(uint256).max : (1 << (bitPos + 1)) - 1;
             uint256 masked = word & mask;
 
             // there are no initialized ticks to the right of the current tick, just return the rightmost in the word

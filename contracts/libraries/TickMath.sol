@@ -9,8 +9,8 @@ library TickMath {
 
     // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > max tick.
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
-        uint256 absTick = uint256(tick < 0 ? -tick : tick);
-        require(absTick <= uint256(MAX_TICK), 'TickMath::getRatioAtTick: invalid tick');
+        uint256 absTick = uint256(tick < 0 ? -int256(tick) : tick);
+        require(absTick <= uint256(int256(MAX_TICK)), 'TickMath::getRatioAtTick: invalid tick');
 
         ratio = absTick & 0x1 != 0 ? 0xfffcb933bd6fad37aa2d162d1a594001 : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfff97272373d413259a46990580e213a) >> 128;
@@ -33,7 +33,7 @@ library TickMath {
         if (absTick & 0x40000 != 0) ratio = (ratio * 0x2216e584f5fa1ea926041bedfe98) >> 128;
         if (absTick & 0x80000 != 0) ratio = (ratio * 0x48a170391f7dc42444e8fa2) >> 128;
 
-        if (tick > 0) ratio = uint256(-1) / ratio;
+        if (tick > 0) ratio = type(uint256).max / ratio;
     }
 
     // Calculate the highest tick value such that getRatioAtTick(tick) <= ratio.

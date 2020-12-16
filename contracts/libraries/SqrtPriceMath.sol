@@ -15,11 +15,11 @@ library SqrtPriceMath {
     }
 
     function isAddSafe(uint256 x, uint256 y) private pure returns (bool) {
-        return x <= uint256(-1) - y;
+        return x <= type(uint256).max - y;
     }
 
     function divRoundingUp(uint256 x, uint256 d) private pure returns (uint256) {
-        // addition is safe because (uint256(-1) / 1) + (uint256(-1) % 1 > 0 ? 1 : 0) == uint256(-1)
+        // addition is safe because (type(uint256).max / 1) + (type(uint256).max % 1 > 0 ? 1 : 0) == type(uint256).max
         return (x / d) + (x % d > 0 ? 1 : 0);
     }
 
@@ -71,12 +71,12 @@ library SqrtPriceMath {
         // in both cases, avoid a mulDiv for most inputs
         uint256 quotient = add
             ? (
-                amount <= uint160(-1)
+                amount <= type(uint160).max
                     ? (amount << FixedPoint96.RESOLUTION) / liquidity
                     : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
             )
             : (
-                amount <= uint160(-1)
+                amount <= type(uint160).max
                     ? divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
                     : mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
             );

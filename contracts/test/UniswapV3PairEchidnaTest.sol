@@ -11,7 +11,6 @@ import '../libraries/SafeCast.sol';
 import '../libraries/SqrtTickMath.sol';
 
 contract UniswapV3PairEchidnaTest {
-    using SafeMath for uint256;
     using SafeCast for uint256;
 
     TestERC20 token0;
@@ -26,13 +25,13 @@ contract UniswapV3PairEchidnaTest {
         factory = new UniswapV3Factory(address(this));
         initializeTokens();
         createNewPair(30);
-        token0.approve(address(pair), uint256(-1));
-        token1.approve(address(pair), uint256(-1));
+        token0.approve(address(pair), type(uint256).max);
+        token1.approve(address(pair), type(uint256).max);
     }
 
     function initializeTokens() private {
-        TestERC20 tokenA = new TestERC20(uint256(-1));
-        TestERC20 tokenB = new TestERC20(uint256(-1));
+        TestERC20 tokenA = new TestERC20(type(uint256).max);
+        TestERC20 tokenB = new TestERC20(type(uint256).max);
         (token0, token1) = (address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA));
     }
 

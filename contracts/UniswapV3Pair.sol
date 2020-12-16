@@ -4,8 +4,8 @@ pragma solidity =0.8.0;
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import '@openzeppelin/contracts/math/SignedSafeMath.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import './openzeppelin/SignedSafeMath.sol';
+import './openzeppelin/IERC20.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
@@ -23,6 +23,7 @@ import './libraries/FixedPoint128.sol';
 contract UniswapV3Pair is IUniswapV3Pair {
     using SignedSafeMath for int128;
     using SignedSafeMath for int256;
+    using SafeCast for int128;
     using SafeCast for int256;
     using SafeCast for uint256;
     using MixedSafeMath for uint128;
@@ -388,13 +389,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount0, uint256 amount1) {
         Position storage position = _updatePosition(msg.sender, tickLower, tickUpper, 0, tickCurrent());
 
-        if (amount0Requested == uint256(-1)) {
+        if (amount0Requested == type(uint256).max) {
             amount0 = position.feesOwed0;
         } else {
             require(amount0Requested <= position.feesOwed0, 'UniswapV3Pair::collectFees: too much token0 requested');
             amount0 = amount0Requested;
         }
-        if (amount1Requested == uint256(-1)) {
+        if (amount1Requested == type(uint256).max) {
             amount1 = position.feesOwed1;
         } else {
             require(amount1Requested <= position.feesOwed1, 'UniswapV3Pair::collectFees: too much token1 requested');
@@ -655,7 +656,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
                             tickInfo.feeGrowthOutside1._x
                     );
-                    tickInfo.secondsOutside = unchecked { _blockTimestamp() - tickInfo.secondsOutside; }
+                    unchecked { tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; }
 
                     // update liquidityCurrent, subi from right to left, addi from left to right
                     if (params.zeroForOne) {
@@ -788,13 +789,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         override
         returns (uint256 amount0, uint256 amount1)
     {
-        if (amount0Requested == uint256(-1)) {
+        if (amount0Requested == type(uint256).max) {
             amount0 = feeToFees0;
         } else {
             require(amount0Requested <= feeToFees0, 'UniswapV3Pair::collect: too much token0 requested');
             amount0 = amount0Requested;
         }
-        if (amount1Requested == uint256(-1)) {
+        if (amount1Requested == type(uint256).max) {
             amount1 = feeToFees1;
         } else {
             require(amount1Requested <= feeToFees1, 'UniswapV3Pair::collect: too much token1 requested');

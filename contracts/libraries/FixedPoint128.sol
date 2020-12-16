@@ -19,7 +19,7 @@ library FixedPoint128 {
         require(denominator > 0, 'FixedPoint128::fraction: division by zero');
         if (numerator == 0) return uq128x128(0);
 
-        if (numerator <= uint128(-1)) {
+        if (numerator <= type(uint128).max) {
             uint256 result = (numerator << RESOLUTION) / denominator;
             return uq128x128(result);
         } else {
