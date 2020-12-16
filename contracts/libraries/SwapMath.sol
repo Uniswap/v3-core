@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
 import './FixedPoint96.sol';
@@ -9,8 +8,6 @@ import './FixedPoint128.sol';
 import './SqrtPriceMath.sol';
 
 library SwapMath {
-    using SafeMath for uint256;
-
     function computeSwapStep(
         FixedPoint96.uq64x96 memory sqrtP,
         FixedPoint96.uq64x96 memory sqrtQTarget,
@@ -78,7 +75,7 @@ library SwapMath {
             }
         } else {
             feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
-            if (amountInMax > 0) assert(amountIn.add(feeAmount) <= amountInMax);
+            if (amountInMax > 0) assert(amountIn + feeAmount <= amountInMax);
         }
     }
 }

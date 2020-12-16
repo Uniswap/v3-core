@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity =0.7.6;
-pragma abicoder v2;
+pragma solidity =0.8.0;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
@@ -23,8 +21,6 @@ import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
-    using SafeMath for uint128;
-    using SafeMath for uint256;
     using SignedSafeMath for int128;
     using SignedSafeMath for int256;
     using SafeCast for int256;
@@ -369,8 +365,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position.feesOwed1 += feesOwed1;
 
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-        tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(liquidityDelta).toInt128();
-        tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(liquidityDelta).toInt128();
+        tickInfoLower.liquidityDelta = (tickInfoLower.liquidityDelta + liquidityDelta).toInt128();
+        tickInfoUpper.liquidityDelta = (tickInfoUpper.liquidityDelta - liquidityDelta).toInt128();
 
         // clear any tick or position data that is no longer needed
         if (liquidityDelta < 0) {
@@ -445,11 +441,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1);
             require(
-                balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
+                balance0 + amount0 <= IERC20(token0).balanceOf(address(this)),
                 'UniswapV3Pair::mint: insufficient token0 amount'
             );
             require(
-                balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)),
+                balance1 + amount1 <= IERC20(token1).balanceOf(address(this)),
                 'UniswapV3Pair::mint: insufficient token1 amount'
             );
         }
@@ -625,11 +621,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // decrement (increment) remaining input (negative output) amount
                 // TODO we might not need safemath below
                 if (state.amountSpecifiedRemaining > 0) {
-                    state.amountSpecifiedRemaining -= step.amountIn.add(step.feeAmount).toInt256();
-                    amountCalculated = amountCalculated.add(step.amountOut);
+                    state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
+                    amountCalculated += step.amountOut;
                 } else {
                     state.amountSpecifiedRemaining += step.amountOut.toInt256();
-                    amountCalculated = amountCalculated.add(step.amountIn.add(step.feeAmount));
+                    amountCalculated += step.amountIn + step.feeAmount;
                 }
 
                 // update global fee tracker
@@ -659,7 +655,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
                             tickInfo.feeGrowthOutside1._x
                     );
-                    tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
+                    tickInfo.secondsOutside = unchecked { _blockTimestamp() - tickInfo.secondsOutside; }
 
                     // update liquidityCurrent, subi from right to left, addi from left to right
                     if (params.zeroForOne) {
@@ -705,7 +701,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(-amountIn.toInt256(), amountOut.toInt256())
                 : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut.toInt256(), -amountIn.toInt256());
             require(
-                balanceBefore.add(amountIn) >= IERC20(tokenIn).balanceOf(address(this)),
+                balanceBefore + amountIn >= IERC20(tokenIn).balanceOf(address(this)),
                 'UniswapV3Pair::_swap: insufficient input amount'
             );
         }

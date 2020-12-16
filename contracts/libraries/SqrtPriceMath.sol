@@ -2,14 +2,12 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
 import './FixedPoint128.sol';
 
 library SqrtPriceMath {
-    using SafeMath for uint256;
     using SafeCast for uint256;
 
     function isMulSafe(uint256 x, uint256 y) private pure returns (bool) {
@@ -56,7 +54,7 @@ library SqrtPriceMath {
             FixedPoint96.uq64x96(
                 divRoundingUp(
                     numerator1,
-                    add ? (numerator1 / sqrtP._x).add(amount) : (numerator1 / sqrtP._x).sub(amount)
+                    add ? numerator1 / sqrtP._x + amount : numerator1 / sqrtP._x - amount
                 )
                     .toUint160()
             );
@@ -84,7 +82,7 @@ library SqrtPriceMath {
             );
 
         return
-            FixedPoint96.uq64x96((add ? uint256(sqrtP._x).add(quotient) : uint256(sqrtP._x).sub(quotient)).toUint160());
+            FixedPoint96.uq64x96((add ? uint256(sqrtP._x) + quotient : uint256(sqrtP._x) - quotient).toUint160());
     }
 
     function getNextPriceFromInput(

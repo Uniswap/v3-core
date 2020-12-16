@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity =0.7.6;
+pragma solidity =0.8.0;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
-
-import '@openzeppelin/contracts/math/SafeMath.sol';
 
 import './TestERC20.sol';
 import './TestUniswapV3Callee.sol';
