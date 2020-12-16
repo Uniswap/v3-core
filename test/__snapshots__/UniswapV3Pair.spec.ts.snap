@@ -25,3 +25,11 @@ exports[`UniswapV3Pair post-initialize for low fee swapExact1For0 gas large swap
 exports[`UniswapV3Pair post-initialize for low fee swapExact1For0 gas large swap crossing several initialized ticks 1`] = `259431`;
 
 exports[`UniswapV3Pair post-initialize for low fee swapExact1For0 gas second swap in block 1`] = `99088`;
+
+exports[`gas tests: getGasCostOfGetNextPriceFrom Input zeroForOne = false gas 1`] = `742`;
+
+exports[`gas tests: getGasCostOfGetNextPriceFrom Input zeroForOne = true gas 1`] = `1351`;
+
+exports[`gas tests: getGasCostOfGetNextPriceFrom Output zeroForOne = false gas 1`] = `1344`;
+
+exports[`gas tests: getGasCostOfGetNextPriceFrom Output zeroForOne = true gas 1`] = `956`;

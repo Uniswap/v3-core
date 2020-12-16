@@ -54,42 +54,81 @@ describe('SqrtPriceMath', () => {
       ).to.eq(price)
     })
 
-    it('sqrtQ is greater than sqrtP if one for zero', async () => {
-      const sqrtQ = await sqrtPriceMath.getNextPriceFromInput(
-        {_x: encodePriceSqrt(1, 1)},
-        expandTo18Decimals(1),
-        expandTo18Decimals(1).div(10),
-        false
-      )
-      expect(sqrtQ._x).to.be.gt(encodePriceSqrt(1, 1))
+    // test directional things that work the same for input and output
+    after(() => {
+      for (const [i, getNextPriceFunction] of [
+        sqrtPriceMath.getNextPriceFromInput,
+        sqrtPriceMath.getNextPriceFromOutput,
+      ].entries()) {
+        describe(`directional tests: getNextPriceFrom ${i === 0 ? 'Input' : 'Output'}`, () => {
+          it('sqrtQ is greater than sqrtP if one for zero', async () => {
+            const sqrtQ = await getNextPriceFunction(
+              {_x: encodePriceSqrt(1, 1)},
+              expandTo18Decimals(1),
+              expandTo18Decimals(1).div(10),
+              false
+            )
+            expect(sqrtQ._x).to.be.gt(encodePriceSqrt(1, 1))
+          })
+          it('sqrtQ is less than sqrtP if zero for one', async () => {
+            const sqrtQ = await getNextPriceFunction(
+              {_x: encodePriceSqrt(1, 1)},
+              expandTo18Decimals(1),
+              expandTo18Decimals(1).div(10),
+              true
+            )
+            expect(sqrtQ._x).to.be.lt(encodePriceSqrt(1, 1))
+          })
+          it('sqrtQ is equal to sqrtP if amount in is zero and swapping one for zero', async () => {
+            const sqrtQ = await getNextPriceFunction(
+              {_x: encodePriceSqrt(1, 1)},
+              expandTo18Decimals(1),
+              BigNumber.from(0),
+              false
+            )
+            expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 1))
+          })
+          it('sqrtQ is equal to sqrtP if amount in is zero and swapping zero for one', async () => {
+            const sqrtQ = await getNextPriceFunction(
+              {_x: encodePriceSqrt(1, 1)},
+              expandTo18Decimals(1),
+              BigNumber.from(0),
+              true
+            )
+            expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 1))
+          })
+        })
+      }
+
+      for (const [i, getGasCostOfGetNextPriceFunction] of [
+        sqrtPriceMath.getGasCostOfGetNextPriceFromInput,
+        sqrtPriceMath.getGasCostOfGetNextPriceFromOutput,
+      ].entries()) {
+        describe(`gas tests: getGasCostOfGetNextPriceFrom ${i === 0 ? 'Input' : 'Output'}`, () => {
+          it('zeroForOne = true gas', async () => {
+            await snapshotGasCost(
+              getGasCostOfGetNextPriceFunction(
+                {_x: encodePriceSqrt(1, 1)},
+                expandTo18Decimals(1),
+                expandTo18Decimals(1).div(10),
+                true
+              )
+            )
+          })
+          it('zeroForOne = false gas', async () => {
+            await snapshotGasCost(
+              getGasCostOfGetNextPriceFunction(
+                {_x: encodePriceSqrt(1, 1)},
+                expandTo18Decimals(1),
+                expandTo18Decimals(1).div(10),
+                false
+              )
+            )
+          })
+        })
+      }
     })
-    it('sqrtQ is less than sqrtP if zero for one', async () => {
-      const sqrtQ = await sqrtPriceMath.getNextPriceFromInput(
-        {_x: encodePriceSqrt(1, 1)},
-        expandTo18Decimals(1),
-        expandTo18Decimals(1).div(10),
-        true
-      )
-      expect(sqrtQ._x).to.be.lt(encodePriceSqrt(1, 1))
-    })
-    it('sqrtQ is equal to sqrtP if amount in is zero and swapping one for zero', async () => {
-      const sqrtQ = await sqrtPriceMath.getNextPriceFromInput(
-        {_x: encodePriceSqrt(1, 1)},
-        expandTo18Decimals(1),
-        BigNumber.from(0),
-        false
-      )
-      expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 1))
-    })
-    it('sqrtQ is equal to sqrtP if amount in is zero and swapping zero for one', async () => {
-      const sqrtQ = await sqrtPriceMath.getNextPriceFromInput(
-        {_x: encodePriceSqrt(1, 1)},
-        expandTo18Decimals(1),
-        BigNumber.from(0),
-        true
-      )
-      expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 1))
-    })
+
     it('price of 1 to 1.21', async () => {
       const sqrtQ = await sqrtPriceMath.getNextPriceFromInput(
         {_x: encodePriceSqrt(1, 1)},
@@ -99,6 +138,7 @@ describe('SqrtPriceMath', () => {
       )
       expect(sqrtQ._x).to.eq(encodePriceSqrt(121, 100))
     })
+
     it('price of 1 to 1/1.21', async () => {
       const sqrtQ = await sqrtPriceMath.getNextPriceFromInput(
         {_x: encodePriceSqrt(1, 1)},
@@ -129,27 +169,6 @@ describe('SqrtPriceMath', () => {
         (await sqrtPriceMath.getNextPriceFromInput({_x: encodePriceSqrt(1, 1)}, 1, constants.MaxUint256.div(2), true))
           ._x
       ).to.eq(1)
-    })
-
-    it('zeroForOne = true gas', async () => {
-      await snapshotGasCost(
-        sqrtPriceMath.getGasCostOfGetNextPriceFromInput(
-          {_x: encodePriceSqrt(1, 1)},
-          expandTo18Decimals(1),
-          expandTo18Decimals(1).div(10),
-          true
-        )
-      )
-    })
-    it('zeroForOne = false gas', async () => {
-      await snapshotGasCost(
-        sqrtPriceMath.getGasCostOfGetNextPriceFromInput(
-          {_x: encodePriceSqrt(1, 1)},
-          expandTo18Decimals(1),
-          expandTo18Decimals(1).div(10),
-          false
-        )
-      )
     })
   })
 
