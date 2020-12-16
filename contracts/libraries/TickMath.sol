@@ -1,5 +1,4 @@
-// todo: this file is a placeholder for the new tick math
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
 // sqrt(1.0001) ticks
