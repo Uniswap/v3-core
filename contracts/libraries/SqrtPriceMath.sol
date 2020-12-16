@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/math/Math.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
