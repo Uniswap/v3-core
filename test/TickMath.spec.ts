@@ -142,30 +142,28 @@ describe('TickMath', () => {
   })
 
   describe('#getTickAtRatio', () => {
-    const ratioExactlyAtTickZero = {_x: BigNumber.from('340282366920938463463374607431768211456')}
-    const ratioCloseToTickZero = {_x: ratioExactlyAtTickZero._x.add(1)}
+    const ratioExactlyAtTickZero = BigNumber.from('340282366920938463463374607431768211456')
+    const ratioCloseToTickZero = ratioExactlyAtTickZero.add(1)
 
     it('ratio too large', async () => {
       await expect(
-        tickMathTest.getTickAtRatio({
-          _x: BigNumber.from('6276865796315986613307619852238232712866172378830071145882'),
-        })
+        tickMathTest.getTickAtRatio(BigNumber.from('6276865796315986613307619852238232712866172378830071145882'))
       ).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
     })
     it('ratio too small', async () => {
-      await expect(tickMathTest.getTickAtRatio({_x: BigNumber.from('18447437462383981825').sub(1)})).to.be.revertedWith(
+      await expect(tickMathTest.getTickAtRatio(BigNumber.from('18447437462383981825').sub(1))).to.be.revertedWith(
         'TickMath::getTickAtRatio: invalid ratio'
       )
     })
 
     it('ratio at min tick boundary', async () => {
-      expect(await tickMathTest.getTickAtRatio({_x: BigNumber.from('18447437462383981825')})).to.eq(MIN_TICK)
+      expect(await tickMathTest.getTickAtRatio(BigNumber.from('18447437462383981825'))).to.eq(MIN_TICK)
     })
     it('ratio at max tick - 1 boundary', async () => {
       expect(
-        await tickMathTest.getTickAtRatio({
-          _x: BigNumber.from('6276865796315986613307619852238232712866172378830071145882').sub(1),
-        })
+        await tickMathTest.getTickAtRatio(
+          BigNumber.from('6276865796315986613307619852238232712866172378830071145882').sub(1)
+        )
       ).to.eq(MAX_TICK - 1)
     })
 
@@ -181,7 +179,7 @@ describe('TickMath', () => {
 
     it('works for arbitrary prices', async () => {
       // got this tick from the spec
-      const randomPriceAtTick365 = {_x: '12857036465196691992791697221653775109723'}
+      const randomPriceAtTick365 = '12857036465196691992791697221653775109723'
       expect(await tickMathTest.getTickAtRatio(randomPriceAtTick365)).to.eq(72641)
     })
 
@@ -197,17 +195,17 @@ describe('TickMath', () => {
     })
 
     it('accuracy', async () => {
-      expect(await tickMathTest.getTickAtRatio({_x: '5192296858534827628530496329220095'})).to.eq(-221819)
+      expect(await tickMathTest.getTickAtRatio('5192296858534827628530496329220095')).to.eq(-221819)
     })
 
     it('gas cost price exactly at 0', async () => {
       await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed(ratioExactlyAtTickZero))
     })
     it('gas cost random price', async () => {
-      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed({_x: '12857036465196691992791697221653775109723'}))
+      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed('12857036465196691992791697221653775109723'))
     })
     it('gas cost another random price', async () => {
-      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed({_x: '5192296858534827628530496329220095'}))
+      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed('5192296858534827628530496329220095'))
     })
   })
 })

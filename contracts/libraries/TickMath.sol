@@ -45,8 +45,6 @@ library TickMath {
             'TickMath::getTickAtRatio: invalid ratio'
         );
 
-        if (ratio >= 0x1000000000000000000000000000000000000000000000000) return 887272;
-
         uint256 r = ratio;
         uint256 msb = 0;
 
