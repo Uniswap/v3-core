@@ -7,7 +7,7 @@ on:
 
 jobs:
   Doc-gen:
-    name: Doc-gen
+    name: Generate wiki
     runs-on: ubuntu-latest
 
     steps:
@@ -34,4 +34,3 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_MAIL: contact@uniswap.org
           GH_NAME: Docs updater
-          EXCLUDED_FILES: 
