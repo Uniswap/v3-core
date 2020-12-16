@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity =0.6.12;
+pragma solidity =0.7.6;
 pragma experimental ABIEncoderV2;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
@@ -199,7 +199,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address _token1,
         uint24 _fee,
         int24 _tickSpacing
-    ) public {
+    ) {
         factory = _factory;
         token0 = _token0;
         token1 = _token1;

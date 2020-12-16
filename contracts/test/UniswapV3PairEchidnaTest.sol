@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity =0.6.12;
+pragma solidity =0.7.6;
 
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 
@@ -23,7 +23,7 @@ contract UniswapV3PairEchidnaTest {
     UniswapV3Pair pair;
     TestUniswapV3Callee payer;
 
-    constructor() public {
+    constructor() {
         payer = new TestUniswapV3Callee();
         factory = new UniswapV3Factory(address(this));
         initializeTokens();

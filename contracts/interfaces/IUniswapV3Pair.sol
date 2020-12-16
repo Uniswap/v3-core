@@ -8,19 +8,19 @@ interface IUniswapV3Pair {
     // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
     // immutables
-    function factory() external pure returns (address);
+    function factory() external view returns (address);
 
-    function token0() external pure returns (address);
+    function token0() external view returns (address);
 
-    function token1() external pure returns (address);
+    function token1() external view returns (address);
 
-    function fee() external pure returns (uint24);
+    function fee() external view returns (uint24);
 
-    function tickSpacing() external pure returns (int24);
+    function tickSpacing() external view returns (int24);
 
-    function MIN_TICK() external pure returns (int24);
+    function MIN_TICK() external view returns (int24);
 
-    function MAX_TICK() external pure returns (int24);
+    function MAX_TICK() external view returns (int24);
 
     // variables/state
     function feeTo() external view returns (address);
