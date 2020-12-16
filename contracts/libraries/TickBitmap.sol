@@ -17,14 +17,14 @@ library TickBitmap {
     // returns whether the given tick is initialized
     function isInitialized(mapping(int16 => uint256) storage self, int24 tick) internal view returns (bool) {
         (int16 wordPos, uint8 bitPos) = position(tick);
-        uint256 mask = uint256(1) << bitPos;
+        uint256 mask = 1 << bitPos;
         return self[wordPos] & mask != 0;
     }
 
     // flips the tick from uninitialized to initialized, or vice versa
     function flipTick(mapping(int16 => uint256) storage self, int24 tick) internal {
         (int16 wordPos, uint8 bitPos) = position(tick);
-        uint256 mask = uint256(1) << bitPos;
+        uint256 mask = 1 << bitPos;
         self[wordPos] ^= mask;
     }
 
@@ -39,7 +39,7 @@ library TickBitmap {
             (int16 wordPos, uint8 bitPos) = position(tick);
             uint256 word = self[wordPos];
             // all the 1s at or to the left of the current bitPos
-            uint256 mask = uint256(-1) - ((uint256(1) << bitPos) - 1);
+            uint256 mask = uint256(-1) - ((1 << bitPos) - 1);
             uint256 masked = word & mask;
 
             // there are no initialized ticks to the left or at of the current tick, return the leftmost in the word
@@ -51,7 +51,7 @@ library TickBitmap {
             (int16 wordPos, uint8 bitPos) = position(tick + 1);
             uint256 word = self[wordPos];
             // all the 1s at or to the right of the bitPos
-            uint256 mask = bitPos == 255 ? uint256(-1) : (uint256(1) << (bitPos + 1)) - 1;
+            uint256 mask = bitPos == 255 ? uint256(-1) : (1 << (bitPos + 1)) - 1;
             uint256 masked = word & mask;
 
             // there are no initialized ticks to the right of the current tick, just return the rightmost in the word
