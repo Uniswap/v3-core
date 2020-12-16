@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "3.1.0",
-    "@uniswap/lib": "4.0.1-alpha"
+    "@uniswap/lib": "4.0.1-alpha",
+    "solidity-docgen": "^0.5.11"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
