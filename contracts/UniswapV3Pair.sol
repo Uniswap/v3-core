@@ -77,13 +77,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
     FixedPoint128.uq128x128 public override feeGrowthGlobal1;
 
     // accumulated protocol fees
-    // there is no value in packing these values, since we only ever set one at a time
     uint256 public override feeToFees0;
     uint256 public override feeToFees1;
 
     struct TickInfo {
         // the total position liquidity that references this tick
         uint128 liquidityGross;
+        // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
+        // i.e. as the price goes up (down), for each fee vote
+        int128 liquidityDelta;
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint32 secondsOutside;
@@ -91,9 +93,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         FixedPoint128.uq128x128 feeGrowthOutside0;
         FixedPoint128.uq128x128 feeGrowthOutside1;
-        // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
-        // i.e. as the price goes up (down), for each fee vote
-        int128 liquidityDelta;
     }
     mapping(int24 => TickInfo) public tickInfos;
 
@@ -275,7 +274,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function initialize(uint160 sqrtPrice) external override {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
 
-        // initialize oracle timestamp and fee
+        // initialize oracle timestamp
         blockTimestampLast = _blockTimestamp();
 
         // initialize current price
