@@ -46,16 +46,18 @@ contract UniswapV3PairEchidnaTest {
         pair.initialize(sqrtPrice);
     }
 
-    function swap0For1(uint256 amount0In) external {
+    function swapExact0For1(uint256 amount0In) external {
+        require(amount0In > 1);
         require(amount0In < 1e18);
         token0.transfer(address(payer), amount0In);
-        pair.swap0For1(amount0In, address(this));
+        pair.swapExact0For1(amount0In, address(this));
     }
 
-    function swap1For0(uint256 amount1In) external {
+    function swapExact1For0(uint256 amount1In) external {
+        require(amount1In > 1);
         require(amount1In < 1e18);
         token1.transfer(address(payer), amount1In);
-        pair.swap1For0(amount1In, address(this));
+        pair.swapExact1For0(amount1In, address(this));
     }
 
     function mint(

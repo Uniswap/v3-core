@@ -1,13 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`SqrtPriceMath #getAmount0Delta gas cost for amount0 where roundUp = true 1`] = `889`;
+exports[`SqrtPriceMath #getAmount0Delta gas cost for amount0 where roundUp = true 1`] = `883`;
 
-exports[`SqrtPriceMath #getAmount0Delta gas cost for amount0 where roundUp = true 2`] = `769`;
+exports[`SqrtPriceMath #getAmount0Delta gas cost for amount0 where roundUp = true 2`] = `777`;
 
-exports[`SqrtPriceMath #getAmount1Delta gas cost for amount0 where roundUp = false 1`] = `769`;
+exports[`SqrtPriceMath #getAmount1Delta gas cost for amount0 where roundUp = false 1`] = `777`;
 
-exports[`SqrtPriceMath #getAmount1Delta gas cost for amount0 where roundUp = true 1`] = `889`;
+exports[`SqrtPriceMath #getAmount1Delta gas cost for amount0 where roundUp = true 1`] = `883`;
 
-exports[`SqrtPriceMath #getNextPrice zeroForOne = false gas 1`] = `584`;
+exports[`SqrtPriceMath #getNextPriceFromInput zeroForOne = false gas 1`] = `742`;
 
-exports[`SqrtPriceMath #getNextPrice zeroForOne = true gas 1`] = `1222`;
+exports[`SqrtPriceMath #getNextPriceFromInput zeroForOne = true gas 1`] = `1355`;
+
+exports[`SqrtPriceMath #getNextPriceFromOutput zeroForOne = false gas 1`] = `1348`;
+
+exports[`SqrtPriceMath #getNextPriceFromOutput zeroForOne = true gas 1`] = `956`;

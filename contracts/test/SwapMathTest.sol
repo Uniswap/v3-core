@@ -10,7 +10,7 @@ contract SwapMathTest {
         FixedPoint96.uq64x96 memory price,
         FixedPoint96.uq64x96 memory target,
         uint128 liquidity,
-        uint256 amountInMax,
+        int256 amount,
         uint24 feePips,
         bool zeroForOne
     )
@@ -23,19 +23,19 @@ contract SwapMathTest {
             uint256 feeAmount
         )
     {
-        return SwapMath.computeSwapStep(price, target, liquidity, amountInMax, feePips, zeroForOne);
+        return SwapMath.computeSwapStep(price, target, liquidity, amount, feePips, zeroForOne);
     }
 
     function getGasCostOfComputeSwapStep(
         FixedPoint96.uq64x96 memory price,
         FixedPoint96.uq64x96 memory target,
         uint128 liquidity,
-        uint256 amountInMax,
+        int256 amount,
         uint24 feePips,
         bool zeroForOne
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        SwapMath.computeSwapStep(price, target, liquidity, amountInMax, feePips, zeroForOne);
+        SwapMath.computeSwapStep(price, target, liquidity, amount, feePips, zeroForOne);
         return gasBefore - gasleft();
     }
 }

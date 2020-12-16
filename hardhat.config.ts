@@ -4,10 +4,9 @@ import '@nomiclabs/hardhat-waffle'
 
 export default {
   networks: {
-    // default configuration is fine
     hardhat: {
       allowUnlimitedContractSize: true,
-      blockGasLimit: 12000000,
+      // blockGasLimit: 12000000,
     },
   },
   solidity: {

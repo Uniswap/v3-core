@@ -15,27 +15,24 @@ contract SwapMathEchidnaTest {
         uint160 sqrtPriceRaw,
         uint160 sqrtPriceTargetRaw,
         uint128 liquidity,
-        uint256 amountInMax,
+        int256 amount,
         uint24 feePips
     ) external pure {
         requirePriceWithinBounds(sqrtPriceRaw);
         requirePriceWithinBounds(sqrtPriceTargetRaw);
+        require(feePips > 0);
         require(feePips < 1e6);
 
         bool zeroForOne = sqrtPriceRaw >= sqrtPriceTargetRaw;
 
-        require(amountInMax > 0);
+        require(amount != 0);
 
-        (
-            FixedPoint96.uq64x96 memory sqrtQ,
-            uint256 amountIn, /*uint256 amountOut*/
-            ,
-            uint256 feeAmount
-        ) = SwapMath.computeSwapStep(
+        (FixedPoint96.uq64x96 memory sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount) = SwapMath
+            .computeSwapStep(
             FixedPoint96.uq64x96(sqrtPriceRaw),
             FixedPoint96.uq64x96(sqrtPriceTargetRaw),
             liquidity,
-            amountInMax,
+            amount,
             feePips,
             zeroForOne
         );
@@ -48,6 +45,10 @@ contract SwapMathEchidnaTest {
             assert(sqrtQ._x <= sqrtPriceTargetRaw);
         }
 
-        assert(amountIn + feeAmount <= amountInMax);
+        if (amount < 0) {
+            assert(amountOut <= uint256(-amount));
+        } else {
+            assert(amountIn + feeAmount <= uint256(amount));
+        }
     }
 }

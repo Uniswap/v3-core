@@ -79,9 +79,13 @@ interface IUniswapV3Pair {
     ) external returns (uint256 amount0, uint256 amount1);
 
     // swapping
-    function swap0For1(uint256 amount0In, address recipient) external returns (uint256 amount1Out);
+    function swapExact0For1(uint256 amount0In, address recipient) external returns (uint256 amount1Out);
 
-    function swap1For0(uint256 amount1In, address recipient) external returns (uint256 amount0Out);
+    function swap0ForExact1(uint256 amount1Out, address recipient) external returns (uint256 amount0In);
+
+    function swapExact1For0(uint256 amount1In, address recipient) external returns (uint256 amount0Out);
+
+    function swap1ForExact0(uint256 amount0Out, address recipient) external returns (uint256 amount1In);
 
     function setFeeTo(address) external;
 

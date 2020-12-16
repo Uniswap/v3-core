@@ -1,5 +1,5 @@
 import bn from 'bignumber.js'
-import {BigNumber, BigNumberish, constants, Contract, ContractTransaction, Signer, utils, Wallet} from 'ethers'
+import {BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet} from 'ethers'
 import {TestERC20} from '../../typechain/TestERC20'
 import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
 import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
@@ -76,8 +76,10 @@ export type MintFunction = (
 ) => Promise<ContractTransaction>
 export type InitializeFunction = (price: BigNumberish) => Promise<ContractTransaction>
 export interface PairFunctions {
-  swap0For1: SwapFunction
-  swap1For0: SwapFunction
+  swapExact0For1: SwapFunction
+  swap0ForExact1: SwapFunction
+  swapExact1For0: SwapFunction
+  swap1ForExact0: SwapFunction
   mint: MintFunction
   initialize: InitializeFunction
 }
@@ -86,9 +88,7 @@ export function createPairFunctions({
   token1,
   swapTarget,
   pair,
-  from,
 }: {
-  from: Signer
   swapTarget: TestUniswapV3Callee
   token0: TestERC20
   token1: TestERC20
@@ -99,24 +99,40 @@ export function createPairFunctions({
    */
   async function _swap(
     inputToken: Contract,
-    amountIn: BigNumberish,
+    [amountIn, amountOut]: [BigNumberish, BigNumberish],
     to: Wallet | string
   ): Promise<ContractTransaction> {
-    const method = inputToken === token0 ? swapTarget.swap0For1 : swapTarget.swap1For0
+    const exactInput = amountOut === 0
+    const method =
+      inputToken === token0
+        ? exactInput
+          ? swapTarget.swapExact0For1
+          : swapTarget.swap0ForExact1
+        : exactInput
+        ? swapTarget.swapExact1For0
+        : swapTarget.swap1ForExact0
 
-    await inputToken.approve(swapTarget.address, amountIn)
+    await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return await method(pair.address, amountIn, toAddress)
+    return await method(pair.address, exactInput ? amountIn : amountOut, toAddress)
   }
 
-  const swap0For1: SwapFunction = (amount, to) => {
-    return _swap(token0, amount, to)
+  const swapExact0For1: SwapFunction = (amount, to) => {
+    return _swap(token0, [amount, 0], to)
   }
 
-  const swap1For0: SwapFunction = (amount, to) => {
-    return _swap(token1, amount, to)
+  const swap0ForExact1: SwapFunction = (amount, to) => {
+    return _swap(token0, [0, amount], to)
+  }
+
+  const swapExact1For0: SwapFunction = (amount, to) => {
+    return _swap(token1, [amount, 0], to)
+  }
+
+  const swap1ForExact0: SwapFunction = (amount, to) => {
+    return _swap(token1, [0, amount], to)
   }
 
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
@@ -131,5 +147,5 @@ export function createPairFunctions({
     return swapTarget.initialize(pair.address, price)
   }
 
-  return {swap0For1, swap1For0, mint, initialize}
+  return {swapExact0For1, swap0ForExact1, swapExact1For0, swap1ForExact0, mint, initialize}
 }

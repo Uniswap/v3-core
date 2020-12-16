@@ -50,8 +50,10 @@ describe('UniswapV3Pair', () => {
 
   let swapTarget: TestUniswapV3Callee
 
-  let swap0For1: SwapFunction
-  let swap1For0: SwapFunction
+  let swapExact0For1: SwapFunction
+  let swap0ForExact1: SwapFunction
+  let swapExact1For0: SwapFunction
+  let swap1ForExact0: SwapFunction
   let mint: MintFunction
   let initialize: InitializeFunction
 
@@ -70,12 +72,11 @@ describe('UniswapV3Pair', () => {
     const oldCreatePair = createPair
     createPair = async (amount, spacing) => {
       const pair = await oldCreatePair(amount, spacing)
-      ;({swap0For1, swap1For0, mint, initialize} = createPairFunctions({
+      ;({swapExact0For1, swap0ForExact1, swapExact1For0, swap1ForExact0, mint, initialize} = createPairFunctions({
         token0,
         token1,
         swapTarget,
         pair,
-        from: wallet,
       }))
       return pair
     }
@@ -431,7 +432,7 @@ describe('UniswapV3Pair', () => {
       it('tick accumulator after swap', async () => {
         // moves to tick -1
         await token0.approve(pair.address, 1000)
-        await swap0For1(1000, walletAddress)
+        await swapExact0For1(1000, walletAddress)
         await pair.setTime(TEST_PAIR_START_TIME + 4)
         let {tickCumulative} = await pair.getCumulatives()
         expect(tickCumulative).to.eq(-4)
@@ -440,10 +441,10 @@ describe('UniswapV3Pair', () => {
       it('tick accumulator after two swaps', async () => {
         await token0.approve(pair.address, constants.MaxUint256)
         await token1.approve(pair.address, constants.MaxUint256)
-        await swap0For1(expandTo18Decimals(1).div(2), walletAddress)
+        await swapExact0For1(expandTo18Decimals(1).div(2), walletAddress)
         expect(await pair.tickCurrent()).to.eq(-4452)
         await pair.setTime(TEST_PAIR_START_TIME + 4)
-        await swap1For0(expandTo18Decimals(1).div(4), walletAddress)
+        await swapExact1For0(expandTo18Decimals(1).div(4), walletAddress)
         expect(await pair.tickCurrent()).to.eq(-1558)
         await pair.setTime(TEST_PAIR_START_TIME + 10)
         let {tickCumulative} = await pair.getCumulatives()
@@ -475,7 +476,7 @@ describe('UniswapV3Pair', () => {
       })
 
       beforeEach('swap in 2 token0', async () => {
-        await swap0For1(expandTo18Decimals(2), walletAddress)
+        await swapExact0For1(expandTo18Decimals(2), walletAddress)
       })
 
       // TODO add more tests here
@@ -553,14 +554,13 @@ describe('UniswapV3Pair', () => {
       )
     })
 
-    it('swap0For1', async () => {
+    it('swapExact0For1', async () => {
       const amount0In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
       const token1BalanceBefore = await token1.balanceOf(walletAddress)
 
-      await token0.approve(pair.address, constants.MaxUint256)
-      await swap0For1(amount0In, walletAddress)
+      await swapExact0For1(amount0In, walletAddress)
 
       const token0BalanceAfter = await token0.balanceOf(walletAddress)
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
@@ -571,61 +571,79 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(-1)
     })
 
-    it('swap0For1 gas first swap ever', async () => {
-      await token0.approve(pair.address, constants.MaxUint256)
-      await snapshotGasCost(swap0For1(1000, walletAddress))
+    it('swap0ForExact1', async () => {
+      const amount1Out = 998
+
+      const token0BalanceBefore = await token0.balanceOf(walletAddress)
+      const token1BalanceBefore = await token1.balanceOf(walletAddress)
+
+      await swap0ForExact1(amount1Out, walletAddress)
+
+      const token0BalanceAfter = await token0.balanceOf(walletAddress)
+      const token1BalanceAfter = await token1.balanceOf(walletAddress)
+
+      expect(token0BalanceBefore.sub(token0BalanceAfter), 'token0 balance decreases by amount in').to.eq(1000)
+      expect(token1BalanceAfter.sub(token1BalanceBefore), 'token1 balance increases by expected amount out').to.eq(
+        amount1Out
+      )
+
+      expect(await pair.tickCurrent()).to.eq(-1)
     })
 
-    it('swap0For1 gas first swap in block', async () => {
+    it('swapExact0For1 gas first swap ever', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
-      await swap0For1(1000, walletAddress)
+      await snapshotGasCost(swapExact0For1(1000, walletAddress))
+    })
+
+    it('swapExact0For1 gas first swap in block', async () => {
+      await token0.approve(pair.address, constants.MaxUint256)
+      await swapExact0For1(1000, walletAddress)
       await pair.setTime(TEST_PAIR_START_TIME + 10)
-      const tx: Promise<ContractTransaction> = swap0For1(1000, walletAddress)
+      const tx: Promise<ContractTransaction> = swapExact0For1(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
-    it('swap0For1 gas second swap in block', async () => {
+    it('swapExact0For1 gas second swap in block', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
-      await swap0For1(1000, walletAddress)
-      const tx = swap0For1(1000, walletAddress)
+      await swapExact0For1(1000, walletAddress)
+      const tx = swapExact0For1(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
-    it('swap0For1 gas large swap', async () => {
+    it('swapExact0For1 gas large swap', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
-      const tx: Promise<ContractTransaction> = swap0For1(expandTo18Decimals(1), walletAddress)
+      const tx: Promise<ContractTransaction> = swapExact0For1(expandTo18Decimals(1), walletAddress)
       await snapshotGasCost(tx)
     })
 
-    it('swap0For1 large swap crossing several initialized ticks', async () => {
+    it('swapExact0For1 large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
       await mint(walletAddress, -tickSpacing * 2, -tickSpacing, expandTo18Decimals(1))
       await mint(walletAddress, -tickSpacing * 4, -tickSpacing * 2, expandTo18Decimals(1))
-      const tx = swap0For1(expandTo18Decimals(1), walletAddress)
+      const tx = swapExact0For1(expandTo18Decimals(1), walletAddress)
       await expect(tx).to.emit(token1, 'Transfer').withArgs(pair.address, walletAddress, '671288525725295030')
     })
 
-    it('swap0For1 gas large swap crossing several initialized ticks', async () => {
+    it('swapExact0For1 gas large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
       await mint(walletAddress, -tickSpacing * 2, -tickSpacing, expandTo18Decimals(1))
       await mint(walletAddress, -tickSpacing * 4, -tickSpacing * 2, expandTo18Decimals(1))
 
-      const tx = swap0For1(expandTo18Decimals(1), walletAddress)
+      const tx = swapExact0For1(expandTo18Decimals(1), walletAddress)
       await snapshotGasCost(tx)
     })
 
-    it('swap1For0', async () => {
+    it('swapExact1For0', async () => {
       const amount1In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
       const token1BalanceBefore = await token1.balanceOf(walletAddress)
 
-      await token1.approve(pair.address, constants.MaxUint256)
-      await swap1For0(amount1In, walletAddress)
+      await swapExact1For0(amount1In, walletAddress)
 
       const token0BalanceAfter = await token0.balanceOf(walletAddress)
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
@@ -636,52 +654,71 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(0)
     })
 
-    it('swap1For0 gas first swap ever', async () => {
+    it('swap1ForExact0', async () => {
+      const amount0Out = 998
+
+      const token0BalanceBefore = await token0.balanceOf(walletAddress)
+      const token1BalanceBefore = await token1.balanceOf(walletAddress)
+
+      await swap1ForExact0(amount0Out, walletAddress)
+
+      const token0BalanceAfter = await token0.balanceOf(walletAddress)
+      const token1BalanceAfter = await token1.balanceOf(walletAddress)
+
+      expect(token0BalanceAfter.sub(token0BalanceBefore), 'output amount increased by expected swap output').to.eq(
+        amount0Out
+      )
+      expect(token1BalanceBefore.sub(token1BalanceAfter), 'input amount decreased by amount in').to.eq(1000)
+
+      expect(await pair.tickCurrent()).to.eq(0)
+    })
+
+    it('swapExact1For0 gas first swap ever', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
-      const tx: ContractTransaction = await swap1For0(1000, walletAddress)
+      const tx: ContractTransaction = await swapExact1For0(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
-    it('swap1For0 gas first swap in block', async () => {
+    it('swapExact1For0 gas first swap in block', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
-      await swap1For0(1000, walletAddress)
+      await swapExact1For0(1000, walletAddress)
       await pair.setTime(TEST_PAIR_START_TIME + 10)
-      const tx = swap1For0(1000, walletAddress)
+      const tx = swapExact1For0(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
-    it('swap1For0 gas second swap in block', async () => {
+    it('swapExact1For0 gas second swap in block', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
-      await swap1For0(1000, walletAddress)
-      const tx = swap1For0(1000, walletAddress)
+      await swapExact1For0(1000, walletAddress)
+      const tx = swapExact1For0(1000, walletAddress)
       await snapshotGasCost(tx)
     })
 
-    it('swap1For0 gas large swap', async () => {
+    it('swapExact1For0 gas large swap', async () => {
       await token1.approve(pair.address, constants.MaxUint256)
-      const tx = swap1For0(expandTo18Decimals(1), walletAddress)
+      const tx = swapExact1For0(expandTo18Decimals(1), walletAddress)
       await snapshotGasCost(tx)
     })
 
-    it('swap1For0 large swap crossing several initialized ticks', async () => {
+    it('swapExact1For0 large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
       await mint(walletAddress, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
       await mint(walletAddress, tickSpacing * 2, tickSpacing * 4, expandTo18Decimals(1))
 
-      const tx = swap1For0(expandTo18Decimals(1), walletAddress)
+      const tx = swapExact1For0(expandTo18Decimals(1), walletAddress)
       await expect(tx).to.emit(token0, 'Transfer').withArgs(pair.address, walletAddress, '671288525725295030')
     })
 
-    it('swap1For0 gas large swap crossing several initialized ticks', async () => {
+    it('swapExact1For0 gas large swap crossing several initialized ticks', async () => {
       await token0.approve(pair.address, constants.MaxUint256)
       await token1.approve(pair.address, constants.MaxUint256)
 
       await mint(walletAddress, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
       await mint(walletAddress, tickSpacing * 2, tickSpacing * 4, expandTo18Decimals(1))
 
-      const tx = swap1For0(expandTo18Decimals(1), walletAddress)
+      const tx = swapExact1For0(expandTo18Decimals(1), walletAddress)
       await snapshotGasCost(tx)
     })
 
@@ -698,7 +735,7 @@ describe('UniswapV3Pair', () => {
       const k = await pair.liquidityCurrent()
 
       const amount0In = expandTo18Decimals(1)
-      await swap0For1(amount0In, walletAddress)
+      await swapExact0For1(amount0In, walletAddress)
 
       const kAfter = await pair.liquidityCurrent()
       expect(kAfter, 'k increases').to.be.gte(k)
@@ -738,13 +775,13 @@ describe('UniswapV3Pair', () => {
       await initializeAtZeroTick(pair)
     })
 
-    it('swap0For1', async () => {
+    it('swapExact0For1', async () => {
       const amount0In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
       const token1BalanceBefore = await token1.balanceOf(walletAddress)
 
-      await swap0For1(amount0In, walletAddress)
+      await swapExact0For1(amount0In, walletAddress)
 
       const token0BalanceAfter = await token0.balanceOf(walletAddress)
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
@@ -755,18 +792,18 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(-1)
     })
 
-    it('swap0For1 to tick -1k', async () => {
+    it('swapExact0For1 to tick -1k', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      const txPromise = swap0For1(amount0In, walletAddress)
+      const txPromise = swapExact0For1(amount0In, walletAddress)
 
       await expect(txPromise).to.emit(token1, 'Transfer').withArgs(pair.address, walletAddress, '94965947516311854')
 
       expect(await pair.tickCurrent()).to.eq(-973)
     })
 
-    it('swap0For1 to tick -1k with intermediate liquidity', async () => {
+    it('swapExact0For1 to tick -1k with intermediate liquidity', async () => {
       const amount0In = expandTo18Decimals(1).div(10)
 
       // add liquidity between -3 and -2 (to the left of the current price)
@@ -777,20 +814,20 @@ describe('UniswapV3Pair', () => {
       await mint(walletAddress, lowerTick, upperTick, liquidityDelta)
 
       await token0.approve(pair.address, constants.MaxUint256)
-      const tx = swap0For1(amount0In, walletAddress)
+      const tx = swapExact0For1(amount0In, walletAddress)
       await expect(tx).to.emit(token1, 'Transfer').withArgs(pair.address, walletAddress, '95214395213460208')
 
       expect(await pair.tickCurrent()).to.eq(-945)
     })
 
-    it('swap1For0', async () => {
+    it('swapExact1For0', async () => {
       const amount1In = 1000
 
       const token0BalanceBefore = await token0.balanceOf(walletAddress)
       const token1BalanceBefore = await token1.balanceOf(walletAddress)
 
       await token1.approve(pair.address, constants.MaxUint256)
-      await swap1For0(amount1In, walletAddress)
+      await swapExact1For0(amount1In, walletAddress)
 
       const token0BalanceAfter = await token0.balanceOf(walletAddress)
       const token1BalanceAfter = await token1.balanceOf(walletAddress)
@@ -803,17 +840,17 @@ describe('UniswapV3Pair', () => {
       expect(await pair.tickCurrent()).to.eq(0)
     })
 
-    it('swap1For0 to tick 1k', async () => {
+    it('swapExact1For0 to tick 1k', async () => {
       const amount1In = expandTo18Decimals(1).div(10)
 
       await token1.approve(pair.address, constants.MaxUint256)
-      const tx = swap1For0(amount1In, walletAddress)
+      const tx = swapExact1For0(amount1In, walletAddress)
       await expect(tx).to.emit(token0, 'Transfer').withArgs(pair.address, walletAddress, '94965947516311854')
 
       expect(await pair.tickCurrent()).to.eq(972)
     })
 
-    it('swap1For0 to tick 1k with intermediate liquidity', async () => {
+    it('swapExact1For0 to tick 1k with intermediate liquidity', async () => {
       const amount1In = expandTo18Decimals(1).div(10)
 
       // add liquidity between 2 and 3 (to the right of the current price)
@@ -824,7 +861,7 @@ describe('UniswapV3Pair', () => {
       await mint(walletAddress, lowerTick, upperTick, liquidityDelta)
 
       await token1.approve(pair.address, constants.MaxUint256)
-      const tx = swap1For0(amount1In, walletAddress)
+      const tx = swapExact1For0(amount1In, walletAddress)
       await expect(tx).to.emit(token0, 'Transfer').withArgs(pair.address, walletAddress, '95214395213460208')
 
       expect(await pair.tickCurrent()).to.eq(944)
@@ -877,7 +914,7 @@ describe('UniswapV3Pair', () => {
         // swap toward the left (just enough for the tick transition function to trigger)
         // TODO if the input amount is 1 here, the tick transition fires incorrectly!
         // should throw an error or something once the TODOs in pair are fixed
-        await swap0For1(2, walletAddress)
+        await swapExact0For1(2, walletAddress)
         const tick = await pair.tickCurrent()
         expect(tick).to.be.eq(-1)
 
@@ -905,7 +942,7 @@ describe('UniswapV3Pair', () => {
         // swap toward the left (just enough for the tick transition function to trigger)
         // TODO if the input amount is 1 here, the tick transition fires incorrectly!
         // should throw an error or something once the TODOs in pair are fixed
-        await swap0For1(2, walletAddress)
+        await swapExact0For1(2, walletAddress)
         const tick = await pair.tickCurrent()
         expect(tick).to.be.eq(-1)
 
@@ -930,7 +967,7 @@ describe('UniswapV3Pair', () => {
         .to.emit(token0, 'Transfer')
         .withArgs(walletAddress, pair.address, '5981737760509663')
       // somebody takes the limit order
-      await swap1For0(expandTo18Decimals(2), otherAddress)
+      await swapExact1For0(expandTo18Decimals(2), otherAddress)
       await expect(pair.burn(walletAddress, 0, 120, expandTo18Decimals(1)))
         .to.emit(token1, 'Transfer')
         .withArgs(pair.address, walletAddress, '6017734268818165')
@@ -940,7 +977,7 @@ describe('UniswapV3Pair', () => {
         .to.emit(token1, 'Transfer')
         .withArgs(walletAddress, pair.address, '5981737760509663')
       // somebody takes the limit order
-      await swap0For1(expandTo18Decimals(2), otherAddress)
+      await swapExact0For1(expandTo18Decimals(2), otherAddress)
       await expect(pair.burn(walletAddress, -120, 0, expandTo18Decimals(1)))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, walletAddress, '6017734268818165')
@@ -953,7 +990,7 @@ describe('UniswapV3Pair', () => {
           .to.emit(token0, 'Transfer')
           .withArgs(walletAddress, pair.address, '5981737760509663')
         // somebody takes the limit order
-        await swap1For0(expandTo18Decimals(2), otherAddress)
+        await swapExact1For0(expandTo18Decimals(2), otherAddress)
         await expect(pair.burn(walletAddress, 0, 120, expandTo18Decimals(1)))
           .to.emit(token1, 'Transfer')
           .withArgs(pair.address, walletAddress, '6017734268818165')
@@ -963,7 +1000,7 @@ describe('UniswapV3Pair', () => {
           .to.emit(token1, 'Transfer')
           .withArgs(walletAddress, pair.address, '5981737760509663')
         // somebody takes the limit order
-        await swap0For1(expandTo18Decimals(2), otherAddress)
+        await swapExact0For1(expandTo18Decimals(2), otherAddress)
         await expect(pair.burn(walletAddress, -120, 0, expandTo18Decimals(1)))
           .to.emit(token0, 'Transfer')
           .withArgs(pair.address, walletAddress, '6017734268818165')
@@ -998,7 +1035,7 @@ describe('UniswapV3Pair', () => {
     })
 
     async function swapAndGetFeesOwed(swapAmount: BigNumberish = expandTo18Decimals(1), zeroForOne: boolean = true) {
-      await (zeroForOne ? swap0For1(swapAmount, walletAddress) : swap1For0(swapAmount, walletAddress))
+      await (zeroForOne ? swapExact0For1(swapAmount, walletAddress) : swapExact1For0(swapAmount, walletAddress))
 
       const {amount0: fees0, amount1: fees1} = await pair.callStatic.collectFees(
         MIN_TICK,
@@ -1168,7 +1205,7 @@ describe('UniswapV3Pair', () => {
         it('swapping across gaps works in 1 for 0 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await mint(walletAddress, 120000, 121200, liquidityAmount)
-          await swap1For0(expandTo18Decimals(1), walletAddress)
+          await swapExact1For0(expandTo18Decimals(1), walletAddress)
           await expect(pair.burn(walletAddress, 120000, 121200, liquidityAmount))
             .to.emit(token0, 'Transfer')
             .withArgs(pair.address, walletAddress, '30027458295511')
@@ -1179,7 +1216,7 @@ describe('UniswapV3Pair', () => {
         it('swapping across gaps works in 0 for 1 direction', async () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await mint(walletAddress, -121200, -120000, liquidityAmount)
-          await swap0For1(expandTo18Decimals(1), walletAddress)
+          await swapExact0For1(expandTo18Decimals(1), walletAddress)
           await expect(pair.burn(walletAddress, -121200, -120000, liquidityAmount))
             .to.emit(token0, 'Transfer')
             .withArgs(pair.address, walletAddress, '996999999999999535')

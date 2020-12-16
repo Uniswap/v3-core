@@ -15,7 +15,7 @@ library SwapMath {
         FixedPoint96.uq64x96 memory sqrtP,
         FixedPoint96.uq64x96 memory sqrtQTarget,
         uint128 liquidity,
-        uint256 amountInMax,
+        int256 amountSpecifiedMax,
         uint24 feePips,
         bool zeroForOne
     )
@@ -28,9 +28,15 @@ library SwapMath {
             uint256 feeAmount
         )
     {
-        uint256 amountInLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
+        uint256 amountInMax = amountSpecifiedMax > 0 ? uint256(amountSpecifiedMax) : 0;
+        uint256 amountOutMax = amountSpecifiedMax < 0 ? uint256(-amountSpecifiedMax) : 0;
 
-        sqrtQ = SqrtPriceMath.getNextPrice(sqrtP, liquidity, amountInLessFee, zeroForOne);
+        if (amountInMax > 0) {
+            uint256 amountInMaxLessFee = FullMath.mulDiv(amountInMax, 1e6 - feePips, 1e6);
+            sqrtQ = SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountInMaxLessFee, zeroForOne);
+        } else {
+            sqrtQ = SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, amountOutMax, zeroForOne);
+        }
 
         // get the input/output amounts
         if (zeroForOne) {
@@ -51,13 +57,28 @@ library SwapMath {
             amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
         }
 
-        // if we didn't reach the target, take the remainder of the maximum input as fee
+        if (amountInMax > 0) {
+            // a max input amount was specified, ensure the calculated input amount is < it
+            assert(amountIn < amountInMax);
+        } else {
+            // a max output amount was specified, cap
+            if (amountOut > amountOutMax) amountOut = amountOutMax;
+        }
+
         if (sqrtQ._x != sqrtQTarget._x) {
-            assert(amountInMax >= SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips));
-            feeAmount = amountInMax - amountIn;
+            if (amountInMax > 0) {
+                // ensure that we can pay for the calculated input amount
+                assert(SqrtPriceMath.mulDivRoundingUp(amountIn, 1e6, 1e6 - feePips) <= amountInMax);
+                // we didn't reach the target, so take the remainder of the maximum input as fee
+                feeAmount = amountInMax - amountIn;
+            } else {
+                // an exact output amount was specified, make sure we reached it
+                assert(amountOut == amountOutMax);
+                feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
+            }
         } else {
             feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
-            assert(amountIn.add(feeAmount) <= amountInMax);
+            if (amountInMax > 0) assert(amountIn.add(feeAmount) <= amountInMax);
         }
     }
 }

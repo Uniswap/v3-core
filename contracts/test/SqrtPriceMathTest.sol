@@ -6,23 +6,43 @@ import '../libraries/SqrtPriceMath.sol';
 import '../libraries/FixedPoint96.sol';
 
 contract SqrtPriceMathTest {
-    function getNextPrice(
+    function getNextPriceFromInput(
         FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
-        return SqrtPriceMath.getNextPrice(sqrtP, liquidity, amountIn, zeroForOne);
+        return SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
     }
 
-    function getGasCostOfGetNextPrice(
+    function getGasCostOfGetNextPriceFromInput(
         FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        SqrtPriceMath.getNextPrice(sqrtP, liquidity, amountIn, zeroForOne);
+        SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
+        return gasBefore - gasleft();
+    }
+
+    function getNextPriceFromOutput(
+        FixedPoint96.uq64x96 memory sqrtP,
+        uint128 liquidity,
+        uint256 amountOut,
+        bool zeroForOne
+    ) external pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
+        return SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
+    }
+
+    function getGasCostOfGetNextPriceFromOutput(
+        FixedPoint96.uq64x96 memory sqrtP,
+        uint128 liquidity,
+        uint256 amountOut,
+        bool zeroForOne
+    ) external view returns (uint256) {
+        uint256 gasBefore = gasleft();
+        SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
         return gasBefore - gasleft();
     }
 

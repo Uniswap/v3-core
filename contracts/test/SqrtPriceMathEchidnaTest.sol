@@ -25,13 +25,13 @@ contract SqrtPriceMathEchidnaTest {
         }
     }
 
-    function getNextPriceInvariants(
+    function getNextPriceFromInputInvariants(
         uint160 sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external pure {
-        FixedPoint96.uq64x96 memory sqrtQ = SqrtPriceMath.getNextPrice(
+        FixedPoint96.uq64x96 memory sqrtQ = SqrtPriceMath.getNextPriceFromInput(
             FixedPoint96.uq64x96(sqrtP),
             liquidity,
             amountIn,
@@ -44,6 +44,28 @@ contract SqrtPriceMathEchidnaTest {
         } else {
             assert(sqrtQ._x >= sqrtP);
             assert(amountIn >= SqrtPriceMath.getAmount1Delta(FixedPoint96.uq64x96(sqrtP), sqrtQ, liquidity, true));
+        }
+    }
+
+    function getNextPriceFromOutputInvariants(
+        uint160 sqrtP,
+        uint128 liquidity,
+        uint256 amountOut,
+        bool zeroForOne
+    ) external pure {
+        FixedPoint96.uq64x96 memory sqrtQ = SqrtPriceMath.getNextPriceFromOutput(
+            FixedPoint96.uq64x96(sqrtP),
+            liquidity,
+            amountOut,
+            zeroForOne
+        );
+
+        if (zeroForOne) {
+            assert(sqrtQ._x <= sqrtP);
+            assert(amountOut <= SqrtPriceMath.getAmount1Delta(sqrtQ, FixedPoint96.uq64x96(sqrtP), liquidity, true));
+        } else {
+            assert(sqrtQ._x >= sqrtP);
+            assert(amountOut <= SqrtPriceMath.getAmount0Delta(sqrtQ, FixedPoint96.uq64x96(sqrtP), liquidity, true));
         }
     }
 
