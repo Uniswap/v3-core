@@ -37,12 +37,12 @@ library SqrtPriceMath {
     // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
     // or, if this is impossible because of overflow,
     // liquidity / (liquidity / sqrt(P) +- x)
-    function getNextPriceRoundingUp(
+    function getNextPriceFromAmount0RoundingUp(
         FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amount,
         bool add
-    ) internal pure returns (FixedPoint96.uq64x96 memory) {
+    ) private pure returns (FixedPoint96.uq64x96 memory) {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
         if (
@@ -64,12 +64,12 @@ library SqrtPriceMath {
     }
 
     // calculate sqrt(P) +- y / liquidity
-    function getNextPriceRoundingDown(
+    function getNextPriceFromAmount1RoundingDown(
         FixedPoint96.uq64x96 memory sqrtP,
         uint128 liquidity,
         uint256 amount,
         bool add
-    ) internal pure returns (FixedPoint96.uq64x96 memory) {
+    ) private pure returns (FixedPoint96.uq64x96 memory) {
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
         uint256 quotient = add
@@ -101,8 +101,8 @@ library SqrtPriceMath {
         // round to make sure that we don't pass the target price
         return
             zeroForOne
-                ? getNextPriceRoundingUp(sqrtP, liquidity, amountIn, true)
-                : getNextPriceRoundingDown(sqrtP, liquidity, amountIn, true);
+                ? getNextPriceFromAmount0RoundingUp(sqrtP, liquidity, amountIn, true)
+                : getNextPriceFromAmount1RoundingDown(sqrtP, liquidity, amountIn, true);
     }
 
     function getNextPriceFromOutput(
@@ -118,8 +118,8 @@ library SqrtPriceMath {
         // round to make sure that we pass the target price
         return
             zeroForOne
-                ? getNextPriceRoundingDown(sqrtP, liquidity, amountOut, false)
-                : getNextPriceRoundingUp(sqrtP, liquidity, amountOut, false);
+                ? getNextPriceFromAmount1RoundingDown(sqrtP, liquidity, amountOut, false)
+                : getNextPriceFromAmount0RoundingUp(sqrtP, liquidity, amountOut, false);
     }
 
     // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
