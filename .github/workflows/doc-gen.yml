@@ -28,7 +28,7 @@ jobs:
       - name: Push Wiki Changes
         uses: Andrew-Chen-Wang/github-wiki-action@1d09cae6d4a4ecf0f9c794972aec063a6fb7a95f
         env:
-          # Make sure you have that / at the end. We use rsync 
+          # Make sure you have that / at the end. We use rsync
           # WIKI_DIR's default is wiki/
           WIKI_DIR: ./docs
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
