@@ -1,5 +1,4 @@
-// todo: this file is a placeholder for the new tick math
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
 // sqrt(1.0001) ticks
@@ -45,8 +44,6 @@ library TickMath {
             ratio >= 18447437462383981825 && ratio < 6276865796315986613307619852238232712866172378830071145882,
             'TickMath::getTickAtRatio: invalid ratio'
         );
-
-        if (ratio >= 0x1000000000000000000000000000000000000000000000000) return 887272;
 
         uint256 r = ratio;
         uint256 msb = 0;
