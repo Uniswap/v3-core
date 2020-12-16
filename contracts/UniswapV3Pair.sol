@@ -4,7 +4,6 @@ pragma solidity =0.8.0;
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import './openzeppelin/SignedSafeMath.sol';
 import './openzeppelin/IERC20.sol';
 
 import './libraries/SafeCast.sol';
@@ -21,8 +20,6 @@ import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
-    using SignedSafeMath for int128;
-    using SignedSafeMath for int256;
     using SafeCast for int128;
     using SafeCast for int256;
     using SafeCast for uint256;
