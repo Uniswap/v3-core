@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity =0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import '../UniswapV3Pair.sol';
 
@@ -14,7 +14,7 @@ contract MockTimeUniswapV3Pair is UniswapV3Pair {
         address tokenB,
         uint24 fee,
         int24 tickSpacing
-    ) public UniswapV3Pair(factory, tokenA, tokenB, fee, tickSpacing) {}
+    ) UniswapV3Pair(factory, tokenA, tokenB, fee, tickSpacing) {}
 
     function setTime(uint32 _time) external {
         require(_time > time, 'MockTimeUniswapV3Pair::setTime: time can only be advanced');

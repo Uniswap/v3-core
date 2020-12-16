@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity =0.6.12;
+pragma solidity =0.7.6;
 
 import './interfaces/IUniswapV3Factory.sol';
 
@@ -22,7 +22,7 @@ contract UniswapV3Factory is IUniswapV3Factory {
         return allEnabledFeeAmounts.length;
     }
 
-    constructor(address _owner) public {
+    constructor(address _owner) {
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
 

@@ -21,7 +21,7 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "3.1.0",
+    "@openzeppelin/contracts": "3.3.0-solc-0.7",
     "@uniswap/lib": "4.0.1-alpha"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity =0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import '../libraries/SwapMath.sol';
 import '../libraries/FixedPoint96.sol';
