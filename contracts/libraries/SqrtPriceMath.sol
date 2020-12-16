@@ -52,10 +52,7 @@ library SqrtPriceMath {
 
         return
             FixedPoint96.uq64x96(
-                divRoundingUp(
-                    numerator1,
-                    add ? numerator1 / sqrtP._x + amount : numerator1 / sqrtP._x - amount
-                )
+                divRoundingUp(numerator1, add ? numerator1 / sqrtP._x + amount : numerator1 / sqrtP._x - amount)
                     .toUint160()
             );
     }
@@ -81,8 +78,7 @@ library SqrtPriceMath {
                     : mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
             );
 
-        return
-            FixedPoint96.uq64x96((add ? uint256(sqrtP._x) + quotient : uint256(sqrtP._x) - quotient).toUint160());
+        return FixedPoint96.uq64x96((add ? uint256(sqrtP._x) + quotient : uint256(sqrtP._x) - quotient).toUint160());
     }
 
     function getNextPriceFromInput(
