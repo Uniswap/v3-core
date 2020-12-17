@@ -46,7 +46,40 @@ describe('SwapMath', () => {
       expect(priceAfter._x, 'price is less than price after whole input amount').to.lt(priceAfterWholeInputAmount._x)
     })
 
-    it('exact amount in that fully spent in one for zero', async () => {
+    it('exact amount out that gets capped at price target in one for zero', async () => {
+      const price = {_x: encodePriceSqrt(1, 1)}
+      const priceTarget = {_x: encodePriceSqrt(101, 100)}
+      const liquidity = expandTo18Decimals(2)
+      const amount = expandTo18Decimals(1).mul(-1)
+      const fee = 600
+      const zeroForOne = false
+
+      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
+        price,
+        priceTarget,
+        liquidity,
+        amount,
+        fee,
+        zeroForOne
+      )
+
+      expect(amountIn).to.eq('9975124224178055')
+      expect(feeAmount).to.eq('5988667735148')
+      expect(amountOut).to.eq('9925619580021728')
+      expect(amountOut, 'entire amount out is not returned').to.lt(amount.mul(-1))
+
+      const priceAfterWholeOutputAmount = await sqrtPriceMath.getNextPriceFromOutput(
+        price,
+        liquidity,
+        amount.mul(-1),
+        zeroForOne
+      )
+
+      expect(priceAfter._x, 'price is capped at price target').to.eq(priceTarget._x)
+      expect(priceAfter._x, 'price is less than price after whole output amount').to.lt(priceAfterWholeOutputAmount._x)
+    })
+
+    it('exact amount in that is fully spent in one for zero', async () => {
       const price = {_x: encodePriceSqrt(1, 1)}
       const priceTarget = {_x: encodePriceSqrt(1000, 100)}
       const liquidity = expandTo18Decimals(2)
@@ -68,10 +101,49 @@ describe('SwapMath', () => {
       expect(amountOut).to.eq('666399946655997866')
       expect(amountIn.add(feeAmount), 'entire amount is used').to.eq(amount)
 
-      const priceAfterWholeInputAmount = await sqrtPriceMath.getNextPriceFromInput(price, liquidity, amount, zeroForOne)
+      const priceAfterWholeInputAmountLessFee = await sqrtPriceMath.getNextPriceFromInput(
+        price,
+        liquidity,
+        amount.sub(feeAmount),
+        zeroForOne
+      )
 
       expect(priceAfter._x, 'price does not reach price target').to.be.lt(priceTarget._x)
-      expect(priceAfter._x, 'price is less than price after whole input amount').to.be.lt(priceAfterWholeInputAmount._x)
+      expect(priceAfter._x, 'price is equal to price after whole input amount').to.eq(
+        priceAfterWholeInputAmountLessFee._x
+      )
+    })
+
+    it('exact amount out that is fully received in one for zero', async () => {
+      const price = {_x: encodePriceSqrt(1, 1)}
+      const priceTarget = {_x: encodePriceSqrt(10000, 100)}
+      const liquidity = expandTo18Decimals(2)
+      const amount = expandTo18Decimals(1).mul(-1)
+      const fee = 600
+      const zeroForOne = false
+
+      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
+        price,
+        priceTarget,
+        liquidity,
+        amount,
+        fee,
+        zeroForOne
+      )
+
+      expect(amountIn).to.eq('2000000000000000000')
+      expect(feeAmount).to.eq('1200720432259356')
+      expect(amountOut).to.eq(amount.mul(-1))
+
+      const priceAfterWholeOutputAmount = await sqrtPriceMath.getNextPriceFromOutput(
+        price,
+        liquidity,
+        amount.mul(-1),
+        zeroForOne
+      )
+
+      expect(priceAfter._x, 'price does not reach price target').to.be.lt(priceTarget._x)
+      expect(priceAfter._x, 'price is less than price after whole output amount').to.eq(priceAfterWholeOutputAmount._x)
     })
 
     it('example from failing test', async () => {

@@ -2,15 +2,9 @@
 pragma solidity =0.7.6;
 
 import '../libraries/FixedPoint128.sol';
-import '../libraries/SqrtTickMath.sol';
 import '../libraries/SwapMath.sol';
 
 contract SwapMathEchidnaTest {
-    function requirePriceWithinBounds(uint160 price) private pure {
-        require(price < SqrtTickMath.getSqrtRatioAtTick(SqrtTickMath.MAX_TICK)._x);
-        require(price >= SqrtTickMath.getSqrtRatioAtTick(SqrtTickMath.MIN_TICK)._x);
-    }
-
     function checkComputeSwapStepInvariants(
         uint160 sqrtPriceRaw,
         uint160 sqrtPriceTargetRaw,
@@ -18,8 +12,8 @@ contract SwapMathEchidnaTest {
         int256 amount,
         uint24 feePips
     ) external pure {
-        requirePriceWithinBounds(sqrtPriceRaw);
-        requirePriceWithinBounds(sqrtPriceTargetRaw);
+        require(sqrtPriceRaw > 0);
+        require(sqrtPriceTargetRaw > 0);
         require(feePips > 0);
         require(feePips < 1e6);
 
@@ -37,7 +31,10 @@ contract SwapMathEchidnaTest {
             zeroForOne
         );
 
-        assert(feeAmount > 0);
+        if (sqrtPriceRaw != sqrtPriceTargetRaw) {
+            assert(feeAmount > 0);
+            // amountIn is not necessarily gt 0, the entire amount in can be taken as a fee
+        }
 
         if (zeroForOne) {
             assert(sqrtQ._x <= sqrtPriceRaw);
