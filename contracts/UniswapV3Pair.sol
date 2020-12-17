@@ -81,13 +81,35 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override feeToFees0;
     uint256 public override feeToFees1;
 
-    event CollectFees(int24 tickLower, int24 tickUpper, address indexed recipient, uint256 amount0, uint256 amount1);
+    event CollectFees(
+        int24 tickLower,
+        int24 tickUpper,
+        address indexed recipient,
+        uint256 amount0,
+        uint256 amount1
+    );
 
-    event Mint(address indexed recipient, int24 tickLower, int24 tickUpper, uint256 amount0, uint256 amount1);
+    event Mint(
+        address indexed recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 amount0,
+        uint256 amount1
+    );
 
-    event Swap(address indexed recipient, uint256 amountIn, uint256 amountOut);
+    event Swap(
+        address indexed recipient,
+        uint256 amountIn,
+        uint256 amountOut
+    );
 
-    event Burn(address indexed recipient, int24 tickLower, int24 tickUpper, uint256 amount0, uint256 amount1);
+    event Burn(
+        address indexed recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 amount0,
+        uint256 amount1
+    );
 
     struct TickInfo {
         // the total position liquidity that references this tick
