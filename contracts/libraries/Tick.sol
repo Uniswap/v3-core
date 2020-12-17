@@ -8,6 +8,9 @@ library Tick {
     struct Info {
         // the total position liquidity that references this tick
         uint128 liquidityGross;
+        // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
+        // i.e. as the price goes up (down), for each fee vote
+        int128 liquidityDelta;
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint32 secondsOutside;
@@ -15,14 +18,11 @@ library Tick {
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         FixedPoint128.uq128x128 feeGrowthOutside0;
         FixedPoint128.uq128x128 feeGrowthOutside1;
-        // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
-        // i.e. as the price goes up (down), for each fee vote
-        int128 liquidityDelta;
     }
 
     function _getFeeGrowthBelow(
         int24 tick,
-        int24 current,
+        int24 tickCurrent,
         Info storage tickInfo,
         FixedPoint128.uq128x128 memory feeGrowthGlobal0,
         FixedPoint128.uq128x128 memory feeGrowthGlobal1
@@ -32,7 +32,7 @@ library Tick {
         returns (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1)
     {
         // tick is above the current tick, meaning growth outside represents growth above, not below
-        if (tick > current) {
+        if (tick > tickCurrent) {
             feeGrowthBelow0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
             feeGrowthBelow1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
         } else {
@@ -43,7 +43,7 @@ library Tick {
 
     function _getFeeGrowthAbove(
         int24 tick,
-        int24 current,
+        int24 tickCurrent,
         Info storage tickInfo,
         FixedPoint128.uq128x128 memory feeGrowthGlobal0,
         FixedPoint128.uq128x128 memory feeGrowthGlobal1
@@ -53,7 +53,7 @@ library Tick {
         returns (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1)
     {
         // tick is above current tick, meaning growth outside represents growth above
-        if (tick > current) {
+        if (tick > tickCurrent) {
             feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
             feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
         } else {
