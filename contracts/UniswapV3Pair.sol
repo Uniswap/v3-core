@@ -81,6 +81,36 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override feeToFees0;
     uint256 public override feeToFees1;
 
+    event CollectFees(
+        int24 tickLower,
+        int24 tickUpper,
+        address indexed recipient,
+        uint256 amount0,
+        uint256 amount1
+    );
+
+    event Mint(
+        address indexed recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 amount0,
+        uint256 amount1
+    );
+
+    event Swap(
+        address indexed recipient,
+        uint256 amountIn,
+        uint256 amountOut
+    );
+
+    event Burn(        
+        address indexed recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 amount0,
+        uint256 amount1
+    );
+
     struct TickInfo {
         // the total position liquidity that references this tick
         uint128 liquidityGross;
@@ -409,6 +439,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position.feesOwed1 -= amount1;
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+        emit CollectFees(tickLower, tickUpper, recipient, amount0, amount1);
     }
 
     function mint(
@@ -452,6 +483,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)),
                 'UniswapV3Pair::mint: insufficient token1 amount'
             );
+            emit Mint(recipient, tickLower, tickUpper, amount0, amount1);
         }
     }
 
@@ -483,6 +515,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+        emit Burn(recipient, tickLower, tickUpper, amount0, amount1);
     }
 
     struct SetPositionParams {
@@ -723,6 +756,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     recipient: recipient
                 })
             );
+        emit Swap(recipient, amount0In, amount1Out);
     }
 
     function swap0ForExact1(uint256 amount1Out, address recipient) external override lock returns (uint256 amount0In) {
@@ -737,6 +771,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     recipient: recipient
                 })
             );
+        emit Swap(recipient, amount0In, amount1Out);
     }
 
     function swapExact1For0(uint256 amount1In, address recipient) external override lock returns (uint256 amount0Out) {
@@ -751,6 +786,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     recipient: recipient
                 })
             );
+        emit Swap(recipient, amount1In, amount0Out);
     }
 
     function swap1ForExact0(uint256 amount0Out, address recipient) external override lock returns (uint256 amount1In) {
@@ -765,6 +801,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     recipient: recipient
                 })
             );
+        emit Swap(recipient, amount1In, amount0Out);
     }
 
     function recover(
