@@ -40,6 +40,7 @@
     "mocha-chai-jest-snapshot": "^1.1.0",
     "prettier": "^2.0.5",
     "prettier-plugin-solidity": "^1.0.0-alpha.59",
+    "solc-0.7.6": "npm:solc@0.7.6",
     "solhint": "^3.2.1",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-docgen": "^0.5.11",
