@@ -536,8 +536,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     step.sqrtPriceNext,
                     state.liquidityCurrent,
                     state.amountSpecifiedRemaining,
-                    fee,
-                    params.zeroForOne
+                    fee
                 );
 
                 // decrement (increment) remaining input (negative output) amount

@@ -31,8 +31,7 @@ describe('SwapMath', () => {
         priceTarget,
         liquidity,
         amount,
-        fee,
-        zeroForOne
+        fee
       )
 
       expect(amountIn).to.eq('9975124224178055')
@@ -59,8 +58,7 @@ describe('SwapMath', () => {
         priceTarget,
         liquidity,
         amount,
-        fee,
-        zeroForOne
+        fee
       )
 
       expect(amountIn).to.eq('9975124224178055')
@@ -92,8 +90,7 @@ describe('SwapMath', () => {
         priceTarget,
         liquidity,
         amount,
-        fee,
-        zeroForOne
+        fee
       )
 
       expect(amountIn).to.eq('999400000000000000')
@@ -127,8 +124,7 @@ describe('SwapMath', () => {
         priceTarget,
         liquidity,
         amount,
-        fee,
-        zeroForOne
+        fee
       )
 
       expect(amountIn).to.eq('2000000000000000000')
@@ -152,8 +148,7 @@ describe('SwapMath', () => {
         {_x: BigNumber.from('44377947312771397').shl(32)},
         '250000000000000001',
         '999999999999999607',
-        FeeAmount.MEDIUM,
-        true
+        FeeAmount.MEDIUM
       )
       expect(amountIn).to.eq('996999999999999608')
       expect(feeAmount).to.eq('2999999999999999')
@@ -167,8 +162,7 @@ describe('SwapMath', () => {
         {_x: '79887613182836312'},
         '1985041575832132834610021537970',
         '10',
-        1872,
-        false
+        1872
       )
       expect(amountIn).to.eq('0')
       expect(feeAmount).to.eq('10')
@@ -183,8 +177,7 @@ describe('SwapMath', () => {
           {_x: encodePriceSqrt(101, 100)},
           expandTo18Decimals(2),
           expandTo18Decimals(1),
-          600,
-          false
+          600
         )
       )
     })

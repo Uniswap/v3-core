@@ -17,26 +17,25 @@ contract SwapMathEchidnaTest {
         require(feePips > 0);
         require(feePips < 1e6);
 
-        bool zeroForOne = sqrtPriceRaw >= sqrtPriceTargetRaw;
-
-        require(amount != 0);
-
         (FixedPoint96.uq64x96 memory sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount) = SwapMath
             .computeSwapStep(
             FixedPoint96.uq64x96(sqrtPriceRaw),
             FixedPoint96.uq64x96(sqrtPriceTargetRaw),
             liquidity,
             amount,
-            feePips,
-            zeroForOne
+            feePips
         );
 
+        assert(feeAmount <= amountIn);
+
         if (sqrtPriceRaw != sqrtPriceTargetRaw) {
-            assert(feeAmount > 0);
-            // amountIn is not necessarily gt 0, the entire amount in can be taken as a fee
+            if (amount != 0) assert(feeAmount > 0);
+            if (amount > 0) {
+                assert(amountIn > 0);
+            }
         }
 
-        if (zeroForOne) {
+        if (sqrtPriceTargetRaw <= sqrtPriceRaw) {
             assert(sqrtQ._x <= sqrtPriceRaw);
             assert(sqrtQ._x >= sqrtPriceTargetRaw);
         } else {
