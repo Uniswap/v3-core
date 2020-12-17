@@ -22,7 +22,7 @@ contract TickBitmapEchidnaTest {
             assert(next <= tick);
             assert(tick - next < 256);
             // all the ticks between the input tick and the next tick should be uninitialized
-            for (int24 i = tick - 1; i > next; i--) {
+            for (int24 i = tick; i > next; i--) {
                 assert(!bitmap.isInitialized(i));
             }
             assert(bitmap.isInitialized(next) == initialized);
