@@ -21,6 +21,7 @@ import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
 import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
+import './libraries/Tick.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
@@ -32,6 +33,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using MixedSafeMath for uint128;
     using FixedPoint128 for FixedPoint128.uq128x128;
     using SpacedTickBitmap for mapping(int16 => uint256);
+    using Tick for mapping(int24 => Tick.Info);
 
     // if we constrain the gross liquidity associated to a single tick, then we can guarantee that the total
     // liquidityCurrent never exceeds uint128
@@ -80,21 +82,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override feeToFees0;
     uint256 public override feeToFees1;
 
-    struct TickInfo {
-        // the total position liquidity that references this tick
-        uint128 liquidityGross;
-        // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
-        // i.e. as the price goes up (down), for each fee vote
-        int128 liquidityDelta;
-        // seconds spent on the _other_ side of this tick (relative to the current tick)
-        // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        uint32 secondsOutside;
-        // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
-        // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        FixedPoint128.uq128x128 feeGrowthOutside0;
-        FixedPoint128.uq128x128 feeGrowthOutside1;
-    }
-    mapping(int24 => TickInfo) public tickInfos;
+    mapping(int24 => Tick.Info) public tickInfos;
 
     struct Position {
         uint128 liquidity;
@@ -120,67 +108,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper
     ) private view returns (Position storage position) {
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
-    }
-
-    function _getFeeGrowthBelow(
-        int24 tick,
-        int24 current,
-        TickInfo storage tickInfo
-    )
-        private
-        view
-        returns (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1)
-    {
-        // tick is above the current tick, meaning growth outside represents growth above, not below
-        if (tick > current) {
-            feeGrowthBelow0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
-            feeGrowthBelow1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
-        } else {
-            feeGrowthBelow0 = tickInfo.feeGrowthOutside0;
-            feeGrowthBelow1 = tickInfo.feeGrowthOutside1;
-        }
-    }
-
-    function _getFeeGrowthAbove(
-        int24 tick,
-        int24 current,
-        TickInfo storage tickInfo
-    )
-        private
-        view
-        returns (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1)
-    {
-        // tick is above current tick, meaning growth outside represents growth above
-        if (tick > current) {
-            feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
-            feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
-        } else {
-            feeGrowthAbove0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
-            feeGrowthAbove1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
-        }
-    }
-
-    function _getFeeGrowthInside(
-        int24 tickLower,
-        int24 tickUpper,
-        int24 current,
-        TickInfo storage tickInfoLower,
-        TickInfo storage tickInfoUpper
-    )
-        private
-        view
-        returns (FixedPoint128.uq128x128 memory feeGrowthInside0, FixedPoint128.uq128x128 memory feeGrowthInside1)
-    {
-        (
-            FixedPoint128.uq128x128 memory feeGrowthBelow0,
-            FixedPoint128.uq128x128 memory feeGrowthBelow1
-        ) = _getFeeGrowthBelow(tickLower, current, tickInfoLower);
-        (
-            FixedPoint128.uq128x128 memory feeGrowthAbove0,
-            FixedPoint128.uq128x128 memory feeGrowthAbove1
-        ) = _getFeeGrowthAbove(tickUpper, current, tickInfoUpper);
-        feeGrowthInside0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - feeGrowthBelow0._x - feeGrowthAbove0._x);
-        feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }
 
     // check for one-time initialization
@@ -245,7 +172,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tick,
         int24 current,
         int128 liquidityDelta
-    ) private returns (TickInfo storage tickInfo) {
+    ) private returns (Tick.Info storage tickInfo) {
         tickInfo = tickInfos[tick];
 
         if (liquidityDelta != 0) {
@@ -320,8 +247,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        TickInfo storage tickInfoLower = _updateTick(tickLower, tick, liquidityDelta);
-        TickInfo storage tickInfoUpper = _updateTick(tickUpper, tick, liquidityDelta);
+        Tick.Info storage tickInfoLower = _updateTick(tickLower, tick, liquidityDelta);
+        Tick.Info storage tickInfoUpper = _updateTick(tickUpper, tick, liquidityDelta);
 
         require(
             tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
@@ -332,10 +259,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             'UniswapV3Pair::_updatePosition: liquidity overflow in upper tick'
         );
 
-        (
-            FixedPoint128.uq128x128 memory feeGrowthInside0,
-            FixedPoint128.uq128x128 memory feeGrowthInside1
-        ) = _getFeeGrowthInside(tickLower, tickUpper, tick, tickInfoLower, tickInfoUpper);
+        (FixedPoint128.uq128x128 memory feeGrowthInside0, FixedPoint128.uq128x128 memory feeGrowthInside1) = tickInfos
+            .getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0, feeGrowthGlobal1);
 
         // calculate accumulated fees
         uint256 feesOwed0 = FullMath.mulDiv(
@@ -637,7 +562,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 state.amountSpecifiedRemaining != 0 ||
                 (params.zeroForOne == false && state.sqrtPrice._x == step.sqrtPriceNext._x)
             ) {
-                TickInfo storage tickInfo = tickInfos[step.tickNext];
+                Tick.Info storage tickInfo = tickInfos[step.tickNext];
 
                 // if the tick is initialized, update it
                 // todo: decide on a minimum here that may be non-zero
