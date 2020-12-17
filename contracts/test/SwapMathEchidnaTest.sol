@@ -37,6 +37,8 @@ contract SwapMathEchidnaTest {
             zeroForOne
         );
 
+        assert(feeAmount > 0);
+
         if (zeroForOne) {
             assert(sqrtQ._x <= sqrtPriceRaw);
             assert(sqrtQ._x >= sqrtPriceTargetRaw);

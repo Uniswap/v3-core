@@ -604,12 +604,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // get the price for the next tick we're moving toward
             step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
-            // it should always be the case that if params.zeroForOne is true, we should be at or above the target price
-            // similarly, if it's false we should be below the target price
-            // TODO we can remove this if/when we're confident they never trigger
-            if (params.zeroForOne) assert(state.sqrtPrice._x >= step.sqrtPriceNext._x);
-            else assert(state.sqrtPrice._x < step.sqrtPriceNext._x);
-
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.sqrtPrice._x > step.sqrtPriceNext._x)) {
                 (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
@@ -632,7 +626,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 }
 
                 // update global fee tracker
-                assert(step.feeAmount > 0);
                 state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidityCurrent)._x;
             }
 
