@@ -21,7 +21,7 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@uniswap/lib": "4.0.1-alpha"
+    "@uniswap/lib": "^5.0.0-alpha"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
