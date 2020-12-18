@@ -11,7 +11,7 @@ library SqrtPriceMath {
     using SafeCast for uint256;
 
     function isMulSafe(uint256 x, uint256 y) private pure returns (bool) {
-        return (x * y) / x == y;
+        unchecked { return (x * y) / x == y; }
     }
 
     function isAddSafe(uint256 x, uint256 y) private pure returns (bool) {

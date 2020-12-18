@@ -11,7 +11,7 @@ library TickBitmap {
     // bitPos is the position in the word from most to least significant where the flag is set
     function position(int24 tick) private pure returns (int16 wordPos, uint8 bitPos) {
         wordPos = int16(tick >> 8);
-        bitPos = uint8(255) - uint8(int8(tick % 128)) * 2;
+        bitPos = uint8(255) - uint8(tick < 0 ? uint24(tick) % 256 : uint24(tick) % 256);
     }
 
     // returns whether the given tick is initialized
