@@ -4,7 +4,7 @@ import {SwapMathTest} from '../typechain/SwapMathTest'
 
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {encodePriceSqrt, expandTo18Decimals, FeeAmount} from './shared/utilities'
+import {encodePriceSqrt, expandTo18Decimals} from './shared/utilities'
 import {SqrtPriceMathTest} from '../typechain/SqrtPriceMathTest'
 
 describe('SwapMath', () => {
@@ -26,13 +26,12 @@ describe('SwapMath', () => {
       const fee = 600
       const zeroForOne = false
 
-      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
         price,
         priceTarget,
         liquidity,
         amount,
-        fee,
-        zeroForOne
+        fee
       )
 
       expect(amountIn).to.eq('9975124224178055')
@@ -42,8 +41,8 @@ describe('SwapMath', () => {
 
       const priceAfterWholeInputAmount = await sqrtPriceMath.getNextPriceFromInput(price, liquidity, amount, zeroForOne)
 
-      expect(priceAfter._x, 'price is capped at price target').to.eq(priceTarget._x)
-      expect(priceAfter._x, 'price is less than price after whole input amount').to.lt(priceAfterWholeInputAmount._x)
+      expect(sqrtQ._x, 'price is capped at price target').to.eq(priceTarget._x)
+      expect(sqrtQ._x, 'price is less than price after whole input amount').to.lt(priceAfterWholeInputAmount._x)
     })
 
     it('exact amount out that gets capped at price target in one for zero', async () => {
@@ -54,13 +53,12 @@ describe('SwapMath', () => {
       const fee = 600
       const zeroForOne = false
 
-      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
         price,
         priceTarget,
         liquidity,
         amount,
-        fee,
-        zeroForOne
+        fee
       )
 
       expect(amountIn).to.eq('9975124224178055')
@@ -75,8 +73,8 @@ describe('SwapMath', () => {
         zeroForOne
       )
 
-      expect(priceAfter._x, 'price is capped at price target').to.eq(priceTarget._x)
-      expect(priceAfter._x, 'price is less than price after whole output amount').to.lt(priceAfterWholeOutputAmount._x)
+      expect(sqrtQ._x, 'price is capped at price target').to.eq(priceTarget._x)
+      expect(sqrtQ._x, 'price is less than price after whole output amount').to.lt(priceAfterWholeOutputAmount._x)
     })
 
     it('exact amount in that is fully spent in one for zero', async () => {
@@ -87,13 +85,12 @@ describe('SwapMath', () => {
       const fee = 600
       const zeroForOne = false
 
-      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
         price,
         priceTarget,
         liquidity,
         amount,
-        fee,
-        zeroForOne
+        fee
       )
 
       expect(amountIn).to.eq('999400000000000000')
@@ -108,10 +105,8 @@ describe('SwapMath', () => {
         zeroForOne
       )
 
-      expect(priceAfter._x, 'price does not reach price target').to.be.lt(priceTarget._x)
-      expect(priceAfter._x, 'price is equal to price after whole input amount').to.eq(
-        priceAfterWholeInputAmountLessFee._x
-      )
+      expect(sqrtQ._x, 'price does not reach price target').to.be.lt(priceTarget._x)
+      expect(sqrtQ._x, 'price is equal to price after whole input amount').to.eq(priceAfterWholeInputAmountLessFee._x)
     })
 
     it('exact amount out that is fully received in one for zero', async () => {
@@ -122,13 +117,12 @@ describe('SwapMath', () => {
       const fee = 600
       const zeroForOne = false
 
-      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
         price,
         priceTarget,
         liquidity,
         amount,
-        fee,
-        zeroForOne
+        fee
       )
 
       expect(amountIn).to.eq('2000000000000000000')
@@ -142,38 +136,51 @@ describe('SwapMath', () => {
         zeroForOne
       )
 
-      expect(priceAfter._x, 'price does not reach price target').to.be.lt(priceTarget._x)
-      expect(priceAfter._x, 'price is less than price after whole output amount').to.eq(priceAfterWholeOutputAmount._x)
+      expect(sqrtQ._x, 'price does not reach price target').to.be.lt(priceTarget._x)
+      expect(sqrtQ._x, 'price is less than price after whole output amount').to.eq(priceAfterWholeOutputAmount._x)
     })
 
-    it('example from failing test', async () => {
-      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
-        {_x: BigNumber.from('47108085314816337').shl(32)},
-        {_x: BigNumber.from('44377947312771397').shl(32)},
-        '250000000000000001',
-        '999999999999999607',
-        FeeAmount.MEDIUM,
-        true
+    it('amount out is capped at the desired amount out', async () => {
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+        {_x: BigNumber.from('417332158212080721273783715441582')},
+        {_x: BigNumber.from('1452870262520218020823638996')},
+        '159344665391607089467575320103',
+        '-1',
+        1
       )
-      expect(amountIn).to.eq('996999999999999608')
-      expect(feeAmount).to.eq('2999999999999999')
-      expect(amountOut).to.eq('6436444186929')
-      expect(priceAfter._x).to.eq('200287895220089885758853514')
+      expect(amountIn).to.eq('1')
+      expect(feeAmount).to.eq('1')
+      expect(amountOut).to.eq('1') // would be 2 if not capped
+      expect(sqrtQ._x).to.eq('417332158212080721273783715441581')
     })
 
-    it('price can decrease from input price', async () => {
-      const {amountIn, amountOut, priceAfter, feeAmount} = await swapMath.computeSwapStep(
+    it('target price of 1 uses partial input amount', async () => {
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+        {_x: BigNumber.from('2')},
+        {_x: BigNumber.from('1')},
+        '1',
+        '3915081100057732413702495386755767',
+        1
+      )
+      expect(amountIn).to.eq('39614081257132168796771975168')
+      expect(feeAmount).to.eq('39614120871253040049813')
+      expect(amountIn.add(feeAmount)).to.be.lte('3915081100057732413702495386755767')
+      expect(amountOut).to.eq('0')
+      expect(sqrtQ._x).to.eq('1')
+    })
+
+    it('entire input amount taken as fee', async () => {
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
         {_x: '2413'},
         {_x: '79887613182836312'},
         '1985041575832132834610021537970',
         '10',
-        1872,
-        false
+        1872
       )
       expect(amountIn).to.eq('0')
       expect(feeAmount).to.eq('10')
       expect(amountOut).to.eq('0')
-      expect(priceAfter._x).to.eq('2413')
+      expect(sqrtQ._x).to.eq('2413')
     })
 
     it('gas', async () => {
@@ -183,8 +190,7 @@ describe('SwapMath', () => {
           {_x: encodePriceSqrt(101, 100)},
           expandTo18Decimals(2),
           expandTo18Decimals(1),
-          600,
-          false
+          600
         )
       )
     })
