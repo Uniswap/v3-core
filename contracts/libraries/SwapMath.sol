@@ -11,11 +11,12 @@ import './SqrtPriceMath.sol';
 library SwapMath {
     using SafeMath for uint256;
 
+    // compute the state changes for the swap step
     function computeSwapStep(
         FixedPoint96.uq64x96 memory sqrtP,
         FixedPoint96.uq64x96 memory sqrtPTarget,
         uint128 liquidity,
-        int256 amountSpecifiedMax,
+        int256 amountRemaining,
         uint24 feePips
     )
         internal
@@ -28,13 +29,13 @@ library SwapMath {
         )
     {
         bool zeroForOne = sqrtP._x >= sqrtPTarget._x;
-        bool exactIn = amountSpecifiedMax >= 0;
+        bool exactIn = amountRemaining >= 0;
 
         if (exactIn) {
-            uint256 amountInMaxLessFee = FullMath.mulDiv(uint256(amountSpecifiedMax), 1e6 - feePips, 1e6);
+            uint256 amountInMaxLessFee = FullMath.mulDiv(uint256(amountRemaining), 1e6 - feePips, 1e6);
             sqrtQ = SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountInMaxLessFee, zeroForOne);
         } else {
-            sqrtQ = SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, uint256(-amountSpecifiedMax), zeroForOne);
+            sqrtQ = SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, uint256(-amountRemaining), zeroForOne);
         }
 
         // get the input/output amounts
@@ -52,16 +53,9 @@ library SwapMath {
             amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
         }
 
-        // a max output amount was specified, cap
-        if (!exactIn) {
-            uint256 maxAmountOut = uint256(-amountSpecifiedMax);
-            if (amountOut > maxAmountOut) amountOut = maxAmountOut;
-        }
-
-        if (sqrtQ._x != sqrtPTarget._x) {
+        if (exactIn && sqrtQ._x != sqrtPTarget._x) {
             // we didn't reach the target, so take the remainder of the maximum input as fee
-            if (exactIn) feeAmount = uint256(amountSpecifiedMax) - amountIn;
-            else feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
+            feeAmount = uint256(amountRemaining) - amountIn;
         } else {
             feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
         }
