@@ -140,18 +140,18 @@ describe('SwapMath', () => {
       expect(sqrtQ._x, 'price is less than price after whole output amount').to.eq(priceAfterWholeOutputAmount._x)
     })
 
-    it('example from failing test', async () => {
+    it('amount out is capped at the desired amount out', async () => {
       const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
-        {_x: BigNumber.from('47108085314816337').shl(32)},
-        {_x: BigNumber.from('44377947312771397').shl(32)},
-        '250000000000000001',
-        '999999999999999607',
-        FeeAmount.MEDIUM
+        {_x: BigNumber.from('417332158212080721273783715441582')},
+        {_x: BigNumber.from('1452870262520218020823638996')},
+        '159344665391607089467575320103',
+        '-1',
+        1
       )
-      expect(amountIn).to.eq('996999999999999608')
-      expect(feeAmount).to.eq('2999999999999999')
-      expect(amountOut).to.eq('6436444186929')
-      expect(sqrtQ._x).to.eq('200287895220089885758853514')
+      expect(amountIn).to.eq('1')
+      expect(feeAmount).to.eq('1')
+      expect(amountOut).to.eq('1') // would be 2 if not capped
+      expect(sqrtQ._x).to.eq('417332158212080721273783715441581')
     })
 
     it('entire input amount taken as fee', async () => {

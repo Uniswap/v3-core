@@ -32,6 +32,13 @@ contract SwapMathEchidnaTest {
             assert(amountIn + feeAmount <= uint256(amountRemaining));
         }
 
+        if (sqrtPriceRaw == sqrtPriceTargetRaw) {
+            assert(amountIn == 0);
+            assert(amountOut == 0);
+            assert(feeAmount == 0);
+            assert(sqrtQ._x == sqrtPriceTargetRaw);
+        }
+
         // didn't reach price target, entire amount must be consumed
         if (sqrtQ._x != sqrtPriceTargetRaw) {
             if (amountRemaining < 0) assert(amountOut == uint256(-amountRemaining));

@@ -53,6 +53,11 @@ library SwapMath {
             amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
         }
 
+        // cap the output amount to not exceed the remaining output amount
+        if (!exactIn && amountOut > uint256(-amountRemaining)) {
+            amountOut = uint256(-amountRemaining);
+        }
+
         if (exactIn && sqrtQ._x != sqrtPTarget._x) {
             // we didn't reach the target, so take the remainder of the maximum input as fee
             feeAmount = uint256(amountRemaining) - amountIn;
