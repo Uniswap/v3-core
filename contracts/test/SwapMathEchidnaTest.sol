@@ -9,7 +9,7 @@ contract SwapMathEchidnaTest {
         uint160 sqrtPriceRaw,
         uint160 sqrtPriceTargetRaw,
         uint128 liquidity,
-        int256 amount,
+        int256 amountRemaining,
         uint24 feePips
     ) external pure {
         require(sqrtPriceRaw > 0);
@@ -17,37 +17,41 @@ contract SwapMathEchidnaTest {
         require(feePips > 0);
         require(feePips < 1e6);
 
-        bool zeroForOne = sqrtPriceRaw >= sqrtPriceTargetRaw;
-
-        require(amount != 0);
-
         (FixedPoint96.uq64x96 memory sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount) = SwapMath
             .computeSwapStep(
             FixedPoint96.uq64x96(sqrtPriceRaw),
             FixedPoint96.uq64x96(sqrtPriceTargetRaw),
             liquidity,
-            amount,
-            feePips,
-            zeroForOne
+            amountRemaining,
+            feePips
         );
 
-        if (sqrtPriceRaw != sqrtPriceTargetRaw) {
-            assert(feeAmount > 0);
-            // amountIn is not necessarily gt 0, the entire amount in can be taken as a fee
+        if (amountRemaining < 0) {
+            assert(amountOut <= uint256(-amountRemaining));
+        } else {
+            assert(amountIn + feeAmount <= uint256(amountRemaining));
         }
 
-        if (zeroForOne) {
+        if (sqrtPriceRaw == sqrtPriceTargetRaw) {
+            assert(amountIn == 0);
+            assert(amountOut == 0);
+            assert(feeAmount == 0);
+            assert(sqrtQ._x == sqrtPriceTargetRaw);
+        }
+
+        // didn't reach price target, entire amount must be consumed
+        if (sqrtQ._x != sqrtPriceTargetRaw) {
+            if (amountRemaining < 0) assert(amountOut == uint256(-amountRemaining));
+            else assert(amountIn + feeAmount == uint256(amountRemaining));
+        }
+
+        // next price is between price and price target
+        if (sqrtPriceTargetRaw <= sqrtPriceRaw) {
             assert(sqrtQ._x <= sqrtPriceRaw);
             assert(sqrtQ._x >= sqrtPriceTargetRaw);
         } else {
             assert(sqrtQ._x >= sqrtPriceRaw);
             assert(sqrtQ._x <= sqrtPriceTargetRaw);
-        }
-
-        if (amount < 0) {
-            assert(amountOut <= uint256(-amount));
-        } else {
-            assert(amountIn + feeAmount <= uint256(amount));
         }
     }
 }

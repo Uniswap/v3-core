@@ -7,35 +7,33 @@ import '../libraries/FixedPoint96.sol';
 
 contract SwapMathTest {
     function computeSwapStep(
-        FixedPoint96.uq64x96 memory price,
-        FixedPoint96.uq64x96 memory target,
+        FixedPoint96.uq64x96 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtPTarget,
         uint128 liquidity,
-        int256 amount,
-        uint24 feePips,
-        bool zeroForOne
+        int256 amountRemaining,
+        uint24 feePips
     )
         external
         pure
         returns (
-            FixedPoint96.uq64x96 memory priceAfter,
+            FixedPoint96.uq64x96 memory sqrtQ,
             uint256 amountIn,
             uint256 amountOut,
             uint256 feeAmount
         )
     {
-        return SwapMath.computeSwapStep(price, target, liquidity, amount, feePips, zeroForOne);
+        return SwapMath.computeSwapStep(sqrtP, sqrtPTarget, liquidity, amountRemaining, feePips);
     }
 
     function getGasCostOfComputeSwapStep(
-        FixedPoint96.uq64x96 memory price,
-        FixedPoint96.uq64x96 memory target,
+        FixedPoint96.uq64x96 memory sqrtP,
+        FixedPoint96.uq64x96 memory sqrtPTarget,
         uint128 liquidity,
-        int256 amount,
-        uint24 feePips,
-        bool zeroForOne
+        int256 amountRemaining,
+        uint24 feePips
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        SwapMath.computeSwapStep(price, target, liquidity, amount, feePips, zeroForOne);
+        SwapMath.computeSwapStep(sqrtP, sqrtPTarget, liquidity, amountRemaining, feePips);
         return gasBefore - gasleft();
     }
 }
