@@ -564,7 +564,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 Tick.Info storage tickInfo = tickInfos[step.tickNext];
 
                 // if the tick is initialized, update it
-                // todo: decide on a minimum here that may be non-zero
                 if (tickInfo.liquidityGross > 0) {
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
@@ -585,8 +584,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
                 }
 
-                // this is ok because we still have amountInRemaining so price is guaranteed to be less than the tick
-                // after swapping the remaining amount in
+                // todo: this might not be ok. the price may not move due to the remaining input amount!
+                // original rationale: this is ok because we still have amountInRemaining so price is guaranteed to be
+                // less than the tick after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
                 state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice);
