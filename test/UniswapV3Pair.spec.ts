@@ -1054,7 +1054,7 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe.only('https://github.com/Uniswap/uniswap-v3-core/issues/214', () => {
+  describe('https://github.com/Uniswap/uniswap-v3-core/issues/214', () => {
     let sqrtPriceMath: SqrtPriceMathTest
     let sqrtTickMath: SqrtTickMathTest
     let swapMath: SwapMathTest
@@ -1068,7 +1068,7 @@ describe('UniswapV3Pair', () => {
       pair = await createPair(FeeAmount.MEDIUM, 1)
     })
 
-    it.only('tick transition can run twice', async () => {
+    it('tick transition can run twice', async () => {
       const p0 = (await sqrtTickMath.getSqrtRatioAtTick(-24081))._x.add(1)
       // initialize at a price of ~0.3 token1/token0
       // meaning if you swap in 2 token0, you should end up getting 0 token1

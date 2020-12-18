@@ -556,14 +556,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidityCurrent)._x;
             }
 
-            // we have to shift to the next tick if either of two conditions are true:
-            // 1) a positive input amount remains
-            // 2) if we're moving right and the price is exactly on the target tick
-            // TODO ensure that there's no off-by-one error here while transitioning ticks in either direction
-            if (
-                state.amountSpecifiedRemaining != 0 ||
-                (params.zeroForOne == false && state.sqrtPrice._x == step.sqrtPriceNext._x)
-            ) {
+            // run the tick transition if we reached the price target, which is in the next tick
+            if (state.sqrtPrice._x == step.sqrtPriceNext._x) {
                 Tick.Info storage tickInfo = tickInfos[step.tickNext];
 
                 // if the tick is initialized, update it
@@ -587,9 +581,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
                 }
 
-                // todo: this might not be ok. the price may not move due to the remaining input amount!
-                // original rationale: this is ok because we still have amountInRemaining so price is guaranteed to be
-                // less than the tick after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
                 state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice);
