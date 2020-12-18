@@ -4,7 +4,7 @@ import {SwapMathTest} from '../typechain/SwapMathTest'
 
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {encodePriceSqrt, expandTo18Decimals, FeeAmount} from './shared/utilities'
+import {encodePriceSqrt, expandTo18Decimals} from './shared/utilities'
 import {SqrtPriceMathTest} from '../typechain/SqrtPriceMathTest'
 
 describe('SwapMath', () => {
@@ -152,6 +152,21 @@ describe('SwapMath', () => {
       expect(feeAmount).to.eq('1')
       expect(amountOut).to.eq('1') // would be 2 if not capped
       expect(sqrtQ._x).to.eq('417332158212080721273783715441581')
+    })
+
+    it('target price of 1 uses partial input amount', async () => {
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+        {_x: BigNumber.from('2')},
+        {_x: BigNumber.from('1')},
+        '1',
+        '3915081100057732413702495386755767',
+        1
+      )
+      expect(amountIn).to.eq('39614081257132168796771975168')
+      expect(feeAmount).to.eq('39614120871253040049813')
+      expect(amountIn.add(feeAmount)).to.be.lte('3915081100057732413702495386755767')
+      expect(amountOut).to.eq('0')
+      expect(sqrtQ._x).to.eq('1')
     })
 
     it('entire input amount taken as fee', async () => {

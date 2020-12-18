@@ -12,8 +12,8 @@ contract SwapMathEchidnaTest {
         int256 amountRemaining,
         uint24 feePips
     ) external pure {
-        require(sqrtPriceRaw > 1);
-        require(sqrtPriceTargetRaw > 1);
+        require(sqrtPriceRaw > 0);
+        require(sqrtPriceTargetRaw > 0);
         require(feePips > 0);
         require(feePips < 1e6);
 
