@@ -71,12 +71,18 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
 
         if (amount0Delta < 0) {
             TransferHelper.safeTransferFrom(
-                IUniswapV3Pair(msg.sender).token0(), sender, msg.sender, uint256(-amount0Delta)
+                IUniswapV3Pair(msg.sender).token0(),
+                sender,
+                msg.sender,
+                uint256(-amount0Delta)
             );
         }
         if (amount1Delta < 0) {
             TransferHelper.safeTransferFrom(
-                IUniswapV3Pair(msg.sender).token1(), sender, msg.sender, uint256(-amount1Delta)
+                IUniswapV3Pair(msg.sender).token1(),
+                sender,
+                msg.sender,
+                uint256(-amount1Delta)
             );
         }
     }
@@ -111,11 +117,17 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         emit MintCallback(amount0Owed, amount1Owed);
         if (amount0Owed > 0)
             TransferHelper.safeTransferFrom(
-                IUniswapV3Pair(msg.sender).token0(), sender, msg.sender, uint256(amount0Owed)
+                IUniswapV3Pair(msg.sender).token0(),
+                sender,
+                msg.sender,
+                uint256(amount0Owed)
             );
         if (amount1Owed > 0)
             TransferHelper.safeTransferFrom(
-                IUniswapV3Pair(msg.sender).token1(), sender, msg.sender, uint256(amount1Owed)
+                IUniswapV3Pair(msg.sender).token1(),
+                sender,
+                msg.sender,
+                uint256(amount1Owed)
             );
     }
 }
