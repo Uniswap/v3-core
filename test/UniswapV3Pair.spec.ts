@@ -1068,7 +1068,7 @@ describe('UniswapV3Pair', () => {
       pair = await createPair(FeeAmount.MEDIUM, 1)
     })
 
-    it('tick transition can run twice', async () => {
+    it.only('tick transition can run twice', async () => {
       const p0 = (await sqrtTickMath.getSqrtRatioAtTick(-24081))._x.add(1)
       // initialize at a price of ~0.3 token1/token0
       // meaning if you swap in 2 token0, you should end up getting 0 token1
@@ -1083,6 +1083,8 @@ describe('UniswapV3Pair', () => {
 
       await mint(walletAddress, -24082, -24081, liquidity)
       expect(await pair.liquidityCurrent(), 'current pair liquidity is still liquidity + 1').to.eq(liquidity.add(1))
+
+      const {secondsOutside: secondsOutsideBefore} = await pair.tickInfos(-24081)
 
       // check the math works out to moving the price down 1, sending no amount out, and having some amount remaining
       {
@@ -1106,11 +1108,14 @@ describe('UniswapV3Pair', () => {
         .to.emit(token1, 'Transfer')
         .withArgs(pair.address, walletAddress, 0)
 
+      const {secondsOutside: secondsOutsideAfter} = await pair.tickInfos(-24081)
+
       expect(await pair.tickCurrent(), 'pair tick is still -24081').to.eq(-24081)
-      expect(await pair.sqrtPriceCurrent(), 'pair tick is still -24081').to.eq(p0.sub(1))
+      expect(await pair.sqrtPriceCurrent(), 'pair price is still in tick -24081').to.eq(p0.sub(1))
       expect(await pair.liquidityCurrent(), 'pair has run tick transition but liquidity did not change').to.eq(
         liquidity.add(1)
       )
+      expect(secondsOutsideAfter, 'the tick transition did not run').to.eq(secondsOutsideBefore)
     })
   })
 })
