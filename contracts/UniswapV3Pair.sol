@@ -529,6 +529,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // get the price for the next tick we're moving toward
             step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
+            // the next price to target is the first price in the adjacent tick
+            if (params.zeroForOne) step.sqrtPriceNext._x--;
+
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.sqrtPrice._x > step.sqrtPriceNext._x)) {
                 (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
