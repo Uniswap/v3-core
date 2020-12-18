@@ -7,7 +7,6 @@ import '../libraries/FixedPoint96.sol';
 import '../libraries/SqrtPriceMath.sol';
 
 contract SqrtPriceMathEchidnaTest {
-    // uniqueness and increasing order
     function mulDivRoundingUpInvariants(
         uint256 x,
         uint256 y,
