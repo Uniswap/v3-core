@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.0;
 
-import '../openzeppelin/IERC20.sol';
+import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import '../interfaces/IUniswapV3MintCallback.sol';
 import '../interfaces/IUniswapV3SwapCallback.sol';
@@ -70,10 +70,10 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         emit SwapCallback(amount0Delta, amount1Delta);
 
         if (amount0Delta < 0) {
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(-amount0Delta));
+            TransferHelper.safeTransferFrom(IUniswapV3Pair(msg.sender).token0(), sender, msg.sender, uint256(-amount0Delta));
         }
         if (amount1Delta < 0) {
-            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(-amount1Delta));
+            TransferHelper.safeTransferFrom(IUniswapV3Pair(msg.sender).token1(), sender, msg.sender, uint256(-amount1Delta));
         }
     }
 
@@ -106,8 +106,8 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
 
         emit MintCallback(amount0Owed, amount1Owed);
         if (amount0Owed > 0)
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Owed));
+            TransferHelper.safeTransferFrom(IUniswapV3Pair(msg.sender).token0(), sender, msg.sender, uint256(amount0Owed));
         if (amount1Owed > 0)
-            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Owed));
+            TransferHelper.safeTransferFrom(IUniswapV3Pair(msg.sender).token1(), sender, msg.sender, uint256(amount1Owed));
     }
 }

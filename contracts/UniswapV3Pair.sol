@@ -4,14 +4,13 @@ pragma solidity =0.8.0;
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import './openzeppelin/IERC20.sol';
-
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
 
+import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3MintCallback.sol';

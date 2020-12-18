@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.5.0;
+pragma solidity >=0.6.8;
 
 // sqrt(1.0001) ticks
 library TickMath {
