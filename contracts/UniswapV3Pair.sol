@@ -527,10 +527,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             else require(step.tickNext <= MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
             // get the price for the next tick we're moving toward
-            step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
-
-            // the next price to target is the first price in the adjacent tick
-            if (params.zeroForOne) step.sqrtPriceNext._x--;
+            step.sqrtPriceNext = params.zeroForOne
+                ? FixedPoint96.uq64x96(SqrtTickMath.getSqrtRatioAtTick(step.tickNext)._x - 1)
+                : SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.sqrtPrice._x > step.sqrtPriceNext._x)) {
