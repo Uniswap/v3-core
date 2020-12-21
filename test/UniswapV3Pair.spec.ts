@@ -479,47 +479,52 @@ describe('UniswapV3Pair', () => {
           })
         })
 
-        describe('swap 1000 in', () => {
-          const IN = 1000
-          const OUT = {
-            [FeeAmount.LOW]: 998,
-            [FeeAmount.MEDIUM]: 996,
-            [FeeAmount.HIGH]: 990,
+        describe('swap 1000 in/out', () => {
+          const EXACT_AMOUNT = 1000
+          const EXPECTED_AMOUNT_OUT = {
+            [FeeAmount.LOW]: 999,
+            [FeeAmount.MEDIUM]: 997,
+            [FeeAmount.HIGH]: 991,
+          }[feeAmount]
+          const EXPECTED_AMOUNT_IN = {
+            [FeeAmount.LOW]: 1002,
+            [FeeAmount.MEDIUM]: 1005,
+            [FeeAmount.HIGH]: 1011,
           }[feeAmount]
 
           it('swapExact0For1', async () => {
-            await expect(swapExact0For1(IN, walletAddress))
+            await expect(swapExact0For1(EXACT_AMOUNT, walletAddress))
               .to.emit(token0, 'Transfer')
-              .withArgs(walletAddress, pair.address, IN)
+              .withArgs(walletAddress, pair.address, EXACT_AMOUNT)
               .to.emit(token1, 'Transfer')
-              .withArgs(pair.address, walletAddress, OUT)
+              .withArgs(pair.address, walletAddress, EXPECTED_AMOUNT_OUT)
             expect(await pair.tickCurrent()).to.eq(-1)
           })
 
           it('swap0ForExact1', async () => {
-            await expect(swap0ForExact1(OUT, walletAddress))
+            await expect(swap0ForExact1(EXACT_AMOUNT, walletAddress))
               .to.emit(token0, 'Transfer')
-              .withArgs(walletAddress, pair.address, IN)
+              .withArgs(walletAddress, pair.address, EXPECTED_AMOUNT_IN)
               .to.emit(token1, 'Transfer')
-              .withArgs(pair.address, walletAddress, OUT)
+              .withArgs(pair.address, walletAddress, EXACT_AMOUNT)
             expect(await pair.tickCurrent()).to.eq(-1)
           })
 
           it('swapExact1For0', async () => {
-            await expect(swapExact1For0(IN, walletAddress))
+            await expect(swapExact1For0(EXACT_AMOUNT, walletAddress))
               .to.emit(token0, 'Transfer')
-              .withArgs(pair.address, walletAddress, OUT)
+              .withArgs(pair.address, walletAddress, EXPECTED_AMOUNT_OUT)
               .to.emit(token1, 'Transfer')
-              .withArgs(walletAddress, pair.address, IN)
+              .withArgs(walletAddress, pair.address, EXACT_AMOUNT)
             expect(await pair.tickCurrent()).to.eq(0)
           })
 
           it('swap1ForExact0', async () => {
-            await expect(swap1ForExact0(OUT, walletAddress))
+            await expect(swap1ForExact0(EXACT_AMOUNT, walletAddress))
               .to.emit(token0, 'Transfer')
-              .withArgs(pair.address, walletAddress, OUT)
+              .withArgs(pair.address, walletAddress, EXACT_AMOUNT)
               .to.emit(token1, 'Transfer')
-              .withArgs(walletAddress, pair.address, IN)
+              .withArgs(walletAddress, pair.address, EXPECTED_AMOUNT_IN)
             expect(await pair.tickCurrent()).to.eq(0)
           })
         })
