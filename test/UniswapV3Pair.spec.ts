@@ -482,9 +482,9 @@ describe('UniswapV3Pair', () => {
         describe('swap 1000 in/out', () => {
           const EXACT_AMOUNT = 1000
           const EXPECTED_AMOUNT_OUT = {
-            [FeeAmount.LOW]: 999,
-            [FeeAmount.MEDIUM]: 997,
-            [FeeAmount.HIGH]: 991,
+            [FeeAmount.LOW]: 998,
+            [FeeAmount.MEDIUM]: 996,
+            [FeeAmount.HIGH]: 990,
           }[feeAmount]
           const EXPECTED_AMOUNT_IN = {
             [FeeAmount.LOW]: 1002,

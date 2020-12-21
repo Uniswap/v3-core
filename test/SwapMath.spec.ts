@@ -197,6 +197,20 @@ describe('SwapMath', () => {
       expect(feeAmount).to.eq(0)
     })
 
+    it('very large price movement with low liquidity', async () => {
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+        {_x: '1461501637330902918203684832716283019655932542975'},
+        {_x: '255'},
+        '199',
+        '60',
+        2047
+      )
+      expect(amountIn).to.eq(59)
+      expect(amountOut).to.eq('3670902070668200770912')
+      expect(sqrtQ._x).to.eq('267227192209128867427668635739')
+      expect(feeAmount).to.eq(1)
+    })
+
     it('gas', async () => {
       await snapshotGasCost(
         swapMath.getGasCostOfComputeSwapStep(

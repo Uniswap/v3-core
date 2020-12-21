@@ -48,17 +48,13 @@ library SwapMath {
             if (sqrtQ._x < sqrtPTarget._x) sqrtQ = sqrtPTarget;
 
             amountIn = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true);
-            amountOut = sqrtQ._x == sqrtP._x
-                ? 0
-                : SqrtPriceMath.getAmount1Delta(sqrtQ, FixedPoint96.uq64x96(sqrtP._x + 1), liquidity, false);
+            amountOut = SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, false);
         } else {
             // if we've overshot the target, cap at the target
             if (sqrtQ._x > sqrtPTarget._x) sqrtQ = sqrtPTarget;
 
             amountIn = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true);
-            amountOut = sqrtQ._x == sqrtP._x
-                ? 0
-                : SqrtPriceMath.getAmount0Delta(sqrtQ, FixedPoint96.uq64x96(sqrtP._x - 1), liquidity, false);
+            amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
         }
 
         // cap the output amount to not exceed the remaining output amount
