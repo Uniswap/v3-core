@@ -28,7 +28,11 @@ library SwapMath {
             uint256 feeAmount
         )
     {
-        bool zeroForOne = sqrtP._x >= sqrtPTarget._x;
+        if (sqrtP._x == sqrtPTarget._x) {
+            return (sqrtPTarget, 0, 0, 0);
+        }
+
+        bool zeroForOne = sqrtP._x > sqrtPTarget._x;
         bool exactIn = amountRemaining >= 0;
 
         if (exactIn) {
@@ -44,13 +48,17 @@ library SwapMath {
             if (sqrtQ._x < sqrtPTarget._x) sqrtQ = sqrtPTarget;
 
             amountIn = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true);
-            amountOut = SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, false);
+            amountOut = sqrtQ._x == sqrtP._x
+                ? 0
+                : SqrtPriceMath.getAmount1Delta(sqrtQ, FixedPoint96.uq64x96(sqrtP._x + 1), liquidity, false);
         } else {
             // if we've overshot the target, cap at the target
             if (sqrtQ._x > sqrtPTarget._x) sqrtQ = sqrtPTarget;
 
             amountIn = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true);
-            amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
+            amountOut = sqrtQ._x == sqrtP._x
+                ? 0
+                : SqrtPriceMath.getAmount0Delta(sqrtQ, FixedPoint96.uq64x96(sqrtP._x - 1), liquidity, false);
         }
 
         // cap the output amount to not exceed the remaining output amount

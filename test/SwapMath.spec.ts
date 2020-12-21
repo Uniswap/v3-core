@@ -4,7 +4,7 @@ import {SwapMathTest} from '../typechain/SwapMathTest'
 
 import {expect} from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {encodePriceSqrt, expandTo18Decimals} from './shared/utilities'
+import {encodePriceSqrt, expandTo18Decimals, FeeAmount} from './shared/utilities'
 import {SqrtPriceMathTest} from '../typechain/SqrtPriceMathTest'
 
 describe('SwapMath', () => {
@@ -181,6 +181,20 @@ describe('SwapMath', () => {
       expect(feeAmount).to.eq('10')
       expect(amountOut).to.eq('0')
       expect(sqrtQ._x).to.eq('2413')
+    })
+
+    it('same price returns 0', async () => {
+      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+        {_x: encodePriceSqrt(1, 10)},
+        {_x: encodePriceSqrt(1, 10)},
+        expandTo18Decimals(1),
+        expandTo18Decimals(1),
+        FeeAmount.MEDIUM
+      )
+      expect(amountIn).to.eq(0)
+      expect(amountOut).to.eq(0)
+      expect(sqrtQ._x).to.eq(encodePriceSqrt(1, 10))
+      expect(feeAmount).to.eq(0)
     })
 
     it('gas', async () => {
