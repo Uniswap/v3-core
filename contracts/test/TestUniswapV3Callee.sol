@@ -3,17 +3,21 @@ pragma solidity =0.7.6;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
+import '../libraries/SafeCast.sol';
+
 import '../interfaces/IUniswapV3MintCallback.sol';
 import '../interfaces/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
 contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
+    using SafeCast for uint256;
+
     function swapExact0For1(
         address pair,
         uint256 amount0In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swapExact0For1(amount0In, recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(true, amount0In.toInt256(), recipient, abi.encode(msg.sender));
     }
 
     function swap0ForExact1(
@@ -21,7 +25,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap0ForExact1(amount1Out, recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender));
     }
 
     function swapExact1For0(
@@ -29,7 +33,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swapExact1For0(amount1In, recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), recipient, abi.encode(msg.sender));
     }
 
     function swap1ForExact0(
@@ -37,7 +41,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount0Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap1ForExact0(amount0Out, recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), recipient, abi.encode(msg.sender));
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
