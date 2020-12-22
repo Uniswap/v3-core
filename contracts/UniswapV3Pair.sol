@@ -506,6 +506,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
             liquidityCurrent: liquidityCurrent
         });
+        bool priceBit = false;
 
         while (state.amountSpecifiedRemaining != 0) {
             StepComputations memory step;
@@ -524,7 +525,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // if there might be room to move in the current tick, continue calculations
             if (params.zeroForOne == false || (state.sqrtPrice._x > step.sqrtPriceNext._x)) {
-                (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
+                FixedPoint96.uq64x96 memory priceNext;
+                (priceNext, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                     state.sqrtPrice,
                     step.sqrtPriceNext,
                     state.liquidityCurrent,
@@ -544,6 +546,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // update global fee tracker
                 state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidityCurrent)._x;
+
+                if (state.sqrtPrice._x != priceNext._x) {
+                    state.sqrtPrice = priceNext;
+                } else if (state.amountSpecifiedRemaining == 0) {
+                    priceBit = true;
+                }
             }
 
             // we have to shift to the next tick if either of two conditions are true:
@@ -582,7 +590,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // less than the tick after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice);
+                state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice) + (priceBit ? int24(-1) : int24(0));
             }
         }
 
@@ -599,6 +607,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         sqrtPriceCurrent = state.sqrtPrice;
+        // store the price bit
+        if (unlockedAndPriceBit & 2 == 0) {
+            if (priceBit) unlockedAndPriceBit += 2;
+        } else {
+            if (!priceBit) unlockedAndPriceBit -= 2;
+        }
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;

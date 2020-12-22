@@ -1100,10 +1100,10 @@ describe('UniswapV3Pair', () => {
     const {secondsOutside: secondsOutsideAfter} = await pair.tickInfos(-24081)
 
     expect(await pair.tickCurrent(), 'pair is at the next tick').to.eq(-24082)
-    expect(await pair.sqrtPriceCurrent(), 'pair price is in the next tick').to.eq(p0.sub(2))
+    expect(await pair.sqrtPriceCurrent(), 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
     expect(await pair.liquidityCurrent(), 'pair has run tick transition and liquidity changed').to.eq(
       liquidity.mul(2).add(1)
     )
-    expect(secondsOutsideAfter, 'the tick transition did not run').to.not.eq(secondsOutsideBefore)
+    expect(secondsOutsideAfter, 'the tick transition updated the seconds outside').to.not.eq(secondsOutsideBefore)
   })
 })
