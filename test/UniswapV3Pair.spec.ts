@@ -426,7 +426,7 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('swaps', () => {
+  describe.only('swaps', () => {
     for (const feeAmount of [FeeAmount.LOW, FeeAmount.MEDIUM, FeeAmount.HIGH]) {
       const tickSpacing = TICK_SPACINGS[feeAmount]
 
