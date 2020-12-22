@@ -189,7 +189,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         tickBitmap.flipTick(tick, tickSpacing);
     }
 
-    function initialize(uint160 sqrtPrice) external override {
+    function initialize(uint160 sqrtPrice, bytes calldata data) external override {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
 
         // initialize oracle timestamp
@@ -201,7 +201,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Initialized(sqrtPrice);
 
         // set permanent 1 wei position
-        mint(address(0), MIN_TICK, MAX_TICK, 1);
+        mint(address(0), MIN_TICK, MAX_TICK, 1, data);
     }
 
     // gets and updates and gets a position with the given liquidity delta
@@ -330,7 +330,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount
+        uint128 amount,
+        bytes calldata data
     ) public override lock returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
@@ -356,7 +357,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 IERC20(token0).balanceOf(address(this)),
                 IERC20(token1).balanceOf(address(this))
             );
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1);
+            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
             require(
                 balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
                 'UniswapV3Pair::mint: insufficient token0 amount'
@@ -456,6 +457,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient;
         // the timestamp of the current block
         uint32 blockTimestamp;
+        // the data to send in the callback
+        bytes data;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
@@ -612,8 +615,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
             params.zeroForOne
-                ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(-amountIn.toInt256(), amountOut.toInt256())
-                : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut.toInt256(), -amountIn.toInt256());
+                ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
+                    -amountIn.toInt256(),
+                    amountOut.toInt256(),
+                    params.data
+                )
+                : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
+                    amountOut.toInt256(),
+                    -amountIn.toInt256(),
+                    params.data
+                );
             require(
                 balanceBefore.add(amountIn) >= IERC20(tokenIn).balanceOf(address(this)),
                 'UniswapV3Pair::_swap: insufficient input amount'
@@ -621,7 +632,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function swapExact0For1(uint256 amount0In, address recipient) external override lock returns (uint256 amount1Out) {
+    function swapExact0For1(
+        uint256 amount0In,
+        address recipient,
+        bytes calldata data
+    ) external override lock returns (uint256 amount1Out) {
         require(amount0In > 1, 'UniswapV3Pair::swapExact0For1: amountIn must be greater than 1');
 
         return
@@ -631,12 +646,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     zeroForOne: true,
                     amountSpecified: amount0In.toInt256(),
                     recipient: recipient,
-                    blockTimestamp: _blockTimestamp()
+                    blockTimestamp: _blockTimestamp(),
+                    data: data
                 })
             );
     }
 
-    function swap0ForExact1(uint256 amount1Out, address recipient) external override lock returns (uint256 amount0In) {
+    function swap0ForExact1(
+        uint256 amount1Out,
+        address recipient,
+        bytes calldata data
+    ) external override lock returns (uint256 amount0In) {
         require(amount1Out > 0, 'UniswapV3Pair::swap0ForExact1: amountOut must be greater than 0');
 
         return
@@ -646,12 +666,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     zeroForOne: true,
                     amountSpecified: -amount1Out.toInt256(),
                     recipient: recipient,
-                    blockTimestamp: _blockTimestamp()
+                    blockTimestamp: _blockTimestamp(),
+                    data: data
                 })
             );
     }
 
-    function swapExact1For0(uint256 amount1In, address recipient) external override lock returns (uint256 amount0Out) {
+    function swapExact1For0(
+        uint256 amount1In,
+        address recipient,
+        bytes calldata data
+    ) external override lock returns (uint256 amount0Out) {
         require(amount1In > 1, 'UniswapV3Pair::swapExact1For0: amountIn must be greater than 1');
 
         return
@@ -661,12 +686,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     zeroForOne: false,
                     amountSpecified: amount1In.toInt256(),
                     recipient: recipient,
-                    blockTimestamp: _blockTimestamp()
+                    blockTimestamp: _blockTimestamp(),
+                    data: data
                 })
             );
     }
 
-    function swap1ForExact0(uint256 amount0Out, address recipient) external override lock returns (uint256 amount1In) {
+    function swap1ForExact0(
+        uint256 amount0Out,
+        address recipient,
+        bytes calldata data
+    ) external override lock returns (uint256 amount1In) {
         require(amount0Out > 0, 'UniswapV3Pair::swap1ForExact0: amountOut must be greater than 0');
 
         return
@@ -676,7 +706,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     zeroForOne: false,
                     amountSpecified: -amount0Out.toInt256(),
                     recipient: recipient,
-                    blockTimestamp: _blockTimestamp()
+                    blockTimestamp: _blockTimestamp(),
+                    data: data
                 })
             );
     }

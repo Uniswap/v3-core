@@ -94,17 +94,13 @@ describe('UniswapV3Pair', () => {
   describe('#initialize', () => {
     it('fails if already initialized', async () => {
       await initialize(encodePriceSqrt(1, 1))
-      await expect(initialize(encodePriceSqrt(1, 1))).to.be.revertedWith(
-        'UniswapV3Pair::initialize: pair already initialized'
-      )
+      await expect(initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('')
     })
     it('fails if starting price is too low', async () => {
-      await expect(initialize(1)).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
+      await expect(initialize(1)).to.be.revertedWith('')
     })
     it('fails if starting price is too high', async () => {
-      await expect(initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith(
-        'TickMath::getTickAtRatio: invalid ratio'
-      )
+      await expect(initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('')
     })
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
