@@ -43,21 +43,21 @@ contract UniswapV3PairEchidnaTest {
     }
 
     function initializePair(uint160 sqrtPrice) public {
-        pair.initialize(sqrtPrice);
+        pair.initialize(sqrtPrice, '');
     }
 
     function swapExact0For1(uint256 amount0In) external {
         require(amount0In > 1);
         require(amount0In < 1e18);
         token0.transfer(address(payer), amount0In);
-        pair.swapExact0For1(amount0In, address(this));
+        pair.swapExact0For1(amount0In, address(this), '');
     }
 
     function swapExact1For0(uint256 amount1In) external {
         require(amount1In > 1);
         require(amount1In < 1e18);
         token1.transfer(address(payer), amount1In);
-        pair.swapExact1For0(amount1In, address(this));
+        pair.swapExact1For0(amount1In, address(this), '');
     }
 
     function mint(
@@ -66,7 +66,7 @@ contract UniswapV3PairEchidnaTest {
         int24 tickUpper,
         uint128 amount
     ) external {
-        pair.mint(owner, tickLower, tickUpper, amount);
+        pair.mint(owner, tickLower, tickUpper, amount, '');
     }
 
     function burn(

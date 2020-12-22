@@ -8,19 +8,12 @@ import '../interfaces/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
 contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
-    address sender;
-
     function swapExact0For1(
         address pair,
         uint256 amount0In,
         address recipient
     ) external {
-        require(sender == address(0));
-        sender = msg.sender;
-
-        IUniswapV3Pair(pair).swapExact0For1(amount0In, recipient);
-
-        sender = address(0);
+        IUniswapV3Pair(pair).swapExact0For1(amount0In, recipient, abi.encode(msg.sender));
     }
 
     function swap0ForExact1(
@@ -28,12 +21,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1Out,
         address recipient
     ) external {
-        require(sender == address(0));
-        sender = msg.sender;
-
-        IUniswapV3Pair(pair).swap0ForExact1(amount1Out, recipient);
-
-        sender = address(0);
+        IUniswapV3Pair(pair).swap0ForExact1(amount1Out, recipient, abi.encode(msg.sender));
     }
 
     function swapExact1For0(
@@ -41,12 +29,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1In,
         address recipient
     ) external {
-        require(sender == address(0));
-        sender = msg.sender;
-
-        IUniswapV3Pair(pair).swapExact1For0(amount1In, recipient);
-
-        sender = address(0);
+        IUniswapV3Pair(pair).swapExact1For0(amount1In, recipient, abi.encode(msg.sender));
     }
 
     function swap1ForExact0(
@@ -54,18 +37,17 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount0Out,
         address recipient
     ) external {
-        require(sender == address(0));
-        sender = msg.sender;
-
-        IUniswapV3Pair(pair).swap1ForExact0(amount0Out, recipient);
-
-        sender = address(0);
+        IUniswapV3Pair(pair).swap1ForExact0(amount0Out, recipient, abi.encode(msg.sender));
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta) external override {
-        require(sender != address(0));
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata data
+    ) external override {
+        address sender = abi.decode(data, (address));
 
         emit SwapCallback(amount0Delta, amount1Delta);
 
@@ -78,11 +60,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
     }
 
     function initialize(address pair, uint160 sqrtPrice) external {
-        require(sender == address(0));
-
-        sender = msg.sender;
-        IUniswapV3Pair(pair).initialize(sqrtPrice);
-        sender = address(0);
+        IUniswapV3Pair(pair).initialize(sqrtPrice, abi.encode(msg.sender));
     }
 
     function mint(
@@ -92,17 +70,17 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         int24 tickUpper,
         uint128 amount
     ) external {
-        require(sender == address(0));
-
-        sender = msg.sender;
-        IUniswapV3Pair(pair).mint(recipient, tickLower, tickUpper, amount);
-        sender = address(0);
+        IUniswapV3Pair(pair).mint(recipient, tickLower, tickUpper, amount, abi.encode(msg.sender));
     }
 
     event MintCallback(uint256 amount0Owed, uint256 amount1Owed);
 
-    function uniswapV3MintCallback(uint256 amount0Owed, uint256 amount1Owed) external override {
-        require(sender != address(0));
+    function uniswapV3MintCallback(
+        uint256 amount0Owed,
+        uint256 amount1Owed,
+        bytes calldata data
+    ) external override {
+        address sender = abi.decode(data, (address));
 
         emit MintCallback(amount0Owed, amount1Owed);
         if (amount0Owed > 0)

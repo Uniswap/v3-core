@@ -51,7 +51,7 @@ interface IUniswapV3Pair {
     function getCumulatives() external view returns (uint32 blockTimestamp, int56 tickCumulative);
 
     // initialize the pair
-    function initialize(uint160 sqrtPrice) external;
+    function initialize(uint160 sqrtPrice, bytes calldata data) external;
 
     // collect fees
     function collectFees(
@@ -67,7 +67,8 @@ interface IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount
+        uint128 amount,
+        bytes calldata data
     ) external returns (uint256 amount0, uint256 amount1);
 
     // burn the sender's liquidity
@@ -79,13 +80,29 @@ interface IUniswapV3Pair {
     ) external returns (uint256 amount0, uint256 amount1);
 
     // swapping
-    function swapExact0For1(uint256 amount0In, address recipient) external returns (uint256 amount1Out);
+    function swapExact0For1(
+        uint256 amount0In,
+        address recipient,
+        bytes calldata data
+    ) external returns (uint256 amount1Out);
 
-    function swap0ForExact1(uint256 amount1Out, address recipient) external returns (uint256 amount0In);
+    function swap0ForExact1(
+        uint256 amount1Out,
+        address recipient,
+        bytes calldata data
+    ) external returns (uint256 amount0In);
 
-    function swapExact1For0(uint256 amount1In, address recipient) external returns (uint256 amount0Out);
+    function swapExact1For0(
+        uint256 amount1In,
+        address recipient,
+        bytes calldata data
+    ) external returns (uint256 amount0Out);
 
-    function swap1ForExact0(uint256 amount0Out, address recipient) external returns (uint256 amount1In);
+    function swap1ForExact0(
+        uint256 amount0Out,
+        address recipient,
+        bytes calldata data
+    ) external returns (uint256 amount1In);
 
     function setFeeTo(address) external;
 
