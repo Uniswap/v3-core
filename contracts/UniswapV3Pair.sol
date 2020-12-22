@@ -142,15 +142,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    // on the first interaction per block, update the oracle price accumulator and fee
-    function _updateAccumulators() private {
-        uint32 blockTimestamp = _blockTimestamp();
-
-        if (blockTimestampLast != blockTimestamp) {
-            (blockTimestampLast, tickCumulativeLast) = getCumulatives();
-        }
-    }
-
     function getCumulatives() public view override returns (uint32 blockTimestamp, int56 tickCumulative) {
         require(isInitialized(), 'UniswapV3Pair::getCumulatives: pair not initialized');
         blockTimestamp = _blockTimestamp();
@@ -344,8 +335,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
 
-        _updateAccumulators();
-
         (int256 amount0Int, int256 amount1Int) = _setPosition(
             SetPositionParams({
                 owner: recipient,
@@ -387,8 +376,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::burn: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::burn: amount must be greater than 0');
-
-        _updateAccumulators();
 
         (int256 amount0Int, int256 amount1Int) = _setPosition(
             SetPositionParams({
@@ -467,6 +454,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int256 amountSpecified;
         // the address that receives amount out
         address recipient;
+        // the timestamp of the current block
+        uint32 blockTimestamp;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
@@ -574,7 +563,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
                             tickInfo.feeGrowthOutside1._x
                     );
-                    tickInfo.secondsOutside = _blockTimestamp() - tickInfo.secondsOutside; // overflow is desired
+                    tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
 
                     // update liquidityCurrent, subi from right to left, addi from left to right
                     if (params.zeroForOne) {
@@ -593,11 +582,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
         }
 
+        // the price moved at least one tick
         if (state.tick != params.tickStart) {
             liquidityCurrent = state.liquidityCurrent;
 
-            // must be called before updating the price
-            _updateAccumulators();
+            uint32 _blockTimestampLast = blockTimestampLast;
+            if (_blockTimestampLast != params.blockTimestamp) {
+                blockTimestampLast = params.blockTimestamp;
+                // overflow desired
+                tickCumulativeLast += int56(params.blockTimestamp - _blockTimestampLast) * params.tickStart;
+            }
         }
 
         sqrtPriceCurrent = state.sqrtPrice;
@@ -636,7 +630,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     tickStart: tickCurrent(),
                     zeroForOne: true,
                     amountSpecified: amount0In.toInt256(),
-                    recipient: recipient
+                    recipient: recipient,
+                    blockTimestamp: _blockTimestamp()
                 })
             );
     }
@@ -650,7 +645,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     tickStart: tickCurrent(),
                     zeroForOne: true,
                     amountSpecified: -amount1Out.toInt256(),
-                    recipient: recipient
+                    recipient: recipient,
+                    blockTimestamp: _blockTimestamp()
                 })
             );
     }
@@ -664,7 +660,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     tickStart: tickCurrent(),
                     zeroForOne: false,
                     amountSpecified: amount1In.toInt256(),
-                    recipient: recipient
+                    recipient: recipient,
+                    blockTimestamp: _blockTimestamp()
                 })
             );
     }
@@ -678,7 +675,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     tickStart: tickCurrent(),
                     zeroForOne: false,
                     amountSpecified: -amount0Out.toInt256(),
-                    recipient: recipient
+                    recipient: recipient,
+                    blockTimestamp: _blockTimestamp()
                 })
             );
     }
