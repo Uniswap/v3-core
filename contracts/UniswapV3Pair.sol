@@ -116,13 +116,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function tickCurrent() public view override returns (int24) {
-        (FixedPoint96.uq64x96 memory _sqrtPriceCurrent, uint8 _unlockedAndPriceBit) = (
-            sqrtPriceCurrent,
-            unlockedAndPriceBit
-        );
-        int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent);
-        if (_unlockedAndPriceBit & 2 > 0) return tick - 1;
-        return tick;
+        if (unlockedAndPriceBit & 2 == 2) return SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent) - 1;
+        return SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent);
     }
 
     constructor(
