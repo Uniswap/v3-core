@@ -67,7 +67,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     FixedPoint96.uq64x96 public override sqrtPriceCurrent; // sqrt(token1 / token0) price
     uint32 public override blockTimestampLast;
     int56 public override tickCumulativeLast;
-    bool private unlocked = true;
+    uint8 private unlocked = 1;
     // single storage slot
 
     // single storage slot
@@ -96,10 +96,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(bytes32 => Position) public positions;
 
     modifier lock() {
-        require(unlocked, 'UniswapV3Pair::lock: reentrancy prohibited');
-        unlocked = false;
+        require(unlocked >= 1, 'UniswapV3Pair::lock: reentrancy prohibited');
+        unlocked ^= 1;
         _;
-        unlocked = true;
+        unlocked ^= 1;
     }
 
     function _getPosition(
