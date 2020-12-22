@@ -79,30 +79,12 @@ interface IUniswapV3Pair {
         uint128 amount
     ) external returns (uint256 amount0, uint256 amount1);
 
-    // swapping
-    function swapExact0For1(
-        uint256 amount0In,
+    function swap(
+        bool zeroForOne,
+        int256 amountSpecified,
         address recipient,
         bytes calldata data
-    ) external returns (uint256 amount1Out);
-
-    function swap0ForExact1(
-        uint256 amount1Out,
-        address recipient,
-        bytes calldata data
-    ) external returns (uint256 amount0In);
-
-    function swapExact1For0(
-        uint256 amount1In,
-        address recipient,
-        bytes calldata data
-    ) external returns (uint256 amount0Out);
-
-    function swap1ForExact0(
-        uint256 amount0Out,
-        address recipient,
-        bytes calldata data
-    ) external returns (uint256 amount1In);
+    ) external returns (uint256 amountCalculated);
 
     function setFeeTo(address) external;
 
