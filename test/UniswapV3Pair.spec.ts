@@ -1,5 +1,5 @@
 import {ethers, waffle} from 'hardhat'
-import {BigNumber, BigNumberish, constants, ContractTransaction, Signer} from 'ethers'
+import {BigNumber, BigNumberish, constants, Signer} from 'ethers'
 import {TestERC20} from '../typechain/TestERC20'
 import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
 import {MockTimeUniswapV3Pair} from '../typechain/MockTimeUniswapV3Pair'
@@ -22,8 +22,9 @@ import {
   MintFunction,
   InitializeFunction,
 } from './shared/utilities'
-import {TickMathTest} from '../typechain/TickMathTest'
 import {TestUniswapV3Callee} from '../typechain/TestUniswapV3Callee'
+import {SqrtTickMathTest} from '../typechain/SqrtTickMathTest'
+import {SwapMathTest} from '../typechain/SwapMathTest'
 
 const feeAmount = FeeAmount.MEDIUM
 const tickSpacing = TICK_SPACINGS[feeAmount]
@@ -1054,5 +1055,59 @@ describe('UniswapV3Pair', () => {
         })
       })
     })
+  })
+
+  // https://github.com/Uniswap/uniswap-v3-core/issues/214
+  it('tick transition cannot run twice if zero for one swap ends at fractional price just below tick', async () => {
+    pair = await createPair(FeeAmount.MEDIUM, 1)
+    const sqrtTickMath = (await (await ethers.getContractFactory('SqrtTickMathTest')).deploy()) as SqrtTickMathTest
+    const swapMath = (await (await ethers.getContractFactory('SwapMathTest')).deploy()) as SwapMathTest
+    const p0 = (await sqrtTickMath.getSqrtRatioAtTick(-24081))._x.add(1)
+    // initialize at a price of ~0.3 token1/token0
+    // meaning if you swap in 2 token0, you should end up getting 0 token1
+    await initialize(p0)
+    expect(await pair.liquidityCurrent(), 'current pair liquidity is 1').to.eq(1)
+    expect(await pair.tickCurrent(), 'pair tick is -24081').to.eq(-24081)
+
+    // add a bunch of liquidity around current price
+    const liquidity = expandTo18Decimals(1000)
+    await mint(walletAddress, -24082, -24080, liquidity)
+    expect(await pair.liquidityCurrent(), 'current pair liquidity is now liquidity + 1').to.eq(liquidity.add(1))
+
+    await mint(walletAddress, -24082, -24081, liquidity)
+    expect(await pair.liquidityCurrent(), 'current pair liquidity is still liquidity + 1').to.eq(liquidity.add(1))
+
+    const {secondsOutside: secondsOutsideBefore} = await pair.tickInfos(-24081)
+
+    // check the math works out to moving the price down 1, sending no amount out, and having some amount remaining
+    {
+      const {feeAmount, amountIn, amountOut, sqrtQ} = await swapMath.computeSwapStep(
+        {_x: p0},
+        {_x: p0.sub(1)},
+        liquidity.add(1),
+        3,
+        FeeAmount.MEDIUM
+      )
+      expect(sqrtQ._x, 'price moves').to.eq(p0.sub(1))
+      expect(feeAmount, 'fee amount is 1').to.eq(1)
+      expect(amountIn, 'amount in is 1').to.eq(1)
+      expect(amountOut, 'zero amount out').to.eq(0)
+    }
+
+    // swap 2 amount in, should get 0 amount out
+    await expect(swapExact0For1(3, walletAddress))
+      .to.emit(token0, 'Transfer')
+      .withArgs(walletAddress, pair.address, 3)
+      .to.emit(token1, 'Transfer')
+      .withArgs(pair.address, walletAddress, 0)
+
+    const {secondsOutside: secondsOutsideAfter} = await pair.tickInfos(-24081)
+
+    expect(await pair.tickCurrent(), 'pair is at the next tick').to.eq(-24082)
+    expect(await pair.sqrtPriceCurrent(), 'pair price is in the next tick').to.eq(p0.sub(2))
+    expect(await pair.liquidityCurrent(), 'pair has run tick transition and liquidity changed').to.eq(
+      liquidity.mul(2).add(1)
+    )
+    expect(secondsOutsideAfter, 'the tick transition did not run').to.not.eq(secondsOutsideBefore)
   })
 })
