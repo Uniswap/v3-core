@@ -68,7 +68,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint96.uq64x96 sqrtPriceCurrent;
         // the last block timestamp where the tick accumulator was updated
         uint32 blockTimestampLast;
-        // the cumulative tick
+        // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
         int56 tickCumulativeLast;
         // whether the pair is locked for swapping
         bool unlocked;
