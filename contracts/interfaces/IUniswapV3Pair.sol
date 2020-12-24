@@ -45,6 +45,10 @@ interface IUniswapV3Pair {
 
     function feeGrowthGlobal1() external view returns (uint256);
 
+    function computedFeeGrowthGlobal0() external view returns (uint256);
+    
+    function computedFeeGrowthGlobal1() external view returns (uint256);
+
     function feeToFees0() external view returns (uint256);
 
     function feeToFees1() external view returns (uint256);

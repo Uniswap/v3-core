@@ -22,7 +22,9 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "3.3.0-solc-0.7",
-    "@uniswap/lib": "4.0.1-alpha"
+    "@uniswap/lib": "4.0.1-alpha",
+    "bignumber.js": "^9.0.1",
+    "solc": "^0.7.6"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",

@@ -90,8 +90,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(int16 => uint256) public override tickBitmap;
 
     // fee growth per unit of liquidity
+    // TODO: transition off of this to the offset-basd one
+    // once we have tested that they reach the same results
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
     FixedPoint128.uq128x128 public override feeGrowthGlobal1;
+
+    // offsets
+    FixedPoint128.uq128x128 public offset0;
+    FixedPoint128.uq128x128 public offset1;
 
     // accumulated protocol fees
     uint256 public override feeToFees0;
@@ -142,9 +148,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return tick;
     }
 
+    function computedFeeGrowthGlobal0() public view override returns (uint256) {
+        return SqrtPriceMath.getFeeGrowthGlobal0(slot0.sqrtPriceCurrent, 
+                                                 offset0, 
+                                                 IERC20(token0).balanceOf(address(this)), 
+                                                 slot1.liquidityCurrent)._x;
+    }
+
+    function computedFeeGrowthGlobal1() public view override returns (uint256) {
+        return SqrtPriceMath.getFeeGrowthGlobal1(slot0.sqrtPriceCurrent, 
+                                                 offset1, 
+                                                 IERC20(token1).balanceOf(address(this)), 
+                                                 slot1.liquidityCurrent)._x;
+    }
+
     constructor() {
         (address _factory, address _token0, address _token1, uint24 _fee, int24 _tickSpacing) =
             IUniswapV3PairDeployer(msg.sender).parameters();
+
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
@@ -346,6 +367,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
 
+        uint128 liquidityBefore = slot1.liquidityCurrent;
+
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
                 SetPositionParams({
@@ -367,14 +390,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
             (uint256 balance0, uint256 balance1) =
                 (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
+            uint256 balance0After = IERC20(token0).balanceOf(address(this));
+            uint256 balance1After = IERC20(token1).balanceOf(address(this));
             require(
-                balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
+                balance0.add(amount0) <= balance0After,
                 'UniswapV3Pair::mint: insufficient token0 amount'
             );
             require(
-                balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)),
+                balance1.add(amount1) <= balance1After,
                 'UniswapV3Pair::mint: insufficient token1 amount'
             );
+
+            // update offsets
+            if (liquidityBefore != 0) {
+                offset0 = SqrtPriceMath.getOffsetAfter(offset0, balance0, balance0After, liquidityBefore, slot1.liquidityCurrent);
+                offset1 = SqrtPriceMath.getOffsetAfter(offset1, balance1, balance1After, liquidityBefore, slot1.liquidityCurrent);
+            }
         }
     }
 
@@ -386,6 +417,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::burn: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::burn: amount must be greater than 0');
+
+        uint128 liquidityBefore = slot1.liquidityCurrent;
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
@@ -403,8 +436,27 @@ contract UniswapV3Pair is IUniswapV3Pair {
         amount0 = uint256(-amount0Int);
         amount1 = uint256(-amount1Int);
 
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+        {
+            (uint256 balance0, uint256 balance1) = (
+                IERC20(token0).balanceOf(address(this)),
+                IERC20(token1).balanceOf(address(this))
+            );
+
+            (uint256 balance0After, uint256 balance1After) = (balance0, balance1);
+
+            if (amount0 > 0) {
+                TransferHelper.safeTransfer(token0, recipient, amount0);
+                balance0After = IERC20(token0).balanceOf(address(this));
+            }
+            if (amount1 > 0) {
+                TransferHelper.safeTransfer(token1, recipient, amount1);
+                balance1After = IERC20(token1).balanceOf(address(this));
+            }
+
+            // update offsets
+            offset0 = SqrtPriceMath.getOffsetAfter(offset0, balance0, balance0After, liquidityBefore, slot1.liquidityCurrent);
+            offset1 = SqrtPriceMath.getOffsetAfter(offset1, balance1, balance1After, liquidityBefore, slot1.liquidityCurrent);
+        }
     }
 
     struct SetPositionParams {
@@ -489,6 +541,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 liquidityCurrent;
         // whether the price is at the lower tickCurrent boundary and a tick transition has already occurred
         bool priceBit;
+        // the balance of tokens 0 and 1 (not stored)
+        uint256 balanceSpecified;
+        uint256 balanceCalculated;
+        // the value of the offsets
+        FixedPoint128.uq128x128 offsetSpecified;
+        FixedPoint128.uq128x128 offsetCalculated;
     }
 
     struct StepComputations {
@@ -525,8 +583,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 sqrtPrice: params.slot0Start.sqrtPriceCurrent,
                 feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
                 liquidityCurrent: params.liquidityStart,
-                priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT
-            });
+                priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
+                balanceSpecified: params.zeroForOne ? IERC20(token0).balanceOf(address(this)) : IERC20(token1).balanceOf(address(this)),
+                balanceCalculated: params.zeroForOne ? IERC20(token1).balanceOf(address(this)) : IERC20(token0).balanceOf(address(this)),
+                offsetSpecified: params.zeroForOne ? offset0 : offset1,
+                offsetCalculated: params.zeroForOne ? offset1 : offset0
+        });
 
         while (state.amountSpecifiedRemaining != 0) {
             StepComputations memory step;
@@ -557,11 +619,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // decrement (increment) remaining input (negative output) amount
                 // TODO we might not need safemath below
                 if (state.amountSpecifiedRemaining > 0) {
+                    // sell
                     state.amountSpecifiedRemaining -= step.amountIn.add(step.feeAmount).toInt256();
                     amountCalculated = amountCalculated.add(step.amountOut);
+                    state.balanceSpecified += step.amountIn + step.feeAmount;
+                    state.balanceCalculated -= step.amountOut;
                 } else {
+                    // buy
                     state.amountSpecifiedRemaining += step.amountOut.toInt256();
                     amountCalculated = amountCalculated.add(step.amountIn.add(step.feeAmount));
+                    state.balanceSpecified -= step.amountOut;
+                    state.balanceCalculated += step.amountIn + step.feeAmount;
                 }
 
                 // update global fee tracker
@@ -586,11 +654,37 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
 
                     // update liquidityCurrent, subi from right to left, addi from left to right
+                    uint128 liquidityBefore = state.liquidityCurrent;
                     if (params.zeroForOne) {
-                        state.liquidityCurrent = uint128(state.liquidityCurrent.subi(tickInfo.liquidityDelta));
+                        state.liquidityCurrent = uint128(liquidityBefore.subi(tickInfo.liquidityDelta));
                     } else {
-                        state.liquidityCurrent = uint128(state.liquidityCurrent.addi(tickInfo.liquidityDelta));
+                        state.liquidityCurrent = uint128(liquidityBefore.addi(tickInfo.liquidityDelta));
                     }
+
+                    // update offsets
+                    uint feeGrowthGlobalStartSpecified;
+                    uint feeGrowthGlobalStartCalculated;
+                    if (params.zeroForOne == (params.amountSpecified > 0)) {
+                        feeGrowthGlobalStartSpecified = SqrtPriceMath.getFeeGrowthGlobal0(state.sqrtPrice, 
+                                                        state.offsetSpecified, 
+                                                        state.balanceSpecified, 
+                                                        liquidityBefore)._x;
+                        feeGrowthGlobalStartCalculated = SqrtPriceMath.getFeeGrowthGlobal1(state.sqrtPrice, 
+                                                        state.offsetCalculated, 
+                                                        state.balanceCalculated, 
+                                                        liquidityBefore)._x;
+                    } else {
+                        feeGrowthGlobalStartSpecified = SqrtPriceMath.getFeeGrowthGlobal1(state.sqrtPrice, 
+                                                        state.offsetSpecified, 
+                                                        state.balanceSpecified, 
+                                                        liquidityBefore)._x;
+                        feeGrowthGlobalStartCalculated = SqrtPriceMath.getFeeGrowthGlobal0(state.sqrtPrice, 
+                                                        state.offsetCalculated, 
+                                                        state.balanceCalculated, 
+                                                        liquidityBefore)._x;
+                    }
+                    state.offsetSpecified = SqrtPriceMath.getOffsetAfter(state.offsetSpecified, state.balanceSpecified, state.balanceSpecified, liquidityBefore, state.liquidityCurrent);
+                    state.offsetCalculated = SqrtPriceMath.getOffsetAfter(state.offsetCalculated, state.balanceCalculated, state.balanceCalculated, liquidityBefore, state.liquidityCurrent);
                 }
 
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
@@ -605,6 +699,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (params.liquidityStart != state.liquidityCurrent) {
             slot1.liquidityCurrent = state.liquidityCurrent;
         }
+
+        // TODO: optimize this out if it didn't cross any initialized ticks
+        offset0 = params.zeroForOne ? state.offsetSpecified : state.offsetCalculated;
+        offset1 = params.zeroForOne ? state.offsetCalculated : state.offsetSpecified;
 
         // the price moved at least one tick, update the accumulator
         if (state.tick != params.tickStart) {

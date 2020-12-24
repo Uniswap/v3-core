@@ -187,4 +187,37 @@ library SqrtPriceMath {
                 ? -getAmount1Delta(sqrtP, sqrtQ, uint128(-liquidity), false).toInt256()
                 : getAmount1Delta(sqrtP, sqrtQ, uint128(liquidity), true).toInt256();
     }
+
+    function getFeeGrowthGlobal0(
+        FixedPoint96.uq64x96 memory sqrtP, // square root of current price
+        FixedPoint128.uq128x128 memory offset1,
+        uint256 balance1,
+        uint128 liquidity
+    ) internal pure returns (FixedPoint128.uq128x128 memory feeGrowthGlobal1) {
+        uint256 frac = ((balance1 << 128) - offset1._x) / uint256(liquidity);
+        // reciprocal of sqrtP, as a 128x128
+        uint256 recip = ((1 << 255) / sqrtP._x) >> 31;
+        feeGrowthGlobal1 = FixedPoint128.uq128x128(frac - recip);
+    }
+
+    function getFeeGrowthGlobal1(
+        FixedPoint96.uq64x96 memory sqrtP, // square root of current price
+        FixedPoint128.uq128x128 memory offset1,
+        uint256 balance1,
+        uint128 liquidity
+    ) internal pure returns (FixedPoint128.uq128x128 memory feeGrowthGlobal1) {
+        uint256 frac = ((balance1 << 128) - offset1._x) / uint256(liquidity);
+        feeGrowthGlobal1 = FixedPoint128.uq128x128(frac - (sqrtP._x << 32));
+    }
+
+    function getOffsetAfter(
+        FixedPoint128.uq128x128 memory offsetBefore,
+        uint256 balanceBefore,
+        uint256 balanceAfter,
+        uint128 liquidityBefore,
+        uint128 liquidityAfter
+    ) internal pure returns (FixedPoint128.uq128x128 memory offsetAfter) {
+        uint256 frac = FullMath.mulDiv((balanceBefore << 128) - offsetBefore._x, uint256(liquidityAfter), uint256(liquidityBefore));
+        offsetAfter = FixedPoint128.uq128x128((balanceAfter << 128) - frac);
+    }
 }
