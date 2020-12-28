@@ -566,8 +566,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 (step.tickTarget == step.tickNext && state.sqrtPrice._x == step.sqrtPriceNext._x) &&
                 (
                     params.zeroForOne
-                        ? (
-                            amountUsed != uint256(params.amountSpecified < 0 ? -params.amountSpecified : params.amountSpecified) &&
+                        ? (amountUsed !=
+                            uint256(params.amountSpecified < 0 ? -params.amountSpecified : params.amountSpecified) &&
                             step.tickNext > params.tickLimit)
                         : true
                 )
@@ -577,10 +577,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 if (tickInfo.liquidityGross > 0) {
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
-                        (params.zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) - tickInfo.feeGrowthOutside0._x
+                        (params.zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) -
+                            tickInfo.feeGrowthOutside0._x
                     );
                     tickInfo.feeGrowthOutside1 = FixedPoint128.uq128x128(
-                        (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) - tickInfo.feeGrowthOutside1._x
+                        (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
+                            tickInfo.feeGrowthOutside1._x
                     );
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
 
