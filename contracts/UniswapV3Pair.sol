@@ -16,6 +16,7 @@ import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
 
 import './interfaces/IUniswapV3Pair.sol';
+import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
@@ -119,13 +120,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent);
     }
 
-    constructor(
-        address _factory,
-        address _token0,
-        address _token1,
-        uint24 _fee,
-        int24 _tickSpacing
-    ) {
+    constructor() {
+        (address _factory, address _token0, address _token1, uint24 _fee, int24 _tickSpacing) =
+            IUniswapV3PairDeployer(msg.sender).parameters();
         factory = _factory;
         token0 = _token0;
         token1 = _token1;

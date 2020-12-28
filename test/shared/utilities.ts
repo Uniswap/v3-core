@@ -33,16 +33,16 @@ export function getCreate2Address(
 ): string {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
   const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address', 'uint24', 'int24'],
-    [factoryAddress, token0, token1, fee, tickSpacing]
+    ['address', 'address', 'uint24'],
+    [token0, token1, fee]
   )
   const create2Inputs = [
     '0xff',
     factoryAddress,
     // salt
-    constants.HashZero,
+    utils.keccak256(constructorArgumentsEncoded),
     // init code. bytecode + constructor arguments
-    utils.keccak256(bytecode + constructorArgumentsEncoded.substr(2)),
+    utils.keccak256(bytecode),
   ]
   const sanitizedInputs = `0x${create2Inputs.map((i) => i.slice(2)).join('')}`
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
