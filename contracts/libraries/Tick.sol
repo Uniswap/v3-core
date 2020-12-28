@@ -74,14 +74,10 @@ library Tick {
         view
         returns (FixedPoint128.uq128x128 memory feeGrowthInside0, FixedPoint128.uq128x128 memory feeGrowthInside1)
     {
-        (
-            FixedPoint128.uq128x128 memory feeGrowthBelow0,
-            FixedPoint128.uq128x128 memory feeGrowthBelow1
-        ) = _getFeeGrowthBelow(tickLower, tickCurrent, self[tickLower], feeGrowthGlobal0, feeGrowthGlobal1);
-        (
-            FixedPoint128.uq128x128 memory feeGrowthAbove0,
-            FixedPoint128.uq128x128 memory feeGrowthAbove1
-        ) = _getFeeGrowthAbove(tickUpper, tickCurrent, self[tickUpper], feeGrowthGlobal0, feeGrowthGlobal1);
+        (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1) =
+            _getFeeGrowthBelow(tickLower, tickCurrent, self[tickLower], feeGrowthGlobal0, feeGrowthGlobal1);
+        (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1) =
+            _getFeeGrowthAbove(tickUpper, tickCurrent, self[tickUpper], feeGrowthGlobal0, feeGrowthGlobal1);
         feeGrowthInside0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - feeGrowthBelow0._x - feeGrowthAbove0._x);
         feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
     }

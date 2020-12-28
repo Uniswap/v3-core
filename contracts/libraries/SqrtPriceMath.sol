@@ -71,17 +71,18 @@ library SqrtPriceMath {
     ) private pure returns (FixedPoint96.uq64x96 memory) {
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
-        uint256 quotient = add
-            ? (
-                amount <= uint160(-1)
-                    ? (amount << FixedPoint96.RESOLUTION) / liquidity
-                    : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
-            )
-            : (
-                amount <= uint160(-1)
-                    ? divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
-                    : mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
-            );
+        uint256 quotient =
+            add
+                ? (
+                    amount <= uint160(-1)
+                        ? (amount << FixedPoint96.RESOLUTION) / liquidity
+                        : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
+                )
+                : (
+                    amount <= uint160(-1)
+                        ? divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                        : mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
+                );
 
         return
             FixedPoint96.uq64x96((add ? uint256(sqrtP._x).add(quotient) : uint256(sqrtP._x).sub(quotient)).toUint160());
