@@ -105,11 +105,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
     mapping(bytes32 => Position) public positions;
 
-    modifier lock() {
-        require(slot0.unlockedAndPriceBit >= 1, 'UniswapV3Pair::lock: reentrancy prohibited');
-        slot0.unlockedAndPriceBit ^= 1;
+    // lock the pair for operations that do not modify the price, i.e. everything but swap
+    modifier lockNoPriceMovement() {
+        uint8 uapb = slot0.unlockedAndPriceBit;
+        require(uapb & 1 == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
+        slot0.unlockedAndPriceBit = uapb ^ 1;
         _;
-        slot0.unlockedAndPriceBit ^= 1;
+        slot0.unlockedAndPriceBit = uapb;
     }
 
     function _getPosition(
@@ -126,8 +128,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function tickCurrent() public view override returns (int24) {
-        if (slot0.unlockedAndPriceBit & 2 == 2) return SqrtTickMath.getTickAtSqrtRatio(slot0.sqrtPriceCurrent) - 1;
-        return SqrtTickMath.getTickAtSqrtRatio(slot0.sqrtPriceCurrent);
+        return _tickCurrent(slot0);
+    }
+
+    function _tickCurrent(Slot0 memory _slot0) internal view returns (int24) {
+        if (_slot0.unlockedAndPriceBit & 2 == 2) return SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent) - 1;
+        return SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
     }
 
     constructor() {
@@ -302,7 +308,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+    ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
         Position storage position = _updatePosition(msg.sender, tickLower, tickUpper, 0, tickCurrent());
 
         if (amount0Requested == uint256(-1)) {
@@ -330,7 +336,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) public override lock returns (uint256 amount0, uint256 amount1) {
+    ) public override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
 
@@ -371,7 +377,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+    ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::burn: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::burn: amount must be greater than 0');
 
@@ -445,6 +451,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct SwapParams {
+        // the value of slot0 at the beginning of the swap
+        Slot0 slot0Start;
         // the liquidity at the beginning of the swap
         uint128 liquidityStart;
         // the tick at the beginning of the swap
@@ -498,11 +506,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountCalculated) {
+        require(params.slot0Start.unlockedAndPriceBit & 1 == 1, 'UniswapV3Pair::_swap: reentrancy prohibited');
+        slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ 1;
+
         SwapState memory state =
             SwapState({
                 amountSpecifiedRemaining: params.amountSpecified,
                 tick: params.tickStart,
-                sqrtPrice: slot0.sqrtPriceCurrent,
+                sqrtPrice: params.slot0Start.sqrtPriceCurrent,
                 feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
                 liquidityCurrent: params.liquidityStart
             });
@@ -610,12 +621,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         slot0.sqrtPriceCurrent = state.sqrtPrice;
-        // store the price bit
-        if (slot0.unlockedAndPriceBit & 2 == 0) {
-            if (priceBit) slot0.unlockedAndPriceBit += 2;
-        } else {
-            if (!priceBit) slot0.unlockedAndPriceBit -= 2;
-        }
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;
@@ -649,6 +654,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 'UniswapV3Pair::_swap: insufficient input amount'
             );
         }
+        slot0.unlockedAndPriceBit = priceBit ? 3 : 1;
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
@@ -657,14 +663,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int256 amountSpecified,
         address recipient,
         bytes calldata data
-    ) external override lock returns (uint256 amountCalculated) {
+    ) external override returns (uint256 amountCalculated) {
         require(amountSpecified != 0, 'UniswapV3Pair::swap: amountSpecified must not be 0');
 
+        Slot0 memory _slot0 = slot0;
         return
             _swap(
                 SwapParams({
+                    slot0Start: _slot0,
+                    tickStart: SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent),
                     liquidityStart: slot1.liquidityCurrent,
-                    tickStart: tickCurrent(),
                     zeroForOne: zeroForOne,
                     amountSpecified: amountSpecified,
                     recipient: recipient,
