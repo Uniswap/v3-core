@@ -150,19 +150,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function getCumulatives() public view override returns (uint32 blockTimestamp, int56 tickCumulative) {
-        require(isInitialized(), 'UniswapV3Pair::getCumulatives: pair not initialized');
-        blockTimestamp = _blockTimestamp();
-
-        Slot0 memory slot = slot0;
-        if (slot.blockTimestampLast != blockTimestamp) {
-            uint32 timeElapsed = blockTimestamp - slot.blockTimestampLast;
-            tickCumulative = slot.tickCumulativeLast + int56(timeElapsed) * tickCurrent();
-        } else {
-            return (blockTimestamp, slot.tickCumulativeLast);
-        }
-    }
-
     function setFeeTo(address feeTo_) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::setFeeTo: caller not owner');
         feeTo = feeTo_;

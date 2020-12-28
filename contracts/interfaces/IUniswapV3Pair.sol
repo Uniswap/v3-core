@@ -54,8 +54,6 @@ interface IUniswapV3Pair {
 
     function tickCurrent() external view returns (int24);
 
-    function getCumulatives() external view returns (uint32 blockTimestamp, int56 tickCumulative);
-
     // initialize the pair
     function initialize(uint160 sqrtPrice, bytes calldata data) external;
 

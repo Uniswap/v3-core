@@ -383,51 +383,54 @@ describe('UniswapV3Pair', () => {
   }
 
   describe('#getCumulatives', () => {
-    it('reverts before initialization', async () => {
-      await expect(pair.getCumulatives()).to.be.revertedWith(
-        '' // 'UniswapV3Pair::getCumulatives: pair not initialized'
-      )
+    // simulates an external call to get the cumulatives as of the current block timestamp
+    async function getCumulatives(): Promise<{ blockTimestamp: number; tickCumulative: BigNumber }> {
+      const { tickCumulativeLast, blockTimestampLast } = await pair.slot0()
+      const [tickCurrent, time] = await Promise.all([pair.tickCurrent(), pair.time()])
+      if (time == blockTimestampLast) return { tickCumulative: tickCumulativeLast, blockTimestamp: blockTimestampLast }
+      return {
+        tickCumulative: tickCumulativeLast.add(BigNumber.from(tickCurrent).mul(time - blockTimestampLast)),
+        blockTimestamp: time,
+      }
+    }
+
+    beforeEach(() => initializeAtZeroTick(pair))
+
+    it('blockTimestamp is always current timestamp', async () => {
+      let { blockTimestamp } = await getCumulatives()
+      expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      ;({ blockTimestamp } = await getCumulatives())
+      expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME + 10)
     })
 
-    describe('after initialization', () => {
-      beforeEach(() => initializeAtZeroTick(pair))
+    // zero tick
+    it('tick accumulator increases by tick over time', async () => {
+      let { tickCumulative } = await getCumulatives()
+      expect(tickCumulative).to.eq(0)
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      ;({ tickCumulative } = await getCumulatives())
+      expect(tickCumulative).to.eq(0)
+    })
 
-      it('blockTimestamp is always current timestamp', async () => {
-        let { blockTimestamp } = await pair.getCumulatives()
-        expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        ;({ blockTimestamp } = await pair.getCumulatives())
-        expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME + 10)
-      })
+    it('tick accumulator after swap', async () => {
+      // moves to tick -1
+      await swapExact0For1(1000, walletAddress)
+      await pair.setTime(TEST_PAIR_START_TIME + 4)
+      let { tickCumulative } = await getCumulatives()
+      expect(tickCumulative).to.eq(-4)
+    })
 
-      // zero tick
-      it('tick accumulator increases by tick over time', async () => {
-        let { tickCumulative } = await pair.getCumulatives()
-        expect(tickCumulative).to.eq(0)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        ;({ tickCumulative } = await pair.getCumulatives())
-        expect(tickCumulative).to.eq(0)
-      })
-
-      it('tick accumulator after swap', async () => {
-        // moves to tick -1
-        await swapExact0For1(1000, walletAddress)
-        await pair.setTime(TEST_PAIR_START_TIME + 4)
-        let { tickCumulative } = await pair.getCumulatives()
-        expect(tickCumulative).to.eq(-4)
-      })
-
-      it('tick accumulator after two swaps', async () => {
-        await swapExact0For1(expandTo18Decimals(1).div(2), walletAddress)
-        expect(await pair.tickCurrent()).to.eq(-4452)
-        await pair.setTime(TEST_PAIR_START_TIME + 4)
-        await swapExact1For0(expandTo18Decimals(1).div(4), walletAddress)
-        expect(await pair.tickCurrent()).to.eq(-1558)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        let { tickCumulative } = await pair.getCumulatives()
-        // -4452*4 + -1558*6
-        expect(tickCumulative).to.eq(-27156)
-      })
+    it('tick accumulator after two swaps', async () => {
+      await swapExact0For1(expandTo18Decimals(1).div(2), walletAddress)
+      expect(await pair.tickCurrent()).to.eq(-4452)
+      await pair.setTime(TEST_PAIR_START_TIME + 4)
+      await swapExact1For0(expandTo18Decimals(1).div(4), walletAddress)
+      expect(await pair.tickCurrent()).to.eq(-1558)
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      let { tickCumulative } = await getCumulatives()
+      // -4452*4 + -1558*6
+      expect(tickCumulative).to.eq(-27156)
     })
   })
 
