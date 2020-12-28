@@ -263,20 +263,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
             'UniswapV3Pair::_updatePosition: liquidity overflow in upper tick'
         );
 
-        (FixedPoint128.uq128x128 memory feeGrowthInside0, FixedPoint128.uq128x128 memory feeGrowthInside1) = tickInfos
-            .getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0, feeGrowthGlobal1);
+        (FixedPoint128.uq128x128 memory feeGrowthInside0, FixedPoint128.uq128x128 memory feeGrowthInside1) =
+            tickInfos.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0, feeGrowthGlobal1);
 
         // calculate accumulated fees
-        uint256 feesOwed0 = FullMath.mulDiv(
-            feeGrowthInside0._x - position.feeGrowthInside0Last._x,
-            position.liquidity,
-            FixedPoint128.Q128
-        );
-        uint256 feesOwed1 = FullMath.mulDiv(
-            feeGrowthInside1._x - position.feeGrowthInside1Last._x,
-            position.liquidity,
-            FixedPoint128.Q128
-        );
+        uint256 feesOwed0 =
+            FullMath.mulDiv(
+                feeGrowthInside0._x - position.feeGrowthInside0Last._x,
+                position.liquidity,
+                FixedPoint128.Q128
+            );
+        uint256 feesOwed1 =
+            FullMath.mulDiv(
+                feeGrowthInside1._x - position.feeGrowthInside1Last._x,
+                position.liquidity,
+                FixedPoint128.Q128
+            );
 
         // collect protocol fee, if on
         if (feeTo != address(0)) {
@@ -349,14 +351,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
 
-        (int256 amount0Int, int256 amount1Int) = _setPosition(
-            SetPositionParams({
-                owner: recipient,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidityDelta: int256(amount).toInt128()
-            })
-        );
+        (int256 amount0Int, int256 amount1Int) =
+            _setPosition(
+                SetPositionParams({
+                    owner: recipient,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: int256(amount).toInt128()
+                })
+            );
 
         assert(amount0Int >= 0);
         assert(amount1Int >= 0);
@@ -366,10 +369,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // collect payment via callback
         {
-            (uint256 balance0, uint256 balance1) = (
-                IERC20(token0).balanceOf(address(this)),
-                IERC20(token1).balanceOf(address(this))
-            );
+            (uint256 balance0, uint256 balance1) =
+                (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
             require(
                 balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
@@ -391,14 +392,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(isInitialized(), 'UniswapV3Pair::burn: pair not initialized');
         require(amount > 0, 'UniswapV3Pair::burn: amount must be greater than 0');
 
-        (int256 amount0Int, int256 amount1Int) = _setPosition(
-            SetPositionParams({
-                owner: msg.sender,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidityDelta: -int256(amount).toInt128()
-            })
-        );
+        (int256 amount0Int, int256 amount1Int) =
+            _setPosition(
+                SetPositionParams({
+                    owner: msg.sender,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: -int256(amount).toInt128()
+                })
+            );
 
         assert(amount0Int <= 0);
         assert(amount1Int <= 0);
@@ -511,13 +513,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountCalculated) {
-        SwapState memory state = SwapState({
-            amountSpecifiedRemaining: params.amountSpecified,
-            tick: params.tickStart,
-            sqrtPrice: slot0.sqrtPriceCurrent,
-            feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
-            liquidityCurrent: slot1.liquidityCurrent
-        });
+        SwapState memory state =
+            SwapState({
+                amountSpecifiedRemaining: params.amountSpecified,
+                tick: params.tickStart,
+                sqrtPrice: slot0.sqrtPriceCurrent,
+                feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
+                liquidityCurrent: slot1.liquidityCurrent
+            });
 
         while (state.amountSpecifiedRemaining != 0) {
             StepComputations memory step;
@@ -618,9 +621,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             feeGrowthGlobal1 = state.feeGrowthGlobal;
         }
 
-        (uint256 amountIn, uint256 amountOut) = params.amountSpecified > 0
-            ? (uint256(params.amountSpecified), amountCalculated)
-            : (amountCalculated, uint256(-params.amountSpecified));
+        (uint256 amountIn, uint256 amountOut) =
+            params.amountSpecified > 0
+                ? (uint256(params.amountSpecified), amountCalculated)
+                : (amountCalculated, uint256(-params.amountSpecified));
 
         // perform the token transfers
         {

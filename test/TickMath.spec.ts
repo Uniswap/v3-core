@@ -1,19 +1,19 @@
-import {ethers} from 'hardhat'
-import {BigNumber, BigNumberish} from 'ethers'
-import {TickMathTest} from '../typechain/TickMathTest'
-import {expect} from './shared/expect'
+import { ethers } from 'hardhat'
+import { BigNumber, BigNumberish } from 'ethers'
+import { TickMathTest } from '../typechain/TickMathTest'
+import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {Decimal} from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
 
 const Q128 = BigNumber.from(2).pow(128)
 
-Decimal.config({toExpNeg: -500, toExpPos: 500})
+Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
 // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-export function bnify2(a: BigNumberish | [BigNumberish] | {0: BigNumberish}): BigNumber {
+export function bnify2(a: BigNumberish | [BigNumberish] | { 0: BigNumberish }): BigNumber {
   if (Array.isArray(a)) {
     return BigNumber.from(a[0])
   } else {
@@ -32,8 +32,8 @@ describe('TickMath', () => {
   describe('#getRatioAtTick', () => {
     // checks that an actual number is within allowedDiffBips of an expected number
     async function checkApproximatelyEquals(
-      actualP: BigNumberish | Promise<BigNumberish> | Promise<{0: BigNumberish}>,
-      expectedP: BigNumberish | Promise<BigNumberish> | Promise<{0: BigNumberish}>,
+      actualP: BigNumberish | Promise<BigNumberish> | Promise<{ 0: BigNumberish }>,
+      expectedP: BigNumberish | Promise<BigNumberish> | Promise<{ 0: BigNumberish }>,
       allowedDiffPips: BigNumberish
     ) {
       const [actual, expected] = [bnify2(await actualP), bnify2(await expectedP)]

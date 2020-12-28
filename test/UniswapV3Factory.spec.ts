@@ -1,9 +1,9 @@
-import {ethers, waffle} from 'hardhat'
-import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
-import {expect} from './shared/expect'
+import { ethers, waffle } from 'hardhat'
+import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
+import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 
-import {FeeAmount, getCreate2Address, TICK_SPACINGS} from './shared/utilities'
+import { FeeAmount, getCreate2Address, TICK_SPACINGS } from './shared/utilities'
 
 const TEST_ADDRESSES: [string, string] = [
   '0x1000000000000000000000000000000000000000',
