@@ -564,11 +564,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // 2) we're moving left and haven't exhaused our input/output or price tick limit, or we're moving right
             if (
                 (step.tickTarget == step.tickNext && state.sqrtPrice._x == step.sqrtPriceNext._x) &&
-                (
-                    params.zeroForOne
-                        ? (state.amountSpecifiedRemaining != 0 && step.tickNext > params.tickLimit)
-                        : true
-                )
+                (params.zeroForOne ? (state.amountSpecifiedRemaining != 0 && step.tickNext > params.tickLimit) : true)
             ) {
                 Tick.Info storage tickInfo = tickInfos[step.tickNext];
 
