@@ -66,7 +66,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 blockTimestampLast;
         // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
         int56 tickCumulativeLast;
-        // whether the pair is locked for swapping, and whether the price is below the current tick boundary
+        // whether the pair is locked for swapping
+        // packed with a boolean representing whether the price is at the lower bounds of the
+        // tick boundary but the tick transition has already happened
         uint8 unlockedAndPriceBit;
     }
 
@@ -671,7 +673,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _swap(
                 SwapParams({
                     slot0Start: _slot0,
-                    tickStart: SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent),
+                    tickStart: _tickCurrent(_slot0),
                     liquidityStart: slot1.liquidityCurrent,
                     zeroForOne: zeroForOne,
                     amountSpecified: amountSpecified,
