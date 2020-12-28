@@ -43,7 +43,6 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0, 'UniswapV3Factory::createPair: fee amount is not allowed');
         require(getPair[token0][token1][fee] == address(0), 'UniswapV3Factory::createPair: pair already exists');
-        // CREATE2 salt is 0 since token0, token1, and fee are included as constructor arguments
         pair = deploy(address(this), token0, token1, fee, tickSpacing);
         allPairs.push(pair);
         getPair[token0][token1][fee] = pair;
