@@ -59,11 +59,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int24 public immutable override MIN_TICK;
     int24 public immutable override MAX_TICK;
 
-    address public override feeTo;
-
-    // see TickBitmap.sol
-    mapping(int16 => uint256) public override tickBitmap;
-
     struct Slot0 {
         // the current price
         FixedPoint96.uq64x96 sqrtPriceCurrent;
@@ -83,6 +78,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     Slot1 public override slot1;
+
+    address public override feeTo;
+
+    // see TickBitmap.sol
+    mapping(int16 => uint256) public override tickBitmap;
 
     // fee growth per unit of liquidity
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
