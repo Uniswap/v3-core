@@ -140,8 +140,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         MIN_TICK = (SqrtTickMath.MIN_TICK / _tickSpacing) * _tickSpacing;
         MAX_TICK = (SqrtTickMath.MAX_TICK / _tickSpacing) * _tickSpacing;
-
-        slot0.unlocked = true;
     }
 
     // returns the block timestamp % 2**32
