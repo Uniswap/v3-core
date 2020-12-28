@@ -1,5 +1,5 @@
 import {ethers, waffle} from 'hardhat'
-import {BigNumber, BigNumberish, constants, Signer} from 'ethers'
+import {BigNumber, BigNumberish, constants, Wallet} from 'ethers'
 import {TestERC20} from '../typechain/TestERC20'
 import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
 import {MockTimeUniswapV3Pair} from '../typechain/MockTimeUniswapV3Pair'
@@ -37,8 +37,8 @@ const createFixtureLoader = waffle.createFixtureLoader
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
 describe('UniswapV3Pair', () => {
-  let wallet: Signer
-  let other: Signer
+  let wallet: Wallet
+  let other: Wallet
   let walletAddress: string
   let otherAddress: string
 
@@ -61,8 +61,8 @@ describe('UniswapV3Pair', () => {
   let createPair: ThenArg<ReturnType<typeof pairFixture>>['createPair']
 
   before('get wallet and other', async () => {
-    ;[wallet, other] = await ethers.getSigners()
-    ;[walletAddress, otherAddress] = await Promise.all([wallet.getAddress(), other.getAddress()])
+    ;[wallet, other] = await waffle.provider.getWallets()
+    ;[walletAddress, otherAddress] = [wallet.address, other.address]
     loadFixture = createFixtureLoader([wallet, other])
   })
 
