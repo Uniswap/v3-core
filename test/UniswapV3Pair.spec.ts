@@ -105,7 +105,7 @@ describe('UniswapV3Pair', () => {
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
       await initialize(price)
-      const {sqrtPriceCurrent, blockTimestampLast} = await pair.slot0()
+      const { sqrtPriceCurrent, blockTimestampLast } = await pair.slot0()
       expect(sqrtPriceCurrent._x).to.eq(price)
       expect(blockTimestampLast).to.eq(TEST_PAIR_START_TIME)
       expect(await pair.tickCurrent()).to.eq(-6932)
