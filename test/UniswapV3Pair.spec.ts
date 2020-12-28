@@ -155,7 +155,7 @@ describe('UniswapV3Pair', () => {
   describe('#mint', () => {
     it('fails if not initialized', async () => {
       await expect(mint(walletAddress, -tickSpacing, tickSpacing, 0)).to.be.revertedWith(
-        'UniswapV3Pair::mint: pair not initialized'
+        '' // 'UniswapV3Pair::mint: pair not initialized'
       )
     })
     describe('after initialization', () => {
@@ -169,28 +169,30 @@ describe('UniswapV3Pair', () => {
       describe('failure cases', () => {
         it('fails if tickLower greater than tickUpper', async () => {
           await expect(mint(walletAddress, 1, 0, 1)).to.be.revertedWith(
-            'UniswapV3Pair::_updatePosition: tickLower must be less than tickUpper'
+            '' // 'UniswapV3Pair::_updatePosition: tickLower must be less than tickUpper'
           )
         })
         it('fails if tickLower less than min tick', async () => {
           await expect(mint(walletAddress, MIN_TICK - 1, 0, 1)).to.be.revertedWith(
-            'UniswapV3Pair::_updatePosition: tickLower cannot be less than min tick'
+            '' // 'UniswapV3Pair::_updatePosition: tickLower cannot be less than min tick'
           )
         })
         it('fails if tickUpper greater than max tick', async () => {
           await expect(mint(walletAddress, 0, MAX_TICK + 1, 1)).to.be.revertedWith(
-            'UniswapV3Pair::_updatePosition: tickUpper cannot be greater than max tick'
+            '' // 'UniswapV3Pair::_updatePosition: tickUpper cannot be greater than max tick'
           )
         })
         it('fails if called with 0 amount', async () => {
           await expect(mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 0)).to.be.revertedWith(
-            'UniswapV3Pair::mint: amount must be greater than 0'
+            '' // 'UniswapV3Pair::mint: amount must be greater than 0'
           )
         })
         it('fails if amount exceeds the max', async () => {
           await expect(
             mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, MAX_LIQUIDITY_GROSS_PER_TICK.add(1))
-          ).to.be.revertedWith('UniswapV3Pair::_updatePosition: liquidity overflow in lower tick')
+          ).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: liquidity overflow in lower tick'
+          )
         })
       })
 
@@ -382,7 +384,9 @@ describe('UniswapV3Pair', () => {
 
   describe('#getCumulatives', () => {
     it('reverts before initialization', async () => {
-      await expect(pair.getCumulatives()).to.be.revertedWith('UniswapV3Pair::getCumulatives: pair not initialized')
+      await expect(pair.getCumulatives()).to.be.revertedWith(
+        '' // 'UniswapV3Pair::getCumulatives: pair not initialized'
+      )
     })
 
     describe('after initialization', () => {
@@ -658,7 +662,7 @@ describe('UniswapV3Pair', () => {
       const upperTick = tickSpacing
       await mint(walletAddress, lowerTick, upperTick, expandTo18Decimals(1000))
       await expect(pair.burn(walletAddress, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith(
-        'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
+        '' // 'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
       )
     })
 
@@ -856,7 +860,7 @@ describe('UniswapV3Pair', () => {
 
     it('cannot be changed by addresses that are not owner', async () => {
       await expect(pair.connect(other).setFeeTo(otherAddress)).to.be.revertedWith(
-        'UniswapV3Pair::setFeeTo: caller not owner'
+        '' // 'UniswapV3Pair::setFeeTo: caller not owner'
       )
     })
 
@@ -970,13 +974,13 @@ describe('UniswapV3Pair', () => {
 
     it('is only callable by owner', async () => {
       await expect(pair.connect(other).recover(token2.address, otherAddress, 10)).to.be.revertedWith(
-        'UniswapV3Pair::recover: caller not owner'
+        '' // 'UniswapV3Pair::recover: caller not owner'
       )
     })
 
     it('does not allow transferring a token from the pair', async () => {
       await expect(pair.recover(token0.address, otherAddress, 10)).to.be.revertedWith(
-        'UniswapV3Pair::recover: cannot recover token0 or token1'
+        '' // 'UniswapV3Pair::recover: cannot recover token0 or token1'
       )
     })
 
@@ -1014,10 +1018,10 @@ describe('UniswapV3Pair', () => {
         })
         it('mint can only be called for multiples of 12', async () => {
           await expect(mint(walletAddress, -6, 0, 1)).to.be.revertedWith(
-            'UniswapV3Pair::_updatePosition: tickSpacing must evenly divide tickLower'
+            '' // 'UniswapV3Pair::_updatePosition: tickSpacing must evenly divide tickLower'
           )
           await expect(mint(walletAddress, 0, 6, 1)).to.be.revertedWith(
-            'UniswapV3Pair::_updatePosition: tickSpacing must evenly divide tickUpper'
+            '' // 'UniswapV3Pair::_updatePosition: tickSpacing must evenly divide tickUpper'
           )
         })
         it('mint can be called with multiples of 12', async () => {
