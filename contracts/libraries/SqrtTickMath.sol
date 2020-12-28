@@ -12,7 +12,7 @@ library SqrtTickMath {
     function getSqrtRatioAtTick(int24 tick) internal pure returns (FixedPoint96.uq64x96 memory) {
         uint256 ratio = TickMath.getRatioAtTick(tick);
         // truncate, rounding up
-        return FixedPoint96.uq64x96(uint160(ratio >> 32) + (ratio % 32 > 0 ? 1 : 0));
+        return FixedPoint96.uq64x96(uint160(ratio >> 32) + (ratio % (1 << 32) > 0 ? 1 : 0));
     }
 
     function getTickAtSqrtRatio(FixedPoint96.uq64x96 memory sqrtP) internal pure returns (int24) {
