@@ -1,11 +1,11 @@
-import {ethers, waffle} from 'hardhat'
-import {BigNumber, BigNumberish, constants, Wallet} from 'ethers'
-import {TestERC20} from '../typechain/TestERC20'
-import {UniswapV3Factory} from '../typechain/UniswapV3Factory'
-import {MockTimeUniswapV3Pair} from '../typechain/MockTimeUniswapV3Pair'
-import {expect} from './shared/expect'
+import { ethers, waffle } from 'hardhat'
+import { BigNumber, BigNumberish, constants, Wallet } from 'ethers'
+import { TestERC20 } from '../typechain/TestERC20'
+import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
+import { MockTimeUniswapV3Pair } from '../typechain/MockTimeUniswapV3Pair'
+import { expect } from './shared/expect'
 
-import {pairFixture, TEST_PAIR_START_TIME} from './shared/fixtures'
+import { pairFixture, TEST_PAIR_START_TIME } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
@@ -22,9 +22,9 @@ import {
   MintFunction,
   InitializeFunction,
 } from './shared/utilities'
-import {TestUniswapV3Callee} from '../typechain/TestUniswapV3Callee'
-import {SqrtTickMathTest} from '../typechain/SqrtTickMathTest'
-import {SwapMathTest} from '../typechain/SwapMathTest'
+import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
+import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
+import { SwapMathTest } from '../typechain/SwapMathTest'
 
 const feeAmount = FeeAmount.MEDIUM
 const tickSpacing = TICK_SPACINGS[feeAmount]
@@ -67,12 +67,12 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy fixture', async () => {
-    ;({token0, token1, token2, factory, createPair, swapTarget} = await loadFixture(pairFixture))
+    ;({ token0, token1, token2, factory, createPair, swapTarget } = await loadFixture(pairFixture))
 
     const oldCreatePair = createPair
     createPair = async (amount, spacing) => {
       const pair = await oldCreatePair(amount, spacing)
-      ;({swapExact0For1, swap0ForExact1, swapExact1For0, swap1ForExact0, mint, initialize} = createPairFunctions({
+      ;({ swapExact0For1, swap0ForExact1, swapExact1For0, swap1ForExact0, mint, initialize } = createPairFunctions({
         token0,
         token1,
         swapTarget,
@@ -115,14 +115,14 @@ describe('UniswapV3Pair', () => {
       await initialize(price)
 
       {
-        const {liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1} = await pair.tickInfos(MIN_TICK)
+        const { liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1 } = await pair.tickInfos(MIN_TICK)
         expect(liquidityGross).to.eq(1)
         expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
         expect(feeGrowthOutside0._x).to.eq(0)
         expect(feeGrowthOutside1._x).to.eq(0)
       }
       {
-        const {liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1} = await pair.tickInfos(MAX_TICK)
+        const { liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1 } = await pair.tickInfos(MAX_TICK)
         expect(liquidityGross).to.eq(1)
         expect(secondsOutside).to.eq(0)
         expect(feeGrowthOutside0._x).to.eq(0)
@@ -132,7 +132,7 @@ describe('UniswapV3Pair', () => {
     it('creates a position for address 0 for min liquidity', async () => {
       const price = encodePriceSqrt(1, 2)
       await initialize(price)
-      const {liquidity} = await pair.positions(getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK))
+      const { liquidity } = await pair.positions(getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK))
       expect(liquidity).to.eq(1)
     })
     it('emits a Initialized event with the input tick', async () => {
@@ -252,7 +252,7 @@ describe('UniswapV3Pair', () => {
           it('clears tick lower if last position is removed', async () => {
             await mint(walletAddress, -240, 0, 100)
             await pair.burn(walletAddress, -240, 0, 100)
-            const {liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside} = await pair.tickInfos(-240)
+            const { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(-240)
             expect(liquidityGross).to.eq(0)
             expect(feeGrowthOutside0._x).to.eq(0)
             expect(feeGrowthOutside1._x).to.eq(0)
@@ -262,7 +262,7 @@ describe('UniswapV3Pair', () => {
           it('clears tick upper if last position is removed', async () => {
             await mint(walletAddress, -240, 0, 100)
             await pair.burn(walletAddress, -240, 0, 100)
-            const {liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside} = await pair.tickInfos(0)
+            const { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(0)
             expect(liquidityGross).to.eq(0)
             expect(feeGrowthOutside0._x).to.eq(0)
             expect(feeGrowthOutside1._x).to.eq(0)
@@ -273,12 +273,12 @@ describe('UniswapV3Pair', () => {
             await mint(walletAddress, -tickSpacing, 0, 250)
             await pair.burn(walletAddress, -240, 0, 100)
 
-            let {liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside} = await pair.tickInfos(-240)
+            let { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(-240)
             expect(liquidityGross).to.eq(0)
             expect(feeGrowthOutside0._x).to.eq(0)
             expect(feeGrowthOutside1._x).to.eq(0)
             expect(secondsOutside).to.eq(0)
-            ;({liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside} = await pair.tickInfos(
+            ;({ liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(
               -tickSpacing
             ))
             expect(liquidityGross).to.eq(250)
@@ -305,14 +305,14 @@ describe('UniswapV3Pair', () => {
 
           it('initializes lower tick', async () => {
             await mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100)
-            const {liquidityGross, secondsOutside} = await pair.tickInfos(MIN_TICK + tickSpacing)
+            const { liquidityGross, secondsOutside } = await pair.tickInfos(MIN_TICK + tickSpacing)
             expect(liquidityGross).to.eq(100)
             expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
           })
 
           it('initializes upper tick', async () => {
             await mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100)
-            const {liquidityGross, secondsOutside} = await pair.tickInfos(MAX_TICK - tickSpacing)
+            const { liquidityGross, secondsOutside } = await pair.tickInfos(MAX_TICK - tickSpacing)
             expect(liquidityGross).to.eq(100)
             expect(secondsOutside).to.eq(0)
           })
@@ -388,19 +388,19 @@ describe('UniswapV3Pair', () => {
       beforeEach(() => initializeAtZeroTick(pair))
 
       it('blockTimestamp is always current timestamp', async () => {
-        let {blockTimestamp} = await pair.getCumulatives()
+        let { blockTimestamp } = await pair.getCumulatives()
         expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
         await pair.setTime(TEST_PAIR_START_TIME + 10)
-        ;({blockTimestamp} = await pair.getCumulatives())
+        ;({ blockTimestamp } = await pair.getCumulatives())
         expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME + 10)
       })
 
       // zero tick
       it('tick accumulator increases by tick over time', async () => {
-        let {tickCumulative} = await pair.getCumulatives()
+        let { tickCumulative } = await pair.getCumulatives()
         expect(tickCumulative).to.eq(0)
         await pair.setTime(TEST_PAIR_START_TIME + 10)
-        ;({tickCumulative} = await pair.getCumulatives())
+        ;({ tickCumulative } = await pair.getCumulatives())
         expect(tickCumulative).to.eq(0)
       })
 
@@ -408,7 +408,7 @@ describe('UniswapV3Pair', () => {
         // moves to tick -1
         await swapExact0For1(1000, walletAddress)
         await pair.setTime(TEST_PAIR_START_TIME + 4)
-        let {tickCumulative} = await pair.getCumulatives()
+        let { tickCumulative } = await pair.getCumulatives()
         expect(tickCumulative).to.eq(-4)
       })
 
@@ -419,7 +419,7 @@ describe('UniswapV3Pair', () => {
         await swapExact1For0(expandTo18Decimals(1).div(4), walletAddress)
         expect(await pair.tickCurrent()).to.eq(-1558)
         await pair.setTime(TEST_PAIR_START_TIME + 10)
-        let {tickCumulative} = await pair.getCumulatives()
+        let { tickCumulative } = await pair.getCumulatives()
         // -4452*4 + -1558*6
         expect(tickCumulative).to.eq(-27156)
       })
@@ -683,7 +683,7 @@ describe('UniswapV3Pair', () => {
 
       await pair.collectFees(lowerTick, upperTick, walletAddress, constants.MaxUint256, constants.MaxUint256)
 
-      const {amount0: fees0, amount1: fees1} = await pair.callStatic.collectFees(
+      const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collectFees(
         lowerTick,
         upperTick,
         walletAddress,
@@ -866,7 +866,7 @@ describe('UniswapV3Pair', () => {
     async function swapAndGetFeesOwed(swapAmount: BigNumberish = expandTo18Decimals(1), zeroForOne: boolean = true) {
       await (zeroForOne ? swapExact0For1(swapAmount, walletAddress) : swapExact1For0(swapAmount, walletAddress))
 
-      const {amount0: fees0, amount1: fees1} = await pair.callStatic.collectFees(
+      const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collectFees(
         MIN_TICK,
         MAX_TICK,
         walletAddress,
@@ -877,11 +877,11 @@ describe('UniswapV3Pair', () => {
       expect(fees0, 'fees owed in token0 are greater than 0').to.be.gte(0)
       expect(fees1, 'fees owed in token1 are greater than 0').to.be.gte(0)
 
-      return {token0Fees: fees0, token1Fees: fees1}
+      return { token0Fees: fees0, token1Fees: fees1 }
     }
 
     it('position owner gets full fees when protocol fee is off', async () => {
-      const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed()
 
       // 6 bips * 1e18
       expect(token0Fees).to.eq('599999999999999')
@@ -891,7 +891,7 @@ describe('UniswapV3Pair', () => {
     it('position owner gets partial fees when protocol fee is on', async () => {
       await pair.setFeeTo(otherAddress)
 
-      const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed()
 
       expect(token0Fees).to.be.eq('500000000000000')
       expect(token1Fees).to.be.eq(0)
@@ -900,7 +900,7 @@ describe('UniswapV3Pair', () => {
     describe('#collect', () => {
       it('returns 0 if no fees', async () => {
         await pair.setFeeTo(otherAddress)
-        const {amount0, amount1} = await pair.callStatic.collect(constants.MaxUint256, constants.MaxUint256)
+        const { amount0, amount1 } = await pair.callStatic.collect(constants.MaxUint256, constants.MaxUint256)
         expect(amount0).to.be.eq(0)
         expect(amount1).to.be.eq(0)
       })
@@ -920,7 +920,7 @@ describe('UniswapV3Pair', () => {
 
     it('fees collected by lp after two swaps should be double one swap', async () => {
       await swapAndGetFeesOwed()
-      const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed()
 
       // 6 bips * 2e18
       expect(token0Fees).to.eq('1199999999999999')
@@ -932,7 +932,7 @@ describe('UniswapV3Pair', () => {
 
       await pair.setFeeTo(otherAddress)
 
-      const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed()
 
       expect(token0Fees).to.eq('1000000000000000')
       expect(token1Fees).to.eq(0)
@@ -941,7 +941,7 @@ describe('UniswapV3Pair', () => {
     it('fees collected by lp after two swaps with intermediate withdrawal', async () => {
       await pair.setFeeTo(otherAddress)
 
-      const {token0Fees, token1Fees} = await swapAndGetFeesOwed()
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed()
 
       expect(token0Fees).to.eq('500000000000000')
       expect(token1Fees).to.eq(0)
@@ -949,7 +949,7 @@ describe('UniswapV3Pair', () => {
       // collect the fees
       await pair.collectFees(MIN_TICK, MAX_TICK, walletAddress, constants.MaxUint256, constants.MaxUint256)
 
-      const {token0Fees: token0FeesNext, token1Fees: token1FeesNext} = await swapAndGetFeesOwed()
+      const { token0Fees: token0FeesNext, token1Fees: token1FeesNext } = await swapAndGetFeesOwed()
 
       expect(token0FeesNext).to.eq('500000000000000')
       expect(token1FeesNext).to.eq(0)
@@ -1006,8 +1006,8 @@ describe('UniswapV3Pair', () => {
       })
       it('initialize sets min and max ticks', async () => {
         await initialize(encodePriceSqrt(1, 1))
-        const {liquidityGross: minTickLiquidityGross} = await pair.tickInfos(-887268)
-        const {liquidityGross: maxTickLiquidityGross} = await pair.tickInfos(887268)
+        const { liquidityGross: minTickLiquidityGross } = await pair.tickInfos(-887268)
+        const { liquidityGross: maxTickLiquidityGross } = await pair.tickInfos(887268)
         expect(minTickLiquidityGross).to.eq(1)
         expect(minTickLiquidityGross).to.eq(maxTickLiquidityGross)
       })
@@ -1073,13 +1073,13 @@ describe('UniswapV3Pair', () => {
     await mint(walletAddress, -24082, -24081, liquidity)
     expect(await pair.liquidityCurrent(), 'current pair liquidity is still liquidity + 1').to.eq(liquidity.add(1))
 
-    const {secondsOutside: secondsOutsideBefore} = await pair.tickInfos(-24081)
+    const { secondsOutside: secondsOutsideBefore } = await pair.tickInfos(-24081)
 
     // check the math works out to moving the price down 1, sending no amount out, and having some amount remaining
     {
-      const {feeAmount, amountIn, amountOut, sqrtQ} = await swapMath.computeSwapStep(
-        {_x: p0},
-        {_x: p0.sub(1)},
+      const { feeAmount, amountIn, amountOut, sqrtQ } = await swapMath.computeSwapStep(
+        { _x: p0 },
+        { _x: p0.sub(1) },
         liquidity.add(1),
         3,
         FeeAmount.MEDIUM
@@ -1097,7 +1097,7 @@ describe('UniswapV3Pair', () => {
       .to.emit(token1, 'Transfer')
       .withArgs(pair.address, walletAddress, 0)
 
-    const {secondsOutside: secondsOutsideAfter} = await pair.tickInfos(-24081)
+    const { secondsOutside: secondsOutsideAfter } = await pair.tickInfos(-24081)
 
     expect(await pair.tickCurrent(), 'pair is at the next tick').to.eq(-24082)
     expect(await pair.sqrtPriceCurrent(), 'pair price is still on the p0 boundary').to.eq(p0.sub(1))

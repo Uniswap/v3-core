@@ -1,8 +1,8 @@
 import bn from 'bignumber.js'
-import {BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet} from 'ethers'
-import {TestERC20} from '../../typechain/TestERC20'
-import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
-import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
+import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
+import { TestERC20 } from '../../typechain/TestERC20'
+import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
+import { UniswapV3Pair } from '../../typechain/UniswapV3Pair'
 
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
@@ -14,7 +14,7 @@ export enum FeeAmount {
   HIGH = 9000,
 }
 
-export const TICK_SPACINGS: {[amount in FeeAmount]: number} = {
+export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
   [FeeAmount.LOW]: 12,
   [FeeAmount.MEDIUM]: 60,
   [FeeAmount.HIGH]: 180,
@@ -48,7 +48,7 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-bn.config({EXPONENTIAL_AT: 999999})
+bn.config({ EXPONENTIAL_AT: 999999 })
 
 // returns the sqrt price as a 64x96
 export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
@@ -147,5 +147,5 @@ export function createPairFunctions({
     return swapTarget.initialize(pair.address, price)
   }
 
-  return {swapExact0For1, swap0ForExact1, swapExact1For0, swap1ForExact0, mint, initialize}
+  return { swapExact0For1, swap0ForExact1, swapExact1For0, swap1ForExact0, mint, initialize }
 }
