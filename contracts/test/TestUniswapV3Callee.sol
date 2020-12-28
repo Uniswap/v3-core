@@ -17,7 +17,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount0In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(true, amount0In.toInt256(), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(true, amount0In.toInt256(), IUniswapV3Pair(pair).MIN_TICK(), recipient, abi.encode(msg.sender));
     }
 
     function swap0ForExact1(
@@ -25,7 +25,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(true, -amount1Out.toInt256(), IUniswapV3Pair(pair).MIN_TICK(), recipient, abi.encode(msg.sender));
     }
 
     function swapExact1For0(
@@ -33,7 +33,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), IUniswapV3Pair(pair).MAX_TICK(), recipient, abi.encode(msg.sender));
     }
 
     function swap1ForExact0(
@@ -41,7 +41,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount0Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), IUniswapV3Pair(pair).MAX_TICK(), recipient, abi.encode(msg.sender));
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
