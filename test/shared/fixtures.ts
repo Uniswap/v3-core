@@ -4,6 +4,7 @@ import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { UniswapV3Factory } from '../../typechain/UniswapV3Factory'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
+import { MockTimeUniswapV3PairDeployer } from '../../typechain/MockTimeUniswapV3PairDeployer'
 
 import { expandTo18Decimals } from './utilities'
 import { Fixture } from 'ethereum-waffle'
@@ -51,7 +52,8 @@ export const pairFixture: Fixture<PairFixture> = async function ([owner]: Wallet
   const { factory } = await factoryFixture(owner)
   const { token0, token1, token2 } = await tokensFixture()
 
-  const mockTimePairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
+  const mockTimeUniswapV3PairDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PairDeployer')
+  const mockTimeUniswapV3PairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
   const payAndForwardContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
 
   const swapTarget = (await payAndForwardContractFactory.deploy()) as TestUniswapV3Callee
@@ -63,13 +65,13 @@ export const pairFixture: Fixture<PairFixture> = async function ([owner]: Wallet
     factory,
     swapTarget,
     createPair: async (fee, tickSpacing) => {
-      const pair = (await mockTimePairFactory.deploy(
-        factory.address,
-        token0.address,
-        token1.address,
-        fee,
-        tickSpacing
-      )) as MockTimeUniswapV3Pair
+      const mockTimePairDeployer = (await mockTimeUniswapV3PairDeployerFactory.deploy()) as MockTimeUniswapV3PairDeployer
+      const tx = await mockTimePairDeployer.deploy(factory.address, token0.address, token1.address, fee, tickSpacing)
+
+      const receipt = await tx.wait()
+      const pairAddress = receipt.events?.[0].args?.pair as string
+      const pair = mockTimeUniswapV3PairFactory.attach(pairAddress) as MockTimeUniswapV3Pair
+
       await pair.setTime(TEST_PAIR_START_TIME)
       return pair
     },
