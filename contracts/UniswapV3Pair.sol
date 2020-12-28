@@ -663,7 +663,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address token,
         address recipient,
         uint256 amount
-    ) external override {
+    ) external override lock {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::recover: caller not owner');
 
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
@@ -682,6 +682,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function collect(uint256 amount0Requested, uint256 amount1Requested)
         external
         override
+        lock
         returns (uint256 amount0, uint256 amount1)
     {
         if (amount0Requested == uint256(-1)) {
