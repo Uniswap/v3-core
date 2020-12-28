@@ -59,21 +59,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int24 public immutable override MIN_TICK;
     int24 public immutable override MAX_TICK;
 
+    struct Slot0 {
+        // the current price
+        FixedPoint96.uq64x96 sqrtPriceCurrent;
+        // the last block timestamp where the tick accumulator was updated
+        uint32 blockTimestampLast;
+        // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
+        int56 tickCumulativeLast;
+        // whether the pair is locked for swapping
+        bool unlocked;
+    }
+
+    Slot0 public override slot0;
+
+    struct Slot1 {
+        // current in-range liquidity
+        uint128 liquidityCurrent;
+    }
+
+    Slot1 public override slot1;
+
     address public override feeTo;
 
     // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;
-
-    // single storage slot
-    FixedPoint96.uq64x96 public override sqrtPriceCurrent; // sqrt(token1 / token0) price
-    uint32 public override blockTimestampLast;
-    int56 public override tickCumulativeLast;
-    bool private unlocked = true;
-    // single storage slot
-
-    // single storage slot
-    uint128 public override liquidityCurrent; // all in-range liquidity
-    // single storage slot
 
     // fee growth per unit of liquidity
     FixedPoint128.uq128x128 public override feeGrowthGlobal0;
@@ -97,10 +106,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(bytes32 => Position) public positions;
 
     modifier lock() {
-        require(unlocked, 'UniswapV3Pair::lock: reentrancy prohibited');
-        unlocked = false;
+        require(slot0.unlocked, 'UniswapV3Pair::lock: reentrancy prohibited');
+        slot0.unlocked = false;
         _;
-        unlocked = true;
+        slot0.unlocked = true;
     }
 
     function _getPosition(
@@ -113,11 +122,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // check for one-time initialization
     function isInitialized() public view override returns (bool) {
-        return sqrtPriceCurrent._x != 0; // sufficient check
+        return slot0.sqrtPriceCurrent._x != 0;
     }
 
     function tickCurrent() public view override returns (int24) {
-        return SqrtTickMath.getTickAtSqrtRatio(sqrtPriceCurrent);
+        return SqrtTickMath.getTickAtSqrtRatio(slot0.sqrtPriceCurrent);
     }
 
     constructor() {
@@ -137,18 +146,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // overridden for tests
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
-    }
-
-    function getCumulatives() public view override returns (uint32 blockTimestamp, int56 tickCumulative) {
-        require(isInitialized(), 'UniswapV3Pair::getCumulatives: pair not initialized');
-        blockTimestamp = _blockTimestamp();
-
-        if (blockTimestampLast != blockTimestamp) {
-            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            tickCumulative = tickCumulativeLast + int56(timeElapsed) * tickCurrent();
-        } else {
-            return (blockTimestamp, tickCumulativeLast);
-        }
     }
 
     function setFeeTo(address feeTo_) external override {
@@ -189,11 +186,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function initialize(uint160 sqrtPrice, bytes calldata data) external override {
         require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
 
-        // initialize oracle timestamp
-        blockTimestampLast = _blockTimestamp();
-
-        // initialize current price
-        sqrtPriceCurrent = FixedPoint96.uq64x96(sqrtPrice);
+        slot0 = Slot0({
+            blockTimestampLast: _blockTimestamp(),
+            tickCumulativeLast: 0,
+            sqrtPriceCurrent: FixedPoint96.uq64x96(sqrtPrice),
+            unlocked: true
+        });
 
         emit Initialized(sqrtPrice);
 
@@ -424,16 +422,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // the current price is inside the passed range
             amount0 = SqrtPriceMath.getAmount0Delta(
                 SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
-                sqrtPriceCurrent,
+                slot0.sqrtPriceCurrent,
                 params.liquidityDelta
             );
             amount1 = SqrtPriceMath.getAmount1Delta(
                 SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
-                sqrtPriceCurrent,
+                slot0.sqrtPriceCurrent,
                 params.liquidityDelta
             );
 
-            liquidityCurrent = liquidityCurrent.addi(params.liquidityDelta).toUint128();
+            slot1.liquidityCurrent = slot1.liquidityCurrent.addi(params.liquidityDelta).toUint128();
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
@@ -501,9 +499,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             SwapState({
                 amountSpecifiedRemaining: params.amountSpecified,
                 tick: params.tickStart,
-                sqrtPrice: sqrtPriceCurrent,
+                sqrtPrice: slot0.sqrtPriceCurrent,
                 feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
-                liquidityCurrent: liquidityCurrent
+                liquidityCurrent: slot1.liquidityCurrent
             });
 
         while (state.amountSpecifiedRemaining != 0) {
@@ -587,17 +585,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // the price moved at least one tick
         if (state.tick != params.tickStart) {
-            liquidityCurrent = state.liquidityCurrent;
+            slot1.liquidityCurrent = state.liquidityCurrent;
 
-            uint32 _blockTimestampLast = blockTimestampLast;
+            uint32 _blockTimestampLast = slot0.blockTimestampLast;
             if (_blockTimestampLast != params.blockTimestamp) {
-                blockTimestampLast = params.blockTimestamp;
+                slot0.blockTimestampLast = params.blockTimestamp;
                 // overflow desired
-                tickCumulativeLast += int56(params.blockTimestamp - _blockTimestampLast) * params.tickStart;
+                slot0.tickCumulativeLast += int56(params.blockTimestamp - _blockTimestampLast) * params.tickStart;
             }
         }
 
-        sqrtPriceCurrent = state.sqrtPrice;
+        slot0.sqrtPriceCurrent = state.sqrtPrice;
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;
