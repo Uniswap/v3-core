@@ -587,7 +587,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // the price moved at least one tick
         if (state.tick != params.tickStart) {
-            slot1 = Slot1({liquidityCurrent: state.liquidityCurrent});
+            slot1.liquidityCurrent = state.liquidityCurrent;
 
             uint32 _blockTimestampLast = slot0.blockTimestampLast;
             if (_blockTimestampLast != params.blockTimestamp) {
