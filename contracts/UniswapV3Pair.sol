@@ -133,7 +133,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return _tickCurrent(slot0);
     }
 
-    function _tickCurrent(Slot0 memory _slot0) internal view returns (int24) {
+    function _tickCurrent(Slot0 memory _slot0) internal pure returns (int24) {
         if (_slot0.unlockedAndPriceBit & 2 == 2) return SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent) - 1;
         return SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
     }
@@ -483,6 +483,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         FixedPoint128.uq128x128 feeGrowthGlobal;
         // the liquidity in range
         uint128 liquidityCurrent;
+        // whether the price is at the lower tickCurrent boundary and a tick transition has already occurred
+        bool priceBit;
     }
 
     struct StepComputations {
@@ -517,9 +519,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tick: params.tickStart,
                 sqrtPrice: params.slot0Start.sqrtPriceCurrent,
                 feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
-                liquidityCurrent: params.liquidityStart
+                liquidityCurrent: params.liquidityStart,
+                priceBit: params.slot0Start.unlockedAndPriceBit & 2 == 2
             });
-        bool priceBit = false;
 
         while (state.amountSpecifiedRemaining != 0) {
             StepComputations memory step;
@@ -563,7 +565,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 if (state.sqrtPrice._x != priceNext._x) {
                     state.sqrtPrice = priceNext;
                 } else if (state.amountSpecifiedRemaining == 0) {
-                    priceBit = true;
+                    state.priceBit = true;
                 }
             }
 
@@ -603,7 +605,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // less than the tick after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice) + (priceBit ? int24(-1) : int24(0));
+                state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice) + (state.priceBit ? int24(-1) : int24(0));
             }
         }
 
@@ -656,7 +658,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 'UniswapV3Pair::_swap: insufficient input amount'
             );
         }
-        slot0.unlockedAndPriceBit = priceBit ? 3 : 1;
+        slot0.unlockedAndPriceBit = state.priceBit ? 3 : 1;
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
