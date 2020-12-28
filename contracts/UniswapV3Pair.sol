@@ -566,9 +566,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 (step.tickTarget == step.tickNext && state.sqrtPrice._x == step.sqrtPriceNext._x) &&
                 (
                     params.zeroForOne
-                        ? (amountUsed !=
-                            uint256(params.amountSpecified < 0 ? -params.amountSpecified : params.amountSpecified) &&
-                            step.tickNext > params.tickLimit)
+                        ? (state.amountSpecifiedRemaining != 0 && step.tickNext > params.tickLimit)
                         : true
                 )
             ) {
