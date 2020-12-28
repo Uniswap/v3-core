@@ -444,7 +444,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct SwapParams {
-        // the tick where the price starts
+        // the liquidity at the beginning of the swap
+        uint128 liquidityStart;
+        // the tick at the beginning of the swap
         int24 tickStart;
         // whether the swap is from token 0 to 1, or 1 for 0
         bool zeroForOne;
@@ -505,7 +507,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tick: params.tickStart,
                 sqrtPrice: slot0.sqrtPriceCurrent,
                 feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
-                liquidityCurrent: slot1.liquidityCurrent
+                liquidityCurrent: params.liquidityStart
             });
 
         // we have to continue runing the while loop if both of the following two conditions are true:
@@ -599,10 +601,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
         }
 
-        // the price moved at least one tick
-        if (state.tick != params.tickStart) {
+        // update liquidity if it changed
+        if (params.liquidityStart != state.liquidityCurrent) {
             slot1.liquidityCurrent = state.liquidityCurrent;
+        }
 
+        // the price moved at least one tick, update the accumulator
+        if (state.tick != params.tickStart) {
             uint32 _blockTimestampLast = slot0.blockTimestampLast;
             if (_blockTimestampLast != params.blockTimestamp) {
                 slot0.blockTimestampLast = params.blockTimestamp;
@@ -662,7 +667,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return
             _swap(
                 SwapParams({
-                    tickStart: tick,
+                    liquidityStart: slot1.liquidityCurrent,
+                    tickStart: tickCurrent(),
                     zeroForOne: zeroForOne,
                     amountSpecified: amountSpecified,
                     tickLimit: tickLimit,
