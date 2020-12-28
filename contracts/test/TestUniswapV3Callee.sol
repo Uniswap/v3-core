@@ -20,7 +20,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         IUniswapV3Pair(pair).swap(
             true,
             amount0In.toInt256(),
-            IUniswapV3Pair(pair).MIN_TICK(),
+            -8388608, // type(int24).min
             recipient,
             abi.encode(msg.sender)
         );
@@ -34,7 +34,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         IUniswapV3Pair(pair).swap(
             true,
             -amount1Out.toInt256(),
-            IUniswapV3Pair(pair).MIN_TICK(),
+            -8388608, // type(int24).min
             recipient,
             abi.encode(msg.sender)
         );
@@ -48,7 +48,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         IUniswapV3Pair(pair).swap(
             false,
             amount1In.toInt256(),
-            IUniswapV3Pair(pair).MAX_TICK(),
+            8388607, // type(int24).max
             recipient,
             abi.encode(msg.sender)
         );
@@ -62,7 +62,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         IUniswapV3Pair(pair).swap(
             false,
             -amount0Out.toInt256(),
-            IUniswapV3Pair(pair).MAX_TICK(),
+            8388607, // type(int24).max
             recipient,
             abi.encode(msg.sender)
         );

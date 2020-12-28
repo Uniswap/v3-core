@@ -530,7 +530,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (params.zeroForOne ? step.tickTarget < params.tickLimit : step.tickTarget > params.tickLimit)
                 step.tickTarget = params.tickLimit;
 
-            // get the price for the next tick we're moving toward (performs safety checks on step.tickTarget)
+            // get the price for the next tick we're moving toward (performs bounds checks on step.tickTarget)
             step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickTarget);
 
             // if there might be room to move in the current tick, continue calculations
@@ -604,6 +604,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // the price moved at least one tick, update the accumulator
         if (state.tick != params.tickStart) {
+            require(state.tick >= MIN_TICK, 'UniswapV3Pair::_swap: crossed MIN_TICK');
+            require(state.tick < MAX_TICK, 'UniswapV3Pair::_swap: reached or crossed MAX_TICK');
+
             uint32 _blockTimestampLast = slot0.blockTimestampLast;
             if (_blockTimestampLast != params.blockTimestamp) {
                 slot0.blockTimestampLast = params.blockTimestamp;
@@ -655,8 +658,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes calldata data
     ) external override lock returns (uint256 amountUsed, uint256 amountCalculated) {
         require(amountSpecified != 0, 'UniswapV3Pair::swap: amountSpecified must not be 0');
-        require(tickLimit >= MIN_TICK, 'UniswapV3Pair::swap: tickLimit must be greater than or equal to MIN_TICK');
-        require(tickLimit <= MAX_TICK, 'UniswapV3Pair::swap: tickLimit must be less than or equal to MAX_TICK');
         int24 tick = tickCurrent();
         require(zeroForOne ? tickLimit < tick : tickLimit > tick, 'UniswapV3Pair::swap: invalid tickLimit');
 
