@@ -642,10 +642,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         Slot0 memory _slot0 = slot0;
 
-        require(
-            _slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT,
-            'LOK'
-        );
+        require(_slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT, 'LOK');
 
         return
             _swap(
