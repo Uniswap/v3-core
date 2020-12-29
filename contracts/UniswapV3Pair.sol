@@ -24,6 +24,8 @@ import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
 
+import 'hardhat/console.sol';
+
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
     using SafeMath for uint256;
@@ -541,9 +543,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 liquidityCurrent;
         // whether the price is at the lower tickCurrent boundary and a tick transition has already occurred
         bool priceBit;
-        // the balance of tokens 0 and 1 (not stored)
-        uint256 balanceSpecified;
-        uint256 balanceCalculated;
+        // the initial balance of tokens 0 and 1 (not stored)
+        uint128 balanceSpecifiedInitial;
+        uint128 balanceCalculatedInitial;
         // the value of the offsets
         FixedPoint128.uq128x128 offsetSpecified;
         FixedPoint128.uq128x128 offsetCalculated;
@@ -584,11 +586,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
                 liquidityCurrent: params.liquidityStart,
                 priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
-                balanceSpecified: params.zeroForOne ? IERC20(token0).balanceOf(address(this)) : IERC20(token1).balanceOf(address(this)),
-                balanceCalculated: params.zeroForOne ? IERC20(token1).balanceOf(address(this)) : IERC20(token0).balanceOf(address(this)),
+                balanceSpecifiedInitial: 0,
+                balanceCalculatedInitial: 0,
                 offsetSpecified: params.zeroForOne ? offset0 : offset1,
                 offsetCalculated: params.zeroForOne ? offset1 : offset0
         });
+
+        bool zeroSpecified = params.zeroForOne == (params.amountSpecified > 0);
 
         while (state.amountSpecifiedRemaining != 0) {
             StepComputations memory step;
@@ -622,14 +626,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     // sell
                     state.amountSpecifiedRemaining -= step.amountIn.add(step.feeAmount).toInt256();
                     amountCalculated = amountCalculated.add(step.amountOut);
-                    state.balanceSpecified += step.amountIn + step.feeAmount;
-                    state.balanceCalculated -= step.amountOut;
                 } else {
                     // buy
                     state.amountSpecifiedRemaining += step.amountOut.toInt256();
                     amountCalculated = amountCalculated.add(step.amountIn.add(step.feeAmount));
-                    state.balanceSpecified -= step.amountOut;
-                    state.balanceCalculated += step.amountIn + step.feeAmount;
                 }
 
                 // update global fee tracker
@@ -642,17 +642,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // if the tick is initialized, run the tick transition
                 if (tickInfo.liquidityGross > 0) {
-                    // update tick info
-                    tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
-                        (params.zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) -
-                            tickInfo.feeGrowthOutside0._x
-                    );
-                    tickInfo.feeGrowthOutside1 = FixedPoint128.uq128x128(
-                        (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
-                            tickInfo.feeGrowthOutside1._x
-                    );
-                    tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
-
                     // update liquidityCurrent, subi from right to left, addi from left to right
                     uint128 liquidityBefore = state.liquidityCurrent;
                     if (params.zeroForOne) {
@@ -661,30 +650,38 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         state.liquidityCurrent = uint128(liquidityBefore.addi(tickInfo.liquidityDelta));
                     }
 
-                    // update offsets
-                    uint feeGrowthGlobalStartSpecified;
-                    uint feeGrowthGlobalStartCalculated;
-                    if (params.zeroForOne == (params.amountSpecified > 0)) {
-                        feeGrowthGlobalStartSpecified = SqrtPriceMath.getFeeGrowthGlobal0(state.sqrtPrice, 
-                                                        state.offsetSpecified, 
-                                                        state.balanceSpecified, 
-                                                        liquidityBefore)._x;
-                        feeGrowthGlobalStartCalculated = SqrtPriceMath.getFeeGrowthGlobal1(state.sqrtPrice, 
-                                                        state.offsetCalculated, 
-                                                        state.balanceCalculated, 
-                                                        liquidityBefore)._x;
-                    } else {
-                        feeGrowthGlobalStartSpecified = SqrtPriceMath.getFeeGrowthGlobal1(state.sqrtPrice, 
-                                                        state.offsetSpecified, 
-                                                        state.balanceSpecified, 
-                                                        liquidityBefore)._x;
-                        feeGrowthGlobalStartCalculated = SqrtPriceMath.getFeeGrowthGlobal0(state.sqrtPrice, 
-                                                        state.offsetCalculated, 
-                                                        state.balanceCalculated, 
-                                                        liquidityBefore)._x;
+                    // initialize balances first time an initialized tick is crossed
+                    if (state.balanceSpecifiedInitial == 0) {
+                        state.balanceSpecifiedInitial = uint128(zeroSpecified ? IERC20(token0).balanceOf(address(this)) : IERC20(token1).balanceOf(address(this)));
+                        state.balanceCalculatedInitial = uint128(zeroSpecified ? IERC20(token1).balanceOf(address(this)) : IERC20(token0).balanceOf(address(this)));
                     }
-                    state.offsetSpecified = SqrtPriceMath.getOffsetAfter(state.offsetSpecified, state.balanceSpecified, state.balanceSpecified, liquidityBefore, state.liquidityCurrent);
-                    state.offsetCalculated = SqrtPriceMath.getOffsetAfter(state.offsetCalculated, state.balanceCalculated, state.balanceCalculated, liquidityBefore, state.liquidityCurrent);
+
+                    uint balanceSpecifiedAfter = state.balanceSpecifiedInitial.addi(params.amountSpecified.sub(state.amountSpecifiedRemaining));
+                    uint balanceCalculatedAfter = params.amountSpecified > 0 ? state.balanceCalculatedInitial - uint128(amountCalculated) : state.balanceCalculatedInitial + uint128(amountCalculated);
+
+                    // update offsets
+                    state.offsetSpecified = SqrtPriceMath.getOffsetAfter(state.offsetSpecified, balanceSpecifiedAfter, balanceSpecifiedAfter, liquidityBefore, state.liquidityCurrent);
+                    state.offsetCalculated = SqrtPriceMath.getOffsetAfter(state.offsetCalculated, balanceCalculatedAfter, balanceCalculatedAfter, liquidityBefore, state.liquidityCurrent);
+
+                    FixedPoint128.uq128x128 memory _feeGrowthGlobal0;
+                    FixedPoint128.uq128x128 memory _feeGrowthGlobal1;
+
+                    if (zeroSpecified) {
+                        _feeGrowthGlobal0 = SqrtPriceMath.getFeeGrowthGlobal0(state.sqrtPrice, state.offsetSpecified, balanceSpecifiedAfter, state.liquidityCurrent);
+                        _feeGrowthGlobal1 = SqrtPriceMath.getFeeGrowthGlobal1(state.sqrtPrice, state.offsetCalculated, balanceCalculatedAfter, state.liquidityCurrent);
+                    } else {
+                        _feeGrowthGlobal0 = SqrtPriceMath.getFeeGrowthGlobal0(state.sqrtPrice, state.offsetCalculated, balanceCalculatedAfter, state.liquidityCurrent);
+                        _feeGrowthGlobal1 = SqrtPriceMath.getFeeGrowthGlobal1(state.sqrtPrice, state.offsetSpecified, balanceSpecifiedAfter, state.liquidityCurrent);
+                    }
+
+                    // update tick info
+                    tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
+                        _feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x
+                    );
+                    tickInfo.feeGrowthOutside1 = FixedPoint128.uq128x128(
+                        _feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x
+                    );
+                    tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
                 }
 
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
@@ -736,7 +733,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         {
             (address tokenIn, address tokenOut) = params.zeroForOne ? (token0, token1) : (token1, token0);
             TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
-            uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
+            // get balance before of the token being sent in
+            uint balanceBefore = uint256(params.amountSpecified > 0 ? state.balanceSpecifiedInitial : state.balanceCalculatedInitial);
+            if (balanceBefore == 0) {
+                balanceBefore = IERC20(tokenIn).balanceOf(address(this));
+            }
             params.zeroForOne
                 ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
                     -amountIn.toInt256(),

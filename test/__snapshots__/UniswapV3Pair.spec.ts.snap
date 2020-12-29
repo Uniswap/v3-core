@@ -6,38 +6,38 @@ exports[`UniswapV3Pair #mint after initialization success cases below current pr
 
 exports[`UniswapV3Pair #mint after initialization success cases including current price gas 1`] = `260082`;
 
-exports[`UniswapV3Pair swaps fee: 600 gas first swap ever 1`] = `125174`;
+exports[`UniswapV3Pair swaps fee: 600 gas first swap ever 1`] = `119339`;
 
-exports[`UniswapV3Pair swaps fee: 600 gas first swap in block 1`] = `105746`;
+exports[`UniswapV3Pair swaps fee: 600 gas first swap in block 1`] = `99912`;
 
-exports[`UniswapV3Pair swaps fee: 600 gas gas large swap crossing several initialized ticks 1`] = `249364`;
+exports[`UniswapV3Pair swaps fee: 600 gas gas large swap crossing several initialized ticks 1`] = `321607`;
 
-exports[`UniswapV3Pair swaps fee: 600 gas gas large swap crossing several initialized ticks after some time passes 1`] = `281072`;
+exports[`UniswapV3Pair swaps fee: 600 gas gas large swap crossing several initialized ticks after some time passes 1`] = `353312`;
 
-exports[`UniswapV3Pair swaps fee: 600 gas large swap 1`] = `144198`;
+exports[`UniswapV3Pair swaps fee: 600 gas large swap 1`] = `138153`;
 
-exports[`UniswapV3Pair swaps fee: 600 gas second swap in block 1`] = `105746`;
+exports[`UniswapV3Pair swaps fee: 600 gas second swap in block 1`] = `99912`;
 
-exports[`UniswapV3Pair swaps fee: 3000 gas first swap ever 1`] = `125232`;
+exports[`UniswapV3Pair swaps fee: 3000 gas first swap ever 1`] = `119385`;
 
-exports[`UniswapV3Pair swaps fee: 3000 gas first swap in block 1`] = `105804`;
+exports[`UniswapV3Pair swaps fee: 3000 gas first swap in block 1`] = `99958`;
 
-exports[`UniswapV3Pair swaps fee: 3000 gas gas large swap crossing several initialized ticks 1`] = `230790`;
+exports[`UniswapV3Pair swaps fee: 3000 gas gas large swap crossing several initialized ticks 1`] = `303220`;
 
-exports[`UniswapV3Pair swaps fee: 3000 gas gas large swap crossing several initialized ticks after some time passes 1`] = `262499`;
+exports[`UniswapV3Pair swaps fee: 3000 gas gas large swap crossing several initialized ticks after some time passes 1`] = `334925`;
 
-exports[`UniswapV3Pair swaps fee: 3000 gas large swap 1`] = `125473`;
+exports[`UniswapV3Pair swaps fee: 3000 gas large swap 1`] = `119626`;
 
-exports[`UniswapV3Pair swaps fee: 3000 gas second swap in block 1`] = `105804`;
+exports[`UniswapV3Pair swaps fee: 3000 gas second swap in block 1`] = `99958`;
 
-exports[`UniswapV3Pair swaps fee: 9000 gas first swap ever 1`] = `125232`;
+exports[`UniswapV3Pair swaps fee: 9000 gas first swap ever 1`] = `119385`;
 
-exports[`UniswapV3Pair swaps fee: 9000 gas first swap in block 1`] = `105804`;
+exports[`UniswapV3Pair swaps fee: 9000 gas first swap in block 1`] = `99958`;
 
-exports[`UniswapV3Pair swaps fee: 9000 gas gas large swap crossing several initialized ticks 1`] = `230842`;
+exports[`UniswapV3Pair swaps fee: 9000 gas gas large swap crossing several initialized ticks 1`] = `303272`;
 
-exports[`UniswapV3Pair swaps fee: 9000 gas gas large swap crossing several initialized ticks after some time passes 1`] = `262551`;
+exports[`UniswapV3Pair swaps fee: 9000 gas gas large swap crossing several initialized ticks after some time passes 1`] = `334977`;
 
-exports[`UniswapV3Pair swaps fee: 9000 gas large swap 1`] = `125473`;
+exports[`UniswapV3Pair swaps fee: 9000 gas large swap 1`] = `119626`;
 
-exports[`UniswapV3Pair swaps fee: 9000 gas second swap in block 1`] = `105804`;
+exports[`UniswapV3Pair swaps fee: 9000 gas second swap in block 1`] = `99958`;

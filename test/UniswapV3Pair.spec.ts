@@ -490,6 +490,19 @@ describe('UniswapV3Pair', () => {
             [FeeAmount.HIGH]: 990,
           }[feeAmount]
 
+          // afterEach('compute difference in fees', async() => {
+          //   const manual0 = await pair.feeGrowthGlobal0()
+          //   const automatic0 = await pair.computedFeeGrowthGlobal0()
+          //   const manual1 = await pair.feeGrowthGlobal1()
+          //   const automatic1 = await pair.computedFeeGrowthGlobal1()
+          //   console.log(automatic0.toString())
+          //   console.log(manual0.toString())
+          //   console.log(automatic0.sub(manual0).toString())
+          //   console.log(automatic1.toString())
+          //   console.log(manual1.toString())
+          //   console.log(automatic1.sub(manual1).toString())
+          // })
+
           it('swapExact0For1', async () => {
             await expect(swapExact0For1(IN, walletAddress))
               .to.emit(token0, 'Transfer')
