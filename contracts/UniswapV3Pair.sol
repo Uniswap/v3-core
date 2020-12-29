@@ -134,8 +134,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _tickCurrent(Slot0 memory _slot0) internal pure returns (int24) {
-        if (_slot0.unlockedAndPriceBit & 2 == 2) return SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent) - 1;
-        return SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
+        int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
+        if (_slot0.unlockedAndPriceBit & 2 == 2) return tick - 1;
+        return tick;
     }
 
     constructor() {
@@ -490,8 +491,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     struct StepComputations {
         // the next initialized tick from the current tick in the swap direction
         int24 tickNext;
+        // the price at the beginning of the step
+        FixedPoint96.uq64x96 sqrtPriceStart;
         // sqrt(price) for the target tick (1/0)
-        FixedPoint96.uq64x96 sqrtPriceNext;
+        FixedPoint96.uq64x96 sqrtPriceTarget;
         // how much is being swapped in in this step
         uint256 amountIn;
         // how much is being swapped out in the current step
@@ -526,6 +529,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         while (state.amountSpecifiedRemaining != 0) {
             StepComputations memory step;
 
+            step.sqrtPriceStart = state.sqrtPrice;
+
             (step.tickNext, ) = tickBitmap.nextInitializedTickWithinOneWord(
                 closestTick(state.tick),
                 params.zeroForOne,
@@ -536,50 +541,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
             else require(step.tickNext <= MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
 
             // get the price for the next tick we're moving toward
-            step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
+            step.sqrtPriceTarget = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
-            // if there might be room to move in the current tick, continue calculations
-            if (params.zeroForOne == false || (state.sqrtPrice._x > step.sqrtPriceNext._x)) {
-                FixedPoint96.uq64x96 memory priceNext;
-                (priceNext, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
-                    state.sqrtPrice,
-                    step.sqrtPriceNext,
-                    state.liquidityCurrent,
-                    state.amountSpecifiedRemaining,
-                    fee
-                );
+            (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
+                state.sqrtPrice,
+                step.sqrtPriceTarget,
+                state.liquidityCurrent,
+                state.amountSpecifiedRemaining,
+                fee
+            );
 
-                // decrement (increment) remaining input (negative output) amount
-                // TODO we might not need safemath below
-                if (state.amountSpecifiedRemaining > 0) {
-                    state.amountSpecifiedRemaining -= step.amountIn.add(step.feeAmount).toInt256();
-                    amountCalculated = amountCalculated.add(step.amountOut);
-                } else {
-                    state.amountSpecifiedRemaining += step.amountOut.toInt256();
-                    amountCalculated = amountCalculated.add(step.amountIn.add(step.feeAmount));
-                }
-
-                // update global fee tracker
-                state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidityCurrent)._x;
-
-                if (state.sqrtPrice._x != priceNext._x) {
-                    state.sqrtPrice = priceNext;
-                } else if (state.amountSpecifiedRemaining == 0) {
-                    state.priceBit = true;
-                }
+            // decrement (increment) remaining input (negative output) amount
+            // TODO we might not need safemath below
+            if (state.amountSpecifiedRemaining > 0) {
+                state.amountSpecifiedRemaining -= step.amountIn.add(step.feeAmount).toInt256();
+                amountCalculated = amountCalculated.add(step.amountOut);
+            } else {
+                state.amountSpecifiedRemaining += step.amountOut.toInt256();
+                amountCalculated = amountCalculated.add(step.amountIn.add(step.feeAmount));
             }
 
-            // we have to shift to the next tick if either of two conditions are true:
-            // 1) a positive input amount remains
-            // 2) if we're moving right and the price is exactly on the target tick
-            // TODO ensure that there's no off-by-one error here while transitioning ticks in either direction
-            if (
-                state.amountSpecifiedRemaining != 0 ||
-                (params.zeroForOne == false && state.sqrtPrice._x == step.sqrtPriceNext._x)
-            ) {
+            // update global fee tracker
+            state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidityCurrent)._x;
+
+            // shift tick if we reached the next price target
+            if (state.sqrtPrice._x == step.sqrtPriceTarget._x) {
                 Tick.Info storage tickInfo = tickInfos[step.tickNext];
 
-                // if the tick is initialized, update it
+                // if the tick is initialized, run the tick transition
                 if (tickInfo.liquidityGross > 0) {
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
@@ -600,11 +589,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
                 }
 
-                // todo: this might not be ok. the price may not move due to the remaining input amount!
-                // original rationale: this is ok because we still have amountInRemaining so price is guaranteed to be
-                // less than the tick after swapping the remaining amount in
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
+                state.priceBit = params.zeroForOne;
             } else {
+                state.priceBit = state.priceBit && params.zeroForOne && state.sqrtPrice._x == step.sqrtPriceStart._x;
                 state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice) + (state.priceBit ? int24(-1) : int24(0));
             }
         }
@@ -690,7 +678,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address token,
         address recipient,
         uint256 amount
-    ) external override lock {
+    ) external override lockNoPriceMovement {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::recover: caller not owner');
 
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
@@ -709,7 +697,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function collect(uint256 amount0Requested, uint256 amount1Requested)
         external
         override
-        lock
+        lockNoPriceMovement
         returns (uint256 amount0, uint256 amount1)
     {
         if (amount0Requested == uint256(-1)) {
