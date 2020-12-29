@@ -9,8 +9,9 @@ import '../interfaces/IUniswapV3MintCallback.sol';
 import '../interfaces/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
-contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
+abstract contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapCallback {
     using SafeCast for uint256;
+
 
     function swapExact0For1(
         address pair,
@@ -20,7 +21,101 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         IUniswapV3Pair(pair).swap(true, amount0In.toInt256(), recipient, abi.encode(msg.sender));
     }
 
+    function swap0ForExact1(
+        address pair,
+        uint256 amount1Out,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender));
+    }
+
+    function swapExact1For0(
+        address pair,
+        uint256 amount1In,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), recipient, abi.encode(msg.sender));
+    }
+
+    function swap1ForExact0(
+        address pair,
+        uint256 amount0Out,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), recipient, abi.encode(msg.sender));
+    }
+
+
+/*
+ allows exact output swaps from A -> B -> C, where the steps look like:
+
+initiate an exact output swap on the BxC pair, resulting in a transfer of C from BxC to user
+within the (outer) swap callback, initiate an exact swap on AxB, resulting in a transfer of B to BxC
+in the inner swap callback, resolve by triggering a transfer of A from user to AxB (via transferFrom)
+*/
+
+    function _first(int256 amount0Delta, int256 amount1Delta, bytes calldata data, address pair) internal {
+         address sender = abi.decode(data, (address));
+         IUniswapV3Pair(pair).swap(true, -amount1Delta.toInt256(), pair, abi.encode(msg.sender));
+         uniswapV3SwapCallback(amount0Delta, amount1Delta, data);
+    }
+
+    function swapAforC(address pair, address pair1, uint256 amount1Out, address recipient) external {
+        (int256 amount0Delta, int256 amount1Delta, bytes calldata data) = 
+        IUniswapV3Pair(pair1).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender));
+        _first(amount0Delta, amount1Delta, data, pair);
+    }
+
+    event SwapCallback(int256 amount0Delta, int256 amount1Delta);
+
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata data
+    ) public override {
+        address sender = abi.decode(data, (address));
+
+        emit SwapCallback(amount0Delta, amount1Delta);
+
+        if (amount0Delta < 0) {
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(-amount0Delta));
+        }
+        if (amount1Delta < 0) {
+            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(-amount1Delta));
+        }
+    }
+
+    function initialize(address pair, uint160 sqrtPrice) external {
+        IUniswapV3Pair(pair).initialize(sqrtPrice, abi.encode(msg.sender));
+    }
+
+    function mint(
+        address pair,
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        IUniswapV3Pair(pair).mint(recipient, tickLower, tickUpper, amount, abi.encode(msg.sender));
+    }
+
+    event MintCallback(uint256 amount0Owed, uint256 amount1Owed);
+
+    function uniswapV3MintCallback(
+        uint256 amount0Owed,
+        uint256 amount1Owed,
+        bytes calldata data
+    ) external override {
+        address sender = abi.decode(data, (address));
+
+        emit MintCallback(amount0Owed, amount1Owed);
+        if (amount0Owed > 0)
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Owed));
+        if (amount1Owed > 0)
+            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Owed));
+    }
 }
+
 
 /*
  allows exact output swaps from A -> B -> C, where the steps look like:

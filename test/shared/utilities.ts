@@ -2,6 +2,7 @@ import bn from 'bignumber.js'
 import {BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet} from 'ethers'
 import {TestERC20} from '../../typechain/TestERC20'
 import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
+import {TestUniswapV3Router} from '../../typechain/TestUniswapV3Router'
 import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
 
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
@@ -89,7 +90,7 @@ export function createPairFunctions({
   swapTarget,
   pair,
 }: {
-  swapTarget: TestUniswapV3Callee
+  swapTarget: TestUniswapV3Router
   token0: TestERC20
   token1: TestERC20
   pair: UniswapV3Pair
