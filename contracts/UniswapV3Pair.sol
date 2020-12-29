@@ -582,15 +582,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // the price moved at least one tick, update the accumulator
         if (state.tick != params.tickStart) {
-            uint32 _blockTimestampLast = slot0.blockTimestampLast;
+            uint32 _blockTimestampLast = params.slot0Start.blockTimestampLast;
             if (_blockTimestampLast != params.blockTimestamp) {
                 slot0.blockTimestampLast = params.blockTimestamp;
                 // overflow desired
-                slot0.tickCumulativeLast += int56(params.blockTimestamp - _blockTimestampLast) * params.tickStart;
+                slot0.tickCumulativeLast =
+                    params.slot0Start.tickCumulativeLast +
+                    int56(params.blockTimestamp - _blockTimestampLast) *
+                    params.tickStart;
             }
         }
 
         slot0.sqrtPriceCurrent = state.sqrtPrice;
+        // still locked until after the callback, but need to record the price bit
+        slot0.unlockedAndPriceBit = state.priceBit ? 2 : 0;
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;
