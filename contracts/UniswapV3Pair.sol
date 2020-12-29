@@ -24,6 +24,8 @@ import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
 
+import 'hardhat/console.sol';
+
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
     using SafeMath for uint256;
@@ -676,6 +678,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         state.liquidityCurrent = uint128(liquidityBefore.addi(tickInfo.liquidityDelta));
                     }
 
+                    uint gasStart = gasleft();
+
                     // initialize balances first time an initialized tick is crossed
                     if (!crossed) {
                         state.balanceSpecifiedInitial = uint128(
@@ -744,6 +748,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         );
                     }
 
+                    crossed = true;
+
+                    uint gasEnd = gasleft();
+                    console.log("gas at end of tick crossing: %d", gasEnd);
+                    console.log("gas used", gasStart - gasEnd);                    
+
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
                         _feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x
@@ -752,8 +762,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         _feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x
                     );
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
-
-                    crossed = true;
                 }
 
                 state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
