@@ -4,7 +4,7 @@ exports[`UniswapV3Pair #mint after initialization success cases above current pr
 
 exports[`UniswapV3Pair #mint after initialization success cases below current price gas 1`] = `213054`;
 
-exports[`UniswapV3Pair #mint after initialization success cases including current price gas 1`] = `244690`;
+exports[`UniswapV3Pair #mint after initialization success cases including current price gas 1`] = `244605`;
 
 exports[`UniswapV3Pair swaps fee: 600 gas first swap ever 1`] = `115674`;
 
