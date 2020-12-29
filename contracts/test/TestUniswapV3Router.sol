@@ -9,8 +9,11 @@ import '../interfaces/IUniswapV3MintCallback.sol';
 import '../interfaces/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
+
+
 abstract contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapCallback {
     using SafeCast for uint256;
+    using SafeCast for int256;
 
 
     function swapExact0For1(
@@ -54,16 +57,21 @@ within the (outer) swap callback, initiate an exact swap on AxB, resulting in a 
 in the inner swap callback, resolve by triggering a transfer of A from user to AxB (via transferFrom)
 */
 
-    function _first(int256 amount0Delta, int256 amount1Delta, bytes calldata data, address pair) internal {
-         address sender = abi.decode(data, (address));
-         IUniswapV3Pair(pair).swap(true, -amount1Delta.toInt256(), pair, abi.encode(msg.sender));
-         uniswapV3SwapCallback(amount0Delta, amount1Delta, data);
+    function _swapBforC(
+        address[] memory pairs,
+        uint256 amount1Out,
+        address recipient ) internal {
+        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out.toInt256(), pairs[1], abi.encode(msg.sender, pairs));
     }
 
-    function swapAforC(address pair, address pair1, uint256 amount1Out, address recipient) external {
-        (int256 amount0Delta, int256 amount1Delta, bytes calldata data) = 
-        IUniswapV3Pair(pair1).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender));
-        _first(amount0Delta, amount1Delta, data, pair);
+    function swapAforC(
+        address[] memory pairs,
+        uint256 amount1Out,
+        address recipient 
+    ) public {
+
+        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender, (pairs)));
+        
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
@@ -73,16 +81,21 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         int256 amount1Delta,
         bytes calldata data
     ) public override {
+
         address sender = abi.decode(data, (address));
+
+        delete abi.decode(data[1:], (address));
+
+        address newPair = abi.decode(data[:], (pairs));
 
         emit SwapCallback(amount0Delta, amount1Delta);
 
-        if (amount0Delta < 0) {
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(-amount0Delta));
-        }
-        if (amount1Delta < 0) {
-            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(-amount1Delta));
-        }
+        newPair != abi.decode(data, pairs[0]) ? _swapBforC() :
+
+        IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(-amount0Delta));
+
+           
+        
     }
 
     function initialize(address pair, uint160 sqrtPrice) external {
