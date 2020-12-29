@@ -34,7 +34,7 @@ interface IUniswapV3Pair {
             FixedPoint96.uq64x96 memory sqrtPriceCurrent,
             uint32 blockTimestampLast,
             int56 tickCumulativeLast,
-            bool unlocked
+            uint8 unlockedAndPriceBit
         );
 
     function slot1() external view returns (uint128 liquidityCurrent);
