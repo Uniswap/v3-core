@@ -444,7 +444,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 params.liquidityDelta
             );
 
-            slot1.liquidityCurrent = slot1.liquidityCurrent.addi(params.liquidityDelta).toUint128();
+            // downcasting is safe because of gross liquidity checks in the _updatePosition call
+            slot1.liquidityCurrent = uint128(slot1.liquidityCurrent.addi(params.liquidityDelta));
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
