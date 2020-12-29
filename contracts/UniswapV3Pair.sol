@@ -36,6 +36,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
 
+    uint8 private constant PRICE_BIT = 0x10;
+    uint8 private constant UNLOCKED_BIT = 0x01;
+
     // if we constrain the gross liquidity associated to a single tick, then we can guarantee that the total
     // liquidityCurrent never exceeds uint128
     // the max liquidity for a single tick fee vote is then:
@@ -110,8 +113,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // lock the pair for operations that do not modify the price, i.e. everything but swap
     modifier lockNoPriceMovement() {
         uint8 uapb = slot0.unlockedAndPriceBit;
-        require(uapb & 1 == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
-        slot0.unlockedAndPriceBit = uapb ^ 1;
+        require(uapb & UNLOCKED_BIT == UNLOCKED_BIT, 'UniswapV3Pair::lock: reentrancy prohibited');
+        slot0.unlockedAndPriceBit = uapb ^ UNLOCKED_BIT;
         _;
         slot0.unlockedAndPriceBit = uapb;
     }
@@ -135,7 +138,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function _tickCurrent(Slot0 memory _slot0) internal pure returns (int24) {
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
-        if (_slot0.unlockedAndPriceBit & 2 == 2) return tick - 1;
+        if (_slot0.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT) return tick - 1;
         return tick;
     }
 
@@ -513,7 +516,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountCalculated) {
-        slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ 1;
+        slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ UNLOCKED_BIT;
 
         SwapState memory state =
             SwapState({
@@ -522,7 +525,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 sqrtPrice: params.slot0Start.sqrtPriceCurrent,
                 feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
                 liquidityCurrent: params.liquidityStart,
-                priceBit: params.slot0Start.unlockedAndPriceBit & 2 == 2
+                priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT
             });
 
         while (state.amountSpecifiedRemaining != 0) {
@@ -618,7 +621,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         slot0.sqrtPriceCurrent = state.sqrtPrice;
         // still locked until after the callback, but need to record the price bit
-        slot0.unlockedAndPriceBit = state.priceBit ? 2 : 0;
+        slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT : 0;
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;
@@ -652,7 +655,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 'UniswapV3Pair::_swap: insufficient input amount'
             );
         }
-        slot0.unlockedAndPriceBit = state.priceBit ? 3 : 1;
+        slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
@@ -666,7 +669,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         Slot0 memory _slot0 = slot0;
 
-        require(_slot0.unlockedAndPriceBit & 1 == 1, 'UniswapV3Pair::swap: reentrancy prohibited');
+        require(
+            _slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT,
+            'UniswapV3Pair::swap: reentrancy prohibited'
+        );
 
         return
             _swap(
