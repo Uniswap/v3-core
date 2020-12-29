@@ -217,7 +217,12 @@ library SqrtPriceMath {
         uint128 liquidityBefore,
         uint128 liquidityAfter
     ) internal pure returns (FixedPoint128.uq128x128 memory offsetAfter) {
-        uint256 frac = FullMath.mulDiv((balanceBefore << 128) - offsetBefore._x, uint256(liquidityAfter), uint256(liquidityBefore));
+        uint256 frac =
+            FullMath.mulDiv(
+                (balanceBefore << 128) - offsetBefore._x,
+                uint256(liquidityAfter),
+                uint256(liquidityBefore)
+            );
         offsetAfter = FixedPoint128.uq128x128((balanceAfter << 128) - frac);
     }
 }
