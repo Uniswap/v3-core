@@ -425,6 +425,42 @@ describe('UniswapV3Pair', () => {
         expect(await pair.feeToFees0()).to.eq(0)
         expect(await pair.feeToFees1()).to.eq(0)
       })
+
+      it('0 liquidity mint is no op on uninitialized position', async () => {
+        await mint(otherAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, expandTo18Decimals(1))
+        await swapExact0For1(expandTo18Decimals(1).div(10), walletAddress)
+        await swapExact1For0(expandTo18Decimals(1).div(100), walletAddress)
+
+        await mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 0)
+        let { liquidity, feeGrowthInside0Last, feeGrowthInside1Last, feesOwed1, feesOwed0 } = await pair.positions(
+          getPositionKey(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing)
+        )
+        expect(liquidity).to.eq(0)
+        expect(feeGrowthInside0Last._x).to.eq('102084710076281216247159121028324689')
+        expect(feeGrowthInside1Last._x).to.eq('10208471007628121624715912102832468')
+        expect(feesOwed0).to.eq(0)
+        expect(feesOwed1).to.eq(0)
+
+        await mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 1)
+        ;({ liquidity, feeGrowthInside0Last, feeGrowthInside1Last, feesOwed1, feesOwed0 } = await pair.positions(
+          getPositionKey(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing)
+        ))
+        expect(liquidity).to.eq(1)
+        expect(feeGrowthInside0Last._x).to.eq('102084710076281216247159121028324689')
+        expect(feeGrowthInside1Last._x).to.eq('10208471007628121624715912102832468')
+        expect(feesOwed0).to.eq(0)
+        expect(feesOwed1).to.eq(0)
+
+        await pair.burn(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 1)
+        ;({ liquidity, feeGrowthInside0Last, feeGrowthInside1Last, feesOwed1, feesOwed0 } = await pair.positions(
+          getPositionKey(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing)
+        ))
+        expect(liquidity).to.eq(0)
+        expect(feeGrowthInside0Last._x).to.eq(0)
+        expect(feeGrowthInside1Last._x).to.eq(0)
+        expect(feesOwed0).to.eq(0)
+        expect(feesOwed1).to.eq(0)
+      })
     })
   })
 
