@@ -17,13 +17,13 @@ describe('SqrtPriceMath', () => {
     it('fails if price is zero', async () => {
       await expect(
         sqrtPriceMath.getNextPriceFromInput({ _x: 0 }, 0, expandTo18Decimals(1).div(10), false)
-      ).to.be.revertedWith('SqrtPriceMath::getNextPriceFromInput: sqrtP cannot be zero')
+      ).to.be.revertedWith('P')
     })
 
     it('fails if liquidity is zero', async () => {
       await expect(
         sqrtPriceMath.getNextPriceFromInput({ _x: 1 }, 0, expandTo18Decimals(1).div(10), true)
-      ).to.be.revertedWith('SqrtPriceMath::getNextPriceFromInput: liquidity cannot be zero')
+      ).to.be.revertedWith('L')
     })
 
     it('returns input price if amount in is zero and zeroForOne = true', async () => {
@@ -109,13 +109,13 @@ describe('SqrtPriceMath', () => {
     it('fails if price is zero', async () => {
       await expect(
         sqrtPriceMath.getNextPriceFromOutput({ _x: 0 }, 0, expandTo18Decimals(1).div(10), false)
-      ).to.be.revertedWith('SqrtPriceMath::getNextPriceFromOutput: sqrtP cannot be zero')
+      ).to.be.revertedWith('P')
     })
 
     it('fails if liquidity is zero', async () => {
       await expect(
         sqrtPriceMath.getNextPriceFromOutput({ _x: 1 }, 0, expandTo18Decimals(1).div(10), true)
-      ).to.be.revertedWith('SqrtPriceMath::getNextPriceFromOutput: liquidity cannot be zero')
+      ).to.be.revertedWith('L')
     })
 
     it('returns input price if amount in is zero and zeroForOne = true', async () => {

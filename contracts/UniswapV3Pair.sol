@@ -110,7 +110,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // lock the pair for operations that do not modify the price, i.e. everything but swap
     modifier lockNoPriceMovement() {
         uint8 uapb = slot0.unlockedAndPriceBit;
-        require(uapb & 1 == 1, 'UniswapV3Pair::lock: reentrancy prohibited');
+        require(uapb & 1 == 1, 'LOK');
         slot0.unlockedAndPriceBit = uapb ^ 1;
         _;
         slot0.unlockedAndPriceBit = uapb;
@@ -159,7 +159,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function setFeeTo(address feeTo_) external override {
-        require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::setFeeTo: caller not owner');
+        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
         feeTo = feeTo_;
     }
 
@@ -194,7 +194,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function initialize(uint160 sqrtPrice, bytes calldata data) external override {
-        require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
+        require(!isInitialized(), 'AI');
 
         slot0 = Slot0({
             blockTimestampLast: _blockTimestamp(),
@@ -217,43 +217,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int128 liquidityDelta,
         int24 tick
     ) private returns (Position storage position) {
-        require(tickLower < tickUpper, 'UniswapV3Pair::_updatePosition: tickLower must be less than tickUpper');
-        require(tickLower >= MIN_TICK, 'UniswapV3Pair::_updatePosition: tickLower cannot be less than min tick');
-        require(tickUpper <= MAX_TICK, 'UniswapV3Pair::_updatePosition: tickUpper cannot be greater than max tick');
-        require(
-            tickLower % tickSpacing == 0,
-            'UniswapV3Pair::_updatePosition: tickSpacing must evenly divide tickLower'
-        );
-        require(
-            tickUpper % tickSpacing == 0,
-            'UniswapV3Pair::_updatePosition: tickSpacing must evenly divide tickUpper'
-        );
+        require(tickLower < tickUpper, 'TLU');
+        require(tickLower >= MIN_TICK, 'TLM');
+        require(tickUpper <= MAX_TICK, 'TUM');
+        require(tickLower % tickSpacing == 0, 'TLS');
+        require(tickUpper % tickSpacing == 0, 'TUS');
 
         position = _getPosition(owner, tickLower, tickUpper);
 
         if (liquidityDelta == 0) {
-            require(
-                position.liquidity > 0 || position.feesOwed0 > 0 || position.feesOwed1 > 0,
-                'UniswapV3Pair::_updatePosition: cannot collect non-existent fees'
-            );
+            require(position.liquidity > 0 || position.feesOwed0 > 0 || position.feesOwed1 > 0, 'NF');
         } else if (liquidityDelta < 0) {
-            require(
-                position.liquidity >= uint128(-liquidityDelta),
-                'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
-            );
+            require(position.liquidity >= uint128(-liquidityDelta), 'CP');
         }
 
         Tick.Info storage tickInfoLower = _updateTick(tickLower, tick, liquidityDelta);
         Tick.Info storage tickInfoUpper = _updateTick(tickUpper, tick, liquidityDelta);
 
-        require(
-            tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
-            'UniswapV3Pair::_updatePosition: liquidity overflow in lower tick'
-        );
-        require(
-            tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK,
-            'UniswapV3Pair::_updatePosition: liquidity overflow in upper tick'
-        );
+        require(tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK, 'LOL');
+        require(tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK, 'LOU');
 
         (FixedPoint128.uq128x128 memory feeGrowthInside0, FixedPoint128.uq128x128 memory feeGrowthInside1) =
             tickInfos.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0, feeGrowthGlobal1);
@@ -317,13 +299,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (amount0Requested == uint256(-1)) {
             amount0 = position.feesOwed0;
         } else {
-            require(amount0Requested <= position.feesOwed0, 'UniswapV3Pair::collectFees: too much token0 requested');
+            require(amount0Requested <= position.feesOwed0, 'CF0');
             amount0 = amount0Requested;
         }
         if (amount1Requested == uint256(-1)) {
             amount1 = position.feesOwed1;
         } else {
-            require(amount1Requested <= position.feesOwed1, 'UniswapV3Pair::collectFees: too much token1 requested');
+            require(amount1Requested <= position.feesOwed1, 'CF1');
             amount1 = amount1Requested;
         }
 
@@ -340,8 +322,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 amount,
         bytes calldata data
     ) public override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
-        require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
-        require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
+        require(isInitialized(), 'MI');
+        require(amount > 0, 'MA');
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
@@ -364,14 +346,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             (uint256 balance0, uint256 balance1) =
                 (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            require(
-                balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)),
-                'UniswapV3Pair::mint: insufficient token0 amount'
-            );
-            require(
-                balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)),
-                'UniswapV3Pair::mint: insufficient token1 amount'
-            );
+            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
+            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
         }
     }
 
@@ -381,8 +357,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount
     ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
-        require(isInitialized(), 'UniswapV3Pair::burn: pair not initialized');
-        require(amount > 0, 'UniswapV3Pair::burn: amount must be greater than 0');
+        require(isInitialized(), 'BI');
+        require(amount > 0, 'BA');
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
@@ -513,7 +489,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountCalculated) {
-        require(params.slot0Start.unlockedAndPriceBit & 1 == 1, 'UniswapV3Pair::_swap: reentrancy prohibited');
+        require(params.slot0Start.unlockedAndPriceBit & 1 == 1, 'SRE');
         slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ 1;
 
         SwapState memory state =
@@ -537,8 +513,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tickSpacing
             );
 
-            if (params.zeroForOne) require(step.tickNext >= MIN_TICK, 'UniswapV3Pair::_swap: crossed min tick');
-            else require(step.tickNext <= MAX_TICK, 'UniswapV3Pair::_swap: crossed max tick');
+            if (params.zeroForOne) require(step.tickNext >= MIN_TICK, 'MT');
+            else require(step.tickNext <= MAX_TICK, 'MT');
 
             // get the price for the next tick we're moving toward
             step.sqrtPriceTarget = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
@@ -643,10 +619,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     -amountIn.toInt256(),
                     params.data
                 );
-            require(
-                balanceBefore.add(amountIn) >= IERC20(tokenIn).balanceOf(address(this)),
-                'UniswapV3Pair::_swap: insufficient input amount'
-            );
+            require(balanceBefore.add(amountIn) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
         }
         slot0.unlockedAndPriceBit = state.priceBit ? 3 : 1;
     }
@@ -658,7 +631,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         bytes calldata data
     ) external override returns (uint256 amountCalculated) {
-        require(amountSpecified != 0, 'UniswapV3Pair::swap: amountSpecified must not be 0');
+        require(amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
         return
@@ -681,7 +654,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         uint256 amount
     ) external override lockNoPriceMovement {
-        require(msg.sender == IUniswapV3Factory(factory).owner(), 'UniswapV3Pair::recover: caller not owner');
+        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
 
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
         uint256 token1Balance = IERC20(token1).balanceOf(address(this));
@@ -692,7 +665,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(
             IERC20(token0).balanceOf(address(this)) == token0Balance &&
                 IERC20(token1).balanceOf(address(this)) == token1Balance,
-            'UniswapV3Pair::recover: cannot recover token0 or token1'
+            'TOK'
         );
     }
 
@@ -705,13 +678,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (amount0Requested == uint256(-1)) {
             amount0 = feeToFees0;
         } else {
-            require(amount0Requested <= feeToFees0, 'UniswapV3Pair::collect: too much token0 requested');
+            require(amount0Requested <= feeToFees0, 'T0');
             amount0 = amount0Requested;
         }
         if (amount1Requested == uint256(-1)) {
             amount1 = feeToFees1;
         } else {
-            require(amount1Requested <= feeToFees1, 'UniswapV3Pair::collect: too much token1 requested');
+            require(amount1Requested <= feeToFees1, 'T1');
             amount1 = amount1Requested;
         }
 

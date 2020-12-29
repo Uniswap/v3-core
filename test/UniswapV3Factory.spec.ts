@@ -37,12 +37,8 @@ describe('UniswapV3Factory', () => {
       .to.emit(factory, 'PairCreated')
       .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, TICK_SPACINGS[feeAmount], create2Address, 1)
 
-    await expect(factory.createPair(tokens[0], tokens[1], feeAmount)).to.be.revertedWith(
-      'UniswapV3Factory::createPair: pair already exists'
-    )
-    await expect(factory.createPair(tokens[1], tokens[0], feeAmount)).to.be.revertedWith(
-      'UniswapV3Factory::createPair: pair already exists'
-    )
+    await expect(factory.createPair(tokens[0], tokens[1], feeAmount)).to.be.revertedWith('PAE')
+    await expect(factory.createPair(tokens[1], tokens[0], feeAmount)).to.be.revertedWith('PAE')
     expect(await factory.getPair(tokens[0], tokens[1], feeAmount), 'getPair in order').to.eq(create2Address)
     expect(await factory.getPair(tokens[1], tokens[0], feeAmount), 'getPair in reverse').to.eq(create2Address)
     expect(await factory.allPairs(0), 'first pair in allPairs').to.eq(create2Address)
@@ -80,9 +76,7 @@ describe('UniswapV3Factory', () => {
 
   describe('#setOwner', () => {
     it('fails if caller is not owner', async () => {
-      await expect(factory.connect(other).setOwner(wallet.address)).to.be.revertedWith(
-        'UniswapV3Factory::setOwner: must be called by owner'
-      )
+      await expect(factory.connect(other).setOwner(wallet.address)).to.be.revertedWith('OO')
     })
 
     it('updates owner', async () => {
@@ -92,9 +86,7 @@ describe('UniswapV3Factory', () => {
 
     it('cannot be called by original owner', async () => {
       await factory.setOwner(other.address)
-      await expect(factory.setOwner(wallet.address)).to.be.revertedWith(
-        'UniswapV3Factory::setOwner: must be called by owner'
-      )
+      await expect(factory.setOwner(wallet.address)).to.be.revertedWith('OO')
     })
   })
 })
