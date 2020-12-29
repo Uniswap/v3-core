@@ -618,6 +618,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         slot0.sqrtPriceCurrent = state.sqrtPrice;
+        // still locked until after the callback, but need to record the price bit
+        slot0.unlockedAndPriceBit = state.priceBit ? 2 : 0;
 
         if (params.zeroForOne) {
             feeGrowthGlobal0 = state.feeGrowthGlobal;
