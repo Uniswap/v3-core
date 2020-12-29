@@ -513,7 +513,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountCalculated) {
-        require(params.slot0Start.unlockedAndPriceBit & 1 == 1, 'UniswapV3Pair::_swap: reentrancy prohibited');
         slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ 1;
 
         SwapState memory state =
@@ -666,6 +665,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(amountSpecified != 0, 'UniswapV3Pair::swap: amountSpecified must not be 0');
 
         Slot0 memory _slot0 = slot0;
+
+        require(_slot0.unlockedAndPriceBit & 1 == 1, 'UniswapV3Pair::swap: reentrancy prohibited');
+
         return
             _swap(
                 SwapParams({
