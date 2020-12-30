@@ -770,14 +770,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
         }
 
-        // update liquidity if it changed
-        if (params.liquidityStart != state.liquidityCurrent) {
-            slot1.liquidityCurrent = state.liquidityCurrent;
-        }
-
         if (crossed) {
             offset0 = params.zeroForOne ? state.offsetSpecified : state.offsetCalculated;
             offset1 = params.zeroForOne ? state.offsetCalculated : state.offsetSpecified;
+
+            // update liquidity if it changed
+            if (params.liquidityStart != state.liquidityCurrent) {
+                slot1.liquidityCurrent = state.liquidityCurrent;
+            }
         }
 
         // the price moved at least one tick, update the accumulator
