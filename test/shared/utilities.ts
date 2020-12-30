@@ -105,7 +105,7 @@ export function createPairFunctions({
     targetPrice: BigNumberish,
     to: Wallet | string
   ): Promise<ContractTransaction> {
-    const method = swapTarget.swapToSqrtPrice
+    const method = inputToken === token0 ? swapTarget.swapToLowerSqrtPrice : swapTarget.swapToHigherSqrtPrice
 
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
 

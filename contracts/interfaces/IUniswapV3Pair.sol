@@ -81,6 +81,7 @@ interface IUniswapV3Pair {
     ) external returns (uint256 amount0, uint256 amount1);
 
     function swap(
+        bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimit,
         address recipient,

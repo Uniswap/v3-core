@@ -625,6 +625,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
     function swap(
+        bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimit,
         address recipient,
@@ -634,7 +635,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         Slot0 memory _slot0 = slot0;
         require(_slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT, 'LOK');
-        require(sqrtPriceLimit != _slot0.sqrtPriceCurrent._x, 'SPL');
+        require(
+            zeroForOne ? sqrtPriceLimit < _slot0.sqrtPriceCurrent._x : sqrtPriceLimit > _slot0.sqrtPriceCurrent._x,
+            'SPL'
+        );
 
         _swap(
             SwapParams({
