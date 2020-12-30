@@ -1,7 +1,7 @@
-import {BigNumber} from 'ethers'
-import {ethers} from 'hardhat'
-import {SqrtTickMathTest} from '../typechain/SqrtTickMathTest'
-import {expect} from './shared/expect'
+import { BigNumber } from 'ethers'
+import { ethers } from 'hardhat'
+import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
+import { expect } from './shared/expect'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
@@ -16,15 +16,11 @@ describe('SqrtTickMath', () => {
 
   describe('#getSqrtRatioAtTick', () => {
     it('throws for too low', async () => {
-      await expect(sqrtTickMath.getSqrtRatioAtTick(MIN_TICK - 1)).to.be.revertedWith(
-        'TickMath::getRatioAtTick: invalid tick'
-      )
+      await expect(sqrtTickMath.getSqrtRatioAtTick(MIN_TICK - 1)).to.be.revertedWith('T')
     })
 
     it('throws for too low', async () => {
-      await expect(sqrtTickMath.getSqrtRatioAtTick(MAX_TICK + 1)).to.be.revertedWith(
-        'TickMath::getRatioAtTick: invalid tick'
-      )
+      await expect(sqrtTickMath.getSqrtRatioAtTick(MAX_TICK + 1)).to.be.revertedWith('T')
     })
 
     it('min tick', async () => {
@@ -49,9 +45,7 @@ describe('SqrtTickMath', () => {
 
   describe('#getTickAtSqrtRatio', () => {
     it('throws for too low', async () => {
-      await expect(sqrtTickMath.getTickAtSqrtRatio({_x: BigNumber.from('4295128738').sub(1)})).to.be.revertedWith(
-        'TickMath::getTickAtRatio: invalid ratio'
-      )
+      await expect(sqrtTickMath.getTickAtSqrtRatio({ _x: BigNumber.from('4295128738').sub(1) })).to.be.revertedWith('R')
     })
 
     it('throws for too high', async () => {
@@ -59,17 +53,17 @@ describe('SqrtTickMath', () => {
         sqrtTickMath.getTickAtSqrtRatio({
           _x: BigNumber.from('1461446703485210103287273052203988822378723970342').add(1),
         })
-      ).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
+      ).to.be.revertedWith('R')
     })
 
     it('ratio of min tick', async () => {
-      expect(await sqrtTickMath.getTickAtSqrtRatio({_x: '4295128739'})).to.eq(MIN_TICK)
+      expect(await sqrtTickMath.getTickAtSqrtRatio({ _x: '4295128739' })).to.eq(MIN_TICK)
     })
     it('ratio of min tick + 1', async () => {
-      expect(await sqrtTickMath.getTickAtSqrtRatio({_x: '4295343490'})).to.eq(MIN_TICK + 1)
+      expect(await sqrtTickMath.getTickAtSqrtRatio({ _x: '4295343490' })).to.eq(MIN_TICK + 1)
     })
     it('ratio of max tick - 1', async () => {
-      expect(await sqrtTickMath.getTickAtSqrtRatio({_x: '1461373636630004318706518188784493106690254656249'})).to.eq(
+      expect(await sqrtTickMath.getTickAtSqrtRatio({ _x: '1461373636630004318706518188784493106690254656249' })).to.eq(
         MAX_TICK - 1
       )
     })

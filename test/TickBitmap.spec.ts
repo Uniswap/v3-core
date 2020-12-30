@@ -1,6 +1,6 @@
-import {ethers} from 'hardhat'
-import {TickBitmapTest} from '../typechain/TickBitmapTest'
-import {expect} from './shared/expect'
+import { ethers } from 'hardhat'
+import { TickBitmapTest } from '../typechain/TickBitmapTest'
+import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 describe('TickBitmap', () => {
@@ -98,38 +98,38 @@ describe('TickBitmap', () => {
 
     describe('lte = false', async () => {
       it('returns tick to right if at initialized tick', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(78, false)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(78, false)
         expect(next).to.eq(84)
         expect(initialized).to.eq(true)
       })
       it('returns the tick directly to the right', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(77, false)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(77, false)
         expect(next).to.eq(78)
         expect(initialized).to.eq(true)
       })
       it('returns the next words initialized tick if on the right boundary', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(255, false)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(255, false)
         expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('returns the next initialized tick from the next word', async () => {
         await tickBitmap.flipTick(340)
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(328, false)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(328, false)
         expect(next).to.eq(340)
         expect(initialized).to.eq(true)
       })
       it('does not exceed boundary', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(508, false)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(508, false)
         expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('skips entire word', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(255, false)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(255, false)
         expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
       it('skips half word', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(383, false)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(383, false)
         expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
@@ -147,56 +147,56 @@ describe('TickBitmap', () => {
 
     describe('lte = true', () => {
       it('returns same tick if initialized', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(78, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(78, true)
 
         expect(next).to.eq(78)
         expect(initialized).to.eq(true)
       })
       it('returns tick directly to the left of input tick if not initialized', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(79, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(79, true)
 
         expect(next).to.eq(78)
         expect(initialized).to.eq(true)
       })
       it('will not exceed the word boundary', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(258, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(258, true)
 
         expect(next).to.eq(256)
         expect(initialized).to.eq(false)
       })
       it('at the word boundary', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(256, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(256, true)
 
         expect(next).to.eq(256)
         expect(initialized).to.eq(false)
       })
       it('word boundary less 1 (next initialized tick in next word)', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(72, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(72, true)
 
         expect(next).to.eq(70)
         expect(initialized).to.eq(true)
       })
       it('word boundary', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(-1, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(-1, true)
 
         expect(next).to.eq(-256)
         expect(initialized).to.eq(false)
       })
       it('entire empty word', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(1023, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(1023, true)
 
         expect(next).to.eq(768)
         expect(initialized).to.eq(false)
       })
       it('halfway through empty word', async () => {
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(900, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(900, true)
 
         expect(next).to.eq(768)
         expect(initialized).to.eq(false)
       })
       it('boundary is initialized', async () => {
         await tickBitmap.flipTick(329)
-        const {next, initialized} = await tickBitmap.nextInitializedTickWithinOneWord(456, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(456, true)
 
         expect(next).to.eq(329)
         expect(initialized).to.eq(true)

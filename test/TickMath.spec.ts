@@ -1,19 +1,19 @@
-import {ethers} from 'hardhat'
-import {BigNumber, BigNumberish} from 'ethers'
-import {TickMathTest} from '../typechain/TickMathTest'
-import {expect} from './shared/expect'
+import { ethers } from 'hardhat'
+import { BigNumber, BigNumberish } from 'ethers'
+import { TickMathTest } from '../typechain/TickMathTest'
+import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {Decimal} from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
 
 const Q128 = BigNumber.from(2).pow(128)
 
-Decimal.config({toExpNeg: -500, toExpPos: 500})
+Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
 // handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-export function bnify2(a: BigNumberish | [BigNumberish] | {0: BigNumberish}): BigNumber {
+export function bnify2(a: BigNumberish | [BigNumberish] | { 0: BigNumberish }): BigNumber {
   if (Array.isArray(a)) {
     return BigNumber.from(a[0])
   } else {
@@ -32,8 +32,8 @@ describe('TickMath', () => {
   describe('#getRatioAtTick', () => {
     // checks that an actual number is within allowedDiffBips of an expected number
     async function checkApproximatelyEquals(
-      actualP: BigNumberish | Promise<BigNumberish> | Promise<{0: BigNumberish}>,
-      expectedP: BigNumberish | Promise<BigNumberish> | Promise<{0: BigNumberish}>,
+      actualP: BigNumberish | Promise<BigNumberish> | Promise<{ 0: BigNumberish }>,
+      expectedP: BigNumberish | Promise<BigNumberish> | Promise<{ 0: BigNumberish }>,
       allowedDiffPips: BigNumberish
     ) {
       const [actual, expected] = [bnify2(await actualP), bnify2(await expectedP)]
@@ -111,14 +111,10 @@ describe('TickMath', () => {
     })
 
     it('tick too small', async () => {
-      await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith(
-        'TickMath::getRatioAtTick: invalid tick'
-      )
+      await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith('T')
     })
     it('tick too large', async () => {
-      await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith(
-        'TickMath::getRatioAtTick: invalid tick'
-      )
+      await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith('T')
     })
 
     it('ratio at min tick boundary', async () => {
@@ -148,12 +144,10 @@ describe('TickMath', () => {
     it('ratio too large', async () => {
       await expect(
         tickMathTest.getTickAtRatio(BigNumber.from('6276865796315986613307619852238232712866172378830071145882'))
-      ).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
+      ).to.be.revertedWith('R')
     })
     it('ratio too small', async () => {
-      await expect(tickMathTest.getTickAtRatio(BigNumber.from('18447437462383981825').sub(1))).to.be.revertedWith(
-        'TickMath::getTickAtRatio: invalid ratio'
-      )
+      await expect(tickMathTest.getTickAtRatio(BigNumber.from('18447437462383981825').sub(1))).to.be.revertedWith('R')
     })
 
     it('ratio at min tick boundary', async () => {

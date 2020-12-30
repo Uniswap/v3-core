@@ -1,9 +1,8 @@
 import bn from 'bignumber.js'
-import {BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet} from 'ethers'
-import {TestERC20} from '../../typechain/TestERC20'
-import {TestUniswapV3Callee} from '../../typechain/TestUniswapV3Callee'
-import {TestUniswapV3Router} from '../../typechain/TestUniswapV3Router'
-import {UniswapV3Pair} from '../../typechain/UniswapV3Pair'
+import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
+import { TestERC20 } from '../../typechain/TestERC20'
+import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
+import { UniswapV3Pair } from '../../typechain/UniswapV3Pair'
 
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
@@ -15,7 +14,7 @@ export enum FeeAmount {
   HIGH = 9000,
 }
 
-export const TICK_SPACINGS: {[amount in FeeAmount]: number} = {
+export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
   [FeeAmount.LOW]: 12,
   [FeeAmount.MEDIUM]: 60,
   [FeeAmount.HIGH]: 180,
@@ -34,22 +33,22 @@ export function getCreate2Address(
 ): string {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
   const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address', 'uint24', 'int24'],
-    [factoryAddress, token0, token1, fee, tickSpacing]
+    ['address', 'address', 'uint24'],
+    [token0, token1, fee]
   )
   const create2Inputs = [
     '0xff',
     factoryAddress,
     // salt
-    constants.HashZero,
+    utils.keccak256(constructorArgumentsEncoded),
     // init code. bytecode + constructor arguments
-    utils.keccak256(bytecode + constructorArgumentsEncoded.substr(2)),
+    utils.keccak256(bytecode),
   ]
   const sanitizedInputs = `0x${create2Inputs.map((i) => i.slice(2)).join('')}`
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-bn.config({EXPONENTIAL_AT: 999999})
+bn.config({ EXPONENTIAL_AT: 999999 })
 
 // returns the sqrt price as a 64x96
 export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
@@ -68,6 +67,10 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
+export type StaticSwapFunction = (
+  amount: BigNumberish,
+  to: Wallet | string
+) => Promise<{ amountUsed: BigNumber; amountCalculated: BigNumber }>
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
@@ -77,6 +80,8 @@ export type MintFunction = (
 ) => Promise<ContractTransaction>
 export type InitializeFunction = (price: BigNumberish) => Promise<ContractTransaction>
 export interface PairFunctions {
+  swapToLowerPrice: SwapFunction
+  swapToHigherPrice: SwapFunction
   swapExact0For1: SwapFunction
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
@@ -90,20 +95,32 @@ export function createPairFunctions({
   swapTarget,
   pair,
 }: {
-  swapTarget: TestUniswapV3Router
+  swapTarget: TestUniswapV3Callee
   token0: TestERC20
   token1: TestERC20
   pair: UniswapV3Pair
 }): PairFunctions {
-  /**
-   * Execute a swap against the pair of the input token in the input amount, sending proceeds to the given to address
-   */
-  async function _swap(
+  async function swapToSqrtPrice(
+    inputToken: Contract,
+    targetPrice: BigNumberish,
+    to: Wallet | string
+  ): Promise<ContractTransaction> {
+    const method = inputToken === token0 ? swapTarget.swapToLowerSqrtPrice : swapTarget.swapToHigherSqrtPrice
+
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+
+    const toAddress = typeof to === 'string' ? to : to.address
+
+    return method(pair.address, targetPrice, toAddress)
+  }
+
+  async function swap(
     inputToken: Contract,
     [amountIn, amountOut]: [BigNumberish, BigNumberish],
     to: Wallet | string
   ): Promise<ContractTransaction> {
     const exactInput = amountOut === 0
+
     const method =
       inputToken === token0
         ? exactInput
@@ -117,23 +134,31 @@ export function createPairFunctions({
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return await method(pair.address, exactInput ? amountIn : amountOut, toAddress)
+    return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
+  }
+
+  const swapToLowerPrice: SwapFunction = (sqrtPrice, to) => {
+    return swapToSqrtPrice(token0, sqrtPrice, to)
+  }
+
+  const swapToHigherPrice: SwapFunction = (sqrtPrice, to) => {
+    return swapToSqrtPrice(token1, sqrtPrice, to)
   }
 
   const swapExact0For1: SwapFunction = (amount, to) => {
-    return _swap(token0, [amount, 0], to)
+    return swap(token0, [amount, 0], to)
   }
 
   const swap0ForExact1: SwapFunction = (amount, to) => {
-    return _swap(token0, [0, amount], to)
+    return swap(token0, [0, amount], to)
   }
 
   const swapExact1For0: SwapFunction = (amount, to) => {
-    return _swap(token1, [amount, 0], to)
+    return swap(token1, [amount, 0], to)
   }
 
   const swap1ForExact0: SwapFunction = (amount, to) => {
-    return _swap(token1, [0, amount], to)
+    return swap(token1, [0, amount], to)
   }
 
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
@@ -148,5 +173,14 @@ export function createPairFunctions({
     return swapTarget.initialize(pair.address, price)
   }
 
-  return {swapExact0For1, swap0ForExact1, swapExact1For0, swap1ForExact0, mint, initialize}
+  return {
+    swapToLowerPrice,
+    swapToHigherPrice,
+    swapExact0For1,
+    swap0ForExact1,
+    swapExact1For0,
+    swap1ForExact0,
+    mint,
+    initialize,
+  }
 }

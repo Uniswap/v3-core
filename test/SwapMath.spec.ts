@@ -1,11 +1,11 @@
-import {BigNumber} from 'ethers'
-import {ethers} from 'hardhat'
-import {SwapMathTest} from '../typechain/SwapMathTest'
+import { BigNumber } from 'ethers'
+import { ethers } from 'hardhat'
+import { SwapMathTest } from '../typechain/SwapMathTest'
 
-import {expect} from './shared/expect'
+import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import {encodePriceSqrt, expandTo18Decimals} from './shared/utilities'
-import {SqrtPriceMathTest} from '../typechain/SqrtPriceMathTest'
+import { encodePriceSqrt, expandTo18Decimals } from './shared/utilities'
+import { SqrtPriceMathTest } from '../typechain/SqrtPriceMathTest'
 
 describe('SwapMath', () => {
   let swapMath: SwapMathTest
@@ -19,14 +19,14 @@ describe('SwapMath', () => {
 
   describe('#computeSwapStep', () => {
     it('exact amount in that gets capped at price target in one for zero', async () => {
-      const price = {_x: encodePriceSqrt(1, 1)}
-      const priceTarget = {_x: encodePriceSqrt(101, 100)}
+      const price = { _x: encodePriceSqrt(1, 1) }
+      const priceTarget = { _x: encodePriceSqrt(101, 100) }
       const liquidity = expandTo18Decimals(2)
       const amount = expandTo18Decimals(1)
       const fee = 600
       const zeroForOne = false
 
-      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
         price,
         priceTarget,
         liquidity,
@@ -46,14 +46,14 @@ describe('SwapMath', () => {
     })
 
     it('exact amount out that gets capped at price target in one for zero', async () => {
-      const price = {_x: encodePriceSqrt(1, 1)}
-      const priceTarget = {_x: encodePriceSqrt(101, 100)}
+      const price = { _x: encodePriceSqrt(1, 1) }
+      const priceTarget = { _x: encodePriceSqrt(101, 100) }
       const liquidity = expandTo18Decimals(2)
       const amount = expandTo18Decimals(1).mul(-1)
       const fee = 600
       const zeroForOne = false
 
-      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
         price,
         priceTarget,
         liquidity,
@@ -78,14 +78,14 @@ describe('SwapMath', () => {
     })
 
     it('exact amount in that is fully spent in one for zero', async () => {
-      const price = {_x: encodePriceSqrt(1, 1)}
-      const priceTarget = {_x: encodePriceSqrt(1000, 100)}
+      const price = { _x: encodePriceSqrt(1, 1) }
+      const priceTarget = { _x: encodePriceSqrt(1000, 100) }
       const liquidity = expandTo18Decimals(2)
       const amount = expandTo18Decimals(1)
       const fee = 600
       const zeroForOne = false
 
-      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
         price,
         priceTarget,
         liquidity,
@@ -110,14 +110,14 @@ describe('SwapMath', () => {
     })
 
     it('exact amount out that is fully received in one for zero', async () => {
-      const price = {_x: encodePriceSqrt(1, 1)}
-      const priceTarget = {_x: encodePriceSqrt(10000, 100)}
+      const price = { _x: encodePriceSqrt(1, 1) }
+      const priceTarget = { _x: encodePriceSqrt(10000, 100) }
       const liquidity = expandTo18Decimals(2)
       const amount = expandTo18Decimals(1).mul(-1)
       const fee = 600
       const zeroForOne = false
 
-      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
         price,
         priceTarget,
         liquidity,
@@ -141,9 +141,9 @@ describe('SwapMath', () => {
     })
 
     it('amount out is capped at the desired amount out', async () => {
-      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
-        {_x: BigNumber.from('417332158212080721273783715441582')},
-        {_x: BigNumber.from('1452870262520218020823638996')},
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
+        { _x: BigNumber.from('417332158212080721273783715441582') },
+        { _x: BigNumber.from('1452870262520218020823638996') },
         '159344665391607089467575320103',
         '-1',
         1
@@ -155,9 +155,9 @@ describe('SwapMath', () => {
     })
 
     it('target price of 1 uses partial input amount', async () => {
-      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
-        {_x: BigNumber.from('2')},
-        {_x: BigNumber.from('1')},
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
+        { _x: BigNumber.from('2') },
+        { _x: BigNumber.from('1') },
         '1',
         '3915081100057732413702495386755767',
         1
@@ -170,9 +170,9 @@ describe('SwapMath', () => {
     })
 
     it('entire input amount taken as fee', async () => {
-      const {amountIn, amountOut, sqrtQ, feeAmount} = await swapMath.computeSwapStep(
-        {_x: '2413'},
-        {_x: '79887613182836312'},
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
+        { _x: '2413' },
+        { _x: '79887613182836312' },
         '1985041575832132834610021537970',
         '10',
         1872
@@ -186,8 +186,8 @@ describe('SwapMath', () => {
     it('gas', async () => {
       await snapshotGasCost(
         swapMath.getGasCostOfComputeSwapStep(
-          {_x: encodePriceSqrt(1, 1)},
-          {_x: encodePriceSqrt(101, 100)},
+          { _x: encodePriceSqrt(1, 1) },
+          { _x: encodePriceSqrt(101, 100) },
           expandTo18Decimals(2),
           expandTo18Decimals(1),
           600

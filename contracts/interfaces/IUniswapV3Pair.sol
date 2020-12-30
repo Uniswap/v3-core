@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.5.0;
+pragma solidity >=0.7.5;
 pragma abicoder v2;
+
+import '../libraries/FixedPoint96.sol';
 
 interface IUniswapV3Pair {
     event Initialized(uint160 sqrtPrice);
@@ -25,15 +27,19 @@ interface IUniswapV3Pair {
     // variables/state
     function feeTo() external view returns (address);
 
-    function blockTimestampLast() external view returns (uint32);
+    function slot0()
+        external
+        view
+        returns (
+            FixedPoint96.uq64x96 memory sqrtPriceCurrent,
+            uint32 blockTimestampLast,
+            int56 tickCumulativeLast,
+            uint8 unlockedAndPriceBit
+        );
 
-    function tickCumulativeLast() external view returns (int56);
+    function slot1() external view returns (uint128 liquidityCurrent);
 
     function tickBitmap(int16) external view returns (uint256);
-
-    function liquidityCurrent() external view returns (uint128);
-
-    function sqrtPriceCurrent() external view returns (uint160);
 
     function feeGrowthGlobal0() external view returns (uint256);
 
@@ -43,12 +49,7 @@ interface IUniswapV3Pair {
 
     function feeToFees1() external view returns (uint256);
 
-    // derived state
-    function isInitialized() external view returns (bool);
-
     function tickCurrent() external view returns (int24);
-
-    function getCumulatives() external view returns (uint32 blockTimestamp, int56 tickCumulative);
 
     // initialize the pair
     function initialize(uint160 sqrtPrice, bytes calldata data) external;
@@ -82,9 +83,10 @@ interface IUniswapV3Pair {
     function swap(
         bool zeroForOne,
         int256 amountSpecified,
+        uint160 sqrtPriceLimit,
         address recipient,
         bytes calldata data
-    ) external returns (uint256 amountCalculated);
+    ) external;
 
     function setFeeTo(address) external;
 
