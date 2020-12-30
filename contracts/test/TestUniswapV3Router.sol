@@ -58,20 +58,20 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
 */
 
     function _swapBforC(
-        address[] memory pairs,
-        uint256 amount1Out,
-        address recipient ) internal {
-        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out.toInt256(), pairs[1], abi.encode(msg.sender, pairs));
+        address pair,
+        int256 amount1Out,
+        address recipient 
+    ) internal {
+        IUniswapV3Pair(pair).swap(true, -amount1Out, pair, abi.encode(msg.sender, pair));
     }
 
     function swapAforC(
-        address[] memory pairs,
         uint256 amount1Out,
-        address recipient 
+        address recipient,
+        address firstPair,
+        address secondPair
     ) public {
-
-        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender, (pairs)));
-        
+        IUniswapV3Pair(secondPair).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender, firstPair, secondPair)); 
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
@@ -81,21 +81,17 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         int256 amount1Delta,
         bytes calldata data
     ) public override {
-
-        address sender = abi.decode(data, (address));
-
-        delete abi.decode(data[1:], (address));
-
-        address newPair = abi.decode(data[:], (pairs));
-
         emit SwapCallback(amount0Delta, amount1Delta);
 
-        newPair != abi.decode(data, pairs[0]) ? _swapBforC() :
+        //@dev  executes 2nd swap if there are three abi.encoded parameters in call, pays back first if there are two.
 
-        IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(-amount0Delta));
+         calldata.length >= (TODO length of three parameters) ? 
+         (address sender, address firstPair, address secondPair) = abi.decode(data, (address, address, address));
+          _swapBforC(firstPair, amount0Delta, secondPair) :  
 
-           
-        
+          (address sender, address firstPair) = abi.decode(data, (address, address));  
+          IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, firstPair, uint256(-amount0Delta));
+            
     }
 
     function initialize(address pair, uint160 sqrtPrice) external {
