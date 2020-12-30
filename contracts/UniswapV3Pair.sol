@@ -609,7 +609,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? (params.amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
                 : (state.amountCalculated, params.amountSpecified - state.amountSpecifiedRemaining);
 
-
         (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
 
         // transfer the output
