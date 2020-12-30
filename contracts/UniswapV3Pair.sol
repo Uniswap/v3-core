@@ -521,8 +521,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             // get the price for the next tick
-            if (zeroForOne) require(step.tickNext >= MIN_TICK, 'MT');
-            else require(step.tickNext <= MAX_TICK, 'MT');
             step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
             (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
