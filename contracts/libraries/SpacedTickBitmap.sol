@@ -8,35 +8,36 @@ import './TickBitmap.sol';
 library SpacedTickBitmap {
     using TickBitmap for mapping(int16 => uint256);
 
-    function compressedTick(int24 tick, int24 tickSpacing) private pure returns (int24) {
-        require(tick % tickSpacing == 0, 'CT');
-        return tick / tickSpacing;
+    struct Spaced {
+        int24 _x;
     }
 
-    function isInitialized(
-        mapping(int16 => uint256) storage self,
-        int24 tick,
-        int24 tickSpacing
-    ) internal view returns (bool) {
-        return self.isInitialized(compressedTick(tick, tickSpacing));
+    struct Compressed {
+        int24 _x;
     }
 
-    function flipTick(
-        mapping(int16 => uint256) storage self,
-        int24 tick,
-        int24 tickSpacing
-    ) internal {
-        self.flipTick(compressedTick(tick, tickSpacing));
+    function compress(int24 tick, int24 tickSpacing) private pure returns (Compressed memory compressed) {
+        compressed._x = tick / tickSpacing;
+        if (tick < 0 && tick % tickSpacing != 0) compressed._x--; // round towards negative infinity
+    }
+
+    function decompress(Compressed memory compressed, int24 tickSpacing) private pure returns (Spaced memory spaced) {
+        spaced._x = compressed._x * tickSpacing;
+    }
+
+    function flipTick(mapping(int16 =>  uint256) storage self, int24 tick, int24 tickSpacing) internal {
+        require(tick % tickSpacing == 0, 'TS'); // ensure that the tick is spaced
+        self.flipTick(tick / tickSpacing);
     }
 
     function nextInitializedTickWithinOneWord(
         mapping(int16 => uint256) storage self,
         int24 tick,
-        bool lte,
-        int24 tickSpacing
-    ) internal view returns (int24 next, bool initialized) {
-        int24 compressed = compressedTick(tick, tickSpacing);
-        (next, initialized) = self.nextInitializedTickWithinOneWord(compressed, lte);
-        next = tick + (next - compressed) * tickSpacing;
+        int24 tickSpacing,
+        bool lte
+    ) internal view returns (int24, bool) {
+        Compressed memory compressed = compress(tick, tickSpacing);
+        (int24 compressedNext, bool initialized) = self.nextInitializedTickWithinOneWord(compressed._x, lte);
+        return (decompress(Compressed(compressedNext), tickSpacing)._x, initialized);
     }
 }

@@ -8,16 +8,6 @@ contract TickBitmapTest {
 
     mapping(int16 => uint256) public bitmap;
 
-    function isInitialized(int24 tick) external view returns (bool) {
-        return bitmap.isInitialized(tick);
-    }
-
-    function getGasCostOfIsInitialized(int24 tick) external view returns (uint256) {
-        uint256 gasBefore = gasleft();
-        bitmap.isInitialized(tick);
-        return gasBefore - gasleft();
-    }
-
     function flipTick(int24 tick) external {
         bitmap.flipTick(tick);
     }
@@ -40,5 +30,11 @@ contract TickBitmapTest {
         uint256 gasBefore = gasleft();
         bitmap.nextInitializedTickWithinOneWord(tick, lte);
         return gasBefore - gasleft();
+    }
+
+    // returns whether the given tick is initialized
+    function isInitialized(int24 tick) external view returns (bool) {
+        (int24 next, bool initialized) = bitmap.nextInitializedTickWithinOneWord(tick, true);
+        return next == tick ? initialized : false;
     }
 }
