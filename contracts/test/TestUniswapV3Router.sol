@@ -56,41 +56,49 @@ initiate an exact output swap on the BxC pair, resulting in a transfer of C from
 within the (outer) swap callback, initiate an exact swap on AxB, resulting in a transfer of B to BxC
 in the inner swap callback, resolve by triggering a transfer of A from user to AxB (via transferFrom)
 */
-
-    function _swapBforC(
-        address pair,
-        int256 amount1Out,
-        address recipient 
-    ) internal {
-        IUniswapV3Pair(pair).swap(true, -amount1Out, pair, abi.encode(msg.sender, pair));
-    }
-
     function swapAforC(
         uint256 amount1Out,
         address recipient,
-        address firstPair,
-        address secondPair
+        address [] memory pairs
     ) public {
-        IUniswapV3Pair(secondPair).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender, firstPair, secondPair)); 
+        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), recipient, abi.encode(recipient, pairs)); 
     }
+
+
+    function _swapBforExactC(
+        int256 amount0In,
+        address recipient,
+        address [] memory pairs 
+    ) internal {
+  
+
+        IUniswapV3Pair(pairs[0]).swap(true, amount0In, pairs[1], abi.encode(recipient, pairs[0]));
+    }
+
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
 
+    //@dev  executes 2nd swap if there are more than one abi.encoded pair address's in call, pays off first if there is 1 remaining.
+    // recipient is available in callback but currently unused
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata data
     ) public override {
+        
         emit SwapCallback(amount0Delta, amount1Delta);
 
-        //@dev  executes 2nd swap if there are three abi.encoded parameters in call, pays back first if there are two.
+        (address recipient, address[] memory pairs) = abi.decode(data, (address, address[]));
+  
+        if (pairs.length > 0) {
+            _swapBforExactC(amount0Delta, recipient, pairs);
 
-         abi.decode(data, ()).length >= (length of three parameters) ? 
-         (address sender, address firstPair, address secondPair) = abi.decode(data, (address, address, address));
-          _swapBforC(firstPair, amount0Delta, secondPair) :  
+        } else if (pairs.length == 0) {
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(msg.sender, pairs[0], uint256(-amount0Delta));
 
-          (address sender, address firstPair) = abi.decode(data, (address, address));  
-          IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, firstPair, uint256(-amount0Delta));
+        } else {
+            revert();
+        }
             
     }
 
