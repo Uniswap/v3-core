@@ -187,4 +187,29 @@ library SqrtPriceMath {
                 ? -getAmount1Delta(sqrtP, sqrtQ, uint128(-liquidity), false).toInt256()
                 : getAmount1Delta(sqrtP, sqrtQ, uint128(liquidity), true).toInt256();
     }
+
+    // ONLY CALL THIS WHEN FEE IS ON
+    function feeToFeesPerUnitWhenFeeIsOn(
+        FixedPoint128.uq128x128 memory feeGrowthGlobal,
+        FixedPoint128.uq128x128 memory feeOffset
+    ) internal pure returns (FixedPoint128.uq128x128 memory) {
+        return FixedPoint128.uq128x128(feeGrowthGlobal._x / 6 - feeOffset._x);
+    }
+
+    // ONLY CALL THIS WHEN FEE IS ON
+    function feeToFeesWhenFeeIsOn(
+        FixedPoint128.uq128x128 memory feeGrowthGlobal,
+        FixedPoint128.uq128x128 memory feeOffset,
+        uint128 liquidity
+    ) internal pure returns (uint256) {
+        return FullMath.mulDiv(feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal, feeOffset)._x, liquidity, FixedPoint128.Q128);
+    }
+
+    // ONLY CALL THIS WHEN FEE IS ON
+    function adjustedFeeGrowthGlobalWhenFeeIsOn(
+        FixedPoint128.uq128x128 memory feeGrowthGlobal,
+        FixedPoint128.uq128x128 memory feeOffset
+    ) internal pure returns (FixedPoint128.uq128x128 memory) {
+        return FixedPoint128.uq128x128(feeGrowthGlobal._x - feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal, feeOffset)._x);
+    }
 }

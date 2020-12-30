@@ -37,7 +37,7 @@ interface IUniswapV3Pair {
             uint8 unlockedAndPriceBit
         );
 
-    function slot1() external view returns (uint128 liquidityCurrent);
+    function slot1() external view returns (uint128 liquidityCurrent, bool feeOn);
 
     function tickBitmap(int16) external view returns (uint256);
 
@@ -45,11 +45,20 @@ interface IUniswapV3Pair {
 
     function feeGrowthGlobal1() external view returns (uint256);
 
+    // derived state
+
+    function adjustedFeeGrowthGlobal0() external view returns (uint256);
+
+    function adjustedFeeGrowthGlobal1() external view returns (uint256);
+
     function feeToFees0() external view returns (uint256);
 
     function feeToFees1() external view returns (uint256);
 
-    // derived state
+    function feeToFeesPerUnit0() external view returns (uint256);
+
+    function feeToFeesPerUnit1() external view returns (uint256);
+
     function isInitialized() external view returns (bool);
 
     function tickCurrent() external view returns (int24);
@@ -100,7 +109,11 @@ interface IUniswapV3Pair {
     ) external;
 
     // allows anyone to collect protocol fees to feeTo
-    function collect(uint256 amount0Requested, uint256 amount1Requested)
+    function collect0()
         external
-        returns (uint256 amount0, uint256 amount1);
+        returns (uint256 amount);
+
+    function collect1()
+        external
+        returns (uint256 amount);
 }
