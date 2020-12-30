@@ -10,7 +10,7 @@ import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
-import './libraries/MixedSafeMath.sol';
+import './libraries/MixedSafeMath.sol'; 
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
@@ -23,8 +23,6 @@ import './interfaces/IUniswapV3SwapCallback.sol';
 import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
-
-import 'hardhat/console.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
@@ -618,8 +616,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
                 balanceSpecifiedInitial: 0,
                 balanceCalculatedInitial: 0,
-                offsetSpecified: params.zeroForOne ? offset0 : offset1,
-                offsetCalculated: params.zeroForOne ? offset1 : offset0
+                offsetSpecified: FixedPoint128.uq128x128(0),
+                offsetCalculated: FixedPoint128.uq128x128(0)
             });
 
         bool zeroSpecified = params.zeroForOne == (params.amountSpecified > 0);
@@ -678,8 +676,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         state.liquidityCurrent = uint128(liquidityBefore.addi(tickInfo.liquidityDelta));
                     }
 
-                    uint gasStart = gasleft();
-
                     // initialize balances first time an initialized tick is crossed
                     if (!crossed) {
                         state.balanceSpecifiedInitial = uint128(
@@ -692,6 +688,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                                 ? IERC20(token1).balanceOf(address(this))
                                 : IERC20(token0).balanceOf(address(this))
                         );
+                        state.offsetSpecified = zeroSpecified ? offset0 : offset1;
+                        state.offsetCalculated = zeroSpecified ? offset1 : offset0;
                     }
 
                     uint256 balanceSpecifiedAfter =
@@ -749,10 +747,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
 
                     crossed = true;
-
-                    uint gasEnd = gasleft();
-                    console.log("gas at end of tick crossing: %d", gasEnd);
-                    console.log("gas used", gasStart - gasEnd);                    
 
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
