@@ -427,6 +427,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     liquidityBefore,
                     slot1.liquidityCurrent
                 );
+            } else {
+                // for now, initialize them to 1 so that the storage is initialized in this step rather than by the first swap
+                offset0 = FixedPoint128.uq128x128(1);
+                offset1 = FixedPoint128.uq128x128(1);
             }
         }
     }
