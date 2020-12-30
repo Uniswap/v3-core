@@ -26,6 +26,8 @@ contract SwapMathEchidnaTest {
                 feePips
             );
 
+        assert(amountIn <= uint256(-1) - feeAmount);
+
         if (amountRemaining < 0) {
             assert(amountOut <= uint256(-amountRemaining));
         } else {

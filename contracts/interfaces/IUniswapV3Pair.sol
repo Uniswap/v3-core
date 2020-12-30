@@ -49,9 +49,6 @@ interface IUniswapV3Pair {
 
     function feeToFees1() external view returns (uint256);
 
-    // derived state
-    function isInitialized() external view returns (bool);
-
     function tickCurrent() external view returns (int24);
 
     // initialize the pair
@@ -86,9 +83,10 @@ interface IUniswapV3Pair {
     function swap(
         bool zeroForOne,
         int256 amountSpecified,
+        uint160 sqrtPriceLimit,
         address recipient,
         bytes calldata data
-    ) external returns (uint256 amountCalculated);
+    ) external;
 
     function setFeeTo(address) external;
 
