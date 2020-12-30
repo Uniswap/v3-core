@@ -94,8 +94,8 @@ library SqrtPriceMath {
         uint256 amountIn,
         bool zeroForOne
     ) internal pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
-        require(sqrtP._x > 0, 'SqrtPriceMath::getNextPriceFromInput: sqrtP cannot be zero');
-        require(liquidity > 0, 'SqrtPriceMath::getNextPriceFromInput: liquidity cannot be zero');
+        require(sqrtP._x > 0, 'P');
+        require(liquidity > 0, 'L');
         if (amountIn == 0) return sqrtP;
 
         // round to make sure that we don't pass the target price
@@ -111,8 +111,8 @@ library SqrtPriceMath {
         uint256 amountOut,
         bool zeroForOne
     ) internal pure returns (FixedPoint96.uq64x96 memory sqrtQ) {
-        require(sqrtP._x > 0, 'SqrtPriceMath::getNextPriceFromOutput: sqrtP cannot be zero');
-        require(liquidity > 0, 'SqrtPriceMath::getNextPriceFromOutput: liquidity cannot be zero');
+        require(sqrtP._x > 0, 'P');
+        require(liquidity > 0, 'L');
         if (amountOut == 0) return sqrtP;
 
         // round to make sure that we pass the target price

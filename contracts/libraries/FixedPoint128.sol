@@ -16,7 +16,7 @@ library FixedPoint128 {
 
     // returns a uq128x128 which represents the ratio of the numerator to the denominator
     function fraction(uint256 numerator, uint256 denominator) internal pure returns (uq128x128 memory) {
-        require(denominator > 0, 'FixedPoint128::fraction: division by zero');
+        require(denominator > 0, 'DB0');
         if (numerator == 0) return uq128x128(0);
 
         if (numerator <= uint128(-1)) {

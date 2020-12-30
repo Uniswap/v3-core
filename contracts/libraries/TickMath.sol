@@ -9,7 +9,7 @@ library TickMath {
     // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > max tick.
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
         uint256 absTick = uint256(tick < 0 ? -tick : tick);
-        require(absTick <= uint256(MAX_TICK), 'TickMath::getRatioAtTick: invalid tick');
+        require(absTick <= uint256(MAX_TICK), 'T');
 
         ratio = absTick & 0x1 != 0 ? 0xfffcb933bd6fad37aa2d162d1a594001 : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfff97272373d413259a46990580e213a) >> 128;
@@ -42,7 +42,7 @@ library TickMath {
         // second inequality must be < because the price can never reach the price at the max tick
         require(
             ratio >= 18447437462383981825 && ratio < 6276865796315986613307619852238232712866172378830071145882,
-            'TickMath::getTickAtRatio: invalid ratio'
+            'R'
         );
 
         uint256 r = ratio;
