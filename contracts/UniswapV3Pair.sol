@@ -2,8 +2,6 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import 'hardhat/console.sol';
-
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
@@ -523,6 +521,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             // get the price for the next tick
+            if (zeroForOne) require(step.tickNext >= MIN_TICK, 'MT');
+            else require(step.tickNext <= MAX_TICK, 'MT');
             step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
             (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
@@ -554,6 +554,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (state.sqrtPrice._x == step.sqrtPriceNext._x) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
+                    // it's ok to put this condition here, because the min/max ticks are always initialized
+                    if (zeroForOne) require(step.tickNext > MIN_TICK, 'MIN');
+                    else require(step.tickNext < MAX_TICK, 'MAX');
+
                     Tick.Info storage tickInfo = tickInfos[step.tickNext];
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
@@ -582,9 +586,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // the price moved at least one tick, update the accumulator
         if (state.tick != params.tickStart) {
-            require(state.tick >= MIN_TICK, 'MIN');
-            require(state.tick < MAX_TICK, 'MAX');
-
             uint32 _blockTimestampLast = params.slot0Start.blockTimestampLast;
             if (_blockTimestampLast != params.blockTimestamp) {
                 slot0.blockTimestampLast = params.blockTimestamp;
