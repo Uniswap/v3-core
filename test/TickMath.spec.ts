@@ -111,14 +111,10 @@ describe('TickMath', () => {
     })
 
     it('tick too small', async () => {
-      await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith(
-        'TickMath::getRatioAtTick: invalid tick'
-      )
+      await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith('T')
     })
     it('tick too large', async () => {
-      await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith(
-        'TickMath::getRatioAtTick: invalid tick'
-      )
+      await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith('T')
     })
 
     it('ratio at min tick boundary', async () => {
@@ -148,12 +144,10 @@ describe('TickMath', () => {
     it('ratio too large', async () => {
       await expect(
         tickMathTest.getTickAtRatio(BigNumber.from('6276865796315986613307619852238232712866172378830071145882'))
-      ).to.be.revertedWith('TickMath::getTickAtRatio: invalid ratio')
+      ).to.be.revertedWith('R')
     })
     it('ratio too small', async () => {
-      await expect(tickMathTest.getTickAtRatio(BigNumber.from('18447437462383981825').sub(1))).to.be.revertedWith(
-        'TickMath::getTickAtRatio: invalid ratio'
-      )
+      await expect(tickMathTest.getTickAtRatio(BigNumber.from('18447437462383981825').sub(1))).to.be.revertedWith('R')
     })
 
     it('ratio at min tick boundary', async () => {
