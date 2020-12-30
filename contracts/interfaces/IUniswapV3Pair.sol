@@ -49,9 +49,6 @@ interface IUniswapV3Pair {
 
     function feeToFees1() external view returns (uint256);
 
-    // derived state
-    function isInitialized() external view returns (bool);
-
     function tickCurrent() external view returns (int24);
 
     // initialize the pair
