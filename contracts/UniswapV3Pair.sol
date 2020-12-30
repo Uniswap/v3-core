@@ -552,9 +552,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPrice,
-                (params.zeroForOne
-                    ? step.sqrtPriceNext._x < params.sqrtPriceLimit._x
-                    : step.sqrtPriceNext._x > params.sqrtPriceLimit._x
+                (
+                    params.zeroForOne
+                        ? step.sqrtPriceNext._x < params.sqrtPriceLimit._x
+                        : step.sqrtPriceNext._x > params.sqrtPriceLimit._x
                 )
                     ? params.sqrtPriceLimit
                     : step.sqrtPriceNext,
