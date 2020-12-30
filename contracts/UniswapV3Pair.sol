@@ -264,12 +264,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         position = _getPosition(owner, tickLower, tickUpper);
 
-        if (liquidityDelta == 0) {
-            require(
-                position.liquidity > 0 || position.feesOwed0 > 0 || position.feesOwed1 > 0,
-                'UniswapV3Pair::_updatePosition: cannot collect non-existent fees'
-            );
-        } else if (liquidityDelta < 0) {
+        if (liquidityDelta < 0) {
             require(
                 position.liquidity >= uint128(-liquidityDelta),
                 'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
@@ -381,7 +376,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes calldata data
     ) public override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'UniswapV3Pair::mint: pair not initialized');
-        require(amount > 0, 'UniswapV3Pair::mint: amount must be greater than 0');
 
         uint128 liquidityBefore = slot1.liquidityCurrent;
 
