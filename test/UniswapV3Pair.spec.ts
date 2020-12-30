@@ -632,6 +632,42 @@ describe('UniswapV3Pair', () => {
           })
         })
 
+        describe('swap to price', () => {
+          it('swapToLowerPrice', async () => {
+            const PRICE = BigNumber.from(2).pow(96).mul(999).div(1000)
+            const IN = {
+              [FeeAmount.LOW]: '2003203924356617',
+              [FeeAmount.MEDIUM]: '2008026080242732',
+              [FeeAmount.HIGH]: '2020183654896068',
+            }[feeAmount]
+            const OUT = '2000000000000000'
+
+            await expect(swapToLowerPrice(PRICE, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+              .to.emit(token1, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+            expect((await pair.slot0()).sqrtPriceCurrent._x).to.eq(PRICE)
+          })
+
+          it('swapToHigherPrice', async () => {
+            const PRICE = BigNumber.from(2).pow(96).mul(1001).div(1000)
+            const IN = {
+              [FeeAmount.LOW]: '2001200720432260',
+              [FeeAmount.MEDIUM]: '2006018054162488',
+              [FeeAmount.HIGH]: '2018163471241171',
+            }[feeAmount]
+            const OUT = '1998001998001998'
+
+            await expect(swapToHigherPrice(PRICE, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+              .to.emit(token1, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+            expect((await pair.slot0()).sqrtPriceCurrent._x).to.eq(PRICE)
+          })
+        })
+
         describe('swap 1000 in', () => {
           const IN = 1000
           const OUT = {

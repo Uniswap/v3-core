@@ -20,11 +20,13 @@ import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
+import './interfaces/IERC3156FlashLender.sol';
+import './interfaces/IERC3156FlashBorrower.sol';
 import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
 
-contract UniswapV3Pair is IUniswapV3Pair {
+contract UniswapV3Pair is IUniswapV3Pair, IERC3156FlashLender {
     using SafeMath for uint128;
     using SafeMath for uint256;
     using SignedSafeMath for int128;
@@ -698,5 +700,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) TransferHelper.safeTransfer(token0, feeTo, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
+    }
+
+    function flashLoan(
+        address receiver,
+        address token,
+        uint256 value,
+        bytes calldata data
+    ) external override lockNoPriceMovement {
+        require(token == token0 || token == token1, 'T');
+        uint256 balanceBefore = IERC20(token).balanceOf(address(this));
+        TransferHelper.safeTransfer(token, receiver, value);
+        uint256 feeAmount = flashFee(token, value);
+        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, value, feeAmount, data);
+        require(IERC20(token).balanceOf(address(this)) >= balanceBefore.add(feeAmount));
+        if (token == token0) {
+            feeGrowthGlobal0._x += FixedPoint128.fraction(feeAmount, slot1.liquidityCurrent)._x;
+        } else {
+            feeGrowthGlobal1._x += FixedPoint128.fraction(feeAmount, slot1.liquidityCurrent)._x;
+        }
+    }
+
+    function flashFee(address token, uint256 value) public view override returns (uint256) {
+        require(token == token0 || token == token1, 'T');
+        return value.mul(fee).div(1e6).add(1);
+    }
+
+    function flashSupply(address token) external view override returns (uint256) {
+        require(token == token0 || token == token1, 'T');
+        return IERC20(token).balanceOf(address(this));
     }
 }
