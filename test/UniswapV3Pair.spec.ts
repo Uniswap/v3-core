@@ -102,6 +102,17 @@ describe('UniswapV3Pair', () => {
     it('fails if starting price is too high', async () => {
       await expect(initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('')
     })
+    it.only('fails if starting price is too low or high', async () => {
+      const minTick = await pair.MIN_TICK()
+      const maxTick = await pair.MAX_TICK()
+
+      const sqrtTickMath = (await (await ethers.getContractFactory('SqrtTickMathTest')).deploy()) as SqrtTickMathTest
+      const badMinPrice = (await sqrtTickMath.getSqrtRatioAtTick(minTick))._x.sub(1)
+      const badMaxPrice = (await sqrtTickMath.getSqrtRatioAtTick(maxTick))._x
+
+      await expect(initialize(badMinPrice)).to.be.revertedWith('MIN')
+      await expect(initialize(badMaxPrice)).to.be.revertedWith('MAX')
+    })
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
       await initialize(price)

@@ -199,12 +199,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function initialize(uint160 sqrtPrice, bytes calldata data) external override {
         require(isInitialized() == false, 'AI');
 
-        slot0 = Slot0({
-            blockTimestampLast: _blockTimestamp(),
-            tickCumulativeLast: 0,
-            sqrtPriceCurrent: FixedPoint96.uq64x96(sqrtPrice),
-            unlockedAndPriceBit: 1
-        });
+        Slot0 memory _slot0 =
+            Slot0({
+                blockTimestampLast: _blockTimestamp(),
+                tickCumulativeLast: 0,
+                sqrtPriceCurrent: FixedPoint96.uq64x96(sqrtPrice),
+                unlockedAndPriceBit: 1
+            });
+        int24 tick = _tickCurrent(_slot0);
+        require(tick >= MIN_TICK, 'MIN');
+        require(tick < MAX_TICK, 'MAX');
+        slot0 = _slot0;
 
         emit Initialized(sqrtPrice);
 
