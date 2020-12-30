@@ -18,7 +18,6 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         address recipient
     ) external {
         IUniswapV3Pair(pair).swap(
-            true,
             amount0In.toInt256(),
             -8388608, // type(int24).min
             recipient,
@@ -32,7 +31,6 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         address recipient
     ) external {
         IUniswapV3Pair(pair).swap(
-            true,
             -amount1Out.toInt256(),
             -8388608, // type(int24).min
             recipient,
@@ -46,7 +44,6 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         address recipient
     ) external {
         IUniswapV3Pair(pair).swap(
-            false,
             amount1In.toInt256(),
             8388607, // type(int24).max
             recipient,
@@ -60,7 +57,6 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         address recipient
     ) external {
         IUniswapV3Pair(pair).swap(
-            false,
             -amount0Out.toInt256(),
             8388607, // type(int24).max
             recipient,
