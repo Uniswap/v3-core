@@ -460,8 +460,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     struct SwapParams {
         // how much is being swapped in (positive), or requested out (negative)
         int256 amountSpecified;
-        // the max/min tick that the pair will end up at after the swap
-        int24 tickLimit;
+        // the max/min price that the pair will end up at after the swap
+        FixedPoint96.uq64x96 sqrtPriceLimit;
         // the address that receives amount out
         address recipient;
         // the data to send in the callback
@@ -503,10 +503,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickNext;
         // whether tickNext is initialized or not
         bool initialized;
-        // the target tick in the swap direction
-        int24 tickTarget;
-        // sqrt(price) for the target tick (1/0)
-        FixedPoint96.uq64x96 sqrtPriceTarget;
+        // sqrt(price) for the next tick (1/0)
+        FixedPoint96.uq64x96 sqrtPriceNext;
         // how much is being swapped in in this step
         uint256 amountIn;
         // how much is being swapped out
@@ -538,7 +536,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
-        while (state.amountSpecifiedRemaining != 0 && state.tick != params.tickLimit) {
+        while (state.amountSpecifiedRemaining != 0 && state.sqrtPrice._x != params.sqrtPriceLimit._x) {
             StepComputations memory step;
 
             step.sqrtPriceStart = state.sqrtPrice;
@@ -549,17 +547,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tickSpacing
             );
 
-            // calculate the target tick
-            if (params.zeroForOne)
-                step.tickTarget = step.tickNext < params.tickLimit ? params.tickLimit : step.tickNext;
-            else step.tickTarget = step.tickNext > params.tickLimit ? params.tickLimit : step.tickNext;
-
-            // get the price for the target tick
-            step.sqrtPriceTarget = SqrtTickMath.getSqrtRatioAtTick(step.tickTarget);
+            // get the price for the next tick
+            step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
             (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPrice,
-                step.sqrtPriceTarget,
+                (params.zeroForOne
+                    ? step.sqrtPriceNext._x < params.sqrtPriceLimit._x
+                    : step.sqrtPriceNext._x > params.sqrtPriceLimit._x
+                )
+                    ? params.sqrtPriceLimit
+                    : step.sqrtPriceNext,
                 state.liquidity,
                 state.amountSpecifiedRemaining,
                 fee
@@ -578,7 +576,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             state.feeGrowthGlobal._x += FixedPoint128.fraction(step.feeAmount, state.liquidity)._x;
 
             // shift tick if we reached the next price target
-            if (step.tickTarget == step.tickNext && step.sqrtPriceTarget._x == state.sqrtPrice._x) {
+            if (state.sqrtPrice._x == step.sqrtPriceNext._x) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     Tick.Info storage tickInfo = tickInfos[step.tickNext];
@@ -665,7 +663,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
     function swap(
         int256 amountSpecified,
-        int24 tickLimit,
+        uint160 sqrtPriceLimit,
         address recipient,
         bytes calldata data
     ) external override returns (uint256 amountUsed, uint256 amountCalculated) {
@@ -676,21 +674,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
             _slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT,
             'UniswapV3Pair::swap: reentrancy prohibited'
         );
-        int24 tick = _tickCurrent(_slot0);
-        require(tickLimit != tick, 'UniswapV3Pair::swap: tickLimit must be different from tickCurrent');
+        require(
+            sqrtPriceLimit != _slot0.sqrtPriceCurrent._x,
+            'UniswapV3Pair::swap: sqrtPriceLimit must not be sqrtPriceCurrent'
+        );
 
         return
             _swap(
                 SwapParams({
                     amountSpecified: amountSpecified,
-                    tickLimit: tickLimit,
+                    sqrtPriceLimit: FixedPoint96.uq64x96(sqrtPriceLimit),
                     recipient: recipient,
                     data: data,
-                    zeroForOne: tickLimit < tick,
+                    zeroForOne: sqrtPriceLimit < _slot0.sqrtPriceCurrent._x,
                     exactInput: amountSpecified > 0,
                     slot0Start: _slot0,
                     slot1Start: slot1,
-                    tickStart: tick,
+                    tickStart: _tickCurrent(_slot0),
                     blockTimestamp: _blockTimestamp()
                 })
             );

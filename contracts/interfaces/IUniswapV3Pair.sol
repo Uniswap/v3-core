@@ -85,7 +85,7 @@ interface IUniswapV3Pair {
 
     function swap(
         int256 amountSpecified,
-        int24 tickLimit,
+        uint160 sqrtPriceLimit,
         address recipient,
         bytes calldata data
     ) external returns (uint256 amountUsed, uint256 amountCalculated);
