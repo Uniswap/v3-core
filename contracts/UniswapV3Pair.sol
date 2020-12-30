@@ -439,10 +439,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient;
         // the data to send in the callback
         bytes data;
-        // whether the swap is from token 0 to 1, or 1 for 0
-        bool zeroForOne;
-        // whether the swap is an exact input or exact output
-        bool exactInput;
         // the value of slot0 at the beginning of the swap
         Slot0 slot0Start;
         // the value of slot1 at the beginning of the swap
@@ -496,6 +492,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private returns (uint256 amountUsed, uint256 amountCalculated) {
+        bool zeroForOne = params.sqrtPriceLimit._x < params.slot0Start.sqrtPriceCurrent._x;
+        bool exactInput = params.amountSpecified > 0;
+
         slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ UNLOCKED_BIT;
 
         SwapState memory state =
@@ -504,7 +503,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 sqrtPrice: params.slot0Start.sqrtPriceCurrent,
                 priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
                 tick: params.tickStart,
-                feeGrowthGlobal: params.zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
+                feeGrowthGlobal: zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
                 liquidity: params.slot1Start.liquidityCurrent
             });
 
@@ -516,7 +515,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
                 closestTick(state.tick),
-                params.zeroForOne,
+                zeroForOne,
                 tickSpacing
             );
 
@@ -526,7 +525,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             (state.sqrtPrice, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPrice,
                 (
-                    params.zeroForOne
+                    zeroForOne
                         ? step.sqrtPriceNext._x < params.sqrtPriceLimit._x
                         : step.sqrtPriceNext._x > params.sqrtPriceLimit._x
                 )
@@ -538,7 +537,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             // decrement (increment) remaining input (negative output) amount
-            if (params.exactInput) {
+            if (exactInput) {
                 state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
                 amountCalculated = amountCalculated.add(step.amountOut);
             } else {
@@ -556,24 +555,24 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     Tick.Info storage tickInfo = tickInfos[step.tickNext];
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
-                        (params.zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) -
+                        (zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) -
                             tickInfo.feeGrowthOutside0._x
                     );
                     tickInfo.feeGrowthOutside1 = FixedPoint128.uq128x128(
-                        (params.zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
+                        (zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
                             tickInfo.feeGrowthOutside1._x
                     );
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
 
                     // update liquidityCurrent, subi from right to left, addi from left to right
-                    if (params.zeroForOne) state.liquidity = uint128(state.liquidity.subi(tickInfo.liquidityDelta));
+                    if (zeroForOne) state.liquidity = uint128(state.liquidity.subi(tickInfo.liquidityDelta));
                     else state.liquidity = uint128(state.liquidity.addi(tickInfo.liquidityDelta));
                 }
 
-                state.priceBit = params.zeroForOne;
-                state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
+                state.priceBit = zeroForOne;
+                state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                state.priceBit = state.priceBit && params.zeroForOne && state.sqrtPrice._x == step.sqrtPriceStart._x;
+                state.priceBit = state.priceBit && zeroForOne && state.sqrtPrice._x == step.sqrtPriceStart._x;
                 state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice) + (state.priceBit ? int24(-1) : int24(0));
             }
         }
@@ -601,20 +600,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // still locked until after the callback, but need to record the price bit
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT : 0;
 
-        if (params.zeroForOne) feeGrowthGlobal0 = state.feeGrowthGlobal;
+        if (zeroForOne) feeGrowthGlobal0 = state.feeGrowthGlobal;
         else feeGrowthGlobal1 = state.feeGrowthGlobal;
 
         (uint256 amountIn, uint256 amountOut) =
-            params.exactInput
+            exactInput
                 ? (amountUsed = uint256(params.amountSpecified - state.amountSpecifiedRemaining), amountCalculated)
                 : (amountCalculated, amountUsed = uint256(state.amountSpecifiedRemaining - params.amountSpecified));
 
         // perform the token transfers
         {
-            (address tokenIn, address tokenOut) = params.zeroForOne ? (token0, token1) : (token1, token0);
+            (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
             TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
-            params.zeroForOne
+            zeroForOne
                 ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
                     -amountIn.toInt256(),
                     amountOut.toInt256(),
@@ -653,8 +652,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     sqrtPriceLimit: FixedPoint96.uq64x96(sqrtPriceLimit),
                     recipient: recipient,
                     data: data,
-                    zeroForOne: sqrtPriceLimit < _slot0.sqrtPriceCurrent._x,
-                    exactInput: amountSpecified > 0,
                     slot0Start: _slot0,
                     slot1Start: slot1,
                     tickStart: _tickCurrent(_slot0),
