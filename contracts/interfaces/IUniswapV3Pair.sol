@@ -83,9 +83,10 @@ interface IUniswapV3Pair {
     function swap(
         bool zeroForOne,
         int256 amountSpecified,
+        uint160 sqrtPriceLimit,
         address recipient,
         bytes calldata data
-    ) external returns (uint256 amountCalculated);
+    ) external;
 
     function setFeeTo(address) external;
 
