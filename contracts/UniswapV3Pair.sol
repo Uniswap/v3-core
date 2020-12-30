@@ -127,11 +127,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    // check for one-time initialization
-    function isInitialized() public view override returns (bool) {
-        return slot0.sqrtPriceCurrent._x != 0;
-    }
-
+    // throws if the pair is not initialized, which is implicitly used throughout to gatekeep various functions
     function tickCurrent() public view override returns (int24) {
         return _tickCurrent(slot0);
     }
@@ -197,18 +193,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function initialize(uint160 sqrtPrice, bytes calldata data) external override {
-        require(isInitialized() == false, 'AI');
+        Slot0 memory _slot0 = slot0;
+        require(_slot0.sqrtPriceCurrent._x == 0, 'AI');
 
-        Slot0 memory _slot0 =
-            Slot0({
-                blockTimestampLast: _blockTimestamp(),
-                tickCumulativeLast: 0,
-                sqrtPriceCurrent: FixedPoint96.uq64x96(sqrtPrice),
-                unlockedAndPriceBit: 1
-            });
-        int24 tick = _tickCurrent(_slot0);
+        _slot0 = Slot0({
+            blockTimestampLast: _blockTimestamp(),
+            tickCumulativeLast: 0,
+            sqrtPriceCurrent: FixedPoint96.uq64x96(sqrtPrice),
+            unlockedAndPriceBit: 1
+        });
+
+        int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
         require(tick >= MIN_TICK, 'MIN');
         require(tick < MAX_TICK, 'MAX');
+
         slot0 = _slot0;
 
         emit Initialized(sqrtPrice);
@@ -328,8 +326,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 amount,
         bytes calldata data
     ) public override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
-        require(isInitialized(), 'MI');
-
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
                 SetPositionParams({
@@ -362,7 +358,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount
     ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
-        require(isInitialized(), 'BI');
         require(amount > 0, 'BA');
 
         (int256 amount0Int, int256 amount1Int) =

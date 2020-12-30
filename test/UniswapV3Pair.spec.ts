@@ -102,7 +102,7 @@ describe('UniswapV3Pair', () => {
     it('fails if starting price is too high', async () => {
       await expect(initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('')
     })
-    it.only('fails if starting price is too low or high', async () => {
+    it('fails if starting price is too low or high', async () => {
       const minTick = await pair.MIN_TICK()
       const maxTick = await pair.MAX_TICK()
 
