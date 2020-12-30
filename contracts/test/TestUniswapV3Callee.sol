@@ -12,28 +12,52 @@ import '../interfaces/IUniswapV3Pair.sol';
 contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
     using SafeCast for uint256;
 
-    function swapExact0For1(address pair, uint256 amount0In, address recipient) external {
+    function swapExact0For1(
+        address pair,
+        uint256 amount0In,
+        address recipient
+    ) external {
         IUniswapV3Pair(pair).swap(amount0In.toInt256(), 0, recipient, abi.encode(msg.sender));
     }
 
-    function swap0ForExact1(address pair, uint256 amount1Out, address recipient) external {
+    function swap0ForExact1(
+        address pair,
+        uint256 amount1Out,
+        address recipient
+    ) external {
         IUniswapV3Pair(pair).swap(-amount1Out.toInt256(), 0, recipient, abi.encode(msg.sender));
     }
 
-    function swapExact1For0(address pair, uint256 amount1In, address recipient) external {
+    function swapExact1For0(
+        address pair,
+        uint256 amount1In,
+        address recipient
+    ) external {
         IUniswapV3Pair(pair).swap(amount1In.toInt256(), uint160(-1), recipient, abi.encode(msg.sender));
     }
 
-    function swap1ForExact0(address pair, uint256 amount0Out, address recipient) external {
+    function swap1ForExact0(
+        address pair,
+        uint256 amount0Out,
+        address recipient
+    ) external {
         IUniswapV3Pair(pair).swap(-amount0Out.toInt256(), uint160(-1), recipient, abi.encode(msg.sender));
     }
 
-    function swapToSqrtPrice(address pair, uint160 sqrtPrice, address recipient) external {
+    function swapToSqrtPrice(
+        address pair,
+        uint160 sqrtPrice,
+        address recipient
+    ) external {
         // in the 0 for 1 case, we run into overflow in getNextPriceFromAmount1RoundingDown if this is not true:
         // amountSpecified < (2**160 - sqrtQ + 1) * l / 2**96
         // the amountSpecified below always satisfies this
-        IUniswapV3Pair(pair)
-            .swap(int256((2**160 - sqrtPrice + 1) / 2**96 - 1), sqrtPrice, recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(
+            int256((2**160 - sqrtPrice + 1) / 2**96 - 1),
+            sqrtPrice,
+            recipient,
+            abi.encode(msg.sender)
+        );
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);

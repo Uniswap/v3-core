@@ -557,12 +557,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     Tick.Info storage tickInfo = tickInfos[step.tickNext];
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
-                        (zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) -
-                            tickInfo.feeGrowthOutside0._x
+                        (zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) - tickInfo.feeGrowthOutside0._x
                     );
                     tickInfo.feeGrowthOutside1 = FixedPoint128.uq128x128(
-                        (zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) -
-                            tickInfo.feeGrowthOutside1._x
+                        (zeroForOne ? feeGrowthGlobal1._x : state.feeGrowthGlobal._x) - tickInfo.feeGrowthOutside1._x
                     );
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
 
@@ -628,10 +626,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
-    function swap(int256 amountSpecified, uint160 sqrtPriceLimit, address recipient, bytes calldata data)
-        external
-        override
-    {
+    function swap(
+        int256 amountSpecified,
+        uint160 sqrtPriceLimit,
+        address recipient,
+        bytes calldata data
+    ) external override {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
