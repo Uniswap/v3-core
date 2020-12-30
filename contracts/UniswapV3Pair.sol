@@ -228,9 +228,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         position = _getPosition(owner, tickLower, tickUpper);
 
-        if (liquidityDelta == 0) {
-            require(position.liquidity > 0 || position.feesOwed0 > 0 || position.feesOwed1 > 0, 'NF');
-        } else if (liquidityDelta < 0) {
+        if (liquidityDelta < 0) {
             require(position.liquidity >= uint128(-liquidityDelta), 'CP');
         }
 
@@ -326,7 +324,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes calldata data
     ) public override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
         require(isInitialized(), 'MI');
-        require(amount > 0, 'MA');
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
