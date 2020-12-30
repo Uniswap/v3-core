@@ -85,7 +85,7 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
 
         //@dev  executes 2nd swap if there are three abi.encoded parameters in call, pays back first if there are two.
 
-         calldata.length >= (TODO length of three parameters) ? 
+         abi.decode(data, ()).length >= (length of three parameters) ? 
          (address sender, address firstPair, address secondPair) = abi.decode(data, (address, address, address));
           _swapBforC(firstPair, amount0Delta, secondPair) :  
 
