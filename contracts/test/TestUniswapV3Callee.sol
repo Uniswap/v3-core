@@ -49,7 +49,11 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint160 sqrtPrice,
         address recipient
     ) external returns (uint256 amountUsed, uint256 amountCalculated) {
-        return IUniswapV3Pair(pair).swap(int256(2**96), sqrtPrice, recipient, abi.encode(msg.sender));
+        // in the 0 for 1 case, we run into overflow in getNextPriceFromAmount1RoundingDown if this is not true:
+        // amountSpecified < (2**160 - sqrtQ + 1) * l / 2**96
+        // the amountSpecified below always satisfies this
+        return IUniswapV3Pair(pair)
+            .swap(int256((2**160 - sqrtPrice + 1) / 2**96 - 1), sqrtPrice, recipient, abi.encode(msg.sender));
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);

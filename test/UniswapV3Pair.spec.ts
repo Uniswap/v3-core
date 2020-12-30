@@ -612,7 +612,7 @@ describe('UniswapV3Pair', () => {
               .withArgs(walletAddress, pair.address, IN)
               .to.emit(token1, 'Transfer')
               .withArgs(pair.address, walletAddress, OUT)
-            expect(await pair.tickCurrent()).to.eq(-21)
+            expect((await pair.slot0()).sqrtPriceCurrent._x).to.eq(PRICE)
           })
 
           it('return values', async () => {
@@ -643,7 +643,7 @@ describe('UniswapV3Pair', () => {
               .withArgs(pair.address, walletAddress, OUT)
               .to.emit(token1, 'Transfer')
               .withArgs(walletAddress, pair.address, IN)
-            expect(await pair.tickCurrent()).to.eq(19)
+            expect((await pair.slot0()).sqrtPriceCurrent._x).to.eq(PRICE)
           })
 
           it('return values', async () => {
