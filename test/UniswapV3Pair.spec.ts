@@ -58,12 +58,6 @@ describe('UniswapV3Pair', () => {
   let swapExact1For0: SwapFunction
   let swap1ForExact0: SwapFunction
 
-  let swapToLowerPriceCallStatic: StaticSwapFunction
-  let swapToHigherPriceCallStatic: StaticSwapFunction
-  let swapExact0For1CallStatic: StaticSwapFunction
-  let swap0ForExact1CallStatic: StaticSwapFunction
-  let swapExact1For0CallStatic: StaticSwapFunction
-  let swap1ForExact0CallStatic: StaticSwapFunction
   let mint: MintFunction
   let initialize: InitializeFunction
 
@@ -89,12 +83,6 @@ describe('UniswapV3Pair', () => {
         swap0ForExact1,
         swapExact1For0,
         swap1ForExact0,
-        swapToLowerPriceCallStatic,
-        swapToHigherPriceCallStatic,
-        swapExact0For1CallStatic,
-        swap0ForExact1CallStatic,
-        swapExact1For0CallStatic,
-        swap1ForExact0CallStatic,
         mint,
         initialize,
       } = createPairFunctions({
@@ -615,20 +603,6 @@ describe('UniswapV3Pair', () => {
             expect((await pair.slot0()).sqrtPriceCurrent._x).to.eq(PRICE)
           })
 
-          it('return values', async () => {
-            const PRICE = BigNumber.from(2).pow(96).mul(999).div(1000)
-            const IN = {
-              [FeeAmount.LOW]: '2003203924356617',
-              [FeeAmount.MEDIUM]: '2008026080242732',
-              [FeeAmount.HIGH]: '2020183654896068',
-            }[feeAmount]
-            const OUT = '2000000000000000'
-
-            const { amountUsed, amountCalculated } = await swapToLowerPriceCallStatic(PRICE, walletAddress)
-            expect(amountUsed).to.be.eq(IN)
-            expect(amountCalculated).to.be.eq(OUT)
-          })
-
           it('swapToHigherPrice', async () => {
             const PRICE = BigNumber.from(2).pow(96).mul(1001).div(1000)
             const IN = {
@@ -644,53 +618,6 @@ describe('UniswapV3Pair', () => {
               .to.emit(token1, 'Transfer')
               .withArgs(walletAddress, pair.address, IN)
             expect((await pair.slot0()).sqrtPriceCurrent._x).to.eq(PRICE)
-          })
-
-          it('return values', async () => {
-            const PRICE = BigNumber.from(2).pow(96).mul(1001).div(1000)
-            const IN = {
-              [FeeAmount.LOW]: '2001200720432260',
-              [FeeAmount.MEDIUM]: '2006018054162488',
-              [FeeAmount.HIGH]: '2018163471241171',
-            }[feeAmount]
-            const OUT = '1998001998001998'
-
-            const { amountUsed, amountCalculated } = await swapToHigherPriceCallStatic(PRICE, walletAddress)
-            expect(amountUsed).to.be.eq(IN)
-            expect(amountCalculated).to.be.eq(OUT)
-          })
-        })
-
-        describe('return values', () => {
-          const IN = 1000
-          const OUT = {
-            [FeeAmount.LOW]: 998,
-            [FeeAmount.MEDIUM]: 996,
-            [FeeAmount.HIGH]: 990,
-          }[feeAmount]
-
-          it('swapExact0For1', async () => {
-            const { amountUsed, amountCalculated } = await swapExact0For1CallStatic(IN, walletAddress)
-            expect(amountUsed).to.be.eq(IN)
-            expect(amountCalculated).to.be.eq(OUT)
-          })
-
-          it('swap0ForExact1', async () => {
-            const { amountUsed, amountCalculated } = await swap0ForExact1CallStatic(OUT, walletAddress)
-            expect(amountUsed).to.be.eq(OUT)
-            expect(amountCalculated).to.be.eq(IN)
-          })
-
-          it('swapExact1For0', async () => {
-            const { amountUsed, amountCalculated } = await swapExact1For0CallStatic(IN, walletAddress)
-            expect(amountUsed).to.be.eq(IN)
-            expect(amountCalculated).to.be.eq(OUT)
-          })
-
-          it('swap1ForExact0', async () => {
-            const { amountUsed, amountCalculated } = await swap1ForExact0CallStatic(OUT, walletAddress)
-            expect(amountUsed).to.be.eq(OUT)
-            expect(amountCalculated).to.be.eq(IN)
           })
         })
 

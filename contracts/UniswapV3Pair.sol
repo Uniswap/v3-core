@@ -2,6 +2,8 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
+import 'hardhat/console.sol';
+
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
@@ -453,6 +455,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     struct SwapState {
         // the amount remaining to be swapped in/out of the input/output asset
         int256 amountSpecifiedRemaining;
+        // the amount already swapped out/in of the output/input asset
+        int256 amountCalculated;
         // current sqrt(price)
         FixedPoint96.uq64x96 sqrtPrice;
         // whether the price is at the lower tickCurrent boundary and a tick transition has already occurred
@@ -491,7 +495,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return compressed * tickSpacing;
     }
 
-    function _swap(SwapParams memory params) private returns (uint256 amountUsed, uint256 amountCalculated) {
+    function _swap(SwapParams memory params) private {
         bool zeroForOne = params.sqrtPriceLimit._x < params.slot0Start.sqrtPriceCurrent._x;
         bool exactInput = params.amountSpecified > 0;
 
@@ -500,6 +504,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         SwapState memory state =
             SwapState({
                 amountSpecifiedRemaining: params.amountSpecified,
+                amountCalculated: 0,
                 sqrtPrice: params.slot0Start.sqrtPriceCurrent,
                 priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
                 tick: params.tickStart,
@@ -536,13 +541,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 fee
             );
 
-            // decrement (increment) remaining input (negative output) amount
             if (exactInput) {
                 state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
-                amountCalculated = amountCalculated.add(step.amountOut);
+                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());
             } else {
                 state.amountSpecifiedRemaining += step.amountOut.toInt256();
-                amountCalculated = amountCalculated.add(step.amountIn + step.feeAmount);
+                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
             }
 
             // update global fee tracker
@@ -603,61 +607,48 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (zeroForOne) feeGrowthGlobal0 = state.feeGrowthGlobal;
         else feeGrowthGlobal1 = state.feeGrowthGlobal;
 
-        (uint256 amountIn, uint256 amountOut) =
+        // amountIn is always >0, amountOut is always <=0
+        (int256 amountIn, int256 amountOut) =
             exactInput
-                ? (amountUsed = uint256(params.amountSpecified - state.amountSpecifiedRemaining), amountCalculated)
-                : (amountCalculated, amountUsed = uint256(state.amountSpecifiedRemaining - params.amountSpecified));
+                ? (params.amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
+                : (state.amountCalculated, params.amountSpecified - state.amountSpecifiedRemaining);
 
         // perform the token transfers
         {
             (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
-            TransferHelper.safeTransfer(tokenOut, params.recipient, amountOut);
+            TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
             uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
             zeroForOne
-                ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
-                    -amountIn.toInt256(),
-                    amountOut.toInt256(),
-                    params.data
-                )
-                : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
-                    amountOut.toInt256(),
-                    -amountIn.toInt256(),
-                    params.data
-                );
-            require(balanceBefore.add(amountIn) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
+                ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
+                : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
+            require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
         }
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
-    function swap(
-        int256 amountSpecified,
-        uint160 sqrtPriceLimit,
-        address recipient,
-        bytes calldata data
-    ) external override returns (uint256 amountUsed, uint256 amountCalculated) {
+    function swap(int256 amountSpecified, uint160 sqrtPriceLimit, address recipient, bytes calldata data)
+        external
+        override
+    {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
         require(_slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT, 'LOK');
-        require(
-            sqrtPriceLimit != _slot0.sqrtPriceCurrent._x,
-            'UniswapV3Pair::swap: sqrtPriceLimit must not be sqrtPriceCurrent'
-        );
+        require(sqrtPriceLimit != _slot0.sqrtPriceCurrent._x, 'SPL');
 
-        return
-            _swap(
-                SwapParams({
-                    amountSpecified: amountSpecified,
-                    sqrtPriceLimit: FixedPoint96.uq64x96(sqrtPriceLimit),
-                    recipient: recipient,
-                    data: data,
-                    slot0Start: _slot0,
-                    slot1Start: slot1,
-                    tickStart: _tickCurrent(_slot0),
-                    blockTimestamp: _blockTimestamp()
-                })
-            );
+        _swap(
+            SwapParams({
+                amountSpecified: amountSpecified,
+                sqrtPriceLimit: FixedPoint96.uq64x96(sqrtPriceLimit),
+                recipient: recipient,
+                data: data,
+                slot0Start: _slot0,
+                slot1Start: slot1,
+                tickStart: _tickCurrent(_slot0),
+                blockTimestamp: _blockTimestamp()
+            })
+        );
     }
 
     function recover(

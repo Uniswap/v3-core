@@ -88,7 +88,7 @@ interface IUniswapV3Pair {
         uint160 sqrtPriceLimit,
         address recipient,
         bytes calldata data
-    ) external returns (uint256 amountUsed, uint256 amountCalculated);
+    ) external;
 
     function setFeeTo(address) external;
 
