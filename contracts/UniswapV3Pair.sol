@@ -552,8 +552,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // calculate the target tick
             if (params.zeroForOne)
                 step.tickTarget = step.tickNext < params.tickLimit ? params.tickLimit : step.tickNext;
-            else
-                step.tickTarget = step.tickNext > params.tickLimit ? params.tickLimit : step.tickNext;
+            else step.tickTarget = step.tickNext > params.tickLimit ? params.tickLimit : step.tickNext;
 
             // get the price for the target tick
             step.sqrtPriceTarget = SqrtTickMath.getSqrtRatioAtTick(step.tickTarget);
@@ -634,9 +633,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (params.zeroForOne) feeGrowthGlobal0 = state.feeGrowthGlobal;
         else feeGrowthGlobal1 = state.feeGrowthGlobal;
 
-        (uint256 amountIn, uint256 amountOut) = params.exactInput
-            ? (amountUsed = uint256(params.amountSpecified - state.amountSpecifiedRemaining), amountCalculated)
-            : (amountCalculated, amountUsed = uint256(state.amountSpecifiedRemaining - params.amountSpecified));
+        (uint256 amountIn, uint256 amountOut) =
+            params.exactInput
+                ? (amountUsed = uint256(params.amountSpecified - state.amountSpecifiedRemaining), amountCalculated)
+                : (amountCalculated, amountUsed = uint256(state.amountSpecifiedRemaining - params.amountSpecified));
 
         // perform the token transfers
         {
@@ -672,7 +672,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(amountSpecified != 0, 'UniswapV3Pair::swap: amountSpecified must not be 0');
 
         Slot0 memory _slot0 = slot0;
-        require(_slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT, 'UniswapV3Pair::swap: reentrancy prohibited');
+        require(
+            _slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT,
+            'UniswapV3Pair::swap: reentrancy prohibited'
+        );
         int24 tick = _tickCurrent(_slot0);
         require(tickLimit != tick, 'UniswapV3Pair::swap: tickLimit must be different from tickCurrent');
 
