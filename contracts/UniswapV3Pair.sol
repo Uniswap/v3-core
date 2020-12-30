@@ -10,7 +10,7 @@ import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './libraries/SafeCast.sol';
-import './libraries/MixedSafeMath.sol'; 
+import './libraries/MixedSafeMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
