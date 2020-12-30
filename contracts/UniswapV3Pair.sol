@@ -344,13 +344,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         amount1 = uint256(amount1Int);
 
         // collect payment via callback
-        {
-            (uint256 balance0, uint256 balance1) =
-                (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
-            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
-        }
+        (uint256 balance0, uint256 balance1) =
+            (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
+        require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
+        require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
     }
 
     function burn(
@@ -613,16 +611,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 ? (params.amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
                 : (state.amountCalculated, params.amountSpecified - state.amountSpecifiedRemaining);
 
-        // perform the token transfers
-        {
-            (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
-            TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
-            uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
-            zeroForOne
-                ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
-                : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
-            require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
-        }
+
+        (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
+
+        // transfer the output
+        TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
+
+        // callback for the input
+        uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
+        zeroForOne
+            ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
+            : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
+        require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
+
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
     }
 
