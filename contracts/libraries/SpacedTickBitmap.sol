@@ -9,7 +9,7 @@ library SpacedTickBitmap {
     using TickBitmap for mapping(int16 => uint256);
 
     function compressedTick(int24 tick, int24 tickSpacing) private pure returns (int24) {
-        require(tick % tickSpacing == 0, 'SpacedTickBitmap::compressedTick: tick must be a multiple of tickSpacing');
+        require(tick % tickSpacing == 0, 'CT');
         return tick / tickSpacing;
     }
 
