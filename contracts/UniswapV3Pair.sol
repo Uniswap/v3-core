@@ -138,7 +138,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function _tickCurrent(Slot0 memory _slot0) internal pure returns (int24) {
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
-        if (_slot0.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT) return tick - 1;
+        if (_slot0.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT) tick--;
         return tick;
     }
 
@@ -197,7 +197,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function initialize(uint160 sqrtPrice, bytes calldata data) external override {
-        require(!isInitialized(), 'UniswapV3Pair::initialize: pair already initialized');
+        require(isInitialized() == false, 'UniswapV3Pair::initialize: pair already initialized');
 
         slot0 = Slot0({
             blockTimestampLast: _blockTimestamp(),
@@ -487,8 +487,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     struct StepComputations {
-        // the next initialized tick from the current tick in the swap direction
+        // the next tick to swap to from the current tick in the swap direction
         int24 tickNext;
+        // whether tickNext is initialized or not
+        bool initialized;
         // the price at the beginning of the step
         FixedPoint96.uq64x96 sqrtPriceStart;
         // sqrt(price) for the target tick (1/0)
@@ -528,7 +530,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             step.sqrtPriceStart = state.sqrtPrice;
 
-            (step.tickNext, ) = tickBitmap.nextInitializedTickWithinOneWord(
+            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
                 closestTick(state.tick),
                 params.zeroForOne,
                 tickSpacing
@@ -565,10 +567,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // shift tick if we reached the next price target
             if (state.sqrtPrice._x == step.sqrtPriceTarget._x) {
-                Tick.Info storage tickInfo = tickInfos[step.tickNext];
-
                 // if the tick is initialized, run the tick transition
-                if (tickInfo.liquidityGross > 0) {
+                if (step.initialized) {
+                    Tick.Info storage tickInfo = tickInfos[step.tickNext];
+
                     // update tick info
                     tickInfo.feeGrowthOutside0 = FixedPoint128.uq128x128(
                         (params.zeroForOne ? state.feeGrowthGlobal._x : feeGrowthGlobal0._x) -
