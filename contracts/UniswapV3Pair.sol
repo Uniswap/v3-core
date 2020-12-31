@@ -226,13 +226,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tickLower < tickUpper, 'TLU');
         require(tickLower >= MIN_TICK, 'TLM');
         require(tickUpper <= MAX_TICK, 'TUM');
-        require(tickLower % tickSpacing == 0, 'TLS');
-        require(tickUpper % tickSpacing == 0, 'TUS');
 
         position = _getPosition(owner, tickLower, tickUpper);
 
         if (liquidityDelta < 0) {
             require(position.liquidity >= uint128(-liquidityDelta), 'CP');
+        } else if (liquidityDelta == 0) {
+            require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
         }
 
         Tick.Info storage tickInfoLower = _updateTick(tickLower, tick, liquidityDelta);
@@ -482,15 +482,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 feeAmount;
     }
 
-    // returns the closest parent tick that could be initialized
-    // the parent tick is the tick s.t. the input tick is gte parent tick and lt parent tick + tickSpacing
-    function closestTick(int24 tick) private view returns (int24) {
-        int24 compressed = tick / tickSpacing;
-        // round towards negative infinity
-        if (tick < 0 && tick % tickSpacing != 0) compressed--;
-        return compressed * tickSpacing;
-    }
-
     function _swap(SwapParams memory params) private {
         bool zeroForOne = params.sqrtPriceLimit._x < params.slot0Start.sqrtPriceCurrent._x;
         bool exactInput = params.amountSpecified > 0;
@@ -515,9 +506,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             step.sqrtPriceStart = state.sqrtPrice;
 
             (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
-                closestTick(state.tick),
-                zeroForOne,
-                tickSpacing
+                state.tick,
+                tickSpacing,
+                zeroForOne
             );
 
             // get the price for the next tick
