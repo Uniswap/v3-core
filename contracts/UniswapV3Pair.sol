@@ -231,6 +231,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (liquidityDelta < 0) {
             require(position.liquidity >= uint128(-liquidityDelta), 'CP');
+        } else if (liquidityDelta == 0) {
+            require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
         }
 
         Tick.Info storage tickInfoLower = _updateTick(tickLower, tick, liquidityDelta);
