@@ -195,7 +195,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             oracleObservations[_slot0.index] = OracleObservation({
                 blockTimestamp: blockTimestamp,
                 tickCumulative: oracleObservationLast.tickCumulative +
-                    int56(blockTimestamp - oracleObservationLast.blockTimestamp) * _slot0.tick,
+                    int56(blockTimestamp - oracleObservationLast.blockTimestamp) *
+                    _slot0.tick,
                 liquidity: liquidity
             });
             slot0.index = _slot0.index == NUMBER_OF_ORACLE_OBSERVATIONS - 1 ? 0 : _slot0.index + 1;
@@ -586,7 +587,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
                 state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPrice);
-                // if the price didn't move from the left boundary, adjust the tick down 
+                // if the price didn't move from the left boundary, adjust the tick down
                 if (zeroForOne && state.sqrtPrice._x == step.sqrtPriceStart._x) state.tick--;
             }
         }
@@ -602,9 +603,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // update liquidity if it changed
         if (params.slot1Start.liquidity != state.liquidity) slot1.liquidity = state.liquidity;
 
-        zeroForOne
-            ? feeGrowthGlobal0 = state.feeGrowthGlobal
-            : feeGrowthGlobal1 = state.feeGrowthGlobal;
+        zeroForOne ? feeGrowthGlobal0 = state.feeGrowthGlobal : feeGrowthGlobal1 = state.feeGrowthGlobal;
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
@@ -632,15 +631,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint160 sqrtPriceLimit,
         address recipient,
         bytes calldata data
-    ) external lock override {
+    ) external override lock {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
         require(_slot0.sqrtPrice._x != 0, 'UI'); // ensure the pair is initialized
-        require(
-            zeroForOne ? sqrtPriceLimit < _slot0.sqrtPrice._x : sqrtPriceLimit > _slot0.sqrtPrice._x,
-            'SPL'
-        );
+        require(zeroForOne ? sqrtPriceLimit < _slot0.sqrtPrice._x : sqrtPriceLimit > _slot0.sqrtPrice._x, 'SPL');
 
         _swap(
             SwapParams({
@@ -655,7 +651,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function recover(address token, address recipient, uint256 amount) external override lock {
+    function recover(
+        address token,
+        address recipient,
+        uint256 amount
+    ) external override lock {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
 
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
