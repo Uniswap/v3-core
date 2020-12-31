@@ -16,25 +16,21 @@ library Tick {
         uint32 secondsOutside;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        FixedPoint128.uq128x128 feeGrowthOutside0;
-        FixedPoint128.uq128x128 feeGrowthOutside1;
+        uint256 feeGrowthOutside0;
+        uint256 feeGrowthOutside1;
     }
 
     function _getFeeGrowthBelow(
         int24 tick,
         int24 tickCurrent,
         Info storage tickInfo,
-        FixedPoint128.uq128x128 memory feeGrowthGlobal0,
-        FixedPoint128.uq128x128 memory feeGrowthGlobal1
-    )
-        private
-        view
-        returns (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1)
-    {
+        uint256 feeGrowthGlobal0,
+        uint256 feeGrowthGlobal1
+    ) private view returns (uint256 feeGrowthBelow0, uint256 feeGrowthBelow1) {
         // tick is above the current tick, meaning growth outside represents growth above, not below
         if (tick > tickCurrent) {
-            feeGrowthBelow0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
-            feeGrowthBelow1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
+            feeGrowthBelow0 = feeGrowthGlobal0 - tickInfo.feeGrowthOutside0;
+            feeGrowthBelow1 = feeGrowthGlobal1 - tickInfo.feeGrowthOutside1;
         } else {
             feeGrowthBelow0 = tickInfo.feeGrowthOutside0;
             feeGrowthBelow1 = tickInfo.feeGrowthOutside1;
@@ -45,20 +41,16 @@ library Tick {
         int24 tick,
         int24 tickCurrent,
         Info storage tickInfo,
-        FixedPoint128.uq128x128 memory feeGrowthGlobal0,
-        FixedPoint128.uq128x128 memory feeGrowthGlobal1
-    )
-        private
-        view
-        returns (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1)
-    {
+        uint256 feeGrowthGlobal0,
+        uint256 feeGrowthGlobal1
+    ) private view returns (uint256 feeGrowthAbove0, uint256 feeGrowthAbove1) {
         // tick is above current tick, meaning growth outside represents growth above
         if (tick > tickCurrent) {
             feeGrowthAbove0 = tickInfo.feeGrowthOutside0;
             feeGrowthAbove1 = tickInfo.feeGrowthOutside1;
         } else {
-            feeGrowthAbove0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - tickInfo.feeGrowthOutside0._x);
-            feeGrowthAbove1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - tickInfo.feeGrowthOutside1._x);
+            feeGrowthAbove0 = feeGrowthGlobal0 - tickInfo.feeGrowthOutside0;
+            feeGrowthAbove1 = feeGrowthGlobal1 - tickInfo.feeGrowthOutside1;
         }
     }
 
@@ -67,18 +59,14 @@ library Tick {
         int24 tickLower,
         int24 tickUpper,
         int24 tickCurrent,
-        FixedPoint128.uq128x128 memory feeGrowthGlobal0,
-        FixedPoint128.uq128x128 memory feeGrowthGlobal1
-    )
-        internal
-        view
-        returns (FixedPoint128.uq128x128 memory feeGrowthInside0, FixedPoint128.uq128x128 memory feeGrowthInside1)
-    {
-        (FixedPoint128.uq128x128 memory feeGrowthBelow0, FixedPoint128.uq128x128 memory feeGrowthBelow1) =
+        uint256 feeGrowthGlobal0,
+        uint256 feeGrowthGlobal1
+    ) internal view returns (uint256 feeGrowthInside0, uint256 feeGrowthInside1) {
+        (uint256 feeGrowthBelow0, uint256 feeGrowthBelow1) =
             _getFeeGrowthBelow(tickLower, tickCurrent, self[tickLower], feeGrowthGlobal0, feeGrowthGlobal1);
-        (FixedPoint128.uq128x128 memory feeGrowthAbove0, FixedPoint128.uq128x128 memory feeGrowthAbove1) =
+        (uint256 feeGrowthAbove0, uint256 feeGrowthAbove1) =
             _getFeeGrowthAbove(tickUpper, tickCurrent, self[tickUpper], feeGrowthGlobal0, feeGrowthGlobal1);
-        feeGrowthInside0 = FixedPoint128.uq128x128(feeGrowthGlobal0._x - feeGrowthBelow0._x - feeGrowthAbove0._x);
-        feeGrowthInside1 = FixedPoint128.uq128x128(feeGrowthGlobal1._x - feeGrowthBelow1._x - feeGrowthAbove1._x);
+        feeGrowthInside0 = feeGrowthGlobal0 - feeGrowthBelow0 - feeGrowthAbove0;
+        feeGrowthInside1 = feeGrowthGlobal1 - feeGrowthBelow1 - feeGrowthAbove1;
     }
 }
