@@ -48,6 +48,7 @@ describe('UniswapV3Pair', () => {
   let token2: TestERC20
   let factory: UniswapV3Factory
   let pair: MockTimeUniswapV3Pair
+  let pair1: MockTimeUniswapV3Pair
 
   let swapTarget: TestUniswapV3Router
 
@@ -98,6 +99,7 @@ describe('UniswapV3Pair', () => {
 
     // default to the 30 bips pair
     pair = await createPair(feeAmount, tickSpacing)
+    pair1 = await createPair(feeAmount, tickSpacing)
   })
 
   it('constructor initializes immutables', async () => {
@@ -511,6 +513,8 @@ describe('UniswapV3Pair', () => {
     }
 
     beforeEach(() => initializeAtZeroTick(pair))
+    beforeEach(() => initializeAtZeroTick(pair1))
+
 
     it('blockTimestamp is always current timestamp', async () => {
       let { blockTimestamp } = await getCumulatives()
@@ -561,7 +565,209 @@ describe('UniswapV3Pair', () => {
         })
 
         // uses swapExact0For1 as representative of all 4 swap functions
-        describe.only('gas', () => {
+        describe('gas', () => {
+          it('first swap ever', async () => {
+            await snapshotGasCost(swapExact0For1(1000, walletAddress))
+          })
+
+          it('first swap in block', async () => {
+            await swapExact0For1(1000, walletAddress)
+            await pair.setTime(TEST_PAIR_START_TIME + 10)
+            await snapshotGasCost(swapExact0For1(1000, walletAddress))
+          })
+
+          it('second swap in block', async () => {
+            await swapExact0For1(1000, walletAddress)
+            await snapshotGasCost(swapExact0For1(1000, walletAddress))
+          })
+
+          it('large swap', async () => {
+            await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), walletAddress))
+          })
+
+          it('gas large swap crossing several initialized ticks', async () => {
+            await mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+            await mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+            await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), walletAddress))
+            expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
+          })
+
+          it('gas large swap crossing several initialized ticks after some time passes', async () => {
+            await mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+            await mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+            await swapExact0For1(2, walletAddress)
+            await pair.setTime(TEST_PAIR_START_TIME + 10)
+            await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), walletAddress))
+            expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
+          })
+        })
+
+        describe('swap to price', () => {
+          it('swapToLowerPrice', async () => {
+            const PRICE = BigNumber.from(2).pow(96).mul(999).div(1000)
+            const IN = {
+              [FeeAmount.LOW]: '2003203924356617',
+              [FeeAmount.MEDIUM]: '2008026080242732',
+              [FeeAmount.HIGH]: '2020183654896068',
+            }[feeAmount]
+            const OUT = '2000000000000000'
+
+            await expect(swapToLowerPrice(PRICE, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+              .to.emit(token1, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+            expect((await pair.slot0()).sqrtPriceCurrent._x).to.eq(PRICE)
+          })
+
+          it('swapToHigherPrice', async () => {
+            const PRICE = BigNumber.from(2).pow(96).mul(1001).div(1000)
+            const IN = {
+              [FeeAmount.LOW]: '2001200720432260',
+              [FeeAmount.MEDIUM]: '2006018054162488',
+              [FeeAmount.HIGH]: '2018163471241171',
+            }[feeAmount]
+            const OUT = '1998001998001998'
+
+            await expect(swapToHigherPrice(PRICE, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+              .to.emit(token1, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+            expect((await pair.slot0()).sqrtPriceCurrent._x).to.eq(PRICE)
+          })
+        })
+
+        describe('swap 1000 in', () => {
+          const IN = 1000
+          const OUT = {
+            [FeeAmount.LOW]: 998,
+            [FeeAmount.MEDIUM]: 996,
+            [FeeAmount.HIGH]: 990,
+          }[feeAmount]
+
+          it('swapExact0For1', async () => {
+            await expect(swapExact0For1(IN, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+              .to.emit(token1, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+            expect(await pair.tickCurrent()).to.eq(-1)
+          })
+
+          it('swap0ForExact1', async () => {
+            await expect(swap0ForExact1(OUT, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+              .to.emit(token1, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+            expect(await pair.tickCurrent()).to.eq(-1)
+          })
+
+          it('swapExact1For0', async () => {
+            await expect(swapExact1For0(IN, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+              .to.emit(token1, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+            expect(await pair.tickCurrent()).to.eq(0)
+          })
+
+          it('swap1ForExact0', async () => {
+            await expect(swap1ForExact0(OUT, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+              .to.emit(token1, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+            expect(await pair.tickCurrent()).to.eq(0)
+          })
+        })
+
+        describe('swap 1e18 in, crossing several initialized ticks', () => {
+          const commonTickSpacing = TICK_SPACINGS[FeeAmount.HIGH] // works because this is a multiple of lower fee amounts
+
+          const IN = expandTo18Decimals(1)
+          const OUT = {
+            [FeeAmount.LOW]: '680406940877446372',
+            [FeeAmount.MEDIUM]: '679319045855941784',
+            [FeeAmount.HIGH]: '676591598947405339',
+          }[feeAmount]
+
+          it('swapExact0For1', async () => {
+            await mint(walletAddress, commonTickSpacing * -2, commonTickSpacing * -1, expandTo18Decimals(1))
+            await mint(walletAddress, commonTickSpacing * -4, commonTickSpacing * -2, expandTo18Decimals(1))
+            await expect(swapExact0For1(IN, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+              .to.emit(token1, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+            expect(await pair.tickCurrent()).to.be.lt(commonTickSpacing * -4)
+          })
+
+          it('swap0ForExact1', async () => {
+            const IN_ADJUSTED = {
+              [FeeAmount.LOW]: IN,
+              [FeeAmount.MEDIUM]: IN.sub(1),
+              [FeeAmount.HIGH]: IN,
+            }[feeAmount]
+
+            await mint(walletAddress, commonTickSpacing * -2, commonTickSpacing * -1, expandTo18Decimals(1))
+            await mint(walletAddress, commonTickSpacing * -4, commonTickSpacing * -2, expandTo18Decimals(1))
+            await expect(swap0ForExact1(OUT, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN_ADJUSTED)
+              .to.emit(token1, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+            expect(await pair.tickCurrent()).to.be.lt(commonTickSpacing * -4)
+          })
+
+          it('swapExact1For0', async () => {
+            await mint(walletAddress, commonTickSpacing, commonTickSpacing * 2, expandTo18Decimals(1))
+            await mint(walletAddress, commonTickSpacing * 2, commonTickSpacing * 4, expandTo18Decimals(1))
+            await expect(swapExact1For0(IN, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+              .to.emit(token1, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN)
+            expect(await pair.tickCurrent()).to.be.gt(commonTickSpacing * 4)
+          })
+
+          it('swap1ForExact0', async () => {
+            const IN_ADJUSTED = {
+              [FeeAmount.LOW]: IN,
+              [FeeAmount.MEDIUM]: IN.sub(1),
+              [FeeAmount.HIGH]: IN,
+            }[feeAmount]
+
+            await mint(walletAddress, commonTickSpacing, commonTickSpacing * 2, expandTo18Decimals(1))
+            await mint(walletAddress, commonTickSpacing * 2, commonTickSpacing * 4, expandTo18Decimals(1))
+            await expect(swap1ForExact0(OUT, walletAddress))
+              .to.emit(token0, 'Transfer')
+              .withArgs(pair.address, walletAddress, OUT)
+              .to.emit(token1, 'Transfer')
+              .withArgs(walletAddress, pair.address, IN_ADJUSTED)
+            expect(await pair.tickCurrent()).to.be.gt(commonTickSpacing * 4)
+          })
+        })
+      })
+    }
+  })
+
+  describe.only('multi-hop swaps', () => {
+    for (const feeAmount of [FeeAmount.LOW, FeeAmount.MEDIUM, FeeAmount.HIGH]) {
+      const tickSpacing = TICK_SPACINGS[feeAmount]
+
+      describe(`fee: ${feeAmount}`, () => {
+        beforeEach('initialize at zero tick', async () => {
+          pair = await createPair(feeAmount, tickSpacing)
+          pair1 = await createPair(feeAmount, tickSpacing)
+          await initializeAtZeroTick(pair)
+          await initializeAtZeroTick(pair1)
+
+        })
+
+        // uses swapAforC as representative of all 4 swap functions
+        describe('gas', () => {
           it('first swap ever', async () => {
             await snapshotGasCost(swapAforC(1000, walletAddress))
           })

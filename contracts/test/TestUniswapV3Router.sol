@@ -91,14 +91,12 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), uint160(-1), recipient, abi.encode(recipient, pairs)); 
     }
 
-
     function _swapBforExactC( //swap exact 0 for 1
         int256 amount0In,
         address recipient,
         address [] memory pairs 
     ) internal {
-  
-
+        
         IUniswapV3Pair(pairs[0]).swap(true, amount0In, 0, pairs[1], abi.encode(recipient, pairs[0]));
     }
 

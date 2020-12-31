@@ -4,6 +4,7 @@ import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { UniswapV3Factory } from '../../typechain/UniswapV3Factory'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
+import { TestUniswapV3Router} from '../../typechain/TestUniswapV3Router'
 import { MockTimeUniswapV3PairDeployer } from '../../typechain/MockTimeUniswapV3PairDeployer'
 
 import { expandTo18Decimals } from './utilities'
@@ -41,7 +42,7 @@ async function tokensFixture(): Promise<TokensFixture> {
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
 interface PairFixture extends TokensAndFactoryFixture {
-  swapTarget: TestUniswapV3Callee
+  swapTarget: TestUniswapV3Router
   createPair(fee: number, tickSpacing: number): Promise<MockTimeUniswapV3Pair>
 }
 
@@ -56,7 +57,7 @@ export const pairFixture: Fixture<PairFixture> = async function ([owner]: Wallet
   const mockTimeUniswapV3PairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
   const payAndForwardContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
 
-  const swapTarget = (await payAndForwardContractFactory.deploy()) as TestUniswapV3Callee
+  const swapTarget = (await payAndForwardContractFactory.deploy()) as TestUniswapV3Router
 
   return {
     token0,

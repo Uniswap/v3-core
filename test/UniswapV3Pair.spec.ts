@@ -26,6 +26,7 @@ import {
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
 import { SwapMathTest } from '../typechain/SwapMathTest'
+import { TestUniswapV3Router } from '../typechain/TestUniswapV3Router'
 
 const feeAmount = FeeAmount.MEDIUM
 const tickSpacing = TICK_SPACINGS[feeAmount]
@@ -49,7 +50,7 @@ describe('UniswapV3Pair', () => {
   let factory: UniswapV3Factory
   let pair: MockTimeUniswapV3Pair
 
-  let swapTarget: TestUniswapV3Callee
+  let swapTarget: TestUniswapV3Router
 
   let swapToLowerPrice: SwapFunction
   let swapToHigherPrice: SwapFunction
