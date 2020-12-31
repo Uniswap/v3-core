@@ -407,10 +407,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // effect some changes to a position
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
-        // write an oracle entry if liquidity is changing
-        if (params.liquidityDelta != 0) writeOracleObservationIfNecessary(slot0, slot1.liquidity);
-
         Slot0 memory _slot0 = slot0; // for SLOAD savings
+
+        // write an oracle entry if liquidity is changing
+        if (params.liquidityDelta != 0) writeOracleObservationIfNecessary(_slot0, slot1.liquidity);
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, _slot0.tick);
 
