@@ -20,10 +20,7 @@
   "engines": {
     "node": ">=10"
   },
-  "dependencies": {
-    "@openzeppelin/contracts": "3.3.0-solc-0.7",
-    "@uniswap/lib": "4.0.1-alpha"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
     "@nomiclabs/hardhat-waffle": "^2.0.0",

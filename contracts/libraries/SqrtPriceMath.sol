@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
+import './FullMath.sol';
+import './SafeMath.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
