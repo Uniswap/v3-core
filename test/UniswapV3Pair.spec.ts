@@ -21,7 +21,6 @@ import {
   SwapFunction,
   MintFunction,
   InitializeFunction,
-  StaticSwapFunction,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
@@ -129,9 +128,9 @@ describe('UniswapV3Pair', () => {
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
       await initialize(price)
-      const { sqrtPriceCurrent, blockTimestampLast } = await pair.slot0()
+      const { sqrtPriceCurrent, index } = await pair.slot0()
       expect(sqrtPriceCurrent._x).to.eq(price)
-      expect(blockTimestampLast).to.eq(TEST_PAIR_START_TIME)
+      expect(index).to.eq(1)
       expect(await pair.tickCurrent()).to.eq(-6932)
       expect(await pair.slot1()).to.eq(1)
     })
@@ -499,7 +498,10 @@ describe('UniswapV3Pair', () => {
   describe('#getCumulatives', () => {
     // simulates an external call to get the cumulatives as of the current block timestamp
     async function getCumulatives(): Promise<{ blockTimestamp: number; tickCumulative: BigNumber }> {
-      const { tickCumulativeLast, blockTimestampLast } = await pair.slot0()
+      const index = (await pair.slot0()).index
+      const { blockTimestamp: blockTimestampLast, tickCumulative: tickCumulativeLast } = await pair.oracleObservations(
+        index === 0 ? 1024 : index - 1
+      )
       const [tickCurrent, time] = await Promise.all([pair.tickCurrent(), pair.time()])
       if (time == blockTimestampLast) return { tickCumulative: tickCumulativeLast, blockTimestamp: blockTimestampLast }
       return {

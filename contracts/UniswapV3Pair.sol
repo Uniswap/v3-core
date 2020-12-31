@@ -46,6 +46,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     //     = (2n ** 128n - 1n) / (2n ** 24n)
     // this is about 104 bits
     uint128 private constant MAX_LIQUIDITY_GROSS_PER_TICK = 20282409603651670423947251286015;
+    uint16 private constant NUMBER_OF_ORACLE_OBSERVATIONS = 1024;
 
     address public immutable override factory;
     address public immutable override token0;
@@ -65,10 +66,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     struct Slot0 {
         // the current price
         FixedPoint96.uq64x96 sqrtPriceCurrent;
-        // the last block timestamp where the tick accumulator was updated
-        uint32 blockTimestampLast;
-        // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
-        int56 tickCumulativeLast;
+        // the next index of oracleObservations due to be updated
+        uint16 index;
         // whether the pair is locked for swapping
         // packed with a boolean representing whether the price is at the lower bounds of the
         // tick boundary but the tick transition has already happened
@@ -83,6 +82,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     Slot1 public override slot1;
+
+    struct OracleObservation {
+        // the block timestamp of the observation
+        uint32 blockTimestamp;
+        // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
+        int56 tickCumulative;
+        // in-range liquidity at the time of the observation
+        uint128 liquidity;
+    }
+
+    OracleObservation[NUMBER_OF_ORACLE_OBSERVATIONS] public override oracleObservations;
 
     address public override feeTo;
 
@@ -187,6 +197,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    function writeOracleObservationIfNecessary(
+        uint16 index,
+        uint32 blockTimestamp,
+        int24 tick,
+        uint128 liquidity
+    )
+        private
+    {
+        OracleObservation memory oracleObservationLast = oracleObservations[
+            (index == 0 ? NUMBER_OF_ORACLE_OBSERVATIONS : index) - 1
+        ];
+        if (oracleObservationLast.blockTimestamp != blockTimestamp) {
+            oracleObservations[index] = OracleObservation({
+                blockTimestamp: blockTimestamp,
+                // addition overflow desired
+                tickCumulative:
+                    oracleObservationLast.tickCumulative +
+                        int56(blockTimestamp - oracleObservationLast.blockTimestamp) * tick,
+                liquidity: liquidity
+            });
+            slot0.index = index == NUMBER_OF_ORACLE_OBSERVATIONS - 1 ? 0 : index + 1;
+        }
+    }
+
     function _clearTick(int24 tick) private {
         delete tickInfos[tick];
         tickBitmap.flipTick(tick, tickSpacing);
@@ -197,15 +231,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(_slot0.sqrtPriceCurrent._x == 0, 'AI');
 
         _slot0 = Slot0({
-            blockTimestampLast: _blockTimestamp(),
-            tickCumulativeLast: 0,
             sqrtPriceCurrent: FixedPoint96.uq64x96(sqrtPrice),
+            index: 0,
             unlockedAndPriceBit: 1
         });
 
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
         require(tick >= MIN_TICK, 'MIN');
         require(tick < MAX_TICK, 'MAX');
+
+        oracleObservations[_slot0.index++] = OracleObservation({
+            blockTimestamp: _blockTimestamp(),
+            tickCumulative: 0,
+            liquidity: 0
+        });
 
         slot0 = _slot0;
 
@@ -391,6 +430,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // effect some changes to a position
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         int24 tick = tickCurrent();
+
+        // write an oracle entry if liquidity is changing
+        if (params.liquidityDelta != 0)
+            writeOracleObservationIfNecessary(
+                slot0.index,
+                _blockTimestamp(),
+                tick,
+                slot1.liquidityCurrent
+            );
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 
@@ -582,18 +630,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // update liquidity if it changed
         if (params.slot1Start.liquidityCurrent != state.liquidity) slot1.liquidityCurrent = state.liquidity;
 
-        // the price moved at least one tick, update the accumulator
-        if (state.tick != params.tickStart) {
-            uint32 _blockTimestampLast = params.slot0Start.blockTimestampLast;
-            if (_blockTimestampLast != params.blockTimestamp) {
-                slot0.blockTimestampLast = params.blockTimestamp;
-                // overflow desired
-                slot0.tickCumulativeLast =
-                    params.slot0Start.tickCumulativeLast +
-                    int56(params.blockTimestamp - _blockTimestampLast) *
-                    params.tickStart;
-            }
-        }
+        // write an oracle entry if the price moved at least one tick
+        if (state.tick != params.tickStart)
+            writeOracleObservationIfNecessary(
+                params.slot0Start.index,
+                params.blockTimestamp,
+                params.tickStart,
+                params.slot1Start.liquidityCurrent
+            );
 
         slot0.sqrtPriceCurrent = state.sqrtPrice;
         // still locked until after the callback, but need to record the price bit

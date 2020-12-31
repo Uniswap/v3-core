@@ -8,6 +8,8 @@ export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpaci
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
 export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
 
+export const NUMBER_OF_ORACLE_OBSERVATIONS = 1024
+
 export enum FeeAmount {
   LOW = 600,
   MEDIUM = 3000,
@@ -67,10 +69,6 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
-export type StaticSwapFunction = (
-  amount: BigNumberish,
-  to: Wallet | string
-) => Promise<{ amountUsed: BigNumber; amountCalculated: BigNumber }>
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,

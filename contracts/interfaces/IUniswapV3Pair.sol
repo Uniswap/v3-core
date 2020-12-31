@@ -32,12 +32,20 @@ interface IUniswapV3Pair {
         view
         returns (
             FixedPoint96.uq64x96 memory sqrtPriceCurrent,
-            uint32 blockTimestampLast,
-            int56 tickCumulativeLast,
+            uint16 index,
             uint8 unlockedAndPriceBit
         );
 
     function slot1() external view returns (uint128 liquidityCurrent);
+
+    function oracleObservations(uint256)
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            int56 tickCumulative,
+            uint128 liquidity
+        );
 
     function tickBitmap(int16) external view returns (uint256);
 
