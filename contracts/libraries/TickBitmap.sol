@@ -35,9 +35,10 @@ library TickBitmap {
             uint256 masked = self[wordPos] & mask;
 
             // if there are no initialized ticks to the right of or at the current tick, return rightmost in the word
-            return masked == 0
-                ? (tick - int24(bitPos), false)
-                : (tick - int24(bitPos - BitMath.mostSignificantBit(masked)), true);
+            return
+                masked == 0
+                    ? (tick - int24(bitPos), false)
+                    : (tick - int24(bitPos - BitMath.mostSignificantBit(masked)), true);
         } else {
             // start from the word of the next tick, since the current tick state doesn't matter
             (int16 wordPos, uint8 bitPos) = position(tick + 1);
@@ -46,9 +47,10 @@ library TickBitmap {
             uint256 masked = self[wordPos] & mask;
 
             // if there are no initialized ticks to the left of the current tick, return leftmost in the word
-            return masked == 0
-                ? (tick + 1 + int24(255 - bitPos), false)
-                : (tick + 1 + int24(BitMath.leastSignificantBit(masked) - bitPos), true);
+            return
+                masked == 0
+                    ? (tick + 1 + int24(255 - bitPos), false)
+                    : (tick + 1 + int24(BitMath.leastSignificantBit(masked) - bitPos), true);
         }
     }
 }
