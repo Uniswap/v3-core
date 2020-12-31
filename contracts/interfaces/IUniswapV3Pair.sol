@@ -31,12 +31,13 @@ interface IUniswapV3Pair {
         external
         view
         returns (
-            FixedPoint96.uq64x96 memory sqrtPriceCurrent,
+            FixedPoint96.uq64x96 memory sqrtPrice,
+            int24 tick,
             uint16 index,
-            uint8 unlockedAndPriceBit
+            bool unlocked
         );
 
-    function slot1() external view returns (uint128 liquidityCurrent);
+    function slot1() external view returns (uint128 liquidity);
 
     function oracleObservations(uint256)
         external
@@ -56,8 +57,6 @@ interface IUniswapV3Pair {
     function feeToFees0() external view returns (uint256);
 
     function feeToFees1() external view returns (uint256);
-
-    function tickCurrent() external view returns (int24);
 
     // initialize the pair
     function initialize(uint160 sqrtPrice, bytes calldata data) external;
