@@ -9,19 +9,15 @@ import '../interfaces/IUniswapV3MintCallback.sol';
 import '../interfaces/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
-
-
-abstract contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapCallback {
+contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapCallback {
     using SafeCast for uint256;
-    using SafeCast for int256;
-
 
     function swapExact0For1(
         address pair,
         uint256 amount0In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(true, amount0In.toInt256(), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(true, amount0In.toInt256(), 0, recipient, abi.encode(msg.sender));
     }
 
     function swap0ForExact1(
@@ -29,7 +25,7 @@ abstract contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapC
         uint256 amount1Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(true, -amount1Out.toInt256(), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(msg.sender));
     }
 
     function swapExact1For0(
@@ -37,7 +33,7 @@ abstract contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapC
         uint256 amount1In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), uint160(-1), recipient, abi.encode(msg.sender));
     }
 
     function swap1ForExact0(
@@ -45,7 +41,38 @@ abstract contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapC
         uint256 amount0Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), uint160(-1), recipient, abi.encode(msg.sender));
+    }
+
+    function swapToLowerSqrtPrice(
+        address pair,
+        uint160 sqrtPrice,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(
+            true,
+            int256(2**255 - 1), // max int256
+            sqrtPrice,
+            recipient,
+            abi.encode(msg.sender)
+        );
+    }
+
+    function swapToHigherSqrtPrice(
+        address pair,
+        uint160 sqrtPrice,
+        address recipient
+    ) external {
+        // in the 0 for 1 case, we run into overflow in getNextPriceFromAmount1RoundingDown if this is not true:
+        // amountSpecified < (2**160 - sqrtQ + 1) * l / 2**96
+        // the amountSpecified below always satisfies this
+        IUniswapV3Pair(pair).swap(
+            false,
+            int256((2**160 - sqrtPrice + 1) / 2**96 - 1),
+            sqrtPrice,
+            recipient,
+            abi.encode(msg.sender)
+        );
     }
 
 
@@ -56,23 +83,23 @@ initiate an exact output swap on the BxC pair, resulting in a transfer of C from
 within the (outer) swap callback, initiate an exact swap on AxB, resulting in a transfer of B to BxC
 in the inner swap callback, resolve by triggering a transfer of A from user to AxB (via transferFrom)
 */
-    function swapAforC(
+    function swapAforC( //swap 1 for exact 0
         uint256 amount1Out,
         address recipient,
         address [] memory pairs
     ) public {
-        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), recipient, abi.encode(recipient, pairs)); 
+        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), uint160(-1), recipient, abi.encode(recipient, pairs)); 
     }
 
 
-    function _swapBforExactC(
+    function _swapBforExactC( //swap exact 0 for 1
         int256 amount0In,
         address recipient,
         address [] memory pairs 
     ) internal {
   
 
-        IUniswapV3Pair(pairs[0]).swap(true, amount0In, pairs[1], abi.encode(recipient, pairs[0]));
+        IUniswapV3Pair(pairs[0]).swap(true, amount0In, 0, pairs[1], abi.encode(recipient, pairs[0]));
     }
 
 
@@ -98,8 +125,7 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
 
         } else {
             revert();
-        }
-            
+        }        
     }
 
     function initialize(address pair, uint160 sqrtPrice) external {
@@ -132,7 +158,6 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
             IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Owed));
     }
 }
-
 
 /*
  allows exact output swaps from A -> B -> C, where the steps look like:

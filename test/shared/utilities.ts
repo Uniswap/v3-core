@@ -2,6 +2,7 @@ import bn from 'bignumber.js'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
+import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
 import { UniswapV3Pair } from '../../typechain/UniswapV3Pair'
 
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
@@ -86,6 +87,7 @@ export interface PairFunctions {
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
   swap1ForExact0: SwapFunction
+  swapAforC: SwapFunction
   mint: MintFunction
   initialize: InitializeFunction
 }
@@ -95,7 +97,7 @@ export function createPairFunctions({
   swapTarget,
   pair,
 }: {
-  swapTarget: TestUniswapV3Callee
+  swapTarget: TestUniswapV3Router
   token0: TestERC20
   token1: TestERC20
   pair: UniswapV3Pair
@@ -160,6 +162,9 @@ export function createPairFunctions({
   const swap1ForExact0: SwapFunction = (amount, to) => {
     return swap(token1, [0, amount], to)
   }
+  const swapAforC: SwapFunction = (amount, to) => {
+    return swap(token1, [0, amount], to)
+  }
 
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
@@ -180,6 +185,7 @@ export function createPairFunctions({
     swap0ForExact1,
     swapExact1For0,
     swap1ForExact0,
+    swapAforC,
     mint,
     initialize,
   }
