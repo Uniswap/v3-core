@@ -25,7 +25,11 @@ library SpacedTickBitmap {
         spaced._x = compressed._x * tickSpacing;
     }
 
-    function flipTick(mapping(int16 =>  uint256) storage self, int24 tick, int24 tickSpacing) internal {
+    function flipTick(
+        mapping(int16 => uint256) storage self,
+        int24 tick,
+        int24 tickSpacing
+    ) internal {
         require(tick % tickSpacing == 0, 'TS'); // ensure that the tick is spaced
         self.flipTick(tick / tickSpacing);
     }
