@@ -43,7 +43,7 @@ library TickBitmap {
             // start from the word of the next tick, since the current tick state doesn't matter
             (int16 wordPos, uint8 bitPos) = position(tick + 1);
             // all the 1s at or to the left of the bitPos
-            uint256 mask = bitPos == uint8(-1) ? 1 << uint8(-1) : uint256(-1) - ((1 << bitPos) - 1);
+            uint256 mask = ~((1 << bitPos) - 1);
             uint256 masked = self[wordPos] & mask;
 
             // if there are no initialized ticks to the left of the current tick, return leftmost in the word
