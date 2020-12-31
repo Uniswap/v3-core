@@ -207,9 +207,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             oracleObservations[(index == 0 ? NUMBER_OF_ORACLE_OBSERVATIONS : index) - 1];
         if (oracleObservationLast.blockTimestamp != blockTimestamp) {
             oracleObservations[index] = OracleObservation({
-                blockTimestamp: blockTimestamp,
-                tickCumulative: // addition overflow desired
-                oracleObservationLast.tickCumulative +
+                blockTimestamp: blockTimestamp, // addition overflow desired
+                tickCumulative: oracleObservationLast.tickCumulative +
                     int56(blockTimestamp - oracleObservationLast.blockTimestamp) *
                     tick,
                 liquidity: liquidity
