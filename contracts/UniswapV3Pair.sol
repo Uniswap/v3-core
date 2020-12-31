@@ -202,19 +202,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 blockTimestamp,
         int24 tick,
         uint128 liquidity
-    )
-        private
-    {
-        OracleObservation memory oracleObservationLast = oracleObservations[
-            (index == 0 ? NUMBER_OF_ORACLE_OBSERVATIONS : index) - 1
-        ];
+    ) private {
+        OracleObservation memory oracleObservationLast =
+            oracleObservations[(index == 0 ? NUMBER_OF_ORACLE_OBSERVATIONS : index) - 1];
         if (oracleObservationLast.blockTimestamp != blockTimestamp) {
             oracleObservations[index] = OracleObservation({
                 blockTimestamp: blockTimestamp,
-                // addition overflow desired
-                tickCumulative:
-                    oracleObservationLast.tickCumulative +
-                        int56(blockTimestamp - oracleObservationLast.blockTimestamp) * tick,
+                tickCumulative: // addition overflow desired
+                oracleObservationLast.tickCumulative +
+                    int56(blockTimestamp - oracleObservationLast.blockTimestamp) *
+                    tick,
                 liquidity: liquidity
             });
             slot0.index = index == NUMBER_OF_ORACLE_OBSERVATIONS - 1 ? 0 : index + 1;
@@ -230,11 +227,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Slot0 memory _slot0 = slot0;
         require(_slot0.sqrtPriceCurrent._x == 0, 'AI');
 
-        _slot0 = Slot0({
-            sqrtPriceCurrent: FixedPoint96.uq64x96(sqrtPrice),
-            index: 0,
-            unlockedAndPriceBit: 1
-        });
+        _slot0 = Slot0({sqrtPriceCurrent: FixedPoint96.uq64x96(sqrtPrice), index: 0, unlockedAndPriceBit: 1});
 
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrent);
         require(tick >= MIN_TICK, 'MIN');
@@ -433,12 +426,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // write an oracle entry if liquidity is changing
         if (params.liquidityDelta != 0)
-            writeOracleObservationIfNecessary(
-                slot0.index,
-                _blockTimestamp(),
-                tick,
-                slot1.liquidityCurrent
-            );
+            writeOracleObservationIfNecessary(slot0.index, _blockTimestamp(), tick, slot1.liquidityCurrent);
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 
