@@ -39,13 +39,6 @@ describe('TickBitmap', () => {
       expect(await tickBitmap.isInitialized(257)).to.eq(true)
       expect(await tickBitmap.isInitialized(1)).to.eq(false)
     })
-    it('gas if tick is not initialized', async () => {
-      await snapshotGasCost(tickBitmap.getGasCostOfIsInitialized(1))
-    })
-    it('gas if tick is initialized', async () => {
-      await tickBitmap.flipTick(1)
-      await snapshotGasCost(tickBitmap.getGasCostOfIsInitialized(1))
-    })
   })
 
   describe('#flipTick', () => {
