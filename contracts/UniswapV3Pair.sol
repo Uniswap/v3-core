@@ -199,7 +199,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     _slot0.tick,
                 liquidity: liquidity
             });
-            slot0.index = _slot0.index == NUMBER_OF_ORACLE_OBSERVATIONS - 1 ? 0 : _slot0.index + 1;
+            slot0.index = (_slot0.index + 1) % NUMBER_OF_ORACLE_OBSERVATIONS;
         }
     }
 
