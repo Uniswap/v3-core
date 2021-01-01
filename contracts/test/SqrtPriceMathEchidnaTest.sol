@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '@uniswap/lib/contracts/libraries/FullMath.sol';
-
+import '../libraries/FullMath.sol';
 import '../libraries/FixedPoint96.sol';
 import '../libraries/SqrtPriceMath.sol';
 

@@ -2,27 +2,27 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import '@uniswap/lib/contracts/libraries/FullMath.sol';
-import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
+import './libraries/FullMath.sol';
+import './libraries/TransferHelper.sol';
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/math/SignedSafeMath.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import './libraries/SafeMath.sol';
+import './libraries/SignedSafeMath.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/MixedSafeMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
+import './libraries/SpacedTickBitmap.sol';
+import './libraries/FixedPoint128.sol';
+import './libraries/Tick.sol';
 
+import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
-import './libraries/SpacedTickBitmap.sol';
-import './libraries/FixedPoint128.sol';
-import './libraries/Tick.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
