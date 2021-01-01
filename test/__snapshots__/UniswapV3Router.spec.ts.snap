@@ -1,5 +1,41 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`UniswapV3Pair multi-hop swaps fee: 600 gas first swap ever 1`] = `126725`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 600 gas first swap in block 1`] = `111725`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 600 gas gas large swap crossing several initialized ticks 1`] = `159741`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 600 gas gas large swap crossing several initialized ticks after some time passes 1`] = `144731`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 600 gas large swap 1`] = `159741`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 600 gas second swap in block 1`] = `111725`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 3000 gas first swap ever 1`] = `126725`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 3000 gas first swap in block 1`] = `111725`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 3000 gas gas large swap crossing several initialized ticks 1`] = `127047`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 3000 gas gas large swap crossing several initialized ticks after some time passes 1`] = `112027`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 3000 gas large swap 1`] = `127047`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 3000 gas second swap in block 1`] = `111725`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 9000 gas first swap ever 1`] = `126725`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 9000 gas first swap in block 1`] = `111725`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 9000 gas gas large swap crossing several initialized ticks 1`] = `127047`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 9000 gas gas large swap crossing several initialized ticks after some time passes 1`] = `112027`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 9000 gas large swap 1`] = `127047`;
+
+exports[`UniswapV3Pair multi-hop swaps fee: 9000 gas second swap in block 1`] = `111725`;
+
 exports[`UniswapV3Pair swaps fee: 600 gas first swap ever 1`] = `126725`;
 
 exports[`UniswapV3Pair swaps fee: 600 gas first swap in block 1`] = `111725`;
