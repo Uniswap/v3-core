@@ -41,7 +41,7 @@ interface IUniswapV3Pair {
         int24 tick
     );
     event FeeToChanged(address indexed oldFeeTo, address indexed newFeeTo);
-    event Collect(uint256 amount0,uint256 amount1);
+    event Collect(uint256 amount0, uint256 amount1);
 
     // immutables
     function factory() external view returns (address);

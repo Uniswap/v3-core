@@ -351,7 +351,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
         require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
         require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
-        
+
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
     }
 
