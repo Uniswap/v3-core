@@ -162,7 +162,7 @@ describe('UniswapV3Pair', () => {
     })
     it('emits a Initialized event with the input tick', async () => {
       const price = encodePriceSqrt(1, 2)
-      await expect(initialize(price)).to.emit(pair, 'Initialized').withArgs(price)
+      await expect(initialize(price)).to.emit(pair, 'Initialized').withArgs(price, -6932)
     })
     it('transfers the token', async () => {
       const price = encodePriceSqrt(1, 2)
