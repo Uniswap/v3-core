@@ -86,7 +86,7 @@ describe('TickBitmap', () => {
   describe('#nextInitializedTickWithinOneWord', () => {
     beforeEach('set up some ticks', async () => {
       // word boundaries are at multiples of 256
-      await initTicks([70, 78, 84, 139, 240, 535])
+      await initTicks([-200, -55, -4, 70, 78, 84, 139, 240, 535])
     })
 
     describe('lte = false', async () => {
@@ -95,16 +95,34 @@ describe('TickBitmap', () => {
         expect(next).to.eq(84)
         expect(initialized).to.eq(true)
       })
+      it('returns tick to right if at initialized tick', async () => {
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(-55, false)
+        expect(next).to.eq(-4)
+        expect(initialized).to.eq(true)
+      })
+
       it('returns the tick directly to the right', async () => {
         const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(77, false)
         expect(next).to.eq(78)
         expect(initialized).to.eq(true)
       })
+      it('returns the tick directly to the right', async () => {
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(-56, false)
+        expect(next).to.eq(-55)
+        expect(initialized).to.eq(true)
+      })
+
       it('returns the next words initialized tick if on the right boundary', async () => {
         const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(255, false)
         expect(next).to.eq(511)
         expect(initialized).to.eq(false)
       })
+      it('returns the next words initialized tick if on the right boundary', async () => {
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(-257, false)
+        expect(next).to.eq(-200)
+        expect(initialized).to.eq(true)
+      })
+
       it('returns the next initialized tick from the next word', async () => {
         await tickBitmap.flipTick(340)
         const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(328, false)
@@ -170,9 +188,9 @@ describe('TickBitmap', () => {
         expect(initialized).to.eq(true)
       })
       it('word boundary', async () => {
-        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(-1, true)
+        const { next, initialized } = await tickBitmap.nextInitializedTickWithinOneWord(-257, true)
 
-        expect(next).to.eq(-256)
+        expect(next).to.eq(-512)
         expect(initialized).to.eq(false)
       })
       it('entire empty word', async () => {
