@@ -34,7 +34,7 @@ interface IUniswapV3Pair {
             uint8 unlockedAndPriceBit
         );
 
-    function slot1() external view returns (uint128 liquidityCurrent);
+    function liquidityCurrent() external view returns (uint128 liquidityCurrent);
 
     function tickBitmap(int16) external view returns (uint256);
 

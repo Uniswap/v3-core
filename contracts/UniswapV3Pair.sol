@@ -76,12 +76,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     Slot0 public override slot0;
 
-    struct Slot1 {
-        // current in-range liquidity
-        uint128 liquidityCurrent;
-    }
-
-    Slot1 public override slot1;
+    // current in-range liquidity
+    uint128 public override liquidityCurrent;
 
     address public override feeTo;
 
@@ -407,7 +403,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             // downcasting is safe because of gross liquidity checks in the _updatePosition call
-            slot1.liquidityCurrent = uint128(slot1.liquidityCurrent.addi(params.liquidityDelta));
+            liquidityCurrent = uint128(liquidityCurrent.addi(params.liquidityDelta));
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right
             // to left, at which point we need _more_ token1 (it's becoming more valuable) so the user must provide it
@@ -430,8 +426,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes data;
         // the value of slot0 at the beginning of the swap
         Slot0 slot0Start;
-        // the value of slot1 at the beginning of the swap
-        Slot1 slot1Start;
+        // the value of liquidityCurrent at the beginning of the swap
+        uint128 liquidityStart;
         // the tick at the beginning of the swap
         int24 tickStart;
         // the timestamp of the current block
@@ -487,7 +483,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
                 tick: params.tickStart,
                 feeGrowthGlobal: zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1,
-                liquidity: params.slot1Start.liquidityCurrent
+                liquidity: params.liquidityStart
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -558,7 +554,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // update liquidity if it changed
-        if (params.slot1Start.liquidityCurrent != state.liquidity) slot1.liquidityCurrent = state.liquidity;
+        if (params.liquidityStart != state.liquidity) liquidityCurrent = state.liquidity;
 
         // the price moved at least one tick, update the accumulator
         if (state.tick != params.tickStart) {
@@ -625,7 +621,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 recipient: recipient,
                 data: data,
                 slot0Start: _slot0,
-                slot1Start: slot1,
+                liquidityStart: liquidityCurrent,
                 tickStart: _tickCurrent(_slot0),
                 blockTimestamp: _blockTimestamp()
             })
