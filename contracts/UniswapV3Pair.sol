@@ -23,9 +23,9 @@ import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
-import './interfaces/IERC3156FlashBorrower.sol';
+import './interfaces/IUniswapV3FlashCallback.sol';
 
-contract UniswapV3Pair is IUniswapV3Pair, IERC3156FlashLender {
+contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint128;
     using SafeMath for uint256;
     using SignedSafeMath for int128;
@@ -675,32 +675,29 @@ contract UniswapV3Pair is IUniswapV3Pair, IERC3156FlashLender {
         if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
     }
 
-    function flashLoan(
+    function flash(
         address receiver,
-        address token,
-        uint256 value,
+        uint256 amount0,
+        uint256 amount1,
         bytes calldata data
     ) external override lockNoPriceMovement {
-        require(token == token0 || token == token1, 'T');
-        uint256 balanceBefore = IERC20(token).balanceOf(address(this));
-        TransferHelper.safeTransfer(token, receiver, value);
-        uint256 feeAmount = flashFee(token, value);
-        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, value, feeAmount, data);
-        require(IERC20(token).balanceOf(address(this)) >= balanceBefore.add(feeAmount));
-        if (token == token0) {
-            feeGrowthGlobal0._x += FixedPoint128.fraction(feeAmount, slot1.liquidityCurrent)._x;
-        } else {
-            feeGrowthGlobal1._x += FixedPoint128.fraction(feeAmount, slot1.liquidityCurrent)._x;
-        }
-    }
+        require(amount0 > 0 || amount1 > 0, 'A');
 
-    function flashFee(address token, uint256 value) public view override returns (uint256) {
-        require(token == token0 || token == token1, 'T');
-        return value.mul(fee).div(1e6).add(1);
-    }
+        uint256 fee0 = amount0 > 0 ? amount0.mul(fee).div(1e6 - fee) : 0;
+        uint256 fee1 = amount1 > 0 ? amount1.mul(fee).div(1e6 - fee) : 0;
 
-    function flashSupply(address token) external view override returns (uint256) {
-        require(token == token0 || token == token1, 'T');
-        return IERC20(token).balanceOf(address(this));
+        uint256 balance0 = IERC20(token0).balanceOf(address(this));
+        uint256 balance1 = IERC20(token1).balanceOf(address(this));
+
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, receiver, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, receiver, amount1);
+
+        IUniswapV3FlashCallback(receiver).uniswapV3FlashCallback(msg.sender, amount0, fee0, amount1, fee1, data);
+
+        require(IERC20(token0).balanceOf(address(this)) >= balance0.add(fee0));
+        require(IERC20(token1).balanceOf(address(this)) >= balance1.add(fee1));
+
+        feeGrowthGlobal0 += FixedPoint128.fraction(fee0, liquidityCurrent);
+        feeGrowthGlobal1 += FixedPoint128.fraction(fee1, liquidityCurrent);
     }
 }

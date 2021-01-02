@@ -98,4 +98,11 @@ interface IUniswapV3Pair {
     function collect(uint256 amount0Requested, uint256 amount1Requested)
         external
         returns (uint256 amount0, uint256 amount1);
+
+    function flash(
+        address receiver,
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) external;
 }
