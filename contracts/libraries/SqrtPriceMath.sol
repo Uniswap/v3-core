@@ -183,35 +183,35 @@ library SqrtPriceMath {
     }
 
     function getFeeGrowthGlobal0(
-        uint160 sqrtP,
+        uint160 sqrtPX96,
         uint256 offset0,
         uint256 balance0,
         uint128 liquidity
-    ) internal pure returns (uint256 feeGrowthGlobal1) {
+    ) internal pure returns (uint256 feeGrowthGlobal1X128) {
         uint256 fraction = ((balance0 << 128) - offset0) / uint256(liquidity);
-        // reciprocal of sqrtP, as a 128x128
-        uint256 reciprocal = ((1 << 255) / sqrtP) >> 31;
-        feeGrowthGlobal1 = fraction - reciprocal;
+        // reciprocal of sqrtPX96, as a 128x128
+        uint256 reciprocal = ((1 << 255) / sqrtPX96) >> 31;
+        feeGrowthGlobal1X128 = fraction - reciprocal;
     }
 
     function getFeeGrowthGlobal1(
-        uint160 sqrtP,
+        uint160 sqrtPX96,
         uint256 offset1,
         uint256 balance1,
         uint128 liquidity
-    ) internal pure returns (uint256 feeGrowthGlobal1) {
+    ) internal pure returns (uint256 feeGrowthGlobal1X128) {
         uint256 fraction = ((balance1 << 128) - offset1) / uint256(liquidity);
-        feeGrowthGlobal1 = fraction - (sqrtP << 32);
+        feeGrowthGlobal1X128 = fraction - (sqrtPX96 << 32);
     }
 
     function getOffsetAfter(
-        uint256 offsetBefore,
+        uint256 offsetBeforeX128,
         uint256 balanceBefore,
         uint256 balanceAfter,
         uint128 liquidityBefore,
         uint128 liquidityAfter
-    ) internal pure returns (uint256 offsetAfter) {
-        uint256 fraction = FullMath.mulDiv((balanceBefore << 128) - offsetBefore, liquidityAfter, liquidityBefore);
-        offsetAfter = (balanceAfter << 128) - fraction;
+    ) internal pure returns (uint256 offsetAfterX128) {
+        uint256 fraction = FullMath.mulDiv((balanceBefore << 128) - offsetBeforeX128, liquidityAfter, liquidityBefore);
+        offsetAfterX128 = (balanceAfter << 128) - fraction;
     }
 }
