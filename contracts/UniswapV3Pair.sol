@@ -174,6 +174,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function setFeeTo(address feeTo_) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
+        emit FeeToChanged(feeTo, feeTo_);
         feeTo = feeTo_;
     }
 
@@ -226,7 +227,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         slot0 = _slot0;
 
-        emit Initialized(sqrtPrice);
+        emit Initialized(sqrtPrice, tick);
 
         // set permanent 1 wei position
         mint(address(0), MIN_TICK, MAX_TICK, 1, data);
@@ -338,6 +339,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(token1, recipient, amount1);
             offset1 -= (amount1 << 128);
         }
+
+        emit CollectFees(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
     function mint(
@@ -349,35 +352,53 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) public override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
         uint128 liquidityBefore = liquidityCurrent;
 
-        (int256 amount0Int, int256 amount1Int) =
-            _setPosition(
-                SetPositionParams({
-                    owner: recipient,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: int256(amount).toInt128()
-                })
-            );
+        {
+            (int256 amount0Int, int256 amount1Int) =
+                _setPosition(
+                    SetPositionParams({
+                        owner: recipient,
+                        tickLower: tickLower,
+                        tickUpper: tickUpper,
+                        liquidityDelta: int256(amount).toInt128()
+                    })
+                );
 
-        assert(amount0Int >= 0);
-        assert(amount1Int >= 0);
+            assert(amount0Int >= 0);
+            assert(amount1Int >= 0);
 
-        amount0 = uint256(amount0Int);
-        amount1 = uint256(amount1Int);
+            amount0 = uint256(amount0Int);
+            amount1 = uint256(amount1Int);
+        }
 
         // collect payment via callback
-        (uint256 balance0, uint256 balance1) =
-            (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
-        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-        uint256 balance0After = IERC20(token0).balanceOf(address(this));
-        uint256 balance1After = IERC20(token1).balanceOf(address(this));
-        require(balance0.add(amount0) <= balance0After, 'M0');
-        require(balance1.add(amount1) <= balance1After, 'M1');
+        {
+            (uint256 balance0, uint256 balance1) =
+                (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
+            uint256 balance0After = IERC20(token0).balanceOf(address(this));
+            uint256 balance1After = IERC20(token1).balanceOf(address(this));
+            require(balance0.add(amount0) <= balance0After, 'M0');
+            require(balance1.add(amount1) <= balance1After, 'M1');
 
-        // update offsets
-        if (liquidityBefore != 0) {
-            offset0 = SqrtPriceMath.getOffsetAfter(offset0, balance0, balance0After, liquidityBefore, liquidityCurrent);
-            offset1 = SqrtPriceMath.getOffsetAfter(offset1, balance1, balance1After, liquidityBefore, liquidityCurrent);
+            // update offsets
+            if (liquidityBefore != 0) {
+                offset0 = SqrtPriceMath.getOffsetAfter(
+                    offset0,
+                    balance0,
+                    balance0After,
+                    liquidityBefore,
+                    liquidityCurrent
+                );
+                offset1 = SqrtPriceMath.getOffsetAfter(
+                    offset1,
+                    balance1,
+                    balance1After,
+                    liquidityBefore,
+                    liquidityCurrent
+                );
+            }
+
+            emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
         }
     }
 
@@ -390,46 +411,53 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(amount > 0, 'BA');
 
         uint128 liquidityBefore = liquidityCurrent;
+        {
+            (int256 amount0Int, int256 amount1Int) =
+                _setPosition(
+                    SetPositionParams({
+                        owner: msg.sender,
+                        tickLower: tickLower,
+                        tickUpper: tickUpper,
+                        liquidityDelta: -int256(amount).toInt128()
+                    })
+                );
 
-        (int256 amount0Int, int256 amount1Int) =
-            _setPosition(
-                SetPositionParams({
-                    owner: msg.sender,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: -int256(amount).toInt128()
-                })
-            );
+            assert(amount0Int <= 0);
+            assert(amount1Int <= 0);
 
-        assert(amount0Int <= 0);
-        assert(amount1Int <= 0);
-
-        amount0 = uint256(-amount0Int);
-        amount1 = uint256(-amount1Int);
+            amount0 = uint256(-amount0Int);
+            amount1 = uint256(-amount1Int);
+        }
 
         {
             (uint256 balance0, uint256 balance1) =
                 (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
 
-            (uint256 balance0After, uint256 balance1After) = (balance0, balance1);
-
-            if (amount0 > 0) {
-                TransferHelper.safeTransfer(token0, recipient, amount0);
-                balance0After = IERC20(token0).balanceOf(address(this));
-            }
-            if (amount1 > 0) {
-                TransferHelper.safeTransfer(token1, recipient, amount1);
-                balance1After = IERC20(token1).balanceOf(address(this));
-            }
+            if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+            if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
 
             // update offsets
-            offset0 = SqrtPriceMath.getOffsetAfter(offset0, balance0, balance0After, liquidityBefore, liquidityCurrent);
-            offset1 = SqrtPriceMath.getOffsetAfter(offset1, balance1, balance1After, liquidityBefore, liquidityCurrent);
+            offset0 = SqrtPriceMath.getOffsetAfter(
+                offset0,
+                balance0,
+                balance0.sub(amount0),
+                liquidityBefore,
+                liquidityCurrent
+            );
+            offset1 = SqrtPriceMath.getOffsetAfter(
+                offset1,
+                balance1,
+                balance1.sub(amount1),
+                liquidityBefore,
+                liquidityCurrent
+            );
+
+            emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
         }
     }
 
     struct SetPositionParams {
-        // the address that will pay for the mint
+        // the address that owns the position
         address owner;
         // the lower and upper tick of the position
         int24 tickLower;
@@ -742,6 +770,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
         require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
+
+        if (zeroForOne) emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPrice, state.tick);
+        else Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPrice, state.tick);
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
@@ -825,5 +856,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(token1, feeTo, amount1);
             offset1 -= (amount1 << 128);
         }
+        emit Collect(amount0, amount1);
     }
 }
