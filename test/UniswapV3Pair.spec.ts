@@ -788,7 +788,7 @@ describe('UniswapV3Pair', () => {
     })
 
     it('collect fees within the current price after swap', async () => {
-      let liquidityDelta = expandTo18Decimals(100)
+      const liquidityDelta = expandTo18Decimals(100)
       const lowerTick = -tickSpacing * 100
       const upperTick = tickSpacing * 100
 

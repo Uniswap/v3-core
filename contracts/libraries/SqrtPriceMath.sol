@@ -180,25 +180,25 @@ library SqrtPriceMath {
     }
 
     function getFeeGrowthGlobal0(
-        uint160 sqrtP, // square root of current price
-        uint256 offset1,
-        uint256 balance1,
+        uint160 sqrtP,
+        uint256 offset0,
+        uint256 balance0,
         uint128 liquidity
     ) internal pure returns (uint256 feeGrowthGlobal1) {
-        uint256 frac = ((balance1 << 128) - offset1) / uint256(liquidity);
+        uint256 fraction = ((balance0 << 128) - offset0) / uint256(liquidity);
         // reciprocal of sqrtP, as a 128x128
-        uint256 recip = ((1 << 255) / sqrtP) >> 31;
-        feeGrowthGlobal1 = frac - recip;
+        uint256 reciprocal = ((1 << 255) / sqrtP) >> 31;
+        feeGrowthGlobal1 = fraction - reciprocal;
     }
 
     function getFeeGrowthGlobal1(
-        uint160 sqrtP, // square root of current price
+        uint160 sqrtP,
         uint256 offset1,
         uint256 balance1,
         uint128 liquidity
     ) internal pure returns (uint256 feeGrowthGlobal1) {
-        uint256 frac = ((balance1 << 128) - offset1) / uint256(liquidity);
-        feeGrowthGlobal1 = frac - (sqrtP << 32);
+        uint256 fraction = ((balance1 << 128) - offset1) / uint256(liquidity);
+        feeGrowthGlobal1 = fraction - (sqrtP << 32);
     }
 
     function getOffsetAfter(
@@ -208,8 +208,7 @@ library SqrtPriceMath {
         uint128 liquidityBefore,
         uint128 liquidityAfter
     ) internal pure returns (uint256 offsetAfter) {
-        uint256 frac =
-            FullMath.mulDiv((balanceBefore << 128) - offsetBefore, uint256(liquidityAfter), uint256(liquidityBefore));
-        offsetAfter = (balanceAfter << 128) - frac;
+        uint256 fraction = FullMath.mulDiv((balanceBefore << 128) - offsetBefore, liquidityAfter, liquidityBefore);
+        offsetAfter = (balanceAfter << 128) - fraction;
     }
 }
