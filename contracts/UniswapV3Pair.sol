@@ -329,8 +329,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         position.feesOwed0 -= amount0;
         position.feesOwed1 -= amount1;
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+
+        if (amount0 > 0) {
+            TransferHelper.safeTransfer(token0, recipient, amount0);
+            offset0 -= (amount0 << 128);
+        }
+        if (amount1 > 0) {
+            TransferHelper.safeTransfer(token1, recipient, amount1);
+            offset1 -= (amount1 << 128);
+        }
     }
 
     function mint(
@@ -810,7 +817,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeToFees0 -= amount0;
         feeToFees1 -= amount1;
 
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, feeTo, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
+        if (amount0 > 0) {
+            TransferHelper.safeTransfer(token0, feeTo, amount0);
+            offset0 -= (amount0 << 128);
+        }
+        if (amount1 > 0) {
+            TransferHelper.safeTransfer(token1, feeTo, amount1);
+            offset1 -= (amount1 << 128);
+        }
     }
 }
