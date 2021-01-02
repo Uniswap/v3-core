@@ -140,18 +140,18 @@ describe('UniswapV3Pair', () => {
       await initialize(price)
 
       {
-        const { liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1 } = await pair.tickInfos(MIN_TICK)
+        const { liquidityGross, secondsOutside, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.tickInfos(MIN_TICK)
         expect(liquidityGross).to.eq(1)
         expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
-        expect(feeGrowthOutside0).to.eq(0)
-        expect(feeGrowthOutside1).to.eq(0)
+        expect(feeGrowthOutside0X128).to.eq(0)
+        expect(feeGrowthOutside1X128).to.eq(0)
       }
       {
-        const { liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1 } = await pair.tickInfos(MAX_TICK)
+        const { liquidityGross, secondsOutside, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.tickInfos(MAX_TICK)
         expect(liquidityGross).to.eq(1)
         expect(secondsOutside).to.eq(0)
-        expect(feeGrowthOutside0).to.eq(0)
-        expect(feeGrowthOutside1).to.eq(0)
+        expect(feeGrowthOutside0X128).to.eq(0)
+        expect(feeGrowthOutside1X128).to.eq(0)
       }
     })
     it('creates a position for address 0 for min liquidity', async () => {
@@ -275,20 +275,20 @@ describe('UniswapV3Pair', () => {
           it('clears tick lower if last position is removed', async () => {
             await mint(walletAddress, -240, 0, 100)
             await pair.burn(walletAddress, -240, 0, 100)
-            const { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(-240)
+            const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, secondsOutside } = await pair.tickInfos(-240)
             expect(liquidityGross).to.eq(0)
-            expect(feeGrowthOutside0).to.eq(0)
-            expect(feeGrowthOutside1).to.eq(0)
+            expect(feeGrowthOutside0X128).to.eq(0)
+            expect(feeGrowthOutside1X128).to.eq(0)
             expect(secondsOutside).to.eq(0)
           })
 
           it('clears tick upper if last position is removed', async () => {
             await mint(walletAddress, -240, 0, 100)
             await pair.burn(walletAddress, -240, 0, 100)
-            const { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(0)
+            const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, secondsOutside } = await pair.tickInfos(0)
             expect(liquidityGross).to.eq(0)
-            expect(feeGrowthOutside0).to.eq(0)
-            expect(feeGrowthOutside1).to.eq(0)
+            expect(feeGrowthOutside0X128).to.eq(0)
+            expect(feeGrowthOutside1X128).to.eq(0)
             expect(secondsOutside).to.eq(0)
           })
           it('only clears the tick that is not used at all', async () => {
@@ -296,17 +296,17 @@ describe('UniswapV3Pair', () => {
             await mint(walletAddress, -tickSpacing, 0, 250)
             await pair.burn(walletAddress, -240, 0, 100)
 
-            let { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(-240)
+            let { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, secondsOutside } = await pair.tickInfos(-240)
             expect(liquidityGross).to.eq(0)
-            expect(feeGrowthOutside0).to.eq(0)
-            expect(feeGrowthOutside1).to.eq(0)
+            expect(feeGrowthOutside0X128).to.eq(0)
+            expect(feeGrowthOutside1X128).to.eq(0)
             expect(secondsOutside).to.eq(0)
-            ;({ liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(
+            ;({ liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, secondsOutside } = await pair.tickInfos(
               -tickSpacing
             ))
             expect(liquidityGross).to.eq(250)
-            expect(feeGrowthOutside0).to.eq(0)
-            expect(feeGrowthOutside1).to.eq(0)
+            expect(feeGrowthOutside0X128).to.eq(0)
+            expect(feeGrowthOutside1X128).to.eq(0)
             expect(secondsOutside).to.eq(0)
           })
 
