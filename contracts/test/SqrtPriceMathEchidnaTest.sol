@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '@uniswap/lib/contracts/libraries/FullMath.sol';
-
+import '../libraries/FullMath.sol';
 import '../libraries/SqrtPriceMath.sol';
 
 contract SqrtPriceMathEchidnaTest {
