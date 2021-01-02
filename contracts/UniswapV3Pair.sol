@@ -371,10 +371,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (liquidityBefore != 0) {
             offset0 = SqrtPriceMath.getOffsetAfter(offset0, balance0, balance0After, liquidityBefore, liquidityCurrent);
             offset1 = SqrtPriceMath.getOffsetAfter(offset1, balance1, balance1After, liquidityBefore, liquidityCurrent);
-        } else {
-            // for now, initialize them to 1 so that the storage is initialized in this step rather than by the first swap
-            offset0 = 1;
-            offset1 = 1;
         }
     }
 
@@ -496,18 +492,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // the top level state of the swap, the results of which are recorded in storage at the end
     struct SwapState {
-        // the current tick of the swap
-        int24 tick;
         // the amount remaining to be swapped in/out of the input/output asset
         int256 amountSpecifiedRemaining;
         // the amount already swapped out/in of the output/input asset
         int256 amountCalculated;
         // current sqrt(price)
         uint160 sqrtPrice;
-        // the liquidity in range
-        uint128 liquidity;
         // whether the price is at the lower tickCurrent boundary and a tick transition has already occurred
         bool priceBit;
+        // the current tick of the swap
+        int24 tick;
+        // the liquidity in range
+        uint128 liquidity;
         // the initial balance of tokens 0 and 1 (not stored)
         uint128 balanceSpecifiedInitial;
         uint128 balanceCalculatedInitial;
@@ -603,11 +599,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // update liquidityCurrent, subi from right to left, addi from left to right
                     uint128 liquidityBefore = state.liquidity;
-                    if (zeroForOne) {
-                        state.liquidity = uint128(liquidityBefore.subi(tickInfo.liquidityDelta));
-                    } else {
-                        state.liquidity = uint128(liquidityBefore.addi(tickInfo.liquidityDelta));
-                    }
+
+                    if (zeroForOne) state.liquidity = uint128(liquidityBefore.subi(tickInfo.liquidityDelta));
+                    else state.liquidity = uint128(liquidityBefore.addi(tickInfo.liquidityDelta));
 
                     // initialize balances first time an initialized tick is crossed
                     if (!crossed) {
@@ -623,6 +617,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         );
                         state.offsetSpecified = zeroSpecified ? offset0 : offset1;
                         state.offsetCalculated = zeroSpecified ? offset1 : offset0;
+
+                        crossed = true;
                     }
 
                     uint256 balanceSpecifiedAfter =
@@ -679,16 +675,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         );
                     }
 
-                    crossed = true;
-
                     // update tick info
                     tickInfo.feeGrowthOutside0 = _feeGrowthGlobal0 - tickInfo.feeGrowthOutside0;
                     tickInfo.feeGrowthOutside1 = _feeGrowthGlobal1 - tickInfo.feeGrowthOutside1;
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
-
-                    // update liquidityCurrent, subi from right to left, addi from left to right
-                    if (zeroForOne) state.liquidity = uint128(state.liquidity.subi(tickInfo.liquidityDelta));
-                    else state.liquidity = uint128(state.liquidity.addi(tickInfo.liquidityDelta));
                 }
 
                 state.priceBit = zeroForOne;
