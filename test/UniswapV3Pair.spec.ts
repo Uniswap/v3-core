@@ -129,8 +129,8 @@ describe('UniswapV3Pair', () => {
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
       await initialize(price)
-      const { sqrtPriceCurrent, blockTimestampLast } = await pair.slot0()
-      expect(sqrtPriceCurrent).to.eq(price)
+      const { sqrtPriceCurrentX96, blockTimestampLast } = await pair.slot0()
+      expect(sqrtPriceCurrentX96).to.eq(price)
       expect(blockTimestampLast).to.eq(TEST_PAIR_START_TIME)
       expect(await pair.tickCurrent()).to.eq(-6932)
       expect(await pair.liquidityCurrent()).to.eq(1)
@@ -434,22 +434,30 @@ describe('UniswapV3Pair', () => {
         await expect(mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 0)).to.be.revertedWith('NP')
 
         await mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 1)
-        let { liquidity, feeGrowthInside0Last, feeGrowthInside1Last, feesOwed1, feesOwed0 } = await pair.positions(
-          getPositionKey(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing)
-        )
+        let {
+          liquidity,
+          feeGrowthInside0LastX128,
+          feeGrowthInside1LastX128,
+          feesOwed1,
+          feesOwed0,
+        } = await pair.positions(getPositionKey(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing))
         expect(liquidity).to.eq(1)
-        expect(feeGrowthInside0Last).to.eq('102084710076281216247159121028324689')
-        expect(feeGrowthInside1Last).to.eq('10208471007628121624715912102832468')
+        expect(feeGrowthInside0LastX128).to.eq('102084710076281216247159121028324689')
+        expect(feeGrowthInside1LastX128).to.eq('10208471007628121624715912102832468')
         expect(feesOwed0).to.eq(0)
         expect(feesOwed1).to.eq(0)
 
         await pair.burn(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 1)
-        ;({ liquidity, feeGrowthInside0Last, feeGrowthInside1Last, feesOwed1, feesOwed0 } = await pair.positions(
-          getPositionKey(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing)
-        ))
+        ;({
+          liquidity,
+          feeGrowthInside0LastX128,
+          feeGrowthInside1LastX128,
+          feesOwed1,
+          feesOwed0,
+        } = await pair.positions(getPositionKey(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing)))
         expect(liquidity).to.eq(0)
-        expect(feeGrowthInside0Last).to.eq(0)
-        expect(feeGrowthInside1Last).to.eq(0)
+        expect(feeGrowthInside0LastX128).to.eq(0)
+        expect(feeGrowthInside1LastX128).to.eq(0)
         expect(feesOwed0).to.eq(0)
         expect(feesOwed1).to.eq(0)
       })
@@ -579,7 +587,7 @@ describe('UniswapV3Pair', () => {
               .withArgs(walletAddress, pair.address, IN)
               .to.emit(token1, 'Transfer')
               .withArgs(pair.address, walletAddress, OUT)
-            expect((await pair.slot0()).sqrtPriceCurrent).to.eq(PRICE)
+            expect((await pair.slot0()).sqrtPriceCurrentX96).to.eq(PRICE)
           })
 
           it('swapToHigherPrice', async () => {
@@ -596,7 +604,7 @@ describe('UniswapV3Pair', () => {
               .withArgs(pair.address, walletAddress, OUT)
               .to.emit(token1, 'Transfer')
               .withArgs(walletAddress, pair.address, IN)
-            expect((await pair.slot0()).sqrtPriceCurrent).to.eq(PRICE)
+            expect((await pair.slot0()).sqrtPriceCurrentX96).to.eq(PRICE)
           })
         })
 
@@ -1222,7 +1230,7 @@ describe('UniswapV3Pair', () => {
     const { secondsOutside: secondsOutsideAfter } = await pair.tickInfos(-24081)
 
     expect(await pair.tickCurrent(), 'pair is at the next tick').to.eq(-24082)
-    expect((await pair.slot0()).sqrtPriceCurrent, 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
+    expect((await pair.slot0()).sqrtPriceCurrentX96, 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
     expect(await pair.liquidityCurrent(), 'pair has run tick transition and liquidity changed').to.eq(
       liquidity.mul(2).add(1)
     )

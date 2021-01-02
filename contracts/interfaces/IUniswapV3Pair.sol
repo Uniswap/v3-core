@@ -2,7 +2,7 @@
 pragma solidity >=0.7.5;
 
 interface IUniswapV3Pair {
-    event Initialized(uint160 sqrtPrice);
+    event Initialized(uint160 sqrtPriceX96);
 
     // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
 
@@ -28,7 +28,7 @@ interface IUniswapV3Pair {
         external
         view
         returns (
-            uint160 sqrtPriceCurrent,
+            uint160 sqrtPriceCurrentX96,
             uint32 blockTimestampLast,
             int56 tickCumulativeLast,
             uint8 unlockedAndPriceBit
@@ -38,9 +38,9 @@ interface IUniswapV3Pair {
 
     function tickBitmap(int16) external view returns (uint256);
 
-    function feeGrowthGlobal0() external view returns (uint256);
+    function feeGrowthGlobal0X128() external view returns (uint256);
 
-    function feeGrowthGlobal1() external view returns (uint256);
+    function feeGrowthGlobal1X128() external view returns (uint256);
 
     function feeToFees0() external view returns (uint256);
 
@@ -49,7 +49,7 @@ interface IUniswapV3Pair {
     function tickCurrent() external view returns (int24);
 
     // initialize the pair
-    function initialize(uint160 sqrtPrice, bytes calldata data) external;
+    function initialize(uint160 sqrtPriceX96, bytes calldata data) external;
 
     // collect fees
     function collectFees(
