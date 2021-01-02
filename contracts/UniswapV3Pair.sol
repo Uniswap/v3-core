@@ -725,7 +725,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(IERC20(token0).balanceOf(address(this)) >= balance0.add(fee0));
         require(IERC20(token1).balanceOf(address(this)) >= balance1.add(fee1));
 
-        feeGrowthGlobal0 += FixedPoint128.fraction(fee0, liquidityCurrent);
-        feeGrowthGlobal1 += FixedPoint128.fraction(fee1, liquidityCurrent);
+        feeGrowthGlobal0X128 += FixedPoint128.fraction(fee0, liquidityCurrent);
+        feeGrowthGlobal0X128 += FixedPoint128.fraction(fee1, liquidityCurrent);
+
+        emit Flash(msg.sender, receiver, amount0, amount1);
     }
 }
