@@ -17,14 +17,8 @@ contract SwapMathEchidnaTest {
         require(feePips > 0);
         require(feePips < 1e6);
 
-        (FixedPoint96.uq64x96 memory sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount) =
-            SwapMath.computeSwapStep(
-                FixedPoint96.uq64x96(sqrtPriceRaw),
-                FixedPoint96.uq64x96(sqrtPriceTargetRaw),
-                liquidity,
-                amountRemaining,
-                feePips
-            );
+        (uint160 sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount) =
+            SwapMath.computeSwapStep(sqrtPriceRaw, sqrtPriceTargetRaw, liquidity, amountRemaining, feePips);
 
         assert(amountIn <= uint256(-1) - feeAmount);
 
@@ -38,22 +32,22 @@ contract SwapMathEchidnaTest {
             assert(amountIn == 0);
             assert(amountOut == 0);
             assert(feeAmount == 0);
-            assert(sqrtQ._x == sqrtPriceTargetRaw);
+            assert(sqrtQ == sqrtPriceTargetRaw);
         }
 
         // didn't reach price target, entire amount must be consumed
-        if (sqrtQ._x != sqrtPriceTargetRaw) {
+        if (sqrtQ != sqrtPriceTargetRaw) {
             if (amountRemaining < 0) assert(amountOut == uint256(-amountRemaining));
             else assert(amountIn + feeAmount == uint256(amountRemaining));
         }
 
         // next price is between price and price target
         if (sqrtPriceTargetRaw <= sqrtPriceRaw) {
-            assert(sqrtQ._x <= sqrtPriceRaw);
-            assert(sqrtQ._x >= sqrtPriceTargetRaw);
+            assert(sqrtQ <= sqrtPriceRaw);
+            assert(sqrtQ >= sqrtPriceTargetRaw);
         } else {
-            assert(sqrtQ._x >= sqrtPriceRaw);
-            assert(sqrtQ._x <= sqrtPriceTargetRaw);
+            assert(sqrtQ >= sqrtPriceRaw);
+            assert(sqrtQ <= sqrtPriceTargetRaw);
         }
     }
 }

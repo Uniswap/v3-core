@@ -19,8 +19,8 @@ describe('SwapMath', () => {
 
   describe('#computeSwapStep', () => {
     it('exact amount in that gets capped at price target in one for zero', async () => {
-      const price = { _x: encodePriceSqrt(1, 1) }
-      const priceTarget = { _x: encodePriceSqrt(101, 100) }
+      const price = encodePriceSqrt(1, 1)
+      const priceTarget = encodePriceSqrt(101, 100)
       const liquidity = expandTo18Decimals(2)
       const amount = expandTo18Decimals(1)
       const fee = 600
@@ -41,13 +41,13 @@ describe('SwapMath', () => {
 
       const priceAfterWholeInputAmount = await sqrtPriceMath.getNextPriceFromInput(price, liquidity, amount, zeroForOne)
 
-      expect(sqrtQ._x, 'price is capped at price target').to.eq(priceTarget._x)
-      expect(sqrtQ._x, 'price is less than price after whole input amount').to.lt(priceAfterWholeInputAmount._x)
+      expect(sqrtQ, 'price is capped at price target').to.eq(priceTarget)
+      expect(sqrtQ, 'price is less than price after whole input amount').to.lt(priceAfterWholeInputAmount)
     })
 
     it('exact amount out that gets capped at price target in one for zero', async () => {
-      const price = { _x: encodePriceSqrt(1, 1) }
-      const priceTarget = { _x: encodePriceSqrt(101, 100) }
+      const price = encodePriceSqrt(1, 1)
+      const priceTarget = encodePriceSqrt(101, 100)
       const liquidity = expandTo18Decimals(2)
       const amount = expandTo18Decimals(1).mul(-1)
       const fee = 600
@@ -73,13 +73,13 @@ describe('SwapMath', () => {
         zeroForOne
       )
 
-      expect(sqrtQ._x, 'price is capped at price target').to.eq(priceTarget._x)
-      expect(sqrtQ._x, 'price is less than price after whole output amount').to.lt(priceAfterWholeOutputAmount._x)
+      expect(sqrtQ, 'price is capped at price target').to.eq(priceTarget)
+      expect(sqrtQ, 'price is less than price after whole output amount').to.lt(priceAfterWholeOutputAmount)
     })
 
     it('exact amount in that is fully spent in one for zero', async () => {
-      const price = { _x: encodePriceSqrt(1, 1) }
-      const priceTarget = { _x: encodePriceSqrt(1000, 100) }
+      const price = encodePriceSqrt(1, 1)
+      const priceTarget = encodePriceSqrt(1000, 100)
       const liquidity = expandTo18Decimals(2)
       const amount = expandTo18Decimals(1)
       const fee = 600
@@ -105,13 +105,13 @@ describe('SwapMath', () => {
         zeroForOne
       )
 
-      expect(sqrtQ._x, 'price does not reach price target').to.be.lt(priceTarget._x)
-      expect(sqrtQ._x, 'price is equal to price after whole input amount').to.eq(priceAfterWholeInputAmountLessFee._x)
+      expect(sqrtQ, 'price does not reach price target').to.be.lt(priceTarget)
+      expect(sqrtQ, 'price is equal to price after whole input amount').to.eq(priceAfterWholeInputAmountLessFee)
     })
 
     it('exact amount out that is fully received in one for zero', async () => {
-      const price = { _x: encodePriceSqrt(1, 1) }
-      const priceTarget = { _x: encodePriceSqrt(10000, 100) }
+      const price = encodePriceSqrt(1, 1)
+      const priceTarget = encodePriceSqrt(10000, 100)
       const liquidity = expandTo18Decimals(2)
       const amount = expandTo18Decimals(1).mul(-1)
       const fee = 600
@@ -136,14 +136,14 @@ describe('SwapMath', () => {
         zeroForOne
       )
 
-      expect(sqrtQ._x, 'price does not reach price target').to.be.lt(priceTarget._x)
-      expect(sqrtQ._x, 'price is less than price after whole output amount').to.eq(priceAfterWholeOutputAmount._x)
+      expect(sqrtQ, 'price does not reach price target').to.be.lt(priceTarget)
+      expect(sqrtQ, 'price is less than price after whole output amount').to.eq(priceAfterWholeOutputAmount)
     })
 
     it('amount out is capped at the desired amount out', async () => {
       const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
-        { _x: BigNumber.from('417332158212080721273783715441582') },
-        { _x: BigNumber.from('1452870262520218020823638996') },
+        BigNumber.from('417332158212080721273783715441582'),
+        BigNumber.from('1452870262520218020823638996'),
         '159344665391607089467575320103',
         '-1',
         1
@@ -151,13 +151,13 @@ describe('SwapMath', () => {
       expect(amountIn).to.eq('1')
       expect(feeAmount).to.eq('1')
       expect(amountOut).to.eq('1') // would be 2 if not capped
-      expect(sqrtQ._x).to.eq('417332158212080721273783715441581')
+      expect(sqrtQ).to.eq('417332158212080721273783715441581')
     })
 
     it('target price of 1 uses partial input amount', async () => {
       const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
-        { _x: BigNumber.from('2') },
-        { _x: BigNumber.from('1') },
+        BigNumber.from('2'),
+        BigNumber.from('1'),
         '1',
         '3915081100057732413702495386755767',
         1
@@ -166,13 +166,13 @@ describe('SwapMath', () => {
       expect(feeAmount).to.eq('39614120871253040049813')
       expect(amountIn.add(feeAmount)).to.be.lte('3915081100057732413702495386755767')
       expect(amountOut).to.eq('0')
-      expect(sqrtQ._x).to.eq('1')
+      expect(sqrtQ).to.eq('1')
     })
 
     it('entire input amount taken as fee', async () => {
       const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
-        { _x: '2413' },
-        { _x: '79887613182836312' },
+        '2413',
+        '79887613182836312',
         '1985041575832132834610021537970',
         '10',
         1872
@@ -180,14 +180,14 @@ describe('SwapMath', () => {
       expect(amountIn).to.eq('0')
       expect(feeAmount).to.eq('10')
       expect(amountOut).to.eq('0')
-      expect(sqrtQ._x).to.eq('2413')
+      expect(sqrtQ).to.eq('2413')
     })
 
     it('gas', async () => {
       await snapshotGasCost(
         swapMath.getGasCostOfComputeSwapStep(
-          { _x: encodePriceSqrt(1, 1) },
-          { _x: encodePriceSqrt(101, 100) },
+          encodePriceSqrt(1, 1),
+          encodePriceSqrt(101, 100),
           expandTo18Decimals(2),
           expandTo18Decimals(1),
           600

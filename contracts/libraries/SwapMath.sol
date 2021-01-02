@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import './SafeMath.sol';
 import './FullMath.sol';
 
-import './FixedPoint96.sol';
 import './FixedPoint128.sol';
 import './SqrtPriceMath.sol';
 
@@ -13,8 +12,8 @@ library SwapMath {
 
     // compute the state changes for the swap step
     function computeSwapStep(
-        FixedPoint96.uq64x96 memory sqrtP,
-        FixedPoint96.uq64x96 memory sqrtPTarget,
+        uint160 sqrtP,
+        uint160 sqrtPTarget,
         uint128 liquidity,
         int256 amountRemaining,
         uint24 feePips
@@ -22,13 +21,13 @@ library SwapMath {
         internal
         pure
         returns (
-            FixedPoint96.uq64x96 memory sqrtQ,
+            uint160 sqrtQ,
             uint256 amountIn,
             uint256 amountOut,
             uint256 feeAmount
         )
     {
-        bool zeroForOne = sqrtP._x >= sqrtPTarget._x;
+        bool zeroForOne = sqrtP >= sqrtPTarget;
         bool exactIn = amountRemaining >= 0;
 
         if (exactIn) {
@@ -41,13 +40,13 @@ library SwapMath {
         // get the input/output amounts
         if (zeroForOne) {
             // if we've overshot the target, cap at the target
-            if (sqrtQ._x < sqrtPTarget._x) sqrtQ = sqrtPTarget;
+            if (sqrtQ < sqrtPTarget) sqrtQ = sqrtPTarget;
 
             amountIn = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true);
             amountOut = SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, false);
         } else {
             // if we've overshot the target, cap at the target
-            if (sqrtQ._x > sqrtPTarget._x) sqrtQ = sqrtPTarget;
+            if (sqrtQ > sqrtPTarget) sqrtQ = sqrtPTarget;
 
             amountIn = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true);
             amountOut = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
@@ -58,7 +57,7 @@ library SwapMath {
             amountOut = uint256(-amountRemaining);
         }
 
-        if (exactIn && sqrtQ._x != sqrtPTarget._x) {
+        if (exactIn && sqrtQ != sqrtPTarget) {
             // we didn't reach the target, so take the remainder of the maximum input as fee
             feeAmount = uint256(amountRemaining) - amountIn;
         } else {

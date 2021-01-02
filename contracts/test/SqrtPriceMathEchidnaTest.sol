@@ -2,7 +2,6 @@
 pragma solidity =0.7.6;
 
 import '../libraries/FullMath.sol';
-import '../libraries/FixedPoint96.sol';
 import '../libraries/SqrtPriceMath.sol';
 
 contract SqrtPriceMathEchidnaTest {
@@ -29,15 +28,14 @@ contract SqrtPriceMathEchidnaTest {
         uint256 amountIn,
         bool zeroForOne
     ) external pure {
-        FixedPoint96.uq64x96 memory sqrtQ =
-            SqrtPriceMath.getNextPriceFromInput(FixedPoint96.uq64x96(sqrtP), liquidity, amountIn, zeroForOne);
+        uint160 sqrtQ = SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
 
         if (zeroForOne) {
-            assert(sqrtQ._x <= sqrtP);
-            assert(amountIn >= SqrtPriceMath.getAmount0Delta(FixedPoint96.uq64x96(sqrtP), sqrtQ, liquidity, true));
+            assert(sqrtQ <= sqrtP);
+            assert(amountIn >= SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true));
         } else {
-            assert(sqrtQ._x >= sqrtP);
-            assert(amountIn >= SqrtPriceMath.getAmount1Delta(FixedPoint96.uq64x96(sqrtP), sqrtQ, liquidity, true));
+            assert(sqrtQ >= sqrtP);
+            assert(amountIn >= SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true));
         }
     }
 
@@ -47,15 +45,14 @@ contract SqrtPriceMathEchidnaTest {
         uint256 amountOut,
         bool zeroForOne
     ) external pure {
-        FixedPoint96.uq64x96 memory sqrtQ =
-            SqrtPriceMath.getNextPriceFromOutput(FixedPoint96.uq64x96(sqrtP), liquidity, amountOut, zeroForOne);
+        uint160 sqrtQ = SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
 
         if (zeroForOne) {
-            assert(sqrtQ._x <= sqrtP);
-            assert(amountOut <= SqrtPriceMath.getAmount1Delta(sqrtQ, FixedPoint96.uq64x96(sqrtP), liquidity, true));
+            assert(sqrtQ <= sqrtP);
+            assert(amountOut <= SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, true));
         } else {
-            assert(sqrtQ._x >= sqrtP);
-            assert(amountOut <= SqrtPriceMath.getAmount0Delta(sqrtQ, FixedPoint96.uq64x96(sqrtP), liquidity, true));
+            assert(sqrtQ >= sqrtP);
+            assert(amountOut <= SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, true));
         }
     }
 
@@ -66,10 +63,8 @@ contract SqrtPriceMathEchidnaTest {
     ) external pure {
         require(sqrtP >= sqrtQ);
         require(sqrtP > 0 && sqrtQ > 0);
-        uint256 amount0Down =
-            SqrtPriceMath.getAmount0Delta(FixedPoint96.uq64x96(sqrtP), FixedPoint96.uq64x96(sqrtQ), liquidity, false);
-        uint256 amount0Up =
-            SqrtPriceMath.getAmount0Delta(FixedPoint96.uq64x96(sqrtP), FixedPoint96.uq64x96(sqrtQ), liquidity, true);
+        uint256 amount0Down = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, false);
+        uint256 amount0Up = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true);
         assert(amount0Down <= amount0Up);
         // diff is no greater than 2
         assert(amount0Up - amount0Down < 2);
@@ -82,10 +77,8 @@ contract SqrtPriceMathEchidnaTest {
     ) external pure {
         require(sqrtP <= sqrtQ);
         require(sqrtP > 0 && sqrtQ > 0);
-        uint256 amount1Down =
-            SqrtPriceMath.getAmount1Delta(FixedPoint96.uq64x96(sqrtP), FixedPoint96.uq64x96(sqrtQ), liquidity, false);
-        uint256 amount1Up =
-            SqrtPriceMath.getAmount1Delta(FixedPoint96.uq64x96(sqrtP), FixedPoint96.uq64x96(sqrtQ), liquidity, true);
+        uint256 amount1Down = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, false);
+        uint256 amount1Up = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true);
         assert(amount1Down <= amount1Up);
         // diff is no greater than 2
         assert(amount1Up - amount1Down < 2);

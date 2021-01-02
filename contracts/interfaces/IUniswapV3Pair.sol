@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.7.5;
-pragma abicoder v2;
-
-import '../libraries/FixedPoint96.sol';
 
 interface IUniswapV3Pair {
     event Initialized(uint160 sqrtPrice);
@@ -31,13 +28,13 @@ interface IUniswapV3Pair {
         external
         view
         returns (
-            FixedPoint96.uq64x96 memory sqrtPriceCurrent,
+            uint160 sqrtPriceCurrent,
             uint32 blockTimestampLast,
             int56 tickCumulativeLast,
             uint8 unlockedAndPriceBit
         );
 
-    function slot1() external view returns (uint128 liquidityCurrent);
+    function liquidityCurrent() external view returns (uint128 liquidityCurrent);
 
     function tickBitmap(int16) external view returns (uint256);
 
