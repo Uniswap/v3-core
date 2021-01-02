@@ -154,6 +154,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function setFeeTo(address feeTo_) external override {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
+        emit FeeToChanged(feeTo, feeTo_);
         feeTo = feeTo_;
     }
 
@@ -204,7 +205,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         slot0 = _slot0;
 
-        emit Initialized(sqrtPrice);
+        emit Initialized(sqrtPrice, tick);
 
         // set permanent 1 wei position
         mint(address(0), MIN_TICK, MAX_TICK, 1, data);
@@ -304,6 +305,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position.feesOwed1 -= amount1;
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+
+        emit CollectFees(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
     function mint(
@@ -335,6 +338,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
         require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
         require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
+
+        emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
     }
 
     function burn(
@@ -363,10 +368,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+
+        emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
     }
 
     struct SetPositionParams {
-        // the address that will pay for the mint
+        // the address that owns the position
         address owner;
         // the lower and upper tick of the position
         int24 tickLower;
@@ -595,6 +602,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
 
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
+
+        if (zeroForOne) emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPrice, state.tick);
+        else Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPrice, state.tick);
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
@@ -672,5 +682,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) TransferHelper.safeTransfer(token0, feeTo, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
+
+        emit Collect(amount0, amount1);
     }
 }
