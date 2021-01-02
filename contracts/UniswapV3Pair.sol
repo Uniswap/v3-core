@@ -182,8 +182,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tick,
         int24 current,
         int128 liquidityDelta,
-        uint256 _feeGrowthGlobal0,
-        uint256 _feeGrowthGlobal1
+        uint256 _feeGrowthGlobal0X128,
+        uint256 _feeGrowthGlobal1X128
     ) private returns (Tick.Info storage tickInfo) {
         tickInfo = tickInfos[tick];
 
@@ -192,8 +192,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 assert(liquidityDelta > 0);
                 // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
                 if (tick <= current) {
-                    tickInfo.feeGrowthOutside0X128 = _feeGrowthGlobal0;
-                    tickInfo.feeGrowthOutside1X128 = _feeGrowthGlobal1;
+                    tickInfo.feeGrowthOutside0X128 = _feeGrowthGlobal0X128;
+                    tickInfo.feeGrowthOutside1X128 = _feeGrowthGlobal1X128;
                     tickInfo.secondsOutside = _blockTimestamp();
                 }
                 // safe because we know liquidityDelta is > 0
@@ -254,18 +254,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         bool zeroLiquidity = liquidityCurrent == 0;
-        uint256 _feeGrowthGlobal0 = zeroLiquidity ? 0 : feeGrowthGlobal0X128();
-        uint256 _feeGrowthGlobal1 = zeroLiquidity ? 0 : feeGrowthGlobal1X128();
+        uint256 _feeGrowthGlobal0X128 = zeroLiquidity ? 0 : feeGrowthGlobal0X128();
+        uint256 _feeGrowthGlobal1X128 = zeroLiquidity ? 0 : feeGrowthGlobal1X128();
         Tick.Info storage tickInfoLower =
-            _updateTick(tickLower, tick, liquidityDelta, _feeGrowthGlobal0, _feeGrowthGlobal1);
+            _updateTick(tickLower, tick, liquidityDelta, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
         Tick.Info storage tickInfoUpper =
-            _updateTick(tickUpper, tick, liquidityDelta, _feeGrowthGlobal0, _feeGrowthGlobal1);
+            _updateTick(tickUpper, tick, liquidityDelta, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
         require(tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK, 'LOL');
         require(tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK, 'LOU');
 
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
-            tickInfos.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0, _feeGrowthGlobal1);
+            tickInfos.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
         // calculate accumulated fees
         uint256 feesOwed0 =
@@ -691,30 +691,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         state.liquidity
                     );
 
-                    uint256 _feeGrowthGlobal0;
-                    uint256 _feeGrowthGlobal1;
+                    uint256 _feeGrowthGlobal0X128;
+                    uint256 _feeGrowthGlobal1X128;
 
                     if (zeroSpecified) {
-                        _feeGrowthGlobal0 = SqrtPriceMath.getFeeGrowthGlobal0(
+                        _feeGrowthGlobal0X128 = SqrtPriceMath.getFeeGrowthGlobal0(
                             state.sqrtPriceX96,
                             state.offsetSpecified,
                             balanceSpecifiedAfter,
                             state.liquidity
                         );
-                        _feeGrowthGlobal1 = SqrtPriceMath.getFeeGrowthGlobal1(
+                        _feeGrowthGlobal1X128 = SqrtPriceMath.getFeeGrowthGlobal1(
                             state.sqrtPriceX96,
                             state.offsetCalculated,
                             balanceCalculatedAfter,
                             state.liquidity
                         );
                     } else {
-                        _feeGrowthGlobal0 = SqrtPriceMath.getFeeGrowthGlobal0(
+                        _feeGrowthGlobal0X128 = SqrtPriceMath.getFeeGrowthGlobal0(
                             state.sqrtPriceX96,
                             state.offsetCalculated,
                             balanceCalculatedAfter,
                             state.liquidity
                         );
-                        _feeGrowthGlobal1 = SqrtPriceMath.getFeeGrowthGlobal1(
+                        _feeGrowthGlobal1X128 = SqrtPriceMath.getFeeGrowthGlobal1(
                             state.sqrtPriceX96,
                             state.offsetSpecified,
                             balanceSpecifiedAfter,
@@ -723,8 +723,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     }
 
                     // update tick info
-                    tickInfo.feeGrowthOutside0X128 = _feeGrowthGlobal0 - tickInfo.feeGrowthOutside0X128;
-                    tickInfo.feeGrowthOutside1X128 = _feeGrowthGlobal1 - tickInfo.feeGrowthOutside1X128;
+                    tickInfo.feeGrowthOutside0X128 = _feeGrowthGlobal0X128 - tickInfo.feeGrowthOutside0X128;
+                    tickInfo.feeGrowthOutside1X128 = _feeGrowthGlobal1X128 - tickInfo.feeGrowthOutside1X128;
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
                 }
 
