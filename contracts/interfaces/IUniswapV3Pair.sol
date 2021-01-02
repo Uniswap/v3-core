@@ -1,13 +1,44 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.7.5;
-pragma abicoder v2;
-
-import '../libraries/FixedPoint96.sol';
 
 interface IUniswapV3Pair {
-    event Initialized(uint160 sqrtPrice);
-
-    // event PositionSet(address owner, int24 tickLower, int24 tickUpper, uint8 feeVote, int112 liquidityDelta);
+    event Initialized(uint160 sqrtPrice, int24 tick);
+    event Mint(
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
+        address payer,
+        int128 amount,
+        int256 amount0,
+        int256 amount1
+    );
+    event Withdraw(
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
+        address recipient,
+        uint256 amount0,
+        uint256 amount1
+    );
+    event Burn(
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
+        address recipient,
+        int128 amount,
+        int256 amount0,
+        int256 amount1
+    );
+    event Swap(
+        address indexed payer,
+        address indexed recipient,
+        int256 amount0,
+        int256 amount1,
+        uint160 sqrtPrice,
+        int24 tick
+    );
+    event FeeToChanged(address indexed oldFeeTo, address indexed newFeeTo);
+    event Collect(uint256 amount0, uint256 amount1);
 
     // immutables
     function factory() external view returns (address);
@@ -31,19 +62,19 @@ interface IUniswapV3Pair {
         external
         view
         returns (
-            FixedPoint96.uq64x96 memory sqrtPriceCurrent,
+            uint160 sqrtPriceCurrentX96,
             uint32 blockTimestampLast,
             int56 tickCumulativeLast,
             uint8 unlockedAndPriceBit
         );
 
-    function slot1() external view returns (uint128 liquidityCurrent);
+    function liquidityCurrent() external view returns (uint128);
 
     function tickBitmap(int16) external view returns (uint256);
 
-    function feeGrowthGlobal0() external view returns (uint256);
+    function feeGrowthGlobal0X128() external view returns (uint256);
 
-    function feeGrowthGlobal1() external view returns (uint256);
+    function feeGrowthGlobal1X128() external view returns (uint256);
 
     function feeToFees0() external view returns (uint256);
 
@@ -52,7 +83,7 @@ interface IUniswapV3Pair {
     function tickCurrent() external view returns (int24);
 
     // initialize the pair
-    function initialize(uint160 sqrtPrice, bytes calldata data) external;
+    function initialize(uint160 sqrtPriceX96, bytes calldata data) external;
 
     // mint some liquidity to an address
     function mint(
@@ -78,7 +109,7 @@ interface IUniswapV3Pair {
         int24 tickLower,
         int24 tickUpper,
         int128 amount
-    ) external returns (uint256 amount0, uint256 amount1);
+    ) external returns (int256 amount0, int256 amount1);
 
     function swap(
         bool zeroForOne,

@@ -137,12 +137,12 @@ export function createPairFunctions({
     return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
   }
 
-  const swapToLowerPrice: SwapFunction = (sqrtPrice, to) => {
-    return swapToSqrtPrice(token0, sqrtPrice, to)
+  const swapToLowerPrice: SwapFunction = (sqrtPriceX96, to) => {
+    return swapToSqrtPrice(token0, sqrtPriceX96, to)
   }
 
-  const swapToHigherPrice: SwapFunction = (sqrtPrice, to) => {
-    return swapToSqrtPrice(token1, sqrtPrice, to)
+  const swapToHigherPrice: SwapFunction = (sqrtPriceX96, to) => {
+    return swapToSqrtPrice(token1, sqrtPriceX96, to)
   }
 
   const swapExact0For1: SwapFunction = (amount, to) => {
