@@ -103,16 +103,16 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount
+        int128 amount
     ) external {
         IUniswapV3Pair(pair).mint(recipient, tickLower, tickUpper, amount, abi.encode(msg.sender));
     }
 
-    event MintCallback(uint256 amount0Owed, uint256 amount1Owed);
+    event MintCallback(int256 amount0Owed, int256 amount1Owed);
 
     function uniswapV3MintCallback(
-        uint256 amount0Owed,
-        uint256 amount1Owed,
+        int256 amount0Owed,
+        int256 amount1Owed,
         bytes calldata data
     ) external override {
         address sender = abi.decode(data, (address));

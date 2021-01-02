@@ -54,8 +54,17 @@ interface IUniswapV3Pair {
     // initialize the pair
     function initialize(uint160 sqrtPrice, bytes calldata data) external;
 
-    // collect fees
-    function collectFees(
+    // mint some liquidity to an address
+    function mint(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        int128 amount,
+        bytes calldata data
+    ) external;
+
+    // withdraw fees
+    function withdraw(
         int24 tickLower,
         int24 tickUpper,
         address recipient,
@@ -63,21 +72,12 @@ interface IUniswapV3Pair {
         uint256 amount1Requested
     ) external returns (uint256 amount0, uint256 amount1);
 
-    // mint some liquidity to an address
-    function mint(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount,
-        bytes calldata data
-    ) external returns (uint256 amount0, uint256 amount1);
-
     // burn the sender's liquidity
     function burn(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount
+        int128 amount
     ) external returns (uint256 amount0, uint256 amount1);
 
     function swap(
