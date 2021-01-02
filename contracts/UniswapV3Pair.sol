@@ -230,12 +230,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         (int256 amount0, int256 amount1) =
             _setPosition(
-                PositionParams({
-                    owner: recipient,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: amount
-                })
+                PositionParams({owner: recipient, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: amount})
             );
 
         assert(amount0 >= 0);
@@ -285,15 +280,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lockNoPriceMovement returns (int256 amount0, int256 amount1) {
         require(amount < 0, 'BA');
 
-        (amount0, amount1) =
-            _setPosition(
-                PositionParams({
-                    owner: msg.sender,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: amount
-                })
-            );
+        (amount0, amount1) = _setPosition(
+            PositionParams({owner: msg.sender, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: amount})
+        );
 
         assert(amount0 <= 0);
         assert(amount1 <= 0);
@@ -369,13 +358,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Tick.Info storage tickInfoLower = _updateTick(params.tickLower, tick, params.liquidityDelta);
         Tick.Info storage tickInfoUpper = _updateTick(params.tickUpper, tick, params.liquidityDelta);
 
-        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = tickInfos.getFeeGrowthInside(
-            params.tickLower,
-            params.tickUpper,
-            tick,
-            feeGrowthGlobal0X128,
-            feeGrowthGlobal1X128
-        );
+        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
+            tickInfos.getFeeGrowthInside(
+                params.tickLower,
+                params.tickUpper,
+                tick,
+                feeGrowthGlobal0X128,
+                feeGrowthGlobal1X128
+            );
 
         // calculate accumulated fees
         uint256 feesOwed0 =
@@ -514,9 +504,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
-                (zeroForOne
-                    ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
-                    : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
+                (
+                    zeroForOne
+                        ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+                        : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
                 )
                     ? params.sqrtPriceLimitX96
                     : step.sqrtPriceNextX96,
