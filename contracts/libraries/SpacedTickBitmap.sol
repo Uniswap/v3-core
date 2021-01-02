@@ -8,35 +8,24 @@ import './TickBitmap.sol';
 library SpacedTickBitmap {
     using TickBitmap for mapping(int16 => uint256);
 
-    function compressedTick(int24 tick, int24 tickSpacing) private pure returns (int24) {
-        require(tick % tickSpacing == 0, 'CT');
-        return tick / tickSpacing;
-    }
-
-    function isInitialized(
-        mapping(int16 => uint256) storage self,
-        int24 tick,
-        int24 tickSpacing
-    ) internal view returns (bool) {
-        return self.isInitialized(compressedTick(tick, tickSpacing));
-    }
-
     function flipTick(
         mapping(int16 => uint256) storage self,
         int24 tick,
         int24 tickSpacing
     ) internal {
-        self.flipTick(compressedTick(tick, tickSpacing));
+        require(tick % tickSpacing == 0, 'TS'); // ensure that the tick is spaced
+        self.flipTick(tick / tickSpacing);
     }
 
     function nextInitializedTickWithinOneWord(
         mapping(int16 => uint256) storage self,
         int24 tick,
-        bool lte,
-        int24 tickSpacing
+        int24 tickSpacing,
+        bool lte
     ) internal view returns (int24 next, bool initialized) {
-        int24 compressed = compressedTick(tick, tickSpacing);
+        int24 compressed = tick / tickSpacing;
+        if (tick < 0 && tick % tickSpacing != 0) compressed--; // round towards negative infinity
         (next, initialized) = self.nextInitializedTickWithinOneWord(compressed, lte);
-        next = tick + (next - compressed) * tickSpacing;
+        next *= tickSpacing;
     }
 }

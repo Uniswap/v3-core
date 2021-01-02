@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import '@uniswap/lib/contracts/libraries/BitMath.sol';
+import './BitMath.sol';
 
 // a library for dealing with a bitmap of all ticks initialized states, represented as mapping(int16 => uint256)
 // the mapping uses int16 for keys since ticks are represented as int24 and there are 256 (2^8) bits per word
@@ -12,13 +12,6 @@ library TickBitmap {
     function position(int24 tick) private pure returns (int16 wordPos, uint8 bitPos) {
         wordPos = int16(tick >> 8);
         bitPos = uint8(255) - uint8(tick % 256);
-    }
-
-    // returns whether the given tick is initialized
-    function isInitialized(mapping(int16 => uint256) storage self, int24 tick) internal view returns (bool) {
-        (int16 wordPos, uint8 bitPos) = position(tick);
-        uint256 mask = 1 << bitPos;
-        return self[wordPos] & mask != 0;
     }
 
     // flips the tick from uninitialized to initialized, or vice versa

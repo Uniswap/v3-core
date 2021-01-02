@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
-pragma abicoder v2;
 
 import '../libraries/SwapMath.sol';
-import '../libraries/FixedPoint96.sol';
 
 contract SwapMathTest {
     function computeSwapStep(
-        FixedPoint96.uq64x96 memory sqrtP,
-        FixedPoint96.uq64x96 memory sqrtPTarget,
+        uint160 sqrtP,
+        uint160 sqrtPTarget,
         uint128 liquidity,
         int256 amountRemaining,
         uint24 feePips
@@ -16,7 +14,7 @@ contract SwapMathTest {
         external
         pure
         returns (
-            FixedPoint96.uq64x96 memory sqrtQ,
+            uint160 sqrtQ,
             uint256 amountIn,
             uint256 amountOut,
             uint256 feeAmount
@@ -26,8 +24,8 @@ contract SwapMathTest {
     }
 
     function getGasCostOfComputeSwapStep(
-        FixedPoint96.uq64x96 memory sqrtP,
-        FixedPoint96.uq64x96 memory sqrtPTarget,
+        uint160 sqrtP,
+        uint160 sqrtPTarget,
         uint128 liquidity,
         int256 amountRemaining,
         uint24 feePips
