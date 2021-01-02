@@ -170,8 +170,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 assert(liquidityDelta > 0);
                 // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
                 if (tick <= current) {
-                    tickInfo.feeGrowthOutside0 = feeGrowthGlobal0X128;
-                    tickInfo.feeGrowthOutside1 = feeGrowthGlobal1X128;
+                    tickInfo.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
+                    tickInfo.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
                     tickInfo.secondsOutside = _blockTimestamp();
                 }
                 // safe because we know liquidityDelta is > 0
@@ -551,12 +551,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     Tick.Info storage tickInfo = tickInfos[step.tickNext];
                     // update tick info
-                    tickInfo.feeGrowthOutside0 =
+                    tickInfo.feeGrowthOutside0X128 =
                         (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128) -
-                        tickInfo.feeGrowthOutside0;
-                    tickInfo.feeGrowthOutside1 =
+                        tickInfo.feeGrowthOutside0X128;
+                    tickInfo.feeGrowthOutside1X128 =
                         (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128) -
-                        tickInfo.feeGrowthOutside1;
+                        tickInfo.feeGrowthOutside1X128;
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
 
                     // update liquidityCurrent, subi from right to left, addi from left to right
