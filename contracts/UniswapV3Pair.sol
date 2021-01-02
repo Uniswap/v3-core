@@ -711,8 +711,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lockNoPriceMovement {
         require(amount0 > 0 || amount1 > 0, 'A');
 
-        uint256 fee0 = amount0 > 0 ? amount0.mul(fee).div(1e6 - fee) : 0;
-        uint256 fee1 = amount1 > 0 ? amount1.mul(fee).div(1e6 - fee) : 0;
+        uint256 fee0 = amount0 > 0 ? amount0.mul(fee).div(1e6) : 0;
+        uint256 fee1 = amount1 > 0 ? amount1.mul(fee).div(1e6) : 0;
 
         uint256 balance0 = IERC20(token0).balanceOf(address(this));
         uint256 balance1 = IERC20(token1).balanceOf(address(this));
