@@ -85,8 +85,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(int16 => uint256) public override tickBitmap;
 
     // offsets for computing fee growth
-    uint256 public offset0;
-    uint256 public offset1;
+    uint256 public offset0X128;
+    uint256 public offset1X128;
 
     // accumulated protocol fees
     uint256 public override feeToFees0;
@@ -150,7 +150,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return
             SqrtPriceMath.getFeeGrowthGlobal0(
                 slot0.sqrtPriceCurrentX96,
-                offset0,
+                offset0X128,
                 IERC20(token0).balanceOf(address(this)),
                 liquidityCurrent
             );
@@ -160,7 +160,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return
             SqrtPriceMath.getFeeGrowthGlobal1(
                 slot0.sqrtPriceCurrentX96,
-                offset1,
+                offset1X128,
                 IERC20(token1).balanceOf(address(this)),
                 liquidityCurrent
             );
@@ -341,11 +341,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) {
             TransferHelper.safeTransfer(token0, recipient, amount0);
-            offset0 -= (amount0 << 128);
+            offset0X128 -= (amount0 << 128);
         }
         if (amount1 > 0) {
             TransferHelper.safeTransfer(token1, recipient, amount1);
-            offset1 -= (amount1 << 128);
+            offset1X128 -= (amount1 << 128);
         }
 
         emit CollectFees(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
@@ -390,15 +390,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // update offsets
             if (liquidityBefore != 0) {
-                offset0 = SqrtPriceMath.getOffsetAfter(
-                    offset0,
+                offset0X128 = SqrtPriceMath.getOffsetAfter(
+                    offset0X128,
                     balance0,
                     balance0After,
                     liquidityBefore,
                     liquidityCurrent
                 );
-                offset1 = SqrtPriceMath.getOffsetAfter(
-                    offset1,
+                offset1X128 = SqrtPriceMath.getOffsetAfter(
+                    offset1X128,
                     balance1,
                     balance1After,
                     liquidityBefore,
@@ -445,15 +445,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
 
             // update offsets
-            offset0 = SqrtPriceMath.getOffsetAfter(
-                offset0,
+            offset0X128 = SqrtPriceMath.getOffsetAfter(
+                offset0X128,
                 balance0,
                 balance0.sub(amount0),
                 liquidityBefore,
                 liquidityCurrent
             );
-            offset1 = SqrtPriceMath.getOffsetAfter(
-                offset1,
+            offset1X128 = SqrtPriceMath.getOffsetAfter(
+                offset1X128,
                 balance1,
                 balance1.sub(amount1),
                 liquidityBefore,
@@ -662,8 +662,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                                 ? IERC20(token1).balanceOf(address(this))
                                 : IERC20(token0).balanceOf(address(this))
                         );
-                        state.offsetSpecified = zeroSpecified ? offset0 : offset1;
-                        state.offsetCalculated = zeroSpecified ? offset1 : offset0;
+                        state.offsetSpecified = zeroSpecified ? offset0X128 : offset1X128;
+                        state.offsetCalculated = zeroSpecified ? offset1X128 : offset0X128;
 
                         crossed = true;
                     }
@@ -739,8 +739,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         if (crossed) {
-            offset0 = zeroForOne ? state.offsetSpecified : state.offsetCalculated;
-            offset1 = zeroForOne ? state.offsetCalculated : state.offsetSpecified;
+            offset0X128 = zeroForOne ? state.offsetSpecified : state.offsetCalculated;
+            offset1X128 = zeroForOne ? state.offsetCalculated : state.offsetSpecified;
 
             // update liquidity if it changed
             if (params.liquidityStart != state.liquidity) liquidityCurrent = state.liquidity;
@@ -866,11 +866,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) {
             TransferHelper.safeTransfer(token0, feeTo, amount0);
-            offset0 -= (amount0 << 128);
+            offset0X128 -= (amount0 << 128);
         }
         if (amount1 > 0) {
             TransferHelper.safeTransfer(token1, feeTo, amount1);
-            offset1 -= (amount1 << 128);
+            offset1X128 -= (amount1 << 128);
         }
         emit Collect(amount0, amount1);
     }
