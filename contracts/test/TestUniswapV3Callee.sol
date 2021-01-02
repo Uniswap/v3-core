@@ -46,13 +46,13 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
 
     function swapToLowerSqrtPrice(
         address pair,
-        uint160 sqrtPrice,
+        uint160 sqrtPriceX96,
         address recipient
     ) external {
         IUniswapV3Pair(pair).swap(
             true,
             int256(2**255 - 1), // max int256
-            sqrtPrice,
+            sqrtPriceX96,
             recipient,
             abi.encode(msg.sender)
         );
@@ -60,7 +60,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
 
     function swapToHigherSqrtPrice(
         address pair,
-        uint160 sqrtPrice,
+        uint160 sqrtPriceX96,
         address recipient
     ) external {
         // in the 0 for 1 case, we run into overflow in getNextPriceFromAmount1RoundingDown if this is not true:
@@ -68,8 +68,8 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         // the amountSpecified below always satisfies this
         IUniswapV3Pair(pair).swap(
             false,
-            int256((2**160 - sqrtPrice + 1) / 2**96 - 1),
-            sqrtPrice,
+            int256((2**160 - sqrtPriceX96 + 1) / 2**96 - 1),
+            sqrtPriceX96,
             recipient,
             abi.encode(msg.sender)
         );
@@ -94,8 +94,8 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         }
     }
 
-    function initialize(address pair, uint160 sqrtPrice) external {
-        IUniswapV3Pair(pair).initialize(sqrtPrice, abi.encode(msg.sender));
+    function initialize(address pair, uint160 sqrtPriceX96) external {
+        IUniswapV3Pair(pair).initialize(sqrtPriceX96, abi.encode(msg.sender));
     }
 
     function mint(

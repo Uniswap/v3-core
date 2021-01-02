@@ -14,7 +14,7 @@ library SqrtTickMath {
         return uint160(ratio >> 32) + (ratio % (1 << 32) > 0 ? 1 : 0);
     }
 
-    function getTickAtSqrtRatio(uint160 sqrtP) internal pure returns (int24) {
-        return TickMath.getTickAtRatio(uint256(sqrtP) << 32);
+    function getTickAtSqrtRatio(uint160 sqrtPX96) internal pure returns (int24) {
+        return TickMath.getTickAtRatio(uint256(sqrtPX96) << 32);
     }
 }
