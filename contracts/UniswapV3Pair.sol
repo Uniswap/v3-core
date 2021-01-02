@@ -427,7 +427,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // how much is being swapped in (positive), or requested out (negative)
         int256 amountSpecified;
         // the max/min price that the pair will end up at after the swap
-        uint160 sqrtPriceLimit;
+        uint160 sqrtPriceLimitX96;
         // the address that receives amount out
         address recipient;
         // the data to send in the callback
@@ -455,7 +455,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the tick associated with the current price
         int24 tick;
         // the global fee growth of the input token
-        uint256 feeGrowthGlobal;
+        uint256 feeGrowthGlobalX128;
         // the current liquidity in range
         uint128 liquidity;
     }
@@ -468,7 +468,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // whether tickNext is initialized or not
         bool initialized;
         // sqrt(price) for the next tick (1/0)
-        uint160 sqrtPriceNext;
+        uint160 sqrtPriceNextX96;
         // how much is being swapped in in this step
         uint256 amountIn;
         // how much is being swapped out
@@ -478,7 +478,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private {
-        bool zeroForOne = params.sqrtPriceLimit < params.slot0Start.sqrtPriceCurrentX96;
+        bool zeroForOne = params.sqrtPriceLimitX96 < params.slot0Start.sqrtPriceCurrentX96;
         bool exactInput = params.amountSpecified > 0;
 
         slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ UNLOCKED_BIT;
@@ -490,12 +490,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 sqrtPriceX96: params.slot0Start.sqrtPriceCurrentX96,
                 priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
                 tick: params.tickStart,
-                feeGrowthGlobal: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
+                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
                 liquidity: params.liquidityStart
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
-        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != params.sqrtPriceLimit) {
+        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != params.sqrtPriceLimitX96) {
             StepComputations memory step;
 
             step.sqrtPriceStart = state.sqrtPriceX96;
@@ -507,13 +507,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
             // get the price for the next tick
-            step.sqrtPriceNext = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
+            step.sqrtPriceNextX96 = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
-                (zeroForOne ? step.sqrtPriceNext < params.sqrtPriceLimit : step.sqrtPriceNext > params.sqrtPriceLimit)
-                    ? params.sqrtPriceLimit
-                    : step.sqrtPriceNext,
+                (zeroForOne
+                    ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+                    : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
+                )
+                    ? params.sqrtPriceLimitX96
+                    : step.sqrtPriceNextX96,
                 state.liquidity,
                 state.amountSpecifiedRemaining,
                 fee
@@ -528,10 +531,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
 
             // update global fee tracker
-            state.feeGrowthGlobal += FixedPoint128.fraction(step.feeAmount, state.liquidity);
+            state.feeGrowthGlobalX128 += FixedPoint128.fraction(step.feeAmount, state.liquidity);
 
             // shift tick if we reached the next price target
-            if (state.sqrtPriceX96 == step.sqrtPriceNext) {
+            if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     // it's ok to put this condition here, because the min/max ticks are always initialized
@@ -541,10 +544,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     Tick.Info storage tickInfo = tickInfos[step.tickNext];
                     // update tick info
                     tickInfo.feeGrowthOutside0 =
-                        (zeroForOne ? state.feeGrowthGlobal : feeGrowthGlobal0X128) -
+                        (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128) -
                         tickInfo.feeGrowthOutside0;
                     tickInfo.feeGrowthOutside1 =
-                        (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobal) -
+                        (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128) -
                         tickInfo.feeGrowthOutside1;
                     tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
 
@@ -583,8 +586,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // still locked until after the callback, but need to record the price bit
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT : 0;
 
-        if (zeroForOne) feeGrowthGlobal0X128 = state.feeGrowthGlobal;
-        else feeGrowthGlobal1X128 = state.feeGrowthGlobal;
+        if (zeroForOne) feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
+        else feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
@@ -611,7 +614,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function swap(
         bool zeroForOne,
         int256 amountSpecified,
-        uint160 sqrtPriceLimit,
+        uint160 sqrtPriceLimitX96,
         address recipient,
         bytes calldata data
     ) external override {
@@ -620,14 +623,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Slot0 memory _slot0 = slot0;
         require(_slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT, 'LOK');
         require(
-            zeroForOne ? sqrtPriceLimit < _slot0.sqrtPriceCurrentX96 : sqrtPriceLimit > _slot0.sqrtPriceCurrentX96,
+            zeroForOne
+                ? sqrtPriceLimitX96 < _slot0.sqrtPriceCurrentX96
+                : sqrtPriceLimitX96 > _slot0.sqrtPriceCurrentX96,
             'SPL'
         );
 
         _swap(
             SwapParams({
                 amountSpecified: amountSpecified,
-                sqrtPriceLimit: sqrtPriceLimit,
+                sqrtPriceLimitX96: sqrtPriceLimitX96,
                 recipient: recipient,
                 data: data,
                 slot0Start: _slot0,
