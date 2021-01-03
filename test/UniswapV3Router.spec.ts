@@ -235,8 +235,23 @@ describe('UniswapV3Pair', () => {
 
         })
 
+        describe.only('Multi-hop swaps', () => {
+          it('check for three transfer events', async () => {
+            await expect(swapAforC(1000, walletAddress))
+            .to.emit(swapTarget, 'SwapCallback')
+
+            .to.emit(token0, 'Transfer')
+            .withArgs(pair.address, pair.address, 100)
+            .to.emit(token1, 'Transfer')
+            .withArgs(pair.address, pair1.address, 100)
+            .to.emit(token1, 'Transfer')
+            .withArgs(pair1.address, walletAddress, 100)
+          expect(await pair.to.eq(pair))
+          })
+        })
+
         // uses swapAforC as representative of all 4 swap functions
-        describe.only('gas', () => {
+        describe('gas', () => {
           it('first swap ever', async () => {
             await snapshotGasCost(swapAforC(1000, walletAddress))
             
