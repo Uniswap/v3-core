@@ -216,6 +216,107 @@ contract UniswapV3Pair is IUniswapV3Pair {
         mint(address(0), MIN_TICK, MAX_TICK, 1, data);
     }
 
+    // gets and updates and gets a position with the given liquidity delta
+    function _updatePosition(PositionParams memory params, int24 tick) private {
+        require(params.tickLower < params.tickUpper, 'TLU');
+        require(params.tickLower >= MIN_TICK, 'TLM');
+        require(params.tickUpper <= MAX_TICK, 'TUM');
+        Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
+
+        if (params.liquidityDelta < 0) {
+            require(position.liquidity >= uint128(-params.liquidityDelta), 'CP');
+        } else if (params.liquidityDelta == 0) {
+            require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
+        }
+
+        Tick.Info storage tickInfoLower = _updateTick(params.tickLower, tick, params.liquidityDelta);
+        Tick.Info storage tickInfoUpper = _updateTick(params.tickUpper, tick, params.liquidityDelta);
+
+        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
+            tickInfos.getFeeGrowthInside(
+                params.tickLower,
+                params.tickUpper,
+                tick,
+                feeGrowthGlobal0X128,
+                feeGrowthGlobal1X128
+            );
+
+        // calculate accumulated fees
+        uint256 feesOwed0 =
+            FullMath.mulDiv(
+                feeGrowthInside0X128 - position.feeGrowthInside0LastX128,
+                position.liquidity,
+                FixedPoint128.Q128
+            );
+        uint256 feesOwed1 =
+            FullMath.mulDiv(
+                feeGrowthInside1X128 - position.feeGrowthInside1LastX128,
+                position.liquidity,
+                FixedPoint128.Q128
+            );
+
+        // collect protocol fee, if on
+        if (feeTo != address(0)) {
+            uint256 fee0 = feesOwed0 / 6;
+            feesOwed0 -= fee0;
+            feeToFees0 += fee0;
+
+            uint256 fee1 = feesOwed1 / 6;
+            feesOwed1 -= fee1;
+            feeToFees1 += fee1;
+        }
+
+        // update the position
+        position.liquidity = uint128(position.liquidity.addi(params.liquidityDelta));
+        position.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+        position.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+        position.feesOwed0 += feesOwed0;
+        position.feesOwed1 += feesOwed1;
+
+        // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
+        if (params.liquidityDelta != 0) {
+            tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(params.liquidityDelta).toInt128();
+            tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(params.liquidityDelta).toInt128();
+        }
+
+        // clear any tick or position data that is no longer needed
+        if (params.liquidityDelta < 0) {
+            if (tickInfoLower.liquidityGross == 0) _clearTick(params.tickLower);
+            if (tickInfoUpper.liquidityGross == 0) _clearTick(params.tickUpper);
+            if (position.liquidity == 0) {
+                delete position.feeGrowthInside0LastX128;
+                delete position.feeGrowthInside1LastX128;
+            }
+        }
+    }
+
+    function withdraw(
+        int24 tickLower,
+        int24 tickUpper,
+        address recipient,
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
+        require(tickLower < tickUpper, 'TLU');
+        require(tickLower >= MIN_TICK, 'TLM');
+        require(tickUpper <= MAX_TICK, 'TUM');
+        Position storage position = _getPosition(msg.sender, tickLower, tickUpper);
+
+        amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
+        amount1 = amount1Requested > position.feesOwed1 ? position.feesOwed1 : amount1Requested;
+
+        if (amount0 > 0) {
+            position.feesOwed0 -= amount0;
+            TransferHelper.safeTransfer(token0, recipient, amount0);
+        }
+        if (amount1 > 0) {
+            position.feesOwed1 -= amount1;
+            TransferHelper.safeTransfer(token1, recipient, amount1);
+        }
+
+        emit Withdraw(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
+    }
+
     function mint(
         address recipient,
         int24 tickLower,
@@ -251,33 +352,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
-    }
-
-    function withdraw(
-        int24 tickLower,
-        int24 tickUpper,
-        address recipient,
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
-        require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= MIN_TICK, 'TLM');
-        require(tickUpper <= MAX_TICK, 'TUM');
-        Position storage position = _getPosition(msg.sender, tickLower, tickUpper);
-
-        amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
-        amount1 = amount1Requested > position.feesOwed1 ? position.feesOwed1 : amount1Requested;
-
-        if (amount0 > 0) {
-            position.feesOwed0 -= amount0;
-            TransferHelper.safeTransfer(token0, recipient, amount0);
-        }
-        if (amount1 > 0) {
-            position.feesOwed1 -= amount1;
-            TransferHelper.safeTransfer(token1, recipient, amount1);
-        }
-
-        emit Withdraw(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
     function burn(
@@ -359,80 +433,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 );
-            }
-        }
-    }
-
-    // gets and updates and gets a position with the given liquidity delta
-    function _updatePosition(PositionParams memory params, int24 tick) private {
-        require(params.tickLower < params.tickUpper, 'TLU');
-        require(params.tickLower >= MIN_TICK, 'TLM');
-        require(params.tickUpper <= MAX_TICK, 'TUM');
-        Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
-
-        if (params.liquidityDelta < 0) {
-            require(position.liquidity >= uint128(-params.liquidityDelta), 'CP');
-        } else if (params.liquidityDelta == 0) {
-            require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
-        }
-
-        Tick.Info storage tickInfoLower = _updateTick(params.tickLower, tick, params.liquidityDelta);
-        Tick.Info storage tickInfoUpper = _updateTick(params.tickUpper, tick, params.liquidityDelta);
-
-        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
-            tickInfos.getFeeGrowthInside(
-                params.tickLower,
-                params.tickUpper,
-                tick,
-                feeGrowthGlobal0X128,
-                feeGrowthGlobal1X128
-            );
-
-        // calculate accumulated fees
-        uint256 feesOwed0 =
-            FullMath.mulDiv(
-                feeGrowthInside0X128 - position.feeGrowthInside0LastX128,
-                position.liquidity,
-                FixedPoint128.Q128
-            );
-        uint256 feesOwed1 =
-            FullMath.mulDiv(
-                feeGrowthInside1X128 - position.feeGrowthInside1LastX128,
-                position.liquidity,
-                FixedPoint128.Q128
-            );
-
-        // collect protocol fee, if on
-        if (feeTo != address(0)) {
-            uint256 fee0 = feesOwed0 / 6;
-            feesOwed0 -= fee0;
-            feeToFees0 += fee0;
-
-            uint256 fee1 = feesOwed1 / 6;
-            feesOwed1 -= fee1;
-            feeToFees1 += fee1;
-        }
-
-        // update the position
-        position.liquidity = uint128(position.liquidity.addi(params.liquidityDelta));
-        position.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-        position.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        position.feesOwed0 += feesOwed0;
-        position.feesOwed1 += feesOwed1;
-
-        // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-        if (params.liquidityDelta != 0) {
-            tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(params.liquidityDelta).toInt128();
-            tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(params.liquidityDelta).toInt128();
-        }
-
-        // clear any tick or position data that is no longer needed
-        if (params.liquidityDelta < 0) {
-            if (tickInfoLower.liquidityGross == 0) _clearTick(params.tickLower);
-            if (tickInfoUpper.liquidityGross == 0) _clearTick(params.tickUpper);
-            if (position.liquidity == 0) {
-                delete position.feeGrowthInside0LastX128;
-                delete position.feeGrowthInside1LastX128;
             }
         }
     }
