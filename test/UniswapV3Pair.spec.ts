@@ -827,10 +827,10 @@ describe('UniswapV3Pair', () => {
       const token1BalanceBeforeWallet = await token1.balanceOf(wallet.address)
 
       await mint(wallet.address, lowerTick, upperTick, 0) // poke to update fees
-      await pair.withdraw(lowerTick, upperTick, wallet.address, constants.MaxUint256, constants.MaxUint256)
+      await pair.collect(lowerTick, upperTick, wallet.address, constants.MaxUint256, constants.MaxUint256)
 
       await mint(wallet.address, lowerTick, upperTick, 0) // poke to update fees
-      const { amount0: fees0, amount1: fees1 } = await pair.callStatic.withdraw(
+      const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collect(
         lowerTick,
         upperTick,
         wallet.address,
@@ -1017,7 +1017,7 @@ describe('UniswapV3Pair', () => {
         await mint(wallet.address, MIN_TICK, MAX_TICK, 0)
       }
 
-      const { amount0: fees0, amount1: fees1 } = await pair.callStatic.withdraw(
+      const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collect(
         MIN_TICK,
         MAX_TICK,
         wallet.address,
@@ -1051,7 +1051,7 @@ describe('UniswapV3Pair', () => {
     describe('#collect', () => {
       it('returns 0 if no fees', async () => {
         await pair.setFeeTo(other.address)
-        const { amount0, amount1 } = await pair.callStatic.collect(constants.MaxUint256, constants.MaxUint256)
+        const { amount0, amount1 } = await pair.callStatic.collectProtocol(constants.MaxUint256, constants.MaxUint256)
         expect(amount0).to.be.eq(0)
         expect(amount1).to.be.eq(0)
       })
@@ -1062,9 +1062,9 @@ describe('UniswapV3Pair', () => {
         await swapAndGetFeesOwed()
         // collect fees to trigger collection of the protocol fee
         await mint(wallet.address, MIN_TICK, MAX_TICK, 0) // poke to update fees
-        await pair.withdraw(MIN_TICK, MAX_TICK, wallet.address, constants.MaxUint256, constants.MaxUint256)
+        await pair.collect(MIN_TICK, MAX_TICK, wallet.address, constants.MaxUint256, constants.MaxUint256)
 
-        await expect(pair.collect(constants.MaxUint256, constants.MaxUint256))
+        await expect(pair.collectProtocol(constants.MaxUint256, constants.MaxUint256))
           .to.emit(token0, 'Transfer')
           .withArgs(pair.address, other.address, '99999999999999')
       })
@@ -1099,7 +1099,7 @@ describe('UniswapV3Pair', () => {
       expect(token1Fees).to.eq(0)
 
       // collect the fees
-      await pair.withdraw(MIN_TICK, MAX_TICK, wallet.address, constants.MaxUint256, constants.MaxUint256)
+      await pair.collect(MIN_TICK, MAX_TICK, wallet.address, constants.MaxUint256, constants.MaxUint256)
 
       const { token0Fees: token0FeesNext, token1Fees: token1FeesNext } = await swapAndGetFeesOwed(
         undefined,
@@ -1115,7 +1115,7 @@ describe('UniswapV3Pair', () => {
       expect(await pair.feeToFees1()).to.be.eq(0)
 
       await mint(wallet.address, MIN_TICK, MAX_TICK, 0) // poke to update fees
-      await expect(pair.withdraw(MIN_TICK, MAX_TICK, wallet.address, constants.MaxUint256, constants.MaxUint256))
+      await expect(pair.collect(MIN_TICK, MAX_TICK, wallet.address, constants.MaxUint256, constants.MaxUint256))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '500000000000000')
 

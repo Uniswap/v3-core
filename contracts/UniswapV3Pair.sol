@@ -287,7 +287,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function withdraw(
+    function collect(
         int24 tickLower,
         int24 tickUpper,
         address recipient,
@@ -311,7 +311,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
-        emit Withdraw(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
+        emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
     function mint(
@@ -682,7 +682,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function collect(uint256 amount0Requested, uint256 amount1Requested)
+    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
         external
         override
         lockNoPriceMovement
@@ -707,6 +707,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (amount0 > 0) TransferHelper.safeTransfer(token0, feeTo, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
 
-        emit Collect(amount0, amount1);
+        emit CollectProtocol(amount0, amount1);
     }
 }

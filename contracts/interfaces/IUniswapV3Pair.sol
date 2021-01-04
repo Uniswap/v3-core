@@ -12,7 +12,7 @@ interface IUniswapV3Pair {
         uint256 amount0,
         uint256 amount1
     );
-    event Withdraw(
+    event Collect(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
@@ -38,7 +38,7 @@ interface IUniswapV3Pair {
         int24 tick
     );
     event FeeToChanged(address indexed oldFeeTo, address indexed newFeeTo);
-    event Collect(uint256 amount0, uint256 amount1);
+    event CollectProtocol(uint256 amount0, uint256 amount1);
 
     // immutables
     function factory() external view returns (address);
@@ -94,8 +94,8 @@ interface IUniswapV3Pair {
         bytes calldata data
     ) external;
 
-    // withdraw fees
-    function withdraw(
+    // collect fees
+    function collect(
         int24 tickLower,
         int24 tickUpper,
         address recipient,
@@ -129,7 +129,7 @@ interface IUniswapV3Pair {
     ) external;
 
     // allows anyone to collect protocol fees to feeTo
-    function collect(uint256 amount0Requested, uint256 amount1Requested)
+    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
         external
         returns (uint256 amount0, uint256 amount1);
 }
