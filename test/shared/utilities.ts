@@ -186,7 +186,7 @@ export function createPairFunctions({
   }
 
   const swapAforC: SwapFunction = (amount, to) => {
-    return multiSwap([address, address], amount, to)
+    return multiSwap(token0, amount, to)
   }
 
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
