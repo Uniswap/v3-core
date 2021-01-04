@@ -67,10 +67,6 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
-export type StaticSwapFunction = (
-  amount: BigNumberish,
-  to: Wallet | string
-) => Promise<{ amountUsed: BigNumber; amountCalculated: BigNumber }>
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
