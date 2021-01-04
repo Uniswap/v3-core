@@ -45,11 +45,11 @@ interface IUniswapV3Factory {
     function isCallFromPairAllowed(address target, bytes4 sig) external view returns (bool);
 
     // appends the bytes4 sig to the blacklist
-    function appendSigToBlacklist(bytes4 sig) external;
+    function appendSigToBlocklist(bytes4 sig) external;
 
     // appends the target/bytes4 sig combination to the blacklist
-    function appendTargetSigToBlacklist(address target, bytes4 sig) external;
+    function appendTargetSigToBlocklist(address target, bytes4 sig) external;
 
     // appends the pair to the blacklist
-    function appendPairToBlacklist(address pair) external;
+    function appendPairToBlocklist(address pair) external;
 }
