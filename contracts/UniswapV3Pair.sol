@@ -217,29 +217,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // gets and updates and gets a position with the given liquidity delta
-    function _updatePosition(PositionParams memory params, int24 tick) private {
-        require(params.tickLower < params.tickUpper, 'TLU');
-        require(params.tickLower >= MIN_TICK, 'TLM');
-        require(params.tickUpper <= MAX_TICK, 'TUM');
-        Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
+    function _updatePosition(address owner, int24 tickLower, int24 tickUpper, int128 liquidityDelta, int24 tick)
+        private
+    {
+        Position storage position = _getPosition(owner, tickLower, tickUpper);
 
-        if (params.liquidityDelta < 0) {
-            require(position.liquidity >= uint128(-params.liquidityDelta), 'CP');
-        } else if (params.liquidityDelta == 0) {
+        if (liquidityDelta < 0) {
+            require(position.liquidity >= uint128(-liquidityDelta), 'CP');
+        } else if (liquidityDelta == 0) {
             require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
         }
 
-        Tick.Info storage tickInfoLower = _updateTick(params.tickLower, tick, params.liquidityDelta);
-        Tick.Info storage tickInfoUpper = _updateTick(params.tickUpper, tick, params.liquidityDelta);
+        Tick.Info storage tickInfoLower = _updateTick(tickLower, tick, liquidityDelta);
+        Tick.Info storage tickInfoUpper = _updateTick(tickUpper, tick, liquidityDelta);
 
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
-            tickInfos.getFeeGrowthInside(
-                params.tickLower,
-                params.tickUpper,
-                tick,
-                feeGrowthGlobal0X128,
-                feeGrowthGlobal1X128
-            );
+            tickInfos.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
 
         // calculate accumulated fees
         uint256 feesOwed0 =
@@ -267,22 +260,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // update the position
-        position.liquidity = uint128(position.liquidity.addi(params.liquidityDelta));
+        position.liquidity = uint128(position.liquidity.addi(liquidityDelta));
         position.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         position.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         position.feesOwed0 += feesOwed0;
         position.feesOwed1 += feesOwed1;
 
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-        if (params.liquidityDelta != 0) {
-            tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(params.liquidityDelta).toInt128();
-            tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(params.liquidityDelta).toInt128();
+        if (liquidityDelta != 0) {
+            tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(liquidityDelta).toInt128();
+            tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(liquidityDelta).toInt128();
         }
 
         // clear any tick or position data that is no longer needed
-        if (params.liquidityDelta < 0) {
-            if (tickInfoLower.liquidityGross == 0) _clearTick(params.tickLower);
-            if (tickInfoUpper.liquidityGross == 0) _clearTick(params.tickUpper);
+        if (liquidityDelta < 0) {
+            if (tickInfoLower.liquidityGross == 0) _clearTick(tickLower);
+            if (tickInfoUpper.liquidityGross == 0) _clearTick(tickUpper);
             if (position.liquidity == 0) {
                 delete position.feeGrowthInside0LastX128;
                 delete position.feeGrowthInside1LastX128;
@@ -397,9 +390,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // effect some changes to a position
     function _setPosition(PositionParams memory params) private returns (int256 amount0, int256 amount1) {
+        require(params.tickLower < params.tickUpper, 'TLU');
+        require(params.tickLower >= MIN_TICK, 'TLM');
+        require(params.tickUpper <= MAX_TICK, 'TUM');
+
         int24 tick = tickCurrent();
 
-        _updatePosition(params, tick);
+        _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 
         if (params.liquidityDelta != 0) {
             if (tick < params.tickLower) {
