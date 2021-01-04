@@ -217,9 +217,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // gets and updates and gets a position with the given liquidity delta
-    function _updatePosition(address owner, int24 tickLower, int24 tickUpper, int128 liquidityDelta, int24 tick)
-        private
-    {
+    function _updatePosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int128 liquidityDelta,
+        int24 tick
+    ) private {
         Position storage position = _getPosition(owner, tickLower, tickUpper);
 
         if (liquidityDelta < 0) {
