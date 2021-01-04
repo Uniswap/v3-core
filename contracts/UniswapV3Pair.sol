@@ -253,9 +253,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
             require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
         }
 
-        bool zeroLiquidity = liquidityCurrent == 0;
-        uint256 _feeGrowthGlobal0X128 = zeroLiquidity ? 0 : feeGrowthGlobal0X128();
-        uint256 _feeGrowthGlobal1X128 = zeroLiquidity ? 0 : feeGrowthGlobal1X128();
+        (uint256 _feeGrowthGlobal0X128, uint256 _feeGrowthGlobal1X128) = liquidityCurrent == 0
+            ? (0, 0)
+            : (feeGrowthGlobal0X128(), feeGrowthGlobal1X128());
         Tick.Info storage tickInfoLower =
             _updateTick(tickLower, tick, liquidityDelta, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
         Tick.Info storage tickInfoUpper =
@@ -270,13 +270,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // calculate accumulated fees
         uint256 feesOwed0 =
             FullMath.mulDiv(
-                feeGrowthInside0X128 - position.feeGrowthInside0LastX128,
+                // TODO this might not be necessary
+                feeGrowthInside0X128 > position.feeGrowthInside0LastX128
+                    ? feeGrowthInside0X128 - position.feeGrowthInside0LastX128
+                    : 0,
                 position.liquidity,
                 FixedPoint128.Q128
             );
         uint256 feesOwed1 =
             FullMath.mulDiv(
-                feeGrowthInside1X128 - position.feeGrowthInside1LastX128,
+                // TODO this might not be necessary
+                feeGrowthInside1X128 > position.feeGrowthInside1LastX128
+                    ? feeGrowthInside1X128 - position.feeGrowthInside1LastX128
+                    : 0,
                 position.liquidity,
                 FixedPoint128.Q128
             );
@@ -341,10 +347,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) {
             TransferHelper.safeTransfer(token0, recipient, amount0);
+            // TODO change amount0Requested to uint128 once #253 lands so this is safe
             offset0X128 -= (amount0 << 128);
         }
         if (amount1 > 0) {
             TransferHelper.safeTransfer(token1, recipient, amount1);
+            // TODO change amount1Requested to uint128 once #253 lands so this is safe
             offset1X128 -= (amount1 << 128);
         }
 
@@ -389,7 +397,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             require(balance1.add(amount1) <= balance1After, 'M1');
 
             // update offsets
-            if (liquidityBefore != 0) {
+            // TODO make sure this is gated properly for poke optimization once #253 lands
+            if (liquidityBefore != 0 && amount > 0) {
                 offset0X128 = SqrtPriceMath.getOffsetAfter(
                     offset0X128,
                     balance0,

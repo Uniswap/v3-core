@@ -187,11 +187,13 @@ library SqrtPriceMath {
         uint256 offset0X128,
         uint256 balance0,
         uint128 liquidity
-    ) internal pure returns (uint256 feeGrowthGlobal1X128) {
-        uint256 fraction = ((balance0 << 128) - offset0X128) / uint256(liquidity);
-        // reciprocal of sqrtPX96, as a 128x128
-        uint256 reciprocal = ((1 << 255) / sqrtPX96) >> 31;
-        feeGrowthGlobal1X128 = fraction - reciprocal;
+    ) internal view returns (uint256 feeGrowthGlobal0X128) {
+        uint256 balance0X128 = balance0 > uint128(-1) ? uint256(-1) : (balance0 << 128);
+        // overflow is necessary
+        uint256 fraction = (balance0X128 - offset0X128) / liquidity;
+        uint256 sqrtPReciprocalX128 = divRoundingUp(1 << 224, sqrtPX96);
+        // TODO this might never happen, but better to be safe for now
+        feeGrowthGlobal0X128 = fraction > sqrtPReciprocalX128 ? fraction - sqrtPReciprocalX128 : 0;
     }
 
     function getFeeGrowthGlobal1(
@@ -199,9 +201,13 @@ library SqrtPriceMath {
         uint256 offset1X128,
         uint256 balance1,
         uint128 liquidity
-    ) internal pure returns (uint256 feeGrowthGlobal1X128) {
-        uint256 fraction = ((balance1 << 128) - offset1X128) / uint256(liquidity);
-        feeGrowthGlobal1X128 = fraction - (sqrtPX96 << 32);
+    ) internal view returns (uint256 feeGrowthGlobal1X128) {
+        uint256 balance1X128 = balance1 > uint128(-1) ? uint256(-1) : (balance1 << 128);
+        // overflow is necessary
+        uint256 fraction = (balance1X128 - offset1X128) / liquidity;
+        uint256 sqrtPX128 = uint256(sqrtPX96) << 32;
+        // TODO this might never happen, but better to be safe for now
+        feeGrowthGlobal1X128 = fraction > sqrtPX128 ? fraction - sqrtPX128 : 0;
     }
 
     function getOffsetAfter(
@@ -210,8 +216,12 @@ library SqrtPriceMath {
         uint256 balanceAfter,
         uint128 liquidityBefore,
         uint128 liquidityAfter
-    ) internal pure returns (uint256 offsetAfterX128) {
-        uint256 fraction = FullMath.mulDiv((balanceBefore << 128) - offsetBeforeX128, liquidityAfter, liquidityBefore);
-        offsetAfterX128 = (balanceAfter << 128) - fraction;
+    ) internal view returns (uint256 offsetAfterX128) {
+        uint256 balanceBeforeX128 = balanceBefore > uint128(-1) ? uint256(-1) : (balanceBefore << 128);
+        // overflow is necessary
+        // TODO ensure that rounding down is appropriate for both + and - offsets
+        uint256 fraction = FullMath.mulDiv(balanceBeforeX128 - offsetBeforeX128, liquidityAfter, liquidityBefore);
+        uint256 balanceAfterX128 = balanceAfter > uint128(-1) ? uint256(-1) : (balanceAfter << 128);
+        offsetAfterX128 = balanceAfterX128 - fraction;
     }
 }
