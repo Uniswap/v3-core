@@ -253,9 +253,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
         }
 
-        (uint256 _feeGrowthGlobal0X128, uint256 _feeGrowthGlobal1X128) = liquidityCurrent == 0
-            ? (0, 0)
-            : (feeGrowthGlobal0X128(), feeGrowthGlobal1X128());
+        (uint256 _feeGrowthGlobal0X128, uint256 _feeGrowthGlobal1X128) =
+            liquidityCurrent == 0 ? (0, 0) : (feeGrowthGlobal0X128(), feeGrowthGlobal1X128());
         Tick.Info storage tickInfoLower =
             _updateTick(tickLower, tick, liquidityDelta, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
         Tick.Info storage tickInfoUpper =
