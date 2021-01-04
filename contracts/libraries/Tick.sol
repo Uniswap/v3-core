@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
-import './FixedPoint128.sol';
-
 library Tick {
     // info stored for each initialized individual tick
     struct Info {

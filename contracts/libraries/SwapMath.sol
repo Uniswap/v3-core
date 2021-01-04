@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import './SafeMath.sol';
 import './FullMath.sol';
 
-import './FixedPoint128.sol';
 import './SqrtPriceMath.sol';
 
 library SwapMath {

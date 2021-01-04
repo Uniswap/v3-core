@@ -1029,6 +1029,34 @@ describe('UniswapV3Pair', () => {
       expect(token1Fees).to.eq(0)
     })
 
+    it('swap fees accumulate as expected (0 for 1)', async () => {
+      let token0Fees
+      let token1Fees
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed())
+      expect(token0Fees).to.eq('599999999999999')
+      expect(token1Fees).to.eq(0)
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed())
+      expect(token0Fees).to.eq('1199999999999999')
+      expect(token1Fees).to.eq(0)
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed())
+      expect(token0Fees).to.eq('1799999999999999')
+      expect(token1Fees).to.eq(0)
+    })
+
+    it('swap fees accumulate as expected (1 for 0)', async () => {
+      let token0Fees
+      let token1Fees
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(undefined, false))
+      expect(token0Fees).to.eq(0)
+      expect(token1Fees).to.eq('599999999999999')
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(undefined, false))
+      expect(token0Fees).to.eq(0)
+      expect(token1Fees).to.eq('1199999999999999')
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(undefined, false))
+      expect(token0Fees).to.eq(0)
+      expect(token1Fees).to.eq('1799999999999999')
+    })
+
     it('position owner gets partial fees when protocol fee is on', async () => {
       await pair.setFeeTo(other.address)
 
