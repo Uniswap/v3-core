@@ -1113,19 +1113,22 @@ describe('UniswapV3Pair', () => {
     })
 
     it('is only callable by owner', async () => {
-      await expect(pair.connect(other).recover(token2.address, other.address, 10)).to.be.revertedWith(
+      const data = token2.interface.encodeFunctionData('transfer', [other.address, 10])
+      await expect(pair.connect(other).callFromPair(token2.address, data)).to.be.revertedWith(
         '' // 'UniswapV3Pair::recover: caller not owner'
       )
     })
 
     it('does not allow transferring a token from the pair', async () => {
-      await expect(pair.recover(token0.address, other.address, 10)).to.be.revertedWith(
+      const data = token2.interface.encodeFunctionData('transfer', [other.address, 10])
+      await expect(pair.callFromPair(token0.address, data)).to.be.revertedWith(
         '' // 'UniswapV3Pair::recover: cannot recover token0 or token1'
       )
     })
 
     it('allows recovery from the pair', async () => {
-      await expect(pair.recover(token2.address, other.address, 10))
+      const data = token2.interface.encodeFunctionData('transfer', [other.address, 10])
+      await expect(pair.callFromPair(token2.address, data))
         .to.emit(token2, 'Transfer')
         .withArgs(pair.address, other.address, 10)
     })

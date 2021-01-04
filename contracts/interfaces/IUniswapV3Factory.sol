@@ -40,4 +40,16 @@ interface IUniswapV3Factory {
     function setOwner(address) external;
 
     function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
+
+    // whether the bytes4 sig may be executed against the given address
+    function isCallFromPairAllowed(address target, bytes4 sig) external view returns (bool);
+
+    // appends the bytes4 sig to the blacklist
+    function appendSigToBlacklist(bytes4 sig) external;
+
+    // appends the target/bytes4 sig combination to the blacklist
+    function appendTargetSigToBlacklist(address target, bytes4 sig) external;
+
+    // appends the pair to the blacklist
+    function appendPairToBlacklist(address pair) external;
 }

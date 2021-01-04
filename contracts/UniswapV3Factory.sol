@@ -15,6 +15,10 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPair;
     address[] public override allPairs;
 
+    mapping(address => bool) public pairBlacklist;
+    mapping(address => mapping(bytes4 => bool)) public targetSigBlacklist;
+    mapping(bytes4 => bool) public sigBlacklist;
+
     function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
@@ -27,9 +31,13 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
 
-        _enableFeeAmount(600, 12);
-        _enableFeeAmount(3000, 60);
-        _enableFeeAmount(9000, 180);
+        enableFeeAmount(600, 12);
+        enableFeeAmount(3000, 60);
+        enableFeeAmount(9000, 180);
+
+        // prevent the factory owner from approving any tokens or taking advantage of other account approvals
+        appendSigToBlacklist(IERC20.approve.selector);
+        appendSigToBlacklist(IERC20.transferFrom.selector);
     }
 
     function createPair(
@@ -57,7 +65,8 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         owner = _owner;
     }
 
-    function _enableFeeAmount(uint24 fee, int24 tickSpacing) private {
+    function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
+        require(msg.sender == owner, 'OO');
         require(fee < 1000000, 'FEE');
         require(tickSpacing > 0, 'TS');
         require(feeAmountTickSpacing[fee] == 0, 'FAI');
@@ -67,9 +76,22 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         emit FeeAmountEnabled(fee, tickSpacing);
     }
 
-    function enableFeeAmount(uint24 fee, int24 tickSpacing) external override {
+    function appendSigToBlacklist(bytes4 sig) public override {
         require(msg.sender == owner, 'OO');
+        sigBlacklist[sig] = true;
+    }
 
-        _enableFeeAmount(fee, tickSpacing);
+    function appendTargetSigToBlacklist(address target, bytes4 sig) external override {
+        require(msg.sender == owner, 'OO');
+        targetSigBlacklist[target][sig] = true;
+    }
+
+    function appendPairToBlacklist(address pair) external override {
+        require(msg.sender == owner, 'OO');
+        pairBlacklist[pair] = true;
+    }
+
+    function isCallFromPairAllowed(address target, bytes4 sig) external view override returns (bool) {
+        return !pairBlacklist[msg.sender] && !sigBlacklist[sig] && !targetSigBlacklist[target][sig];
     }
 }

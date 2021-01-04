@@ -654,23 +654,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function recover(
-        address token,
-        address recipient,
-        uint256 amount
-    ) external override lockNoPriceMovement {
+    function callFromPair(address target, bytes calldata data) external override lockNoPriceMovement {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
+        bytes4 sig = data[0] | (bytes4(data[1]) >> 8) | (bytes4(data[2]) >> 16) | (bytes4(data[3]) >> 24);
+        require(IUniswapV3Factory(factory).isCallFromPairAllowed(target, sig), 'SIG');
 
-        uint256 token0Balance = IERC20(token0).balanceOf(address(this));
-        uint256 token1Balance = IERC20(token1).balanceOf(address(this));
+        uint256 balance0 = IERC20(token0).balanceOf(address(this));
+        uint256 balance1 = IERC20(token1).balanceOf(address(this));
 
-        TransferHelper.safeTransfer(token, recipient, amount);
+        (bool success, ) = target.call(data);
 
-        // check the balance hasn't changed
+        require(success, 'F');
+
+        // check the balances have not changed
         require(
-            IERC20(token0).balanceOf(address(this)) == token0Balance &&
-                IERC20(token1).balanceOf(address(this)) == token1Balance,
-            'TOK'
+            IERC20(token0).balanceOf(address(this)) == balance0 && IERC20(token1).balanceOf(address(this)) == balance1,
+            'BAL'
         );
     }
 
