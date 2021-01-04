@@ -14,7 +14,6 @@ import {
   getPositionKey,
   getMaxTick,
   getMinTick,
-  MAX_LIQUIDITY_GROSS_PER_TICK,
   encodePriceSqrt,
   TICK_SPACINGS,
   createPairFunctions,
@@ -203,13 +202,6 @@ describe('UniswapV3Pair', () => {
         it('fails if tickUpper greater than max tick', async () => {
           await expect(mint(wallet.address, 0, MAX_TICK + 1, 1)).to.be.revertedWith(
             '' // 'UniswapV3Pair::_updatePosition: tickUpper cannot be greater than max tick'
-          )
-        })
-        it('fails if amount exceeds the max', async () => {
-          await expect(
-            mint(wallet.address, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, MAX_LIQUIDITY_GROSS_PER_TICK.add(1))
-          ).to.be.revertedWith(
-            '' // 'UniswapV3Pair::_updatePosition: liquidity overflow in lower tick'
           )
         })
       })

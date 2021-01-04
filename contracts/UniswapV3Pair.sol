@@ -38,14 +38,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint8 private constant PRICE_BIT = 0x10;
     uint8 private constant UNLOCKED_BIT = 0x01;
 
-    // if we constrain the gross liquidity associated to a single tick, then we can guarantee that the total
-    // liquidityCurrent never exceeds uint128
-    // the max liquidity for a single tick fee vote is then:
-    //   floor(type(uint128).max / (number of ticks))
-    //     = (2n ** 128n - 1n) / (2n ** 24n)
-    // this is about 104 bits
-    uint128 private constant MAX_LIQUIDITY_GROSS_PER_TICK = 20282409603651670423947251286015;
-
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
@@ -78,6 +70,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // current in-range liquidity
     uint128 public override liquidityCurrent;
+    // the gross liquidity across all ticks
+    uint128 public override liquidityGross;
 
     address public override feeTo;
 
@@ -233,9 +227,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         Tick.Info storage tickInfoLower = _updateTick(tickLower, tick, liquidityDelta);
         Tick.Info storage tickInfoUpper = _updateTick(tickUpper, tick, liquidityDelta);
-
-        require(tickInfoLower.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK, 'LOL');
-        require(tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK, 'LOU');
 
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             tickInfos.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
@@ -396,6 +387,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 
+        liquidityGross = liquidityGross.addi(params.liquidityDelta).toUint128();
+
         // the current price is below the passed range, so the liquidity can only become in range by crossing from left
         // to right, at which point we'll need _more_ token0 (it's becoming more valuable) so the user must provide it
         if (tick < params.tickLower) {
@@ -417,7 +410,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 params.liquidityDelta
             );
 
-            // downcasting is safe because of gross liquidity checks in the _updatePosition call
+            // downcasting is safe because gross liquidity cannot exceed uint128
             liquidityCurrent = uint128(liquidityCurrent.addi(params.liquidityDelta));
         } else {
             // the current price is above the passed range, so liquidity can only become in range by crossing from right

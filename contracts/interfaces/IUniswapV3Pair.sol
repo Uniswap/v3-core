@@ -70,6 +70,8 @@ interface IUniswapV3Pair {
 
     function liquidityCurrent() external view returns (uint128);
 
+    function liquidityGross() external view returns (uint128);
+
     function tickBitmap(int16) external view returns (uint256);
 
     function feeGrowthGlobal0X128() external view returns (uint256);
