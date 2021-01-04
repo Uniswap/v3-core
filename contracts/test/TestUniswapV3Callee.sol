@@ -103,24 +103,24 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        int128 amount
+        uint128 amount
     ) external {
         IUniswapV3Pair(pair).mint(recipient, tickLower, tickUpper, amount, abi.encode(msg.sender));
     }
 
-    event MintCallback(int256 amount0Owed, int256 amount1Owed);
+    event MintCallback(uint256 amount0Owed, uint256 amount1Owed);
 
     function uniswapV3MintCallback(
-        int256 amount0Owed,
-        int256 amount1Owed,
+        uint256 amount0Owed,
+        uint256 amount1Owed,
         bytes calldata data
     ) external override {
         address sender = abi.decode(data, (address));
 
         emit MintCallback(amount0Owed, amount1Owed);
         if (amount0Owed > 0)
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Owed));
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, amount0Owed);
         if (amount1Owed > 0)
-            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Owed));
+            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, amount1Owed);
     }
 }

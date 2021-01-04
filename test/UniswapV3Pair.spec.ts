@@ -241,7 +241,7 @@ describe('UniswapV3Pair', () => {
 
           it('removing works', async () => {
             await mint(walletAddress, -240, 0, 10000)
-            await pair.burn(walletAddress, -240, 0, -10000)
+            await pair.burn(walletAddress, -240, 0, 10000)
             expect(await token0.balanceOf(pair.address)).to.eq(10001)
             expect(await token1.balanceOf(pair.address)).to.eq(1001)
           })
@@ -267,14 +267,14 @@ describe('UniswapV3Pair', () => {
           it('removes liquidity from liquidityGross', async () => {
             await mint(walletAddress, -240, 0, 100)
             await mint(walletAddress, -240, 0, 40)
-            await pair.burn(walletAddress, -240, 0, -90)
+            await pair.burn(walletAddress, -240, 0, 90)
             expect((await pair.tickInfos(-240)).liquidityGross).to.eq(50)
             expect((await pair.tickInfos(0)).liquidityGross).to.eq(50)
           })
 
           it('clears tick lower if last position is removed', async () => {
             await mint(walletAddress, -240, 0, 100)
-            await pair.burn(walletAddress, -240, 0, -100)
+            await pair.burn(walletAddress, -240, 0, 100)
             const { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(-240)
             expect(liquidityGross).to.eq(0)
             expect(feeGrowthOutside0).to.eq(0)
@@ -284,7 +284,7 @@ describe('UniswapV3Pair', () => {
 
           it('clears tick upper if last position is removed', async () => {
             await mint(walletAddress, -240, 0, 100)
-            await pair.burn(walletAddress, -240, 0, -100)
+            await pair.burn(walletAddress, -240, 0, 100)
             const { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(0)
             expect(liquidityGross).to.eq(0)
             expect(feeGrowthOutside0).to.eq(0)
@@ -294,7 +294,7 @@ describe('UniswapV3Pair', () => {
           it('only clears the tick that is not used at all', async () => {
             await mint(walletAddress, -240, 0, 100)
             await mint(walletAddress, -tickSpacing, 0, 250)
-            await pair.burn(walletAddress, -240, 0, -100)
+            await pair.burn(walletAddress, -240, 0, 100)
 
             let { liquidityGross, feeGrowthOutside0, feeGrowthOutside1, secondsOutside } = await pair.tickInfos(-240)
             expect(liquidityGross).to.eq(0)
@@ -352,7 +352,7 @@ describe('UniswapV3Pair', () => {
 
           it('removing works', async () => {
             await mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100)
-            await pair.burn(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, -100)
+            await pair.burn(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 100)
             expect(await token0.balanceOf(pair.address)).to.eq(10001)
             expect(await token1.balanceOf(pair.address)).to.eq(1002)
           })
@@ -382,7 +382,7 @@ describe('UniswapV3Pair', () => {
 
           it('removing works', async () => {
             await mint(walletAddress, -46080, -46020, 10000)
-            await pair.burn(walletAddress, -46080, -46020, -10000)
+            await pair.burn(walletAddress, -46080, -46020, 10000)
             expect(await token0.balanceOf(pair.address)).to.eq(10000)
             expect(await token1.balanceOf(pair.address)).to.eq(1002)
           })
@@ -447,7 +447,7 @@ describe('UniswapV3Pair', () => {
         expect(feesOwed0).to.eq(0)
         expect(feesOwed1).to.eq(0)
 
-        await pair.burn(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, -1)
+        await pair.burn(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, 1)
         ;({
           liquidity,
           feeGrowthInside0LastX128,
@@ -790,7 +790,7 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -tickSpacing
       const upperTick = tickSpacing
       await mint(walletAddress, lowerTick, upperTick, expandTo18Decimals(1000))
-      await expect(pair.burn(walletAddress, lowerTick, upperTick, expandTo18Decimals(1001).mul(-1))).to.be.revertedWith(
+      await expect(pair.burn(walletAddress, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith(
         '' // 'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
       )
     })
@@ -931,7 +931,7 @@ describe('UniswapV3Pair', () => {
         .withArgs(walletAddress, pair.address, '5981737760509663')
       // somebody takes the limit order
       await swapExact1For0(expandTo18Decimals(2), otherAddress)
-      await expect(pair.burn(walletAddress, 0, 120, expandTo18Decimals(1).mul(-1)))
+      await expect(pair.burn(walletAddress, 0, 120, expandTo18Decimals(1)))
         .to.emit(token1, 'Transfer')
         .withArgs(pair.address, walletAddress, '6017734268818165')
     })
@@ -941,7 +941,7 @@ describe('UniswapV3Pair', () => {
         .withArgs(walletAddress, pair.address, '5981737760509663')
       // somebody takes the limit order
       await swapExact0For1(expandTo18Decimals(2), otherAddress)
-      await expect(pair.burn(walletAddress, -120, 0, expandTo18Decimals(1).mul(-1)))
+      await expect(pair.burn(walletAddress, -120, 0, expandTo18Decimals(1)))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, walletAddress, '6017734268818165')
     })
@@ -954,7 +954,7 @@ describe('UniswapV3Pair', () => {
           .withArgs(walletAddress, pair.address, '5981737760509663')
         // somebody takes the limit order
         await swapExact1For0(expandTo18Decimals(2), otherAddress)
-        await expect(pair.burn(walletAddress, 0, 120, expandTo18Decimals(1).mul(-1)))
+        await expect(pair.burn(walletAddress, 0, 120, expandTo18Decimals(1)))
           .to.emit(token1, 'Transfer')
           .withArgs(pair.address, walletAddress, '6017734268818165')
       })
@@ -964,7 +964,7 @@ describe('UniswapV3Pair', () => {
           .withArgs(walletAddress, pair.address, '5981737760509663')
         // somebody takes the limit order
         await swapExact0For1(expandTo18Decimals(2), otherAddress)
-        await expect(pair.burn(walletAddress, -120, 0, expandTo18Decimals(1).mul(-1)))
+        await expect(pair.burn(walletAddress, -120, 0, expandTo18Decimals(1)))
           .to.emit(token0, 'Transfer')
           .withArgs(pair.address, walletAddress, '6017734268818165')
       })
@@ -1180,7 +1180,7 @@ describe('UniswapV3Pair', () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await mint(walletAddress, 120000, 121200, liquidityAmount)
           await swapExact1For0(expandTo18Decimals(1), walletAddress)
-          await expect(pair.burn(walletAddress, 120000, 121200, liquidityAmount.mul(-1)))
+          await expect(pair.burn(walletAddress, 120000, 121200, liquidityAmount))
             .to.emit(token0, 'Transfer')
             .withArgs(pair.address, walletAddress, '30027458295511')
             .to.emit(token1, 'Transfer')
@@ -1191,7 +1191,7 @@ describe('UniswapV3Pair', () => {
           const liquidityAmount = expandTo18Decimals(1).div(4)
           await mint(walletAddress, -121200, -120000, liquidityAmount)
           await swapExact0For1(expandTo18Decimals(1), walletAddress)
-          await expect(pair.burn(walletAddress, -121200, -120000, liquidityAmount.mul(-1)))
+          await expect(pair.burn(walletAddress, -121200, -120000, liquidityAmount))
             .to.emit(token0, 'Transfer')
             .withArgs(pair.address, walletAddress, '996999999999999535')
             .to.emit(token1, 'Transfer')

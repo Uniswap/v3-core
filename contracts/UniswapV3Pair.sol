@@ -120,9 +120,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickLower,
         int24 tickUpper
     ) private view returns (Position storage position) {
-        require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= MIN_TICK, 'TLM');
-        require(tickUpper <= MAX_TICK, 'TUM');
         position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
@@ -223,26 +220,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        int128 amount,
+        uint128 amount,
         bytes calldata data
     ) public override lockNoPriceMovement {
-        require(amount >= 0, 'MA');
+        require(amount < 2**127, 'MA');
 
-        (int256 amount0, int256 amount1) =
+        (int256 amount0Int, int256 amount1Int) =
             _setPosition(
-                PositionParams({owner: recipient, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: amount})
+                PositionParams({
+                    owner: recipient,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: int128(amount)
+                })
             );
 
-        assert(amount0 >= 0);
-        assert(amount1 >= 0);
+        assert(amount0Int >= 0);
+        assert(amount1Int >= 0);
+
+        uint256 amount0 = uint256(amount0Int);
+        uint256 amount1 = uint256(amount1Int);
 
         // if necessary, collect payment via callback
         if (amount0 > 0 || amount1 > 0) {
             uint256 balance0 = IERC20(token0).balanceOf(address(this));
             uint256 balance1 = IERC20(token1).balanceOf(address(this));
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            require(balance0.addi(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
-            require(balance1.addi(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
+            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
+            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
         }
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
@@ -255,6 +260,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
+        require(tickLower < tickUpper, 'TLU');
+        require(tickLower >= MIN_TICK, 'TLM');
+        require(tickUpper <= MAX_TICK, 'TUM');
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper);
 
         amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
@@ -276,19 +284,28 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        int128 amount
-    ) external override lockNoPriceMovement returns (int256 amount0, int256 amount1) {
-        require(amount < 0, 'BA');
+        uint128 amount
+    ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
+        require(amount > 0, 'BA');
+        require(amount < 2**127, 'BA');
 
-        (amount0, amount1) = _setPosition(
-            PositionParams({owner: msg.sender, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: amount})
+        (int256 amount0Int, int256 amount1Int) = _setPosition(
+            PositionParams({
+                owner: msg.sender,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidityDelta: -int128(amount)
+            })
         );
 
-        assert(amount0 <= 0);
-        assert(amount1 <= 0);
+        assert(amount0Int <= 0);
+        assert(amount1Int <= 0);
 
-        if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
-        if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));
+        amount0 = uint256(-amount0Int);
+        amount1 = uint256(-amount1Int);
+
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
 
         emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
     }
@@ -347,6 +364,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // gets and updates and gets a position with the given liquidity delta
     function _updatePosition(PositionParams memory params, int24 tick) private {
+        require(params.tickLower < params.tickUpper, 'TLU');
+        require(params.tickLower >= MIN_TICK, 'TLM');
+        require(params.tickUpper <= MAX_TICK, 'TUM');
         Position storage position = _getPosition(params.owner, params.tickLower, params.tickUpper);
 
         if (params.liquidityDelta < 0) {

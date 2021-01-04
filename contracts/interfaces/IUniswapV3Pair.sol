@@ -8,9 +8,9 @@ interface IUniswapV3Pair {
         int24 indexed tickLower,
         int24 indexed tickUpper,
         address payer,
-        int128 amount,
-        int256 amount0,
-        int256 amount1
+        uint128 amount,
+        uint256 amount0,
+        uint256 amount1
     );
     event Withdraw(
         address indexed owner,
@@ -25,9 +25,9 @@ interface IUniswapV3Pair {
         int24 indexed tickLower,
         int24 indexed tickUpper,
         address recipient,
-        int128 amount,
-        int256 amount0,
-        int256 amount1
+        uint128 amount,
+        uint256 amount0,
+        uint256 amount1
     );
     event Swap(
         address indexed payer,
@@ -90,7 +90,7 @@ interface IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        int128 amount,
+        uint128 amount,
         bytes calldata data
     ) external;
 
@@ -108,8 +108,8 @@ interface IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        int128 amount
-    ) external returns (int256 amount0, int256 amount1);
+        uint128 amount
+    ) external returns (uint256 amount0, uint256 amount1);
 
     function swap(
         bool zeroForOne,
