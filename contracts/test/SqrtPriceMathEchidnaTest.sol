@@ -93,8 +93,11 @@ contract SqrtPriceMathEchidnaTest {
         require(sqrtP > 0 && sqrtQ > 0);
 
         int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity);
-        if (liquidity < 0) assert(amount0 < 0);
-        if (liquidity > 0) assert(amount0 > 0);
+        if (liquidity < 0) assert(amount0 <= 0);
+        if (liquidity > 0) {
+            if (sqrtP == sqrtQ) assert(amount0 == 0);
+            else assert(amount0 > 0);
+        }
         if (liquidity == 0) assert(amount0 == 0);
     }
 
@@ -107,8 +110,11 @@ contract SqrtPriceMathEchidnaTest {
         require(sqrtP > 0 && sqrtQ > 0);
 
         int256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity);
-        if (liquidity < 0) assert(amount1 < 0);
-        if (liquidity > 0) assert(amount1 > 0);
+        if (liquidity < 0) assert(amount1 <= 0);
+        if (liquidity > 0) {
+            if (sqrtP == sqrtQ) assert(amount1 == 0);
+            else assert(amount1 > 0);
+        }
         if (liquidity == 0) assert(amount1 == 0);
     }
 }
