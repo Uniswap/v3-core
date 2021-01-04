@@ -2,6 +2,8 @@
 pragma solidity =0.7.6;
 
 import './interfaces/IUniswapV3Factory.sol';
+import './interfaces/IERC20.sol';
+import './interfaces/IERC20Extras.sol';
 
 import './UniswapV3Pair.sol';
 import './UniswapV3PairDeployer.sol';
@@ -38,6 +40,7 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         // prevent the factory owner from approving any tokens or taking advantage of other account approvals
         appendSigToBlacklist(IERC20.approve.selector);
         appendSigToBlacklist(IERC20.transferFrom.selector);
+        appendSigToBlacklist(IERC20Extras.increaseAllowance.selector);
     }
 
     function createPair(
