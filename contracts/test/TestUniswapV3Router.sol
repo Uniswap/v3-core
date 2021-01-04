@@ -83,21 +83,21 @@ initiate an exact output swap on the BxC pair, resulting in a transfer of C from
 within the (outer) swap callback, initiate an exact swap on AxB, resulting in a transfer of B to BxC
 in the inner swap callback, resolve by triggering a transfer of A from user to AxB (via transferFrom)
 */
-    function swapAforC( //swap 1 for exact 0
+    function swapAforC( 
+        address [] memory pairs,
         uint256 amount1Out,
-        address recipient,
-        address [] memory pairs
+        address recipient
     ) public {
-        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), uint160(-1), recipient, abi.encode(recipient, pairs)); 
+        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient)); //swap 0 for exact 1
     }
 
-    function _swapBforExactC( //swap exact 0 for 1
-        int256 amount0In,
-        address recipient,
-        address [] memory pairs 
+    function _swapBforExactC( 
+        address [] memory pairs,
+        int256 amount1Out,
+        address recipient
     ) internal {
-        
-        IUniswapV3Pair(pairs[0]).swap(true, amount0In, 0, pairs[1], abi.encode(recipient, pairs[0]));
+        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out, 0, pairs[1], abi.encode(pairs[0], recipient)); //swap 0 for exact 1
+                                                                                                        // possible to abi.encode(pairs.pop()) (and slice pair array for swap arguments) and as a result pass a arbitrary length of pairs for >3 token multihop
     }
 
 
@@ -113,10 +113,10 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         
         emit SwapCallback(amount0Delta, amount1Delta);
 
-        (address recipient, address[] memory pairs) = abi.decode(data, (address, address[]));
+        (address[] memory pairs, address recipient) = abi.decode(data, (address [], address));
   
         if (pairs.length > 0) {
-            _swapBforExactC(amount0Delta, recipient, pairs);
+            _swapBforExactC(pairs, amount0Delta, recipient);
 
         } else if (pairs.length == 0) {
             IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(msg.sender, pairs[0], uint256(-amount0Delta));

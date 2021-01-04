@@ -67,7 +67,10 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
   return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
 
-export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
+export type SwapFunction = (
+  amount: BigNumberish,
+  to: Wallet | string
+) => Promise<ContractTransaction>
 export type StaticSwapFunction = (
   amount: BigNumberish,
   to: Wallet | string
@@ -139,6 +142,27 @@ export function createPairFunctions({
     return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
   }
 
+  async function multiSwap(
+    inputToken: Contract,
+    [amountIn, amountOut]: [BigNumberish, BigNumberish],
+    to: Wallet | string
+  ): Promise<ContractTransaction> {
+    const exactInput = amountOut === 0
+
+    ///update for potential swapAforC beginning with token 1 instead of 0.
+    const method = inputToken === token0 ?
+    swapTarget.swapAforC
+    : swapTarget.swapAforC
+
+    await inputToken.approve(swapTarget.address, amountIn)
+
+    const toAddress = typeof to === 'string' ? to : to.address
+
+    return method([pair.address, pair.address], amountIn, toAddress)
+
+
+  }
+
   const swapToLowerPrice: SwapFunction = (sqrtPrice, to) => {
     return swapToSqrtPrice(token0, sqrtPrice, to)
   }
@@ -162,8 +186,9 @@ export function createPairFunctions({
   const swap1ForExact0: SwapFunction = (amount, to) => {
     return swap(token1, [0, amount], to)
   }
+
   const swapAforC: SwapFunction = (amount, to) => {
-    return swap(token1, [0, amount], to)
+    return multiSwap(token0, [0, amount], to)
   }
 
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
