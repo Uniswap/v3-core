@@ -289,14 +289,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(amount > 0, 'BA');
         require(amount < 2**127, 'BA');
 
-        (int256 amount0Int, int256 amount1Int) = _setPosition(
-            PositionParams({
-                owner: msg.sender,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidityDelta: -int128(amount)
-            })
-        );
+        (int256 amount0Int, int256 amount1Int) =
+            _setPosition(
+                PositionParams({
+                    owner: msg.sender,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: -int128(amount)
+                })
+            );
 
         assert(amount0Int <= 0);
         assert(amount1Int <= 0);
