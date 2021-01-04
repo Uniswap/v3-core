@@ -83,4 +83,32 @@ contract SqrtPriceMathEchidnaTest {
         // diff is no greater than 2
         assert(amount1Up - amount1Down < 2);
     }
+
+    function getAmount0DeltaSignedInvariants(
+        uint160 sqrtP,
+        uint160 sqrtQ,
+        int128 liquidity
+    ) external pure {
+        require(sqrtP >= sqrtQ);
+        require(sqrtP > 0 && sqrtQ > 0);
+
+        int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity);
+        if (liquidity < 0) assert(amount0 < 0);
+        if (liquidity > 0) assert(amount0 > 0);
+        if (liquidity == 0) assert(amount0 == 0);
+    }
+
+    function getAmount1DeltaSignedInvariants(
+        uint160 sqrtP,
+        uint160 sqrtQ,
+        int128 liquidity
+    ) external pure {
+        require(sqrtP <= sqrtQ);
+        require(sqrtP > 0 && sqrtQ > 0);
+
+        int256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity);
+        if (liquidity < 0) assert(amount1 < 0);
+        if (liquidity > 0) assert(amount1 > 0);
+        if (liquidity == 0) assert(amount1 == 0);
+    }
 }
