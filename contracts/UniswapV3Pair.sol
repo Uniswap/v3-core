@@ -325,7 +325,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
-                PositionParams({
+                SetPositionParams({
                     owner: recipient,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
@@ -362,7 +362,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
-                PositionParams({
+                SetPositionParams({
                     owner: msg.sender,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
@@ -382,7 +382,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
     }
 
-    struct PositionParams {
+    struct SetPositionParams {
         // the address that owns the position
         address owner;
         // the lower and upper tick of the position
@@ -393,7 +393,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // effect some changes to a position
-    function _setPosition(PositionParams memory params) private returns (int256 amount0, int256 amount1) {
+    function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         require(params.tickLower < params.tickUpper, 'TLU');
         require(params.tickLower >= MIN_TICK, 'TLM');
         require(params.tickUpper <= MAX_TICK, 'TUM');
