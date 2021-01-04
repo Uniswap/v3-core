@@ -16,6 +16,7 @@ import './libraries/SqrtTickMath.sol';
 import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
+import './libraries/Position.sol';
 
 import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Pair.sol';
@@ -34,6 +35,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using MixedSafeMath for uint128;
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
+    using Position for mapping(bytes32 => Position.Info);
 
     uint8 private constant PRICE_BIT = 0x10;
     uint8 private constant UNLOCKED_BIT = 0x01;
@@ -92,18 +94,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override feeToFees0;
     uint256 public override feeToFees1;
 
-    mapping(int24 => Tick.Info) public tickInfos;
-
-    struct Position {
-        uint128 liquidity;
-        // fee growth per unit of liquidity as of the last modification
-        uint256 feeGrowthInside0LastX128;
-        uint256 feeGrowthInside1LastX128;
-        // the fees owed to the position owner in token0/token1
-        uint256 feesOwed0;
-        uint256 feesOwed1;
-    }
-    mapping(bytes32 => Position) public positions;
+    mapping(int24 => Tick.Info) public ticks;
+    mapping(bytes32 => Position.Info) public positions;
 
     // lock the pair for operations that do not modify the price, i.e. everything but swap
     modifier lockNoPriceMovement() {
@@ -112,14 +104,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlockedAndPriceBit = uapb ^ UNLOCKED_BIT;
         _;
         slot0.unlockedAndPriceBit = uapb;
-    }
-
-    function _getPosition(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper
-    ) private view returns (Position storage position) {
-        position = positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
     // throws if the pair is not initialized, which is implicitly used throughout to gatekeep various functions
@@ -163,7 +147,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 current,
         int128 liquidityDelta
     ) private returns (Tick.Info storage tickInfo) {
-        tickInfo = tickInfos[tick];
+        tickInfo = ticks[tick];
 
         if (liquidityDelta != 0) {
             if (tickInfo.liquidityGross == 0) {
@@ -184,7 +168,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _clearTick(int24 tick) private {
-        delete tickInfos[tick];
+        delete ticks[tick];
         tickBitmap.flipTick(tick, tickSpacing);
     }
 
@@ -218,12 +202,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         int128 liquidityDelta,
         int24 tick
-    ) private returns (Position storage position) {
+    ) private returns (Position.Info storage position) {
         require(tickLower < tickUpper, 'TLU');
         require(tickLower >= MIN_TICK, 'TLM');
         require(tickUpper <= MAX_TICK, 'TUM');
 
-        position = _getPosition(owner, tickLower, tickUpper);
+        position = positions.getPosition(owner, tickLower, tickUpper);
 
         if (liquidityDelta < 0) {
             require(position.liquidity >= uint128(-liquidityDelta), 'CP');
@@ -238,7 +222,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tickInfoUpper.liquidityGross <= MAX_LIQUIDITY_GROSS_PER_TICK, 'LOU');
 
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
-            tickInfos.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
+            ticks.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
 
         // calculate accumulated fees
         uint256 feesOwed0 =
@@ -294,7 +278,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
-        Position storage position = _updatePosition(msg.sender, tickLower, tickUpper, 0, tickCurrent());
+        Position.Info storage position = _updatePosition(msg.sender, tickLower, tickUpper, 0, tickCurrent());
 
         if (amount0Requested == uint256(-1)) {
             amount0 = position.feesOwed0;
@@ -549,7 +533,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     if (zeroForOne) require(step.tickNext > MIN_TICK, 'MIN');
                     else require(step.tickNext < MAX_TICK, 'MAX');
 
-                    Tick.Info storage tickInfo = tickInfos[step.tickNext];
+                    Tick.Info storage tickInfo = ticks[step.tickNext];
                     // update tick info
                     tickInfo.feeGrowthOutside0X128 =
                         (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128) -
