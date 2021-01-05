@@ -30,25 +30,40 @@ library SwapMath {
         bool exactIn = amountRemaining >= 0;
 
         if (exactIn) {
-            uint256 amountInMaxLessFee = FullMath.mulDiv(uint256(amountRemaining), 1e6 - feePips, 1e6);
-            sqrtQX96 = SqrtPriceMath.getNextPriceFromInput(sqrtPX96, liquidity, amountInMaxLessFee, zeroForOne);
+            uint256 amountRemainingLessFee = FullMath.mulDiv(uint256(amountRemaining), 1e6 - feePips, 1e6);
+            amountIn = zeroForOne
+                ? SqrtPriceMath.getAmount0Delta(sqrtPX96, sqrtPTargetX96, liquidity, true)
+                : SqrtPriceMath.getAmount1Delta(sqrtPX96, sqrtPTargetX96, liquidity, true);
+            if (amountRemainingLessFee >= amountIn) sqrtQX96 = sqrtPTargetX96;
+            else
+                sqrtQX96 = SqrtPriceMath.getNextPriceFromInput(sqrtPX96, liquidity, amountRemainingLessFee, zeroForOne);
         } else {
-            sqrtQX96 = SqrtPriceMath.getNextPriceFromOutput(sqrtPX96, liquidity, uint256(-amountRemaining), zeroForOne);
+            amountOut = zeroForOne
+                ? SqrtPriceMath.getAmount1Delta(sqrtPTargetX96, sqrtPX96, liquidity, false)
+                : SqrtPriceMath.getAmount0Delta(sqrtPTargetX96, sqrtPX96, liquidity, false);
+            if (uint256(-amountRemaining) >= amountOut) sqrtQX96 = sqrtPTargetX96;
+            else
+                sqrtQX96 = SqrtPriceMath.getNextPriceFromOutput(
+                    sqrtPX96,
+                    liquidity,
+                    uint256(-amountRemaining),
+                    zeroForOne
+                );
         }
+
+        bool max = sqrtPTargetX96 == sqrtQX96;
 
         // get the input/output amounts
         if (zeroForOne) {
-            // if we've overshot the target, cap at the target
-            if (sqrtQX96 < sqrtPTargetX96) sqrtQX96 = sqrtPTargetX96;
-
-            amountIn = SqrtPriceMath.getAmount0Delta(sqrtPX96, sqrtQX96, liquidity, true);
-            amountOut = SqrtPriceMath.getAmount1Delta(sqrtQX96, sqrtPX96, liquidity, false);
+            amountIn = max && exactIn ? amountIn : SqrtPriceMath.getAmount0Delta(sqrtPX96, sqrtQX96, liquidity, true);
+            amountOut = max && !exactIn
+                ? amountOut
+                : SqrtPriceMath.getAmount1Delta(sqrtQX96, sqrtPX96, liquidity, false);
         } else {
-            // if we've overshot the target, cap at the target
-            if (sqrtQX96 > sqrtPTargetX96) sqrtQX96 = sqrtPTargetX96;
-
-            amountIn = SqrtPriceMath.getAmount1Delta(sqrtPX96, sqrtQX96, liquidity, true);
-            amountOut = SqrtPriceMath.getAmount0Delta(sqrtQX96, sqrtPX96, liquidity, false);
+            amountIn = max && exactIn ? amountIn : SqrtPriceMath.getAmount1Delta(sqrtPX96, sqrtQX96, liquidity, true);
+            amountOut = max && !exactIn
+                ? amountOut
+                : SqrtPriceMath.getAmount0Delta(sqrtQX96, sqrtPX96, liquidity, false);
         }
 
         // cap the output amount to not exceed the remaining output amount
