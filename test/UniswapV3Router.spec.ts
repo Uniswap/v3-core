@@ -239,13 +239,12 @@ describe('UniswapV3Pair', () => {
           it('check for three transfer events', async () => {
             await expect(swapAForC(1000, walletAddress))
             .to.emit(swapTarget, 'SwapCallback')
-
-            .to.emit(token0, 'Transfer')
-            .withArgs(pair.address, pair.address, 100)
-            .to.emit(token1, 'Transfer')
-            .withArgs(pair.address, pair1.address, 100)
             .to.emit(token1, 'Transfer')
             .withArgs(pair1.address, walletAddress, 100)
+            .to.emit(token1, 'Transfer')
+            .withArgs(pair.address, pair1.address, 100)
+            .to.emit(token0, 'Transfer')
+            .withArgs(walletAddress, pair.address, 100)
           expect(await pair.to.eq(pair))
           })
         })

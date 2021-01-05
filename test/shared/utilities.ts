@@ -71,10 +71,12 @@ export type SwapFunction = (
   amount: BigNumberish,
   to: Wallet | string
 ) => Promise<ContractTransaction>
+
 export type StaticSwapFunction = (
   amount: BigNumberish,
   to: Wallet | string
 ) => Promise<{ amountUsed: BigNumber; amountCalculated: BigNumber }>
+
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
@@ -152,12 +154,16 @@ export function createPairFunctions({
 
     ///update for potential swapAforC beginning with token 1 instead of 0.
     const method = swapTarget.swapAForC
+  
  
+
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
+
+    let pairs: string = '${pair.address}, ${pair.address}'
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return method([pair.address, pair.address], amountOut, toAddress)
+    return method(pairs, amountOut, toAddress)
   }
 
 
