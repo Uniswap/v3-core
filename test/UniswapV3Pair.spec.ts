@@ -185,8 +185,6 @@ describe('UniswapV3Pair', () => {
       beforeEach('initialize the pair at price of 10:1', async () => {
         await initialize(encodePriceSqrt(1, 10))
         await mint(wallet.address, MIN_TICK, MAX_TICK, 3161)
-        await token0.approve(pair.address, 0)
-        await token1.approve(pair.address, 0)
       })
 
       describe('failure cases', () => {
@@ -215,18 +213,28 @@ describe('UniswapV3Pair', () => {
       })
 
       describe('success cases', () => {
-        it('initial prices', async () => {
+        it('initial balances', async () => {
           expect(await token0.balanceOf(pair.address)).to.eq(10000)
           expect(await token1.balanceOf(pair.address)).to.eq(1001)
         })
 
-        describe('below current price', () => {
+        it('initial tick', async () => {
+          expect(await pair.tickCurrent()).to.eq(-23028)
+        })
+
+        describe('above current price', () => {
           it('transfers token0 only', async () => {
             await expect(mint(wallet.address, -22980, 0, 10000))
               .to.emit(token0, 'Transfer')
               .withArgs(wallet.address, pair.address, 21549)
               .to.not.emit(token1, 'Transfer')
             expect(await token0.balanceOf(pair.address)).to.eq(10000 + 21549)
+            expect(await token1.balanceOf(pair.address)).to.eq(1001)
+          })
+
+          it('max tick with max leverage', async () => {
+            await mint(wallet.address, MAX_TICK - tickSpacing, MAX_TICK, BigNumber.from(2).pow(102))
+            expect(await token0.balanceOf(pair.address)).to.eq(10000 + 828011525)
             expect(await token1.balanceOf(pair.address)).to.eq(1001)
           })
 
@@ -365,7 +373,7 @@ describe('UniswapV3Pair', () => {
           })
         })
 
-        describe('above current price', () => {
+        describe('below current price', () => {
           it('transfers token1 only', async () => {
             await expect(mint(wallet.address, -46080, -23040, 10000))
               .to.emit(token1, 'Transfer')
@@ -373,6 +381,12 @@ describe('UniswapV3Pair', () => {
               .to.not.emit(token0, 'Transfer')
             expect(await token0.balanceOf(pair.address)).to.eq(10000)
             expect(await token1.balanceOf(pair.address)).to.eq(1001 + 2162)
+          })
+
+          it('min tick with max leverage', async () => {
+            await mint(wallet.address, MIN_TICK, MIN_TICK + tickSpacing, BigNumber.from(2).pow(102))
+            expect(await token0.balanceOf(pair.address)).to.eq(10000)
+            expect(await token1.balanceOf(pair.address)).to.eq(1001 + 828011520)
           })
 
           it('works for min tick', async () => {
