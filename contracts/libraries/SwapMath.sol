@@ -31,9 +31,25 @@ library SwapMath {
 
         if (exactIn) {
             uint256 amountInMaxLessFee = FullMath.mulDiv(uint256(amountRemaining), 1e6 - feePips, 1e6);
-            sqrtQX96 = SqrtPriceMath.getNextPriceFromInput(sqrtPX96, liquidity, amountInMaxLessFee, zeroForOne);
+            uint256 maxAmountIn =
+                zeroForOne
+                    ? SqrtPriceMath.getAmount0Delta(sqrtPX96, sqrtPTargetX96, liquidity, true)
+                    : SqrtPriceMath.getAmount1Delta(sqrtPX96, sqrtPTargetX96, liquidity, true);
+            if (amountInMaxLessFee >= maxAmountIn) sqrtQX96 = sqrtPTargetX96;
+            else sqrtQX96 = SqrtPriceMath.getNextPriceFromInput(sqrtPX96, liquidity, amountInMaxLessFee, zeroForOne);
         } else {
-            sqrtQX96 = SqrtPriceMath.getNextPriceFromOutput(sqrtPX96, liquidity, uint256(-amountRemaining), zeroForOne);
+            uint256 maxAmountOut =
+                zeroForOne
+                    ? SqrtPriceMath.getAmount1Delta(sqrtPTargetX96, sqrtPX96, liquidity, false)
+                    : SqrtPriceMath.getAmount0Delta(sqrtPTargetX96, sqrtPX96, liquidity, false);
+            if (uint256(-amountRemaining) >= maxAmountOut) sqrtQX96 = sqrtPTargetX96;
+            else
+                sqrtQX96 = SqrtPriceMath.getNextPriceFromOutput(
+                    sqrtPX96,
+                    liquidity,
+                    uint256(-amountRemaining),
+                    zeroForOne
+                );
         }
 
         // get the input/output amounts
