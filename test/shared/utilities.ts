@@ -157,7 +157,7 @@ export function createPairFunctions({
     return swap(token1, [0, amount], to)
   }
 
-  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
+  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
