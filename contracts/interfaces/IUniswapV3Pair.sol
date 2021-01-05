@@ -12,7 +12,7 @@ interface IUniswapV3Pair {
         uint256 amount0,
         uint256 amount1
     );
-    event CollectFees(
+    event Collect(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
@@ -38,7 +38,7 @@ interface IUniswapV3Pair {
         int24 tick
     );
     event FeeToChanged(address indexed oldFeeTo, address indexed newFeeTo);
-    event Collect(uint256 amount0, uint256 amount1);
+    event CollectProtocol(uint256 amount0, uint256 amount1);
     event Flash(address indexed sender, address indexed recipient, uint256 amount0, uint256 amount1);
 
     // immutables
@@ -52,9 +52,11 @@ interface IUniswapV3Pair {
 
     function tickSpacing() external view returns (int24);
 
-    function MIN_TICK() external view returns (int24);
+    function minTick() external view returns (int24);
 
-    function MAX_TICK() external view returns (int24);
+    function maxTick() external view returns (int24);
+
+    function maxLiquidityPerTick() external view returns (uint128);
 
     // variables/state
     function feeTo() external view returns (address);
@@ -86,15 +88,6 @@ interface IUniswapV3Pair {
     // initialize the pair
     function initialize(uint160 sqrtPriceX96, bytes calldata data) external;
 
-    // collect fees
-    function collectFees(
-        int24 tickLower,
-        int24 tickUpper,
-        address recipient,
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external returns (uint256 amount0, uint256 amount1);
-
     // mint some liquidity to an address
     function mint(
         address recipient,
@@ -102,6 +95,15 @@ interface IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
+    ) external;
+
+    // collect fees
+    function collect(
+        int24 tickLower,
+        int24 tickUpper,
+        address recipient,
+        uint256 amount0Requested,
+        uint256 amount1Requested
     ) external returns (uint256 amount0, uint256 amount1);
 
     // burn the sender's liquidity
@@ -130,7 +132,7 @@ interface IUniswapV3Pair {
     ) external;
 
     // allows anyone to collect protocol fees to feeTo
-    function collect(uint256 amount0Requested, uint256 amount1Requested)
+    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
         external
         returns (uint256 amount0, uint256 amount1);
 

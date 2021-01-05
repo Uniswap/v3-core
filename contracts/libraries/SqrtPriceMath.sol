@@ -6,7 +6,6 @@ import './SafeMath.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
-import './FixedPoint128.sol';
 
 library SqrtPriceMath {
     using SafeMath for uint256;
@@ -52,9 +51,10 @@ library SqrtPriceMath {
             return mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
         }
 
-        return
-            divRoundingUp(numerator1, add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount))
-                .toUint160();
+        uint256 denominator = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
+        require(denominator != 0, 'OUT');
+
+        return divRoundingUp(numerator1, denominator).toUint160();
     }
 
     // calculate sqrt(P) +- y / liquidity
@@ -159,7 +159,6 @@ library SqrtPriceMath {
     }
 
     // helpers to get signed deltas for use in setPosition
-    // TODO not clear this is the right thing to do
     function getAmount0Delta(
         uint160 sqrtPX96, // square root of current price
         uint160 sqrtQX96, // square root of target price
