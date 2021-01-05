@@ -1,8 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #mint after initialization success cases above current price gas 1`] = `238158`;
+exports[`UniswapV3Pair #mint after initialization success cases above current price gas 1`] = `207173`;
 
-exports[`UniswapV3Pair #mint after initialization success cases below current price gas 1`] = `207173`;
+exports[`UniswapV3Pair #mint after initialization success cases below current price gas 1`] = `238158`;
 
 exports[`UniswapV3Pair #mint after initialization success cases including current price gas 1`] = `244410`;
 
