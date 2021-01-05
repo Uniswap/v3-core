@@ -297,6 +297,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tickLower < tickUpper, 'TLU');
         require(tickLower >= MIN_TICK, 'TLM');
         require(tickUpper <= MAX_TICK, 'TUM');
+
         Position storage position = _getPosition(msg.sender, tickLower, tickUpper);
 
         amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
@@ -691,24 +692,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         lockNoPriceMovement
         returns (uint256 amount0, uint256 amount1)
     {
-        if (amount0Requested == uint256(-1)) {
-            amount0 = feeToFees0;
-        } else {
-            require(amount0Requested <= feeToFees0, 'T0');
-            amount0 = amount0Requested;
-        }
-        if (amount1Requested == uint256(-1)) {
-            amount1 = feeToFees1;
-        } else {
-            require(amount1Requested <= feeToFees1, 'T1');
-            amount1 = amount1Requested;
-        }
+        amount0 = amount0Requested > feeToFees0 ? feeToFees0 : amount0Requested;
+        amount1 = amount1Requested > feeToFees1 ? feeToFees1 : amount1Requested;
 
-        feeToFees0 -= amount0;
-        feeToFees1 -= amount1;
-
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, feeTo, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
+        if (amount0 > 0) {
+            feeToFees0 -= amount0;
+            TransferHelper.safeTransfer(token0, feeTo, amount0);
+        }
+        if (amount1 > 0) {
+            feeToFees1 -= amount1;
+            TransferHelper.safeTransfer(token1, feeTo, amount1);
+        }
 
         emit CollectProtocol(amount0, amount1);
     }
