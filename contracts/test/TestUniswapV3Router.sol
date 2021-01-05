@@ -20,7 +20,7 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
 */
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
     
-    function swapAforC( 
+    function swapAForC( 
         address [] memory pairs,
         uint256 amount1Out,
         address recipient
@@ -28,7 +28,7 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient)); //swap 0 for exact 1 (B for exact C)
     }
 
-    function _swapAforExactB( 
+    function _swapAForExactB( 
         address [] memory pairs,
         int256 amount1Out,
         address recipient
@@ -50,7 +50,7 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         (address[] memory pairs, address recipient) = abi.decode(data, (address [], address));
   
         if (pairs.length > 0) {
-            _swapAforExactB(pairs, amount0Delta, recipient);
+            _swapAForExactB(pairs, amount0Delta, recipient);
 
         } else if (pairs.length == 0) {
             IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(-amount0Delta));

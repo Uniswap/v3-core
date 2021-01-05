@@ -90,7 +90,7 @@ export interface PairFunctions {
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
   swap1ForExact0: SwapFunction
-  swapAforC: SwapFunction
+  swapAForC: SwapFunction
   mint: MintFunction
   initialize: InitializeFunction
 }
@@ -105,6 +105,7 @@ export function createPairFunctions({
   token1: TestERC20
   pair: UniswapV3Pair
 }): PairFunctions {
+
   async function swapToSqrtPrice(
     inputToken: Contract,
     targetPrice: BigNumberish,
@@ -147,12 +148,11 @@ export function createPairFunctions({
     amountOut: BigNumberish,
     to: Wallet | string
   ): Promise<ContractTransaction> {
+    //const exactInput = amountOut === 0
 
     ///update for potential swapAforC beginning with token 1 instead of 0.
-    const method = 
-      swapTarget.swapAforC
-    
-
+    const method = swapTarget.swapAForC
+ 
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
@@ -185,7 +185,7 @@ export function createPairFunctions({
     return swap(token1, [0, amount], to)
   }
 
-  const swapAforC: SwapFunction = (amount, to) => {
+  const swapAForC: SwapFunction = (amount, to) => {
     return multiSwap(token0, amount, to)
   }
 
@@ -208,7 +208,7 @@ export function createPairFunctions({
     swap0ForExact1,
     swapExact1For0,
     swap1ForExact0,
-    swapAforC,
+    swapAForC,
     mint,
     initialize,
   }

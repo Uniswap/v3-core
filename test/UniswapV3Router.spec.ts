@@ -61,7 +61,7 @@ describe('UniswapV3Pair', () => {
   let swap0ForExact1: SwapFunction
   let swapExact1For0: SwapFunction
   let swap1ForExact0: SwapFunction
-  let swapAforC: SwapFunction
+  let swapAForC: SwapFunction
 
   let mint: MintFunction
   let initialize: InitializeFunction
@@ -88,7 +88,7 @@ describe('UniswapV3Pair', () => {
         swap0ForExact1,
         swapExact1For0,
         swap1ForExact0,
-        swapAforC,
+        swapAForC,
         mint,
         initialize,
       } = createPairFunctions({
@@ -117,7 +117,7 @@ describe('UniswapV3Pair', () => {
         swap0ForExact1,
         swapExact1For0,
         swap1ForExact0,
-        swapAforC,
+        swapAForC,
         mint,
         initialize,
       } = createPairFunctions({
@@ -237,7 +237,7 @@ describe('UniswapV3Pair', () => {
 
         describe.only('Multi-hop swaps', () => {
           it('check for three transfer events', async () => {
-            await expect(swapAforC(1000, walletAddress))
+            await expect(swapAForC(1000, walletAddress))
             .to.emit(swapTarget, 'SwapCallback')
 
             .to.emit(token0, 'Transfer')
@@ -253,43 +253,43 @@ describe('UniswapV3Pair', () => {
         // uses swapAforC as representative of all 4 swap functions
         describe('gas', () => {
           it('first swap ever', async () => {
-            await snapshotGasCost(swapAforC(1000, walletAddress))
+            await snapshotGasCost(swapAForC(1000, walletAddress))
             
           })
 
           it('first swap in block', async () => {
-            await swapAforC(1000, walletAddress)
+            await swapAForC(1000, walletAddress)
             await pair.setTime(TEST_PAIR_START_TIME + 10)
-            await snapshotGasCost(swapAforC(1000, walletAddress))
+            await snapshotGasCost(swapAForC(1000, walletAddress))
           })
 
           it('second swap in block', async () => {
-            await swapAforC(1000, walletAddress)
-            await snapshotGasCost(swapAforC(1000, walletAddress))
+            await swapAForC(1000, walletAddress)
+            await snapshotGasCost(swapAForC(1000, walletAddress))
           })
 
           it('large swap', async () => {
-            await snapshotGasCost(swapAforC(expandTo18Decimals(1), walletAddress))
+            await snapshotGasCost(swapAForC(expandTo18Decimals(1), walletAddress))
           })
 
           it('gas large swap crossing several initialized ticks', async () => {
             await mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
             await mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-            await snapshotGasCost(swapAforC(expandTo18Decimals(1), walletAddress))
+            await snapshotGasCost(swapAForC(expandTo18Decimals(1), walletAddress))
             expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
           })
 
           it('gas large swap crossing several initialized ticks after some time passes', async () => {
             await mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
             await mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-            await swapAforC(2, walletAddress)
+            await swapAForC(2, walletAddress)
             await pair.setTime(TEST_PAIR_START_TIME + 10)
-            await snapshotGasCost(swapAforC(expandTo18Decimals(1), walletAddress))
+            await snapshotGasCost(swapAForC(expandTo18Decimals(1), walletAddress))
             expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
           })
         })
 
-
+ 
         describe('swap 1000 in', () => {
           const IN = 1000
           const OUT = {
