@@ -57,7 +57,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int24 public immutable override maxTick;
 
     // the maximum amount of liquidity that can use any individual tick
-    uint128 public immutable override maxTickLiquidityGross;
+    uint128 public immutable override maxLiquidityPerTick;
 
     struct Slot0 {
         // the current price
@@ -122,12 +122,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         fee = _fee;
         tickSpacing = _tickSpacing;
 
-        int24 _minTick = (SqrtTickMath.MIN_TICK / _tickSpacing) * _tickSpacing;
-        int24 _maxTick = (SqrtTickMath.MAX_TICK / _tickSpacing) * _tickSpacing;
-
-        minTick = _minTick;
-        maxTick = _maxTick;
-        maxTickLiquidityGross = uint128(-1) / uint128((_maxTick - _minTick + 1) / _tickSpacing);
+        (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
     }
 
     // returns the block timestamp % 2**32
@@ -167,7 +162,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tickInfo.liquidityGross = uint128(tickInfo.liquidityGross.addi(liquidityDelta));
             }
 
-            require(tickInfo.liquidityGross <= maxTickLiquidityGross, 'LO');
+            require(tickInfo.liquidityGross <= maxLiquidityPerTick, 'LO');
         }
     }
 

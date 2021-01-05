@@ -103,7 +103,7 @@ describe('UniswapV3Pair', () => {
     expect(await pair.token1()).to.eq(token1.address)
     expect(await pair.minTick()).to.eq(minTick)
     expect(await pair.maxTick()).to.eq(maxTick)
-    expect(await pair.maxTickLiquidityGross()).to.eq(getMaxLiquidityPerTick(tickSpacing))
+    expect(await pair.maxLiquidityPerTick()).to.eq(getMaxLiquidityPerTick(tickSpacing))
   })
 
   describe('#initialize', () => {
@@ -211,7 +211,7 @@ describe('UniswapV3Pair', () => {
           )
         })
         it('fails if amount exceeds the max', async () => {
-          const maxLiquidityGross = await pair.maxTickLiquidityGross()
+          const maxLiquidityGross = await pair.maxLiquidityPerTick()
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))
           ).to.be.revertedWith(
@@ -1209,9 +1209,9 @@ describe('UniswapV3Pair', () => {
       it('initialize sets min and max ticks', async () => {
         await initialize(encodePriceSqrt(1, 1))
         const { liquidityGross: minTickLiquidityGross } = await pair.ticks(-887268)
-        const { liquidityGross: maxTickLiquidityGross } = await pair.ticks(887268)
+        const { liquidityGross: maxLiquidityPerTick } = await pair.ticks(887268)
         expect(minTickLiquidityGross).to.eq(1)
-        expect(minTickLiquidityGross).to.eq(maxTickLiquidityGross)
+        expect(minTickLiquidityGross).to.eq(maxLiquidityPerTick)
       })
       describe('post initialize', () => {
         beforeEach('initialize pair', async () => {

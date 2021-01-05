@@ -10,7 +10,7 @@ export const getMaxLiquidityPerTick = (tickSpacing: number) =>
   BigNumber.from(2)
     .pow(128)
     .sub(1)
-    .div(Math.floor((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing))
+    .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
 
 export enum FeeAmount {
   LOW = 600,
