@@ -129,8 +129,7 @@ describe('SqrtPriceMath', () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
       const amountOut = 4
-      // todo: make this fail without throwing an invalid opcode
-      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, false)).to.be.revertedWith('')
+      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, false)).to.be.revertedWith('OUT')
     })
 
     it('fails if output amount is greater than virtual reserves of token0', async () => {
