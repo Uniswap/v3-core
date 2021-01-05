@@ -333,9 +333,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 })
             );
 
-        assert(amount0Int >= 0);
-        assert(amount1Int >= 0);
-
         uint256 amount0 = uint256(amount0Int);
         uint256 amount1 = uint256(amount1Int);
 
@@ -378,9 +375,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     liquidityDelta: -int128(amount)
                 })
             );
-
-        assert(amount0Int <= 0);
-        assert(amount1Int <= 0);
 
         amount0 = uint256(-amount0Int);
         amount1 = uint256(-amount1Int);

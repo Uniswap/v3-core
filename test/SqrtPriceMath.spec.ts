@@ -111,6 +111,14 @@ describe('SqrtPriceMath', () => {
       )
     })
 
+    it('puzzling echidna test', async () => {
+      const price = '20282409603651670423947251286016'
+      const liquidity = 1024
+      const amountOut = 4
+
+      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, false)).to.be.reverted
+    })
+
     it('returns input price if amount in is zero and zeroForOne = true', async () => {
       const price = encodePriceSqrt(1, 1)
       expect(await sqrtPriceMath.getNextPriceFromOutput(price, expandTo18Decimals(1).div(10), 0, true)).to.eq(price)
