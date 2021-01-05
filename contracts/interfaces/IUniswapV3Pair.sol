@@ -75,7 +75,7 @@ interface IUniswapV3Pair {
         returns (
             uint32 blockTimestamp,
             int56 tickCumulative,
-            uint128 liquidity
+            uint160 liquidityCumulative
         );
 
     function tickBitmap(int16) external view returns (uint256);

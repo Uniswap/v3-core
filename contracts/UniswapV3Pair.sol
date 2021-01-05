@@ -86,8 +86,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint32 blockTimestamp;
         // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
         int56 tickCumulative;
-        // in-range liquidity at the time of the observation
-        uint128 liquidity;
+        // the liquidity accumulator, i.e. liquidity * time elapsed since the pair was first initialized
+        uint160 liquidityCumulative;
     }
 
     OracleObservation[NUMBER_OF_ORACLE_OBSERVATIONS] public override oracleObservations;
@@ -191,12 +191,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         OracleObservation memory oracleObservationLast =
             oracleObservations[(index == 0 ? NUMBER_OF_ORACLE_OBSERVATIONS : index) - 1];
         if (oracleObservationLast.blockTimestamp != blockTimestamp) {
+            uint32 timestampDelta = blockTimestamp - oracleObservationLast.blockTimestamp;
             oracleObservations[index] = OracleObservation({
-                blockTimestamp: blockTimestamp, // addition overflow desired
-                tickCumulative: oracleObservationLast.tickCumulative +
-                    int56(blockTimestamp - oracleObservationLast.blockTimestamp) *
-                    tick,
-                liquidity: liquidity
+                blockTimestamp: blockTimestamp,
+                tickCumulative: oracleObservationLast.tickCumulative + int56(tick) * timestampDelta,
+                liquidityCumulative: oracleObservationLast.liquidityCumulative + uint160(liquidity) * timestampDelta
             });
             slot0.index = index == NUMBER_OF_ORACLE_OBSERVATIONS - 1 ? 0 : index + 1;
         }
@@ -220,7 +219,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         oracleObservations[_slot0.index++] = OracleObservation({
             blockTimestamp: _blockTimestamp(),
             tickCumulative: 0,
-            liquidity: 0
+            liquidityCumulative: 0
         });
 
         slot0 = _slot0;
