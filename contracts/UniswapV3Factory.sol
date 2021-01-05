@@ -58,9 +58,9 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
     }
 
     function _enableFeeAmount(uint24 fee, int24 tickSpacing) private {
-        require(fee < 1000000, 'FAV');
-        require(tickSpacing > 0, 'TSV');
-        require(feeAmountTickSpacing[fee] == 0, 'FAE');
+        require(fee < 1000000, 'FEE');
+        require(tickSpacing > 0, 'TS');
+        require(feeAmountTickSpacing[fee] == 0, 'FAI');
 
         feeAmountTickSpacing[fee] = tickSpacing;
         allEnabledFeeAmounts.push(fee);

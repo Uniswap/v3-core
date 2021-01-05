@@ -135,12 +135,12 @@ export function createPairFunctions({
     return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
   }
 
-  const swapToLowerPrice: SwapFunction = (sqrtPrice, to) => {
-    return swapToSqrtPrice(token0, sqrtPrice, to)
+  const swapToLowerPrice: SwapFunction = (sqrtPriceX96, to) => {
+    return swapToSqrtPrice(token0, sqrtPriceX96, to)
   }
 
-  const swapToHigherPrice: SwapFunction = (sqrtPrice, to) => {
-    return swapToSqrtPrice(token1, sqrtPrice, to)
+  const swapToHigherPrice: SwapFunction = (sqrtPriceX96, to) => {
+    return swapToSqrtPrice(token1, sqrtPriceX96, to)
   }
 
   const swapExact0For1: SwapFunction = (amount, to) => {
@@ -159,7 +159,7 @@ export function createPairFunctions({
     return swap(token1, [0, amount], to)
   }
 
-  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
+  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
