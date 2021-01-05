@@ -127,7 +127,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         minTick = _minTick;
         maxTick = _maxTick;
-        maxTickLiquidityGross = uint128(-1) / uint128((_maxTick - _minTick) / _tickSpacing);
+        maxTickLiquidityGross = uint128(-1) / uint128((_maxTick - _minTick + 1) / _tickSpacing);
     }
 
     // returns the block timestamp % 2**32
