@@ -340,11 +340,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount1 = uint256(amount1Int);
 
         // if necessary, collect payment via callback
-        if (amount0 > 0 || amount1 > 0) {
+        // TODO we could decrease bytecode size here at the cost of gas increase
+        if (amount0 > 0 && amount1 > 0) {
             uint256 balance0 = IERC20(token0).balanceOf(address(this));
             uint256 balance1 = IERC20(token1).balanceOf(address(this));
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
             require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
+            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
+        } else if (amount0 > 0 && amount1 == 0) {
+            uint256 balance0 = IERC20(token0).balanceOf(address(this));
+            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, 0, data);
+            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
+        } else if (amount0 == 0 && amount1 > 0) {
+            uint256 balance1 = IERC20(token1).balanceOf(address(this));
+            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(0, amount1, data);
             require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
         }
 
