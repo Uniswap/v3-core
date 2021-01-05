@@ -109,7 +109,7 @@ describe('UniswapV3Pair', () => {
 
     const oldCreatePair = createPair
     createPair = async (amount, spacing) => {
-      const pair1 = await oldCreatePair(amount, spacing)
+    const pair1 = await oldCreatePair(amount, spacing)
       ;({
         swapToLowerPrice,
         swapToHigherPrice,
