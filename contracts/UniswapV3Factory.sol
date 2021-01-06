@@ -27,9 +27,9 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
 
-        _enableFeeAmount(600, 12);
-        _enableFeeAmount(3000, 60);
-        _enableFeeAmount(9000, 180);
+        enableFeeAmount(600, 12);
+        enableFeeAmount(3000, 60);
+        enableFeeAmount(9000, 180);
     }
 
     function createPair(
@@ -57,7 +57,8 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         owner = _owner;
     }
 
-    function _enableFeeAmount(uint24 fee, int24 tickSpacing) private {
+    function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
+        require(msg.sender == owner, 'OO');
         require(fee < 1000000, 'FEE');
         require(tickSpacing > 0, 'TS');
         require(feeAmountTickSpacing[fee] == 0, 'FAI');
@@ -65,11 +66,5 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         feeAmountTickSpacing[fee] = tickSpacing;
         allEnabledFeeAmounts.push(fee);
         emit FeeAmountEnabled(fee, tickSpacing);
-    }
-
-    function enableFeeAmount(uint24 fee, int24 tickSpacing) external override {
-        require(msg.sender == owner, 'OO');
-
-        _enableFeeAmount(fee, tickSpacing);
     }
 }
