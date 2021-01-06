@@ -159,13 +159,12 @@ export function createPairFunctions({
 
     ///update for potential swapAforC beginning with token 1 instead of 0.
     
-    const method = inputToken === token0 ? swapTarget.swapAForC : swapTarget.swapAForC
   
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return method([pair.address, pair.address], amountOut, toAddress)
+    return swapAForC([pair.address, pair.address], amountOut, toAddress)
   }
 
 
