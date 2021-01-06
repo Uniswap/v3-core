@@ -687,23 +687,22 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function flash(
-        address receiver,
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
     ) external override lockNoPriceMovement {
         require(amount0 > 0 || amount1 > 0, 'A');
 
-        uint256 fee0 = amount0 > 0 ? amount0.mul(fee).div(1e6) : 0;
-        uint256 fee1 = amount1 > 0 ? amount1.mul(fee).div(1e6) : 0;
+        uint256 fee0 = amount0 > 0 ? SqrtPriceMath.mulDivRoundingUp(amount0, fee, 1e6) : 0;
+        uint256 fee1 = amount1 > 0 ? SqrtPriceMath.mulDivRoundingUp(amount1, fee, 1e6) : 0;
 
         uint256 balance0 = IERC20(token0).balanceOf(address(this));
         uint256 balance1 = IERC20(token1).balanceOf(address(this));
 
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, receiver, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, receiver, amount1);
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, msg.sender, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, msg.sender, amount1);
 
-        IUniswapV3FlashCallback(receiver).uniswapV3FlashCallback(msg.sender, amount0, fee0, amount1, fee1, data);
+        IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);
 
         require(IERC20(token0).balanceOf(address(this)) >= balance0.add(fee0));
         require(IERC20(token1).balanceOf(address(this)) >= balance1.add(fee1));
@@ -711,6 +710,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeGrowthGlobal0X128 += FixedPoint128.fraction(fee0, liquidityCurrent);
         feeGrowthGlobal1X128 += FixedPoint128.fraction(fee1, liquidityCurrent);
 
-        emit Flash(msg.sender, receiver, amount0, amount1);
+        emit Flash(msg.sender, amount0, amount1);
     }
 }
