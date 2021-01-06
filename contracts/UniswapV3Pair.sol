@@ -242,8 +242,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // clear any tick or position data that is no longer needed
         if (liquidityDelta < 0) {
-            if (flippedLower) ticks.clear(tick);
-            if (flippedUpper) ticks.clear(tick);
+            if (flippedLower) ticks.clear(tickLower);
+            if (flippedUpper) ticks.clear(tickUpper);
             if (position.liquidity == 0) {
                 delete position.feeGrowthInside0LastX128;
                 delete position.feeGrowthInside1LastX128;
