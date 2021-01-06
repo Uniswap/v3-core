@@ -73,7 +73,7 @@ export type SwapFunction = (
 ) => Promise<ContractTransaction>
 
 export type MultiSwapFunction = (
-  pairs: [string, string],
+  pairs: [Contract, Contract],
   amount: BigNumberish,
   to: Wallet | string
 ) => Promise<ContractTransaction>
@@ -145,26 +145,28 @@ export function createPairFunctions({
         : swapTarget.swap1ForExact0
 
     await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
-
+    
     const toAddress = typeof to === 'string' ? to : to.address
 
     return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
   }
 
   async function multiSwap(
-    [inputToken, secondPair]: [Contract, Contract],
+    inputToken: Contract,
+    pairs: [Contract, Contract],
     [amountIn, amountOut]: [BigNumberish, BigNumberish],
     to: Wallet | string
   ): Promise<ContractTransaction> {
 
     ///update for potential swapAforC beginning with token 1 instead of 0.
     
-  
+    inputToken = pairs[0].token0
+
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return swapAForC([pair.address, pair.address], amountOut, toAddress)
+    return swapAForC([pairs[0].address, pairs[1].address], amountOut, toAddress)
   }
 
 
@@ -193,7 +195,7 @@ export function createPairFunctions({
   }
 
   const swapAForC: MultiSwapFunction = (pairs, amount, to) => {
-    return multiSwap([token0, token0], [0, amount], to)
+    return multiSwap([pairs[0].address, pairs[1].address], [0, amount], to)
   }
 
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {

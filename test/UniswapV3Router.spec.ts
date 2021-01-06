@@ -240,7 +240,7 @@ describe('UniswapV3Pair', () => {
           it('check for three transfer events', async () => {
             await expect(swapAForC([pair.address, pair1.address], 1, walletAddress))
             .to.emit(swapTarget, 'SwapCallback')
-            
+            .withArgs(1,0,[pair.address, pair.address])
             .to.emit(token1, 'Transfer')
             .withArgs(pair1.address, walletAddress, 1)
             .to.emit(token1, 'Transfer')
