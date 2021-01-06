@@ -9,7 +9,7 @@ const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
 describe('TickTest', () => {
   let tickTest: TickTest
 
-  before('deploy TickTest', async () => {
+  beforeEach('deploy TickTest', async () => {
     const tickTestFactory = await ethers.getContractFactory('TickTest')
     tickTest = (await tickTestFactory.deploy()) as TickTest
   })
@@ -65,6 +65,70 @@ describe('TickTest', () => {
       expect(maxTick).to.eq(getMaxTick(2302))
       expect(maxLiquidityPerTick).to.eq('441351967472034323558203122479595605') // 118 bits
       expect(maxLiquidityPerTick).to.eq(getMaxLiquidityPerTick(2302))
+    })
+  })
+
+  describe('#getFeeGrowthInside', () => {
+    it('returns all for two uninitialized ticks if tick is inside', async () => {
+      const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
+      expect(feeGrowthInside0X128).to.eq(15)
+      expect(feeGrowthInside1X128).to.eq(15)
+    })
+    it('returns 0 for two uninitialized ticks if tick is above', async () => {
+      const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 4, 15, 15)
+      expect(feeGrowthInside0X128).to.eq(0)
+      expect(feeGrowthInside1X128).to.eq(0)
+    })
+    it('returns 0 for two uninitialized ticks if tick is below', async () => {
+      const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, -4, 15, 15)
+      expect(feeGrowthInside0X128).to.eq(0)
+      expect(feeGrowthInside1X128).to.eq(0)
+    })
+
+    it('subtracts upper tick if below', async () => {
+      await tickTest.setTick(2, {
+        feeGrowthOutside0X128: 2,
+        feeGrowthOutside1X128: 3,
+        secondsOutside: 0,
+        liquidityGross: 0,
+        liquidityDelta: 0,
+      })
+      const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
+      expect(feeGrowthInside0X128).to.eq(13)
+      expect(feeGrowthInside1X128).to.eq(12)
+    })
+
+    it('subtracts lower tick if above', async () => {
+      await tickTest.setTick(-2, {
+        feeGrowthOutside0X128: 2,
+        feeGrowthOutside1X128: 3,
+        secondsOutside: 0,
+        liquidityGross: 0,
+        liquidityDelta: 0,
+      })
+      const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
+      expect(feeGrowthInside0X128).to.eq(13)
+      expect(feeGrowthInside1X128).to.eq(12)
+    })
+
+    it('subtracts upper and lower tick if inside', async () => {
+      await tickTest.setTick(-2, {
+        feeGrowthOutside0X128: 2,
+        feeGrowthOutside1X128: 3,
+        secondsOutside: 0,
+        liquidityGross: 0,
+        liquidityDelta: 0,
+      })
+      await tickTest.setTick(2, {
+        feeGrowthOutside0X128: 4,
+        feeGrowthOutside1X128: 1,
+        secondsOutside: 0,
+        liquidityGross: 0,
+        liquidityDelta: 0,
+      })
+      const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
+      expect(feeGrowthInside0X128).to.eq(9)
+      expect(feeGrowthInside1X128).to.eq(11)
     })
   })
 })

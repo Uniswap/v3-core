@@ -38,34 +38,34 @@ library Tick {
     function _getFeeGrowthBelow(
         int24 tick,
         int24 tickCurrent,
-        Info storage tickInfo,
+        Info storage info,
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128
     ) private view returns (uint256 feeGrowthBelow0X128, uint256 feeGrowthBelow1X128) {
         // tick is above the current tick, meaning growth outside represents growth above, not below
         if (tick > tickCurrent) {
-            feeGrowthBelow0X128 = feeGrowthGlobal0X128 - tickInfo.feeGrowthOutside0X128;
-            feeGrowthBelow1X128 = feeGrowthGlobal1X128 - tickInfo.feeGrowthOutside1X128;
+            feeGrowthBelow0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128;
+            feeGrowthBelow1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128;
         } else {
-            feeGrowthBelow0X128 = tickInfo.feeGrowthOutside0X128;
-            feeGrowthBelow1X128 = tickInfo.feeGrowthOutside1X128;
+            feeGrowthBelow0X128 = info.feeGrowthOutside0X128;
+            feeGrowthBelow1X128 = info.feeGrowthOutside1X128;
         }
     }
 
     function _getFeeGrowthAbove(
         int24 tick,
         int24 tickCurrent,
-        Info storage tickInfo,
+        Info storage info,
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128
     ) private view returns (uint256 feeGrowthAbove0X128, uint256 feeGrowthAbove1X128) {
         // tick is above current tick, meaning growth outside represents growth above
         if (tick > tickCurrent) {
-            feeGrowthAbove0X128 = tickInfo.feeGrowthOutside0X128;
-            feeGrowthAbove1X128 = tickInfo.feeGrowthOutside1X128;
+            feeGrowthAbove0X128 = info.feeGrowthOutside0X128;
+            feeGrowthAbove1X128 = info.feeGrowthOutside1X128;
         } else {
-            feeGrowthAbove0X128 = feeGrowthGlobal0X128 - tickInfo.feeGrowthOutside0X128;
-            feeGrowthAbove1X128 = feeGrowthGlobal1X128 - tickInfo.feeGrowthOutside1X128;
+            feeGrowthAbove0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128;
+            feeGrowthAbove1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128;
         }
     }
 
