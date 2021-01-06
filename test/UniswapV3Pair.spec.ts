@@ -207,6 +207,26 @@ describe('UniswapV3Pair', () => {
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))
           ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)
+          ).to.not.be.revertedWith('LO')
+        })
+        it('fails if total amount at tick exceeds the max', async () => {
+          await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1000)
+
+          const maxLiquidityGross = await pair.maxLiquidityPerTick()
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing * 2, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing * 2, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000))
+          ).to.not.be.revertedWith('LO')
         })
       })
 
@@ -476,6 +496,89 @@ describe('UniswapV3Pair', () => {
         expect(feesOwed0).to.eq(0)
         expect(feesOwed1).to.eq(0)
       })
+    })
+  })
+
+  describe('#burn', () => {
+    beforeEach('initialize at zero tick', () => initializeAtZeroTick(pair))
+
+    async function checkTickIsClear(tick: number) {
+      const {
+        liquidityGross,
+        secondsOutside,
+        feeGrowthOutside0X128,
+        feeGrowthOutside1X128,
+        liquidityDelta,
+      } = await pair.ticks(tick)
+      expect(liquidityGross).to.eq(0)
+      expect(secondsOutside).to.eq(0)
+      expect(feeGrowthOutside0X128).to.eq(0)
+      expect(feeGrowthOutside1X128).to.eq(0)
+      expect(liquidityDelta).to.eq(0)
+    }
+
+    async function checkTickIsNotClear(tick: number) {
+      const { liquidityGross } = await pair.ticks(tick)
+      expect(liquidityGross).to.not.eq(0)
+    }
+
+    it('clears the position fee growth snapshot if no more liquidity', async () => {
+      // some activity that would make the ticks non-zero
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await swapExact1For0(expandTo18Decimals(1), wallet.address)
+      await pair.connect(other).burn(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      const {
+        liquidity,
+        feesOwed0,
+        feesOwed1,
+        feeGrowthInside0LastX128,
+        feeGrowthInside1LastX128,
+      } = await pair.positions(getPositionKey(other.address, minTick, maxTick))
+      expect(liquidity).to.eq(0)
+      expect(feesOwed0).to.not.eq(0)
+      expect(feesOwed1).to.not.eq(0)
+      expect(feeGrowthInside0LastX128).to.eq(0)
+      expect(feeGrowthInside1LastX128).to.eq(0)
+    })
+
+    it('clears the tick if its the last position using it', async () => {
+      const tickLower = minTick + tickSpacing
+      const tickUpper = maxTick - tickSpacing
+      // some activity that would make the ticks non-zero
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await mint(wallet.address, tickLower, tickUpper, 1)
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, tickLower, tickUpper, 1)
+      await checkTickIsClear(tickLower)
+      await checkTickIsClear(tickUpper)
+    })
+
+    it('clears only the lower tick if upper is still used', async () => {
+      const tickLower = minTick + tickSpacing
+      const tickUpper = maxTick - tickSpacing
+      // some activity that would make the ticks non-zero
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await mint(wallet.address, tickLower, tickUpper, 1)
+      await mint(wallet.address, tickLower + tickSpacing, tickUpper, 1)
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, tickLower, tickUpper, 1)
+      await checkTickIsClear(tickLower)
+      await checkTickIsNotClear(tickUpper)
+    })
+
+    it('clears only the upper tick if lower is still used', async () => {
+      const tickLower = minTick + tickSpacing
+      const tickUpper = maxTick - tickSpacing
+      // some activity that would make the ticks non-zero
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await mint(wallet.address, tickLower, tickUpper, 1)
+      await mint(wallet.address, tickLower, tickUpper - tickSpacing, 1)
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, tickLower, tickUpper, 1)
+      await checkTickIsNotClear(tickLower)
+      await checkTickIsClear(tickUpper)
     })
   })
 
