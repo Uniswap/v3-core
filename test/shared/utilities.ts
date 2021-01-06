@@ -67,10 +67,7 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
   return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
 
-export type SwapFunction = (
-  amount: BigNumberish,
-  to: Wallet | string
-) => Promise<ContractTransaction>
+export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
 
 export type StaticSwapFunction = (
   amount: BigNumberish,
@@ -92,7 +89,6 @@ export interface PairFunctions {
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
   swap1ForExact0: SwapFunction
-  swapAForC: SwapFunction
   mint: MintFunction
   initialize: InitializeFunction
 }
@@ -102,12 +98,11 @@ export function createPairFunctions({
   swapTarget,
   pair,
 }: {
-  swapTarget: TestUniswapV3Router
+  swapTarget: TestUniswapV3Callee
   token0: TestERC20
   token1: TestERC20
   pair: UniswapV3Pair
 }): PairFunctions {
-
   async function swapToSqrtPrice(
     inputToken: Contract,
     targetPrice: BigNumberish,
@@ -145,28 +140,6 @@ export function createPairFunctions({
     return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
   }
 
-  async function multiSwap(
-    inputToken: Contract,
-    amountOut: BigNumberish,
-    to: Wallet | string
-  ): Promise<ContractTransaction> {
-    //const exactInput = amountOut === 0
-
-    ///update for potential swapAforC beginning with token 1 instead of 0.
-    const method = swapTarget.swapAForC
-  
- 
-
-    await inputToken.approve(swapTarget.address, constants.MaxUint256)
-
-    let pairs: string = '${pair.address}, ${pair.address}'
-
-    const toAddress = typeof to === 'string' ? to : to.address
-
-    return method(pairs, amountOut, toAddress)
-  }
-
-
   const swapToLowerPrice: SwapFunction = (sqrtPrice, to) => {
     return swapToSqrtPrice(token0, sqrtPrice, to)
   }
@@ -191,10 +164,6 @@ export function createPairFunctions({
     return swap(token1, [0, amount], to)
   }
 
-  const swapAForC: SwapFunction = (amount, to) => {
-    return multiSwap(token0, amount, to)
-  }
-
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
@@ -214,8 +183,37 @@ export function createPairFunctions({
     swap0ForExact1,
     swapExact1For0,
     swap1ForExact0,
-    swapAForC,
     mint,
     initialize,
+  }
+}
+
+export interface MultiPairFunctions {
+  swap0ForExact2: any
+}
+
+export function createMultiPairFunctions({
+  token0,
+  swapTarget,
+  pair0,
+  pair1,
+}: {
+  token0: TestERC20
+  swapTarget: TestUniswapV3Router
+  pair0: UniswapV3Pair
+  pair1: UniswapV3Pair
+}): MultiPairFunctions {
+  async function swap0ForExact2(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swapAForC
+
+    await token0.approve(swapTarget.address, constants.MaxUint256)
+
+    const toAddress = typeof to === 'string' ? to : to.address
+
+    return method([pair0.address, pair1.address], amountOut, toAddress)
+  }
+
+  return {
+    swap0ForExact2,
   }
 }

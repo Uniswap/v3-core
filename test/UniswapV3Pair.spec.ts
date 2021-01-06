@@ -50,7 +50,7 @@ describe('UniswapV3Pair', () => {
   let factory: UniswapV3Factory
   let pair: MockTimeUniswapV3Pair
 
-  let swapTarget: TestUniswapV3Router
+  let swapTarget: TestUniswapV3Callee
 
   let swapToLowerPrice: SwapFunction
   let swapToHigherPrice: SwapFunction
@@ -72,7 +72,7 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy fixture', async () => {
-    ;({ token0, token1, token2, factory, createPair, swapTarget } = await loadFixture(pairFixture))
+    ;({ token0, token1, token2, factory, createPair, swapTargetCallee: swapTarget } = await loadFixture(pairFixture))
 
     const oldCreatePair = createPair
     createPair = async (amount, spacing) => {

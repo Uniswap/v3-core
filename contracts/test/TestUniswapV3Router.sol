@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
+import 'hardhat/console.sol';
+
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import '../libraries/SafeCast.sol';
@@ -9,7 +11,7 @@ import '../interfaces/IUniswapV3MintCallback.sol';
 import '../interfaces/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
-abstract contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapCallback {
+contract TestUniswapV3Router is IUniswapV3SwapCallback {
     using SafeCast for uint256;
 /*
  allows exact output swaps from A -> B -> C, where the steps look like:
@@ -25,6 +27,7 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         uint256 amount1Out,
         address recipient
     ) public {
+        console.log('starting swapAForC');
         IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient)); //swap 0 for exact 1 (B for exact C)
     }
 
@@ -44,7 +47,7 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         int256 amount1Delta,
         bytes calldata data
     ) public override {
-        
+        console.log('inside swap callback! :)');
         emit SwapCallback(amount0Delta, amount1Delta);
 
         (address[] memory pairs, address recipient) = abi.decode(data, (address [], address));
