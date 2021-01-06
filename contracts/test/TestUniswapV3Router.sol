@@ -9,22 +9,78 @@ import '../interfaces/IUniswapV3MintCallback.sol';
 import '../interfaces/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
-abstract contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapCallback {
+contract TestUniswapV3Router is IUniswapV3MintCallback, IUniswapV3SwapCallback {
     using SafeCast for uint256;
-/*
- allows exact output swaps from A -> B -> C, where the steps look like:
 
-initiate an exact output swap on the BxC pair, resulting in a transfer of C from BxC to user
-within the (outer) swap callback, initiate an exact swap on AxB, resulting in a transfer of B to BxC
-in the inner swap callback, resolve by triggering a transfer of A from user to AxB (via transferFrom)
-*/
+    function swapExact0For1(
+        address pair,
+        uint256 amount0In,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(true, amount0In.toInt256(), 0, recipient, abi.encode(msg.sender));
+    }
+
+    function swap0ForExact1(
+        address pair,
+        uint256 amount1Out,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(msg.sender));
+    }
+
+    function swapExact1For0(
+        address pair,
+        uint256 amount1In,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), uint160(-1), recipient, abi.encode(msg.sender));
+    }
+
+    function swap1ForExact0(
+        address pair,
+        uint256 amount0Out,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), uint160(-1), recipient, abi.encode(msg.sender));
+    }
+
+    function swapToLowerSqrtPrice(
+        address pair,
+        uint160 sqrtPrice,
+        address recipient
+    ) external {
+        IUniswapV3Pair(pair).swap(
+            true,
+            int256(2**255 - 1), // max int256
+            sqrtPrice,
+            recipient,
+            abi.encode(msg.sender)
+        );
+    }
+
+    function swapToHigherSqrtPrice(
+        address pair,
+        uint160 sqrtPrice,
+        address recipient
+    ) external {
+        // in the 0 for 1 case, we run into overflow in getNextPriceFromAmount1RoundingDown if this is not true:
+        // amountSpecified < (2**160 - sqrtQ + 1) * l / 2**96
+        // the amountSpecified below always satisfies this
+        IUniswapV3Pair(pair).swap(
+            false,
+            int256((2**160 - sqrtPrice + 1) / 2**96 - 1),
+            sqrtPrice,
+            recipient,
+            abi.encode(msg.sender)
+        );
+    }
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
     
     function swapAForC( 
         address [] memory pairs,
         uint256 amount1Out,
         address recipient
-    ) public {
+    ) external {
         IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient)); //swap 0 for exact 1 (B for exact C)
     }
 
@@ -60,4 +116,36 @@ in the inner swap callback, resolve by triggering a transfer of A from user to A
         }        
     }
 
+    function initialize(address pair, uint160 sqrtPrice) external {
+        IUniswapV3Pair(pair).initialize(sqrtPrice, abi.encode(msg.sender));
+    }
+
+    function mint(
+        address pair,
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        IUniswapV3Pair(pair).mint(recipient, tickLower, tickUpper, amount, abi.encode(msg.sender));
+    }
+
+    event MintCallback(uint256 amount0Owed, uint256 amount1Owed);
+
+    function uniswapV3MintCallback(
+        uint256 amount0Owed,
+        uint256 amount1Owed,
+        bytes calldata data
+    ) external override {
+        address sender = abi.decode(data, (address));
+
+        emit MintCallback(amount0Owed, amount1Owed);
+        if (amount0Owed > 0)
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Owed));
+        if (amount1Owed > 0)
+            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Owed));
+    }
 }
+
+
+

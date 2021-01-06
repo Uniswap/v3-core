@@ -72,6 +72,12 @@ export type SwapFunction = (
   to: Wallet | string
 ) => Promise<ContractTransaction>
 
+export type MultiSwapFunction = (
+  pairs: [string, string],
+  amount: BigNumberish,
+  to: Wallet | string
+) => Promise<ContractTransaction>
+
 export type StaticSwapFunction = (
   amount: BigNumberish,
   to: Wallet | string
@@ -92,7 +98,7 @@ export interface PairFunctions {
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
   swap1ForExact0: SwapFunction
-  swapAForC: SwapFunction
+  swapAForC: MultiSwapFunction
   mint: MintFunction
   initialize: InitializeFunction
 }
@@ -150,10 +156,10 @@ export function createPairFunctions({
     [amountIn, amountOut]: [BigNumberish, BigNumberish],
     to: Wallet | string
   ): Promise<ContractTransaction> {
-    
-    const method = inputToken === token0 ? swapTarget.swapAForC : swapTarget.swapAForC
 
     ///update for potential swapAforC beginning with token 1 instead of 0.
+    
+    const method = inputToken === token0 ? swapTarget.swapAForC : swapTarget.swapAForC
   
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
 
@@ -187,7 +193,7 @@ export function createPairFunctions({
     return swap(token1, [0, amount], to)
   }
 
-  const swapAForC: SwapFunction = (amount, to) => {
+  const swapAForC: MultiSwapFunction = (pairs, amount, to) => {
     return multiSwap([token0, token0], [0, amount], to)
   }
 
