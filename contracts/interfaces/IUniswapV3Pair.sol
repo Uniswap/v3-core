@@ -12,13 +12,13 @@ interface IUniswapV3Pair {
         uint256 amount0,
         uint256 amount1
     );
-    event CollectFees(
+    event Collect(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
         address recipient,
-        uint256 amount0,
-        uint256 amount1
+        uint128 amount0,
+        uint128 amount1
     );
     event Burn(
         address indexed owner,
@@ -38,7 +38,7 @@ interface IUniswapV3Pair {
         int24 tick
     );
     event FeeToChanged(address indexed oldFeeTo, address indexed newFeeTo);
-    event Collect(uint256 amount0, uint256 amount1);
+    event CollectProtocol(uint128 amount0, uint128 amount1);
 
     // immutables
     function factory() external view returns (address);
@@ -51,9 +51,11 @@ interface IUniswapV3Pair {
 
     function tickSpacing() external view returns (int24);
 
-    function MIN_TICK() external view returns (int24);
+    function minTick() external view returns (int24);
 
-    function MAX_TICK() external view returns (int24);
+    function maxTick() external view returns (int24);
+
+    function maxLiquidityPerTick() external view returns (uint128);
 
     // variables/state
     function feeTo() external view returns (address);
@@ -76,23 +78,14 @@ interface IUniswapV3Pair {
 
     function feeGrowthGlobal1X128() external view returns (uint256);
 
-    function feeToFees0() external view returns (uint256);
+    function feeToFees0() external view returns (uint128);
 
-    function feeToFees1() external view returns (uint256);
+    function feeToFees1() external view returns (uint128);
 
     function tickCurrent() external view returns (int24);
 
     // initialize the pair
     function initialize(uint160 sqrtPriceX96, bytes calldata data) external;
-
-    // collect fees
-    function collectFees(
-        int24 tickLower,
-        int24 tickUpper,
-        address recipient,
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external returns (uint256 amount0, uint256 amount1);
 
     // mint some liquidity to an address
     function mint(
@@ -101,7 +94,16 @@ interface IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external returns (uint256 amount0, uint256 amount1);
+    ) external;
+
+    // collect fees
+    function collect(
+        int24 tickLower,
+        int24 tickUpper,
+        address recipient,
+        uint128 amount0Requested,
+        uint128 amount1Requested
+    ) external returns (uint128 amount0, uint128 amount1);
 
     // burn the sender's liquidity
     function burn(
@@ -129,7 +131,7 @@ interface IUniswapV3Pair {
     ) external;
 
     // allows anyone to collect protocol fees to feeTo
-    function collect(uint256 amount0Requested, uint256 amount1Requested)
+    function collectProtocol(uint128 amount0Requested, uint128 amount1Requested)
         external
-        returns (uint256 amount0, uint256 amount1);
+        returns (uint128 amount0, uint128 amount1);
 }

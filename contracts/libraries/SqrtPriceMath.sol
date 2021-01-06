@@ -51,9 +51,10 @@ library SqrtPriceMath {
             return mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
         }
 
-        return
-            divRoundingUp(numerator1, add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount))
-                .toUint160();
+        uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
+        require(denominator1 != 0, 'OUT');
+
+        return divRoundingUp(numerator1, denominator1).toUint160();
     }
 
     // calculate sqrt(P) +- y / liquidity
@@ -185,7 +186,7 @@ library SqrtPriceMath {
         uint256 offset0X128,
         uint256 balance0,
         uint128 liquidity
-    ) internal view returns (uint256 feeGrowthGlobal0X128) {
+    ) internal pure returns (uint256 feeGrowthGlobal0X128) {
         uint256 balance0X128 = balance0 > uint128(-1) ? uint256(-1) : (balance0 << 128);
         // overflow is necessary
         uint256 fraction = (balance0X128 - offset0X128) / liquidity;
@@ -199,7 +200,7 @@ library SqrtPriceMath {
         uint256 offset1X128,
         uint256 balance1,
         uint128 liquidity
-    ) internal view returns (uint256 feeGrowthGlobal1X128) {
+    ) internal pure returns (uint256 feeGrowthGlobal1X128) {
         uint256 balance1X128 = balance1 > uint128(-1) ? uint256(-1) : (balance1 << 128);
         // overflow is necessary
         uint256 fraction = (balance1X128 - offset1X128) / liquidity;
@@ -214,7 +215,7 @@ library SqrtPriceMath {
         uint256 balanceAfter,
         uint128 liquidityBefore,
         uint128 liquidityAfter
-    ) internal view returns (uint256 offsetAfterX128) {
+    ) internal pure returns (uint256 offsetAfterX128) {
         uint256 balanceBeforeX128 = balanceBefore > uint128(-1) ? uint256(-1) : (balanceBefore << 128);
         // overflow is necessary
         // TODO ensure that rounding down is appropriate for both + and - offsets

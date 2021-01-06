@@ -6,7 +6,11 @@ import { UniswapV3Pair } from '../../typechain/UniswapV3Pair'
 
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
-export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
+export const getMaxLiquidityPerTick = (tickSpacing: number) =>
+  BigNumber.from(2)
+    .pow(128)
+    .sub(1)
+    .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
 
 export enum FeeAmount {
   LOW = 600,
@@ -157,7 +161,7 @@ export function createPairFunctions({
     return swap(token1, [0, amount], to)
   }
 
-  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
+  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
