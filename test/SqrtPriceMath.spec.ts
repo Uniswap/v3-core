@@ -195,13 +195,13 @@ describe('SqrtPriceMath', () => {
     it('reverts if amountOut is impossible in zero for one direction', async () => {
       await expect(
         sqrtPriceMath.getNextPriceFromOutput(encodePriceSqrt(1, 1), 1, constants.MaxUint256, true)
-      ).to.be.revertedWith('')
+      ).to.be.revertedWith('FMD')
     })
 
     it('reverts if amountOut is impossible in one for zero direction', async () => {
       await expect(
         sqrtPriceMath.getNextPriceFromOutput(encodePriceSqrt(1, 1), 1, constants.MaxUint256, false)
-      ).to.be.revertedWith('')
+      ).to.be.revertedWith('SO')
     })
 
     it('zeroForOne = true gas', async () => {

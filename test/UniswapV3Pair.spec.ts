@@ -111,13 +111,13 @@ describe('UniswapV3Pair', () => {
   describe('#initialize', () => {
     it('fails if already initialized', async () => {
       await initialize(encodePriceSqrt(1, 1))
-      await expect(initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('')
+      await expect(initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('AI')
     })
     it('fails if starting price is too low', async () => {
-      await expect(initialize(1)).to.be.revertedWith('')
+      await expect(initialize(1)).to.be.revertedWith('R')
     })
     it('fails if starting price is too high', async () => {
-      await expect(initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('')
+      await expect(initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('R')
     })
     it('fails if starting price is too low or high', async () => {
       const minTick = await pair.minTick()
@@ -186,9 +186,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#mint', () => {
     it('fails if not initialized', async () => {
-      await expect(mint(wallet.address, -tickSpacing, tickSpacing, 0)).to.be.revertedWith(
-        '' // 'UniswapV3Pair::mint: pair not initialized'
-      )
+      await expect(mint(wallet.address, -tickSpacing, tickSpacing, 0)).to.be.revertedWith('LOK')
     })
     describe('after initialization', () => {
       beforeEach('initialize the pair at price of 10:1', async () => {
@@ -198,27 +196,39 @@ describe('UniswapV3Pair', () => {
 
       describe('failure cases', () => {
         it('fails if tickLower greater than tickUpper', async () => {
-          await expect(mint(wallet.address, 1, 0, 1)).to.be.revertedWith(
-            '' // 'UniswapV3Pair::_updatePosition: tickLower must be less than tickUpper'
-          )
+          await expect(mint(wallet.address, 1, 0, 1)).to.be.revertedWith('TLU')
         })
         it('fails if tickLower less than min tick', async () => {
-          await expect(mint(wallet.address, minTick - 1, 0, 1)).to.be.revertedWith(
-            '' // 'UniswapV3Pair::_updatePosition: tickLower cannot be less than min tick'
-          )
+          await expect(mint(wallet.address, minTick - 1, 0, 1)).to.be.revertedWith('TLM')
         })
         it('fails if tickUpper greater than max tick', async () => {
-          await expect(mint(wallet.address, 0, maxTick + 1, 1)).to.be.revertedWith(
-            '' // 'UniswapV3Pair::_updatePosition: tickUpper cannot be greater than max tick'
-          )
+          await expect(mint(wallet.address, 0, maxTick + 1, 1)).to.be.revertedWith('TUM')
         })
         it('fails if amount exceeds the max', async () => {
           const maxLiquidityGross = await pair.maxLiquidityPerTick()
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))
-          ).to.be.revertedWith(
-            '' // 'UniswapV3Pair::_updatePosition: liquidity overflow in lower tick'
-          )
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)
+          ).to.not.be.revertedWith('LO')
+        })
+        it('fails if total amount at tick exceeds the max', async () => {
+          await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1000)
+
+          const maxLiquidityGross = await pair.maxLiquidityPerTick()
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing * 2, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing * 2, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000))
+          ).to.not.be.revertedWith('LO')
         })
       })
 
@@ -488,6 +498,89 @@ describe('UniswapV3Pair', () => {
         expect(feesOwed0).to.eq(0)
         expect(feesOwed1).to.eq(0)
       })
+    })
+  })
+
+  describe('#burn', () => {
+    beforeEach('initialize at zero tick', () => initializeAtZeroTick(pair))
+
+    async function checkTickIsClear(tick: number) {
+      const {
+        liquidityGross,
+        secondsOutside,
+        feeGrowthOutside0X128,
+        feeGrowthOutside1X128,
+        liquidityDelta,
+      } = await pair.ticks(tick)
+      expect(liquidityGross).to.eq(0)
+      expect(secondsOutside).to.eq(0)
+      expect(feeGrowthOutside0X128).to.eq(0)
+      expect(feeGrowthOutside1X128).to.eq(0)
+      expect(liquidityDelta).to.eq(0)
+    }
+
+    async function checkTickIsNotClear(tick: number) {
+      const { liquidityGross } = await pair.ticks(tick)
+      expect(liquidityGross).to.not.eq(0)
+    }
+
+    it('clears the position fee growth snapshot if no more liquidity', async () => {
+      // some activity that would make the ticks non-zero
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await swapExact1For0(expandTo18Decimals(1), wallet.address)
+      await pair.connect(other).burn(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      const {
+        liquidity,
+        feesOwed0,
+        feesOwed1,
+        feeGrowthInside0LastX128,
+        feeGrowthInside1LastX128,
+      } = await pair.positions(getPositionKey(other.address, minTick, maxTick))
+      expect(liquidity).to.eq(0)
+      expect(feesOwed0).to.not.eq(0)
+      expect(feesOwed1).to.not.eq(0)
+      expect(feeGrowthInside0LastX128).to.eq(0)
+      expect(feeGrowthInside1LastX128).to.eq(0)
+    })
+
+    it('clears the tick if its the last position using it', async () => {
+      const tickLower = minTick + tickSpacing
+      const tickUpper = maxTick - tickSpacing
+      // some activity that would make the ticks non-zero
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await mint(wallet.address, tickLower, tickUpper, 1)
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, tickLower, tickUpper, 1)
+      await checkTickIsClear(tickLower)
+      await checkTickIsClear(tickUpper)
+    })
+
+    it('clears only the lower tick if upper is still used', async () => {
+      const tickLower = minTick + tickSpacing
+      const tickUpper = maxTick - tickSpacing
+      // some activity that would make the ticks non-zero
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await mint(wallet.address, tickLower, tickUpper, 1)
+      await mint(wallet.address, tickLower + tickSpacing, tickUpper, 1)
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, tickLower, tickUpper, 1)
+      await checkTickIsClear(tickLower)
+      await checkTickIsNotClear(tickUpper)
+    })
+
+    it('clears only the upper tick if lower is still used', async () => {
+      const tickLower = minTick + tickSpacing
+      const tickUpper = maxTick - tickSpacing
+      // some activity that would make the ticks non-zero
+      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await mint(wallet.address, tickLower, tickUpper, 1)
+      await mint(wallet.address, tickLower, tickUpper - tickSpacing, 1)
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, tickLower, tickUpper, 1)
+      await checkTickIsNotClear(tickLower)
+      await checkTickIsClear(tickUpper)
     })
   })
 
@@ -817,9 +910,7 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -tickSpacing
       const upperTick = tickSpacing
       await mint(wallet.address, lowerTick, upperTick, expandTo18Decimals(1000))
-      await expect(pair.burn(wallet.address, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith(
-        '' // 'UniswapV3Pair::_updatePosition: cannot remove more than current position liquidity'
-      )
+      await expect(pair.burn(wallet.address, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith('CP')
     })
 
     it('collect fees within the current price after swap', async () => {
@@ -1017,9 +1108,7 @@ describe('UniswapV3Pair', () => {
     })
 
     it('cannot be changed by addresses that are not owner', async () => {
-      await expect(pair.connect(other).setFeeTo(other.address)).to.be.revertedWith(
-        '' // 'UniswapV3Pair::setFeeTo: caller not owner'
-      )
+      await expect(pair.connect(other).setFeeTo(other.address)).to.be.revertedWith('OO')
     })
 
     async function swapAndGetFeesOwed(
@@ -1176,15 +1265,11 @@ describe('UniswapV3Pair', () => {
     })
 
     it('is only callable by owner', async () => {
-      await expect(pair.connect(other).recover(token2.address, other.address, 10)).to.be.revertedWith(
-        '' // 'UniswapV3Pair::recover: caller not owner'
-      )
+      await expect(pair.connect(other).recover(token2.address, other.address, 10)).to.be.revertedWith('OO')
     })
 
     it('does not allow transferring a token from the pair', async () => {
-      await expect(pair.recover(token0.address, other.address, 10)).to.be.revertedWith(
-        '' // 'UniswapV3Pair::recover: cannot recover token0 or token1'
-      )
+      await expect(pair.recover(token0.address, other.address, 10)).to.be.revertedWith('TOK')
     })
 
     it('allows recovery from the pair', async () => {
@@ -1220,12 +1305,8 @@ describe('UniswapV3Pair', () => {
           await initialize(encodePriceSqrt(1, 1))
         })
         it('mint can only be called for multiples of 12', async () => {
-          await expect(mint(wallet.address, -6, 0, 1)).to.be.revertedWith(
-            '' // 'UniswapV3Pair::_updatePosition: tickSpacing must evenly divide tickLower'
-          )
-          await expect(mint(wallet.address, 0, 6, 1)).to.be.revertedWith(
-            '' // 'UniswapV3Pair::_updatePosition: tickSpacing must evenly divide tickUpper'
-          )
+          await expect(mint(wallet.address, -6, 0, 1)).to.be.revertedWith('TS')
+          await expect(mint(wallet.address, 0, 6, 1)).to.be.revertedWith('TS')
         })
         it('mint can be called with multiples of 12', async () => {
           await mint(wallet.address, 12, 24, 1)

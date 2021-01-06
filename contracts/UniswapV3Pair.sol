@@ -157,42 +157,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeTo = feeTo_;
     }
 
-    function _updateTick(
-        int24 tick,
-        int24 current,
-        int128 liquidityDelta,
-        uint256 _feeGrowthGlobal0X128,
-        uint256 _feeGrowthGlobal1X128
-    ) private returns (Tick.Info storage tickInfo) {
-        tickInfo = ticks[tick];
-
-        if (liquidityDelta != 0) {
-            if (tickInfo.liquidityGross == 0) {
-                assert(liquidityDelta > 0);
-
-                // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
-                if (tick <= current) {
-                    tickInfo.feeGrowthOutside0X128 = _feeGrowthGlobal0X128;
-                    tickInfo.feeGrowthOutside1X128 = _feeGrowthGlobal1X128;
-                    tickInfo.secondsOutside = _blockTimestamp();
-                }
-
-                // safe because we know liquidityDelta is > 0
-                tickInfo.liquidityGross = uint128(liquidityDelta);
-                tickBitmap.flipTick(tick, tickSpacing);
-            } else {
-                tickInfo.liquidityGross = uint128(tickInfo.liquidityGross.addi(liquidityDelta));
-            }
-
-            require(tickInfo.liquidityGross <= maxLiquidityPerTick, 'LO');
-        }
-    }
-
-    function _clearTick(int24 tick) private {
-        delete ticks[tick];
-        tickBitmap.flipTick(tick, tickSpacing);
-    }
-
     function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
         Slot0 memory _slot0 = slot0;
         require(_slot0.sqrtPriceCurrentX96 == 0, 'AI');
@@ -234,10 +198,32 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         (uint256 _feeGrowthGlobal0X128, uint256 _feeGrowthGlobal1X128) =
             liquidityCurrent == 0 ? (0, 0) : (feeGrowthGlobal0X128(), feeGrowthGlobal1X128());
-        Tick.Info storage tickInfoLower =
-            _updateTick(tickLower, tick, liquidityDelta, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
-        Tick.Info storage tickInfoUpper =
-            _updateTick(tickUpper, tick, liquidityDelta, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
+        uint32 blockTimestamp = _blockTimestamp();
+
+        bool flippedLower =
+            ticks.update(
+                tickLower,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                blockTimestamp,
+                false,
+                maxLiquidityPerTick
+            );
+        if (flippedLower) tickBitmap.flipTick(tickLower, tickSpacing);
+        bool flippedUpper =
+            ticks.update(
+                tickUpper,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                blockTimestamp,
+                true,
+                maxLiquidityPerTick
+            );
+        if (flippedUpper) tickBitmap.flipTick(tickUpper, tickSpacing);
 
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
@@ -284,16 +270,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         position.feesOwed0 += feesOwed0;
         position.feesOwed1 += feesOwed1;
 
-        // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-        if (liquidityDelta != 0) {
-            tickInfoLower.liquidityDelta = tickInfoLower.liquidityDelta.add(liquidityDelta).toInt128();
-            tickInfoUpper.liquidityDelta = tickInfoUpper.liquidityDelta.sub(liquidityDelta).toInt128();
-        }
-
         // clear any tick or position data that is no longer needed
         if (liquidityDelta < 0) {
-            if (tickInfoLower.liquidityGross == 0) _clearTick(tickLower);
-            if (tickInfoUpper.liquidityGross == 0) _clearTick(tickUpper);
+            if (flippedLower) ticks.clear(tickLower);
+            if (flippedUpper) ticks.clear(tickUpper);
             if (position.liquidity == 0) {
                 delete position.feeGrowthInside0LastX128;
                 delete position.feeGrowthInside1LastX128;
@@ -614,16 +594,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     // it's ok to put this condition here, because the min/max ticks are always initialized
-                    if (zeroForOne) require(step.tickNext > minTick, 'MIN');
+                    if (zeroForOne) require(step.tickNext > minTick && step.tickNext < maxTick, 'MIN');
                     else require(step.tickNext < maxTick, 'MAX');
-
-                    Tick.Info storage tickInfo = ticks[step.tickNext];
-
-                    // update liquidityCurrent, subi from right to left, addi from left to right
-                    uint128 liquidityBefore = state.liquidity;
-
-                    if (zeroForOne) state.liquidity = uint128(liquidityBefore.subi(tickInfo.liquidityDelta));
-                    else state.liquidity = uint128(liquidityBefore.addi(tickInfo.liquidityDelta));
 
                     // initialize balances first time an initialized tick is crossed
                     if (!crossed) {
@@ -642,6 +614,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                         crossed = true;
                     }
+
+                    uint128 liquidityBefore = state.liquidity;
+
+                    // update liquidityCurrent, subi from right to left, addi from left to right
+                    if (zeroForOne)
+                        state.liquidity = uint128(state.liquidity.subi(ticks[step.tickNext].liquidityDelta));
+                    else state.liquidity = uint128(state.liquidity.addi(ticks[step.tickNext].liquidityDelta));
 
                     uint256 balanceSpecifiedAfter =
                         state.balanceSpecifiedInitial.addi(params.amountSpecified.sub(state.amountSpecifiedRemaining));
@@ -696,10 +675,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             state.liquidity
                         );
                     }
-                    // update tick info
-                    tickInfo.feeGrowthOutside0X128 = _feeGrowthGlobal0X128 - tickInfo.feeGrowthOutside0X128;
-                    tickInfo.feeGrowthOutside1X128 = _feeGrowthGlobal1X128 - tickInfo.feeGrowthOutside1X128;
-                    tickInfo.secondsOutside = params.blockTimestamp - tickInfo.secondsOutside; // overflow is desired
+
+                    ticks.cross(step.tickNext, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128, params.blockTimestamp);
                 }
 
                 state.priceBit = zeroForOne;
