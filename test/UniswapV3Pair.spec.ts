@@ -126,7 +126,7 @@ describe('UniswapV3Pair', () => {
       await initialize(price)
       const { sqrtPriceCurrentX96, index } = await pair.slot0()
       expect(sqrtPriceCurrentX96).to.eq(price)
-      expect(index).to.eq(1)
+      expect(index).to.eq(0)
       expect(await pair.tickCurrent()).to.eq(-6932)
       expect(await pair.liquidityCurrent()).to.eq(1)
     })
@@ -494,7 +494,7 @@ describe('UniswapV3Pair', () => {
     async function getCumulatives(): Promise<{ blockTimestamp: number; tickCumulative: BigNumber }> {
       const index = (await pair.slot0()).index
       const { blockTimestamp: blockTimestampLast, tickCumulative: tickCumulativeLast } = await pair.oracleObservations(
-        index === 0 ? 1024 : index - 1
+        index
       )
       const [tickCurrent, time] = await Promise.all([pair.tickCurrent(), pair.time()])
       if (time == blockTimestampLast) return { tickCumulative: tickCumulativeLast, blockTimestamp: blockTimestampLast }
