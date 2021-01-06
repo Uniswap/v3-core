@@ -31,6 +31,16 @@ describe('UniswapV3Factory', () => {
     expect(await factory.allPairsLength()).to.eq(0)
   })
 
+  it('factory bytecode size', async () => {
+    expect(((await waffle.provider.getCode(factory.address)).length - 2) / 2).to.matchSnapshot()
+  })
+
+  it('pair bytecode size', async () => {
+    await factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM)
+    const pairAddress = getCreate2Address(factory.address, TEST_ADDRESSES, FeeAmount.MEDIUM, pairBytecode)
+    expect(((await waffle.provider.getCode(pairAddress)).length - 2) / 2).to.matchSnapshot()
+  })
+
   it('initial enabled fee amounts', async () => {
     expect(await factory.allEnabledFeeAmountsLength()).to.eq(3)
     expect(await factory.allEnabledFeeAmounts(0)).to.eq(FeeAmount.LOW)
@@ -46,7 +56,7 @@ describe('UniswapV3Factory', () => {
     feeAmount: FeeAmount,
     tickSpacing: number = TICK_SPACINGS[feeAmount]
   ) {
-    const create2Address = getCreate2Address(factory.address, tokens, feeAmount, tickSpacing, pairBytecode)
+    const create2Address = getCreate2Address(factory.address, tokens, feeAmount, pairBytecode)
     const create = factory.createPair(tokens[0], tokens[1], feeAmount)
 
     await expect(create)

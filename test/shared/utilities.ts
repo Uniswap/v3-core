@@ -32,7 +32,6 @@ export function getCreate2Address(
   factoryAddress: string,
   [tokenA, tokenB]: [string, string],
   fee: number,
-  tickSpacing: number,
   bytecode: string
 ): string {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
