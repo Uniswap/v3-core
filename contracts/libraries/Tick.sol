@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
+import './SqrtTickMath.sol';
+
 library Tick {
     // info stored for each initialized individual tick
     struct Info {
@@ -16,6 +18,21 @@ library Tick {
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint256 feeGrowthOutside0X128;
         uint256 feeGrowthOutside1X128;
+    }
+
+    function tickSpacingToParameters(int24 tickSpacing)
+        internal
+        pure
+        returns (
+            int24 minTick,
+            int24 maxTick,
+            uint128 maxLiquidityPerTick
+        )
+    {
+        minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
+        maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
+        uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;
+        maxLiquidityPerTick = uint128(-1) / numTicks;
     }
 
     function _getFeeGrowthBelow(
