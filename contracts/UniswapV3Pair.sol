@@ -299,12 +299,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) {
             position.feesOwed0 -= amount0;
-            offset0X128 -= (amount0 << 128);
+            offset0X128 -= (uint256(amount0) << 128);
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
             position.feesOwed1 -= amount1;
-            offset1X128 -= (amount1 << 128);
+            offset1X128 -= (uint256(amount1) << 128);
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
@@ -804,12 +804,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) {
             feeToFees0 -= amount0;
-            offset0X128 -= (amount0 << 128);
+            offset0X128 -= (uint256(amount0) << 128);
             TransferHelper.safeTransfer(token0, feeTo, amount0);
         }
         if (amount1 > 0) {
             feeToFees1 -= amount1;
-            offset1X128 -= (amount1 << 128);
+            offset1X128 -= (uint256(amount1) << 128);
             TransferHelper.safeTransfer(token1, feeTo, amount1);
         }
 
