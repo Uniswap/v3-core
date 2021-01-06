@@ -339,8 +339,26 @@ describe('UniswapV3Pair', () => {
             expect(secondsOutside).to.eq(0)
           })
 
-          it('gas', async () => {
-            await snapshotGasCost(mint(wallet.address, -240, 0, 10000))
+          describe('gas', () => {
+            it('first mint of range', async () => {
+              await snapshotGasCost(mint(wallet.address, -240, 0, 10000))
+            })
+            it('second mint of different range same tick lower', async () => {
+              await mint(wallet.address, -240, 0, 10000)
+              await snapshotGasCost(mint(wallet.address, -480, -240, 10000))
+            })
+            it('second mint of different range same tick upper', async () => {
+              await mint(wallet.address, -240, 0, 10000)
+              await snapshotGasCost(mint(wallet.address, -480, 0, 10000))
+            })
+            it('second mint of range for same position', async () => {
+              await mint(wallet.address, -240, 0, 10000)
+              await snapshotGasCost(mint(wallet.address, -240, 0, 10000))
+            })
+            it('second mint of same range for different owner', async () => {
+              await mint(wallet.address, -240, 0, 10000)
+              await snapshotGasCost(mint(other.address, -240, 0, 10000))
+            })
           })
         })
 
@@ -386,8 +404,26 @@ describe('UniswapV3Pair', () => {
             expect(await token1.balanceOf(pair.address)).to.eq(1002)
           })
 
-          it('gas', async () => {
-            await snapshotGasCost(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 100))
+          describe('gas', () => {
+            it('first mint of range', async () => {
+              await snapshotGasCost(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 10000))
+            })
+            it('second mint of different range same tick lower', async () => {
+              await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 10000)
+              await snapshotGasCost(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing * 2, 10000))
+            })
+            it('second mint of different range same tick upper', async () => {
+              await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 10000)
+              await snapshotGasCost(mint(wallet.address, minTick + tickSpacing * 2, maxTick - tickSpacing, 10000))
+            })
+            it('second mint of range for same position', async () => {
+              await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 10000)
+              await snapshotGasCost(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 10000))
+            })
+            it('second mint of same range for different owner', async () => {
+              await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 10000)
+              await snapshotGasCost(mint(other.address, minTick + tickSpacing, maxTick - tickSpacing, 10000))
+            })
           })
         })
 
@@ -422,8 +458,26 @@ describe('UniswapV3Pair', () => {
             expect(await token1.balanceOf(pair.address)).to.eq(1002)
           })
 
-          it('gas', async () => {
-            await snapshotGasCost(await mint(wallet.address, -46080, -46020, 10000))
+          describe('gas', () => {
+            it('first mint of range', async () => {
+              await snapshotGasCost(mint(wallet.address, -46080, -46020, 10000))
+            })
+            it('second mint of different range same tick lower', async () => {
+              await mint(wallet.address, -46080, -46020, 10000)
+              await snapshotGasCost(mint(wallet.address, -46080, -46020 + tickSpacing, 10000))
+            })
+            it('second mint of different range same tick upper', async () => {
+              await mint(wallet.address, -46080, -46020, 10000)
+              await snapshotGasCost(mint(wallet.address, -46080 - tickSpacing, -46020, 10000))
+            })
+            it('second mint of range for same position', async () => {
+              await mint(wallet.address, -46080, -46020, 10000)
+              await snapshotGasCost(mint(wallet.address, -46080, -46020, 10000))
+            })
+            it('second mint of same range for different owner', async () => {
+              await mint(wallet.address, -46080, -46020, 10000)
+              await snapshotGasCost(mint(other.address, -46080, -46020, 10000))
+            })
           })
         })
       })
@@ -643,124 +697,122 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('swaps', () => {
-    describe('0 for 1 gas', () => {
+    describe('gas', () => {
       beforeEach('initialize at zero tick', async () => {
         pair = await createPair(feeAmount, tickSpacing)
         await initializeAtZeroTick(pair)
       })
 
-      it('first swap ever', async () => {
-        await snapshotGasCost(swapExact0For1(1000, wallet.address))
+      describe('0 for 1 gas', () => {
+        it('first swap ever', async () => {
+          await snapshotGasCost(swapExact0For1(1000, wallet.address))
+        })
+
+        it('first swap in block', async () => {
+          await swapExact0For1(1000, wallet.address)
+          await pair.setTime(TEST_PAIR_START_TIME + 10)
+          await snapshotGasCost(swapExact0For1(1000, wallet.address))
+        })
+
+        it('second swap in block', async () => {
+          await swapExact0For1(1000, wallet.address)
+          await snapshotGasCost(swapExact0For1(1000, wallet.address))
+        })
+
+        it('large swap', async () => {
+          await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
+        })
+
+        it('large swap crossing several initialized ticks', async () => {
+          await mint(wallet.address, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+          await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
+          expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
+        })
+
+        it('large swap crossing several initialized ticks second time', async () => {
+          await mint(wallet.address, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
+          expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
+        })
+
+        it('large swap crossing several initialized ticks after some time passes', async () => {
+          await mint(wallet.address, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+          await swapExact0For1(2, wallet.address)
+          await pair.setTime(TEST_PAIR_START_TIME + 10)
+          await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
+          expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
+        })
+
+        it('large swap crossing several initialized ticks second time after some time passes', async () => {
+          await mint(wallet.address, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          await pair.setTime(TEST_PAIR_START_TIME + 10)
+          await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
+          expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
+        })
       })
 
-      it('first swap in block', async () => {
-        await swapExact0For1(1000, wallet.address)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        await snapshotGasCost(swapExact0For1(1000, wallet.address))
-      })
+      describe('1 for 0 gas', () => {
+        it('first swap ever', async () => {
+          await snapshotGasCost(swapExact1For0(1000, wallet.address))
+        })
 
-      it('second swap in block', async () => {
-        await swapExact0For1(1000, wallet.address)
-        await snapshotGasCost(swapExact0For1(1000, wallet.address))
-      })
+        it('first swap in block', async () => {
+          await swapExact1For0(1000, wallet.address)
+          await pair.setTime(TEST_PAIR_START_TIME + 10)
+          await snapshotGasCost(swapExact1For0(1000, wallet.address))
+        })
 
-      it('large swap', async () => {
-        await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
-      })
+        it('second swap in block', async () => {
+          await swapExact1For0(1000, wallet.address)
+          await snapshotGasCost(swapExact1For0(1000, wallet.address))
+        })
 
-      it('large swap crossing several initialized ticks', async () => {
-        await mint(wallet.address, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
-        await mint(wallet.address, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-        await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
-        expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
-      })
+        it('large swap', async () => {
+          await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
+        })
 
-      it('large swap crossing several initialized ticks second time', async () => {
-        await mint(wallet.address, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
-        await mint(wallet.address, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
-        await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
-        expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
-      })
+        it('large swap crossing several initialized ticks', async () => {
+          await mint(wallet.address, tickSpacing * 2, tickSpacing * 3, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing * 3, tickSpacing * 4, expandTo18Decimals(1))
+          await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
+          expect(await pair.tickCurrent()).to.be.gt(tickSpacing * 4)
+        })
 
-      it('large swap crossing several initialized ticks after some time passes', async () => {
-        await mint(wallet.address, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
-        await mint(wallet.address, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-        await swapExact0For1(2, wallet.address)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
-        expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
-      })
+        it('large swap crossing several initialized ticks second time', async () => {
+          await mint(wallet.address, tickSpacing * 2, tickSpacing * 3, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing * 3, tickSpacing * 4, expandTo18Decimals(1))
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
+          expect(await pair.tickCurrent()).to.be.gt(tickSpacing * 4)
+        })
 
-      it('large swap crossing several initialized ticks second time after some time passes', async () => {
-        await mint(wallet.address, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
-        await mint(wallet.address, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
-        expect(await pair.tickCurrent()).to.be.lt(tickSpacing * -4)
-      })
-    })
-    describe('1 for 0 gas', () => {
-      beforeEach('initialize at zero tick', async () => {
-        pair = await createPair(feeAmount, tickSpacing)
-        await initializeAtZeroTick(pair)
-      })
+        it('large swap crossing several initialized ticks after some time passes', async () => {
+          await mint(wallet.address, tickSpacing * 2, tickSpacing * 3, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing * 3, tickSpacing * 4, expandTo18Decimals(1))
+          await swapExact1For0(2, wallet.address)
+          await pair.setTime(TEST_PAIR_START_TIME + 10)
+          await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
+          expect(await pair.tickCurrent()).to.be.gt(tickSpacing * 4)
+        })
 
-      it('first swap ever', async () => {
-        await snapshotGasCost(swapExact1For0(1000, wallet.address))
-      })
-
-      it('first swap in block', async () => {
-        await swapExact1For0(1000, wallet.address)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        await snapshotGasCost(swapExact1For0(1000, wallet.address))
-      })
-
-      it('second swap in block', async () => {
-        await swapExact1For0(1000, wallet.address)
-        await snapshotGasCost(swapExact1For0(1000, wallet.address))
-      })
-
-      it('large swap', async () => {
-        await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
-      })
-
-      it('large swap crossing several initialized ticks', async () => {
-        await mint(wallet.address, tickSpacing * 2, tickSpacing * 3, expandTo18Decimals(1))
-        await mint(wallet.address, tickSpacing * 3, tickSpacing * 4, expandTo18Decimals(1))
-        await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
-        expect(await pair.tickCurrent()).to.be.gt(tickSpacing * 4)
-      })
-
-      it('large swap crossing several initialized ticks second time', async () => {
-        await mint(wallet.address, tickSpacing * 2, tickSpacing * 3, expandTo18Decimals(1))
-        await mint(wallet.address, tickSpacing * 3, tickSpacing * 4, expandTo18Decimals(1))
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
-        expect(await pair.tickCurrent()).to.be.gt(tickSpacing * 4)
-      })
-
-      it('large swap crossing several initialized ticks after some time passes', async () => {
-        await mint(wallet.address, tickSpacing * 2, tickSpacing * 3, expandTo18Decimals(1))
-        await mint(wallet.address, tickSpacing * 3, tickSpacing * 4, expandTo18Decimals(1))
-        await swapExact1For0(2, wallet.address)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
-        expect(await pair.tickCurrent()).to.be.gt(tickSpacing * 4)
-      })
-
-      it('large swap crossing several initialized ticks second time after some time passes', async () => {
-        await mint(wallet.address, tickSpacing * 2, tickSpacing * 3, expandTo18Decimals(1))
-        await mint(wallet.address, tickSpacing * 3, tickSpacing * 4, expandTo18Decimals(1))
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await pair.setTime(TEST_PAIR_START_TIME + 10)
-        await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
-        expect(await pair.tickCurrent()).to.be.gt(tickSpacing * 4)
+        it('large swap crossing several initialized ticks second time after some time passes', async () => {
+          await mint(wallet.address, tickSpacing * 2, tickSpacing * 3, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing * 3, tickSpacing * 4, expandTo18Decimals(1))
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await pair.setTime(TEST_PAIR_START_TIME + 10)
+          await snapshotGasCost(swapExact1For0(expandTo18Decimals(1), wallet.address))
+          expect(await pair.tickCurrent()).to.be.gt(tickSpacing * 4)
+        })
       })
     })
 

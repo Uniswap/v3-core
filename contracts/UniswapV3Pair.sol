@@ -131,7 +131,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function checkTicks(int24 tickLower, int24 tickUpper) internal view {
+    function checkTicks(int24 tickLower, int24 tickUpper) private view {
         require(tickLower < tickUpper, 'TLU');
         require(tickLower >= minTick, 'TLM');
         require(tickUpper <= maxTick, 'TUM');
