@@ -27,6 +27,12 @@ describe('UniswapV3Factory', () => {
     expect(await factory.owner()).to.eq(wallet.address)
   })
 
+  it('owner does not have to be deployer', async () => {
+    const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
+    factory = (await factoryFactory.deploy(other.address)) as UniswapV3Factory
+    expect(await factory.owner()).to.eq(other.address)
+  })
+
   it('initial pairs length is 0', async () => {
     expect(await factory.allPairsLength()).to.eq(0)
   })
@@ -128,6 +134,12 @@ describe('UniswapV3Factory', () => {
     it('updates owner', async () => {
       await factory.setOwner(other.address)
       expect(await factory.owner()).to.eq(other.address)
+    })
+
+    it('emits event', async () => {
+      await expect(factory.setOwner(other.address))
+        .to.emit(factory, 'OwnerChanged')
+        .withArgs(wallet.address, other.address)
     })
 
     it('cannot be called by original owner', async () => {
