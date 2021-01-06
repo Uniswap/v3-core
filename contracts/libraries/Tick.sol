@@ -97,32 +97,29 @@ library Tick {
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128,
         uint32 blockTimestamp,
-        bool upper
+        bool upper,
+        uint128 maxLiquidity
     ) internal returns (bool flipped) {
         Tick.Info storage info = self[tick];
 
         if (liquidityDelta != 0) {
             uint128 liquidityGrossBefore = info.liquidityGross;
+            uint128 liquidityGrossAfter = SafeCast.toUint128(MixedSafeMath.addi(liquidityGrossBefore, liquidityDelta));
+
+            require(liquidityGrossAfter <= maxLiquidity, 'LO');
+
+            flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
 
             if (liquidityGrossBefore == 0) {
-                require(liquidityDelta > 0, 'UT');
-
                 // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
                 if (tick <= tickCurrent) {
                     info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
                     info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
                     info.secondsOutside = blockTimestamp;
                 }
-
-                // safe because we know liquidityDelta is > 0
-                info.liquidityGross = uint128(liquidityDelta);
-                flipped = true;
-            } else {
-                uint128 liquidityGrossAfter =
-                    SafeCast.toUint128(MixedSafeMath.addi(liquidityGrossBefore, liquidityDelta));
-                flipped = liquidityGrossAfter == 0;
-                info.liquidityGross = liquidityGrossAfter;
             }
+
+            info.liquidityGross = liquidityGrossAfter;
 
             // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
             info.liquidityDelta = upper

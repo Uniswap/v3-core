@@ -188,7 +188,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
                 blockTimestamp,
-                false
+                false,
+                maxLiquidityPerTick
             );
         if (flippedLower) tickBitmap.flipTick(tickLower, tickSpacing);
         bool flippedUpper =
@@ -199,7 +200,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
                 blockTimestamp,
-                true
+                true,
+                maxLiquidityPerTick
             );
         if (flippedUpper) tickBitmap.flipTick(tickUpper, tickSpacing);
 
@@ -242,11 +244,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (liquidityDelta < 0) {
             if (flippedLower) ticks.clear(tick);
             if (flippedUpper) ticks.clear(tick);
-        }
-        // this is outside the liquidityDelta check because mint can be called with 0 delta
-        if (position.liquidity == 0) {
-            delete position.feeGrowthInside0LastX128;
-            delete position.feeGrowthInside1LastX128;
+            if (position.liquidity == 0) {
+                delete position.feeGrowthInside0LastX128;
+                delete position.feeGrowthInside1LastX128;
+            }
         }
     }
 
