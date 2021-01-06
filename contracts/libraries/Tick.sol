@@ -2,6 +2,9 @@
 pragma solidity >=0.5.0;
 
 import './SqrtTickMath.sol';
+import './SafeCast.sol';
+import './MixedSafeMath.sol';
+import './SignedSafeMath.sol';
 
 library Tick {
     // info stored for each initialized individual tick
@@ -83,5 +86,66 @@ library Tick {
             _getFeeGrowthAbove(tickUpper, tickCurrent, self[tickUpper], feeGrowthGlobal0X128, feeGrowthGlobal1X128);
         feeGrowthInside0X128 = feeGrowthGlobal0X128 - feeGrowthBelow0X128 - feeGrowthAbove0X128;
         feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128;
+    }
+
+    // updates a tick and returns true iff the tick was flipped from initialized to uninitialized or vice versa
+    function update(
+        mapping(int24 => Tick.Info) storage self,
+        int24 tick,
+        int24 tickCurrent,
+        int128 liquidityDelta,
+        uint256 feeGrowthGlobal0X128,
+        uint256 feeGrowthGlobal1X128,
+        uint32 blockTimestamp,
+        bool upper
+    ) internal returns (bool flipped) {
+        Tick.Info storage info = self[tick];
+
+        if (liquidityDelta != 0) {
+            uint128 liquidityGrossBefore = info.liquidityGross;
+
+            if (liquidityGrossBefore == 0) {
+                require(liquidityDelta > 0, 'UT');
+
+                // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
+                if (tick <= tickCurrent) {
+                    info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
+                    info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
+                    info.secondsOutside = blockTimestamp;
+                }
+
+                // safe because we know liquidityDelta is > 0
+                info.liquidityGross = uint128(liquidityDelta);
+                flipped = true;
+            } else {
+                uint128 liquidityGrossAfter =
+                    SafeCast.toUint128(MixedSafeMath.addi(liquidityGrossBefore, liquidityDelta));
+                flipped = liquidityGrossAfter == 0;
+                info.liquidityGross = liquidityGrossAfter;
+            }
+
+            // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
+            info.liquidityDelta = upper
+                ? SafeCast.toInt128(SignedSafeMath.sub(info.liquidityDelta, liquidityDelta))
+                : SafeCast.toInt128(SignedSafeMath.add(info.liquidityDelta, liquidityDelta));
+        }
+    }
+
+    function clear(mapping(int24 => Tick.Info) storage self, int24 tick) internal {
+        delete self[tick];
+    }
+
+    function cross(
+        mapping(int24 => Tick.Info) storage self,
+        int24 tick,
+        uint256 feeGrowthGlobal0X128,
+        uint256 feeGrowthGlobal1X128,
+        uint32 blockTimestamp
+    ) internal returns (int128 liquidityDelta) {
+        Tick.Info storage info = self[tick];
+        info.feeGrowthOutside0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128;
+        info.feeGrowthOutside1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128;
+        info.secondsOutside = blockTimestamp - info.secondsOutside; // overflow is desired
+        liquidityDelta = info.liquidityDelta;
     }
 }
