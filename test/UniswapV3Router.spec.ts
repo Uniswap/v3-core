@@ -19,6 +19,7 @@ import {
   TICK_SPACINGS,
   createPairFunctions,
   SwapFunction,
+  MultiSwapFunction,
   MintFunction,
   InitializeFunction,
   PairFunctions,
@@ -65,7 +66,7 @@ describe('UniswapV3Pair', () => {
   let swap0ForExact1: SwapFunction
   let swapExact1For0: SwapFunction
   let swap1ForExact0: SwapFunction
-  let swapAForC: SwapFunction
+  let swapAForC: MultiSwapFunction
 
   let mint: MintFunction
   let initialize: InitializeFunction
