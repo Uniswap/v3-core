@@ -207,6 +207,26 @@ describe('UniswapV3Pair', () => {
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))
           ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)
+          ).to.not.be.revertedWith('LO')
+        })
+        it('fails if total amount at tick exceeds the max', async () => {
+          await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1000)
+
+          const maxLiquidityGross = await pair.maxLiquidityPerTick()
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing * 2, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing * 2, maxLiquidityGross.sub(1000).add(1))
+          ).to.be.revertedWith('LO')
+          await expect(
+            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000))
+          ).to.not.be.revertedWith('LO')
         })
       })
 
