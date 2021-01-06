@@ -394,46 +394,43 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(amount < 2**127, 'BA');
 
         uint128 liquidityBefore = liquidityCurrent;
-        {
-            (int256 amount0Int, int256 amount1Int) =
-                _setPosition(
-                    SetPositionParams({
-                        owner: msg.sender,
-                        tickLower: tickLower,
-                        tickUpper: tickUpper,
-                        liquidityDelta: -int128(amount)
-                    })
-                );
 
-            amount0 = uint256(-amount0Int);
-            amount1 = uint256(-amount1Int);
-        }
-
-        {
-            (uint256 balance0, uint256 balance1) =
-                (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
-
-            if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
-            if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
-
-            // update offsets
-            offset0X128 = SqrtPriceMath.getOffsetAfter(
-                offset0X128,
-                balance0,
-                balance0.sub(amount0),
-                liquidityBefore,
-                liquidityCurrent
-            );
-            offset1X128 = SqrtPriceMath.getOffsetAfter(
-                offset1X128,
-                balance1,
-                balance1.sub(amount1),
-                liquidityBefore,
-                liquidityCurrent
+        (int256 amount0Int, int256 amount1Int) =
+            _setPosition(
+                SetPositionParams({
+                    owner: msg.sender,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: -int128(amount)
+                })
             );
 
-            emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
-        }
+        amount0 = uint256(-amount0Int);
+        amount1 = uint256(-amount1Int);
+
+        (uint256 balance0, uint256 balance1) =
+            (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+
+        // update offsets
+        offset0X128 = SqrtPriceMath.getOffsetAfter(
+            offset0X128,
+            balance0,
+            balance0.sub(amount0),
+            liquidityBefore,
+            liquidityCurrent
+        );
+        offset1X128 = SqrtPriceMath.getOffsetAfter(
+            offset1X128,
+            balance1,
+            balance1.sub(amount1),
+            liquidityBefore,
+            liquidityCurrent
+        );
+
+        emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
     }
 
     struct SetPositionParams {
