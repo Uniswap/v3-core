@@ -130,6 +130,12 @@ describe('UniswapV3Factory', () => {
       expect(await factory.owner()).to.eq(other.address)
     })
 
+    it('emits event', async () => {
+      await expect(factory.setOwner(other.address))
+        .to.emit(factory, 'OwnerChanged')
+        .withArgs(wallet.address, other.address)
+    })
+
     it('cannot be called by original owner', async () => {
       await factory.setOwner(other.address)
       await expect(factory.setOwner(wallet.address)).to.be.revertedWith('OO')
