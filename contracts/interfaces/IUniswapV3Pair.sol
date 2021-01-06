@@ -69,7 +69,7 @@ interface IUniswapV3Pair {
 
     function liquidityCurrent() external view returns (uint128);
 
-    function oracleObservations(uint256)
+    function oracle(uint256)
         external
         view
         returns (
@@ -78,6 +78,8 @@ interface IUniswapV3Pair {
             uint160 liquidityCumulative,
             bool initialized
         );
+
+    function scry(uint256 blockTimestamp) external view returns (int24 tick, uint128 liquidity);
 
     function tickBitmap(int16) external view returns (uint256);
 

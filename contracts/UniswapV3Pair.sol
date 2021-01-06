@@ -17,6 +17,7 @@ import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
 import './libraries/Position.sol';
+import './libraries/Oracle.sol';
 
 import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Pair.sol';
@@ -37,6 +38,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
+    using Oracle for Oracle.Observation[1024];
 
     uint8 private constant PRICE_BIT = 0x10;
     uint8 private constant UNLOCKED_BIT = 0x01;
@@ -48,7 +50,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     //     = (2n ** 128n - 1n) / (2n ** 24n)
     // this is about 104 bits
     uint128 private constant MAX_LIQUIDITY_GROSS_PER_TICK = 20282409603651670423947251286015;
-    uint16 private constant NUMBER_OF_ORACLE_OBSERVATIONS = 1024;
 
     address public immutable override factory;
     address public immutable override token0;
@@ -81,18 +82,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // current in-range liquidity
     uint128 public override liquidityCurrent;
 
-    struct OracleObservation {
-        // the block timestamp of the observation
-        uint32 blockTimestamp;
-        // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
-        int56 tickCumulative;
-        // the liquidity accumulator, i.e. liquidity * time elapsed since the pair was first initialized
-        uint160 liquidityCumulative;
-        // whether or not the observation is initialized
-        bool initialized;
-    }
-
-    OracleObservation[NUMBER_OF_ORACLE_OBSERVATIONS] public override oracleObservations;
+    // see Oracle.sol
+    Oracle.Observation[1024] public override oracle;
 
     address public override feeTo;
 
@@ -130,103 +121,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return tick;
     }
 
-    function scry(uint256 blockTimestamp) external view returns (int24 tick, uint128 liquidity) {
-        require(blockTimestamp <= block.timestamp, 'BT'); // can't look into the future
-
-        OracleObservation memory oracleObservationBefore;
-        OracleObservation memory oracleObservationAtOrAfter;
-
-        // to start, set oracleObservationBefore to the oldest known observation (ensuring it exists)
-        uint16 index = slot0.index;
-        oracleObservationBefore = oracleObservations[(index + 1) % NUMBER_OF_ORACLE_OBSERVATIONS];
-        if (!oracleObservationBefore.initialized) {
-            oracleObservationBefore = oracleObservations[0];
-            require(oracleObservationBefore.initialized, 'UI');
-        }
-
-        // now, ensure that the passed timestamp is greater than the oldest observation
-        uint32 blockTimestampTruncated = uint32(blockTimestamp);
-        uint32 blockTimestampNow = _blockTimestamp();
-        require(
-            oracleObservationBefore.blockTimestamp < blockTimestampTruncated || (
-                oracleObservationBefore.blockTimestamp > blockTimestampNow &&
-                blockTimestampTruncated <= blockTimestampNow
-            ),
-            'OLD'
-        );
-
-        // check if the passed timestamp is after the most recent observation, and if so return the current values
-        oracleObservationAtOrAfter = oracleObservations[index];
-        if (
-            oracleObservationAtOrAfter.blockTimestamp < blockTimestampTruncated || (
-                oracleObservationAtOrAfter.blockTimestamp > blockTimestampNow &&
-                blockTimestampTruncated <= blockTimestampNow
-            )
-        ) return (tickCurrent(), liquidityCurrent);
-
-        // once here, we can be confident that the answer is in the array, time for binary search!
-        uint16 l = (index + 1) % NUMBER_OF_ORACLE_OBSERVATIONS;
-        uint16 r = l + NUMBER_OF_ORACLE_OBSERVATIONS - 1;
-        while (true) {
-            index = (l + r) / 2;
-
-            oracleObservationAtOrAfter = oracleObservations[index % NUMBER_OF_ORACLE_OBSERVATIONS];
-
-            // we've landed on an uninitialized tick, keeping searching lower
-            if (!oracleObservationAtOrAfter.initialized) {
-                r = index - 1;
-                continue;
-            }
-
-            oracleObservationBefore = oracleObservations[(
-                (index % NUMBER_OF_ORACLE_OBSERVATIONS) == 0
-                    ? NUMBER_OF_ORACLE_OBSERVATIONS
-                    : index % NUMBER_OF_ORACLE_OBSERVATIONS
-                ) - 1
-            ];
-
-            // we've found the answer!
-            if ((
-                oracleObservationBefore.blockTimestamp < blockTimestampTruncated &&
-                blockTimestampTruncated <= oracleObservationAtOrAfter.blockTimestamp
-            ) || (
-                oracleObservationBefore.blockTimestamp > oracleObservationAtOrAfter.blockTimestamp && (
-                    oracleObservationBefore.blockTimestamp < blockTimestampTruncated ||
-                    blockTimestampTruncated <= oracleObservationAtOrAfter.blockTimestamp
-                )
-            )) break;
-
-            // we need to get more recent, keep searching higher
-            if (
-                oracleObservationAtOrAfter.blockTimestamp < blockTimestampTruncated ||
-                blockTimestampTruncated <= oracleObservations[r % NUMBER_OF_ORACLE_OBSERVATIONS].blockTimestamp
-            ) {
-                l = index + 1;
-                continue;
-            }
-
-            // we need to get less recent, keep searching lower
-            if (
-                oracleObservationAtOrAfter.blockTimestamp < blockTimestampTruncated ||
-                blockTimestampTruncated <= oracleObservations[r % NUMBER_OF_ORACLE_OBSERVATIONS].blockTimestamp
-            ) {
-                r = index - 1;
-                continue;
-            }
-        }
-
-        uint32 timestampDelta = oracleObservationAtOrAfter.blockTimestamp - oracleObservationBefore.blockTimestamp;
-        return (
-            int24(
-                (oracleObservationAtOrAfter.tickCumulative - oracleObservationBefore.tickCumulative) / timestampDelta
-            ),
-            uint128(
-                (oracleObservationAtOrAfter.liquidityCumulative - oracleObservationBefore.liquidityCumulative)
-                    / timestampDelta
-            )
-        );
-    }
-
     constructor() {
         (address _factory, address _token0, address _token1, uint24 _fee, int24 _tickSpacing) =
             IUniswapV3PairDeployer(msg.sender).parameters();
@@ -244,6 +138,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // overridden for tests
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
+    }
+
+    function scry(uint256 blockTimestamp) external view override returns (int24 tick, uint128 liquidity) {
+        require(blockTimestamp <= block.timestamp, 'BT'); // can't look into the future
+        return oracle.scry(uint32(blockTimestamp), _blockTimestamp(), slot0.index, tickCurrent(), liquidityCurrent);
     }
 
     function setFeeTo(address feeTo_) external override {
@@ -281,26 +180,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    function writeOracleObservationIfNecessary(
-        uint16 index,
-        uint32 blockTimestamp,
-        int24 tick,
-        uint128 liquidity
-    ) private {
-        OracleObservation memory oracleObservationLast = oracleObservations[index];
-        if (oracleObservationLast.blockTimestamp != blockTimestamp) {
-            uint16 indexNext = (index + 1) % NUMBER_OF_ORACLE_OBSERVATIONS;
-            uint32 timestampDelta = blockTimestamp - oracleObservationLast.blockTimestamp;
-            oracleObservations[indexNext] = OracleObservation({
-                blockTimestamp: blockTimestamp,
-                tickCumulative: oracleObservationLast.tickCumulative + int56(tick) * timestampDelta,
-                liquidityCumulative: oracleObservationLast.liquidityCumulative + uint160(liquidity) * timestampDelta,
-                initialized: true
-            });
-            slot0.index = indexNext;
-        }
-    }
-
     function _clearTick(int24 tick) private {
         delete ticks[tick];
         tickBitmap.flipTick(tick, tickSpacing);
@@ -315,7 +194,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= MIN_TICK, 'MIN');
         require(tick < MAX_TICK, 'MAX');
 
-        oracleObservations[_slot0.index] = OracleObservation({
+        oracle[_slot0.index] = Oracle.Observation({
             blockTimestamp: _blockTimestamp(),
             tickCumulative: 0,
             liquidityCumulative: 0,
@@ -520,7 +399,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // write an oracle entry if liquidity is changing
         if (params.liquidityDelta != 0)
-            writeOracleObservationIfNecessary(slot0.index, _blockTimestamp(), tick, liquidityCurrent);
+            slot0.index = oracle.writeObservationIfNecessary(slot0.index, _blockTimestamp(), tick, liquidityCurrent);
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 
@@ -709,7 +588,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // write an oracle entry if the price moved at least one tick
         if (state.tick != params.tickStart)
-            writeOracleObservationIfNecessary(
+            slot0.index = oracle.writeObservationIfNecessary(
                 params.slot0Start.index,
                 params.blockTimestamp,
                 params.tickStart,
