@@ -51,10 +51,10 @@ library SqrtPriceMath {
             return mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
         }
 
-        uint256 denominator = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
-        require(denominator != 0, 'OUT');
+        uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
+        require(denominator1 != 0, 'OUT');
 
-        return divRoundingUp(numerator1, denominator).toUint160();
+        return divRoundingUp(numerator1, denominator1).toUint160();
     }
 
     // calculate sqrt(P) +- y / liquidity
