@@ -142,20 +142,14 @@ describe('UniswapV3Pair', () => {
       await initialize(price)
 
       {
-        const { liquidityGross, secondsOutside, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.ticks(
-          minTick
-        )
+        const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.ticks(minTick)
         expect(liquidityGross).to.eq(1)
-        expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
         expect(feeGrowthOutside0X128).to.eq(0)
         expect(feeGrowthOutside1X128).to.eq(0)
       }
       {
-        const { liquidityGross, secondsOutside, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.ticks(
-          maxTick
-        )
+        const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.ticks(maxTick)
         expect(liquidityGross).to.eq(1)
-        expect(secondsOutside).to.eq(0)
         expect(feeGrowthOutside0X128).to.eq(0)
         expect(feeGrowthOutside1X128).to.eq(0)
       }
@@ -300,43 +294,33 @@ describe('UniswapV3Pair', () => {
           it('clears tick lower if last position is removed', async () => {
             await mint(wallet.address, -240, 0, 100)
             await pair.burn(wallet.address, -240, 0, 100)
-            const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, secondsOutside } = await pair.ticks(
-              -240
-            )
+            const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.ticks(-240)
             expect(liquidityGross).to.eq(0)
             expect(feeGrowthOutside0X128).to.eq(0)
             expect(feeGrowthOutside1X128).to.eq(0)
-            expect(secondsOutside).to.eq(0)
           })
 
           it('clears tick upper if last position is removed', async () => {
             await mint(wallet.address, -240, 0, 100)
             await pair.burn(wallet.address, -240, 0, 100)
-            const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, secondsOutside } = await pair.ticks(0)
+            const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.ticks(0)
             expect(liquidityGross).to.eq(0)
             expect(feeGrowthOutside0X128).to.eq(0)
             expect(feeGrowthOutside1X128).to.eq(0)
-            expect(secondsOutside).to.eq(0)
           })
           it('only clears the tick that is not used at all', async () => {
             await mint(wallet.address, -240, 0, 100)
             await mint(wallet.address, -tickSpacing, 0, 250)
             await pair.burn(wallet.address, -240, 0, 100)
 
-            let { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, secondsOutside } = await pair.ticks(
-              -240
-            )
+            let { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.ticks(-240)
             expect(liquidityGross).to.eq(0)
             expect(feeGrowthOutside0X128).to.eq(0)
             expect(feeGrowthOutside1X128).to.eq(0)
-            expect(secondsOutside).to.eq(0)
-            ;({ liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, secondsOutside } = await pair.ticks(
-              -tickSpacing
-            ))
+            ;({ liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128 } = await pair.ticks(-tickSpacing))
             expect(liquidityGross).to.eq(250)
             expect(feeGrowthOutside0X128).to.eq(0)
             expect(feeGrowthOutside1X128).to.eq(0)
-            expect(secondsOutside).to.eq(0)
           })
         })
 
@@ -353,16 +337,14 @@ describe('UniswapV3Pair', () => {
 
           it('initializes lower tick', async () => {
             await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 100)
-            const { liquidityGross, secondsOutside } = await pair.ticks(minTick + tickSpacing)
+            const { liquidityGross } = await pair.ticks(minTick + tickSpacing)
             expect(liquidityGross).to.eq(100)
-            expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
           })
 
           it('initializes upper tick', async () => {
             await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 100)
-            const { liquidityGross, secondsOutside } = await pair.ticks(maxTick - tickSpacing)
+            const { liquidityGross } = await pair.ticks(maxTick - tickSpacing)
             expect(liquidityGross).to.eq(100)
-            expect(secondsOutside).to.eq(0)
           })
 
           it('works for min/max tick', async () => {
@@ -491,15 +473,8 @@ describe('UniswapV3Pair', () => {
     beforeEach('initialize at zero tick', () => initializeAtZeroTick(pair))
 
     async function checkTickIsClear(tick: number) {
-      const {
-        liquidityGross,
-        secondsOutside,
-        feeGrowthOutside0X128,
-        feeGrowthOutside1X128,
-        liquidityDelta,
-      } = await pair.ticks(tick)
+      const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, liquidityDelta } = await pair.ticks(tick)
       expect(liquidityGross).to.eq(0)
-      expect(secondsOutside).to.eq(0)
       expect(feeGrowthOutside0X128).to.eq(0)
       expect(feeGrowthOutside1X128).to.eq(0)
       expect(liquidityDelta).to.eq(0)
@@ -1306,8 +1281,6 @@ describe('UniswapV3Pair', () => {
     await mint(wallet.address, -24082, -24081, liquidity)
     expect(await pair.liquidityCurrent(), 'current pair liquidity is still liquidity + 1').to.eq(liquidity.add(1))
 
-    const { secondsOutside: secondsOutsideBefore } = await pair.ticks(-24081)
-
     // check the math works out to moving the price down 1, sending no amount out, and having some amount remaining
     {
       const { feeAmount, amountIn, amountOut, sqrtQ } = await swapMath.computeSwapStep(
@@ -1330,14 +1303,11 @@ describe('UniswapV3Pair', () => {
       .to.emit(token1, 'Transfer')
       .withArgs(pair.address, wallet.address, 0)
 
-    const { secondsOutside: secondsOutsideAfter } = await pair.ticks(-24081)
-
     expect(await pair.tickCurrent(), 'pair is at the next tick').to.eq(-24082)
     expect((await pair.slot0()).sqrtPriceCurrentX96, 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
     expect(await pair.liquidityCurrent(), 'pair has run tick transition and liquidity changed').to.eq(
       liquidity.mul(2).add(1)
     )
-    expect(secondsOutsideAfter, 'the tick transition updated the seconds outside').to.not.eq(secondsOutsideBefore)
   })
 
   describe('gas', () => {
