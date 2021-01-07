@@ -48,24 +48,24 @@ exports[`UniswapV3Pair gas #mint below current price new position mint first in 
 
 exports[`UniswapV3Pair gas #mint below current price second position in same range 1`] = `134827`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `106812`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `107013`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 first swap in block with no tick movement 1`] = `98241`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block with no tick movement 1`] = `98302`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `109504`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `109766`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `114416`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `114638`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `120187`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `120668`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `153831`;
+exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `154276`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `213831`;
+exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `214276`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `106812`;
+exports[`UniswapV3Pair gas #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `107013`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 second swap in block with no tick movement 1`] = `98340`;
+exports[`UniswapV3Pair gas #swapExact0For1 second swap in block with no tick movement 1`] = `98401`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `101248`;
+exports[`UniswapV3Pair gas #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `101370`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `110273`;
+exports[`UniswapV3Pair gas #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `110425`;

@@ -1203,7 +1203,7 @@ describe('UniswapV3Pair', () => {
             .to.emit(token0, 'Transfer')
             .withArgs(pair.address, wallet.address, '30027458295511')
             .to.emit(token1, 'Transfer')
-            .withArgs(pair.address, wallet.address, '996999999999999535')
+            .withArgs(pair.address, wallet.address, '996999999999999999')
           expect(await pair.tickCurrent()).to.eq(120196)
         })
         it('swapping across gaps works in 0 for 1 direction', async () => {
@@ -1212,7 +1212,7 @@ describe('UniswapV3Pair', () => {
           await swapExact0For1(expandTo18Decimals(1), wallet.address)
           await expect(pair.burn(wallet.address, -121200, -120000, liquidityAmount))
             .to.emit(token0, 'Transfer')
-            .withArgs(pair.address, wallet.address, '996999999999999535')
+            .withArgs(pair.address, wallet.address, '996999999999999999')
             .to.emit(token1, 'Transfer')
             .withArgs(pair.address, wallet.address, '30027458295511')
           expect(await pair.tickCurrent()).to.eq(-120197)
