@@ -74,8 +74,8 @@ describe('Oracle', () => {
 
       const values = await oracle.scry(1, 1, 0, 0)
 
-      expect(values.tick).to.be.eq(tick)
-      expect(values.liquidity).to.be.eq(liquidity)
+      expect(values.tickThen).to.be.eq(tick)
+      expect(values.liquidityThen).to.be.eq(liquidity)
     })
 
     it('timestamp greater than the most recent observation', async () => {
@@ -95,8 +95,8 @@ describe('Oracle', () => {
 
       const values = await oracle.scry(1, 0, tick, liquidity)
 
-      expect(values.tick).to.be.eq(tick)
-      expect(values.liquidity).to.be.eq(liquidity)
+      expect(values.tickThen).to.be.eq(tick)
+      expect(values.liquidityThen).to.be.eq(liquidity)
     })
 
     it('worst-case binary search', async () => {
@@ -122,8 +122,8 @@ describe('Oracle', () => {
 
       const values = await oracle.scry(1, 1, 0, 0)
 
-      expect(values.tick).to.be.eq(tick)
-      expect(values.liquidity).to.be.eq(liquidity)
+      expect(values.tickThen).to.be.eq(tick)
+      expect(values.liquidityThen).to.be.eq(liquidity)
     })
   })
 
@@ -157,71 +157,71 @@ describe('Oracle', () => {
     it('works for 1', async () => {
       const values = await oracle.scry(1, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for 2', async () => {
       const values = await oracle.scry(2, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for 13', async () => {
       const values = await oracle.scry(13, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for 14', async () => {
       const values = await oracle.scry(14, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(2 * tickDelta)
-      expect(values.liquidity).to.be.eq(2 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(2 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(2 * liquidityDelta)
     })
 
     it('works for 6655', async () => {
       const values = await oracle.scry(6655, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(512 * tickDelta)
-      expect(values.liquidity).to.be.eq(512 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(512 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(512 * liquidityDelta)
     })
 
     it('works for 6656', async () => {
       const values = await oracle.scry(6656, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(512 * tickDelta)
-      expect(values.liquidity).to.be.eq(512 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(512 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(512 * liquidityDelta)
     })
 
     it('works for 6657', async () => {
       const values = await oracle.scry(6657, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(513 * tickDelta)
-      expect(values.liquidity).to.be.eq(513 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(513 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(513 * liquidityDelta)
     })
 
     it('works for 13298', async () => {
       const values = await oracle.scry(13298, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(1023 * tickDelta)
-      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1023 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1023 * liquidityDelta)
     })
 
     it('works for 13299', async () => {
       const values = await oracle.scry(13299, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(1023 * tickDelta)
-      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1023 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1023 * liquidityDelta)
     })
 
     it('works for 13300', async () => {
       const values = await oracle.scry(13300, observations.length - 1, 123, 456)
 
-      expect(values.tick).to.be.eq(123)
-      expect(values.liquidity).to.be.eq(456)
+      expect(values.tickThen).to.be.eq(123)
+      expect(values.liquidityThen).to.be.eq(456)
     })
   })
 
@@ -260,71 +260,71 @@ describe('Oracle', () => {
     it('works for 1', async () => {
       const values = await oracle.scry(1, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for 2', async () => {
       const values = await oracle.scry(2, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for 13', async () => {
       const values = await oracle.scry(13, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for 14', async () => {
       const values = await oracle.scry(14, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(2 * tickDelta)
-      expect(values.liquidity).to.be.eq(2 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(2 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(2 * liquidityDelta)
     })
 
     it('works for 6655', async () => {
       const values = await oracle.scry(6655, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(512 * tickDelta)
-      expect(values.liquidity).to.be.eq(512 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(512 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(512 * liquidityDelta)
     })
 
     it('works for 6656', async () => {
       const values = await oracle.scry(6656, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(512 * tickDelta)
-      expect(values.liquidity).to.be.eq(512 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(512 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(512 * liquidityDelta)
     })
 
     it('works for 6657', async () => {
       const values = await oracle.scry(6657, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(513 * tickDelta)
-      expect(values.liquidity).to.be.eq(513 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(513 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(513 * liquidityDelta)
     })
 
     it('works for 13298', async () => {
       const values = await oracle.scry(13298, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1023 * tickDelta)
-      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1023 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1023 * liquidityDelta)
     })
 
     it('works for 13299', async () => {
       const values = await oracle.scry(13299, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1023 * tickDelta)
-      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1023 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1023 * liquidityDelta)
     })
 
     it('works for 13300', async () => {
       const values = await oracle.scry(13300, 923, 123, 456)
 
-      expect(values.tick).to.be.eq(123)
-      expect(values.liquidity).to.be.eq(456)
+      expect(values.tickThen).to.be.eq(123)
+      expect(values.liquidityThen).to.be.eq(456)
     })
   })
 
@@ -360,50 +360,50 @@ describe('Oracle', () => {
     it('works for +1', async () => {
       const values = await oracle.scry(start + 1, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for +13', async () => {
       const values = await oracle.scry(start + 13, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for +14', async () => {
       const values = await oracle.scry(start + 14, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(2 * tickDelta)
-      expect(values.liquidity).to.be.eq(2 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(2 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(2 * liquidityDelta)
     })
 
     it('works for boundary-2', async () => {
       const values = await oracle.scry(2 ** 32 - 2, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(231 * tickDelta)
-      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(231 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(231 * liquidityDelta)
     })
 
     it('works for boundary-1', async () => {
       const values = await oracle.scry(2 ** 32 - 1, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(231 * tickDelta)
-      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(231 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(231 * liquidityDelta)
     })
 
     it('works for boundary+1', async () => {
       const values = await oracle.scry(0, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(231 * tickDelta)
-      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(231 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(231 * liquidityDelta)
     })
 
     it('works for boundary+5', async () => {
       const values = await oracle.scry(4, observations.length - 1, 0, 0)
 
-      expect(values.tick).to.be.eq(232 * tickDelta)
-      expect(values.liquidity).to.be.eq(232 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(232 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(232 * liquidityDelta)
     })
 
     it('works for newest-1', async () => {
@@ -414,8 +414,8 @@ describe('Oracle', () => {
         0
       )
 
-      expect(values.tick).to.be.eq(1023 * tickDelta)
-      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1023 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1023 * liquidityDelta)
     })
 
     it('works for newest', async () => {
@@ -426,8 +426,8 @@ describe('Oracle', () => {
         0
       )
 
-      expect(values.tick).to.be.eq(1023 * tickDelta)
-      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1023 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1023 * liquidityDelta)
     })
 
     it('works for newest +1', async () => {
@@ -438,8 +438,8 @@ describe('Oracle', () => {
         456
       )
 
-      expect(values.tick).to.be.eq(123)
-      expect(values.liquidity).to.be.eq(456)
+      expect(values.tickThen).to.be.eq(123)
+      expect(values.liquidityThen).to.be.eq(456)
     })
   })
 
@@ -480,71 +480,71 @@ describe('Oracle', () => {
     it('works for +1', async () => {
       const values = await oracle.scry(start + 1, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for +13', async () => {
       const values = await oracle.scry(start + 13, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1 * tickDelta)
-      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1 * liquidityDelta)
     })
 
     it('works for +14', async () => {
       const values = await oracle.scry(start + 14, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(2 * tickDelta)
-      expect(values.liquidity).to.be.eq(2 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(2 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(2 * liquidityDelta)
     })
 
     it('works for boundary-2', async () => {
       const values = await oracle.scry(2 ** 32 - 2, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(231 * tickDelta)
-      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(231 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(231 * liquidityDelta)
     })
 
     it('works for boundary-1', async () => {
       const values = await oracle.scry(2 ** 32 - 1, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(231 * tickDelta)
-      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(231 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(231 * liquidityDelta)
     })
 
     it('works for boundary+1', async () => {
       const values = await oracle.scry(0, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(231 * tickDelta)
-      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(231 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(231 * liquidityDelta)
     })
 
     it('works for boundary+5', async () => {
       const values = await oracle.scry(4, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(232 * tickDelta)
-      expect(values.liquidity).to.be.eq(232 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(232 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(232 * liquidityDelta)
     })
 
     it('works for newest-1', async () => {
       const values = await oracle.scry(observations[923].blockTimestamp - 1, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1023 * tickDelta)
-      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1023 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1023 * liquidityDelta)
     })
 
     it('works for newest', async () => {
       const values = await oracle.scry(observations[923].blockTimestamp, 923, 0, 0)
 
-      expect(values.tick).to.be.eq(1023 * tickDelta)
-      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+      expect(values.tickThen).to.be.eq(1023 * tickDelta)
+      expect(values.liquidityThen).to.be.eq(1023 * liquidityDelta)
     })
 
     it('works for newest +1', async () => {
       const values = await oracle.scry(observations[923].blockTimestamp + 1, 923, 123, 456)
 
-      expect(values.tick).to.be.eq(123)
-      expect(values.liquidity).to.be.eq(456)
+      expect(values.tickThen).to.be.eq(123)
+      expect(values.liquidityThen).to.be.eq(456)
     })
   })
 

@@ -63,19 +63,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     struct Slot0 {
         // the current price
-        uint160 sqrtPriceCurrentX96;
+        uint160 sqrtPriceX96;
+        // the current tick
+        int24 tick;
         // the most-recently updated index of oracle
         uint16 index;
-        // whether the pair is locked for swapping
-        // packed with a boolean representing whether the price is at the lower bounds of the
-        // tick boundary but the tick transition has already happened
-        uint8 unlockedAndPriceBit;
+        // whether the pair is locked
+        bool unlocked;
     }
 
     Slot0 public override slot0;
 
     // current in-range liquidity
-    uint128 public override liquidityCurrent;
+    uint128 public override liquidity;
 
     // see Oracle.sol
     Oracle.Observation[1024] public override oracle; // hack to satisfy solidity
@@ -96,24 +96,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(int24 => Tick.Info) public ticks;
     mapping(bytes32 => Position.Info) public positions;
 
-    // lock the pair for operations that do not modify the price, i.e. everything but swap
-    modifier lockNoPriceMovement() {
-        uint8 uapb = slot0.unlockedAndPriceBit;
-        require(uapb & UNLOCKED_BIT == UNLOCKED_BIT, 'LOK');
-        slot0.unlockedAndPriceBit = uapb ^ UNLOCKED_BIT;
+    modifier lock() {
+        require(slot0.unlocked, 'LOK');
+        slot0.unlocked = false;
         _;
-        slot0.unlockedAndPriceBit = uapb;
-    }
-
-    // throws if the pair is not initialized, which is implicitly used throughout to gatekeep various functions
-    function tickCurrent() public view override returns (int24) {
-        return _tickCurrent(slot0);
-    }
-
-    function _tickCurrent(Slot0 memory _slot0) internal pure returns (int24) {
-        int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrentX96);
-        if (_slot0.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT) tick--;
-        return tick;
+        slot0.unlocked = true;
     }
 
     constructor() {
@@ -134,7 +121,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function scry(uint256 blockTimestamp) external view override returns (int24 tick, uint128 liquidity) {
+    function scry(uint256 blockTimestamp) external view override returns (int24 tickThen, uint128 liquidityThen) {
         require(blockTimestamp <= block.timestamp, 'BT'); // can't look into the future
 
         uint16 index = slot0.index;
@@ -170,7 +157,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (
             (newest.blockTimestamp < target && target <= current) ||
             (newest.blockTimestamp > current && target <= current)
-        ) return (tickCurrent(), liquidityCurrent);
+        ) return (slot0.tick, liquidity);
 
         return oracle.scry(target, index);
     }
@@ -188,13 +175,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
-        require(slot0.sqrtPriceCurrentX96 == 0, 'AI');
+        require(slot0.sqrtPriceX96 == 0, 'AI');
 
-        Slot0 memory _slot0 = Slot0({sqrtPriceCurrentX96: sqrtPriceX96, index: 0, unlockedAndPriceBit: 1});
-
-        int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrentX96);
+        int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
+
+        Slot0 memory _slot0 = Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, index: 0, unlocked: true});
 
         oracle[_slot0.index] = Oracle.Observation({
             blockTimestamp: _blockTimestamp(),
@@ -308,7 +295,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
-    ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
+    ) external override lock returns (uint256 amount0, uint256 amount1) {
         checkTicks(tickLower, tickUpper);
 
         Position.Info storage position = positions.getPosition(msg.sender, tickLower, tickUpper);
@@ -334,7 +321,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) public override lockNoPriceMovement {
+    ) public override lock {
         require(amount < 2**127, 'MA');
 
         (int256 amount0Int, int256 amount1Int) =
@@ -376,7 +363,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
+    ) external override lock returns (uint256 amount0, uint256 amount1) {
         require(amount > 0, 'BA');
         require(amount < 2**127, 'BA');
 
@@ -413,11 +400,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         checkTicks(params.tickLower, params.tickUpper);
 
-        int24 tick = tickCurrent();
+        int24 tick = slot0.tick;
 
         // write an oracle entry if liquidity is changing
         if (params.liquidityDelta != 0)
-            slot0.index = oracle.writeObservationIfNecessary(slot0.index, _blockTimestamp(), tick, liquidityCurrent);
+            slot0.index = oracle.writeObservationIfNecessary(slot0.index, _blockTimestamp(), tick, liquidity);
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 
@@ -434,17 +421,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // current tick is inside the passed range
                 amount0 = SqrtPriceMath.getAmount0Delta(
                     SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
-                    slot0.sqrtPriceCurrentX96,
+                    slot0.sqrtPriceX96,
                     params.liquidityDelta
                 );
                 amount1 = SqrtPriceMath.getAmount1Delta(
                     SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
-                    slot0.sqrtPriceCurrentX96,
+                    slot0.sqrtPriceX96,
                     params.liquidityDelta
                 );
 
                 // downcasting is safe because of gross liquidity checks
-                liquidityCurrent = uint128(liquidityCurrent.addi(params.liquidityDelta));
+                liquidity = uint128(liquidity.addi(params.liquidityDelta));
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -468,10 +455,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes data;
         // the value of slot0 at the beginning of the swap
         Slot0 slot0Start;
-        // the value of liquidityCurrent at the beginning of the swap
+        // the value of liquidity at the beginning of the swap
         uint128 liquidityStart;
-        // the tick at the beginning of the swap
-        int24 tickStart;
         // the timestamp of the current block
         uint32 blockTimestamp;
     }
@@ -484,8 +469,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int256 amountCalculated;
         // current sqrt(price)
         uint160 sqrtPriceX96;
-        // whether the price is at the lower tickCurrent boundary and a tick transition has already occurred
-        bool priceBit;
         // the tick associated with the current price
         int24 tick;
         // the global fee growth of the input token
@@ -496,7 +479,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     struct StepComputations {
         // the price at the beginning of the step
-        uint160 sqrtPriceStart;
+        uint160 sqrtPriceStartX96;
         // the next tick to swap to from the current tick in the swap direction
         int24 tickNext;
         // whether tickNext is initialized or not
@@ -512,18 +495,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private {
-        bool zeroForOne = params.sqrtPriceLimitX96 < params.slot0Start.sqrtPriceCurrentX96;
+        bool zeroForOne = params.sqrtPriceLimitX96 < params.slot0Start.sqrtPriceX96;
         bool exactInput = params.amountSpecified > 0;
-
-        slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ UNLOCKED_BIT;
 
         SwapState memory state =
             SwapState({
                 amountSpecifiedRemaining: params.amountSpecified,
                 amountCalculated: 0,
-                sqrtPriceX96: params.slot0Start.sqrtPriceCurrentX96,
-                priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
-                tick: params.tickStart,
+                sqrtPriceX96: params.slot0Start.sqrtPriceX96,
+                tick: params.slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
                 liquidity: params.liquidityStart
             });
@@ -532,7 +512,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != params.sqrtPriceLimitX96) {
             StepComputations memory step;
 
-            step.sqrtPriceStart = state.sqrtPriceX96;
+            step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
             (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
                 state.tick,
@@ -572,9 +552,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
-                    // it's ok to put this condition here, because the min/max ticks are always initialized
-                    if (zeroForOne) require(step.tickNext > minTick, 'MIN');
-                    else require(step.tickNext < maxTick, 'MAX');
+                    // it's ok to put this check here, as the min/max ticks are always initialized
+                    require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
 
                     int128 liquidityDelta =
                         ticks.cross(
@@ -584,39 +563,39 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             params.blockTimestamp
                         );
 
-                    // update liquidityCurrent, subi from right to left, addi from left to right
-                    if (zeroForOne) state.liquidity = uint128(state.liquidity.subi(liquidityDelta));
-                    else state.liquidity = uint128(state.liquidity.addi(liquidityDelta));
+                    // update liquidity, subi from right to left, addi from left to right
+                    zeroForOne
+                        ? state.liquidity = uint128(state.liquidity.subi(liquidityDelta))
+                        : state.liquidity = uint128(state.liquidity.addi(liquidityDelta));
                 }
 
-                state.priceBit = zeroForOne;
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                state.priceBit = state.priceBit && zeroForOne && state.sqrtPriceX96 == step.sqrtPriceStart;
-                state.tick =
-                    SqrtTickMath.getTickAtSqrtRatio(state.sqrtPriceX96) +
-                    (state.priceBit ? int24(-1) : int24(0));
+                // only recomput tick if the price changed
+                if (state.sqrtPriceX96 != step.sqrtPriceStartX96)
+                    state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
             }
         }
 
         // update liquidity if it changed
-        if (params.liquidityStart != state.liquidity) liquidityCurrent = state.liquidity;
+        if (params.liquidityStart != state.liquidity) liquidity = state.liquidity;
 
         // write an oracle entry if the price moved at least one tick
-        if (state.tick != params.tickStart)
+        if (state.tick != params.slot0Start.tick) {
             slot0.index = oracle.writeObservationIfNecessary(
                 params.slot0Start.index,
                 params.blockTimestamp,
-                params.tickStart,
+                params.slot0Start.tick,
                 params.liquidityStart
             );
+            slot0.tick = state.tick;
+        }
 
-        slot0.sqrtPriceCurrentX96 = state.sqrtPriceX96;
-        // still locked until after the callback, but need to record the price bit
-        slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT : 0;
+        slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
-        if (zeroForOne) feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
-        else feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
+        zeroForOne
+            ? feeGrowthGlobal0X128 = state.feeGrowthGlobalX128
+            : feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
@@ -636,8 +615,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
         require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
 
-        slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
-
         if (zeroForOne) emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
         else Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
     }
@@ -649,17 +626,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint160 sqrtPriceLimitX96,
         address recipient,
         bytes calldata data
-    ) external override {
+    ) external override lock {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
-        require(_slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT, 'LOK');
-        require(
-            zeroForOne
-                ? sqrtPriceLimitX96 < _slot0.sqrtPriceCurrentX96
-                : sqrtPriceLimitX96 > _slot0.sqrtPriceCurrentX96,
-            'SPL'
-        );
+        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
 
         _swap(
             SwapParams({
@@ -668,8 +639,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 recipient: recipient,
                 data: data,
                 slot0Start: _slot0,
-                liquidityStart: liquidityCurrent,
-                tickStart: _tickCurrent(_slot0),
+                liquidityStart: liquidity,
                 blockTimestamp: _blockTimestamp()
             })
         );
@@ -679,7 +649,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address token,
         address recipient,
         uint256 amount
-    ) external override lockNoPriceMovement {
+    ) external override lock {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
 
         uint256 token0Balance = IERC20(token0).balanceOf(address(this));
@@ -698,7 +668,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
         external
         override
-        lockNoPriceMovement
+        lock
         returns (uint256 amount0, uint256 amount1)
     {
         amount0 = amount0Requested > feeToFees0 ? feeToFees0 : amount0Requested;

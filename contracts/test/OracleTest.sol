@@ -27,7 +27,7 @@ contract OracleTest {
         uint16 index,
         int24 tickCurrent,
         uint128 liquidityCurrent
-    ) external view returns (int24 tick, uint128 liquidity) {
+    ) external view returns (int24 tickThen, uint128 liquidityThen) {
         require(_blockTimestamp <= blockTimestamp, 'BT'); // can't look into the future
 
         Oracle.Observation memory oldest = oracle[(index + 1) % Oracle.CARDINALITY];

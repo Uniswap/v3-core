@@ -44,7 +44,7 @@ library Oracle {
         Observation[CARDINALITY] storage self,
         uint32 target,
         uint16 index
-    ) internal view returns (int24 tick, uint128 liquidity) {
+    ) internal view returns (int24 tickThen, uint128 liquidityThen) {
         Observation memory before;
         Observation memory atOrAfter;
 
