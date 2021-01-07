@@ -143,7 +143,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         feeTo = feeTo_;
     }
 
-    function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
+    function initialize(uint160 sqrtPriceX96) external override {
         Slot0 memory _slot0 = slot0;
         require(_slot0.sqrtPriceX96 == 0, 'AI');
 
@@ -161,9 +161,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0 = _slot0;
 
         emit Initialized(sqrtPriceX96, tick);
-
-        // set permanent 1 wei position
-        mint(address(0), minTick, maxTick, 1, data);
     }
 
     // gets and updates and gets a position with the given liquidity delta
