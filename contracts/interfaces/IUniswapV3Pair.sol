@@ -123,13 +123,6 @@ interface IUniswapV3Pair {
 
     function setFeeTo(address) external;
 
-    // allows the factory owner address to recover any tokens other than token0 and token1 held by the contract
-    function recover(
-        address token,
-        address recipient,
-        uint256 amount
-    ) external;
-
     // allows anyone to collect protocol fees to feeTo
     function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
         external

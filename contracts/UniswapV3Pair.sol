@@ -625,26 +625,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function recover(
-        address token,
-        address recipient,
-        uint256 amount
-    ) external override lockNoPriceMovement {
-        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
-
-        uint256 token0Balance = IERC20(token0).balanceOf(address(this));
-        uint256 token1Balance = IERC20(token1).balanceOf(address(this));
-
-        TransferHelper.safeTransfer(token, recipient, amount);
-
-        // check the balance hasn't changed
-        require(
-            IERC20(token0).balanceOf(address(this)) == token0Balance &&
-                IERC20(token1).balanceOf(address(this)) == token1Balance,
-            'TOK'
-        );
-    }
-
     function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
         external
         override

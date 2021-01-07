@@ -1205,28 +1205,6 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('#recover', () => {
-    beforeEach('initialize the pair', () => initializeAtZeroTick(pair))
-
-    beforeEach('send some token2 to the pair', async () => {
-      await token2.transfer(pair.address, 10)
-    })
-
-    it('is only callable by owner', async () => {
-      await expect(pair.connect(other).recover(token2.address, other.address, 10)).to.be.revertedWith('OO')
-    })
-
-    it('does not allow transferring a token from the pair', async () => {
-      await expect(pair.recover(token0.address, other.address, 10)).to.be.revertedWith('TOK')
-    })
-
-    it('allows recovery from the pair', async () => {
-      await expect(pair.recover(token2.address, other.address, 10))
-        .to.emit(token2, 'Transfer')
-        .withArgs(pair.address, other.address, 10)
-    })
-  })
-
   describe('#tickSpacing', () => {
     it('default tickSpacing is correct', async () => {
       expect(await pair.minTick()).to.eq(minTick)
