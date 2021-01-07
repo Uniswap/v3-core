@@ -14,6 +14,8 @@ library Tick {
         // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
         // i.e. as the price goes up (down), for each fee vote
         int128 liquidityDelta;
+        // stored in the secondsOutside slot so the slot is not set from 0 when the tick is first crossed
+        bool initialized;
         // seconds spent on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint32 secondsOutside;
@@ -117,6 +119,7 @@ library Tick {
                     info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
                     info.secondsOutside = blockTimestamp;
                 }
+                info.initialized = true;
             }
 
             info.liquidityGross = liquidityGrossAfter;
