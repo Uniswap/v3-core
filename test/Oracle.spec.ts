@@ -225,6 +225,109 @@ describe('Oracle', () => {
     })
   })
 
+  describe('monotonic observations, shifted', () => {
+    const timestampDelta = 13
+    const tickDelta = 2
+    const liquidityDelta = 3
+
+    const observations = new Array(CARDINALITY)
+      .fill(0)
+      .map((_, i) => {
+        return {
+          blockTimestamp: i * timestampDelta,
+          tickCumulative: 0,
+          liquidityCumulative: 0,
+          initialized: true,
+        }
+      })
+      .map((observation, i, arr) => {
+        if (i == 0) return observation
+        observation.tickCumulative = arr[i - 1].tickCumulative + i * tickDelta * timestampDelta
+        observation.liquidityCumulative = arr[i - 1].liquidityCumulative + i * liquidityDelta * timestampDelta
+        return observation
+      })
+
+    for (let i = 0; i < 100; i++) {
+      const shifted = observations.shift()
+      observations.push(shifted!)
+    }
+
+    before(async () => {
+      await setOracle(observations)
+      await oracle.setBlockTimestamp(observations[923].blockTimestamp + 1)
+    })
+
+    it('works for 1', async () => {
+      const values = await oracle.scry(1, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1 * tickDelta)
+      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+    })
+
+    it('works for 2', async () => {
+      const values = await oracle.scry(2, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1 * tickDelta)
+      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+    })
+
+    it('works for 13', async () => {
+      const values = await oracle.scry(13, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1 * tickDelta)
+      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+    })
+
+    it('works for 14', async () => {
+      const values = await oracle.scry(14, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(2 * tickDelta)
+      expect(values.liquidity).to.be.eq(2 * liquidityDelta)
+    })
+
+    it('works for 6655', async () => {
+      const values = await oracle.scry(6655, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(512 * tickDelta)
+      expect(values.liquidity).to.be.eq(512 * liquidityDelta)
+    })
+
+    it('works for 6656', async () => {
+      const values = await oracle.scry(6656, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(512 * tickDelta)
+      expect(values.liquidity).to.be.eq(512 * liquidityDelta)
+    })
+
+    it('works for 6657', async () => {
+      const values = await oracle.scry(6657, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(513 * tickDelta)
+      expect(values.liquidity).to.be.eq(513 * liquidityDelta)
+    })
+
+    it('works for 13298', async () => {
+      const values = await oracle.scry(13298, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1023 * tickDelta)
+      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+    })
+
+    it('works for 13299', async () => {
+      const values = await oracle.scry(13299, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1023 * tickDelta)
+      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+    })
+
+    it('works for 13300', async () => {
+      const values = await oracle.scry(13300, 923, 123, 456)
+
+      expect(values.tick).to.be.eq(123)
+      expect(values.liquidity).to.be.eq(456)
+    })
+  })
+
   describe('non-monotonic observations, unshifted', () => {
     const start = 4294964296
     const timestampDelta = 13
@@ -255,8 +358,6 @@ describe('Oracle', () => {
     })
 
     it('works for +1', async () => {
-      console.log(observations.length)
-
       const values = await oracle.scry(start + 1, observations.length - 1, 0, 0)
 
       expect(values.tick).to.be.eq(1 * tickDelta)
@@ -336,6 +437,111 @@ describe('Oracle', () => {
         123,
         456
       )
+
+      expect(values.tick).to.be.eq(123)
+      expect(values.liquidity).to.be.eq(456)
+    })
+  })
+
+  describe('non-monotonic observations, shifted', () => {
+    const start = 4294964296
+    const timestampDelta = 13
+    const tickDelta = 2
+    const liquidityDelta = 3
+
+    const observations = new Array(CARDINALITY)
+      .fill(0)
+      .map(() => {
+        return {
+          blockTimestamp: start,
+          tickCumulative: 0,
+          liquidityCumulative: 0,
+          initialized: true,
+        }
+      })
+      .map((observation, i, arr) => {
+        if (i == 0) return observation
+        observation.blockTimestamp = (arr[i - 1].blockTimestamp + timestampDelta) % 2 ** 32
+        observation.tickCumulative = arr[i - 1].tickCumulative + i * tickDelta * timestampDelta
+        observation.liquidityCumulative = arr[i - 1].liquidityCumulative + i * liquidityDelta * timestampDelta
+        return observation
+      })
+
+    for (let i = 0; i < 100; i++) {
+      const shifted = observations.shift()
+      observations.push(shifted!)
+    }
+
+    before(async () => {
+      await setOracle(observations)
+      await oracle.setBlockTimestamp(observations[923].blockTimestamp + 2 ** 32 + 1)
+    })
+
+    it('works for +1', async () => {
+      const values = await oracle.scry(start + 1, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1 * tickDelta)
+      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+    })
+
+    it('works for +13', async () => {
+      const values = await oracle.scry(start + 13, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1 * tickDelta)
+      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+    })
+
+    it('works for +14', async () => {
+      const values = await oracle.scry(start + 14, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(2 * tickDelta)
+      expect(values.liquidity).to.be.eq(2 * liquidityDelta)
+    })
+
+    it('works for boundary-2', async () => {
+      const values = await oracle.scry(2 ** 32 - 2, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(231 * tickDelta)
+      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+    })
+
+    it('works for boundary-1', async () => {
+      const values = await oracle.scry(2 ** 32 - 1, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(231 * tickDelta)
+      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+    })
+
+    it('works for boundary+1', async () => {
+      const values = await oracle.scry(0, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(231 * tickDelta)
+      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+    })
+
+    it('works for boundary+5', async () => {
+      const values = await oracle.scry(4, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(232 * tickDelta)
+      expect(values.liquidity).to.be.eq(232 * liquidityDelta)
+    })
+
+    it('works for newest-1', async () => {
+      const values = await oracle.scry(observations[923].blockTimestamp - 1, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1023 * tickDelta)
+      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+    })
+
+    it('works for newest', async () => {
+      const values = await oracle.scry(observations[923].blockTimestamp, 923, 0, 0)
+
+      expect(values.tick).to.be.eq(1023 * tickDelta)
+      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+    })
+
+    it('works for newest +1', async () => {
+      const values = await oracle.scry(observations[923].blockTimestamp + 1, 923, 123, 456)
 
       expect(values.tick).to.be.eq(123)
       expect(values.liquidity).to.be.eq(456)
