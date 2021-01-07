@@ -1413,12 +1413,16 @@ describe('UniswapV3Pair', () => {
     const tickSpacing = TICK_SPACINGS[FeeAmount.MEDIUM]
 
     beforeEach('do the initial sstores', async () => {
+      await mint(wallet.address, minTick, minTick + tickSpacing, 1)
+      await mint(wallet.address, maxTick - tickSpacing, maxTick, 1)
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
       await pair.setTime(TEST_PAIR_START_TIME + 1)
       await swapToHigherPrice(startingPrice, wallet.address)
       await pair.setTime(startingTime)
       expect(await pair.tickCurrent()).to.eq(startingTick)
       expect((await pair.slot0()).sqrtPriceCurrentX96).to.eq(startingPrice)
+      expect(await pair.offset0X128()).to.not.eq(0)
+      expect(await pair.offset1X128()).to.not.eq(0)
     })
 
     describe('#swapExact0For1', () => {
