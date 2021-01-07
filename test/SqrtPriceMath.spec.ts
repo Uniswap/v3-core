@@ -26,6 +26,20 @@ describe('SqrtPriceMath', () => {
       )
     })
 
+    it('fails if input amount overflows the price', async () => {
+      const price = BigNumber.from(2).pow(160).sub(1)
+      const liquidity = 1024
+      const amountIn = 1024
+      await expect(sqrtPriceMath.getNextPriceFromInput(price, liquidity, amountIn, false)).to.be.revertedWith('DO')
+    })
+
+    it('any input amount cannot underflow the price', async () => {
+      const price = 1
+      const liquidity = 1
+      const amountIn = BigNumber.from(2).pow(255)
+      expect(await sqrtPriceMath.getNextPriceFromInput(price, liquidity, amountIn, true)).to.eq(1)
+    })
+
     it('returns input price if amount in is zero and zeroForOne = true', async () => {
       const price = encodePriceSqrt(1, 1)
       expect(await sqrtPriceMath.getNextPriceFromInput(price, expandTo18Decimals(1).div(10), 0, true)).to.eq(price)
@@ -111,6 +125,35 @@ describe('SqrtPriceMath', () => {
       )
     })
 
+    it('fails if output amount is exactly the virtual reserves of token0', async () => {
+      const price = '20282409603651670423947251286016'
+      const liquidity = 1024
+      const amountOut = 4
+      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, false)).to.be.revertedWith('OUT')
+    })
+
+    it('fails if output amount is greater than virtual reserves of token0', async () => {
+      const price = '20282409603651670423947251286016'
+      const liquidity = 1024
+      const amountOut = 5
+      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, false)).to.be.revertedWith('SO')
+    })
+
+    it('succeeds if output amount is exactly the virtual reserves of token1', async () => {
+      const price = '20282409603651670423947251286016'
+      const liquidity = 1024
+      const amountOut = 262144
+      // todo: this edge case should probably be handled a little better given 0 is not a real price
+      expect(await sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, true)).to.eq(0)
+    })
+
+    it('fails if output amount is greater than virtual reserves of token1', async () => {
+      const price = '20282409603651670423947251286016'
+      const liquidity = 1024
+      const amountOut = 262145
+      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, true)).to.be.revertedWith('SO')
+    })
+
     it('puzzling echidna test', async () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
@@ -152,13 +195,13 @@ describe('SqrtPriceMath', () => {
     it('reverts if amountOut is impossible in zero for one direction', async () => {
       await expect(
         sqrtPriceMath.getNextPriceFromOutput(encodePriceSqrt(1, 1), 1, constants.MaxUint256, true)
-      ).to.be.revertedWith('')
+      ).to.be.revertedWith('FMD')
     })
 
     it('reverts if amountOut is impossible in one for zero direction', async () => {
       await expect(
         sqrtPriceMath.getNextPriceFromOutput(encodePriceSqrt(1, 1), 1, constants.MaxUint256, false)
-      ).to.be.revertedWith('')
+      ).to.be.revertedWith('SO')
     })
 
     it('zeroForOne = true gas', async () => {

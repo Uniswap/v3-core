@@ -51,9 +51,11 @@ interface IUniswapV3Pair {
 
     function tickSpacing() external view returns (int24);
 
-    function MIN_TICK() external view returns (int24);
+    function minTick() external view returns (int24);
 
-    function MAX_TICK() external view returns (int24);
+    function maxTick() external view returns (int24);
+
+    function maxLiquidityPerTick() external view returns (uint128);
 
     // variables/state
     function feeTo() external view returns (address);

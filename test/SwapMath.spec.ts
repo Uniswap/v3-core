@@ -183,6 +183,48 @@ describe('SwapMath', () => {
       expect(sqrtQ).to.eq('2413')
     })
 
+    it('handles intermediate insufficient liquidity in zero for one exact output case', async () => {
+      const sqrtP = BigNumber.from('20282409603651670423947251286016')
+      const sqrtPTarget = sqrtP.mul(11).div(10)
+      const liquidity = 1024
+      // virtual reserves of one are only 4
+      // https://www.wolframalpha.com/input/?i=1024+%2F+%2820282409603651670423947251286016+%2F+2**96%29
+      const amountRemaining = -4
+      const feePips = 3000
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
+        sqrtP,
+        sqrtPTarget,
+        liquidity,
+        amountRemaining,
+        feePips
+      )
+      expect(amountOut).to.eq(0)
+      expect(sqrtQ).to.eq(sqrtPTarget)
+      expect(amountIn).to.eq(26215)
+      expect(feeAmount).to.eq(79)
+    })
+
+    it('handles intermediate insufficient liquidity in one for zero exact output case', async () => {
+      const sqrtP = BigNumber.from('20282409603651670423947251286016')
+      const sqrtPTarget = sqrtP.mul(9).div(10)
+      const liquidity = 1024
+      // virtual reserves of zero are only 262144
+      // https://www.wolframalpha.com/input/?i=1024+*+%2820282409603651670423947251286016+%2F+2**96%29
+      const amountRemaining = -263000
+      const feePips = 3000
+      const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
+        sqrtP,
+        sqrtPTarget,
+        liquidity,
+        amountRemaining,
+        feePips
+      )
+      expect(amountOut).to.eq(26214)
+      expect(sqrtQ).to.eq(sqrtPTarget)
+      expect(amountIn).to.eq(1)
+      expect(feeAmount).to.eq(1)
+    })
+
     it('gas', async () => {
       await snapshotGasCost(
         swapMath.getGasCostOfComputeSwapStep(

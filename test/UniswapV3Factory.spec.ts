@@ -27,8 +27,24 @@ describe('UniswapV3Factory', () => {
     expect(await factory.owner()).to.eq(wallet.address)
   })
 
+  it('owner does not have to be deployer', async () => {
+    const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
+    factory = (await factoryFactory.deploy(other.address)) as UniswapV3Factory
+    expect(await factory.owner()).to.eq(other.address)
+  })
+
   it('initial pairs length is 0', async () => {
     expect(await factory.allPairsLength()).to.eq(0)
+  })
+
+  it('factory bytecode size', async () => {
+    expect(((await waffle.provider.getCode(factory.address)).length - 2) / 2).to.matchSnapshot()
+  })
+
+  it('pair bytecode size', async () => {
+    await factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM)
+    const pairAddress = getCreate2Address(factory.address, TEST_ADDRESSES, FeeAmount.MEDIUM, pairBytecode)
+    expect(((await waffle.provider.getCode(pairAddress)).length - 2) / 2).to.matchSnapshot()
   })
 
   it('initial enabled fee amounts', async () => {
@@ -46,7 +62,7 @@ describe('UniswapV3Factory', () => {
     feeAmount: FeeAmount,
     tickSpacing: number = TICK_SPACINGS[feeAmount]
   ) {
-    const create2Address = getCreate2Address(factory.address, tokens, feeAmount, tickSpacing, pairBytecode)
+    const create2Address = getCreate2Address(factory.address, tokens, feeAmount, pairBytecode)
     const create = factory.createPair(tokens[0], tokens[1], feeAmount)
 
     await expect(create)
@@ -118,6 +134,12 @@ describe('UniswapV3Factory', () => {
     it('updates owner', async () => {
       await factory.setOwner(other.address)
       expect(await factory.owner()).to.eq(other.address)
+    })
+
+    it('emits event', async () => {
+      await expect(factory.setOwner(other.address))
+        .to.emit(factory, 'OwnerChanged')
+        .withArgs(wallet.address, other.address)
     })
 
     it('cannot be called by original owner', async () => {
