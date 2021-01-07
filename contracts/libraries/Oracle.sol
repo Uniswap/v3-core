@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 library Oracle {
-    uint16 private constant CARDINALITY = 1024;
+    uint16 internal constant CARDINALITY = 1024;
 
     struct Observation {
         // the block timestamp of the observation
@@ -22,6 +22,7 @@ library Oracle {
         int24 tick,
         uint128 liquidity
     ) internal returns (uint16 indexNext) {
+        // TODO storage -> memory here and below?
         Observation memory last = self[index];
 
         if (last.blockTimestamp != blockTimestamp) {
@@ -38,37 +39,16 @@ library Oracle {
         }
     }
 
-    function scry(
-        Observation[CARDINALITY] memory self,
-        uint32 target,
-        uint32 current,
-        uint16 index,
-        int24 tickCurrent,
-        uint128 liquidityCurrent
-    )
+    // this function only works if very specific conditions are true, which must be enforced elsewhere
+    // note that even though we're not modifying self, it must be passed by ref to save gas
+    function scry(Observation[CARDINALITY] storage self, uint32 target, uint16 index, uint32 current)
         internal
-        pure
+        view
         returns (int24 tick, uint128 liquidity)
     {
         Observation memory before;
         Observation memory atOrAfter;
 
-        // to start, set before to the oldest known observation (while ensuring it exists)
-        before = self[(index + 1) % CARDINALITY];
-        if (before.initialized == false) {
-            before = self[0];
-            require(before.initialized, 'UI');
-        }
-
-        // now, ensure that the target is greater than the oldest observation (accounting for wrapping)
-        require(before.blockTimestamp < target || (before.blockTimestamp > current && target <= current), 'OLD');
-
-        // check if the target is after the youngest observation, and if so return the current values
-        atOrAfter = self[index];
-        if (atOrAfter.blockTimestamp < target || (atOrAfter.blockTimestamp > current && target <= current))
-            return (tickCurrent, liquidityCurrent);
-
-        // once here, we can be confident that the answer is in the array, time for binary search!
         uint16 l = (index + 1) % CARDINALITY;
         uint16 r = l + CARDINALITY - 1;
         uint16 i;
@@ -95,7 +75,7 @@ library Oracle {
             )) break;
 
             // we need to get more recent, keep searching higher
-            if (atOrAfter.blockTimestamp < target || self[l % CARDINALITY].blockTimestamp > target) {
+            if (atOrAfter.blockTimestamp < target || (atOrAfter.blockTimestamp > current && target <= current)) {
                 l = i + 1;
                 continue;
             }

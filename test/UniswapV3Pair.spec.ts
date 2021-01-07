@@ -493,9 +493,7 @@ describe('UniswapV3Pair', () => {
     // simulates an external call to get the cumulatives as of the current block timestamp
     async function getCumulatives(): Promise<{ blockTimestamp: number; tickCumulative: BigNumber }> {
       const index = (await pair.slot0()).index
-      const { blockTimestamp: blockTimestampLast, tickCumulative: tickCumulativeLast } = await pair.oracle(
-        index
-      )
+      const { blockTimestamp: blockTimestampLast, tickCumulative: tickCumulativeLast } = await pair.oracle(index)
       const [tickCurrent, time] = await Promise.all([pair.tickCurrent(), pair.time()])
       if (time == blockTimestampLast) return { tickCumulative: tickCumulativeLast, blockTimestamp: blockTimestampLast }
       return {

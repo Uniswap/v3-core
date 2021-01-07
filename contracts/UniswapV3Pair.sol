@@ -38,7 +38,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
-    using Oracle for Oracle.Observation[1024];
+    using Oracle for Oracle.Observation[1024]; // hack to satisfy solidity
 
     uint8 private constant PRICE_BIT = 0x10;
     uint8 private constant UNLOCKED_BIT = 0x01;
@@ -69,7 +69,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     struct Slot0 {
         // the current price
         uint160 sqrtPriceCurrentX96;
-        // the most-recently updated index of oracleObservations
+        // the most-recently updated index of oracle
         uint16 index;
         // whether the pair is locked for swapping
         // packed with a boolean representing whether the price is at the lower bounds of the
@@ -83,7 +83,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint128 public override liquidityCurrent;
 
     // see Oracle.sol
-    Oracle.Observation[1024] public override oracle;
+    Oracle.Observation[1024] public override oracle; // hack to satisfy solidity
 
     address public override feeTo;
 
@@ -142,7 +142,41 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function scry(uint256 blockTimestamp) external view override returns (int24 tick, uint128 liquidity) {
         require(blockTimestamp <= block.timestamp, 'BT'); // can't look into the future
-        return oracle.scry(uint32(blockTimestamp), _blockTimestamp(), slot0.index, tickCurrent(), liquidityCurrent);
+
+        uint16 index = slot0.index;
+
+        Oracle.Observation memory oldest = oracle[(index + 1) % Oracle.CARDINALITY];
+
+        // first, ensure that the oldest known observation is initialized
+        if (oldest.initialized == false) {
+            oldest = oracle[0];
+            require(oldest.initialized, 'UI');
+        }
+
+        uint32 target = uint32(blockTimestamp);
+        uint32 current = _blockTimestamp();
+
+        // then, ensure that the target is greater than the oldest observation (accounting for wrapping)
+        require(oldest.blockTimestamp < target || (oldest.blockTimestamp > current && target <= current), 'OLD');
+
+        Oracle.Observation memory newest = oracle[index];
+
+        // we can short-circuit if the target is after the youngest observation and return the current values
+        if (newest.blockTimestamp < target || (newest.blockTimestamp > current && target <= current))
+            return (tickCurrent(), liquidityCurrent);
+
+        // we can also short-circuit for the specific case where the target is the block.timestamp, but an interaction
+        // updated the oracle before the check, as this might be fairly common and is a worst-case for the binary search
+        if (newest.blockTimestamp == target) {
+            Oracle.Observation memory before = oracle[(index == 0 ? Oracle.CARDINALITY : index) - 1];
+            uint32 delta = newest.blockTimestamp - before.blockTimestamp;
+            return (
+                int24((newest.tickCumulative - before.tickCumulative) / delta),
+                uint128((newest.liquidityCumulative - before.liquidityCumulative) / delta)
+            );
+        }
+
+        return oracle.scry(target, index, current);
     }
 
     function setFeeTo(address feeTo_) external override {
