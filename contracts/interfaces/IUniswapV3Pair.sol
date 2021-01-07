@@ -64,13 +64,13 @@ interface IUniswapV3Pair {
         external
         view
         returns (
-            uint160 sqrtPriceCurrentX96,
+            uint160 sqrtPriceX96,
             uint32 blockTimestampLast,
             int56 tickCumulativeLast,
             uint8 unlockedAndPriceBit
         );
 
-    function liquidityCurrent() external view returns (uint128);
+    function liquidity() external view returns (uint128);
 
     function tickBitmap(int16) external view returns (uint256);
 

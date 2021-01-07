@@ -61,7 +61,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     struct Slot0 {
         // the current price
-        uint160 sqrtPriceCurrentX96;
+        uint160 sqrtPriceX96;
         // the last block timestamp where the tick accumulator was updated
         uint32 blockTimestampLast;
         // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
@@ -75,7 +75,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     Slot0 public override slot0;
 
     // current in-range liquidity
-    uint128 public override liquidityCurrent;
+    uint128 public override liquidity;
 
     address public override feeTo;
 
@@ -108,7 +108,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _tickCurrent(Slot0 memory _slot0) internal pure returns (int24) {
-        int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrentX96);
+        int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceX96);
         if (_slot0.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT) tick--;
         return tick;
     }
@@ -145,16 +145,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
         Slot0 memory _slot0 = slot0;
-        require(_slot0.sqrtPriceCurrentX96 == 0, 'AI');
+        require(_slot0.sqrtPriceX96 == 0, 'AI');
 
         _slot0 = Slot0({
             blockTimestampLast: _blockTimestamp(),
             tickCumulativeLast: 0,
-            sqrtPriceCurrentX96: sqrtPriceX96,
+            sqrtPriceX96: sqrtPriceX96,
             unlockedAndPriceBit: 1
         });
 
-        int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceCurrentX96);
+        int24 tick = SqrtTickMath.getTickAtSqrtRatio(_slot0.sqrtPriceX96);
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
@@ -385,17 +385,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 // current tick is inside the passed range
                 amount0 = SqrtPriceMath.getAmount0Delta(
                     SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
-                    slot0.sqrtPriceCurrentX96,
+                    slot0.sqrtPriceX96,
                     params.liquidityDelta
                 );
                 amount1 = SqrtPriceMath.getAmount1Delta(
                     SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
-                    slot0.sqrtPriceCurrentX96,
+                    slot0.sqrtPriceX96,
                     params.liquidityDelta
                 );
 
                 // downcasting is safe because of gross liquidity checks
-                liquidityCurrent = uint128(liquidityCurrent.addi(params.liquidityDelta));
+                liquidity = uint128(liquidity.addi(params.liquidityDelta));
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -419,7 +419,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes data;
         // the value of slot0 at the beginning of the swap
         Slot0 slot0Start;
-        // the value of liquidityCurrent at the beginning of the swap
+        // the value of liquidity at the beginning of the swap
         uint128 liquidityStart;
         // the tick at the beginning of the swap
         int24 tickStart;
@@ -435,7 +435,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int256 amountCalculated;
         // current sqrt(price)
         uint160 sqrtPriceX96;
-        // whether the price is at the lower tickCurrent boundary and a tick transition has already occurred
+        // whether the price is at the lower tick boundary and a tick transition has already occurred
         bool priceBit;
         // the tick associated with the current price
         int24 tick;
@@ -463,7 +463,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function _swap(SwapParams memory params) private {
-        bool zeroForOne = params.sqrtPriceLimitX96 < params.slot0Start.sqrtPriceCurrentX96;
+        bool zeroForOne = params.sqrtPriceLimitX96 < params.slot0Start.sqrtPriceX96;
         bool exactInput = params.amountSpecified > 0;
 
         slot0.unlockedAndPriceBit = params.slot0Start.unlockedAndPriceBit ^ UNLOCKED_BIT;
@@ -472,7 +472,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             SwapState({
                 amountSpecifiedRemaining: params.amountSpecified,
                 amountCalculated: 0,
-                sqrtPriceX96: params.slot0Start.sqrtPriceCurrentX96,
+                sqrtPriceX96: params.slot0Start.sqrtPriceX96,
                 priceBit: params.slot0Start.unlockedAndPriceBit & PRICE_BIT == PRICE_BIT,
                 tick: params.tickStart,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
@@ -535,7 +535,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             params.blockTimestamp
                         );
 
-                    // update liquidityCurrent, subi from right to left, addi from left to right
+                    // update liquidity, subi from right to left, addi from left to right
                     if (zeroForOne) state.liquidity = uint128(state.liquidity.subi(liquidityDelta));
                     else state.liquidity = uint128(state.liquidity.addi(liquidityDelta));
                 }
@@ -551,7 +551,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // update liquidity if it changed
-        if (params.liquidityStart != state.liquidity) liquidityCurrent = state.liquidity;
+        if (params.liquidityStart != state.liquidity) liquidity = state.liquidity;
 
         // the price moved at least one tick, update the accumulator
         if (state.tick != params.tickStart) {
@@ -566,7 +566,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
         }
 
-        slot0.sqrtPriceCurrentX96 = state.sqrtPriceX96;
+        slot0.sqrtPriceX96 = state.sqrtPriceX96;
         // still locked until after the callback, but need to record the price bit
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT : 0;
 
@@ -611,8 +611,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(_slot0.unlockedAndPriceBit & UNLOCKED_BIT == UNLOCKED_BIT, 'LOK');
         require(
             zeroForOne
-                ? sqrtPriceLimitX96 < _slot0.sqrtPriceCurrentX96
-                : sqrtPriceLimitX96 > _slot0.sqrtPriceCurrentX96,
+                ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96
+                : sqrtPriceLimitX96 > _slot0.sqrtPriceX96,
             'SPL'
         );
 
@@ -623,7 +623,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 recipient: recipient,
                 data: data,
                 slot0Start: _slot0,
-                liquidityStart: liquidityCurrent,
+                liquidityStart: liquidity,
                 tickStart: _tickCurrent(_slot0),
                 blockTimestamp: _blockTimestamp()
             })
