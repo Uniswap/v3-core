@@ -43,7 +43,11 @@ contract OracleTest {
 
         Oracle.Observation memory newest = oracle[index];
 
-        // we can short-circuit here for the specific case where the target is the block.timestamp, but an interaction
+        // we can short-circuit if the target is after the youngest observation and return the current values
+        if (newest.blockTimestamp < target || (newest.blockTimestamp > current && target <= current))
+            return (tickCurrent, liquidityCurrent);
+
+        // we can also short-circuit for the specific case where the target is the block.timestamp, but an interaction
         // updated the oracle before the check, as this might be fairly common and is a worst-case for the binary search
         if (newest.blockTimestamp == target) {
             Oracle.Observation memory before = oracle[(index == 0 ? Oracle.CARDINALITY : index) - 1];
@@ -54,9 +58,6 @@ contract OracleTest {
             );
         }
 
-        // finally, if the target is after the youngest observation, short-circuit and return the current values
-        if (newest.blockTimestamp < target || (newest.blockTimestamp > current && target <= current))
-            return (tickCurrent, liquidityCurrent);
 
         return oracle.scry(target, index, current);
 

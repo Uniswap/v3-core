@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Oracle gas scry cost for timestamp equal to the most recent observation 1`] = `28469`;
+exports[`Oracle gas scry cost for timestamp equal to the most recent observation 1`] = `28581`;
 
-exports[`Oracle gas scry cost for timestamp greater than the most recent observation 1`] = `27237`;
+exports[`Oracle gas scry cost for timestamp greater than the most recent observation 1`] = `27193`;
 
-exports[`Oracle gas scry cost for worst-case binary search 1`] = `41533`;
+exports[`Oracle gas scry cost for worst-case binary search 1`] = `41536`;
