@@ -60,7 +60,7 @@ exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap, no i
 
 exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `153766`;
 
-exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `213924`;
+exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `213766`;
 
 exports[`UniswapV3Pair gas #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `106747`;
 
