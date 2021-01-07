@@ -593,9 +593,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
-        zeroForOne
-            ? feeGrowthGlobal0X128 = state.feeGrowthGlobalX128
-            : feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
+        zeroForOne ? feeGrowthGlobal0X128 = state.feeGrowthGlobalX128 : feeGrowthGlobal1X128 = state
+            .feeGrowthGlobalX128;
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
