@@ -1,63 +1,103 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair #mint after initialization success cases above current price gas first mint of range 1`] = `209767`;
+exports[`UniswapV3Pair gas #burn above current price burn entire position after some time passes 1`] = `84918`;
 
-exports[`UniswapV3Pair #mint after initialization success cases above current price gas second mint of different range same tick lower 1`] = `158986`;
+exports[`UniswapV3Pair gas #burn above current price burn when only position using ticks 1`] = `61760`;
 
-exports[`UniswapV3Pair #mint after initialization success cases above current price gas second mint of different range same tick upper 1`] = `158524`;
+exports[`UniswapV3Pair gas #burn above current price entire position burn but other positions are using the ticks 1`] = `87756`;
 
-exports[`UniswapV3Pair #mint after initialization success cases above current price gas second mint of range for same position 1`] = `122281`;
+exports[`UniswapV3Pair gas #burn above current price partial position burn 1`] = `101129`;
 
-exports[`UniswapV3Pair #mint after initialization success cases above current price gas second mint of same range for different owner 1`] = `137281`;
+exports[`UniswapV3Pair gas #burn around current price burn entire position after some time passes 1`] = `93750`;
 
-exports[`UniswapV3Pair #mint after initialization success cases below current price gas first mint of range 1`] = `235906`;
+exports[`UniswapV3Pair gas #burn around current price burn when only position using ticks 1`] = `83051`;
 
-exports[`UniswapV3Pair #mint after initialization success cases below current price gas second mint of different range same tick lower 1`] = `181374`;
+exports[`UniswapV3Pair gas #burn around current price entire position burn but other positions are using the ticks 1`] = `113537`;
 
-exports[`UniswapV3Pair #mint after initialization success cases below current price gas second mint of different range same tick upper 1`] = `196501`;
+exports[`UniswapV3Pair gas #burn around current price partial position burn 1`] = `126910`;
 
-exports[`UniswapV3Pair #mint after initialization success cases below current price gas second mint of range for same position 1`] = `122688`;
+exports[`UniswapV3Pair gas #burn below current price burn entire position after some time passes 1`] = `85302`;
 
-exports[`UniswapV3Pair #mint after initialization success cases below current price gas second mint of same range for different owner 1`] = `137688`;
+exports[`UniswapV3Pair gas #burn below current price burn when only position using ticks 1`] = `74603`;
 
-exports[`UniswapV3Pair #mint after initialization success cases including current price gas first mint of range 1`] = `244615`;
+exports[`UniswapV3Pair gas #burn below current price entire position burn but other positions are using the ticks 1`] = `88242`;
 
-exports[`UniswapV3Pair #mint after initialization success cases including current price gas second mint of different range same tick lower 1`] = `200920`;
+exports[`UniswapV3Pair gas #burn below current price partial position burn 1`] = `101615`;
 
-exports[`UniswapV3Pair #mint after initialization success cases including current price gas second mint of different range same tick upper 1`] = `223372`;
+exports[`UniswapV3Pair gas #mint above current price add to position after some time passes 1`] = `147725`;
 
-exports[`UniswapV3Pair #mint after initialization success cases including current price gas second mint of range for same position 1`] = `164663`;
+exports[`UniswapV3Pair gas #mint above current price add to position existing 1`] = `122127`;
 
-exports[`UniswapV3Pair #mint after initialization success cases including current price gas second mint of same range for different owner 1`] = `179663`;
+exports[`UniswapV3Pair gas #mint above current price new position mint first in range 1`] = `216011`;
 
-exports[`UniswapV3Pair swaps gas 0 for 1 gas first swap ever 1`] = `119280`;
+exports[`UniswapV3Pair gas #mint above current price second position in same range 1`] = `137127`;
 
-exports[`UniswapV3Pair swaps gas 0 for 1 gas first swap in block 1`] = `94925`;
+exports[`UniswapV3Pair gas #mint around current price add to position after some time passes 1`] = `189655`;
 
-exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap 1`] = `119521`;
+exports[`UniswapV3Pair gas #mint around current price add to position existing 1`] = `164057`;
 
-exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap crossing several initialized ticks 1`] = `186964`;
+exports[`UniswapV3Pair gas #mint around current price new position mint first in range 1`] = `338007`;
 
-exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap crossing several initialized ticks after some time passes 1`] = `231986`;
+exports[`UniswapV3Pair gas #mint around current price second position in same range 1`] = `179057`;
 
-exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap crossing several initialized ticks second time 1`] = `138699`;
+exports[`UniswapV3Pair gas #mint below current price add to position after some time passes 1`] = `148254`;
 
-exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap crossing several initialized ticks second time after some time passes 1`] = `205098`;
+exports[`UniswapV3Pair gas #mint below current price add to position existing 1`] = `122656`;
 
-exports[`UniswapV3Pair swaps gas 0 for 1 gas second swap in block 1`] = `94925`;
+exports[`UniswapV3Pair gas #mint below current price new position mint first in range 1`] = `338272`;
 
-exports[`UniswapV3Pair swaps gas 1 for 0 gas first swap ever 1`] = `109327`;
+exports[`UniswapV3Pair gas #mint below current price second position in same range 1`] = `137656`;
 
-exports[`UniswapV3Pair swaps gas 1 for 0 gas first swap in block 1`] = `94327`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `125800`;
 
-exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap 1`] = `112608`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block with no tick movement 1`] = `94830`;
 
-exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap crossing several initialized ticks 1`] = `270253`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `107068`;
 
-exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap crossing several initialized ticks after some time passes 1`] = `276651`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `113157`;
 
-exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap crossing several initialized ticks second time 1`] = `228568`;
+exports[`UniswapV3Pair gas #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `139145`;
 
-exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap crossing several initialized ticks second time after some time passes 1`] = `249966`;
+exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `172712`;
 
-exports[`UniswapV3Pair swaps gas 1 for 0 gas second swap in block 1`] = `94327`;
+exports[`UniswapV3Pair gas #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `232712`;
+
+exports[`UniswapV3Pair gas #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `125800`;
+
+exports[`UniswapV3Pair gas #swapExact0For1 second swap in block with no tick movement 1`] = `94959`;
+
+exports[`UniswapV3Pair gas #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `100679`;
+
+exports[`UniswapV3Pair gas #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `109948`;
+
+exports[`UniswapV3Pair swaps gas 0 for 1 gas first swap ever 1`] = `119356`;
+
+exports[`UniswapV3Pair swaps gas 0 for 1 gas first swap in block 1`] = `95001`;
+
+exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap 1`] = `119597`;
+
+exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap crossing several initialized ticks 1`] = `187040`;
+
+exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap crossing several initialized ticks after some time passes 1`] = `232062`;
+
+exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap crossing several initialized ticks second time 1`] = `138775`;
+
+exports[`UniswapV3Pair swaps gas 0 for 1 gas large swap crossing several initialized ticks second time after some time passes 1`] = `205174`;
+
+exports[`UniswapV3Pair swaps gas 0 for 1 gas second swap in block 1`] = `95001`;
+
+exports[`UniswapV3Pair swaps gas 1 for 0 gas first swap ever 1`] = `109403`;
+
+exports[`UniswapV3Pair swaps gas 1 for 0 gas first swap in block 1`] = `94403`;
+
+exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap 1`] = `112684`;
+
+exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap crossing several initialized ticks 1`] = `270329`;
+
+exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap crossing several initialized ticks after some time passes 1`] = `276727`;
+
+exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap crossing several initialized ticks second time 1`] = `228644`;
+
+exports[`UniswapV3Pair swaps gas 1 for 0 gas large swap crossing several initialized ticks second time after some time passes 1`] = `250042`;
+
+exports[`UniswapV3Pair swaps gas 1 for 0 gas second swap in block 1`] = `94403`;
