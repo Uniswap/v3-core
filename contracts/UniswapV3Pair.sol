@@ -571,7 +571,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                // only recomput tick if the price changed
+                // only recompute tick if the price changed
                 if (state.sqrtPriceX96 != step.sqrtPriceStartX96)
                     state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
             }
