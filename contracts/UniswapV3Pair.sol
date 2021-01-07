@@ -145,7 +145,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // we can short-circuit for the specific case where the target is the block.timestamp, but an interaction
         // updated the oracle before this check, as this might be fairly common and is a worst-case for the binary search
         if (newest.blockTimestamp == target) {
-            Oracle.Observation memory before = oracle[(index == 0 ? Oracle.CARDINALITY : index) - 1];
+            Oracle.Observation memory before = index == 0 ? oracle[Oracle.CARDINALITY - 1] : oracle[index - 1];
             uint32 delta = newest.blockTimestamp - before.blockTimestamp;
             return (
                 int24((newest.tickCumulative - before.tickCumulative) / delta),

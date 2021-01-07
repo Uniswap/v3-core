@@ -62,7 +62,7 @@ library Oracle {
                 continue;
             }
 
-            before = self[((i % CARDINALITY) == 0 ? CARDINALITY : i % CARDINALITY) - 1];
+            before = i % CARDINALITY == 0 ? self[CARDINALITY - 1] : self[i % CARDINALITY - 1];
 
             // we've found the answer!
             if (
