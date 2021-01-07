@@ -8,11 +8,13 @@ contract OracleTest {
     using Oracle for Oracle.Observation[1024];
 
     uint256 public blockTimestamp;
+
     function setBlockTimestamp(uint256 _blockTimestamp) external {
         blockTimestamp = _blockTimestamp;
     }
 
     Oracle.Observation[1024] public oracle;
+
     function setOracle(Oracle.Observation[] calldata _oracle, uint16 offset) external {
         for (uint16 i; i < _oracle.length; i++) {
             oracle[i + offset] = _oracle[i];
@@ -20,11 +22,12 @@ contract OracleTest {
     }
 
     // somewhat fragile, copied from scry in the pair
-    function scry(uint256 _blockTimestamp, uint16 index, int24 tickCurrent, uint128 liquidityCurrent)
-        external
-        view
-        returns (int24 tick, uint128 liquidity)
-    {
+    function scry(
+        uint256 _blockTimestamp,
+        uint16 index,
+        int24 tickCurrent,
+        uint128 liquidityCurrent
+    ) external view returns (int24 tick, uint128 liquidity) {
         require(_blockTimestamp <= blockTimestamp, 'BT'); // can't look into the future
 
         Oracle.Observation memory oldest = oracle[(index + 1) % Oracle.CARDINALITY];
@@ -61,6 +64,5 @@ contract OracleTest {
         ) return (tickCurrent, liquidityCurrent);
 
         return oracle.scry(target, index);
-
     }
 }

@@ -40,11 +40,11 @@ library Oracle {
 
     // this function only works if very specific conditions are true, which must be enforced elsewhere
     // note that even though we're not modifying self, it must be passed by ref to save gas
-    function scry(Observation[CARDINALITY] storage self, uint32 target, uint16 index)
-        internal
-        view
-        returns (int24 tick, uint128 liquidity)
-    {
+    function scry(
+        Observation[CARDINALITY] storage self,
+        uint32 target,
+        uint16 index
+    ) internal view returns (int24 tick, uint128 liquidity) {
         Observation memory before;
         Observation memory atOrAfter;
 
@@ -62,22 +62,21 @@ library Oracle {
                 continue;
             }
 
-            before = self[((i % CARDINALITY) == 0 ? CARDINALITY: i % CARDINALITY) - 1];
+            before = self[((i % CARDINALITY) == 0 ? CARDINALITY : i % CARDINALITY) - 1];
 
             // we've found the answer!
             if (
-                (before.blockTimestamp < target && target <= atOrAfter.blockTimestamp) || (
-                    before.blockTimestamp > atOrAfter.blockTimestamp && (
-                        before.blockTimestamp < target || target <= atOrAfter.blockTimestamp
-                ))
+                (before.blockTimestamp < target && target <= atOrAfter.blockTimestamp) ||
+                (before.blockTimestamp > atOrAfter.blockTimestamp &&
+                    (before.blockTimestamp < target || target <= atOrAfter.blockTimestamp))
             ) break;
 
             uint256 mostRecent = self[r % CARDINALITY].blockTimestamp;
             uint256 atOrAfterAdjusted = atOrAfter.blockTimestamp;
             uint256 targetAdjusted = target;
             if (atOrAfterAdjusted > mostRecent || targetAdjusted > mostRecent) {
-                 if (atOrAfterAdjusted <= mostRecent) atOrAfterAdjusted += 2**32;
-                 if (targetAdjusted <= mostRecent) targetAdjusted += 2**32;
+                if (atOrAfterAdjusted <= mostRecent) atOrAfterAdjusted += 2**32;
+                if (targetAdjusted <= mostRecent) targetAdjusted += 2**32;
             }
 
             // keep searching higher (more recently) if necessary
