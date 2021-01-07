@@ -225,6 +225,123 @@ describe('Oracle', () => {
     })
   })
 
+  describe('non-monotonic observations, unshifted', () => {
+    const start = 4294964296
+    const timestampDelta = 13
+    const tickDelta = 2
+    const liquidityDelta = 3
+
+    const observations = new Array(CARDINALITY)
+      .fill(0)
+      .map(() => {
+        return {
+          blockTimestamp: start,
+          tickCumulative: 0,
+          liquidityCumulative: 0,
+          initialized: true,
+        }
+      })
+      .map((observation, i, arr) => {
+        if (i == 0) return observation
+        observation.blockTimestamp = (arr[i - 1].blockTimestamp + timestampDelta) % 2 ** 32
+        observation.tickCumulative = arr[i - 1].tickCumulative + i * tickDelta * timestampDelta
+        observation.liquidityCumulative = arr[i - 1].liquidityCumulative + i * liquidityDelta * timestampDelta
+        return observation
+      })
+
+    before(async () => {
+      await setOracle(observations)
+      await oracle.setBlockTimestamp(observations[observations.length - 1].blockTimestamp + 2 ** 32 + 1)
+    })
+
+    it('works for +1', async () => {
+      console.log(observations.length)
+
+      const values = await oracle.scry(start + 1, observations.length - 1, 0, 0)
+
+      expect(values.tick).to.be.eq(1 * tickDelta)
+      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+    })
+
+    it('works for +13', async () => {
+      const values = await oracle.scry(start + 13, observations.length - 1, 0, 0)
+
+      expect(values.tick).to.be.eq(1 * tickDelta)
+      expect(values.liquidity).to.be.eq(1 * liquidityDelta)
+    })
+
+    it('works for +14', async () => {
+      const values = await oracle.scry(start + 14, observations.length - 1, 0, 0)
+
+      expect(values.tick).to.be.eq(2 * tickDelta)
+      expect(values.liquidity).to.be.eq(2 * liquidityDelta)
+    })
+
+    it('works for boundary-2', async () => {
+      const values = await oracle.scry(2 ** 32 - 2, observations.length - 1, 0, 0)
+
+      expect(values.tick).to.be.eq(231 * tickDelta)
+      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+    })
+
+    it('works for boundary-1', async () => {
+      const values = await oracle.scry(2 ** 32 - 1, observations.length - 1, 0, 0)
+
+      expect(values.tick).to.be.eq(231 * tickDelta)
+      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+    })
+
+    it('works for boundary+1', async () => {
+      const values = await oracle.scry(0, observations.length - 1, 0, 0)
+
+      expect(values.tick).to.be.eq(231 * tickDelta)
+      expect(values.liquidity).to.be.eq(231 * liquidityDelta)
+    })
+
+    it('works for boundary+5', async () => {
+      const values = await oracle.scry(4, observations.length - 1, 0, 0)
+
+      expect(values.tick).to.be.eq(232 * tickDelta)
+      expect(values.liquidity).to.be.eq(232 * liquidityDelta)
+    })
+
+    it('works for newest-1', async () => {
+      const values = await oracle.scry(
+        observations[observations.length - 1].blockTimestamp - 1,
+        observations.length - 1,
+        0,
+        0
+      )
+
+      expect(values.tick).to.be.eq(1023 * tickDelta)
+      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+    })
+
+    it('works for newest', async () => {
+      const values = await oracle.scry(
+        observations[observations.length - 1].blockTimestamp,
+        observations.length - 1,
+        0,
+        0
+      )
+
+      expect(values.tick).to.be.eq(1023 * tickDelta)
+      expect(values.liquidity).to.be.eq(1023 * liquidityDelta)
+    })
+
+    it('works for newest +1', async () => {
+      const values = await oracle.scry(
+        observations[observations.length - 1].blockTimestamp + 1,
+        observations.length - 1,
+        123,
+        456
+      )
+
+      expect(values.tick).to.be.eq(123)
+      expect(values.liquidity).to.be.eq(456)
+    })
+  })
+
   describe('gas', () => {
     it('scry cost for timestamp equal to the most recent observation', async () => {
       const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)

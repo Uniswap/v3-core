@@ -161,12 +161,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         Oracle.Observation memory newest = oracle[index];
 
-        // we can short-circuit if the target is after the youngest observation and return the current values
-        if (newest.blockTimestamp < target || (newest.blockTimestamp > current && target <= current))
-            return (tickCurrent(), liquidityCurrent);
-
-        // we can also short-circuit for the specific case where the target is the block.timestamp, but an interaction
-        // updated the oracle before the check, as this might be fairly common and is a worst-case for the binary search
+        // we can short-circuit for the specific case where the target is the block.timestamp, but an interaction
+        // updated the oracle before this check, as this might be fairly common and is a worst-case for the binary search
         if (newest.blockTimestamp == target) {
             Oracle.Observation memory before = oracle[(index == 0 ? Oracle.CARDINALITY : index) - 1];
             uint32 delta = newest.blockTimestamp - before.blockTimestamp;
@@ -176,7 +172,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
         }
 
-        return oracle.scry(target, index, current);
+        // we can short-circuit if the target is after the youngest observation and return the current values
+        if (
+            (newest.blockTimestamp < target && target <= current) ||
+            (newest.blockTimestamp > current && target <= current)
+        ) return (tickCurrent(), liquidityCurrent);
+
+        return oracle.scry(target, index);
     }
 
     function setFeeTo(address feeTo_) external override {
