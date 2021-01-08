@@ -22,10 +22,7 @@ contract OracleTest {
     }
 
     // somewhat fragile, copied from scry in the pair
-    function scry(
-        uint256 _blockTimestamp,
-        uint16 index
-    ) external view returns (uint16 indexAtOrAfter) {
+    function scry(uint256 _blockTimestamp, uint16 index) external view returns (uint16 indexAtOrAfter) {
         require(_blockTimestamp <= blockTimestamp, 'BT'); // can't look into the future
 
         Oracle.Observation memory oldest = oracle[(index + 1) % Oracle.CARDINALITY];
