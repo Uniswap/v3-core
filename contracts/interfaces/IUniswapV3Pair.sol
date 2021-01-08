@@ -75,7 +75,6 @@ interface IUniswapV3Pair {
     function tickBitmap(int16) external view returns (uint256);
 
     function feeGrowthGlobal0X128() external view returns (uint256);
-
     function feeGrowthGlobal1X128() external view returns (uint256);
 
     // derived state
@@ -126,7 +125,5 @@ interface IUniswapV3Pair {
     function setFeeTo(address) external;
 
     // allows anyone to collect protocol fees to feeTo
-    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
-        external
-        returns (uint256 amount0, uint256 amount1);
+    function collectProtocol() external returns (uint256 amount0, uint256 amount1);
 }

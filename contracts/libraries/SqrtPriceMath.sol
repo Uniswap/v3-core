@@ -182,30 +182,32 @@ library SqrtPriceMath {
                 : getAmount1Delta(sqrtPX96, sqrtQX96, uint128(liquidity), true).toInt256();
     }
 
-    // ONLY CALL THIS WHEN FEE IS ON
-    function feeToFeesPerUnitWhenFeeIsOn(uint256 feeGrowthGlobalX128, uint256 feeOffsetX128)
+    function feeToFeesPerUnitWhenFeeIsOn(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
         internal
         pure
         returns (uint256)
     {
-        return feeGrowthGlobalX128 / 6 - feeOffsetX128;
+        return feeGrowthGlobalX128Partial / 6 - feeGrowthGlobalX128Offset;
     }
 
-    // ONLY CALL THIS WHEN FEE IS ON
     function feeToFeesWhenFeeIsOn(
-        uint256 feeGrowthGlobal,
-        uint256 feeOffset,
+        uint256 feeGrowthGlobalX128Partial,
+        uint256 feeGrowthGlobalX128Offset,
         uint128 liquidity
     ) internal pure returns (uint256) {
-        return FullMath.mulDiv(feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal, feeOffset), liquidity, FixedPoint128.Q128);
+        return FullMath.mulDiv(
+            feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset),
+            liquidity,
+            FixedPoint128.Q128
+        );
     }
 
-    // ONLY CALL THIS WHEN FEE IS ON
-    function adjustedFeeGrowthGlobalWhenFeeIsOn(uint256 feeGrowthGlobalX128, uint256 feeOffsetX128)
+    function feeGrowthGlobalWhenFeeIsOn(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
         internal
         pure
         returns (uint256)
     {
-        return feeGrowthGlobalX128 - feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobalX128, feeOffsetX128);
+        return feeGrowthGlobalX128Partial -
+            feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset);
     }
 }

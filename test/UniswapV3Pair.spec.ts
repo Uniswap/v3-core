@@ -1126,7 +1126,7 @@ describe('UniswapV3Pair', () => {
     describe('#collect', () => {
       it('returns 0 if no fees', async () => {
         await pair.setFeeTo(other.address)
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(constants.MaxUint256, constants.MaxUint256)
+        const { amount0, amount1 } = await pair.callStatic.collectProtocol()
         expect(amount0).to.be.eq(0)
         expect(amount1).to.be.eq(0)
       })
@@ -1139,7 +1139,7 @@ describe('UniswapV3Pair', () => {
         await mint(wallet.address, minTick, maxTick, 0) // poke to update fees
         await pair.collect(minTick, maxTick, wallet.address, constants.MaxUint256, constants.MaxUint256)
 
-        await expect(pair.collectProtocol(constants.MaxUint256, constants.MaxUint256))
+        await expect(pair.collectProtocol())
           .to.emit(token0, 'Transfer')
           .withArgs(pair.address, other.address, '99999999999999')
       })
