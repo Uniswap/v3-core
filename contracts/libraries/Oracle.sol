@@ -44,13 +44,12 @@ library Oracle {
         Observation[CARDINALITY] storage self,
         uint32 target,
         uint16 index
-    ) internal view returns (int24 tickThen, uint128 liquidityThen) {
-        Observation memory before;
+    ) internal view returns (uint16 i) {
         Observation memory atOrAfter;
+        uint256 beforeBlockTimestamp;
 
         uint16 l = (index + 1) % CARDINALITY;
         uint16 r = l + CARDINALITY - 1;
-        uint16 i;
         while (true) {
             i = (l + r) / 2;
 
@@ -62,13 +61,14 @@ library Oracle {
                 continue;
             }
 
-            before = i % CARDINALITY == 0 ? self[CARDINALITY - 1] : self[(i % CARDINALITY) - 1];
+            beforeBlockTimestamp = (i == CARDINALITY ? self[CARDINALITY - 1] : self[(i % CARDINALITY) - 1])
+                .blockTimestamp;
 
             // we've found the answer!
             if (
-                (before.blockTimestamp < target && target <= atOrAfter.blockTimestamp) ||
-                (before.blockTimestamp > atOrAfter.blockTimestamp &&
-                    (before.blockTimestamp < target || target <= atOrAfter.blockTimestamp))
+                (beforeBlockTimestamp < target && target <= atOrAfter.blockTimestamp) ||
+                (beforeBlockTimestamp > atOrAfter.blockTimestamp &&
+                    (beforeBlockTimestamp < target || target <= atOrAfter.blockTimestamp))
             ) break;
 
             uint256 mostRecent = self[r % CARDINALITY].blockTimestamp;
@@ -79,20 +79,9 @@ library Oracle {
                 if (targetAdjusted <= mostRecent) targetAdjusted += 2**32;
             }
 
-            // keep searching higher (more recently) if necessary
-            if (atOrAfterAdjusted < targetAdjusted) {
-                l = i + 1;
-                continue;
-            }
-
-            // otherwise, the only remaining option is to keep searching lower (less recently)
-            r = i - 1;
+            if (atOrAfterAdjusted < targetAdjusted) l = i + 1;
+            else r = i - 1;
         }
-
-        uint32 delta = atOrAfter.blockTimestamp - before.blockTimestamp;
-        return (
-            int24((atOrAfter.tickCumulative - before.tickCumulative) / delta),
-            uint128((atOrAfter.liquidityCumulative - before.liquidityCumulative) / delta)
-        );
+        i %= CARDINALITY;
     }
 }

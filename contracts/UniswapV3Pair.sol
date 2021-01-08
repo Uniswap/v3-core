@@ -121,7 +121,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function scry(uint256 blockTimestamp) external view override returns (int24 tickThen, uint128 liquidityThen) {
+    function scry(uint256 blockTimestamp) external view override returns (uint16 indexAtOrAfter) {
         require(blockTimestamp <= block.timestamp, 'BT'); // can't look into the future
 
         uint16 index = slot0.index;
@@ -140,24 +140,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // then, ensure that the target is greater than the oldest observation (accounting for wrapping)
         require(oldest.blockTimestamp < target || (oldest.blockTimestamp > current && target <= current), 'OLD');
 
-        Oracle.Observation memory newest = oracle[index];
+        uint256 newestBlockTimestamp = oracle[index].blockTimestamp;
 
         // we can short-circuit for the specific case where the target is the block.timestamp, but an interaction
         // updated the oracle before this check, as this might be fairly common and is a worst-case for the binary search
-        if (newest.blockTimestamp == target) {
-            Oracle.Observation memory before = index == 0 ? oracle[Oracle.CARDINALITY - 1] : oracle[index - 1];
-            uint32 delta = newest.blockTimestamp - before.blockTimestamp;
-            return (
-                int24((newest.tickCumulative - before.tickCumulative) / delta),
-                uint128((newest.liquidityCumulative - before.liquidityCumulative) / delta)
-            );
-        }
+        if (newestBlockTimestamp == target) return index;
+
+        // adjust the newest and target block timestamps
+        uint256 targetAdjusted = target;
+        if (newestBlockTimestamp > current && targetAdjusted <= current) targetAdjusted += 2**32;
+        if (targetAdjusted > current) newestBlockTimestamp += 2**32;
 
         // we can short-circuit if the target is after the youngest observation and return the current values
-        if (
-            (newest.blockTimestamp < target && target <= current) ||
-            (newest.blockTimestamp > current && target <= current)
-        ) return (slot0.tick, liquidity);
+        if (newestBlockTimestamp < targetAdjusted) return Oracle.CARDINALITY; // special return value
 
         return oracle.scry(target, index);
     }

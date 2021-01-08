@@ -82,7 +82,7 @@ interface IUniswapV3Pair {
             bool initialized
         );
 
-    function scry(uint256 blockTimestamp) external view returns (int24 tickThen, uint128 liquidityThen);
+    function scry(uint256 blockTimestamp) external view returns (uint16 indexAtOrAfter);
 
     function tickBitmap(int16) external view returns (uint256);
 

@@ -24,10 +24,8 @@ contract OracleTest {
     // somewhat fragile, copied from scry in the pair
     function scry(
         uint256 _blockTimestamp,
-        uint16 index,
-        int24 tickCurrent,
-        uint128 liquidityCurrent
-    ) external view returns (int24 tickThen, uint128 liquidityThen) {
+        uint16 index
+    ) external view returns (uint16 indexAtOrAfter) {
         require(_blockTimestamp <= blockTimestamp, 'BT'); // can't look into the future
 
         Oracle.Observation memory oldest = oracle[(index + 1) % Oracle.CARDINALITY];
@@ -44,24 +42,19 @@ contract OracleTest {
         // then, ensure that the target is greater than the oldest observation (accounting for wrapping)
         require(oldest.blockTimestamp < target || (oldest.blockTimestamp > current && target <= current), 'OLD');
 
-        Oracle.Observation memory newest = oracle[index];
+        uint256 newestBlockTimestamp = oracle[index].blockTimestamp;
 
         // we can short-circuit for the specific case where the target is the block.timestamp, but an interaction
         // updated the oracle before this check, as this might be fairly common and is a worst-case for the binary search
-        if (newest.blockTimestamp == target) {
-            Oracle.Observation memory before = index == 0 ? oracle[Oracle.CARDINALITY - 1] : oracle[index - 1];
-            uint32 delta = newest.blockTimestamp - before.blockTimestamp;
-            return (
-                int24((newest.tickCumulative - before.tickCumulative) / delta),
-                uint128((newest.liquidityCumulative - before.liquidityCumulative) / delta)
-            );
-        }
+        if (newestBlockTimestamp == target) return index;
+
+        // adjust the newest and target block timestamps
+        uint256 targetAdjusted = target;
+        if (newestBlockTimestamp > current && targetAdjusted <= current) targetAdjusted += 2**32;
+        if (targetAdjusted > current) newestBlockTimestamp += 2**32;
 
         // we can short-circuit if the target is after the youngest observation and return the current values
-        if (
-            (newest.blockTimestamp < target && target <= current) ||
-            (newest.blockTimestamp > current && target <= current)
-        ) return (tickCurrent, liquidityCurrent);
+        if (newestBlockTimestamp < targetAdjusted) return Oracle.CARDINALITY; // special return value
 
         return oracle.scry(target, index);
     }
