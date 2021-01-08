@@ -76,8 +76,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // current in-range liquidity
     uint128 public override liquidity;
-
-    address public override feeTo;
+    // the current protocol fee, applied as (1 / x)% of fees earned
+    uint8 public override feeProtocol;
 
     // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;
@@ -100,6 +100,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlockedAndPriceBit = uapb ^ UNLOCKED_BIT;
         _;
         slot0.unlockedAndPriceBit = uapb;
+    }
+
+    modifier onlyFactoryOwner() {
+        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
+        _;
     }
 
     // throws if the pair is not initialized, which is implicitly used throughout to gatekeep various functions
@@ -137,10 +142,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tickUpper <= maxTick, 'TUM');
     }
 
-    function setFeeTo(address feeTo_) external override {
-        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
-        emit FeeToChanged(feeTo, feeTo_);
-        feeTo = feeTo_;
+    function setFeeProtocol(uint8 feeProtocol_) external override onlyFactoryOwner {
+        require(feeProtocol_ == 0 || (feeProtocol_ <= 10 && feeProtocol_ >= 5), 'FP');
+        emit FeeProtocolChanged(feeProtocol, feeProtocol_);
+        feeProtocol = feeProtocol_;
     }
 
     function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
@@ -228,13 +233,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 FixedPoint128.Q128
             );
 
-        // collect protocol fee, if on
-        if (feeTo != address(0)) {
-            uint256 fee0 = feesOwed0 / 6;
+        // collect protocol fee
+        uint8 _feeProtocol = feeProtocol;
+        if (_feeProtocol > 0) {
+            uint256 fee0 = feesOwed0 / _feeProtocol;
             feesOwed0 -= fee0;
-            feeToFees0 += fee0;
-
-            uint256 fee1 = feesOwed1 / 6;
+            feeToFees0 += fee0;            
+            uint256 fee1 = feesOwed1 / _feeProtocol;
             feesOwed1 -= fee1;
             feeToFees1 += fee1;
         }
@@ -625,10 +630,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
+    function collectProtocol(address recipient, uint256 amount0Requested, uint256 amount1Requested)
         external
         override
         lockNoPriceMovement
+        onlyFactoryOwner
         returns (uint256 amount0, uint256 amount1)
     {
         amount0 = amount0Requested > feeToFees0 ? feeToFees0 : amount0Requested;
@@ -636,13 +642,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         if (amount0 > 0) {
             feeToFees0 -= amount0;
-            TransferHelper.safeTransfer(token0, feeTo, amount0);
+            TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
             feeToFees1 -= amount1;
-            TransferHelper.safeTransfer(token1, feeTo, amount1);
+            TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
-        emit CollectProtocol(amount0, amount1);
+        emit CollectProtocol(recipient, amount0, amount1);
     }
 }
