@@ -238,7 +238,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (_feeProtocol > 0) {
             uint256 fee0 = feesOwed0 / _feeProtocol;
             feesOwed0 -= fee0;
-            feeToFees0 += fee0;            
+            feeToFees0 += fee0;
             uint256 fee1 = feesOwed1 / _feeProtocol;
             feesOwed1 -= fee1;
             feeToFees1 += fee1;
@@ -630,13 +630,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function collectProtocol(address recipient, uint256 amount0Requested, uint256 amount1Requested)
-        external
-        override
-        lockNoPriceMovement
-        onlyFactoryOwner
-        returns (uint256 amount0, uint256 amount1)
-    {
+    function collectProtocol(
+        address recipient,
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external override lockNoPriceMovement onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
         amount0 = amount0Requested > feeToFees0 ? feeToFees0 : amount0Requested;
         amount1 = amount1Requested > feeToFees1 ? feeToFees1 : amount1Requested;
 
