@@ -696,22 +696,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // not gas-optimized yet but easily could be
-    function collect0() external override lockNoPriceMovement returns (uint256 amount) {
-        amount = this.feeToFees0();
-        uint256 amountPerUnit = this.feeToFeesPerUnit0();
-        feeGrowthGlobal0X128 = this.adjustedFeeGrowthGlobal0X128();
-        feeOffset0X128 += amountPerUnit;
+    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
+        external
+        override
+        lockNoPriceMovement
+        returns (uint256 amount0, uint256 amount1)
+    {
+        amount0 = feeToFees0();
+        amount1 = feeToFees1();
 
-        if (amount > 0) TransferHelper.safeTransfer(token0, feeTo, amount);
-    }
-
-    // not gas-optimized yet but easily could be
-    function collect1() external override lockNoPriceMovement returns (uint256 amount) {
-        amount = feeToFees1();
-        uint256 amountPerUnit = feeToFeesPerUnit1();
+        uint256 amountPerUnit0 = feeToFeesPerUnit0();
+        uint256 amountPerUnit1 = feeToFeesPerUnit1();
+        feeGrowthGlobal0X128 = adjustedFeeGrowthGlobal0X128();
         feeGrowthGlobal1X128 = adjustedFeeGrowthGlobal1X128();
-        feeOffset1X128 += amountPerUnit;
 
-        if (amount > 0) TransferHelper.safeTransfer(token1, feeTo, amount);
+        feeOffset0X128 += amountPerUnit0;
+        feeOffset1X128 += amountPerUnit1;
+
+        // todo: limit by amount0 requested
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, feeTo, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
     }
 }
