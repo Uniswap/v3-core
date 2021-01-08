@@ -13,7 +13,7 @@ const UNINITIALIZED_OBSERVATION = {
   initialized: false,
 }
 
-describe.only('Oracle', () => {
+describe('Oracle', () => {
   let oracle: OracleTest
 
   async function setOracle(observations: any) {

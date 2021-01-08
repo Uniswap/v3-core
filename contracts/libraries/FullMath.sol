@@ -38,6 +38,7 @@ library FullMath {
         uint256 d
     ) internal pure returns (uint256) {
         (uint256 l, uint256 h) = fullMul(x, y);
+        require(h < d, 'FMD');
 
         uint256 mm = mulmod(x, y, d);
         if (mm > l) h -= 1;
@@ -45,7 +46,6 @@ library FullMath {
 
         if (h == 0) return l / d;
 
-        require(h < d, 'FMD');
         return fullDiv(l, h, d);
     }
 }
