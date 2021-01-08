@@ -75,6 +75,7 @@ interface IUniswapV3Pair {
     function tickBitmap(int16) external view returns (uint256);
 
     function feeGrowthGlobal0X128() external view returns (uint256);
+
     function feeGrowthGlobal1X128() external view returns (uint256);
 
     // derived state

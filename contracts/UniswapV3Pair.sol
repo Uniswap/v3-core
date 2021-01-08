@@ -108,21 +108,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function feeGrowthGlobal0X128(uint256 _feeGrowthGlobal0X128Partial) private view returns (uint256) {
-        return feeTo == address(0)
-            ? _feeGrowthGlobal0X128Partial
-            : SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(
-                _feeGrowthGlobal0X128Partial,
-                feeGrowthGlobal0X128Offset
-            );
+        return
+            feeTo == address(0)
+                ? _feeGrowthGlobal0X128Partial
+                : SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(_feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
     }
 
     function feeGrowthGlobal1X128(uint256 _feeGrowthGlobal1X128Partial) private view returns (uint256) {
-        return feeTo == address(0)
-            ? _feeGrowthGlobal1X128Partial
-            : SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(
-                _feeGrowthGlobal1X128Partial,
-                feeGrowthGlobal1X128Offset
-            );
+        return
+            feeTo == address(0)
+                ? _feeGrowthGlobal1X128Partial
+                : SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(_feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
     }
 
     function feeToFees0() public view override returns (uint256) {
@@ -563,21 +559,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     if (zeroForOne) require(step.tickNext > minTick, 'MIN');
                     else require(step.tickNext < maxTick, 'MAX');
 
-                    uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128(zeroForOne
-                        ? state.feeGrowthGlobalX128Partial
-                        : feeGrowthGlobal0X128Partial
-                    );
-                    uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128(zeroForOne
-                        ? feeGrowthGlobal1X128Partial
-                        : state.feeGrowthGlobalX128Partial
-                    );
+                    uint256 _feeGrowthGlobal0X128 =
+                        feeGrowthGlobal0X128(
+                            zeroForOne ? state.feeGrowthGlobalX128Partial : feeGrowthGlobal0X128Partial
+                        );
+                    uint256 _feeGrowthGlobal1X128 =
+                        feeGrowthGlobal1X128(
+                            zeroForOne ? feeGrowthGlobal1X128Partial : state.feeGrowthGlobalX128Partial
+                        );
 
-                    int128 liquidityDelta = ticks.cross(
-                        step.tickNext,
-                        _feeGrowthGlobal0X128,
-                        _feeGrowthGlobal1X128,
-                        params.blockTimestamp
-                    );
+                    int128 liquidityDelta =
+                        ticks.cross(step.tickNext, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128, params.blockTimestamp);
 
                     // update liquidity, subi from right to left, addi from left to right
                     if (zeroForOne) state.liquidity = uint128(state.liquidity.subi(liquidityDelta));
@@ -670,26 +662,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // not gas-optimized yet but easily could be
-    function collectProtocol()
-        external
-        override
-        lockNoPriceMovement
-        returns (uint256 amount0, uint256 amount1)
-    {
+    function collectProtocol() external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
         require(feeTo != address(0));
 
         amount0 = feeToFees0();
         amount1 = feeToFees1();
 
-        uint256 amountPerUnit0 = SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(
-            feeGrowthGlobal0X128Partial,
-            feeGrowthGlobal0X128Offset
-        );
-        uint256 amountPerUnit1 = SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(
-            feeGrowthGlobal1X128Partial,
-            feeGrowthGlobal1X128Offset
-        );
-        
+        uint256 amountPerUnit0 =
+            SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
+        uint256 amountPerUnit1 =
+            SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
+
         feeGrowthGlobal0X128Partial = SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(
             feeGrowthGlobal0X128Partial,
             feeGrowthGlobal0X128Offset

@@ -195,11 +195,12 @@ library SqrtPriceMath {
         uint256 feeGrowthGlobalX128Offset,
         uint128 liquidity
     ) internal pure returns (uint256) {
-        return FullMath.mulDiv(
-            feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset),
-            liquidity,
-            FixedPoint128.Q128
-        );
+        return
+            FullMath.mulDiv(
+                feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset),
+                liquidity,
+                FixedPoint128.Q128
+            );
     }
 
     function feeGrowthGlobalWhenFeeIsOn(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
@@ -207,7 +208,8 @@ library SqrtPriceMath {
         pure
         returns (uint256)
     {
-        return feeGrowthGlobalX128Partial -
+        return
+            feeGrowthGlobalX128Partial -
             feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset);
     }
 }
