@@ -19,6 +19,7 @@ jobs:
           - SqrtPriceMathEchidnaTest
           - SwapMathEchidnaTest
           - SqrtTickMathEchidnaTest
+          - TickEchidnaTest
 
     steps:
       - uses: actions/checkout@v2

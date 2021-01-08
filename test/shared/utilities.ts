@@ -6,7 +6,11 @@ import { UniswapV3Pair } from '../../typechain/UniswapV3Pair'
 
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
-export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
+export const getMaxLiquidityPerTick = (tickSpacing: number) =>
+  BigNumber.from(2)
+    .pow(128)
+    .sub(1)
+    .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
 
 export enum FeeAmount {
   LOW = 600,
@@ -28,7 +32,6 @@ export function getCreate2Address(
   factoryAddress: string,
   [tokenA, tokenB]: [string, string],
   fee: number,
-  tickSpacing: number,
   bytecode: string
 ): string {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
@@ -76,6 +79,8 @@ export type MintFunction = (
 ) => Promise<ContractTransaction>
 export type InitializeFunction = (price: BigNumberish) => Promise<ContractTransaction>
 export interface PairFunctions {
+  swapToLowerPrice: SwapFunction
+  swapToHigherPrice: SwapFunction
   swapExact0For1: SwapFunction
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
@@ -94,15 +99,27 @@ export function createPairFunctions({
   token1: TestERC20
   pair: UniswapV3Pair
 }): PairFunctions {
-  /**
-   * Execute a swap against the pair of the input token in the input amount, sending proceeds to the given to address
-   */
-  async function _swap(
+  async function swapToSqrtPrice(
+    inputToken: Contract,
+    targetPrice: BigNumberish,
+    to: Wallet | string
+  ): Promise<ContractTransaction> {
+    const method = inputToken === token0 ? swapTarget.swapToLowerSqrtPrice : swapTarget.swapToHigherSqrtPrice
+
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+
+    const toAddress = typeof to === 'string' ? to : to.address
+
+    return method(pair.address, targetPrice, toAddress)
+  }
+
+  async function swap(
     inputToken: Contract,
     [amountIn, amountOut]: [BigNumberish, BigNumberish],
     to: Wallet | string
   ): Promise<ContractTransaction> {
     const exactInput = amountOut === 0
+
     const method =
       inputToken === token0
         ? exactInput
@@ -116,26 +133,34 @@ export function createPairFunctions({
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return await method(pair.address, exactInput ? amountIn : amountOut, toAddress)
+    return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
+  }
+
+  const swapToLowerPrice: SwapFunction = (sqrtPriceX96, to) => {
+    return swapToSqrtPrice(token0, sqrtPriceX96, to)
+  }
+
+  const swapToHigherPrice: SwapFunction = (sqrtPriceX96, to) => {
+    return swapToSqrtPrice(token1, sqrtPriceX96, to)
   }
 
   const swapExact0For1: SwapFunction = (amount, to) => {
-    return _swap(token0, [amount, 0], to)
+    return swap(token0, [amount, 0], to)
   }
 
   const swap0ForExact1: SwapFunction = (amount, to) => {
-    return _swap(token0, [0, amount], to)
+    return swap(token0, [0, amount], to)
   }
 
   const swapExact1For0: SwapFunction = (amount, to) => {
-    return _swap(token1, [amount, 0], to)
+    return swap(token1, [amount, 0], to)
   }
 
   const swap1ForExact0: SwapFunction = (amount, to) => {
-    return _swap(token1, [0, amount], to)
+    return swap(token1, [0, amount], to)
   }
 
-  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
+  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
@@ -147,5 +172,14 @@ export function createPairFunctions({
     return swapTarget.initialize(pair.address, price)
   }
 
-  return { swapExact0For1, swap0ForExact1, swapExact1For0, swap1ForExact0, mint, initialize }
+  return {
+    swapToLowerPrice,
+    swapToHigherPrice,
+    swapExact0For1,
+    swap0ForExact1,
+    swapExact1For0,
+    swap1ForExact0,
+    mint,
+    initialize,
+  }
 }
