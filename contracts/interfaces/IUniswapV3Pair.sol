@@ -84,10 +84,6 @@ interface IUniswapV3Pair {
 
     function feeToFees1() external view returns (uint256);
 
-    function feeToFeesPerUnit0() external view returns (uint256);
-
-    function feeToFeesPerUnit1() external view returns (uint256);
-
     function tickCurrent() external view returns (int24);
 
     // initialize the pair

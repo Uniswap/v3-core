@@ -103,16 +103,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlockedAndPriceBit = uapb;
     }
 
-    function feeToFeesPerUnit0() public view override returns (uint256) {
-        return
-            feeTo != address(0) ? SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal0X128, feeOffset0X128) : 0;
-    }
-
-    function feeToFeesPerUnit1() public view override returns (uint256) {
-        return
-            feeTo != address(0) ? SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal0X128, feeOffset0X128) : 0;
-    }
-
     function feeToFees0() public view override returns (uint256) {
         return
             feeTo != address(0)
@@ -124,20 +114,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return
             feeTo != address(0)
                 ? SqrtPriceMath.feeToFeesWhenFeeIsOn(feeGrowthGlobal1X128, feeOffset1X128, liquidity)
-                : 0;
-    }
-
-    function adjustedFeeGrowthGlobal0X128() public view returns (uint256) {
-        return
-            feeTo != address(0)
-                ? SqrtPriceMath.adjustedFeeGrowthGlobalWhenFeeIsOn(feeGrowthGlobal0X128, feeOffset0X128)
-                : 0;
-    }
-
-    function adjustedFeeGrowthGlobal1X128() public view returns (uint256) {
-        return
-            feeTo != address(0)
-                ? SqrtPriceMath.adjustedFeeGrowthGlobalWhenFeeIsOn(feeGrowthGlobal1X128, feeOffset1X128)
                 : 0;
     }
 
@@ -383,8 +359,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount
     ) external override lockNoPriceMovement returns (uint256 amount0, uint256 amount1) {
-        require(amount > 0, 'BA');
-        require(amount < 2**127, 'BA');
+        require(amount > 0 && amount < 2**127, 'BA');
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
@@ -702,18 +677,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
         lockNoPriceMovement
         returns (uint256 amount0, uint256 amount1)
     {
+        require(feeTo != address(0));
+
         amount0 = feeToFees0();
         amount1 = feeToFees1();
 
-        uint256 amountPerUnit0 = feeToFeesPerUnit0();
-        uint256 amountPerUnit1 = feeToFeesPerUnit1();
-        feeGrowthGlobal0X128 = adjustedFeeGrowthGlobal0X128();
-        feeGrowthGlobal1X128 = adjustedFeeGrowthGlobal1X128();
+        uint256 amountPerUnit0 = SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal0X128, feeOffset0X128);
+        uint256 amountPerUnit1 = SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal1X128, feeOffset1X128);
+
+        feeGrowthGlobal0X128 = SqrtPriceMath.adjustedFeeGrowthGlobalWhenFeeIsOn(feeGrowthGlobal0X128, feeOffset0X128);
+        feeGrowthGlobal1X128 = SqrtPriceMath.adjustedFeeGrowthGlobalWhenFeeIsOn(feeGrowthGlobal1X128, feeOffset1X128);
 
         feeOffset0X128 += amountPerUnit0;
         feeOffset1X128 += amountPerUnit1;
 
-        // todo: limit by amount0 requested
+        // todo: limit by amounts requested
         if (amount0 > 0) TransferHelper.safeTransfer(token0, feeTo, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, feeTo, amount1);
     }
