@@ -88,13 +88,13 @@ describe('UniswapV3Pair', () => {
     const createPairWrapped = async (
       amount: number,
       spacing: number,
-      firstToken = token0,
-      secondToken = token1
+      firstToken: TestERC20,
+      secondToken: TestERC20
     ): Promise<[MockTimeUniswapV3Pair, any]> => {
       const pair = await createPair(amount, spacing, firstToken, secondToken)
       const pairFunctions = createPairFunctions({
-        token0,
-        token1,
+        token0: firstToken,
+        token1: secondToken,
         swapTarget: swapTargetCallee,
         pair,
       })
@@ -106,7 +106,7 @@ describe('UniswapV3Pair', () => {
     ;[pair1, pair1Functions] = await createPairWrapped(feeAmount, tickSpacing, token1, token2)
   })
 
-  it('constructor initializes immutables', async () => {
+  it.only('constructor initializes immutables', async () => {
     expect(await pair0.factory()).to.eq(factory.address)
     expect(await pair0.token0()).to.eq(token0.address)
     expect(await pair0.token1()).to.eq(token1.address)
@@ -119,12 +119,15 @@ describe('UniswapV3Pair', () => {
     await pair0Functions.initialize(encodePriceSqrt(1, 1))
     await pair1Functions.initialize(encodePriceSqrt(1, 1))
 
+    //await pair0Functions.token0.approve(swapTargetRouter.address, constants.MaxUint256)
+
+    //expect('approve').to.be.calledOnContract(pair0Functions.token0);
     
-    const { swap0ForExact2 } = createMultiPairFunctions({ token0: token0, swapTarget: swapTargetRouter, pair0, pair1 })
+    //const { swap0ForExact2 } = createMultiPairFunctions({ token0: pair0Functions.token0, swapTarget: swapTargetRouter, pair0, pair1 })
 
     //await pair0.token0.approve(swapTargetRouter.address, constants.MaxUint256)
 
-    await swap0ForExact2(10, walletAddress)
+   // await swap0ForExact2(10, walletAddress)
 
 
 

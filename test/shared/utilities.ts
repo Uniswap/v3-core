@@ -110,6 +110,7 @@ export function createPairFunctions({
   token1: TestERC20
   pair: UniswapV3Pair
 }): PairFunctions {
+
   async function swapToSqrtPrice(
     inputToken: Contract,
     targetPrice: BigNumberish,
@@ -205,11 +206,12 @@ export function createMultiPairFunctions({
   pair0,
   pair1,
 }: {
-  token0: Contract,
+  token0: TestERC20,
   swapTarget: TestUniswapV3Router
   pair0: UniswapV3Pair
   pair1: UniswapV3Pair
 }): MultiPairFunctions {
+
   async function swap0ForExact2(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
    
     const method = swapTarget.swapAForC
