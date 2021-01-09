@@ -92,6 +92,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         int256 amount1Out,
         address recipient
     ) internal {
+        console.log('starting second swap');
         IUniswapV3Pair(pairs[0]).swap(true, -amount1Out, 0, pairs[1], abi.encode(pairs[0], recipient)); //swap 0 for exact 1
                                                                                                         // possible to slice array for last position, then adjust towards zero by one instance on each internal callback, and as a result pass a arbitrary length of pairs for >3 token multihop?
     }
@@ -139,7 +140,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         uint256 amount0Owed,
         uint256 amount1Owed,
         bytes calldata data
-    ) external override {
+    ) external {
         address sender = abi.decode(data, (address));
 
         emit MintCallback(amount0Owed, amount1Owed);

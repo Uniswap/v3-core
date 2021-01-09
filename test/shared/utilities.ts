@@ -1,5 +1,6 @@
 import bn from 'bignumber.js'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
+import { Test } from 'mocha'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
@@ -69,11 +70,11 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
 
-export type MultiSwapFunction = (
-  pairs: [Contract, Contract],
-  amount: BigNumberish,
-  to: Wallet | string
-) => Promise<ContractTransaction>
+// export type MultiSwapFunction = (
+//   pairs: [Contract, Contract],
+//   amount: BigNumberish,
+//   to: Wallet | string
+// ) => Promise<ContractTransaction>
 
 export type StaticSwapFunction = (
   amount: BigNumberish,
@@ -139,7 +140,7 @@ export function createPairFunctions({
         ? swapTarget.swapExact1For0
         : swapTarget.swap1ForExact0
 
-    await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
+   await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
@@ -204,15 +205,17 @@ export function createMultiPairFunctions({
   pair0,
   pair1,
 }: {
-  token0: TestERC20
+  token0: Contract,
   swapTarget: TestUniswapV3Router
   pair0: UniswapV3Pair
   pair1: UniswapV3Pair
 }): MultiPairFunctions {
   async function swap0ForExact2(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+   
     const method = swapTarget.swapAForC
-
+  
     await token0.approve(swapTarget.address, constants.MaxUint256)
+   // await pair0Functions.token0.approve(swapTargetRouter, constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 

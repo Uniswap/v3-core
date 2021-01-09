@@ -1,5 +1,5 @@
 import { ethers, waffle } from 'hardhat'
-import { BigNumber, BigNumberish, constants, Wallet } from 'ethers'
+import { BigNumber, BigNumberish, constants, Contract, Wallet } from 'ethers'
 import { TestERC20 } from '../typechain/TestERC20'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { MockTimeUniswapV3Pair } from '../typechain/MockTimeUniswapV3Pair'
@@ -19,7 +19,7 @@ import {
   TICK_SPACINGS,
   createPairFunctions,
   SwapFunction,
-  MultiSwapFunction,
+ // MultiSwapFunction,
   MintFunction,
   InitializeFunction,
   PairFunctions,
@@ -57,8 +57,8 @@ describe('UniswapV3Pair', () => {
   let swapTargetCallee: TestUniswapV3Callee
   let swapTargetRouter: TestUniswapV3Router
 
-  let pair0Functions: any
-  let pair1Functions: any
+  let pair0Functions: Contract
+  let pair1Functions: Contract
 
   let swapToLowerPrice: SwapFunction
   let swapToHigherPrice: SwapFunction
@@ -66,7 +66,7 @@ describe('UniswapV3Pair', () => {
   let swap0ForExact1: SwapFunction
   let swapExact1For0: SwapFunction
   let swap1ForExact0: SwapFunction
-  let swapAForC: MultiSwapFunction
+  //let swapAForC: MultiSwapFunction
 
   let mint: MintFunction
   let initialize: InitializeFunction
@@ -103,7 +103,7 @@ describe('UniswapV3Pair', () => {
 
     // default to the 30 bips pair
     ;[pair0, pair0Functions] = await createPairWrapped(feeAmount, tickSpacing, token0, token1)
-    ;[pair1, pair1Functions] = await createPairWrapped(feeAmount, tickSpacing, token0, token1)
+    ;[pair1, pair1Functions] = await createPairWrapped(feeAmount, tickSpacing, token1, token2)
   })
 
   it('constructor initializes immutables', async () => {
@@ -117,10 +117,17 @@ describe('UniswapV3Pair', () => {
 
   it.only('blah', async () => {
     await pair0Functions.initialize(encodePriceSqrt(1, 1))
+    await pair1Functions.initialize(encodePriceSqrt(1, 1))
 
-    const { swap0ForExact2 } = await createMultiPairFunctions({ token0, swapTarget: swapTargetRouter, pair0, pair1 })
+    
+    const { swap0ForExact2 } = createMultiPairFunctions({ token0: token0, swapTarget: swapTargetRouter, pair0, pair1 })
 
-    await swap0ForExact2(1000, walletAddress)
+    //await pair0.token0.approve(swapTargetRouter.address, constants.MaxUint256)
+
+    await swap0ForExact2(10, walletAddress)
+
+
+
   })
 
   // describe('#initialize', () => {
