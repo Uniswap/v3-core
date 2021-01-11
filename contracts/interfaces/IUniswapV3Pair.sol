@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.7.5;
+pragma abicoder v2;
+
+import '../libraries/Oracle.sol';
 
 interface IUniswapV3Pair {
     event Initialized(uint160 sqrtPrice, int24 tick);
@@ -72,15 +75,10 @@ interface IUniswapV3Pair {
 
     function liquidity() external view returns (uint128);
 
-    function observations(uint256)
+    function getObservations(uint16[] calldata indices)
         external
         view
-        returns (
-            uint32 blockTimestamp,
-            int56 tickCumulative,
-            uint160 liquidityCumulative,
-            bool initialized
-        );
+        returns (Oracle.Observation[] memory observations);
 
     function scry(uint256 blockTimestamp) external view returns (uint16 indexAtOrAfter);
 

@@ -24,18 +24,16 @@ library Oracle {
     ) internal returns (uint16 indexNext) {
         Observation memory last = self[index];
 
-        if (last.blockTimestamp != blockTimestamp) {
-            indexNext = (index + 1) % CARDINALITY;
-            uint32 timestampDelta = blockTimestamp - last.blockTimestamp;
-            self[indexNext] = Observation({
-                blockTimestamp: blockTimestamp,
-                tickCumulative: last.tickCumulative + int56(tick) * timestampDelta,
-                liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * timestampDelta,
-                initialized: true
-            });
-        } else {
-            indexNext = index;
-        }
+        if (last.blockTimestamp == blockTimestamp) return index;
+
+        indexNext = (index + 1) % CARDINALITY;
+        uint32 timestampDelta = blockTimestamp - last.blockTimestamp;
+        self[indexNext] = Observation({
+            blockTimestamp: blockTimestamp,
+            tickCumulative: last.tickCumulative + int56(tick) * timestampDelta,
+            liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * timestampDelta,
+            initialized: true
+        });
     }
 
     // this function only works if very specific conditions are true, which must be enforced elsewhere
@@ -82,6 +80,7 @@ library Oracle {
             if (atOrAfterAdjusted < targetAdjusted) l = i + 1;
             else r = i - 1;
         }
+
         i %= CARDINALITY;
     }
 }

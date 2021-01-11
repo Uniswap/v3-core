@@ -78,7 +78,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint128 public override liquidity;
 
     // see Oracle.sol
-    Oracle.Observation[1024] public override observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
+    Oracle.Observation[1024] private observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
 
     address public override feeTo;
 
@@ -119,6 +119,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     // overridden for tests
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
+    }
+
+    function getObservations(uint16[] calldata indices) external view override returns (Oracle.Observation[] memory o) {
+        o = new Oracle.Observation[](indices.length);
+        for (uint16 i; i < indices.length; i++) o[i] = observations[indices[i]];
     }
 
     function scry(uint256 blockTimestamp) external view override returns (uint16 indexAtOrAfter) {
