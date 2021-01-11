@@ -423,12 +423,12 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
-        expect(await pair.feeToFees0()).to.eq('49999999999999')
-        expect(await pair.feeToFees1()).to.eq('4999999999999')
+        expect(await pair.protocolFees0()).to.eq('49999999999999')
+        expect(await pair.protocolFees1()).to.eq('4999999999999')
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
-        expect(await pair.feeToFees0()).to.eq('49999999999999')
-        expect(await pair.feeToFees1()).to.eq('4999999999999')
+        expect(await pair.protocolFees0()).to.eq('49999999999999')
+        expect(await pair.protocolFees1()).to.eq('4999999999999')
       })
 
       it('positive liquidity mint does not affect protocol fee', async () => {
@@ -438,12 +438,12 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
-        expect(await pair.feeToFees0()).to.eq('49999999999999')
-        expect(await pair.feeToFees1()).to.eq('4999999999999')
+        expect(await pair.protocolFees0()).to.eq('49999999999999')
+        expect(await pair.protocolFees1()).to.eq('4999999999999')
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(10))
-        expect(await pair.feeToFees0()).to.eq('49999999999999')
-        expect(await pair.feeToFees1()).to.eq('4999999999999')
+        expect(await pair.protocolFees0()).to.eq('49999999999999')
+        expect(await pair.protocolFees1()).to.eq('4999999999999')
       })
 
       it('0 liquidity mint can poke existing position before protocol fee is turned on to protect fees', async () => {
@@ -451,17 +451,17 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
-        expect(await pair.feeToFees0()).to.eq(0)
-        expect(await pair.feeToFees1()).to.eq(0)
+        expect(await pair.protocolFees0()).to.eq(0)
+        expect(await pair.protocolFees1()).to.eq(0)
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
-        expect(await pair.feeToFees0()).to.eq(0)
-        expect(await pair.feeToFees1()).to.eq(0)
+        expect(await pair.protocolFees0()).to.eq(0)
+        expect(await pair.protocolFees1()).to.eq(0)
 
         await pair.setFeeProtocol(6)
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
-        expect(await pair.feeToFees0()).to.eq(0)
-        expect(await pair.feeToFees1()).to.eq(0)
+        expect(await pair.protocolFees0()).to.eq(0)
+        expect(await pair.protocolFees1()).to.eq(0)
       })
 
       it('0 liquidity mint is not allowed on uninitialized position', async () => {
@@ -1206,8 +1206,8 @@ describe('UniswapV3Pair', () => {
       expect(token1FeesNext).to.eq(0)
 
       // the fee to fees account for fees even though it was not poked
-      expect(await pair.feeToFees0()).to.be.eq('199999999999999')
-      expect(await pair.feeToFees1()).to.be.eq(0)
+      expect(await pair.protocolFees0()).to.be.eq('199999999999999')
+      expect(await pair.protocolFees1()).to.be.eq(0)
 
       await mint(wallet.address, minTick, maxTick, 0) // poke to update fees
       await expect(pair.collect(minTick, maxTick, wallet.address, constants.MaxUint256, constants.MaxUint256))
@@ -1215,8 +1215,8 @@ describe('UniswapV3Pair', () => {
         .withArgs(pair.address, wallet.address, '499999999999999')
 
       // unaffected
-      expect(await pair.feeToFees0()).to.be.eq('199999999999999')
-      expect(await pair.feeToFees1()).to.be.eq(0)
+      expect(await pair.protocolFees0()).to.be.eq('199999999999999')
+      expect(await pair.protocolFees1()).to.be.eq(0)
     })
   })
 

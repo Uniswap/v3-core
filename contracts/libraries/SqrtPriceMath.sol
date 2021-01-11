@@ -190,14 +190,4 @@ library SqrtPriceMath {
     ) internal pure returns (uint256) {
         return feeGrowthGlobalX128Partial / feeProtocol - feeGrowthGlobalX128Offset;
     }
-
-    function feeGrowthGlobalX128(
-        uint256 feeGrowthGlobalX128Partial,
-        uint256 feeGrowthGlobalX128Offset,
-        uint8 feeProtocol
-    ) internal pure returns (uint256) {
-        return
-            feeGrowthGlobalX128Partial -
-            feeGrowthProtocolX128(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset, feeProtocol);
-    }
 }

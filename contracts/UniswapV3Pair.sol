@@ -88,8 +88,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // components for calculating fee growth per unit of liquidity
     uint256 private feeGrowthGlobal0X128Partial;
-    uint256 private feeGrowthGlobal0X128Offset;
     uint256 private feeGrowthGlobal1X128Partial;
+    uint256 private feeGrowthGlobal0X128Offset;
     uint256 private feeGrowthGlobal1X128Offset;
 
     mapping(int24 => Tick.Info) public ticks;
@@ -122,14 +122,39 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (uint256)
     {
-        return
-            slot1.feeProtocol == 0
-                ? feeGrowthGlobalX128Partial
-                : SqrtPriceMath.feeGrowthGlobalX128(
+        return slot1.feeProtocol == 0
+            ? feeGrowthGlobalX128Partial
+            : feeGrowthGlobalX128Partial - SqrtPriceMath.feeGrowthProtocolX128(
+                feeGrowthGlobalX128Partial,
+                feeGrowthGlobalX128Offset,
+                slot1.feeProtocol
+            );
+    }
+
+    function protocolFees0() public view override returns (uint256) {
+        return protocolFees(feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
+    }
+
+    function protocolFees1() public view override returns (uint256) {
+        return protocolFees(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
+    }
+
+    function protocolFees(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
+        private
+        view
+        returns (uint256)
+    {
+        return slot1.feeProtocol == 0
+            ? 0
+            : FullMath.mulDiv(
+                SqrtPriceMath.feeGrowthProtocolX128(
                     feeGrowthGlobalX128Partial,
                     feeGrowthGlobalX128Offset,
                     slot1.feeProtocol
-                );
+                ),
+                slot1.liquidity,
+                FixedPoint128.Q128
+            );
     }
 
     // throws if the pair is not initialized, which is implicitly used throughout to gatekeep various functions
@@ -662,31 +687,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
-    function feeToFees0() public view override returns (uint256) {
-        return slot1.feeProtocol == 0 ? 0 : feeToFees(feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
-    }
-
-    function feeToFees1() public view override returns (uint256) {
-        return slot1.feeProtocol == 0 ? 0 : feeToFees(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
-    }
-
-    function feeToFees(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
-        private
-        view
-        returns (uint256)
-    {
-        return
-            FullMath.mulDiv(
-                SqrtPriceMath.feeGrowthProtocolX128(
-                    feeGrowthGlobalX128Partial,
-                    feeGrowthGlobalX128Offset,
-                    slot1.feeProtocol
-                ),
-                slot1.liquidity,
-                FixedPoint128.Q128
-            );
-    }
-
     // not gas-optimized yet but easily could be
     function collectProtocol(address recipient)
         external
@@ -697,8 +697,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     {
         require(slot1.feeProtocol > 0);
 
-        amount0 = feeToFees0();
-        amount1 = feeToFees1();
+        amount0 = protocolFees0();
+        amount1 = protocolFees1();
 
         uint256 feeGrowthProtocol0X128 =
             SqrtPriceMath.feeGrowthProtocolX128(
@@ -713,15 +713,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 slot1.feeProtocol
             );
 
-        feeGrowthGlobal0X128Partial = SqrtPriceMath.feeGrowthGlobalX128(
+        feeGrowthGlobal0X128Partial = feeGrowthGlobalX128(
             feeGrowthGlobal0X128Partial,
-            feeGrowthGlobal0X128Offset,
-            slot1.feeProtocol
+            feeGrowthGlobal0X128Offset
         );
-        feeGrowthGlobal1X128Partial = SqrtPriceMath.feeGrowthGlobalX128(
+        feeGrowthGlobal1X128Partial = feeGrowthGlobalX128(
             feeGrowthGlobal1X128Partial,
-            feeGrowthGlobal1X128Offset,
-            slot1.feeProtocol
+            feeGrowthGlobal1X128Offset
         );
 
         feeGrowthGlobal0X128Offset += feeGrowthProtocol0X128;
