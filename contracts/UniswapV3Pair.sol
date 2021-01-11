@@ -110,39 +110,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function feeGrowthGlobal0X128() public view override returns (uint256) {
-        return feeGrowthGlobal0X128(feeGrowthGlobal0X128Partial);
+        return feeGrowthGlobalX128(feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
     }
 
     function feeGrowthGlobal1X128() public view override returns (uint256) {
-        return feeGrowthGlobal1X128(feeGrowthGlobal1X128Partial);
+        return feeGrowthGlobalX128(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
     }
 
-    function feeGrowthGlobal0X128(uint256 _feeGrowthGlobal0X128Partial) private view returns (uint256) {
+    function feeGrowthGlobalX128(
+        uint256 feeGrowthGlobalX128Partial,
+        uint256 feeGrowthGlobalX128Offset
+    ) private view returns (uint256) {
         return
             slot1.feeProtocol == 0
-                ? _feeGrowthGlobal0X128Partial
-                : SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(_feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
-    }
-
-    function feeGrowthGlobal1X128(uint256 _feeGrowthGlobal1X128Partial) private view returns (uint256) {
-        return
-            slot1.feeProtocol == 0
-                ? _feeGrowthGlobal1X128Partial
-                : SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(_feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
-    }
-
-    function feeToFees0() public view override returns (uint256) {
-        return
-            slot1.feeProtocol > 0
-                ? SqrtPriceMath.feeToFeesWhenFeeIsOn(feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset, slot1.liquidity)
-                : 0;
-    }
-
-    function feeToFees1() public view override returns (uint256) {
-        return
-            slot1.feeProtocol > 0
-                ? SqrtPriceMath.feeToFeesWhenFeeIsOn(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset, slot1.liquidity)
-                : 0;
+                ? feeGrowthGlobalX128Partial
+                : SqrtPriceMath.feeGrowthGlobalX128(
+                    feeGrowthGlobalX128Partial,
+                    feeGrowthGlobalX128Offset,
+                    slot1.feeProtocol
+                );
     }
 
     // throws if the pair is not initialized, which is implicitly used throughout to gatekeep various functions
@@ -572,12 +558,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     else require(step.tickNext < maxTick, 'MAX');
 
                     uint256 _feeGrowthGlobal0X128 =
-                        feeGrowthGlobal0X128(
-                            zeroForOne ? state.feeGrowthGlobalX128Partial : feeGrowthGlobal0X128Partial
+                        feeGrowthGlobalX128(
+                            zeroForOne ? state.feeGrowthGlobalX128Partial : feeGrowthGlobal0X128Partial,
+                            feeGrowthGlobal0X128Offset
                         );
                     uint256 _feeGrowthGlobal1X128 =
-                        feeGrowthGlobal1X128(
-                            zeroForOne ? feeGrowthGlobal1X128Partial : state.feeGrowthGlobalX128Partial
+                        feeGrowthGlobalX128(
+                            zeroForOne ? feeGrowthGlobal1X128Partial : state.feeGrowthGlobalX128Partial,
+                            feeGrowthGlobal1X128Offset
                         );
 
                     int128 liquidityDelta =
@@ -673,6 +661,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
         );
     }
 
+    function feeToFees0() public view override returns (uint256) {
+        return slot1.feeProtocol == 0 ? 0 : feeToFees(feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
+    }
+
+    function feeToFees1() public view override returns (uint256) {
+        return slot1.feeProtocol == 0 ? 0 : feeToFees(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
+    }
+
+    function feeToFees(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
+        private
+        view
+        returns (uint256)
+    {
+        return FullMath.mulDiv(
+            SqrtPriceMath.feeGrowthProtocolX128(
+                feeGrowthGlobalX128Partial,
+                feeGrowthGlobalX128Offset,
+                slot1.feeProtocol
+            ),
+            slot1.liquidity,
+            FixedPoint128.Q128
+        );
+    }
+
     // not gas-optimized yet but easily could be
     function collectProtocol(address recipient)
         external
@@ -686,22 +698,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
         amount0 = feeToFees0();
         amount1 = feeToFees1();
 
-        uint256 amountPerUnit0 =
-            SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
-        uint256 amountPerUnit1 =
-            SqrtPriceMath.feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
-
-        feeGrowthGlobal0X128Partial = SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(
+        uint256 feeGrowthProtocol0X128 = SqrtPriceMath.feeGrowthProtocolX128(
             feeGrowthGlobal0X128Partial,
-            feeGrowthGlobal0X128Offset
+            feeGrowthGlobal0X128Offset,
+            slot1.feeProtocol
         );
-        feeGrowthGlobal1X128Partial = SqrtPriceMath.feeGrowthGlobalWhenFeeIsOn(
+        uint256 feeGrowthProtocol1X128 = SqrtPriceMath.feeGrowthProtocolX128(
             feeGrowthGlobal1X128Partial,
-            feeGrowthGlobal1X128Offset
+            feeGrowthGlobal1X128Offset,
+            slot1.feeProtocol
         );
 
-        feeGrowthGlobal0X128Offset += amountPerUnit0;
-        feeGrowthGlobal1X128Offset += amountPerUnit1;
+        feeGrowthGlobal0X128Partial = SqrtPriceMath.feeGrowthGlobalX128(
+            feeGrowthGlobal0X128Partial,
+            feeGrowthGlobal0X128Offset,
+            slot1.feeProtocol
+        );
+        feeGrowthGlobal1X128Partial = SqrtPriceMath.feeGrowthGlobalX128(
+            feeGrowthGlobal1X128Partial,
+            feeGrowthGlobal1X128Offset,
+            slot1.feeProtocol
+        );
+
+        feeGrowthGlobal0X128Offset += feeGrowthProtocol0X128;
+        feeGrowthGlobal1X128Offset += feeGrowthProtocol1X128;
 
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);

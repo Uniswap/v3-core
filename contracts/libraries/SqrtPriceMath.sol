@@ -182,34 +182,30 @@ library SqrtPriceMath {
                 : getAmount1Delta(sqrtPX96, sqrtQX96, uint128(liquidity), true).toInt256();
     }
 
-    function feeToFeesPerUnitWhenFeeIsOn(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
+    // assumes feeProtocol is not 0
+    function feeGrowthProtocolX128(
+        uint256 feeGrowthGlobalX128Partial,
+        uint256 feeGrowthGlobalX128Offset,
+        uint8 feeProtocol
+    )
         internal
         pure
         returns (uint256)
     {
-        return feeGrowthGlobalX128Partial / 6 - feeGrowthGlobalX128Offset;
+        return feeGrowthGlobalX128Partial / feeProtocol - feeGrowthGlobalX128Offset;
     }
 
-    function feeToFeesWhenFeeIsOn(
+    function feeGrowthGlobalX128(
         uint256 feeGrowthGlobalX128Partial,
         uint256 feeGrowthGlobalX128Offset,
-        uint128 liquidity
-    ) internal pure returns (uint256) {
-        return
-            FullMath.mulDiv(
-                feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset),
-                liquidity,
-                FixedPoint128.Q128
-            );
-    }
-
-    function feeGrowthGlobalWhenFeeIsOn(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
+        uint8 feeProtocol
+    )
         internal
         pure
         returns (uint256)
     {
         return
             feeGrowthGlobalX128Partial -
-            feeToFeesPerUnitWhenFeeIsOn(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset);
+            feeGrowthProtocolX128(feeGrowthGlobalX128Partial, feeGrowthGlobalX128Offset, feeProtocol);
     }
 }
