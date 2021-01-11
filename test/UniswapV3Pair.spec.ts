@@ -417,7 +417,7 @@ describe('UniswapV3Pair', () => {
       })
 
       it('0 liquidity mint can be used to poke an existing position and accumulate protocol fee', async () => {
-        await pair.setFeeProtocol(10)
+        await pair.setFeeProtocol(6)
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
@@ -427,8 +427,8 @@ describe('UniswapV3Pair', () => {
         expect(await pair.feeToFees1()).to.eq(0)
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
-        expect(await pair.feeToFees0()).to.eq('29999999999999')
-        expect(await pair.feeToFees1()).to.eq('2999999999999')
+        expect(await pair.feeToFees0()).to.eq('49999999999999')
+        expect(await pair.feeToFees1()).to.eq('4999999999999')
       })
 
       it('0 liquidity mint can poke existing position before protocol fee is turned on to protect fees', async () => {
@@ -443,7 +443,7 @@ describe('UniswapV3Pair', () => {
         expect(await pair.feeToFees0()).to.eq(0)
         expect(await pair.feeToFees1()).to.eq(0)
 
-        await pair.setFeeProtocol(10)
+        await pair.setFeeProtocol(6)
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
         expect(await pair.feeToFees0()).to.eq(0)
         expect(await pair.feeToFees1()).to.eq(0)
@@ -1013,7 +1013,7 @@ describe('UniswapV3Pair', () => {
     })
 
     describe('fee is on', () => {
-      beforeEach(() => pair.setFeeProtocol(20))
+      beforeEach(() => pair.setFeeProtocol(6))
       it('selling 1 for 0 at tick 0 thru 1', async () => {
         await expect(mint(wallet.address, 0, 120, expandTo18Decimals(1)))
           .to.emit(token0, 'Transfer')
@@ -1051,13 +1051,13 @@ describe('UniswapV3Pair', () => {
     })
 
     it('can be changed by the owner', async () => {
-      await pair.setFeeProtocol(10)
-      expect((await pair.slot1()).feeProtocol).to.eq(10)
+      await pair.setFeeProtocol(6)
+      expect((await pair.slot1()).feeProtocol).to.eq(6)
     })
 
     it('cannot be changed out of bounds', async () => {
-      await expect(pair.setFeeProtocol(9)).to.be.revertedWith('FP')
-      await expect(pair.setFeeProtocol(26)).to.be.revertedWith('FP')
+      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('FP')
+      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('FP')
     })
 
     it('cannot be changed by addresses that are not owner', async () => {
@@ -1126,17 +1126,17 @@ describe('UniswapV3Pair', () => {
     })
 
     it('position owner gets partial fees when protocol fee is on', async () => {
-      await pair.setFeeProtocol(10)
+      await pair.setFeeProtocol(6)
 
       const { token0Fees, token1Fees } = await swapAndGetFeesOwed()
 
-      expect(token0Fees).to.be.eq('540000000000000')
+      expect(token0Fees).to.be.eq('500000000000000')
       expect(token1Fees).to.be.eq(0)
     })
 
     describe('#collect', () => {
       it('returns 0 if no fees', async () => {
-        await pair.setFeeProtocol(10)
+        await pair.setFeeProtocol(6)
         const { amount0, amount1 } = await pair.callStatic.collectProtocol(
           wallet.address,
           constants.MaxUint256,
@@ -1147,7 +1147,7 @@ describe('UniswapV3Pair', () => {
       })
 
       it('can collect fees', async () => {
-        await pair.setFeeProtocol(10)
+        await pair.setFeeProtocol(6)
 
         await swapAndGetFeesOwed()
         // collect fees to trigger collection of the protocol fee
@@ -1156,7 +1156,7 @@ describe('UniswapV3Pair', () => {
 
         await expect(pair.collectProtocol(other.address, constants.MaxUint256, constants.MaxUint256))
           .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, other.address, '59999999999999')
+          .withArgs(pair.address, other.address, '99999999999999')
       })
     })
 
@@ -1172,20 +1172,20 @@ describe('UniswapV3Pair', () => {
     it('fees collected after two swaps with fee turned on in middle are fees from both swaps (confiscatory)', async () => {
       await swapAndGetFeesOwed(undefined, undefined, true)
 
-      await pair.setFeeProtocol(10)
+      await pair.setFeeProtocol(6)
 
       const { token0Fees, token1Fees } = await swapAndGetFeesOwed()
 
-      expect(token0Fees).to.eq('1080000000000000')
+      expect(token0Fees).to.eq('1000000000000000')
       expect(token1Fees).to.eq(0)
     })
 
     it('fees collected by lp after two swaps with intermediate withdrawal', async () => {
-      await pair.setFeeProtocol(10)
+      await pair.setFeeProtocol(6)
 
       const { token0Fees, token1Fees } = await swapAndGetFeesOwed()
 
-      expect(token0Fees).to.eq('540000000000000')
+      expect(token0Fees).to.eq('500000000000000')
       expect(token1Fees).to.eq(0)
 
       // collect the fees
@@ -1201,15 +1201,15 @@ describe('UniswapV3Pair', () => {
       expect(token1FeesNext).to.eq(0)
 
       // the fee to fees do not account for uncollected fees yet
-      expect(await pair.feeToFees0()).to.be.eq('59999999999999')
+      expect(await pair.feeToFees0()).to.be.eq('99999999999999')
       expect(await pair.feeToFees1()).to.be.eq(0)
 
       await mint(wallet.address, minTick, maxTick, 0) // poke to update fees
       await expect(pair.collect(minTick, maxTick, wallet.address, constants.MaxUint256, constants.MaxUint256))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '540000000000000')
+        .withArgs(pair.address, wallet.address, '500000000000000')
 
-      expect(await pair.feeToFees0()).to.be.eq('119999999999998')
+      expect(await pair.feeToFees0()).to.be.eq('199999999999998')
       expect(await pair.feeToFees1()).to.be.eq(0)
     })
   })
@@ -1335,7 +1335,7 @@ describe('UniswapV3Pair', () => {
     for (const feeProtocol of [0, 6]) {
       describe(feeProtocol > 0 ? 'fee is on' : 'fee is off', () => {
         beforeEach('turn fee on', async () => {
-          await pair.setFeeProtocol(10)
+          await pair.setFeeProtocol(6)
         })
 
         const startingPrice = encodePriceSqrt(100001, 100000)

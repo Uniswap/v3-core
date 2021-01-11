@@ -77,7 +77,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     struct Slot1 {
         // the current liquidity
         uint128 liquidity;
-        // the current protocol fee, expressed as the numerator of the % of total fees (x / 100)%
+        // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
         uint8 feeProtocol;
     }
 
@@ -147,7 +147,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
-        require(feeProtocol == 0 || (feeProtocol >= 10 && feeProtocol <= 25), 'FP');
+        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4), 'FP');
         emit FeeProtocolChanged(slot1.feeProtocol, feeProtocol);
         slot1.feeProtocol = feeProtocol;
     }
@@ -240,11 +240,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // collect protocol fee
         uint8 feeProtocol = slot1.feeProtocol;
         if (feeProtocol > 0) {
-            uint256 fee0 = feesOwed0 * feeProtocol / 100;
+            uint256 fee0 = feesOwed0 / feeProtocol;
             feesOwed0 -= fee0;
             feeToFees0 += fee0;
 
-            uint256 fee1 = feesOwed1 * feeProtocol / 100;
+            uint256 fee1 = feesOwed1 / feeProtocol;
             feesOwed1 -= fee1;
             feeToFees1 += fee1;
         }
