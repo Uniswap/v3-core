@@ -38,7 +38,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
-    using Oracle for Oracle.Observation[1024]; // hack to satisfy solidity
+    using Oracle for Oracle.Observation[1024]; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
 
     uint8 private constant PRICE_BIT = 0x10;
     uint8 private constant UNLOCKED_BIT = 0x01;
@@ -66,8 +66,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint160 sqrtPriceX96;
         // the current tick
         int24 tick;
-        // the most-recently updated index of oracle
-        uint16 index;
+        // the most-recently updated index of the observations array
+        uint16 observationIndex;
         // whether the pair is locked
         bool unlocked;
     }
@@ -78,7 +78,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint128 public override liquidity;
 
     // see Oracle.sol
-    Oracle.Observation[1024] public override oracle; // hack to satisfy solidity
+    Oracle.Observation[1024] public override observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
 
     address public override feeTo;
 
@@ -124,13 +124,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function scry(uint256 blockTimestamp) external view override returns (uint16 indexAtOrAfter) {
         require(blockTimestamp <= block.timestamp, 'BT'); // can't look into the future
 
-        uint16 index = slot0.index;
+        uint16 index = slot0.observationIndex;
 
-        Oracle.Observation memory oldest = oracle[(index + 1) % Oracle.CARDINALITY];
+        Oracle.Observation memory oldest = observations[(index + 1) % Oracle.CARDINALITY];
 
         // first, ensure that the oldest known observation is initialized
         if (oldest.initialized == false) {
-            oldest = oracle[0];
+            oldest = observations[0];
             require(oldest.initialized, 'UI');
         }
 
@@ -140,7 +140,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // then, ensure that the target is greater than the oldest observation (accounting for wrapping)
         require(oldest.blockTimestamp < target || (oldest.blockTimestamp > current && target <= current), 'OLD');
 
-        uint256 newestBlockTimestamp = oracle[index].blockTimestamp;
+        uint256 newestBlockTimestamp = observations[index].blockTimestamp;
 
         // we can short-circuit for the specific case where the target is the block.timestamp, but an interaction
         // updated the oracle before this check, as this might be fairly common and is a worst-case for the binary search
@@ -154,7 +154,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // we can short-circuit if the target is after the youngest observation and return the current values
         if (newestBlockTimestamp < targetAdjusted) return Oracle.CARDINALITY; // special return value
 
-        return oracle.scry(target, index);
+        return observations.scry(target, index);
     }
 
     function checkTicks(int24 tickLower, int24 tickUpper) private view {
@@ -176,9 +176,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
-        Slot0 memory _slot0 = Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, index: 0, unlocked: true});
+        Slot0 memory _slot0 = Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, observationIndex: 0, unlocked: true});
 
-        oracle[_slot0.index] = Oracle.Observation({
+        observations[_slot0.observationIndex] = Oracle.Observation({
             blockTimestamp: _blockTimestamp(),
             tickCumulative: 0,
             liquidityCumulative: 0,
@@ -398,8 +398,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tick = slot0.tick;
 
         // write an oracle entry if liquidity is changing
-        if (params.liquidityDelta != 0)
-            slot0.index = oracle.writeObservationIfNecessary(slot0.index, _blockTimestamp(), tick, liquidity);
+        if (params.liquidityDelta != 0) slot0.observationIndex = observations.writeObservationIfNecessary(
+            slot0.observationIndex,
+            _blockTimestamp(),
+            tick,
+            liquidity
+        );
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 
@@ -577,8 +581,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // write an oracle entry if the price moved at least one tick
         if (state.tick != params.slot0Start.tick) {
-            slot0.index = oracle.writeObservationIfNecessary(
-                params.slot0Start.index,
+            slot0.observationIndex = observations.writeObservationIfNecessary(
+                params.slot0Start.observationIndex,
                 params.blockTimestamp,
                 params.slot0Start.tick,
                 params.liquidityStart
@@ -620,10 +624,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint160 sqrtPriceLimitX96,
         address recipient,
         bytes calldata data
-    ) external override lock {
+    ) external override {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
+
+        require(_slot0.unlocked == true, 'LOK');
+        slot0.unlocked = false;
+
         require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
 
         _swap(
@@ -637,6 +645,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 blockTimestamp: _blockTimestamp()
             })
         );
+
+        slot0.unlocked = true;
     }
 
     function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)

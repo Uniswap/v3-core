@@ -72,7 +72,7 @@ interface IUniswapV3Pair {
 
     function liquidity() external view returns (uint128);
 
-    function oracle(uint256)
+    function observations(uint256)
         external
         view
         returns (
