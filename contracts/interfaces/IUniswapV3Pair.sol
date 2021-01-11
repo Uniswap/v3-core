@@ -58,8 +58,6 @@ interface IUniswapV3Pair {
     function maxLiquidityPerTick() external view returns (uint128);
 
     // variables/state
-    function feeProtocol() external view returns (uint8);
-
     function slot0()
         external
         view
@@ -70,7 +68,13 @@ interface IUniswapV3Pair {
             uint8 unlockedAndPriceBit
         );
 
-    function liquidity() external view returns (uint128);
+    function slot1()
+        external
+        view
+        returns (
+            uint128 liquidity,
+            uint8 feeProtocol
+        );
 
     function tickBitmap(int16) external view returns (uint256);
 
