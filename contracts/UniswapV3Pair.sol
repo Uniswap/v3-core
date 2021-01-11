@@ -117,10 +117,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return feeGrowthGlobalX128(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
     }
 
-    function feeGrowthGlobalX128(
-        uint256 feeGrowthGlobalX128Partial,
-        uint256 feeGrowthGlobalX128Offset
-    ) private view returns (uint256) {
+    function feeGrowthGlobalX128(uint256 feeGrowthGlobalX128Partial, uint256 feeGrowthGlobalX128Offset)
+        private
+        view
+        returns (uint256)
+    {
         return
             slot1.feeProtocol == 0
                 ? feeGrowthGlobalX128Partial
@@ -674,15 +675,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (uint256)
     {
-        return FullMath.mulDiv(
-            SqrtPriceMath.feeGrowthProtocolX128(
-                feeGrowthGlobalX128Partial,
-                feeGrowthGlobalX128Offset,
-                slot1.feeProtocol
-            ),
-            slot1.liquidity,
-            FixedPoint128.Q128
-        );
+        return
+            FullMath.mulDiv(
+                SqrtPriceMath.feeGrowthProtocolX128(
+                    feeGrowthGlobalX128Partial,
+                    feeGrowthGlobalX128Offset,
+                    slot1.feeProtocol
+                ),
+                slot1.liquidity,
+                FixedPoint128.Q128
+            );
     }
 
     // not gas-optimized yet but easily could be
@@ -698,16 +700,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         amount0 = feeToFees0();
         amount1 = feeToFees1();
 
-        uint256 feeGrowthProtocol0X128 = SqrtPriceMath.feeGrowthProtocolX128(
-            feeGrowthGlobal0X128Partial,
-            feeGrowthGlobal0X128Offset,
-            slot1.feeProtocol
-        );
-        uint256 feeGrowthProtocol1X128 = SqrtPriceMath.feeGrowthProtocolX128(
-            feeGrowthGlobal1X128Partial,
-            feeGrowthGlobal1X128Offset,
-            slot1.feeProtocol
-        );
+        uint256 feeGrowthProtocol0X128 =
+            SqrtPriceMath.feeGrowthProtocolX128(
+                feeGrowthGlobal0X128Partial,
+                feeGrowthGlobal0X128Offset,
+                slot1.feeProtocol
+            );
+        uint256 feeGrowthProtocol1X128 =
+            SqrtPriceMath.feeGrowthProtocolX128(
+                feeGrowthGlobal1X128Partial,
+                feeGrowthGlobal1X128Offset,
+                slot1.feeProtocol
+            );
 
         feeGrowthGlobal0X128Partial = SqrtPriceMath.feeGrowthGlobalX128(
             feeGrowthGlobal0X128Partial,
