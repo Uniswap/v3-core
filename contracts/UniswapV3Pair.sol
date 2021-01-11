@@ -403,12 +403,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tick = slot0.tick;
 
         // write an oracle entry if liquidity is changing
-        if (params.liquidityDelta != 0) slot0.observationIndex = observations.writeObservationIfNecessary(
-            slot0.observationIndex,
-            _blockTimestamp(),
-            tick,
-            liquidity
-        );
+        if (params.liquidityDelta != 0)
+            slot0.observationIndex = observations.writeObservationIfNecessary(
+                slot0.observationIndex,
+                _blockTimestamp(),
+                tick,
+                liquidity
+            );
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
 

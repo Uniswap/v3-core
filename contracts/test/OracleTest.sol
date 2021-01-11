@@ -27,7 +27,6 @@ contract OracleTest {
         for (uint16 i; i < indices.length; i++) o[i] = observations[indices[i]];
     }
 
-
     // somewhat fragile, copied from the pair
     function scry(uint256 _blockTimestamp, uint16 index) external view returns (uint16 indexAtOrAfter) {
         require(_blockTimestamp <= blockTimestamp, 'BT'); // can't look into the future
