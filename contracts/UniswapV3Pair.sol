@@ -168,8 +168,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
         if (feeProtocol == 0) {
-            // TODO: figure out the right way to do this part
-            // right now, feeTo just forfeits any uncollected fees if feeTo is turned off
+            // TODO: decide if we're comfortable with how this works.
+            // right now, uncollected protocol fees are forfeited if the protocol fee is turned off,
             // and they go to currently-in-range liquidity providers
             feeGrowthGlobal0X128Offset = 0;
             feeGrowthGlobal1X128Offset = 0;
