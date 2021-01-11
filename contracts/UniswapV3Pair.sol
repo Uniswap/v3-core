@@ -122,13 +122,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (uint256)
     {
-        return slot1.feeProtocol == 0
-            ? feeGrowthGlobalX128Partial
-            : feeGrowthGlobalX128Partial - SqrtPriceMath.feeGrowthProtocolX128(
-                feeGrowthGlobalX128Partial,
-                feeGrowthGlobalX128Offset,
-                slot1.feeProtocol
-            );
+        return
+            slot1.feeProtocol == 0
+                ? feeGrowthGlobalX128Partial
+                : feeGrowthGlobalX128Partial -
+                    SqrtPriceMath.feeGrowthProtocolX128(
+                        feeGrowthGlobalX128Partial,
+                        feeGrowthGlobalX128Offset,
+                        slot1.feeProtocol
+                    );
     }
 
     function protocolFees0() public view override returns (uint256) {
@@ -144,17 +146,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (uint256)
     {
-        return slot1.feeProtocol == 0
-            ? 0
-            : FullMath.mulDiv(
-                SqrtPriceMath.feeGrowthProtocolX128(
-                    feeGrowthGlobalX128Partial,
-                    feeGrowthGlobalX128Offset,
-                    slot1.feeProtocol
-                ),
-                slot1.liquidity,
-                FixedPoint128.Q128
-            );
+        return
+            slot1.feeProtocol == 0
+                ? 0
+                : FullMath.mulDiv(
+                    SqrtPriceMath.feeGrowthProtocolX128(
+                        feeGrowthGlobalX128Partial,
+                        feeGrowthGlobalX128Offset,
+                        slot1.feeProtocol
+                    ),
+                    slot1.liquidity,
+                    FixedPoint128.Q128
+                );
     }
 
     // throws if the pair is not initialized, which is implicitly used throughout to gatekeep various functions
@@ -713,14 +716,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 slot1.feeProtocol
             );
 
-        feeGrowthGlobal0X128Partial = feeGrowthGlobalX128(
-            feeGrowthGlobal0X128Partial,
-            feeGrowthGlobal0X128Offset
-        );
-        feeGrowthGlobal1X128Partial = feeGrowthGlobalX128(
-            feeGrowthGlobal1X128Partial,
-            feeGrowthGlobal1X128Offset
-        );
+        feeGrowthGlobal0X128Partial = feeGrowthGlobalX128(feeGrowthGlobal0X128Partial, feeGrowthGlobal0X128Offset);
+        feeGrowthGlobal1X128Partial = feeGrowthGlobalX128(feeGrowthGlobal1X128Partial, feeGrowthGlobal1X128Offset);
 
         feeGrowthGlobal0X128Offset += feeGrowthProtocol0X128;
         feeGrowthGlobal1X128Offset += feeGrowthProtocol1X128;
