@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.4.0;
 
-import './FullMath.sol';
+import '../functions/mulDiv.sol';
 
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
 library FixedPoint128 {
@@ -16,7 +16,7 @@ library FixedPoint128 {
         if (numerator <= uint128(-1)) {
             return (numerator << RESOLUTION) / denominator;
         } else {
-            return FullMath.mulDiv(numerator, Q128, denominator);
+            return mulDiv(numerator, Q128, denominator);
         }
     }
 }

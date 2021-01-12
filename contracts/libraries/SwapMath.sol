@@ -2,9 +2,10 @@
 pragma solidity >=0.5.0;
 
 import './SafeMath.sol';
-import './FullMath.sol';
 
 import './SqrtPriceMath.sol';
+
+import '../functions/mulDiv.sol';
 
 library SwapMath {
     using SafeMath for uint256;
@@ -30,7 +31,7 @@ library SwapMath {
         bool exactIn = amountRemaining >= 0;
 
         if (exactIn) {
-            uint256 amountRemainingLessFee = FullMath.mulDiv(uint256(amountRemaining), 1e6 - feePips, 1e6);
+            uint256 amountRemainingLessFee = mulDiv(uint256(amountRemaining), 1e6 - feePips, 1e6);
             amountIn = zeroForOne
                 ? SqrtPriceMath.getAmount0Delta(sqrtPX96, sqrtPTargetX96, liquidity, true)
                 : SqrtPriceMath.getAmount1Delta(sqrtPX96, sqrtPTargetX96, liquidity, true);
@@ -75,7 +76,7 @@ library SwapMath {
             // we didn't reach the target, so take the remainder of the maximum input as fee
             feeAmount = uint256(amountRemaining) - amountIn;
         } else {
-            feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
+            feeAmount = mulDivRoundUp(amountIn, feePips, 1e6 - feePips);
         }
     }
 }

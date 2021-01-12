@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '../libraries/FullMath.sol';
 import '../libraries/SqrtPriceMath.sol';
+
+import '../functions/mulDiv.sol';
 
 contract SqrtPriceMathEchidnaTest {
     function mulDivRoundingUpInvariants(
@@ -11,8 +12,8 @@ contract SqrtPriceMathEchidnaTest {
         uint256 z
     ) external pure {
         require(z > 0);
-        uint256 notRoundedUp = FullMath.mulDiv(x, y, z);
-        uint256 roundedUp = SqrtPriceMath.mulDivRoundingUp(x, y, z);
+        uint256 notRoundedUp = mulDiv(x, y, z);
+        uint256 roundedUp = mulDivRoundUp(x, y, z);
         assert(roundedUp >= notRoundedUp);
         assert(roundedUp - notRoundedUp < 2);
         if (roundedUp - notRoundedUp == 1) {

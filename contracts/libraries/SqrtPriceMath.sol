@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import './FullMath.sol';
 import './SafeMath.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
+
+import '../functions/divRoundUp.sol';
+import '../functions/mulDiv.sol';
 
 library SqrtPriceMath {
     using SafeMath for uint256;
@@ -17,19 +19,6 @@ library SqrtPriceMath {
 
     function isAddSafe(uint256 x, uint256 y) private pure returns (bool) {
         return x <= uint256(-1) - y;
-    }
-
-    function divRoundingUp(uint256 x, uint256 d) private pure returns (uint256) {
-        // addition is safe because (uint256(-1) / 1) + (uint256(-1) % 1 > 0 ? 1 : 0) == uint256(-1)
-        return (x / d) + (x % d > 0 ? 1 : 0);
-    }
-
-    function mulDivRoundingUp(
-        uint256 x,
-        uint256 y,
-        uint256 d
-    ) internal pure returns (uint256) {
-        return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
     }
 
     // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
@@ -48,13 +37,13 @@ library SqrtPriceMath {
             (add ? isAddSafe(numerator1, amount * sqrtPX96) : numerator1 > amount * sqrtPX96)
         ) {
             uint256 denominator = add ? (numerator1 + amount * sqrtPX96) : (numerator1 - amount * sqrtPX96);
-            return mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
+            return mulDivRoundUp(numerator1, sqrtPX96, denominator).toUint160();
         }
 
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
         require(denominator1 != 0, 'OUT');
 
-        return divRoundingUp(numerator1, denominator1).toUint160();
+        return divRoundUp(numerator1, denominator1).toUint160();
     }
 
     // calculate sqrt(P) +- y / liquidity
@@ -71,12 +60,12 @@ library SqrtPriceMath {
                 ? (
                     amount <= uint160(-1)
                         ? (amount << FixedPoint96.RESOLUTION) / liquidity
-                        : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
+                        : mulDiv(amount, FixedPoint96.Q96, liquidity)
                 )
                 : (
                     amount <= uint160(-1)
-                        ? divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
-                        : mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
+                        ? divRoundUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                        : mulDivRoundUp(amount, FixedPoint96.Q96, liquidity)
                 );
 
         return (add ? uint256(sqrtPX96).add(quotient) : uint256(sqrtPX96).sub(quotient)).toUint160();
@@ -133,14 +122,14 @@ library SqrtPriceMath {
             uint256 denominator = uint256(sqrtPX96) * sqrtQX96;
             return
                 roundUp
-                    ? mulDivRoundingUp(numerator1, numerator2, denominator)
-                    : FullMath.mulDiv(numerator1, numerator2, denominator);
+                    ? mulDivRoundUp(numerator1, numerator2, denominator)
+                    : mulDiv(numerator1, numerator2, denominator);
         }
 
         return
             roundUp
-                ? divRoundingUp(mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
-                : FullMath.mulDiv(numerator1, numerator2, sqrtPX96) / sqrtQX96;
+                ? divRoundUp(mulDivRoundUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
+                : mulDiv(numerator1, numerator2, sqrtPX96) / sqrtQX96;
     }
 
     // calculate liquidity * (sqrt(Q) - sqrt(P))
@@ -154,8 +143,8 @@ library SqrtPriceMath {
 
         return
             roundUp
-                ? mulDivRoundingUp(liquidity, sqrtQX96 - sqrtPX96, FixedPoint96.Q96)
-                : FullMath.mulDiv(liquidity, sqrtQX96 - sqrtPX96, FixedPoint96.Q96);
+                ? mulDivRoundUp(liquidity, sqrtQX96 - sqrtPX96, FixedPoint96.Q96)
+                : mulDiv(liquidity, sqrtQX96 - sqrtPX96, FixedPoint96.Q96);
     }
 
     // helpers to get signed deltas for use in setPosition

@@ -2,7 +2,6 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import './libraries/FullMath.sol';
 import './libraries/TransferHelper.sol';
 
 import './libraries/SafeMath.sol';
@@ -17,6 +16,8 @@ import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
 import './libraries/Position.sol';
+
+import './functions/mulDiv.sol';
 
 import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Pair.sol';
@@ -216,13 +217,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // calculate accumulated fees
         uint256 feesOwed0 =
-            FullMath.mulDiv(
+            mulDiv(
                 feeGrowthInside0X128 - position.feeGrowthInside0LastX128,
                 position.liquidity,
                 FixedPoint128.Q128
             );
         uint256 feesOwed1 =
-            FullMath.mulDiv(
+            mulDiv(
                 feeGrowthInside1X128 - position.feeGrowthInside1LastX128,
                 position.liquidity,
                 FixedPoint128.Q128

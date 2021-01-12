@@ -3,15 +3,15 @@ pragma solidity >=0.5.0;
 
 import './TickMath.sol';
 
+import '../functions/divRoundUp.sol';
+
 // returns and takes sqrt prices for 1 bips ticks
 library SqrtTickMath {
     int24 internal constant MIN_TICK = -887272;
     int24 internal constant MAX_TICK = -MIN_TICK;
 
     function getSqrtRatioAtTick(int24 tick) internal pure returns (uint160) {
-        uint256 ratio = TickMath.getRatioAtTick(tick);
-        // truncate, rounding up
-        return uint160(ratio >> 32) + (ratio % (1 << 32) > 0 ? 1 : 0);
+        return uint160(divRoundUp(TickMath.getRatioAtTick(tick), 1 << 32));
     }
 
     function getTickAtSqrtRatio(uint160 sqrtPX96) internal pure returns (int24) {
