@@ -4,7 +4,11 @@ pragma solidity =0.7.6;
 import './fullMul.sol';
 
 // taken from https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
-function mulDiv(uint256 x, uint256 y, uint256 d) pure returns (uint256) {
+function mulDiv(
+    uint256 x,
+    uint256 y,
+    uint256 d
+) pure returns (uint256) {
     (uint256 l, uint256 h) = fullMul(x, y);
     require(h < d, 'FMD');
 
@@ -30,6 +34,10 @@ function mulDiv(uint256 x, uint256 y, uint256 d) pure returns (uint256) {
     return l * r;
 }
 
-function mulDivRoundUp(uint256 x, uint256 y, uint256 d) pure returns (uint256) {
+function mulDivRoundUp(
+    uint256 x,
+    uint256 y,
+    uint256 d
+) pure returns (uint256) {
     return mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
 }

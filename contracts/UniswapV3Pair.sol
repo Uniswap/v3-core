@@ -217,17 +217,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // calculate accumulated fees
         uint256 feesOwed0 =
-            mulDiv(
-                feeGrowthInside0X128 - position.feeGrowthInside0LastX128,
-                position.liquidity,
-                FixedPoint128.Q128
-            );
+            mulDiv(feeGrowthInside0X128 - position.feeGrowthInside0LastX128, position.liquidity, FixedPoint128.Q128);
         uint256 feesOwed1 =
-            mulDiv(
-                feeGrowthInside1X128 - position.feeGrowthInside1LastX128,
-                position.liquidity,
-                FixedPoint128.Q128
-            );
+            mulDiv(feeGrowthInside1X128 - position.feeGrowthInside1LastX128, position.liquidity, FixedPoint128.Q128);
 
         // collect protocol fee, if on
         if (feeTo != address(0)) {
