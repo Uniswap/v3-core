@@ -29,6 +29,7 @@ import { TestUniswapV3Router } from '../typechain/TestUniswapV3Router'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
 import { SwapMathTest } from '../typechain/SwapMathTest'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
+import { isBytes } from 'ethers/lib/utils'
 
 const feeAmount = FeeAmount.MEDIUM
 const tickSpacing = TICK_SPACINGS[feeAmount]
@@ -45,7 +46,6 @@ describe('UniswapV3Pair', () => {
   let other: Wallet
   let walletAddress: string
   let otherAddress: string
-  //let pairAddress: string
 
   let token0: TestERC20
   let token1: TestERC20
@@ -66,7 +66,6 @@ describe('UniswapV3Pair', () => {
   let swap0ForExact1: SwapFunction
   let swapExact1For0: SwapFunction
   let swap1ForExact0: SwapFunction
-  //let swapAForC: MultiSwapFunction
 
   let mint: MintFunction
   let initialize: InitializeFunction
@@ -91,11 +90,16 @@ describe('UniswapV3Pair', () => {
       firstToken: TestERC20,
       secondToken: TestERC20
     ): Promise<[MockTimeUniswapV3Pair, any]> => {
-      const pair = await createPair(amount, spacing, firstToken, secondToken)
+      const pair = await createPair(
+        amount, 
+        spacing, 
+        firstToken, 
+        secondToken
+      )
       const pairFunctions = createPairFunctions({
+        swapTarget: swapTargetCallee,
         token0: firstToken,
         token1: secondToken,
-        swapTarget: swapTargetCallee,
         pair,
       })
       return [pair, pairFunctions]
@@ -106,7 +110,7 @@ describe('UniswapV3Pair', () => {
     ;[pair1, pair1Functions] = await createPairWrapped(feeAmount, tickSpacing, token1, token2)
   })
 
-  it.only('constructor initializes immutables', async () => {
+  it('constructor initializes immutables', async () => {
     expect(await pair0.factory()).to.eq(factory.address)
     expect(await pair0.token0()).to.eq(token0.address)
     expect(await pair0.token1()).to.eq(token1.address)
@@ -115,23 +119,216 @@ describe('UniswapV3Pair', () => {
     expect(await pair1.token1()).to.eq(token2.address)
   })
 
-  it.only('blah', async () => {
-    await pair0Functions.initialize(encodePriceSqrt(1, 1))
-    await pair1Functions.initialize(encodePriceSqrt(1, 1))
+  describe('#initialize', () => {
+    it('fails if already initialized', async () => {
+      await pair0Functions.initialize(encodePriceSqrt(1, 1))
+      await pair1Functions.initialize(encodePriceSqrt(1, 1))
+      await expect(pair0Functions.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('')
+      await expect(pair1Functions.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('')
+    })
+    it('fails if starting price is too low', async () => {
+      await expect(pair0Functions.initialize(1)).to.be.revertedWith('')
+      await expect(pair1Functions.initialize(1)).to.be.revertedWith('')
+    })
+    it('fails if starting price is too high', async () => {
+      await expect(pair0Functions.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('')
+      await expect(pair1Functions.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('')
+    })
+    it('fails if starting price is too low or high', async () => {
+      const minTick0 = await pair0.MIN_TICK()
+      const maxTick0 = await pair0.MAX_TICK()
+      const minTick1 = await pair1.MIN_TICK()
+      const maxTick1= await pair1.MAX_TICK()
 
-    //await pair0Functions.token0.approve(swapTargetRouter.address, constants.MaxUint256)
+      const sqrtTickMath = (await (await ethers.getContractFactory('SqrtTickMathTest')).deploy()) as SqrtTickMathTest
+      const badMinPrice0 = (await sqrtTickMath.getSqrtRatioAtTick(minTick0))._x.sub(1)
+      const badMaxPrice0 = (await sqrtTickMath.getSqrtRatioAtTick(maxTick0))._x
+      const badMinPrice1 = (await sqrtTickMath.getSqrtRatioAtTick(minTick1))._x.sub(1)
+      const badMaxPrice1 = (await sqrtTickMath.getSqrtRatioAtTick(maxTick1))._x
 
-    //expect('approve').to.be.calledOnContract(pair0Functions.token0);
-    
-    //const { swap0ForExact2 } = createMultiPairFunctions({ token0: pair0Functions.token0, swapTarget: swapTargetRouter, pair0, pair1 })
+      await expect(pair0Functions.initialize(badMinPrice0)).to.be.revertedWith('MIN')
+      await expect(pair0Functions.initialize(badMaxPrice0)).to.be.revertedWith('MAX')
+      await expect(pair1Functions.initialize(badMinPrice1)).to.be.revertedWith('MIN')
+      await expect(pair1Functions.initialize(badMaxPrice1)).to.be.revertedWith('MAX')
+    })
+    it('sets initial variables', async () => {
+      const price = encodePriceSqrt(1, 2)
+      await pair0Functions.initialize(price)
+      await pair1Functions.initialize(price)
+      const { sqrtPriceCurrent, blockTimestampLast } = await pair0.slot0()
+      expect(sqrtPriceCurrent._x).to.eq(price)
+      expect(blockTimestampLast).to.eq(TEST_PAIR_START_TIME)
+      expect(await pair0.tickCurrent()).to.eq(-6932)
+      expect(await pair0.slot1()).to.eq(1)
+    })
+    it('initializes MIN_TICK and MAX_TICK', async () => {
+      const price = encodePriceSqrt(1, 2)
+      await pair0Functions.initialize(price)
 
-    //await pair0.token0.approve(swapTargetRouter.address, constants.MaxUint256)
-
-   // await swap0ForExact2(10, walletAddress)
-
-
-
+      {
+        const { liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1 } = await pair0.tickInfos(MIN_TICK)
+        expect(liquidityGross).to.eq(1)
+        expect(secondsOutside).to.eq(TEST_PAIR_START_TIME)
+        expect(feeGrowthOutside0._x).to.eq(0)
+        expect(feeGrowthOutside1._x).to.eq(0)
+      }
+      {
+        const { liquidityGross, secondsOutside, feeGrowthOutside0, feeGrowthOutside1 } = await pair0.tickInfos(MAX_TICK)
+        expect(liquidityGross).to.eq(1)
+        expect(secondsOutside).to.eq(0)
+        expect(feeGrowthOutside0._x).to.eq(0)
+        expect(feeGrowthOutside1._x).to.eq(0)
+      }
+    })
+    it('creates a position for address 0 for min liquidity', async () => {
+      const price = encodePriceSqrt(1, 2)
+      await pair0Functions.initialize(price)
+      const { liquidity } = await pair0.positions(getPositionKey(constants.AddressZero, MIN_TICK, MAX_TICK))
+      expect(liquidity).to.eq(1)
+    })
+    it('emits a Initialized event with the input tick', async () => {
+      const price = encodePriceSqrt(1, 2)
+      await expect(pair0Functions.initialize(price)).to.emit(pair0, 'Initialized').withArgs(price)
+    })
+    it('transfers the token', async () => {
+      const price = encodePriceSqrt(1, 2)
+      await expect(pair0Functions.initialize(price))
+        .to.emit(token0, 'Transfer')
+        .withArgs(walletAddress, pair0.address, 2)
+        .to.emit(token1, 'Transfer')
+        .withArgs(walletAddress, pair0.address, 1)
+      expect(await token0.balanceOf(pair0.address)).to.eq(2)
+      expect(await token1.balanceOf(pair0.address)).to.eq(1)
+    })
   })
+
+
+
+  describe('#mint', () => {
+    it('fails if not initialized', async () => {
+      await expect(pair0Functions.mint(walletAddress, -tickSpacing, tickSpacing, 0)).to.be.revertedWith(
+        '')
+      await expect(pair1Functions.mint(walletAddress, -tickSpacing, tickSpacing, 0)).to.be.revertedWith(
+        '' // 'UniswapV3Pair::mint: pair not initialized''
+      )
+    })
+    describe('after initialization', () => {
+      beforeEach('initialize the pair at price of 10:1', async () => {
+        await pair0Functions.initialize(encodePriceSqrt(1, 10))
+        await pair1Functions.initialize(encodePriceSqrt(1, 10))
+        await pair0Functions.mint(walletAddress, MIN_TICK, MAX_TICK, 3161)
+        await pair1Functions.mint(walletAddress, MIN_TICK, MAX_TICK, 3161)
+        await token0.approve(pair0.address, 0)
+        await token1.approve(pair0.address, 0)
+        await token1.approve(pair1.address, 0)
+        await token2.approve(pair1.address, 0)
+      })
+
+      describe('failure cases', () => {
+        it('fails if tickLower greater than tickUpper', async () => {
+          await expect(pair0Functions.mint(walletAddress, 1, 0, 1)).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: tickLower must be less than tickUpper'
+          )
+          await expect(pair1Functions.mint(walletAddress, 1, 0, 1)).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: tickLower must be less than tickUpper'
+          )
+        })
+        it('fails if tickLower less than min tick', async () => {
+          await expect(pair0Functions.mint(walletAddress, MIN_TICK - 1, 0, 1)).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: tickLower cannot be less than min tick'
+          )
+          await expect(pair1Functions.mint(walletAddress, MIN_TICK - 1, 0, 1)).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: tickLower cannot be less than min tick'
+          )
+        })
+        it('fails if tickUpper greater than max tick', async () => {
+          await expect(pair0Functions.mint(walletAddress, 0, MAX_TICK + 1, 1)).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: tickUpper cannot be greater than max tick'
+          )
+        it('fails if tickUpper greater than max tick', async () => {
+          await expect(pair1Functions.mint(walletAddress, 0, MAX_TICK + 1, 1)).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: tickUpper cannot be greater than max tick'
+          )
+        })
+        it('fails if amount exceeds the max', async () => {
+          await expect(
+            pair0Functions.mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, MAX_LIQUIDITY_GROSS_PER_TICK.add(1))
+          ).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: liquidity overflow in lower tick'
+          )
+        it('fails if amount exceeds the max', async () => {
+          await expect(
+            pair1Functions.mint(walletAddress, MIN_TICK + tickSpacing, MAX_TICK - tickSpacing, MAX_LIQUIDITY_GROSS_PER_TICK.add(1))
+          ).to.be.revertedWith(
+            '' // 'UniswapV3Pair::_updatePosition: liquidity overflow in lower tick'
+          )
+        })
+      })
+    })
+  })
+})
+
+
+
+const initializeLiquidityAmount = expandTo18Decimals(2)
+async function initializeAtZeroTickpair0(pair0: MockTimeUniswapV3Pair): Promise<void> {
+  await pair0Functions.initialize(encodePriceSqrt(1, 1))
+  const [min, max] = await Promise.all([pair0.MIN_TICK(), pair0.MAX_TICK()])
+  await pair0Functions.mint(walletAddress, min, max, initializeLiquidityAmount.sub(1))
+}
+async function initializeAtZeroTickpair1(pair1: MockTimeUniswapV3Pair): Promise<void> {
+  await pair1Functions.initialize(encodePriceSqrt(1, 1))
+  const [min, max] = await Promise.all([pair1.MIN_TICK(), pair1.MAX_TICK()])
+  await pair1Functions.mint(walletAddress, min, max, initializeLiquidityAmount.sub(1))
+}
+
+describe.only('multi-swaps', () => {
+  for (const feeAmount of [FeeAmount.LOW, FeeAmount.MEDIUM, FeeAmount.HIGH]) {
+    const tickSpacing = TICK_SPACINGS[feeAmount]
+    
+    describe(`fee: ${feeAmount}`, () => {
+      beforeEach('initialize pair 0 at zero tick', async () => {
+        pair0 = await createPair(feeAmount, tickSpacing)
+        await initializeAtZeroTickpair0(pair0)
+      })
+      beforeEach('initialize pair 1 at zero tick', async () => {
+        pair1 = await createPair(feeAmount, tickSpacing)
+        await initializeAtZeroTickpair1(pair1)
+      })
+
+
+        it('multi-swap', async () => {
+
+          await pair0Functions.initialize(encodePriceSqrt(1, 1))
+          await pair1Functions.initialize(encodePriceSqrt(1, 1))
+
+          await pair0Functions.mint(walletAddress, MIN_TICK, MAX_TICK, expandTo18Decimals(1), '0x')
+          await pair1Functions.mint(walletAddress, MIN_TICK, MAX_TICK, expandTo18Decimals(1), '0x')
+
+          await token0.approve(pair0.address, constants.MaxUint256)
+          await token1.approve(pair0.address, constants.MaxUint256)
+          await token1.approve(pair1.address, constants.MaxUint256)
+          await token2.approve(pair1.address, constants.MaxUint256)
+
+          await token0.approve(swapTargetRouter.address, constants.MaxUint256)
+
+
+
+         
+           await expect(token0.approve(swapTargetRouter.address, constants.MaxUint256))
+            .to.emit(token0, 'approve')
+           .withArgs(swapTargetRouter.address, constants.MaxUint256)
+
+          // expect('Approve').to.be.calledOnContract(token0)
+
+
+          //  const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
+          //  await swap0ForExact2(10, walletAddress)
+
+
+        })
+    })
+  }})
 
   // describe('#initialize', () => {
   //   it('fails if already initialized', async () => {
@@ -391,4 +588,7 @@ describe('UniswapV3Pair', () => {
   //     })
   //   }
   // })
+  })
+
 })
+      

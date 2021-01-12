@@ -70,11 +70,6 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
 
-// export type MultiSwapFunction = (
-//   pairs: [Contract, Contract],
-//   amount: BigNumberish,
-//   to: Wallet | string
-// ) => Promise<ContractTransaction>
 
 export type StaticSwapFunction = (
   amount: BigNumberish,
@@ -201,22 +196,27 @@ export interface MultiPairFunctions {
 }
 
 export function createMultiPairFunctions({
-  token0,
+  inputToken,
   swapTarget,
   pair0,
   pair1,
 }: {
-  token0: TestERC20,
+  inputToken: TestERC20,
   swapTarget: TestUniswapV3Router
   pair0: UniswapV3Pair
   pair1: UniswapV3Pair
 }): MultiPairFunctions {
 
-  async function swap0ForExact2(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+
+  async function swap0ForExact2(
+    amountOut: BigNumberish, 
+    to: Wallet | string
+  ): Promise<ContractTransaction> {
    
     const method = swapTarget.swapAForC
   
-    await token0.approve(swapTarget.address, constants.MaxUint256)
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+    //inputToken.approve(swapTarget.address, constants.MaxUint256)
    // await pair0Functions.token0.approve(swapTargetRouter, constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
