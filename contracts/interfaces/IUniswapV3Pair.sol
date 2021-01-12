@@ -40,8 +40,8 @@ interface IUniswapV3Pair {
         uint160 sqrtPrice,
         int24 tick
     );
-    event FeeToChanged(address indexed oldFeeTo, address indexed newFeeTo);
-    event CollectProtocol(uint256 amount0, uint256 amount1);
+    event FeeProtocolChanged(uint8 indexed feeProtocolOld, uint8 indexed feeProtocolNew);
+    event CollectProtocol(address indexed recipient, uint256 amount0, uint256 amount1);
 
     // immutables
     function factory() external view returns (address);
@@ -61,8 +61,6 @@ interface IUniswapV3Pair {
     function maxLiquidityPerTick() external view returns (uint128);
 
     // variables/state
-    function feeTo() external view returns (address);
-
     function slot0()
         external
         view
@@ -73,7 +71,7 @@ interface IUniswapV3Pair {
             bool unlocked
         );
 
-    function liquidity() external view returns (uint128);
+    function slot1() external view returns (uint128 liquidity, uint8 feeProtocol);
 
     function getObservations(uint16[] calldata indices)
         external
@@ -129,10 +127,12 @@ interface IUniswapV3Pair {
         bytes calldata data
     ) external;
 
-    function setFeeTo(address) external;
+    function setFeeProtocol(uint8) external;
 
-    // allows anyone to collect protocol fees to feeTo
-    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
-        external
-        returns (uint256 amount0, uint256 amount1);
+    // allows factory owner to collect protocol fees
+    function collectProtocol(
+        address recipient,
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external returns (uint256 amount0, uint256 amount1);
 }

@@ -74,13 +74,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     Slot0 public override slot0;
 
-    // current in-range liquidity
-    uint128 public override liquidity;
+    struct Slot1 {
+        // the current liquidity
+        uint128 liquidity;
+        // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
+        uint8 feeProtocol;
+    }
+
+    Slot1 public override slot1;
 
     // see Oracle.sol
     Oracle.Observation[1024] private observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
-
-    address public override feeTo;
 
     // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;
@@ -101,6 +105,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlocked = false;
         _;
         slot0.unlocked = true;
+    }
+
+    modifier onlyFactoryOwner() {
+        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
+        _;
     }
 
     constructor() {
@@ -168,10 +177,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tickUpper <= maxTick, 'TUM');
     }
 
-    function setFeeTo(address feeTo_) external override {
-        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
-        emit FeeToChanged(feeTo, feeTo_);
-        feeTo = feeTo_;
+    function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
+        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4), 'FP');
+        emit FeeProtocolChanged(slot1.feeProtocol, feeProtocol);
+        slot1.feeProtocol = feeProtocol;
     }
 
     function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
@@ -260,13 +269,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 FixedPoint128.Q128
             );
 
-        // collect protocol fee, if on
-        if (feeTo != address(0)) {
-            uint256 fee0 = feesOwed0 / 6;
+        // collect protocol fee
+        uint8 feeProtocol = slot1.feeProtocol;
+        if (feeProtocol > 0) {
+            uint256 fee0 = feesOwed0 / feeProtocol;
             feesOwed0 -= fee0;
             feeToFees0 += fee0;
 
-            uint256 fee1 = feesOwed1 / 6;
+            uint256 fee1 = feesOwed1 / feeProtocol;
             feesOwed1 -= fee1;
             feeToFees1 += fee1;
         }
@@ -408,7 +418,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 slot0.observationIndex,
                 _blockTimestamp(),
                 tick,
-                liquidity
+                slot1.liquidity
             );
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
@@ -436,7 +446,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // downcasting is safe because of gross liquidity checks
-                liquidity = uint128(liquidity.addi(params.liquidityDelta));
+                slot1.liquidity = uint128(slot1.liquidity.addi(params.liquidityDelta));
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -460,8 +470,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes data;
         // the value of slot0 at the beginning of the swap
         Slot0 slot0Start;
-        // the value of liquidity at the beginning of the swap
-        uint128 liquidityStart;
+        // the value of slot1 at the beginning of the swap
+        Slot1 slot1Start;
         // the timestamp of the current block
         uint32 blockTimestamp;
     }
@@ -510,7 +520,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 sqrtPriceX96: params.slot0Start.sqrtPriceX96,
                 tick: params.slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
-                liquidity: params.liquidityStart
+                liquidity: params.slot1Start.liquidity
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -583,7 +593,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // update liquidity if it changed
-        if (params.liquidityStart != state.liquidity) liquidity = state.liquidity;
+        if (params.slot1Start.liquidity != state.liquidity) slot1.liquidity = state.liquidity;
 
         // write an oracle entry if the price moved at least one tick
         if (state.tick != params.slot0Start.tick) {
@@ -591,7 +601,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 params.slot0Start.observationIndex,
                 params.blockTimestamp,
                 params.slot0Start.tick,
-                params.liquidityStart
+                params.slot1Start.liquidity
             );
             slot0.tick = state.tick;
         }
@@ -620,7 +630,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
 
         if (zeroForOne) emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
-        else Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
+        else emit Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
@@ -647,7 +657,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 recipient: recipient,
                 data: data,
                 slot0Start: _slot0,
-                liquidityStart: liquidity,
+                slot1Start: slot1,
                 blockTimestamp: _blockTimestamp()
             })
         );
@@ -655,24 +665,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlocked = true;
     }
 
-    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
-        external
-        override
-        lock
-        returns (uint256 amount0, uint256 amount1)
-    {
+    function collectProtocol(
+        address recipient,
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
         amount0 = amount0Requested > feeToFees0 ? feeToFees0 : amount0Requested;
         amount1 = amount1Requested > feeToFees1 ? feeToFees1 : amount1Requested;
 
         if (amount0 > 0) {
             feeToFees0 -= amount0;
-            TransferHelper.safeTransfer(token0, feeTo, amount0);
+            TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
             feeToFees1 -= amount1;
-            TransferHelper.safeTransfer(token1, feeTo, amount1);
+            TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
-        emit CollectProtocol(amount0, amount1);
+        emit CollectProtocol(recipient, amount0, amount1);
     }
 }
