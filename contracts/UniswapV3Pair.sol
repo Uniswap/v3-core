@@ -501,31 +501,34 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // get the price for the next tick
             step.sqrtPriceNextX96 = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
-            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
-                state.sqrtPriceX96,
-                (
-                    zeroForOne
-                        ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
-                        : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
-                )
-                    ? params.sqrtPriceLimitX96
-                    : step.sqrtPriceNextX96,
-                state.liquidity,
-                state.amountSpecifiedRemaining,
-                fee
-            );
+            if (state.liquidity > 0) {
+                (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
+                    state.sqrtPriceX96,
+                    (
+                        zeroForOne
+                            ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+                            : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
+                    )
+                        ? params.sqrtPriceLimitX96
+                        : step.sqrtPriceNextX96,
+                    state.liquidity,
+                    state.amountSpecifiedRemaining,
+                    fee
+                );
 
-            if (exactInput) {
-                state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
-                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());
-            } else {
-                state.amountSpecifiedRemaining += step.amountOut.toInt256();
-                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
-            }
+                if (exactInput) {
+                    state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
+                    state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());
+                } else {
+                    state.amountSpecifiedRemaining += step.amountOut.toInt256();
+                    state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
+                }
 
-            // update global fee tracker
-            if (state.liquidity > 0)
+                // update global fee tracker
                 state.feeGrowthGlobalX128 += FixedPoint128.fraction(step.feeAmount, state.liquidity);
+            } else {
+                state.sqrtPriceX96 = step.sqrtPriceNextX96;
+            }
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
