@@ -62,8 +62,6 @@ contract TickOverflowSafetyEchidnaTest {
                 MAX_LIQUIDITY
             );
 
-        checkTicks(tickLower, tickUpper);
-
         if (flippedLower) {
             if (liquidityDelta < 0) {
                 assert(ticks[tickLower].liquidityGross == 0);
@@ -79,7 +77,7 @@ contract TickOverflowSafetyEchidnaTest {
         }
     }
 
-    function checkTicks(int24 tickLower, int24 tickUpper) public view {
+    function checkTicks(int24 tickLower, int24 tickUpper) external view {
         require(tickLower > MIN_TICK);
         require(tickUpper < MAX_TICK);
         require(tickLower < tickUpper);
