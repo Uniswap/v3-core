@@ -39,28 +39,44 @@ contract TickOverflowSafetyEchidnaTest {
         require(tickLower > MIN_TICK);
         require(tickUpper < MAX_TICK);
         require(tickLower < tickUpper);
-        ticks.update(
-            tickLower,
-            tick,
-            liquidityDelta,
-            feeGrowthGlobal0X128,
-            feeGrowthGlobal1X128,
-            uint32(block.timestamp),
-            false,
-            MAX_LIQUIDITY
-        );
-        ticks.update(
-            tickUpper,
-            tick,
-            liquidityDelta,
-            feeGrowthGlobal0X128,
-            feeGrowthGlobal1X128,
-            uint32(block.timestamp),
-            true,
-            MAX_LIQUIDITY
-        );
+        bool flippedLower =
+            ticks.update(
+                tickLower,
+                tick,
+                liquidityDelta,
+                feeGrowthGlobal0X128,
+                feeGrowthGlobal1X128,
+                uint32(block.timestamp),
+                false,
+                MAX_LIQUIDITY
+            );
+        bool flippedUpper =
+            ticks.update(
+                tickUpper,
+                tick,
+                liquidityDelta,
+                feeGrowthGlobal0X128,
+                feeGrowthGlobal1X128,
+                uint32(block.timestamp),
+                true,
+                MAX_LIQUIDITY
+            );
 
         checkTicks(tickLower, tickUpper);
+
+        if (flippedLower) {
+            if (liquidityDelta < 0) {
+                assert(ticks[tickLower].liquidityGross == 0);
+                ticks.clear(tickLower);
+            } else assert(ticks[tickLower].liquidityGross > 0);
+        }
+
+        if (flippedUpper) {
+            if (liquidityDelta < 0) {
+                assert(ticks[tickUpper].liquidityGross == 0);
+                ticks.clear(tickUpper);
+            } else assert(ticks[tickUpper].liquidityGross > 0);
+        }
     }
 
     function checkTicks(int24 tickLower, int24 tickUpper) public view {
@@ -70,10 +86,10 @@ contract TickOverflowSafetyEchidnaTest {
         require(ticks[tickLower].liquidityGross > 0);
         require(ticks[tickUpper].liquidityGross > 0);
 
-        (uint256 fgi0, uint256 fgi1) =
+        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
-        assert(fgi0 <= feeGrowthGlobal0X128);
-        assert(fgi1 <= feeGrowthGlobal1X128);
+        assert(feeGrowthInside0X128 <= feeGrowthGlobal0X128);
+        assert(feeGrowthInside1X128 <= feeGrowthGlobal1X128);
     }
 
     function moveToTick(int24 target) external {
