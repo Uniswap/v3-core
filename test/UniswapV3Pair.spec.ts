@@ -1335,7 +1335,7 @@ describe('UniswapV3Pair', () => {
     for (const feeProtocol of [0, 6]) {
       describe(feeProtocol > 0 ? 'fee is on' : 'fee is off', () => {
         beforeEach('turn fee on', async () => {
-          await pair.setFeeProtocol(6)
+          await pair.setFeeProtocol(feeProtocol)
         })
 
         const startingPrice = encodePriceSqrt(100001, 100000)
