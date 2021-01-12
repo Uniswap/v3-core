@@ -594,7 +594,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
 
         if (zeroForOne) emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
-        else Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
+        else emit Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
