@@ -21,6 +21,7 @@ import {
   MintFunction,
   InitializeFunction,
   getMaxLiquidityPerTick,
+  NUMBER_OF_ORACLE_OBSERVATIONS,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
@@ -585,7 +586,10 @@ describe('UniswapV3Pair', () => {
       const [{ blockTimestamp: blockTimestampLast, tickCumulative: tickCumulativeLast }] = await pair.getObservations([
         index,
       ])
-      const [tickCurrent, time] = await Promise.all([pair.slot0().then(({ tick }) => tick), pair.time()])
+      const [tickCurrent, time] = await Promise.all([
+        pair.slot0().then(({ tick }) => tick),
+        pair.time().then((time) => time.mod(2 ** 32).toNumber()),
+      ])
       if (time == blockTimestampLast) return { tickCumulative: tickCumulativeLast, blockTimestamp: blockTimestampLast }
       return {
         tickCumulative: tickCumulativeLast.add(BigNumber.from(tickCurrent).mul(time - blockTimestampLast)),
@@ -1338,7 +1342,7 @@ describe('UniswapV3Pair', () => {
     for (const feeProtocol of [0, 6]) {
       describe(feeProtocol > 0 ? 'fee is on' : 'fee is off', () => {
         beforeEach('turn fee on', async () => {
-          await pair.setFeeProtocol(6)
+          await pair.setFeeProtocol(feeProtocol)
         })
 
         const startingPrice = encodePriceSqrt(100001, 100000)
@@ -1356,6 +1360,21 @@ describe('UniswapV3Pair', () => {
         })
 
         describe('#swapExact0For1', () => {
+          beforeEach('initialize oracle', async () => {
+            const observations = new Array(NUMBER_OF_ORACLE_OBSERVATIONS).fill({
+              blockTimestamp: 0,
+              tickCumulative: 0,
+              liquidityCumulative: 0,
+              initialized: true,
+            })
+
+            await Promise.all([
+              pair.setObservations(observations.slice(0, 341) as any, 0),
+              pair.setObservations(observations.slice(341, 682) as any, 341),
+              pair.setObservations(observations.slice(682, 1024) as any, 682),
+            ])
+          })
+
           it('first swap in block with no tick movement', async () => {
             await snapshotGasCost(swapExact0For1(10, wallet.address))
             expect((await pair.slot0()).sqrtPriceX96).to.not.eq(startingPrice)

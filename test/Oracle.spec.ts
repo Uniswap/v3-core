@@ -1,8 +1,10 @@
-import { BigNumberish } from 'ethers'
-import { ethers } from 'hardhat'
-import { OracleTest } from '../typechain/OracleTest'
+import { BigNumber, constants } from 'ethers'
+import { ethers, waffle } from 'hardhat'
+import { MockTimeUniswapV3Pair } from '../typechain/MockTimeUniswapV3Pair'
 import { expect } from './shared/expect'
+import { pairFixture } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
+import { FeeAmount, TICK_SPACINGS } from './shared/utilities'
 
 const CARDINALITY = 1024
 
@@ -13,20 +15,29 @@ const UNINITIALIZED_OBSERVATION = {
   initialized: false,
 }
 
-async function setOracle(oracle: OracleTest, observations: any) {
-  await oracle.setOracle(observations.slice(0, 256) as any, 0)
-  await oracle.setOracle(observations.slice(256, 512) as any, 256)
-  await oracle.setOracle(observations.slice(512, 768) as any, 512)
-  await oracle.setOracle(observations.slice(768, 1024) as any, 768)
+async function setOracle(oracle: MockTimeUniswapV3Pair, observations: any, index: number = 0, time: number = 0) {
+  await Promise.all([
+    oracle.setObservations(observations.slice(0, 341) as any, 0),
+    oracle.setObservations(observations.slice(341, 682) as any, 341),
+    oracle.setObservations(observations.slice(682, 1024) as any, 682),
+    oracle.setOracleData(index, time),
+  ])
 }
 
 describe('Oracle', () => {
-  let oracle: OracleTest
+  const [wallet, other] = waffle.provider.getWallets()
+
+  let loadFixture: ReturnType<typeof waffle.createFixtureLoader>
+  before('create fixture loader', async () => {
+    loadFixture = waffle.createFixtureLoader([wallet, other])
+  })
+
+  let oracle: MockTimeUniswapV3Pair
 
   describe('#getObservations', () => {
-    before('deploy OracleTest', async () => {
-      const oracleTestFactory = await ethers.getContractFactory('OracleTest')
-      oracle = (await oracleTestFactory.deploy()) as OracleTest
+    before('deploy pair', async () => {
+      const { createPair } = await loadFixture(pairFixture)
+      oracle = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM], 0)
     })
 
     it('length', async () => {
@@ -55,24 +66,33 @@ describe('Oracle', () => {
         await snapshotGasCost(await oracle.estimateGas.getObservations([0, 1]))
       })
       it('10', async () => {
-        await snapshotGasCost(await oracle.estimateGas.getObservations([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]))
+        await snapshotGasCost(await oracle.estimateGas.getObservations(new Array(10).fill(0).map((_, i) => i)))
       })
+      it('max', async () => {
+        await snapshotGasCost(await oracle.estimateGas.getObservations(new Array(CARDINALITY).fill(0).map((_, i) => i)))
+      }).timeout(60000)
     })
   })
 
   describe('#scry', () => {
-    before('deploy OracleTest', async () => {
-      const oracleTestFactory = await ethers.getContractFactory('OracleTest')
-      oracle = (await oracleTestFactory.deploy()) as OracleTest
+    before('deploy pair', async () => {
+      const { createPair } = await loadFixture(pairFixture)
+      oracle = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM], 0)
+    })
+
+    // this is so the actual block.timestamp check in `scry` works
+    before('travel far, far into the future', async () => {
+      await ethers.provider.send('evm_setNextBlockTimestamp', [2 ** 32 + CARDINALITY])
+      await ethers.provider.send('evm_mine', [])
     })
 
     describe('failures', () => {
       it('fails if looking into the future', async () => {
-        await expect(oracle.scry(1, 0)).to.be.revertedWith('BT')
+        await expect(oracle.scry(constants.MaxUint256)).to.be.revertedWith('BT')
       })
 
       it('fails while uninitialized', async () => {
-        await expect(oracle.scry(0, 0)).to.be.revertedWith('UI')
+        await expect(oracle.scry(0)).to.be.revertedWith('UI')
       })
 
       it('fails for single observation without any intervening time', async () => {
@@ -84,7 +104,7 @@ describe('Oracle', () => {
           initialized: true,
         }
         await setOracle(oracle, observations)
-        await expect(oracle.scry(0, 0)).to.be.revertedWith('OLD')
+        await expect(oracle.scry(0)).to.be.revertedWith('OLD')
       })
     })
 
@@ -103,11 +123,9 @@ describe('Oracle', () => {
           liquidityCumulative: 0,
           initialized: true,
         }
-        await setOracle(oracle, observations)
+        await setOracle(oracle, observations, 1, 1)
 
-        await oracle.setBlockTimestamp(1)
-
-        const index = await oracle.scry(1, 1)
+        const index = await oracle.scry(1)
 
         expect(index).to.be.eq(1)
       })
@@ -120,11 +138,9 @@ describe('Oracle', () => {
           liquidityCumulative: 0,
           initialized: true,
         }
-        await setOracle(oracle, observations)
+        await setOracle(oracle, observations, 0, 1)
 
-        await oracle.setBlockTimestamp(1)
-
-        const index = await oracle.scry(1, 0)
+        const index = await oracle.scry(1)
 
         expect(index).to.be.eq(CARDINALITY)
       })
@@ -143,11 +159,9 @@ describe('Oracle', () => {
           liquidityCumulative: 0,
           initialized: true,
         }
-        await setOracle(oracle, observations)
+        await setOracle(oracle, observations, 1, 2)
 
-        await oracle.setBlockTimestamp(2)
-
-        const index = await oracle.scry(1, 1)
+        const index = await oracle.scry(1)
 
         expect(index).to.be.eq(1)
       })
@@ -166,66 +180,70 @@ describe('Oracle', () => {
       })
 
       before(async () => {
-        await setOracle(oracle, observations)
-        await oracle.setBlockTimestamp(observations[observations.length - 1].blockTimestamp + 1)
+        await setOracle(
+          oracle,
+          observations,
+          observations.length - 1,
+          observations[observations.length - 1].blockTimestamp + 1
+        )
       })
 
       it('works for 1', async () => {
-        const index = await oracle.scry(1, observations.length - 1)
+        const index = await oracle.scry(1)
 
         expect(index).to.be.eq(1)
       })
 
       it('works for 2', async () => {
-        const index = await oracle.scry(2, observations.length - 1)
+        const index = await oracle.scry(2)
 
         expect(index).to.be.eq(1)
       })
 
       it('works for 13', async () => {
-        const index = await oracle.scry(13, observations.length - 1)
+        const index = await oracle.scry(13)
 
         expect(index).to.be.eq(1)
       })
 
       it('works for 14', async () => {
-        const index = await oracle.scry(14, observations.length - 1)
+        const index = await oracle.scry(14)
 
         expect(index).to.be.eq(2)
       })
 
       it('works for 6655', async () => {
-        const index = await oracle.scry(6655, observations.length - 1)
+        const index = await oracle.scry(6655)
 
         expect(index).to.be.eq(512)
       })
 
       it('works for 6656', async () => {
-        const index = await oracle.scry(6656, observations.length - 1)
+        const index = await oracle.scry(6656)
 
         expect(index).to.be.eq(512)
       })
 
       it('works for 6657', async () => {
-        const index = await oracle.scry(6657, observations.length - 1)
+        const index = await oracle.scry(6657)
 
         expect(index).to.be.eq(513)
       })
 
       it('works for 13298', async () => {
-        const index = await oracle.scry(13298, observations.length - 1)
+        const index = await oracle.scry(13298)
 
         expect(index).to.be.eq(1023)
       })
 
       it('works for 13299', async () => {
-        const index = await oracle.scry(13299, observations.length - 1)
+        const index = await oracle.scry(13299)
 
         expect(index).to.be.eq(1023)
       })
 
       it('works for 13300', async () => {
-        const index = await oracle.scry(13300, observations.length - 1)
+        const index = await oracle.scry(13300)
 
         expect(index).to.be.eq(CARDINALITY)
       })
@@ -249,60 +267,59 @@ describe('Oracle', () => {
       }
 
       before(async () => {
-        await setOracle(oracle, observations)
-        await oracle.setBlockTimestamp(observations[923].blockTimestamp + 1)
+        await setOracle(oracle, observations, 923, observations[923].blockTimestamp + 1)
       })
 
       it('works for 1', async () => {
-        const index = await oracle.scry(1, 923)
+        const index = await oracle.scry(1)
 
         expect(index).to.be.eq(CARDINALITY + (1 - 100))
       })
 
       it('works for 13', async () => {
-        const index = await oracle.scry(13, 923)
+        const index = await oracle.scry(13)
 
         expect(index).to.be.eq(CARDINALITY + (1 - 100))
       })
 
       it('works for 14', async () => {
-        const index = await oracle.scry(14, 923)
+        const index = await oracle.scry(14)
 
         expect(index).to.be.eq(CARDINALITY + (2 - 100))
       })
 
       it('works for 6655', async () => {
-        const index = await oracle.scry(6655, 923)
+        const index = await oracle.scry(6655)
 
         expect(index).to.be.eq((CARDINALITY + (512 - 100)) % CARDINALITY)
       })
 
       it('works for 6656', async () => {
-        const index = await oracle.scry(6656, 923)
+        const index = await oracle.scry(6656)
 
         expect(index).to.be.eq((CARDINALITY + (512 - 100)) % CARDINALITY)
       })
 
       it('works for 6657', async () => {
-        const index = await oracle.scry(6657, 923)
+        const index = await oracle.scry(6657)
 
         expect(index).to.be.eq((CARDINALITY + (513 - 100)) % CARDINALITY)
       })
 
       it('works for 13298', async () => {
-        const index = await oracle.scry(13298, 923)
+        const index = await oracle.scry(13298)
 
         expect(index).to.be.eq((CARDINALITY + (1023 - 100)) % CARDINALITY)
       })
 
       it('works for 13299', async () => {
-        const index = await oracle.scry(13299, 923)
+        const index = await oracle.scry(13299)
 
         expect(index).to.be.eq((CARDINALITY + (1023 - 100)) % CARDINALITY)
       })
 
       it('works for 13300', async () => {
-        const index = await oracle.scry(13300, 923)
+        const index = await oracle.scry(13300)
 
         expect(index).to.be.eq(CARDINALITY)
       })
@@ -329,78 +346,76 @@ describe('Oracle', () => {
         })
 
       before(async () => {
-        await setOracle(oracle, observations)
-        await oracle.setBlockTimestamp(observations[observations.length - 1].blockTimestamp + 2 ** 32 + 1)
+        await setOracle(
+          oracle,
+          observations,
+          observations.length - 1,
+          observations[observations.length - 1].blockTimestamp + 2 ** 32 + 1
+        )
       })
 
       it('works for +1', async () => {
-        const index = await oracle.scry(start + 1, observations.length - 1)
+        const index = await oracle.scry(start + 1)
 
         expect(index).to.be.eq(1)
       })
 
       it('works for +2', async () => {
-        const index = await oracle.scry(start + 2, observations.length - 1)
+        const index = await oracle.scry(start + 2)
 
         expect(index).to.be.eq(1)
       })
 
       it('works for +13', async () => {
-        const index = await oracle.scry(start + 13, observations.length - 1)
+        const index = await oracle.scry(start + 13)
 
         expect(index).to.be.eq(1)
       })
 
       it('works for +14', async () => {
-        const index = await oracle.scry(start + 14, observations.length - 1)
+        const index = await oracle.scry(start + 14)
 
         expect(index).to.be.eq(2)
       })
 
       it('works for boundary-2', async () => {
-        const index = await oracle.scry(2 ** 32 - 2, observations.length - 1)
+        const index = await oracle.scry(2 ** 32 - 2)
 
         expect(index).to.be.eq(231)
       })
 
       it('works for boundary-1', async () => {
-        const index = await oracle.scry(2 ** 32 - 1, observations.length - 1)
+        const index = await oracle.scry(2 ** 32 - 1)
 
         expect(index).to.be.eq(231)
       })
 
       it('works for boundary+1', async () => {
-        const index = await oracle.scry(0, observations.length - 1)
+        const index = await oracle.scry(0)
 
         expect(index).to.be.eq(231)
       })
 
       it('works for boundary+5', async () => {
-        const index = await oracle.scry(4, observations.length - 1)
+        const index = await oracle.scry(4)
 
         expect(index).to.be.eq(232)
       })
 
       it('works for newest-1', async () => {
-        const index = await oracle.scry(
-          observations[observations.length - 1].blockTimestamp - 1,
-          observations.length - 1
-        )
+        const index = await oracle.scry(observations[observations.length - 1].blockTimestamp - 1)
 
         expect(index).to.be.eq(1023)
       })
 
       it('works for newest', async () => {
-        const index = await oracle.scry(observations[observations.length - 1].blockTimestamp, observations.length - 1)
+        const index = await oracle.scry(observations[observations.length - 1].blockTimestamp)
 
         expect(index).to.be.eq(1023)
       })
 
       it('works for newest+1', async () => {
-        const index = await oracle.scry(
-          observations[observations.length - 1].blockTimestamp + 1,
-          observations.length - 1
-        )
+        const index = await oracle.scry(observations[observations.length - 1].blockTimestamp + 1)
 
         expect(index).to.be.eq(CARDINALITY)
       })
@@ -432,66 +447,65 @@ describe('Oracle', () => {
       }
 
       before(async () => {
-        await setOracle(oracle, observations)
-        await oracle.setBlockTimestamp(observations[923].blockTimestamp + 2 ** 32 + 1)
+        await setOracle(oracle, observations, 923, observations[923].blockTimestamp + 2 ** 32 + 1)
       })
 
       it('works for +1', async () => {
-        const index = await oracle.scry(start + 1, 923)
+        const index = await oracle.scry(start + 1)
 
         expect(index).to.be.eq(CARDINALITY + (1 - 100))
       })
 
       it('works for +13', async () => {
-        const index = await oracle.scry(start + 13, 923)
+        const index = await oracle.scry(start + 13)
 
         expect(index).to.be.eq(CARDINALITY + (1 - 100))
       })
 
       it('works for +14', async () => {
-        const index = await oracle.scry(start + 14, 923)
+        const index = await oracle.scry(start + 14)
 
         expect(index).to.be.eq(CARDINALITY + (2 - 100))
       })
 
       it('works for boundary-2', async () => {
-        const index = await oracle.scry(2 ** 32 - 2, 923)
+        const index = await oracle.scry(2 ** 32 - 2)
 
         expect(index).to.be.eq((CARDINALITY + (231 - 100)) % CARDINALITY)
       })
 
       it('works for boundary-1', async () => {
-        const index = await oracle.scry(2 ** 32 - 1, 923)
+        const index = await oracle.scry(2 ** 32 - 1)
 
         expect(index).to.be.eq((CARDINALITY + (231 - 100)) % CARDINALITY)
       })
 
       it('works for boundary+1', async () => {
-        const index = await oracle.scry(0, 923)
+        const index = await oracle.scry(0)
 
         expect(index).to.be.eq((CARDINALITY + (231 - 100)) % CARDINALITY)
       })
 
       it('works for boundary+5', async () => {
-        const index = await oracle.scry(4, 923)
+        const index = await oracle.scry(4)
 
         expect(index).to.be.eq((CARDINALITY + (232 - 100)) % CARDINALITY)
       })
 
       it('works for newest-1', async () => {
-        const index = await oracle.scry(observations[923].blockTimestamp - 1, 923)
+        const index = await oracle.scry(observations[923].blockTimestamp - 1)
 
         expect(index).to.be.eq((CARDINALITY + (1023 - 100)) % CARDINALITY)
       })
 
       it('works for newest', async () => {
-        const index = await oracle.scry(observations[923].blockTimestamp, 923)
+        const index = await oracle.scry(observations[923].blockTimestamp)
 
         expect(index).to.be.eq((CARDINALITY + (1023 - 100)) % CARDINALITY)
       })
 
       it('works for newest+1', async () => {
-        const index = await oracle.scry(observations[923].blockTimestamp + 1, 923)
+        const index = await oracle.scry(observations[923].blockTimestamp + 1)
 
         expect(index).to.be.eq(CARDINALITY)
       })
@@ -512,9 +526,8 @@ describe('Oracle', () => {
           liquidityCumulative: 0,
           initialized: true,
         }
-        await setOracle(oracle, observations)
-        await oracle.setBlockTimestamp(1)
-        await snapshotGasCost(await oracle.estimateGas.scry(1, 1))
+        await setOracle(oracle, observations, 1, 1)
+        await snapshotGasCost(await oracle.estimateGas.scry(1))
       })
 
       it('scry cost for timestamp greater than the most recent observation', async () => {
@@ -525,9 +538,8 @@ describe('Oracle', () => {
           liquidityCumulative: 0,
           initialized: true,
         }
-        await setOracle(oracle, observations)
-        await oracle.setBlockTimestamp(1)
-        await snapshotGasCost(await oracle.estimateGas.scry(1, 0))
+        await setOracle(oracle, observations, 0, 1)
+        await snapshotGasCost(await oracle.estimateGas.scry(1))
       })
 
       it('scry cost for worst-case binary search', async () => {
@@ -544,9 +556,8 @@ describe('Oracle', () => {
           liquidityCumulative: 0,
           initialized: true,
         }
-        await setOracle(oracle, observations)
-        await oracle.setBlockTimestamp(2)
-        await snapshotGasCost(await oracle.estimateGas.scry(1, 1))
+        await setOracle(oracle, observations, 1, 2)
+        await snapshotGasCost(await oracle.estimateGas.scry(1))
       })
     })
   })

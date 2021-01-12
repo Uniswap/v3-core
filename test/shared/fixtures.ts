@@ -42,7 +42,7 @@ type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
 interface PairFixture extends TokensAndFactoryFixture {
   swapTarget: TestUniswapV3Callee
-  createPair(fee: number, tickSpacing: number): Promise<MockTimeUniswapV3Pair>
+  createPair(fee: number, tickSpacing: number, time?: number): Promise<MockTimeUniswapV3Pair>
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
@@ -64,7 +64,7 @@ export const pairFixture: Fixture<PairFixture> = async function ([owner]: Wallet
     token2,
     factory,
     swapTarget,
-    createPair: async (fee, tickSpacing) => {
+    createPair: async (fee, tickSpacing, time = TEST_PAIR_START_TIME) => {
       const mockTimePairDeployer = (await mockTimeUniswapV3PairDeployerFactory.deploy()) as MockTimeUniswapV3PairDeployer
       const tx = await mockTimePairDeployer.deploy(factory.address, token0.address, token1.address, fee, tickSpacing)
 
@@ -72,7 +72,7 @@ export const pairFixture: Fixture<PairFixture> = async function ([owner]: Wallet
       const pairAddress = receipt.events?.[0].args?.pair as string
       const pair = mockTimeUniswapV3PairFactory.attach(pairAddress) as MockTimeUniswapV3Pair
 
-      await pair.setTime(TEST_PAIR_START_TIME)
+      if (time > 0) await pair.setTime(time)
       return pair
     },
   }

@@ -84,7 +84,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     Slot1 public override slot1;
 
     // see Oracle.sol
-    Oracle.Observation[1024] private observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
+    Oracle.Observation[1024] internal observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
 
     // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;
