@@ -19,6 +19,9 @@ contract TickOverflowSafetyEchidnaTest {
     uint256 private totalGrowth0 = 0;
     uint256 private totalGrowth1 = 0;
 
+    // the current time mod 2**32
+    uint32 time = 1;
+
     function increaseFeeGrowthGlobal0X128(uint256 amount) external {
         require(totalGrowth0 + amount > totalGrowth0); // overflow check
         feeGrowthGlobal0X128 += amount; // overflow desired
@@ -29,6 +32,10 @@ contract TickOverflowSafetyEchidnaTest {
         require(totalGrowth1 + amount > totalGrowth1); // overflow check
         feeGrowthGlobal1X128 += amount; // overflow desired
         totalGrowth1 += amount;
+    }
+
+    function increaseTime(uint32 by) external {
+        time += by;
     }
 
     function setPosition(
@@ -46,7 +53,7 @@ contract TickOverflowSafetyEchidnaTest {
                 liquidityDelta,
                 feeGrowthGlobal0X128,
                 feeGrowthGlobal1X128,
-                uint32(block.timestamp),
+                time,
                 false,
                 MAX_LIQUIDITY
             );
@@ -57,7 +64,7 @@ contract TickOverflowSafetyEchidnaTest {
                 liquidityDelta,
                 feeGrowthGlobal0X128,
                 feeGrowthGlobal1X128,
-                uint32(block.timestamp),
+                time,
                 true,
                 MAX_LIQUIDITY
             );
@@ -86,8 +93,8 @@ contract TickOverflowSafetyEchidnaTest {
 
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
-        assert(feeGrowthInside0X128 <= feeGrowthGlobal0X128);
-        assert(feeGrowthInside1X128 <= feeGrowthGlobal1X128);
+        assert(feeGrowthInside0X128 <= totalGrowth0);
+        assert(feeGrowthInside1X128 <= totalGrowth1);
     }
 
     function moveToTick(int24 target) external {
@@ -96,11 +103,10 @@ contract TickOverflowSafetyEchidnaTest {
         while (tick != target) {
             if (tick < target) {
                 if (ticks[tick + 1].liquidityGross > 0)
-                    ticks.cross(tick + 1, feeGrowthGlobal0X128, feeGrowthGlobal1X128, uint32(block.timestamp));
+                    ticks.cross(tick + 1, feeGrowthGlobal0X128, feeGrowthGlobal1X128, time);
                 tick++;
             } else {
-                if (ticks[tick].liquidityGross > 0)
-                    ticks.cross(tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128, uint32(block.timestamp));
+                if (ticks[tick].liquidityGross > 0) ticks.cross(tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128, time);
                 tick--;
             }
         }
