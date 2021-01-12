@@ -105,17 +105,23 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         bytes calldata data
     ) public override {
         console.log('inside swap callback! :)');
+        
         emit SwapCallback(amount0Delta, amount1Delta);
 
         (address[] memory pairs, address recipient) = abi.decode(data, (address [], address));
+
+        console.log('pairs.address');
   
         if (pairs.length > 0) {
+            console.log('pairs.length > 0, go to second swap');
             _swapAForExactB(pairs, amount0Delta, recipient);
 
         } else if (pairs.length == 0) {
+            console.log('pairs.length < 0, repay first swap');
             IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(-amount0Delta));
 
         } else {
+            console.log('revert for array calc error');
             revert();
         }        
     }

@@ -216,9 +216,7 @@ export function createMultiPairFunctions({
     const method = swapTarget.swapAForC
   
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
-    //inputToken.approve(swapTarget.address, constants.MaxUint256)
-   // await pair0Functions.token0.approve(swapTargetRouter, constants.MaxUint256)
-
+    
     const toAddress = typeof to === 'string' ? to : to.address
 
     return method([pair0.address, pair1.address], amountOut, toAddress)
