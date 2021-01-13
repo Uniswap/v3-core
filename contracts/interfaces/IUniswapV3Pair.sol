@@ -83,7 +83,7 @@ interface IUniswapV3Pair {
     function tickCurrent() external view returns (int24);
 
     // initialize the pair
-    function initialize(uint160 sqrtPriceX96, bytes calldata data) external;
+    function initialize(uint160 sqrtPriceX96) external;
 
     // mint some liquidity to an address
     function mint(
