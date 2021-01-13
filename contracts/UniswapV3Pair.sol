@@ -194,13 +194,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
-        Slot0 memory _slot0 = Slot0({
-            sqrtPriceX96: sqrtPriceX96,
-            tick: tick,
-            observationIndex: 0,
-            feeProtocol: 0,
-            unlocked: true
-        });
+        Slot0 memory _slot0 =
+            Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, observationIndex: 0, feeProtocol: 0, unlocked: true});
 
         observations[_slot0.observationIndex] = Oracle.Observation({
             blockTimestamp: _blockTimestamp(),
