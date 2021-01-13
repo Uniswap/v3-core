@@ -143,47 +143,6 @@ describe('UniswapV3Pair', () => {
     it('fails if not initialized', async () => {
       await expect(mint(wallet.address, -tickSpacing, tickSpacing, 0)).to.be.revertedWith('LOK')
     })
-
-    it.only('edge case', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
-      await mint(wallet.address, minTick, maxTick, 100)
-
-      // simulate a bunch of fee growth
-      await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
-      await pair.setFeeGrowthGlobal1X128(constants.MaxUint256)
-
-      // poke position to accumulate fees
-      await mint(wallet.address, minTick, maxTick, 100)
-      const { feesOwed0: feesOwed0Before, feesOwed1: feesOwed1Before } = await pair.positions(
-        getPositionKey(wallet.address, minTick, maxTick)
-      )
-      expect(feesOwed0Before).to.be.eq('34028236692093846346337460743176821145599')
-      expect(feesOwed1Before).to.be.eq('34028236692093846346337460743176821145599')
-
-      // create another position
-      await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 100)
-
-      // pay 2 wei of fees, overflowing one of the fee growths
-      await swapExact0For1(1, wallet.address)
-      await swapExact0For1(1, wallet.address)
-
-      // poke original position to accumulate
-      await mint(wallet.address, minTick, maxTick, 0)
-      const { feesOwed0: feesOwed0After, feesOwed1: feesOwed1After } = await pair.positions(
-        getPositionKey(wallet.address, minTick, maxTick)
-      )
-      expect(feesOwed0After.sub(feesOwed0Before)).to.be.eq(1)
-      expect(feesOwed1After.sub(feesOwed1Before)).to.be.eq(0)
-
-      // poke second position to accumulate
-      await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
-      const { feesOwed0: feesOwed0Other, feesOwed1: feesOwed1Other } = await pair.positions(
-        getPositionKey(wallet.address, minTick, maxTick)
-      )
-      expect(feesOwed0Other).to.be.eq(1)
-      expect(feesOwed1Other).to.be.eq(0)
-    })
-
     describe('after initialization', () => {
       beforeEach('initialize the pair at price of 10:1', async () => {
         await pair.initialize(encodePriceSqrt(1, 10))
