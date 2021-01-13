@@ -219,7 +219,7 @@ export function createMultiPairFunctions({
     
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return method([pair0.address, pair1.address], amountOut, toAddress)
+    return method([pair0.address, pair1.address], amountOut, toAddress, false)
   }
 
   return {

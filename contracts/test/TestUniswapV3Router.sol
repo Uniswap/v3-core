@@ -81,20 +81,23 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
     function swapAForC( 
         address [] memory pairs,
         uint256 amount1Out,
-        address recipient
+        address recipient,
+        bool finished
     ) public {
         console.log('starting swapAForC');
-        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient)); //swap 0 for exact 1 (B for exact C)
+
+        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient, (finished = false))); //swap 0 for exact 1 (B for exact C)
     }
 
     function _swapAForExactB( 
         address [] memory pairs,
         int256 amount1Out,
-        address recipient
+        address recipient,
+        bool finished
     ) internal {
         console.log('starting second swap');
-        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out, 0, pairs[1], abi.encode(pairs[0], recipient)); //swap 0 for exact 1
-                                                                                                        // possible to slice array for last position, then adjust towards zero by one instance on each internal callback, and as a result pass a arbitrary length of pairs for >3 token multihop?
+        
+        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out, 0, pairs[1], abi.encode(pairs, recipient, (finished = true))); //swap 0 for exact 1
     }
 
     //@dev  executes 2nd swap if there are more than one abi.encoded pair address's in call, pays off first if there is 1 remaining.
@@ -108,22 +111,20 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         
         emit SwapCallback(amount0Delta, amount1Delta);
 
-        (address[] memory pairs, address recipient) = abi.decode(data, (address [], address));
+        (address[] memory pairs, address recipient, bool finished) = abi.decode(data, (address [], address, bool));
 
-        console.log('pairs.address');
+        console.log('abi decoded');
   
-        if (pairs.length > 0) {
-            console.log('pairs.length > 0, go to second swap');
-            _swapAForExactB(pairs, amount0Delta, recipient);
+        if (finished == false) {
+            console.log('if finished == false, go to second swap');
+           
+            _swapAForExactB(pairs, amount0Delta, recipient, finished);
 
-        } else if (pairs.length == 0) {
-            console.log('pairs.length < 0, repay first swap');
+        } else if (finished == true) {
+            console.log('finished == true, repay first swap');
             IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(-amount0Delta));
 
-        } else {
-            console.log('revert for array calc error');
-            revert();
-        }        
+        }       
     }
 
     function initialize(address pair, uint160 sqrtPrice) external {

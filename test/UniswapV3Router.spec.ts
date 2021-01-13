@@ -309,7 +309,7 @@ describe.only('multi-swaps', () => {
           await token2.approve(pair1.address, constants.MaxUint256)
 
           const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
-          await swap0ForExact2(10, walletAddress)
+          await swap0ForExact2(1, walletAddress)
         })
       })  
      })
