@@ -54,7 +54,7 @@ library Oracle {
             atOrAfter = self[i % CARDINALITY];
 
             // we've landed on an uninitialized tick, keep searching higher (more recently)
-            if (atOrAfter.initialized == false) {
+            if (!atOrAfter.initialized) {
                 l = i + 1;
                 continue;
             }

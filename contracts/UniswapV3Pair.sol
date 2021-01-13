@@ -137,21 +137,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return _observations;
     }
 
-    function scry(uint256 blockTimestamp) external view override returns (uint16 firstIndexAfter) {
-        require(blockTimestamp <= block.timestamp, 'BT'); // can't look into the future
-
+    function scry(uint32 secondsAgo) external view override returns (uint16 firstIndexAfter) {
         uint16 index = slot0.observationIndex;
 
         Oracle.Observation memory oldest = observations[(index + 1) % Oracle.CARDINALITY];
 
         // first, ensure that the oldest known observation is initialized
-        if (oldest.initialized == false) {
+        if (!oldest.initialized) {
             oldest = observations[0];
             require(oldest.initialized, 'UI');
         }
 
-        uint32 target = uint32(blockTimestamp);
         uint32 current = _blockTimestamp();
+        uint32 target = current - secondsAgo;
 
         // then, ensure that the target is greater than the oldest observation (accounting for wrapping)
         require(oldest.blockTimestamp < target || (oldest.blockTimestamp > current && target <= current), 'OLD');
@@ -587,7 +585,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
-                // only recompute tick if the price changed
+                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), but haven't moved
                 if (state.sqrtPriceX96 != step.sqrtPriceStartX96)
                     state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
             }
@@ -646,7 +644,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         Slot0 memory _slot0 = slot0;
 
-        require(_slot0.unlocked == true, 'LOK');
+        require(_slot0.unlocked, 'LOK');
         slot0.unlocked = false;
 
         require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
