@@ -130,6 +130,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
     }
 
+    function getBalance0() private view returns(uint256) {
+        return getBalance(token0);
+    }
+
+    function getBalance1() private view returns(uint256) {
+        return getBalance(token1);
+    }
+
+    function getBalance(address token) private view returns(uint256) {
+        return IERC20(token).balanceOf(address(this));
+    }
+
     // returns the block timestamp % 2**32
     // overridden for tests
     function _blockTimestamp() internal view virtual returns (uint32) {
@@ -314,19 +326,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // if necessary, collect payment via callback
         // TODO we could decrease bytecode size here at the cost of gas increase
         if (amount0 > 0 && amount1 > 0) {
-            uint256 balance0 = IERC20(token0).balanceOf(address(this));
-            uint256 balance1 = IERC20(token1).balanceOf(address(this));
+            uint256 balance0 = getBalance0();
+            uint256 balance1 = getBalance1();
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
-            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
+            require(balance0.add(amount0) <= getBalance0(), 'M0');
+            require(balance1.add(amount1) <= getBalance1(), 'M1');
         } else if (amount0 > 0 && amount1 == 0) {
-            uint256 balance0 = IERC20(token0).balanceOf(address(this));
+            uint256 balance0 = getBalance0();
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, 0, data);
-            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
+            require(balance0.add(amount0) <= getBalance0(), 'M0');
         } else if (amount0 == 0 && amount1 > 0) {
-            uint256 balance1 = IERC20(token1).balanceOf(address(this));
+            uint256 balance1 = getBalance1();
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(0, amount1, data);
-            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
+            require(balance1.add(amount1) <= getBalance1(), 'M1');
         }
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
@@ -591,11 +603,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
 
         // callback for the input
-        uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
+        uint256 balanceBefore = getBalance(tokenIn);
         zeroForOne
             ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
-        require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
+        require(balanceBefore.add(uint256(amountIn)) >= getBalance(tokenIn), 'IIA');
 
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
 
