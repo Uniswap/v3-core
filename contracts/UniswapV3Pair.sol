@@ -26,14 +26,10 @@ import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
-    using SafeMath for uint128;
     using SafeMath for uint256;
-    using SignedSafeMath for int128;
     using SignedSafeMath for int256;
-    using SafeCast for int256;
     using SafeCast for uint256;
     using MixedSafeMath for uint128;
-    using MixedSafeMath for uint256;
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
@@ -527,7 +523,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
 
             // update global fee tracker
-            state.feeGrowthGlobalX128 += FixedPoint128.fraction(step.feeAmount, state.liquidity);
+            state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {

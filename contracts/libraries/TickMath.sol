@@ -3,13 +3,12 @@ pragma solidity >=0.5.0;
 
 // sqrt(1.0001) ticks
 library TickMath {
-    int24 private constant MIN_TICK = -887272;
-    int24 private constant MAX_TICK = -MIN_TICK;
+    uint24 private constant MAX_TICK = 887272;
 
     // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > max tick.
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
         uint256 absTick = tick < 0 ? uint24(-tick) : uint24(tick);
-        require(absTick <= uint24(MAX_TICK), 'T');
+        require(absTick <= MAX_TICK, 'T');
 
         ratio = absTick & 0x1 != 0 ? 0xfffcb933bd6fad37aa2d162d1a594001 : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfff97272373d413259a46990580e213a) >> 128;
