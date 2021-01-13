@@ -130,15 +130,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
     }
 
-    function getBalance0() private view returns(uint256) {
+    function getBalance0() private view returns (uint256) {
         return getBalance(token0);
     }
 
-    function getBalance1() private view returns(uint256) {
+    function getBalance1() private view returns (uint256) {
         return getBalance(token1);
     }
 
-    function getBalance(address token) private view returns(uint256) {
+    function getBalance(address token) private view returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 
