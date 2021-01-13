@@ -1,12 +1,12 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Oracle #getObservations #gas 1 1`] = `24096`;
+exports[`Oracle #getObservations #gas 1 1`] = `24101`;
 
-exports[`Oracle #getObservations #gas 2 1`] = `26022`;
+exports[`Oracle #getObservations #gas 2 1`] = `26027`;
 
-exports[`Oracle #getObservations #gas 10 1`] = `41448`;
+exports[`Oracle #getObservations #gas 10 1`] = `41453`;
 
-exports[`Oracle #getObservations #gas max 1`] = `2348004`;
+exports[`Oracle #getObservations #gas max 1`] = `2348009`;
 
 exports[`Oracle #scry gas scry cost for timestamp equal to the most recent observation 1`] = `26371`;
 

@@ -36,9 +36,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using Position for mapping(bytes32 => Position.Info);
     using Oracle for Oracle.Observation[1024]; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
 
-    uint8 private constant PRICE_BIT = 0x10;
-    uint8 private constant UNLOCKED_BIT = 0x01;
-
     address public immutable override factory;
     address public immutable override token0;
     address public immutable override token1;
@@ -134,12 +131,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function getObservations(uint16[] calldata indices) external view override returns (Oracle.Observation[] memory o) {
-        o = new Oracle.Observation[](indices.length);
-        for (uint16 i; i < indices.length; i++) o[i] = observations[indices[i]];
+    function getObservations(uint16[] calldata indices) external view override returns (Oracle.Observation[] memory) {
+        Oracle.Observation[] memory _observations = new Oracle.Observation[](indices.length);
+        for (uint16 i; i < indices.length; i++) _observations[i] = observations[indices[i]];
+        return _observations;
     }
 
-    function scry(uint256 blockTimestamp) external view override returns (uint16 indexAtOrAfter) {
+    function scry(uint256 blockTimestamp) external view override returns (uint16 firstIndexAfter) {
         require(blockTimestamp <= block.timestamp, 'BT'); // can't look into the future
 
         uint16 index = slot0.observationIndex;

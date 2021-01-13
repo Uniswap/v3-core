@@ -79,7 +79,7 @@ interface IUniswapV3Pair {
         view
         returns (Oracle.Observation[] memory observations);
 
-    function scry(uint256 blockTimestamp) external view returns (uint16 indexAtOrAfter);
+    function scry(uint256 blockTimestamp) external view returns (uint16 firstIndexAfter);
 
     function tickBitmap(int16) external view returns (uint256);
 
