@@ -1359,22 +1359,22 @@ describe('UniswapV3Pair', () => {
           expect((await pair.slot0()).sqrtPriceX96).to.eq(startingPrice)
         })
 
-        describe('#swapExact0For1', () => {
-          beforeEach('initialize oracle', async () => {
-            const observations = new Array(NUMBER_OF_ORACLE_OBSERVATIONS).fill({
-              blockTimestamp: 0,
-              tickCumulative: 0,
-              liquidityCumulative: 0,
-              initialized: true,
-            })
-
-            await Promise.all([
-              pair.setObservations(observations.slice(0, 341) as any, 0),
-              pair.setObservations(observations.slice(341, 682) as any, 341),
-              pair.setObservations(observations.slice(682, 1024) as any, 682),
-            ])
+        beforeEach('initialize oracle', async () => {
+          const observations = new Array(NUMBER_OF_ORACLE_OBSERVATIONS).fill({
+            blockTimestamp: 0,
+            tickCumulative: 0,
+            liquidityCumulative: 0,
+            initialized: true,
           })
 
+          await Promise.all([
+            pair.setObservations(observations.slice(0, 341) as any, 0),
+            pair.setObservations(observations.slice(341, 682) as any, 341),
+            pair.setObservations(observations.slice(682, 1024) as any, 682),
+          ])
+        })
+
+        describe('#swapExact0For1', () => {
           it('first swap in block with no tick movement', async () => {
             await snapshotGasCost(swapExact0For1(10, wallet.address))
             expect((await pair.slot0()).sqrtPriceX96).to.not.eq(startingPrice)
