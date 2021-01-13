@@ -509,34 +509,31 @@ contract UniswapV3Pair is IUniswapV3Pair {
             // get the price for the next tick
             step.sqrtPriceNextX96 = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
-            if (state.liquidity > 0) {
-                (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
-                    state.sqrtPriceX96,
-                    (
-                        zeroForOne
-                            ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
-                            : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
-                    )
-                        ? params.sqrtPriceLimitX96
-                        : step.sqrtPriceNextX96,
-                    state.liquidity,
-                    state.amountSpecifiedRemaining,
-                    fee
-                );
+            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
+                state.sqrtPriceX96,
+                (
+                    zeroForOne
+                        ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+                        : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
+                )
+                    ? params.sqrtPriceLimitX96
+                    : step.sqrtPriceNextX96,
+                state.liquidity,
+                state.amountSpecifiedRemaining,
+                fee
+            );
 
-                if (exactInput) {
-                    state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
-                    state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());
-                } else {
-                    state.amountSpecifiedRemaining += step.amountOut.toInt256();
-                    state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
-                }
-
-                // update global fee tracker
-                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
+            if (exactInput) {
+                state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
+                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());
             } else {
-                state.sqrtPriceX96 = step.sqrtPriceNextX96;
+                state.amountSpecifiedRemaining += step.amountOut.toInt256();
+                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
             }
+
+            // update global fee tracker
+            if (state.liquidity > 0)
+                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
