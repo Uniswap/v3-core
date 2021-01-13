@@ -131,14 +131,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function balance0() private view returns (uint256) {
-        return balanceOf(token0);
+        return balanceOfToken(token0);
     }
 
     function balance1() private view returns (uint256) {
-        return balanceOf(token1);
+        return balanceOfToken(token1);
     }
 
-    function balanceOf(address token) private view returns (uint256) {
+    function balanceOfToken(address token) private view returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 
@@ -321,11 +321,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount1 = uint256(amount1Int);
 
         if (amount0 > 0 || amount1 > 0) {
-            uint256 b0 = amount0 > 0 ? balance0() : 0;
-            uint256 b1 = amount1 > 0 ? balance1() : 0;
+            uint256 balance0Before;
+            uint256 balance1Before;
+            if (amount0 > 0) balance0Before = balance0();
+            if (amount1 > 0) balance1Before = balance1();
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            if (amount0 > 0) require(b0.add(amount0) <= balance0(), 'M0');
-            if (amount1 > 0) require(b1.add(amount1) <= balance1(), 'M1');
+            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
+            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
         }
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
@@ -589,11 +591,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
 
         // callback for the input
-        uint256 balanceBefore = balanceOf(tokenIn);
+        uint256 balanceBefore = balanceOfToken(tokenIn);
         zeroForOne
             ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
-        require(balanceBefore.add(uint256(amountIn)) >= balanceOf(tokenIn), 'IIA');
+        require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn), 'IIA');
 
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
 
