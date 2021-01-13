@@ -233,8 +233,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
         }
 
-        uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128;
-        uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128;
+        uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
+        uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
         uint32 blockTimestamp = _blockTimestamp();
 
         bool flippedLower =
@@ -420,21 +420,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
         checkTicks(params.tickLower, params.tickUpper);
 
-        int24 tick = slot0.tick;
+        Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
-        // write an oracle entry if liquidity is changing
-        if (params.liquidityDelta != 0)
-            slot0.observationIndex = observations.writeObservationIfNecessary(
-                slot0.observationIndex,
-                _blockTimestamp(),
-                tick,
-                liquidity
-            );
-
-        _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
+        _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, _slot0.tick);
 
         if (params.liquidityDelta != 0) {
-            if (tick < params.tickLower) {
+            if (_slot0.tick < params.tickLower) {
                 // current tick is below the passed range; liquidity can only become in range by crossing from left to
                 // right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
                 amount0 = SqrtPriceMath.getAmount0Delta(
@@ -442,21 +433,31 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
                     params.liquidityDelta
                 );
-            } else if (tick < params.tickUpper) {
+            } else if (_slot0.tick < params.tickUpper) {
                 // current tick is inside the passed range
+                uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
+
+                // write an oracle entry
+                slot0.observationIndex = observations.writeObservationIfNecessary(
+                    _slot0.observationIndex,
+                    _blockTimestamp(),
+                    _slot0.tick,
+                    liquidityBefore
+                );
+
                 amount0 = SqrtPriceMath.getAmount0Delta(
                     SqrtTickMath.getSqrtRatioAtTick(params.tickUpper),
-                    slot0.sqrtPriceX96,
+                    _slot0.sqrtPriceX96,
                     params.liquidityDelta
                 );
                 amount1 = SqrtPriceMath.getAmount1Delta(
                     SqrtTickMath.getSqrtRatioAtTick(params.tickLower),
-                    slot0.sqrtPriceX96,
+                    _slot0.sqrtPriceX96,
                     params.liquidityDelta
                 );
 
                 // downcasting is safe because of gross liquidity checks
-                liquidity = uint128(liquidity.addi(params.liquidityDelta));
+                liquidity = uint128(liquidityBefore.addi(params.liquidityDelta));
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
