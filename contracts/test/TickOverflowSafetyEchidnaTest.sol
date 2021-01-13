@@ -12,6 +12,9 @@ contract TickOverflowSafetyEchidnaTest {
 
     mapping(int24 => Tick.Info) private ticks;
     int24 private tick = 0;
+
+    // used to track how much total liquidity has been added. should never be negative
+    int256 totalLiquidity = 0;
     // half the cap of fee growth has happened, this can overflow
     uint256 private feeGrowthGlobal0X128 = uint256(-1) / 2;
     uint256 private feeGrowthGlobal1X128 = uint256(-1) / 2;
@@ -82,19 +85,31 @@ contract TickOverflowSafetyEchidnaTest {
                 ticks.clear(tickUpper);
             } else assert(ticks[tickUpper].liquidityGross > 0);
         }
+
+        totalLiquidity += liquidityDelta;
+        // requires should have prevented this
+        assert(totalLiquidity >= 0);
+
+        if (totalLiquidity == 0) {
+            totalGrowth0 = 0;
+            totalGrowth1 = 0;
+        }
+
+        checkTicks(tickLower, tickUpper);
     }
 
-    function checkTicks(int24 tickLower, int24 tickUpper) external view {
+    function checkTicks(int24 tickLower, int24 tickUpper) public view {
         require(tickLower > MIN_TICK);
         require(tickUpper < MAX_TICK);
         require(tickLower < tickUpper);
-        require(ticks[tickLower].liquidityGross > 0);
-        require(ticks[tickUpper].liquidityGross > 0);
 
-        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
-            ticks.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
-        assert(feeGrowthInside0X128 <= totalGrowth0);
-        assert(feeGrowthInside1X128 <= totalGrowth1);
+        // both ticks are used, check fee growth inside is not overflowing the total growth since gross liquidity was 0
+        if (ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0) {
+            (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
+                ticks.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
+            assert(feeGrowthInside0X128 <= totalGrowth0);
+            assert(feeGrowthInside1X128 <= totalGrowth1);
+        }
     }
 
     function moveToTick(int24 target) external {
