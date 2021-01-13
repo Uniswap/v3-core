@@ -92,7 +92,7 @@ interface IUniswapV3Pair {
     function feeToFees1() external view returns (uint256);
 
     // initialize the pair
-    function initialize(uint160 sqrtPriceX96, bytes calldata data) external;
+    function initialize(uint160 sqrtPriceX96) external;
 
     // mint some liquidity to an address
     function mint(

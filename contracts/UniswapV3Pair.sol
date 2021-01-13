@@ -187,7 +187,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.feeProtocol = feeProtocol;
     }
 
-    function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
+    function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, 'AI');
 
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
@@ -207,9 +207,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0 = _slot0;
 
         emit Initialized(sqrtPriceX96, tick);
-
-        // set permanent 1 wei position
-        mint(address(0), minTick, maxTick, 1, data);
     }
 
     // gets and updates and gets a position with the given liquidity delta
@@ -567,15 +564,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
 
             // update global fee tracker
-            state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
+            if (state.liquidity > 0)
+                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
+                require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
+
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
-                    // it's ok to put this check here, as the min/max ticks are always initialized
-                    require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
-
                     int128 liquidityDelta =
                         ticks.cross(
                             step.tickNext,
