@@ -64,20 +64,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tick;
         // the most-recently updated index of the observations array
         uint16 observationIndex;
+        // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
+        uint8 feeProtocol;
         // whether the pair is locked
         bool unlocked;
     }
 
     Slot0 public override slot0;
 
-    struct Slot1 {
-        // the current liquidity
-        uint128 liquidity;
-        // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
-        uint8 feeProtocol;
-    }
-
-    Slot1 public override slot1;
+    // the current liquidity
+    uint128 public override liquidity;
 
     // see Oracle.sol
     Oracle.Observation[1024] internal observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
@@ -187,8 +183,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
         require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4), 'FP');
-        emit FeeProtocolChanged(slot1.feeProtocol, feeProtocol);
-        slot1.feeProtocol = feeProtocol;
+        emit FeeProtocolChanged(slot0.feeProtocol, feeProtocol);
+        slot0.feeProtocol = feeProtocol;
     }
 
     function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
@@ -198,7 +194,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
-        Slot0 memory _slot0 = Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, observationIndex: 0, unlocked: true});
+        Slot0 memory _slot0 = Slot0({
+            sqrtPriceX96: sqrtPriceX96,
+            tick: tick,
+            observationIndex: 0,
+            feeProtocol: 0,
+            unlocked: true
+        });
 
         observations[_slot0.observationIndex] = Oracle.Observation({
             blockTimestamp: _blockTimestamp(),
@@ -278,7 +280,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
 
         // collect protocol fee
-        uint8 feeProtocol = slot1.feeProtocol;
+        uint8 feeProtocol = slot0.feeProtocol;
         if (feeProtocol > 0) {
             uint256 fee0 = feesOwed0 / feeProtocol;
             feesOwed0 -= fee0;
@@ -426,7 +428,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 slot0.observationIndex,
                 _blockTimestamp(),
                 tick,
-                slot1.liquidity
+                liquidity
             );
 
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, tick);
@@ -454,7 +456,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // downcasting is safe because of gross liquidity checks
-                slot1.liquidity = uint128(slot1.liquidity.addi(params.liquidityDelta));
+                liquidity = uint128(liquidity.addi(params.liquidityDelta));
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -478,8 +480,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes data;
         // the value of slot0 at the beginning of the swap
         Slot0 slot0Start;
-        // the value of slot1 at the beginning of the swap
-        Slot1 slot1Start;
+        // liquidity at the beginning of the swap
+        uint128 liquidityStart;
         // the timestamp of the current block
         uint32 blockTimestamp;
     }
@@ -528,7 +530,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 sqrtPriceX96: params.slot0Start.sqrtPriceX96,
                 tick: params.slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
-                liquidity: params.slot1Start.liquidity
+                liquidity: params.liquidityStart
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -601,7 +603,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // update liquidity if it changed
-        if (params.slot1Start.liquidity != state.liquidity) slot1.liquidity = state.liquidity;
+        if (params.liquidityStart != state.liquidity) liquidity = state.liquidity;
 
         // write an oracle entry if the price moved at least one tick
         if (state.tick != params.slot0Start.tick) {
@@ -609,7 +611,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 params.slot0Start.observationIndex,
                 params.blockTimestamp,
                 params.slot0Start.tick,
-                params.slot1Start.liquidity
+                params.liquidityStart
             );
             slot0.tick = state.tick;
         }
@@ -665,7 +667,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 recipient: recipient,
                 data: data,
                 slot0Start: _slot0,
-                slot1Start: slot1,
+                liquidityStart: liquidity,
                 blockTimestamp: _blockTimestamp()
             })
         );

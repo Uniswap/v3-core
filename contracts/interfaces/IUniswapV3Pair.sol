@@ -68,10 +68,11 @@ interface IUniswapV3Pair {
             uint160 sqrtPriceCurrentX96,
             int24 tick,
             uint16 index,
+            uint8 feeProtocol,
             bool unlocked
         );
 
-    function slot1() external view returns (uint128 liquidity, uint8 feeProtocol);
+    function liquidity() external view returns (uint128);
 
     function getObservations(uint16[] calldata indices)
         external
