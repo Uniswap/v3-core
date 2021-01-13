@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Factory #createPair gas 1`] = `4192868`;
+exports[`UniswapV3Factory #createPair gas 1`] = `4202315`;
 
-exports[`UniswapV3Factory factory bytecode size 1`] = `23646`;
+exports[`UniswapV3Factory factory bytecode size 1`] = `23693`;
 
-exports[`UniswapV3Factory pair bytecode size 1`] = `20096`;
+exports[`UniswapV3Factory pair bytecode size 1`] = `20143`;
