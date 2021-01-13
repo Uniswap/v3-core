@@ -45,10 +45,6 @@ jobs:
         run: |
           pip3 install slither-analyzer
 
-      - name: debug run slither
-        run: |
-          slither --print echidna .
-
       - name: Install echidna
         run: |
           sudo wget -O /tmp/echidna-test.tar.gz https://github.com/crytic/echidna/releases/download/v1.6.0/echidna-test-v1.6.0-Ubuntu-18.04.tar.gz
