@@ -118,11 +118,12 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         if (finished == false) {
             console.log('if finished == false, go to second swap');
            
-            _swapAForExactB(pairs, amount0Delta, recipient, finished);
+            _swapAForExactB(pairs, amount1Delta, recipient, finished);
 
         } else if (finished == true) {
             console.log('finished == true, repay first swap');
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(-amount0Delta));
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(amount0Delta));
+            console.log('finished!');
 
         }       
     }
