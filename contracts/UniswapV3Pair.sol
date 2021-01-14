@@ -460,7 +460,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 feeAmount;
     }
 
-    // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
+    // positive (negative) numbers specify exact input (output) amounts
     function swap(
         bool zeroForOne,
         int256 amountSpecified,
