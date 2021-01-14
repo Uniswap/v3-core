@@ -18,16 +18,20 @@ library Oracle {
 
     // transforms an oracle observation in a subsequent observation, given the passage of time and current values
     // blockTimestamp _must_ be at or after last.blockTimestamp (accounting for overflow)
-    function transform(Observation memory last, uint32 blockTimestamp, int24 tick, uint128 liquidity)
-        internal pure returns (Observation memory)
-    {
+    function transform(
+        Observation memory last,
+        uint32 blockTimestamp,
+        int24 tick,
+        uint128 liquidity
+    ) internal pure returns (Observation memory) {
         uint32 delta = blockTimestamp - last.blockTimestamp;
-        return Observation({
-            blockTimestamp: blockTimestamp,
-            tickCumulative: last.tickCumulative + int56(tick) * delta,
-            liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * delta,
-            initialized: true
-        });
+        return
+            Observation({
+                blockTimestamp: blockTimestamp,
+                tickCumulative: last.tickCumulative + int56(tick) * delta,
+                liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * delta,
+                initialized: true
+            });
     }
 
     // writes an oracle observation to the array, at most once per block
