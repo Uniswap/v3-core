@@ -85,19 +85,35 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         address recipient,
         bool finished
     ) public {
-        console.log('starting swapAForC');
-        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient, (finished = false)));   //swap 0 for exact 1 (B for exact C)     
+        console.log('starting swap0ForExact2');
+        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient, (finished = false)));   //swap 0 for exact 1     
     }
 
-    function _swap0ForExact1Callback( 
+     function swap2ForExact0( 
+        address [] memory pairs,
+        uint256 amount0Out,
+        address recipient,
+        bool finished
+    ) public {
+        console.log('starting swap2ForExact0');
+        IUniswapV3Pair(pairs[0 ]).swap(false, -amount0Out.toInt256(), uint160(-1), recipient, abi.encode(pairs, recipient, (finished = false)));   //swap 1 for exact 0    
+    }
+
+    function _multiSwapCallback( 
         address [] memory pairs,
         int256 amount1Out,
+        int256 amount0Out,
         address recipient,
         bool finished
     ) internal {
-        console.log('starting second swap');
         
-        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out, 0, pairs[1], abi.encode(pairs, recipient, (finished = true))); //swap 0 for exact 1 (A for exact B)
+        console.log('starting second swap'); 
+        (amount1Out > 0) ? 
+       // console.log('second swap 0 for 1'); 
+        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out, 0, pairs[1], abi.encode(pairs, recipient, (finished = true))) :
+       // console.log('second swap 1 for 0'); 
+        IUniswapV3Pair(pairs[1]).swap(false, -amount0Out, uint160(-1), pairs[0], abi.encode(pairs, recipient, (finished = true)));
+
     }
 
     // executes 2nd swap if bool finished == false, pays off first if finished == true.
@@ -118,12 +134,24 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
         if (finished == false) {
             console.log('if finished == false, go to second swap');
-            _swap0ForExact1Callback(pairs, amount0Delta, recipient, finished);
+            if (amount0Delta > 0) {
+                console.log('0Delta > 0, go to second swap');
+                _multiSwapCallback(pairs, amount0Delta, 0, recipient, finished);
+        }   else if (amount1Delta > 0) {
+                console.log('1Delta > 0, go to second swap');
+                _multiSwapCallback(pairs, 0, amount1Delta, recipient, finished);
+        }
 
         } else if (finished == true) {
             console.log('finished == true, repay first swap');
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(amount0Delta)); // transfer from wallet addres token0 to pay back swap
-            console.log('finished!');
+            if (amount0Delta > 0){
+                console.log('0Delta > 0, repay first swap');
+                IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(amount0Delta)); // transfer from wallet addres token0 to pay back swap
+        }   else if (amount1Delta > 0){
+                console.log('1Delta > 0, repay first swap');
+                IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(recipient, pairs[1], uint256(amount1Delta)); // transfer from wallet addres token0 to pay back swap
+        }
+          console.log('finished!');
         }       
     }
 

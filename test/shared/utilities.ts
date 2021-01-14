@@ -193,6 +193,7 @@ export function createPairFunctions({
 
 export interface MultiPairFunctions {
   swap0ForExact2: any
+  swap2ForExact0: any
 }
 
 export function createMultiPairFunctions({
@@ -213,18 +214,24 @@ export function createMultiPairFunctions({
     to: Wallet | string
   ): Promise<ContractTransaction> {
 
-    
-   
     const method = swapTarget.swap0ForExact2
-  
-    await inputToken.approve(swapTarget.address, constants.MaxUint256)
-    
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)   
     const toAddress = typeof to === 'string' ? to : to.address
+    return method([pair0.address, pair1.address], amountOut, toAddress, false)
+  }
 
+  async function swap2ForExact0(
+    amountOut: BigNumberish, 
+    to: Wallet | string
+  ): Promise<ContractTransaction> {
+    const method = swapTarget.swap2ForExact0
+    await inputToken.approve(swapTarget.address, constants.MaxUint256) 
+    const toAddress = typeof to === 'string' ? to : to.address
     return method([pair0.address, pair1.address], amountOut, toAddress, false)
   }
 
   return {
     swap0ForExact2,
+    swap2ForExact0
   }
 }
