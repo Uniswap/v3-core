@@ -37,8 +37,8 @@ interface IUniswapV3Pair {
         uint160 sqrtPrice,
         int24 tick
     );
-    event FeeToChanged(address indexed oldFeeTo, address indexed newFeeTo);
-    event CollectProtocol(uint256 amount0, uint256 amount1);
+    event FeeProtocolChanged(uint8 indexed feeProtocolOld, uint8 indexed feeProtocolNew);
+    event CollectProtocol(address indexed recipient, uint256 amount0, uint256 amount1);
     event Flash(address indexed sender, uint256 amount0, uint256 amount1);
 
     // immutables
@@ -59,19 +59,17 @@ interface IUniswapV3Pair {
     function maxLiquidityPerTick() external view returns (uint128);
 
     // variables/state
-    function feeTo() external view returns (address);
-
     function slot0()
         external
         view
         returns (
-            uint160 sqrtPriceCurrentX96,
+            uint160 sqrtPriceX96,
             uint32 blockTimestampLast,
             int56 tickCumulativeLast,
             uint8 unlockedAndPriceBit
         );
 
-    function liquidityCurrent() external view returns (uint128);
+    function slot1() external view returns (uint128 liquidity, uint8 feeProtocol);
 
     function tickBitmap(int16) external view returns (uint256);
 
@@ -86,7 +84,7 @@ interface IUniswapV3Pair {
     function tickCurrent() external view returns (int24);
 
     // initialize the pair
-    function initialize(uint160 sqrtPriceX96, bytes calldata data) external;
+    function initialize(uint160 sqrtPriceX96) external;
 
     // mint some liquidity to an address
     function mint(
@@ -122,19 +120,14 @@ interface IUniswapV3Pair {
         bytes calldata data
     ) external;
 
-    function setFeeTo(address) external;
+    function setFeeProtocol(uint8) external;
 
-    // allows the factory owner address to recover any tokens other than token0 and token1 held by the contract
-    function recover(
-        address token,
+    // allows factory owner to collect protocol fees
+    function collectProtocol(
         address recipient,
-        uint256 amount
-    ) external;
-
-    // allows anyone to collect protocol fees to feeTo
-    function collectProtocol(uint256 amount0Requested, uint256 amount1Requested)
-        external
-        returns (uint256 amount0, uint256 amount1);
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external returns (uint256 amount0, uint256 amount1);
 
     function flash(
         uint256 amount0,
