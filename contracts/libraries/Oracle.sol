@@ -15,16 +15,20 @@ library Oracle {
         bool initialized;
     }
 
-    function transform(Observation memory last, uint32 blockTimestamp, int24 tick, uint128 liquidity)
-        internal pure returns (Observation memory)
-    {
+    function transform(
+        Observation memory last,
+        uint32 blockTimestamp,
+        int24 tick,
+        uint128 liquidity
+    ) internal pure returns (Observation memory) {
         uint32 delta = blockTimestamp - last.blockTimestamp;
-        return Observation({
-            blockTimestamp: blockTimestamp,
-            tickCumulative: last.tickCumulative + int56(tick) * delta,
-            liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * delta,
-            initialized: true
-        });
+        return
+            Observation({
+                blockTimestamp: blockTimestamp,
+                tickCumulative: last.tickCumulative + int56(tick) * delta,
+                liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * delta,
+                initialized: true
+            });
     }
 
     function write(

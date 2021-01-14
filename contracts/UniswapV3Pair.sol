@@ -132,14 +132,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function scry(uint32 secondsAgo)
-        external view override returns (int56 tickCumulative, uint160 liquidityCumulative) {
+        external
+        view
+        override
+        returns (int56 tickCumulative, uint160 liquidityCumulative)
+    {
         uint32 current = _blockTimestamp();
         uint32 target = current - secondsAgo;
 
-        (
-            Oracle.Observation memory before,
-            Oracle.Observation memory atOrAfter
-        ) = getSurroundingObservations(current, target);
+        (Oracle.Observation memory before, Oracle.Observation memory atOrAfter) =
+            getSurroundingObservations(current, target);
 
         Oracle.Observation memory at;
         if (target == atOrAfter.blockTimestamp) at = atOrAfter;
