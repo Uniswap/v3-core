@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.0;
 
 import '../libraries/SwapMath.sol';
 
@@ -19,7 +19,7 @@ contract SwapMathEchidnaTest {
         (uint160 sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount) =
             SwapMath.computeSwapStep(sqrtPriceRaw, sqrtPriceTargetRaw, liquidity, amountRemaining, feePips);
 
-        assert(amountIn <= uint256(-1) - feeAmount);
+        assert(amountIn <= type(uint256).max - feeAmount);
 
         if (amountRemaining < 0) {
             assert(amountOut <= uint256(-amountRemaining));

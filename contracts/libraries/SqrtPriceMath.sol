@@ -2,26 +2,29 @@
 pragma solidity >=0.5.0;
 
 import './FullMath.sol';
-import './SafeMath.sol';
-
 import './SafeCast.sol';
 import './FixedPoint96.sol';
 
 library SqrtPriceMath {
-    using SafeMath for uint256;
     using SafeCast for uint256;
 
     function isMulSafe(uint256 x, uint256 y) private pure returns (bool) {
-        return (x * y) / x == y;
+        unchecked {
+            return (x * y) / x == y;
+        }
     }
 
     function isAddSafe(uint256 x, uint256 y) private pure returns (bool) {
-        return x <= uint256(-1) - y;
+        unchecked {
+            return x <= type(uint256).max - y;
+        }
     }
 
     function divRoundingUp(uint256 x, uint256 d) internal pure returns (uint256) {
-        // addition is safe because (uint256(-1) / 1) + (uint256(-1) % 1 > 0 ? 1 : 0) == uint256(-1)
-        return (x / d) + (x % d > 0 ? 1 : 0);
+        unchecked {
+            // addition is safe because (type(uint256).max / 1) + (type(uint256).max % 1 > 0 ? 1 : 0) == type(uint256).max
+            return (x / d) + (x % d > 0 ? 1 : 0);
+        }
     }
 
     function mulDivRoundingUp(
@@ -51,7 +54,7 @@ library SqrtPriceMath {
             return mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
         }
 
-        uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
+        uint256 denominator1 = add ? (numerator1 / sqrtPX96) + amount : (numerator1 / sqrtPX96) - amount;
         require(denominator1 != 0, 'OUT');
 
         return divRoundingUp(numerator1, denominator1).toUint160();
@@ -69,17 +72,17 @@ library SqrtPriceMath {
         uint256 quotient =
             add
                 ? (
-                    amount <= uint160(-1)
+                    amount <= type(uint160).max
                         ? (amount << FixedPoint96.RESOLUTION) / liquidity
                         : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
                 )
                 : (
-                    amount <= uint160(-1)
+                    amount <= type(uint160).max
                         ? divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
                         : mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
                 );
 
-        return (add ? uint256(sqrtPX96).add(quotient) : uint256(sqrtPX96).sub(quotient)).toUint160();
+        return (add ? uint256(sqrtPX96) + quotient : uint256(sqrtPX96) - quotient).toUint160();
     }
 
     function getNextPriceFromInput(

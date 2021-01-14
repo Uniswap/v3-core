@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.0;
 pragma abicoder v2;
 
 import './libraries/FullMath.sol';
 import './libraries/TransferHelper.sol';
 
-import './libraries/SafeMath.sol';
-import './libraries/SignedSafeMath.sol';
-
 import './libraries/SafeCast.sol';
-import './libraries/MixedSafeMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
@@ -18,6 +14,7 @@ import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
+import './libraries/LiquidityDelta.sol';
 
 import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Pair.sol';
@@ -27,10 +24,7 @@ import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
-    using SafeMath for uint256;
-    using SignedSafeMath for int256;
     using SafeCast for uint256;
-    using MixedSafeMath for uint128;
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
@@ -307,7 +301,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // update the position
-        position.liquidity = uint128(position.liquidity.addi(liquidityDelta));
+        position.liquidity = LiquidityDelta.add(position.liquidity, liquidityDelta);
         position.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         position.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         position.feesOwed0 += feesOwed0;
@@ -378,8 +372,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
             if (amount0 > 0) balance0Before = balance0();
             if (amount1 > 0) balance1Before = balance1();
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
-            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
+            if (amount0 > 0) require(balance0Before + amount0 <= balance0(), 'M0');
+            if (amount1 > 0) require(balance1Before + amount1 <= balance1(), 'M1');
         }
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
@@ -462,8 +456,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     params.liquidityDelta
                 );
 
-                // downcasting is safe because of gross liquidity checks
-                liquidity = uint128(liquidityBefore.addi(params.liquidityDelta));
+                liquidity = LiquidityDelta.add(liquidityBefore, params.liquidityDelta);
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -577,10 +570,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             if (exactInput) {
                 state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
-                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());
+                state.amountCalculated = state.amountCalculated - step.amountOut.toInt256();
             } else {
                 state.amountSpecifiedRemaining += step.amountOut.toInt256();
-                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
+                state.amountCalculated = state.amountCalculated + (step.amountIn + step.feeAmount).toInt256();
             }
 
             // update global fee tracker
@@ -603,8 +596,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                     // update liquidity, subi from right to left, addi from left to right
                     zeroForOne
-                        ? state.liquidity = uint128(state.liquidity.subi(liquidityDelta))
-                        : state.liquidity = uint128(state.liquidity.addi(liquidityDelta));
+                        ? state.liquidity = LiquidityDelta.sub(state.liquidity, liquidityDelta)
+                        : state.liquidity = LiquidityDelta.add(state.liquidity, liquidityDelta);
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
@@ -650,7 +643,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         zeroForOne
             ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, data)
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, data);
-        require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn), 'IIA');
+        require(balanceBefore + uint256(amountIn) >= balanceOfToken(tokenIn), 'IIA');
 
         if (zeroForOne) emit Swap(msg.sender, recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
         else emit Swap(msg.sender, recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);

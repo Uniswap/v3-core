@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.0;
 
 import '../interfaces/IERC20.sol';
 
@@ -33,7 +33,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), uint160(-1), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(false, amount1In.toInt256(), type(uint160).max, recipient, abi.encode(msg.sender));
     }
 
     function swap1ForExact0(
@@ -41,7 +41,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount0Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), uint160(-1), recipient, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(false, -amount0Out.toInt256(), type(uint160).max, recipient, abi.encode(msg.sender));
     }
 
     function swapToLowerSqrtPrice(

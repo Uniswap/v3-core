@@ -31,7 +31,7 @@ library TickMath {
         if (absTick & 0x40000 != 0) ratio = (ratio * 0x2216e584f5fa1ea926041bedfe98) >> 128;
         if (absTick & 0x80000 != 0) ratio = (ratio * 0x48a170391f7dc42444e8fa2) >> 128;
 
-        if (tick > 0) ratio = uint256(-1) / ratio;
+        if (tick > 0) ratio = type(uint256).max / ratio;
     }
 
     // Calculate the highest tick value such that getRatioAtTick(tick) <= ratio.

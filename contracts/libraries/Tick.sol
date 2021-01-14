@@ -3,8 +3,6 @@ pragma solidity >=0.5.0;
 
 import './SqrtTickMath.sol';
 import './SafeCast.sol';
-import './MixedSafeMath.sol';
-import './SignedSafeMath.sol';
 
 library Tick {
     // info stored for each initialized individual tick
@@ -35,7 +33,7 @@ library Tick {
         minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
         maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
         uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;
-        maxLiquidityPerTick = uint128(-1) / numTicks;
+        maxLiquidityPerTick = type(uint128).max / numTicks;
     }
 
     function _getFeeGrowthBelow(
@@ -104,7 +102,12 @@ library Tick {
 
         if (liquidityDelta != 0) {
             uint128 liquidityGrossBefore = info.liquidityGross;
-            uint128 liquidityGrossAfter = SafeCast.toUint128(MixedSafeMath.addi(liquidityGrossBefore, liquidityDelta));
+            uint128 liquidityGrossAfter =
+                SafeCast.toUint128(
+                    liquidityDelta < 0
+                        ? liquidityGrossBefore - uint256(-int256(liquidityDelta))
+                        : liquidityGrossBefore + uint256(int256(liquidityDelta))
+                );
 
             require(liquidityGrossAfter <= maxLiquidity, 'LO');
 
@@ -123,8 +126,8 @@ library Tick {
 
             // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
             info.liquidityDelta = upper
-                ? SafeCast.toInt128(SignedSafeMath.sub(info.liquidityDelta, liquidityDelta))
-                : SafeCast.toInt128(SignedSafeMath.add(info.liquidityDelta, liquidityDelta));
+                ? SafeCast.toInt128(info.liquidityDelta - liquidityDelta)
+                : SafeCast.toInt128(info.liquidityDelta + liquidityDelta);
         }
     }
 
@@ -142,7 +145,8 @@ library Tick {
         Tick.Info storage info = self[tick];
         info.feeGrowthOutside0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128;
         info.feeGrowthOutside1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128;
-        info.secondsOutside = blockTimestamp - info.secondsOutside; // overflow is desired
+        info.secondsOutside = blockTimestamp - info.secondsOutside;
+        // overflow is desired
         liquidityDelta = info.liquidityDelta;
     }
 }
