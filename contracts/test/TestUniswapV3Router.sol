@@ -11,7 +11,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
     using SafeCast for uint256;
 
     // flash swaps for an exact amount of token0 in the output pair
-    function swapForExact0Multi( 
+    function swapForExact0Multi(
         address pairInput,
         address pairOutput,
         uint256 amount0Out,
@@ -29,7 +29,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
     }
 
     // flash swaps for an exact amount of token1 in the output pair
-    function swapForExact1Multi( 
+    function swapForExact1Multi(
         address pairInput,
         address pairOutput,
         uint256 amount1Out,
@@ -53,9 +53,8 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
         if (pairs.length == 1) {
             // get the address and amount of the token that we need to pay
-            address tokenToBePaid = amount0Delta > 0
-                ? IUniswapV3Pair(msg.sender).token0()
-                : IUniswapV3Pair(msg.sender).token1();
+            address tokenToBePaid =
+                amount0Delta > 0 ? IUniswapV3Pair(msg.sender).token0() : IUniswapV3Pair(msg.sender).token1();
             int256 amountToBePaid = amount0Delta > 0 ? amount0Delta : amount1Delta;
 
             bool zeroForOne = tokenToBePaid == IUniswapV3Pair(pairs[0]).token1();
@@ -70,11 +69,8 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             if (amount0Delta > 0) {
                 IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(payer, msg.sender, uint256(amount0Delta));
             } else {
-                IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(payer, msg.sender, uint256(amount1Delta));                
+                IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(payer, msg.sender, uint256(amount1Delta));
             }
         }
     }
 }
-
-
-
