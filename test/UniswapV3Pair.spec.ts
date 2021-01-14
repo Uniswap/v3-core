@@ -1051,8 +1051,16 @@ describe('UniswapV3Pair', () => {
       await expect(pair.connect(other).setFeeProtocol(6)).to.be.revertedWith('OO')
     })
 
-    async function swapAndGetFeesOwed(swapAmount: BigNumberish, zeroForOne: boolean, poke: boolean) {
-      await (zeroForOne ? swapExact0For1(swapAmount, wallet.address) : swapExact1For0(swapAmount, wallet.address))
+    async function swapAndGetFeesOwed({
+      amount,
+      zeroForOne,
+      poke,
+    }: {
+      amount: BigNumberish
+      zeroForOne: boolean
+      poke: boolean
+    }) {
+      await (zeroForOne ? swapExact0For1(amount, wallet.address) : swapExact1For0(amount, wallet.address))
 
       if (poke) await mint(wallet.address, minTick, maxTick, 0)
 
@@ -1071,7 +1079,11 @@ describe('UniswapV3Pair', () => {
     }
 
     it('position owner gets full fees when protocol fee is off', async () => {
-      const { token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), true, true)
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      })
 
       // 6 bips * 1e18
       expect(token0Fees).to.eq('599999999999999')
@@ -1081,13 +1093,25 @@ describe('UniswapV3Pair', () => {
     it('swap fees accumulate as expected (0 for 1)', async () => {
       let token0Fees
       let token1Fees
-      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), true, true))
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      }))
       expect(token0Fees).to.eq('599999999999999')
       expect(token1Fees).to.eq(0)
-      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), true, true))
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      }))
       expect(token0Fees).to.eq('1199999999999998')
       expect(token1Fees).to.eq(0)
-      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), true, true))
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      }))
       expect(token0Fees).to.eq('1799999999999997')
       expect(token1Fees).to.eq(0)
     })
@@ -1095,13 +1119,25 @@ describe('UniswapV3Pair', () => {
     it('swap fees accumulate as expected (1 for 0)', async () => {
       let token0Fees
       let token1Fees
-      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), false, true))
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: false,
+        poke: true,
+      }))
       expect(token0Fees).to.eq(0)
       expect(token1Fees).to.eq('599999999999999')
-      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), false, true))
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: false,
+        poke: true,
+      }))
       expect(token0Fees).to.eq(0)
       expect(token1Fees).to.eq('1199999999999998')
-      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), false, true))
+      ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: false,
+        poke: true,
+      }))
       expect(token0Fees).to.eq(0)
       expect(token1Fees).to.eq('1799999999999997')
     })
@@ -1109,7 +1145,11 @@ describe('UniswapV3Pair', () => {
     it('position owner gets partial fees when protocol fee is on', async () => {
       await pair.setFeeProtocol(6)
 
-      const { token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), true, true)
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      })
 
       expect(token0Fees).to.be.eq('499999999999999')
       expect(token1Fees).to.be.eq(0)
@@ -1130,7 +1170,11 @@ describe('UniswapV3Pair', () => {
       it('can collect fees', async () => {
         await pair.setFeeProtocol(6)
 
-        await swapAndGetFeesOwed(expandTo18Decimals(1), true, true)
+        await swapAndGetFeesOwed({
+          amount: expandTo18Decimals(1),
+          zeroForOne: true,
+          poke: true,
+        })
         // collect fees to trigger collection of the protocol fee
         await mint(wallet.address, minTick, maxTick, 0) // poke to update fees
         await pair.collect(minTick, maxTick, wallet.address, constants.MaxUint256, constants.MaxUint256)
@@ -1142,8 +1186,16 @@ describe('UniswapV3Pair', () => {
     })
 
     it('fees collected by lp after two swaps should be double one swap', async () => {
-      await swapAndGetFeesOwed(expandTo18Decimals(1), true, true)
-      const { token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), true, true)
+      await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      })
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      })
 
       // 6 bips * 2e18
       expect(token0Fees).to.eq('1199999999999998')
@@ -1151,11 +1203,19 @@ describe('UniswapV3Pair', () => {
     })
 
     it('fees collected by feeTo are only fees collected when fee is on', async () => {
-      await swapAndGetFeesOwed(expandTo18Decimals(1), true, true)
+      await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: false,
+      })
 
       await pair.setFeeProtocol(6)
 
-      const { token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), true, true)
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      })
 
       expect(token0Fees).to.eq('1099999999999998')
       expect(token1Fees).to.eq(0)
@@ -1164,7 +1224,11 @@ describe('UniswapV3Pair', () => {
     it('fees collected by lp after two swaps with intermediate withdrawal', async () => {
       await pair.setFeeProtocol(6)
 
-      const { token0Fees, token1Fees } = await swapAndGetFeesOwed(expandTo18Decimals(1), true, true)
+      const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: true,
+      })
 
       expect(token0Fees).to.eq('499999999999999')
       expect(token1Fees).to.eq(0)
@@ -1172,11 +1236,11 @@ describe('UniswapV3Pair', () => {
       // collect the fees
       await pair.collect(minTick, maxTick, wallet.address, constants.MaxUint256, constants.MaxUint256)
 
-      const { token0Fees: token0FeesNext, token1Fees: token1FeesNext } = await swapAndGetFeesOwed(
-        expandTo18Decimals(1),
-        true,
-        false
-      )
+      const { token0Fees: token0FeesNext, token1Fees: token1FeesNext } = await swapAndGetFeesOwed({
+        amount: expandTo18Decimals(1),
+        zeroForOne: true,
+        poke: false,
+      })
 
       expect(token0FeesNext).to.eq(0)
       expect(token1FeesNext).to.eq(0)
