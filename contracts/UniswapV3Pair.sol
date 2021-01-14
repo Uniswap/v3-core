@@ -476,15 +476,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
-    struct SwapParams {
-        // how much is being swapped in (positive), or requested out (negative)
-        int256 amountSpecified;
-        // the max/min price that the pair will end up at after the swap
-        uint160 sqrtPriceLimitX96;
-        // the address that receives amount out
-        address recipient;
-        // the data to send in the callback
-        bytes data;
+    struct SwapCache {
         // the value of slot0 at the beginning of the swap
         Slot0 slot0Start;
         // liquidity at the beginning of the swap
@@ -526,22 +518,50 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 feeAmount;
     }
 
-    function _swap(SwapParams memory params) private {
-        bool zeroForOne = params.sqrtPriceLimitX96 < params.slot0Start.sqrtPriceX96;
-        bool exactInput = params.amountSpecified > 0;
+    // positive (negative) numbers specify exact input (output) amounts
+    function swap(
+        bool zeroForOne,
+        int256 amountSpecified,
+        uint160 sqrtPriceLimitX96,
+        address recipient,
+        bytes calldata data
+    ) external override {
+        require(amountSpecified != 0, 'AS');
+
+        Slot0 memory _slot0 = slot0;
+
+        require(_slot0.unlocked, 'LOK');
+        require(
+            zeroForOne
+                ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96
+                : sqrtPriceLimitX96 > _slot0.sqrtPriceX96,
+            'SPL'
+        );
+
+        slot0.unlocked = false;
+
+        SwapCache memory cache =
+            SwapCache({
+                slot0Start: _slot0,
+                liquidityStart: liquidity,
+                blockTimestamp: _blockTimestamp()
+            });
+
+
+        bool exactInput = amountSpecified > 0;
 
         SwapState memory state =
             SwapState({
-                amountSpecifiedRemaining: params.amountSpecified,
+                amountSpecifiedRemaining: amountSpecified,
                 amountCalculated: 0,
-                sqrtPriceX96: params.slot0Start.sqrtPriceX96,
-                tick: params.slot0Start.tick,
+                sqrtPriceX96: cache.slot0Start.sqrtPriceX96,
+                tick: cache.slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
-                liquidity: params.liquidityStart
+                liquidity: cache.liquidityStart
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
-        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != params.sqrtPriceLimitX96) {
+        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
             StepComputations memory step;
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
@@ -557,12 +577,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
-                (
-                    zeroForOne
-                        ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
-                        : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
-                )
-                    ? params.sqrtPriceLimitX96
+                (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)
+                    ? sqrtPriceLimitX96
                     : step.sqrtPriceNextX96,
                 state.liquidity,
                 state.amountSpecifiedRemaining,
@@ -592,7 +608,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             step.tickNext,
                             (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
                             (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
-                            params.blockTimestamp
+                            cache.blockTimestamp
                         );
 
                     // update liquidity, subi from right to left, addi from left to right
@@ -610,17 +626,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         // update liquidity if it changed
-        if (params.liquidityStart != state.liquidity) liquidity = state.liquidity;
+        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;
 
-        // write an oracle entry if the price moved at least one tick
-        if (state.tick != params.slot0Start.tick) {
-            slot0.observationIndex = observations.write(
-                params.slot0Start.observationIndex,
-                params.blockTimestamp,
-                params.slot0Start.tick,
-                params.liquidityStart
-            );
+        if (state.tick != cache.slot0Start.tick) {
             slot0.tick = state.tick;
+            // write an oracle entry if the price moved at least one tick
+            slot0.observationIndex = observations.write(
+                cache.slot0Start.observationIndex,
+                cache.blockTimestamp,
+                cache.slot0Start.tick,
+                cache.liquidityStart
+            );
         }
 
         slot0.sqrtPriceX96 = state.sqrtPriceX96;
@@ -631,53 +647,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
             exactInput
-                ? (params.amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
-                : (state.amountCalculated, params.amountSpecified - state.amountSpecifiedRemaining);
+                ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
+                : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);
 
         (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
 
         // transfer the output
-        TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
+        TransferHelper.safeTransfer(tokenOut, recipient, uint256(-amountOut));
 
         // callback for the input
         uint256 balanceBefore = balanceOfToken(tokenIn);
         zeroForOne
-            ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
-            : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
+            ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, data)
+            : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, data);
         require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn), 'IIA');
 
-        if (zeroForOne) emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
-        else emit Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
-    }
-
-    // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
-    function swap(
-        bool zeroForOne,
-        int256 amountSpecified,
-        uint160 sqrtPriceLimitX96,
-        address recipient,
-        bytes calldata data
-    ) external override {
-        require(amountSpecified != 0, 'AS');
-
-        Slot0 memory _slot0 = slot0;
-
-        require(_slot0.unlocked, 'LOK');
-        slot0.unlocked = false;
-
-        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
-
-        _swap(
-            SwapParams({
-                amountSpecified: amountSpecified,
-                sqrtPriceLimitX96: sqrtPriceLimitX96,
-                recipient: recipient,
-                data: data,
-                slot0Start: _slot0,
-                liquidityStart: liquidity,
-                blockTimestamp: _blockTimestamp()
-            })
-        );
+        if (zeroForOne) emit Swap(msg.sender, recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
+        else emit Swap(msg.sender, recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
 
         slot0.unlocked = true;
     }
