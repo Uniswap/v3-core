@@ -4,12 +4,6 @@ pragma solidity =0.7.6;
 import '../libraries/TickMath.sol';
 
 contract TickMathEchidnaTest {
-    // fits into uint192
-    function checkFitsInto192Bits(int24 tick) external pure {
-        uint256 ratio = TickMath.getRatioAtTick(tick);
-        assert(ratio <= uint192(-1));
-    }
-
     // uniqueness and increasing order
     function checkGetRatioAtTickInvariants(int24 tick) external pure {
         uint256 ratio = TickMath.getRatioAtTick(tick);
