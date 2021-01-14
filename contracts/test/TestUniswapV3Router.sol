@@ -78,18 +78,18 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
     }
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
     
-    function swapAForC( 
+    // swaps 0 for exact 2 in series of 0forExact1 steps, in reverse order. 
+    function swap0ForExact2( 
         address [] memory pairs,
         uint256 amount1Out,
         address recipient,
         bool finished
     ) public {
         console.log('starting swapAForC');
-
-        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient, (finished = false))); //swap 0 for exact 1 (B for exact C)
+        IUniswapV3Pair(pairs[1]).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, recipient, (finished = false)));   //swap 0 for exact 1 (B for exact C)     
     }
 
-    function _swapAForExactB( 
+    function _swap0ForExact1Callback( 
         address [] memory pairs,
         int256 amount1Out,
         address recipient,
@@ -97,10 +97,11 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
     ) internal {
         console.log('starting second swap');
         
-        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out, 0, pairs[1], abi.encode(pairs, recipient, (finished = true))); //swap 0 for exact 1
+        IUniswapV3Pair(pairs[0]).swap(true, -amount1Out, 0, pairs[1], abi.encode(pairs, recipient, (finished = true))); //swap 0 for exact 1 (A for exact B)
     }
 
-    //@dev  executes 2nd swap if there are more than one abi.encoded pair address's in call, pays off first if there is 1 remaining.
+    // executes 2nd swap if bool finished == false, pays off first if finished == true.
+    // possible to explore swap stage logic based on shift operators directed towards pair address array.
 
     function uniswapV3SwapCallback(
         int256 amount0Delta,
@@ -114,17 +115,15 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         (address[] memory pairs, address recipient, bool finished) = abi.decode(data, (address [], address, bool));
 
         console.log('abi decoded');
-  
+
         if (finished == false) {
             console.log('if finished == false, go to second swap');
-           
-            _swapAForExactB(pairs, amount1Delta, recipient, finished);
+            _swap0ForExact1Callback(pairs, amount0Delta, recipient, finished);
 
         } else if (finished == true) {
             console.log('finished == true, repay first swap');
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(amount0Delta));
+            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(recipient, pairs[0], uint256(amount0Delta)); // transfer from wallet addres token0 to pay back swap
             console.log('finished!');
-
         }       
     }
 

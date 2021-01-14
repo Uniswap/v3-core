@@ -23,6 +23,7 @@ import {
   InitializeFunction,
   PairFunctions,
   createMultiPairFunctions,
+  MultiPairFunctions,
 } from './shared/utilities'
 import { TestUniswapV3Router } from '../typechain/TestUniswapV3Router'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
@@ -37,6 +38,7 @@ const MIN_TICK = getMinTick(tickSpacing)
 const MAX_TICK = getMaxTick(tickSpacing)
 
 const createFixtureLoader = waffle.createFixtureLoader
+
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
@@ -261,42 +263,32 @@ describe('UniswapV3Pair', () => {
       })
     })
    })
-  })
-  })
+ })
+})
 
 
 
-  const initializeLiquidityAmount = expandTo18Decimals(2)
+  // const initializeLiquidityAmount = expandTo18Decimals(2)
 
-  async function initializeAtZeroTickpair0(pair0: MockTimeUniswapV3Pair): Promise<void> {
-    await pair0Functions.initialize(encodePriceSqrt(1, 1))
-    const [min, max] = await Promise.all([pair0.MIN_TICK(), pair0.MAX_TICK()])
-    await pair0Functions.mint(walletAddress, min, max, initializeLiquidityAmount.sub(1))
-  }
+  // async function initializeAtZeroTickpair0(pair0: MockTimeUniswapV3Pair): Promise<void> {
+  //   await pair0Functions.initialize(encodePriceSqrt(1, 1))
+  //   const [min, max] = await Promise.all([pair0.MIN_TICK(), pair0.MAX_TICK()])
+  //   await pair0Functions.mint(walletAddress, min, max, initializeLiquidityAmount.sub(1))
+  // }
   
-  async function initializeAtZeroTickpair1(pair1: MockTimeUniswapV3Pair): Promise<void> {
-    await pair1Functions.initialize(encodePriceSqrt(1, 1))
-    const [min, max] = await Promise.all([pair1.MIN_TICK(), pair1.MAX_TICK()])
-    await pair1Functions.mint(walletAddress, min, max, initializeLiquidityAmount.sub(1))
-  }
+  // async function initializeAtZeroTickpair1(pair1: MockTimeUniswapV3Pair): Promise<void> {
+  //   await pair1Functions.initialize(encodePriceSqrt(1, 1))
+  //   const [min, max] = await Promise.all([pair1.MIN_TICK(), pair1.MAX_TICK()])
+  //   await pair1Functions.mint(walletAddress, min, max, initializeLiquidityAmount.sub(1))
+  // }
 
 describe.only('multi-swaps', () => {
   for (const feeAmount of [FeeAmount.LOW, FeeAmount.MEDIUM, FeeAmount.HIGH]) {
     const tickSpacing = TICK_SPACINGS[feeAmount]
     
     describe(`fee: ${feeAmount}`, () => {
-      // beforeEach('initialize pair 0 at zero tick', async () => {
-      //   pair0 = await createPair(feeAmount, tickSpacing)
-      //   await initializeAtZeroTickpair0(pair0)
-      // })
-      // beforeEach('initialize pair 1 at zero tick', async () => {
-      //   pair1 = await createPair(feeAmount, tickSpacing)
-      //   await initializeAtZeroTickpair1(pair1)
-      // })
 
-      describe('multi-swaps', () => {
-        it('multi-swap', async () => {
-
+        beforeEach('initialize both pairs', async () => {
           await pair0Functions.initialize(encodePriceSqrt(1, 1))
           await pair1Functions.initialize(encodePriceSqrt(1, 1))
 
@@ -309,8 +301,72 @@ describe.only('multi-swaps', () => {
           await token2.approve(pair1.address, constants.MaxUint256)
 
           const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
-          await swap0ForExact2(1, walletAddress)
+
         })
+
+      describe('multi-swaps', () => {
+        it('Check multi-hop transfer events', async () => {
+          const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
+          await expect(swap0ForExact2(100, walletAddress))
+            .to.emit(token2, 'Transfer')
+            .withArgs(pair1.address, walletAddress, 100)
+            .to.emit(token1, 'Transfer')
+            .withArgs(pair0.address, pair1.address, 102)
+            .to.emit(token0, 'Transfer')
+            .withArgs(walletAddress, pair0.address, 104)
+            }) 
+      
+            describe('gas', () => {
+              it('first swap ever', async () => {
+                const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
+                await snapshotGasCost(swap0ForExact2(1000, walletAddress))
+              })
+    
+              it('first swap in block', async () => {
+                const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
+                await swap0ForExact2(1000, walletAddress)
+                await pair0.setTime(TEST_PAIR_START_TIME + 10)
+                await pair1.setTime(TEST_PAIR_START_TIME + 10)
+                await snapshotGasCost(swap0ForExact2(1000, walletAddress))
+              })
+    
+              it('second swap in block', async () => {
+                const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
+                await swap0ForExact2(1000, walletAddress)
+                await snapshotGasCost(swap0ForExact2(1000, walletAddress))
+              })
+    
+              // it('large swap', async () => {
+              //   const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
+              //   await snapshotGasCost(swap0ForExact2(expandTo18Decimals(1), walletAddress))
+              // })
+    
+              // it('gas large swap crossing several initialized ticks', async () => {
+              //   const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
+              //   await pair0Functions.mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+              //   await pair0Functions.mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+              //   await pair1Functions.mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+              //   await pair1Functions.mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+              //   await snapshotGasCost(swap0ForExact2(expandTo18Decimals(1), walletAddress))
+              //   expect(await pair0.tickCurrent()).to.be.lt(tickSpacing * -4)
+              //   expect(await pair1.tickCurrent()).to.be.lt(tickSpacing * -4)
+              // })
+    
+              // it('gas large swap crossing several initialized ticks after some time passes', async () => {
+              //   const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
+              //   await pair0Functions.mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+              //   await pair0Functions.mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+              //   await pair1Functions.mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
+              //   await pair1Functions.mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
+              //   await swap0ForExact2(2, walletAddress)
+              //   await pair0.setTime(TEST_PAIR_START_TIME + 10)
+              //   await pair1.setTime(TEST_PAIR_START_TIME + 10)
+              //   await snapshotGasCost(swap0ForExact2(expandTo18Decimals(1), walletAddress))
+              //   expect(await pair0.tickCurrent()).to.be.lt(tickSpacing * -4)
+              //   expect(await pair1.tickCurrent()).to.be.lt(tickSpacing * -4)
+              // })
+            })
+
       })  
      })
    }

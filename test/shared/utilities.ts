@@ -212,8 +212,10 @@ export function createMultiPairFunctions({
     amountOut: BigNumberish, 
     to: Wallet | string
   ): Promise<ContractTransaction> {
+
+    
    
-    const method = swapTarget.swapAForC
+    const method = swapTarget.swap0ForExact2
   
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     
