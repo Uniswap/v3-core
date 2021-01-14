@@ -403,6 +403,21 @@ describe('UniswapV3Pair', () => {
         expect(await pair.protocolFees1()).to.eq('4999999999999')
       })
 
+      it('burn does not affect protocol fee', async () => {
+        await pair.setFeeProtocol(6)
+
+        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
+        await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
+        await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
+
+        expect(await pair.protocolFees0()).to.eq('49999999999999')
+        expect(await pair.protocolFees1()).to.eq('4999999999999')
+
+        await pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
+        expect(await pair.protocolFees0()).to.eq('49999999999999')
+        expect(await pair.protocolFees1()).to.eq('4999999999999')
+      })
+
       it('0 liquidity mint can poke existing position before protocol fee is turned on to protect fees', async () => {
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
