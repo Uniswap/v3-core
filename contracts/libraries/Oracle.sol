@@ -100,10 +100,10 @@ library Oracle {
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     function getSurroundingObservations(
         Observation[CARDINALITY] storage self,
-        uint16 index,
         uint32 current,
         uint32 target,
         int24 tick,
+        uint16 index,
         uint128 liquidity
     ) private view returns (Observation memory before, Observation memory) {
         // first, set before to the oldest observation, and make sure it's initialized
@@ -148,7 +148,7 @@ library Oracle {
         uint32 target = current - secondsAgo;
 
         (Observation memory before, Observation memory atOrAfter) =
-            getSurroundingObservations(self, index, current, target, tick, liquidity);
+            getSurroundingObservations(self, current, target, tick, index, liquidity);
 
         Oracle.Observation memory at;
         if (target == atOrAfter.blockTimestamp) {
