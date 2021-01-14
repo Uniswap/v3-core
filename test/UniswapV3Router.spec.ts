@@ -42,7 +42,7 @@ const createFixtureLoader = waffle.createFixtureLoader
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
-describe('UniswapV3Pair', () => {
+describe.only('UniswapV3Pair', () => {
   let wallet: Wallet
   let other: Wallet
   let walletAddress: string
@@ -289,7 +289,7 @@ describe('multi-swaps', () => {
         })
 
       describe('multi-swaps', () => {
-        it.only('Check 0 to 2 multi-hop transfer events', async () => {
+        it('Check 0 to 2 multi-hop transfer events', async () => {
           const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
           await expect(swap0ForExact2(100, walletAddress))
             .to.emit(token2, 'Transfer')
@@ -300,7 +300,7 @@ describe('multi-swaps', () => {
             .withArgs(walletAddress, pair0.address, 104)
             }) 
 
-        it.only('check 2 to 0 multi-hop transfer events', async () => {
+        it('check 2 to 0 multi-hop transfer events', async () => {
           const { swap2ForExact0 } = createMultiPairFunctions({ inputToken: token2 , swapTarget: swapTargetRouter, pair0, pair1 })
           await expect(swap2ForExact0(100, walletAddress))
             .to.emit(token0, 'Transfer')
@@ -330,43 +330,12 @@ describe('multi-swaps', () => {
           await swap0ForExact2(1000, walletAddress)
           await snapshotGasCost(swap0ForExact2(1000, walletAddress))
         })
-
-        // it('large swap', async () => {
-        //   const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
-        //   await snapshotGasCost(swap0ForExact2(expandTo18Decimals(1), walletAddress))
-        // })
-
-        // it('gas large swap crossing several initialized ticks', async () => {
-        //   const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
-        //   await pair0Functions.mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
-        //   await pair0Functions.mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-        //   await pair1Functions.mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
-        //   await pair1Functions.mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-        //   await snapshotGasCost(swap0ForExact2(expandTo18Decimals(1), walletAddress))
-        //   expect(await pair0.tickCurrent()).to.be.lt(tickSpacing * -4)
-        //   expect(await pair1.tickCurrent()).to.be.lt(tickSpacing * -4)
-        // })
-
-        // it('gas large swap crossing several initialized ticks after some time passes', async () => {
-        //   const { swap0ForExact2 } = createMultiPairFunctions({ inputToken: token0 , swapTarget: swapTargetRouter, pair0, pair1 })
-        //   await pair0Functions.mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
-        //   await pair0Functions.mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-        //   await pair1Functions.mint(walletAddress, tickSpacing * -3, tickSpacing * -2, expandTo18Decimals(1))
-        //   await pair1Functions.mint(walletAddress, tickSpacing * -4, tickSpacing * -3, expandTo18Decimals(1))
-        //   await swap0ForExact2(2, walletAddress)
-        //   await pair0.setTime(TEST_PAIR_START_TIME + 10)
-        //   await pair1.setTime(TEST_PAIR_START_TIME + 10)
-        //   await snapshotGasCost(swap0ForExact2(expandTo18Decimals(1), walletAddress))
-        //   expect(await pair0.tickCurrent()).to.be.lt(tickSpacing * -4)
-        //   expect(await pair1.tickCurrent()).to.be.lt(tickSpacing * -4)
-        // })
-      })
-
+       })
       })  
      })
+    }
    }
-  }
- )
+  )
 })
 
 

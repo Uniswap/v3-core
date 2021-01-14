@@ -1,19 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair multi-swaps fee: 600 multi-swaps gas first swap ever 1`] = `235497`;
+exports[`UniswapV3Pair multi-swaps fee: 600 multi-swaps gas first swap ever 1`] = `223307`;
 
-exports[`UniswapV3Pair multi-swaps fee: 600 multi-swaps gas first swap in block 1`] = `190311`;
+exports[`UniswapV3Pair multi-swaps fee: 600 multi-swaps gas first swap in block 1`] = `178121`;
 
-exports[`UniswapV3Pair multi-swaps fee: 600 multi-swaps gas second swap in block 1`] = `190311`;
+exports[`UniswapV3Pair multi-swaps fee: 600 multi-swaps gas second swap in block 1`] = `178121`;
 
-exports[`UniswapV3Pair multi-swaps fee: 3000 multi-swaps gas first swap ever 1`] = `235497`;
+exports[`UniswapV3Pair multi-swaps fee: 3000 multi-swaps gas first swap ever 1`] = `223307`;
 
-exports[`UniswapV3Pair multi-swaps fee: 3000 multi-swaps gas first swap in block 1`] = `190311`;
+exports[`UniswapV3Pair multi-swaps fee: 3000 multi-swaps gas first swap in block 1`] = `178121`;
 
-exports[`UniswapV3Pair multi-swaps fee: 3000 multi-swaps gas second swap in block 1`] = `190311`;
+exports[`UniswapV3Pair multi-swaps fee: 3000 multi-swaps gas second swap in block 1`] = `178121`;
 
-exports[`UniswapV3Pair multi-swaps fee: 9000 multi-swaps gas first swap ever 1`] = `235497`;
+exports[`UniswapV3Pair multi-swaps fee: 9000 multi-swaps gas first swap ever 1`] = `223307`;
 
-exports[`UniswapV3Pair multi-swaps fee: 9000 multi-swaps gas first swap in block 1`] = `190311`;
+exports[`UniswapV3Pair multi-swaps fee: 9000 multi-swaps gas first swap in block 1`] = `178121`;
 
-exports[`UniswapV3Pair multi-swaps fee: 9000 multi-swaps gas second swap in block 1`] = `190311`;
+exports[`UniswapV3Pair multi-swaps fee: 9000 multi-swaps gas second swap in block 1`] = `178121`;
