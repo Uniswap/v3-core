@@ -94,10 +94,6 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         }
     }
 
-    function initialize(address pair, uint160 sqrtPriceX96) external {
-        IUniswapV3Pair(pair).initialize(sqrtPriceX96, abi.encode(msg.sender));
-    }
-
     function mint(
         address pair,
         address recipient,

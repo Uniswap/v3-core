@@ -6,6 +6,8 @@ import { FeeAmount, getMaxLiquidityPerTick, getMaxTick, getMinTick, TICK_SPACING
 
 const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
 
+const { constants } = ethers
+
 describe('TickTest', () => {
   let tickTest: TickTest
 
@@ -129,6 +131,26 @@ describe('TickTest', () => {
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(9)
       expect(feeGrowthInside1X128).to.eq(11)
+    })
+
+    it('works correctly with overflow on inside tick', async () => {
+      await tickTest.setTick(-2, {
+        feeGrowthOutside0X128: constants.MaxUint256.sub(3),
+        feeGrowthOutside1X128: constants.MaxUint256.sub(2),
+        secondsOutside: 0,
+        liquidityGross: 0,
+        liquidityDelta: 0,
+      })
+      await tickTest.setTick(2, {
+        feeGrowthOutside0X128: 3,
+        feeGrowthOutside1X128: 5,
+        secondsOutside: 0,
+        liquidityGross: 0,
+        liquidityDelta: 0,
+      })
+      const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
+      expect(feeGrowthInside0X128).to.eq(16)
+      expect(feeGrowthInside1X128).to.eq(13)
     })
   })
 })

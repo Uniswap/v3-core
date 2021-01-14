@@ -85,7 +85,7 @@ interface IUniswapV3Pair {
     function tickCurrent() external view returns (int24);
 
     // initialize the pair
-    function initialize(uint160 sqrtPriceX96, bytes calldata data) external;
+    function initialize(uint160 sqrtPriceX96) external;
 
     // mint some liquidity to an address
     function mint(
@@ -124,5 +124,9 @@ interface IUniswapV3Pair {
     function setFeeProtocol(uint8) external;
 
     // allows factory owner to collect protocol fees
-    function collectProtocol(address recipient) external returns (uint256 amount0, uint256 amount1);
+    function collectProtocol(
+        address recipient,
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external returns (uint256 amount0, uint256 amount1);
 }

@@ -26,14 +26,10 @@ import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
-    using SafeMath for uint128;
     using SafeMath for uint256;
-    using SignedSafeMath for int128;
     using SignedSafeMath for int256;
-    using SafeCast for int256;
     using SafeCast for uint256;
     using MixedSafeMath for uint128;
-    using MixedSafeMath for uint256;
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
@@ -183,6 +179,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
     }
 
+    function balance0() private view returns (uint256) {
+        return balanceOfToken(token0);
+    }
+
+    function balance1() private view returns (uint256) {
+        return balanceOfToken(token1);
+    }
+
+    function balanceOfToken(address token) private view returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
+    }
+
     // returns the block timestamp % 2**32
     // overridden for tests
     function _blockTimestamp() internal view virtual returns (uint32) {
@@ -214,7 +222,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot1.feeProtocol = feeProtocol;
     }
 
-    function initialize(uint160 sqrtPriceX96, bytes calldata data) external override {
+    function initialize(uint160 sqrtPriceX96) external override {
         Slot0 memory _slot0 = slot0;
         require(_slot0.sqrtPriceX96 == 0, 'AI');
 
@@ -232,9 +240,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0 = _slot0;
 
         emit Initialized(sqrtPriceX96, tick);
-
-        // set permanent 1 wei position
-        mint(address(0), minTick, maxTick, 1, data);
     }
 
     // gets and updates and gets a position with the given liquidity delta
@@ -365,22 +370,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount0 = uint256(amount0Int);
         uint256 amount1 = uint256(amount1Int);
 
-        // if necessary, collect payment via callback
-        // TODO we could decrease bytecode size here at the cost of gas increase
-        if (amount0 > 0 && amount1 > 0) {
-            uint256 balance0 = IERC20(token0).balanceOf(address(this));
-            uint256 balance1 = IERC20(token1).balanceOf(address(this));
+        if (amount0 > 0 || amount1 > 0) {
+            uint256 balance0Before;
+            uint256 balance1Before;
+            if (amount0 > 0) balance0Before = balance0();
+            if (amount1 > 0) balance1Before = balance1();
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
-            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
-        } else if (amount0 > 0 && amount1 == 0) {
-            uint256 balance0 = IERC20(token0).balanceOf(address(this));
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, 0, data);
-            require(balance0.add(amount0) <= IERC20(token0).balanceOf(address(this)), 'M0');
-        } else if (amount0 == 0 && amount1 > 0) {
-            uint256 balance1 = IERC20(token1).balanceOf(address(this));
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(0, amount1, data);
-            require(balance1.add(amount1) <= IERC20(token1).balanceOf(address(this)), 'M1');
+            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
+            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
         }
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
@@ -576,16 +573,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
             }
 
             // update global fee tracker
-            state.feeGrowthGlobalX128Partial += FixedPoint128.fraction(step.feeAmount, state.liquidity);
+            if (state.liquidity > 0)
+                state.feeGrowthGlobalX128Partial += FullMath.mulDiv(
+                    step.feeAmount,
+                    FixedPoint128.Q128,
+                    state.liquidity
+                );
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
+                if (zeroForOne) require(step.tickNext > minTick, 'MIN');
+                else require(step.tickNext < maxTick, 'MAX');
+
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
-                    // it's ok to put this condition here, because the min/max ticks are always initialized
-                    if (zeroForOne) require(step.tickNext > minTick, 'MIN');
-                    else require(step.tickNext < maxTick, 'MAX');
-
                     uint256 _feeGrowthGlobal0X128 =
                         feeGrowthGlobalX128(
                             zeroForOne ? state.feeGrowthGlobalX128Partial : feeGrowthGlobal0X128Partial,
@@ -596,7 +597,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             zeroForOne ? feeGrowthGlobal1X128Partial : state.feeGrowthGlobalX128Partial,
                             feeGrowthGlobal1X128Offset
                         );
-
                     int128 liquidityDelta =
                         ticks.cross(step.tickNext, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128, params.blockTimestamp);
 
@@ -650,16 +650,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
 
         // callback for the input
-        uint256 balanceBefore = IERC20(tokenIn).balanceOf(address(this));
+        uint256 balanceBefore = balanceOfToken(tokenIn);
         zeroForOne
             ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
-        require(balanceBefore.add(uint256(amountIn)) >= IERC20(tokenIn).balanceOf(address(this)), 'IIA');
+        require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn), 'IIA');
 
         slot0.unlockedAndPriceBit = state.priceBit ? PRICE_BIT | UNLOCKED_BIT : UNLOCKED_BIT;
 
         if (zeroForOne) emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
-        else Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
+        else emit Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
     }
 
     // positive (negative) numbers specify exact input (output) amounts, return values are output (input) amounts
@@ -691,13 +691,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // not gas-optimized yet but easily could be
-    function collectProtocol(address recipient)
-        external
-        override
-        lockNoPriceMovement
-        onlyFactoryOwner
-        returns (uint256 amount0, uint256 amount1)
-    {
+    function collectProtocol(
+        address recipient,
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external override lockNoPriceMovement onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
+        // TODO: use the amount0Requested and amount1Requested arguments
         require(slot1.feeProtocol > 0);
 
         amount0 = protocolFees0();
