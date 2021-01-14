@@ -55,7 +55,7 @@ describe('Oracle', () => {
 
   let oracle: MockTimeUniswapV3Pair
 
-  describe('#scry', () => {
+  describe('#observationAt', () => {
     before('deploy pair', async () => {
       const { createPair } = await loadFixture(pairFixture)
       oracle = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
@@ -63,7 +63,7 @@ describe('Oracle', () => {
 
     describe('failures', () => {
       it('fails while uninitialized', async () => {
-        await expect(oracle.scry(0)).to.be.revertedWith('UI')
+        await expect(oracle.observationAt(0)).to.be.revertedWith('UI')
       })
 
       it('fails for single observation without any intervening time', async () => {
@@ -75,7 +75,7 @@ describe('Oracle', () => {
           initialized: true,
         }
         await setOracle(oracle, observations, 0)
-        await expect(oracle.scry(0)).to.be.revertedWith('OLD')
+        await expect(oracle.observationAt(0)).to.be.revertedWith('OLD')
       })
     })
 
@@ -98,7 +98,7 @@ describe('Oracle', () => {
           initialized: true,
         }
         await setOracle(oracle, observations, 1, 1)
-        const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+        const { tickCumulative, liquidityCumulative } = await oracle.observationAt(0)
 
         expect(tickCumulative).to.be.eq(tick)
         expect(liquidityCumulative).to.be.eq(liquidity)
@@ -114,10 +114,10 @@ describe('Oracle', () => {
         }
         await setOracle(oracle, observations, 0, 2, tick, liquidity)
 
-        let { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+        let { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
         expect(tickCumulative).to.be.eq(tick)
         expect(liquidityCumulative).to.be.eq(liquidity)
-        ;({ tickCumulative, liquidityCumulative } = await oracle.scry(0))
+        ;({ tickCumulative, liquidityCumulative } = await oracle.observationAt(0))
         expect(tickCumulative).to.be.eq(tick * 2)
         expect(liquidityCumulative).to.be.eq(liquidity * 2)
       })
@@ -138,7 +138,7 @@ describe('Oracle', () => {
         }
         await setOracle(oracle, observations, 1, 2, tick, liquidity)
 
-        const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+        const { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
 
         expect(tickCumulative).to.be.eq(tick)
         expect(liquidityCumulative).to.be.eq(liquidity)
@@ -146,7 +146,7 @@ describe('Oracle', () => {
     })
 
     describe('gas', () => {
-      it('scry cost for timestamp equal to the most recent observation', async () => {
+      it('timestamp equal to the most recent observation', async () => {
         const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
@@ -161,10 +161,10 @@ describe('Oracle', () => {
           initialized: true,
         }
         await setOracle(oracle, observations, 1, 1)
-        await snapshotGasCost(await oracle.estimateGas.scry(0))
+        await snapshotGasCost(await oracle.estimateGas.observationAt(0))
       })
 
-      it('scry cost for timestamp greater than the most recent observation', async () => {
+      it('timestamp greater than the most recent observation', async () => {
         const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
@@ -173,10 +173,10 @@ describe('Oracle', () => {
           initialized: true,
         }
         await setOracle(oracle, observations, 0, 1)
-        await snapshotGasCost(await oracle.estimateGas.scry(0))
+        await snapshotGasCost(await oracle.estimateGas.observationAt(0))
       })
 
-      it('scry cost for worst-case binary search', async () => {
+      it('worst-case binary search', async () => {
         const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
@@ -191,7 +191,7 @@ describe('Oracle', () => {
           initialized: true,
         }
         await setOracle(oracle, observations, 1, 2)
-        await snapshotGasCost(await oracle.estimateGas.scry(1))
+        await snapshotGasCost(await oracle.estimateGas.observationAt(1))
       })
 
       it('observations cost', async () => {
@@ -231,14 +231,14 @@ describe('Oracle', () => {
         })
 
         it('works for +1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 1, now)
           )
           expect(tickCumulative).to.be.eq(ticks[1] * 1)
           expect(liquidityCumulative).to.be.eq(liquidities[1] * 1)
         })
         it('works for +2', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 2, now)
           )
           expect(tickCumulative).to.be.eq(ticks[1] * 2)
@@ -246,14 +246,14 @@ describe('Oracle', () => {
         })
 
         it('works for +13', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 13, now)
           )
           expect(tickCumulative).to.be.eq(observations[1].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[1].liquidityCumulative)
         })
         it('works for +14', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 14, now)
           )
           expect(tickCumulative).to.be.eq(observations[1].tickCumulative + ticks[2])
@@ -261,21 +261,21 @@ describe('Oracle', () => {
         })
 
         it('works for +6655', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6655, now)
           )
           expect(tickCumulative).to.be.eq(observations[511].tickCumulative + ticks[512] * 12)
           expect(liquidityCumulative).to.be.eq(observations[511].liquidityCumulative + liquidities[512] * 12)
         })
         it('works for +6656', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6656, now)
           )
           expect(tickCumulative).to.be.eq(observations[512].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[512].liquidityCumulative)
         })
         it('works for +6657', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6657, now)
           )
           expect(tickCumulative).to.be.eq(observations[512].tickCumulative + ticks[513])
@@ -283,19 +283,19 @@ describe('Oracle', () => {
         })
 
         it('works for -2', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(2)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(2)
           expect(tickCumulative).to.be.eq(observations[newestIndex - 1].tickCumulative + ticks[1023] * 12)
           expect(liquidityCumulative).to.be.eq(
             observations[newestIndex - 1].liquidityCumulative + liquidities[1023] * 12
           )
         })
         it('works for -1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
           expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative)
         })
         it('works for 0', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(0)
           expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative + tick)
           expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative + liquidity)
         })
@@ -329,14 +329,14 @@ describe('Oracle', () => {
         })
 
         it('works for +1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 1, now)
           )
           expect(tickCumulative).to.be.eq(ticks[1] * 1)
           expect(liquidityCumulative).to.be.eq(liquidities[1] * 1)
         })
         it('works for +2', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 2, now)
           )
           expect(tickCumulative).to.be.eq(ticks[1] * 2)
@@ -344,14 +344,14 @@ describe('Oracle', () => {
         })
 
         it('works for +13', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 13, now)
           )
           expect(tickCumulative).to.be.eq(observations[oldestIndex + 1].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[oldestIndex + 1].liquidityCumulative)
         })
         it('works for +14', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 14, now)
           )
           expect(tickCumulative).to.be.eq(observations[oldestIndex + 1].tickCumulative + ticks[2])
@@ -359,7 +359,7 @@ describe('Oracle', () => {
         })
 
         it('works for +6655', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6655, now)
           )
           expect(tickCumulative).to.be.eq(
@@ -370,14 +370,14 @@ describe('Oracle', () => {
           )
         })
         it('works for +6656', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6656, now)
           )
           expect(tickCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].liquidityCumulative)
         })
         it('works for +6657', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6657, now)
           )
           expect(tickCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].tickCumulative + ticks[513])
@@ -387,19 +387,19 @@ describe('Oracle', () => {
         })
 
         it('works for -2', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(2)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(2)
           expect(tickCumulative).to.be.eq(observations[newestIndex - 1].tickCumulative + ticks[1023] * 12)
           expect(liquidityCumulative).to.be.eq(
             observations[newestIndex - 1].liquidityCumulative + liquidities[1023] * 12
           )
         })
         it('works for -1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
           expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative)
         })
         it('works for 0', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(0)
           expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative + tick)
           expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative + liquidity)
         })
@@ -434,14 +434,14 @@ describe('Oracle', () => {
         })
 
         it('works for +1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 1, now)
           )
           expect(tickCumulative).to.be.eq(ticks[1] * 1)
           expect(liquidityCumulative).to.be.eq(liquidities[1] * 1)
         })
         it('works for +2', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 2, now)
           )
           expect(tickCumulative).to.be.eq(ticks[1] * 2)
@@ -449,14 +449,14 @@ describe('Oracle', () => {
         })
 
         it('works for +13', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 13, now)
           )
           expect(tickCumulative).to.be.eq(observations[1].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[1].liquidityCumulative)
         })
         it('works for +14', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 14, now)
           )
           expect(tickCumulative).to.be.eq(observations[1].tickCumulative + ticks[2])
@@ -464,32 +464,32 @@ describe('Oracle', () => {
         })
 
         it('works for boundary-1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(getSecondsAgo(2 ** 32 - 1, now))
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(getSecondsAgo(2 ** 32 - 1, now))
           expect(tickCumulative).to.be.eq(observations[230].tickCumulative + ticks[231] * 8)
           expect(liquidityCumulative).to.be.eq(observations[230].liquidityCumulative + liquidities[231] * 8)
         })
         it('works for boundary+1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(getSecondsAgo(0, now))
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(getSecondsAgo(0, now))
           expect(tickCumulative).to.be.eq(observations[230].tickCumulative + ticks[231] * 9)
           expect(liquidityCumulative).to.be.eq(observations[230].liquidityCumulative + liquidities[231] * 9)
         })
 
         it('works for +6655', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6655, now)
           )
           expect(tickCumulative).to.be.eq(observations[511].tickCumulative + ticks[512] * 12)
           expect(liquidityCumulative).to.be.eq(observations[511].liquidityCumulative + liquidities[512] * 12)
         })
         it('works for +6656', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6656, now)
           )
           expect(tickCumulative).to.be.eq(observations[512].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[512].liquidityCumulative)
         })
         it('works for +6657', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6657, now)
           )
           expect(tickCumulative).to.be.eq(observations[512].tickCumulative + ticks[513])
@@ -497,19 +497,19 @@ describe('Oracle', () => {
         })
 
         it('works for -2', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(2)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(2)
           expect(tickCumulative).to.be.eq(observations[newestIndex - 1].tickCumulative + ticks[1023] * 12)
           expect(liquidityCumulative).to.be.eq(
             observations[newestIndex - 1].liquidityCumulative + liquidities[1023] * 12
           )
         })
         it('works for -1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
           expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative)
         })
         it('works for 0', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(0)
           expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative + tick)
           expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative + liquidity)
         })
@@ -548,14 +548,14 @@ describe('Oracle', () => {
         })
 
         it('works for +1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 1, now)
           )
           expect(tickCumulative).to.be.eq(ticks[1] * 1)
           expect(liquidityCumulative).to.be.eq(liquidities[1] * 1)
         })
         it('works for +2', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 2, now)
           )
           expect(tickCumulative).to.be.eq(ticks[1] * 2)
@@ -563,14 +563,14 @@ describe('Oracle', () => {
         })
 
         it('works for +13', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 13, now)
           )
           expect(tickCumulative).to.be.eq(observations[oldestIndex + 1].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[oldestIndex + 1].liquidityCumulative)
         })
         it('works for +14', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 14, now)
           )
           expect(tickCumulative).to.be.eq(observations[oldestIndex + 1].tickCumulative + ticks[2])
@@ -578,20 +578,20 @@ describe('Oracle', () => {
         })
 
         it('works for boundary-1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(getSecondsAgo(2 ** 32 - 1, now))
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(getSecondsAgo(2 ** 32 - 1, now))
           const index = (oldestIndex + 230) % CARDINALITY
           expect(tickCumulative).to.be.eq(observations[index].tickCumulative + ticks[231] * 8)
           expect(liquidityCumulative).to.be.eq(observations[index].liquidityCumulative + liquidities[231] * 8)
         })
         it('works for boundary+1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(getSecondsAgo(0, now))
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(getSecondsAgo(0, now))
           const index = (oldestIndex + 230) % CARDINALITY
           expect(tickCumulative).to.be.eq(observations[index].tickCumulative + ticks[231] * 9)
           expect(liquidityCumulative).to.be.eq(observations[index].liquidityCumulative + liquidities[231] * 9)
         })
 
         it('works for +6655', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6655, now)
           )
           expect(tickCumulative).to.be.eq(
@@ -602,14 +602,14 @@ describe('Oracle', () => {
           )
         })
         it('works for +6656', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6656, now)
           )
           expect(tickCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].liquidityCumulative)
         })
         it('works for +6657', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(
             getSecondsAgo(observations[oldestIndex].blockTimestamp + 6657, now)
           )
           expect(tickCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].tickCumulative + ticks[513])
@@ -619,19 +619,19 @@ describe('Oracle', () => {
         })
 
         it('works for -2', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(2)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(2)
           expect(tickCumulative).to.be.eq(observations[newestIndex - 1].tickCumulative + ticks[1023] * 12)
           expect(liquidityCumulative).to.be.eq(
             observations[newestIndex - 1].liquidityCumulative + liquidities[1023] * 12
           )
         })
         it('works for -1', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
           expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative)
           expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative)
         })
         it('works for 0', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(0)
           expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative + tick)
           expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative + liquidity)
         })
