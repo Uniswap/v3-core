@@ -13,8 +13,10 @@ library SpacedTickBitmap {
         int24 tick,
         int24 tickSpacing
     ) internal {
-        require(tick % tickSpacing == 0, 'TS'); // ensure that the tick is spaced
-        self.flipTick(tick / tickSpacing);
+        unchecked {
+            require(tick % tickSpacing == 0, 'TS'); // ensure that the tick is spaced
+            self.flipTick(tick / tickSpacing);
+        }
     }
 
     function nextInitializedTickWithinOneWord(
@@ -23,9 +25,11 @@ library SpacedTickBitmap {
         int24 tickSpacing,
         bool lte
     ) internal view returns (int24 next, bool initialized) {
-        int24 compressed = tick / tickSpacing;
-        if (tick < 0 && tick % tickSpacing != 0) compressed--; // round towards negative infinity
-        (next, initialized) = self.nextInitializedTickWithinOneWord(compressed, lte);
-        next *= tickSpacing;
+        unchecked {
+            int24 compressed = tick / tickSpacing;
+            if (tick < 0 && tick % tickSpacing != 0) compressed--; // round towards negative infinity
+            (next, initialized) = self.nextInitializedTickWithinOneWord(compressed, lte);
+            next *= tickSpacing;
+        }
     }
 }

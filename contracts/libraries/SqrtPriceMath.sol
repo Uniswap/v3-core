@@ -32,7 +32,9 @@ library SqrtPriceMath {
         uint256 y,
         uint256 d
     ) internal pure returns (uint256) {
-        return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
+        unchecked {
+            return FullMath.mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
+        }
     }
 
     // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))

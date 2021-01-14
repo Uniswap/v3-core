@@ -110,8 +110,7 @@ library Tick {
 
             if (liquidityDelta != 0) {
                 uint128 liquidityGrossBefore = info.liquidityGross;
-                uint128 liquidityGrossAfter =
-                    SafeCast.toUint128(LiquidityDelta.add(liquidityGrossBefore, liquidityDelta));
+                uint128 liquidityGrossAfter = LiquidityDelta.add(liquidityGrossBefore, liquidityDelta);
 
                 require(liquidityGrossAfter <= maxLiquidity, 'LO');
 
