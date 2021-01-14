@@ -531,22 +531,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Slot0 memory _slot0 = slot0;
 
         require(_slot0.unlocked, 'LOK');
-        require(
-            zeroForOne
-                ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96
-                : sqrtPriceLimitX96 > _slot0.sqrtPriceX96,
-            'SPL'
-        );
+        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
 
         slot0.unlocked = false;
 
         SwapCache memory cache =
-            SwapCache({
-                slot0Start: _slot0,
-                liquidityStart: liquidity,
-                blockTimestamp: _blockTimestamp()
-            });
-
+            SwapCache({slot0Start: _slot0, liquidityStart: liquidity, blockTimestamp: _blockTimestamp()});
 
         bool exactInput = amountSpecified > 0;
 
