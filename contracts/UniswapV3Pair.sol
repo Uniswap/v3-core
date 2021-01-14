@@ -82,9 +82,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override feeGrowthGlobal0X128;
     uint256 public override feeGrowthGlobal1X128;
 
-    // accumulated protocol fees
-    uint256 public override feeToFees0;
-    uint256 public override feeToFees1;
+    // accumulated protocol fees in token0/token1 units
+    uint256 public override protocolFees0;
+    uint256 public override protocolFees1;
 
     mapping(int24 => Tick.Info) public ticks;
     mapping(bytes32 => Position.Info) public positions;
@@ -113,15 +113,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
     }
 
-    function getBalance0() private view returns (uint256) {
-        return getBalance(token0);
+    function balance0() private view returns (uint256) {
+        return balanceOfToken(token0);
     }
 
-    function getBalance1() private view returns (uint256) {
-        return getBalance(token1);
+    function balance1() private view returns (uint256) {
+        return balanceOfToken(token1);
     }
 
-    function getBalance(address token) private view returns (uint256) {
+    function balanceOfToken(address token) private view returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 
@@ -292,11 +292,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (feeProtocol > 0) {
             uint256 fee0 = feesOwed0 / feeProtocol;
             feesOwed0 -= fee0;
-            feeToFees0 += fee0;
+            protocolFees0 += fee0;
 
             uint256 fee1 = feesOwed1 / feeProtocol;
             feesOwed1 -= fee1;
-            feeToFees1 += fee1;
+            protocolFees1 += fee1;
         }
 
         // update the position
@@ -365,22 +365,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount0 = uint256(amount0Int);
         uint256 amount1 = uint256(amount1Int);
 
-        // if necessary, collect payment via callback
-        // TODO we could decrease bytecode size here at the cost of gas increase
-        if (amount0 > 0 && amount1 > 0) {
-            uint256 balance0 = getBalance0();
-            uint256 balance1 = getBalance1();
+        if (amount0 > 0 || amount1 > 0) {
+            uint256 balance0Before;
+            uint256 balance1Before;
+            if (amount0 > 0) balance0Before = balance0();
+            if (amount1 > 0) balance1Before = balance1();
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            require(balance0.add(amount0) <= getBalance0(), 'M0');
-            require(balance1.add(amount1) <= getBalance1(), 'M1');
-        } else if (amount0 > 0 && amount1 == 0) {
-            uint256 balance0 = getBalance0();
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, 0, data);
-            require(balance0.add(amount0) <= getBalance0(), 'M0');
-        } else if (amount0 == 0 && amount1 > 0) {
-            uint256 balance1 = getBalance1();
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(0, amount1, data);
-            require(balance1.add(amount1) <= getBalance1(), 'M1');
+            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
+            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
         }
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
@@ -392,8 +384,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
-        require(amount > 0, 'BA');
-        require(amount < 2**127, 'BA');
+        require(amount > 0 && amount < 2**127, 'BA');
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
@@ -642,11 +633,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
 
         // callback for the input
-        uint256 balanceBefore = getBalance(tokenIn);
+        uint256 balanceBefore = balanceOfToken(tokenIn);
         zeroForOne
             ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
-        require(balanceBefore.add(uint256(amountIn)) >= getBalance(tokenIn), 'IIA');
+        require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn), 'IIA');
 
         if (zeroForOne) emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
         else emit Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
@@ -689,15 +680,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
-        amount0 = amount0Requested > feeToFees0 ? feeToFees0 : amount0Requested;
-        amount1 = amount1Requested > feeToFees1 ? feeToFees1 : amount1Requested;
+        amount0 = amount0Requested > protocolFees0 ? protocolFees0 : amount0Requested;
+        amount1 = amount1Requested > protocolFees1 ? protocolFees1 : amount1Requested;
 
         if (amount0 > 0) {
-            feeToFees0 -= amount0;
+            protocolFees0 -= amount0;
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
-            feeToFees1 -= amount1;
+            protocolFees1 -= amount1;
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 

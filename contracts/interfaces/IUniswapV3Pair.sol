@@ -80,9 +80,9 @@ interface IUniswapV3Pair {
 
     function feeGrowthGlobal1X128() external view returns (uint256);
 
-    function feeToFees0() external view returns (uint256);
+    function protocolFees0() external view returns (uint256);
 
-    function feeToFees1() external view returns (uint256);
+    function protocolFees1() external view returns (uint256);
 
     // initialize the pair
     function initialize(uint160 sqrtPriceX96) external;
