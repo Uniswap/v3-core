@@ -6,7 +6,6 @@ import './SafeMath.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
-import './FixedPoint128.sol';
 
 library SqrtPriceMath {
     using SafeMath for uint256;
