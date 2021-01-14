@@ -86,9 +86,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override feeGrowthGlobal0X128;
     uint256 public override feeGrowthGlobal1X128;
 
-    // accumulated protocol fees
-    uint256 public override feeToFees0;
-    uint256 public override feeToFees1;
+    // accumulated protocol fees in token0/token1 units
+    uint256 public override protocolFees0;
+    uint256 public override protocolFees1;
 
     mapping(int24 => Tick.Info) public ticks;
     mapping(bytes32 => Position.Info) public positions;
@@ -247,11 +247,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (feeProtocol > 0) {
             uint256 fee0 = feesOwed0 / feeProtocol;
             feesOwed0 -= fee0;
-            feeToFees0 += fee0;
+            protocolFees0 += fee0;
 
             uint256 fee1 = feesOwed1 / feeProtocol;
             feesOwed1 -= fee1;
-            feeToFees1 += fee1;
+            protocolFees1 += fee1;
         }
 
         // update the position
@@ -636,15 +636,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external override lockNoPriceMovement onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
-        amount0 = amount0Requested > feeToFees0 ? feeToFees0 : amount0Requested;
-        amount1 = amount1Requested > feeToFees1 ? feeToFees1 : amount1Requested;
+        amount0 = amount0Requested > protocolFees0 ? protocolFees0 : amount0Requested;
+        amount1 = amount1Requested > protocolFees1 ? protocolFees1 : amount1Requested;
 
         if (amount0 > 0) {
-            feeToFees0 -= amount0;
+            protocolFees0 -= amount0;
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
-            feeToFees1 -= amount1;
+            protocolFees1 -= amount1;
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
