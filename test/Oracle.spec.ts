@@ -193,6 +193,10 @@ describe('Oracle', () => {
         await setOracle(oracle, observations, 1, 2)
         await snapshotGasCost(await oracle.estimateGas.scry(1))
       })
+
+      it('observations cost', async () => {
+        await snapshotGasCost(await oracle.estimateGas.observations(0))
+      })
     })
 
     describe('full cases', () => {

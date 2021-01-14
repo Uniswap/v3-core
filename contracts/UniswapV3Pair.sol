@@ -73,7 +73,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint128 public override liquidity;
 
     // see Oracle.sol
-    Oracle.Observation[1024] internal observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
+    Oracle.Observation[1024] public override observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
 
     // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;
@@ -131,6 +131,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
+    // constructs an exact observation as of a particular time in the past, as long as we have observations before then
     function scry(uint32 secondsAgo)
         external view override returns (int56 tickCumulative, uint160 liquidityCumulative) {
         uint32 current = _blockTimestamp();
@@ -142,8 +143,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         ) = getSurroundingObservations(current, target);
 
         Oracle.Observation memory at;
-        if (target == atOrAfter.blockTimestamp) at = atOrAfter;
-        else {
+        if (target == atOrAfter.blockTimestamp) {
+            // if we're at the right boundary, make it so 
+            at = atOrAfter;
+        } else {
+            // else, adjust counterfactually
             uint32 delta = atOrAfter.blockTimestamp - before.blockTimestamp;
             int24 tickDerived = int24((atOrAfter.tickCumulative - before.tickCumulative) / delta);
             uint128 liquidityDerived = uint128((atOrAfter.liquidityCumulative - before.liquidityCumulative) / delta);
@@ -153,6 +157,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return (at.tickCumulative, at.liquidityCumulative);
     }
 
+    // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     function getSurroundingObservations(uint32 current, uint32 target)
         private
         view

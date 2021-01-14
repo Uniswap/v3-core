@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.7.5;
-pragma abicoder v2;
+pragma solidity >=0.5.0;
 
 interface IUniswapV3Pair {
     event Initialized(uint160 sqrtPrice, int24 tick);
@@ -63,9 +62,9 @@ interface IUniswapV3Pair {
         external
         view
         returns (
-            uint160 sqrtPriceCurrentX96,
+            uint160 sqrtPriceX96,
             int24 tick,
-            uint16 index,
+            uint16 observationIndex,
             uint8 feeProtocol,
             bool unlocked
         );
@@ -73,6 +72,13 @@ interface IUniswapV3Pair {
     function liquidity() external view returns (uint128);
 
     function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
+
+    function observations(uint256) external view returns (
+        uint32 blockTimestamp,
+        int56 tickCumulative,
+        uint160 liquidityCumulative,
+        bool initialized
+    );
 
     function tickBitmap(int16) external view returns (uint256);
 
