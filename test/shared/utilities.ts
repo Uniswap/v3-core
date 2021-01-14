@@ -1,8 +1,8 @@
 import bn from 'bignumber.js'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
+import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
-import { UniswapV3Pair } from '../../typechain/UniswapV3Pair'
 
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
@@ -11,6 +11,8 @@ export const getMaxLiquidityPerTick = (tickSpacing: number) =>
     .pow(128)
     .sub(1)
     .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
+
+export const NUMBER_OF_ORACLE_OBSERVATIONS = 1024
 
 export enum FeeAmount {
   LOW = 600,
@@ -95,7 +97,7 @@ export function createPairFunctions({
   swapTarget: TestUniswapV3Callee
   token0: TestERC20
   token1: TestERC20
-  pair: UniswapV3Pair
+  pair: MockTimeUniswapV3Pair
 }): PairFunctions {
   async function swapToSqrtPrice(
     inputToken: Contract,
