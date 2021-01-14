@@ -25,7 +25,6 @@ import {
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
 import { SwapMathTest } from '../typechain/SwapMathTest'
-import { TestUniswapV3Router } from '../typechain/TestUniswapV3Router'
 
 const createFixtureLoader = waffle.createFixtureLoader
 

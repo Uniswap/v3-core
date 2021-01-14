@@ -2,7 +2,6 @@ import bn from 'bignumber.js'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
-import { UniswapV3Pair } from '../../typechain/UniswapV3Pair'
 import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
 
@@ -180,37 +179,37 @@ export function createPairFunctions({
 }
 
 export interface MultiPairFunctions {
-  swap0ForExact2: any
-  swap2ForExact0: any
+  swapForExact0Multi: SwapFunction
+  swapForExact1Multi: SwapFunction
 }
 
 export function createMultiPairFunctions({
   inputToken,
   swapTarget,
-  pair0,
-  pair1,
+  pairInput,
+  pairOutput,
 }: {
   inputToken: TestERC20
   swapTarget: TestUniswapV3Router
-  pair0: UniswapV3Pair
-  pair1: UniswapV3Pair
+  pairInput: MockTimeUniswapV3Pair
+  pairOutput: MockTimeUniswapV3Pair
 }): MultiPairFunctions {
-  async function swap0ForExact2(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swap0ForExact2
+  async function swapForExact0Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swapForExact0Multi
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
-    return method([pair0.address, pair1.address], amountOut, toAddress, false)
+    return method(pairInput.address, pairOutput.address, amountOut, toAddress)
   }
 
-  async function swap2ForExact0(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swap2ForExact0
+  async function swapForExact1Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swapForExact1Multi
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
-    return method([pair0.address, pair1.address], amountOut, toAddress, false)
+    return method(pairInput.address, pairOutput.address, amountOut, toAddress)
   }
 
   return {
-    swap0ForExact2,
-    swap2ForExact0,
+    swapForExact0Multi,
+    swapForExact1Multi,
   }
 }
