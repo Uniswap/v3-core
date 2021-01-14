@@ -146,7 +146,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         Oracle.Observation memory at;
         if (target == atOrAfter.blockTimestamp) {
-            // if we're at the right boundary, make it so 
+            // if we're at the right boundary, make it so
             at = atOrAfter;
         } else {
             // else, adjust counterfactually

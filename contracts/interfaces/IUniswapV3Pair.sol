@@ -73,12 +73,15 @@ interface IUniswapV3Pair {
 
     function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
 
-    function observations(uint256) external view returns (
-        uint32 blockTimestamp,
-        int56 tickCumulative,
-        uint160 liquidityCumulative,
-        bool initialized
-    );
+    function observations(uint256)
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            int56 tickCumulative,
+            uint160 liquidityCumulative,
+            bool initialized
+        );
 
     function tickBitmap(int16) external view returns (uint256);
 
