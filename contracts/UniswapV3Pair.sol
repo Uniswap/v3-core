@@ -662,19 +662,28 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 fee0 = amount0 > 0 ? SqrtPriceMath.mulDivRoundingUp(amount0, fee, 1e6) : 0;
         uint256 fee1 = amount1 > 0 ? SqrtPriceMath.mulDivRoundingUp(amount1, fee, 1e6) : 0;
 
-        uint256 balance0 = IERC20(token0).balanceOf(address(this));
-        uint256 balance1 = IERC20(token1).balanceOf(address(this));
+        uint256 balance0Before;
+        uint256 balance1Before;
+
+        if (amount0 > 0) balance0Before = balance0();
+        if (amount1 > 0) balance1Before = balance1();
 
         if (amount0 > 0) TransferHelper.safeTransfer(token0, msg.sender, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, msg.sender, amount1);
 
         IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);
 
-        require(IERC20(token0).balanceOf(address(this)) >= balance0.add(fee0));
-        require(IERC20(token1).balanceOf(address(this)) >= balance1.add(fee1));
+        if (amount0 > 0) require(balance0Before.add(fee0) <= balance0());
+        if (amount1 > 0) require(balance1Before.add(fee1) <= balance1());
 
-        feeGrowthGlobal0X128 += FixedPoint128.fraction(fee0, liquidityCurrent);
-        feeGrowthGlobal1X128 += FixedPoint128.fraction(fee1, liquidityCurrent);
+        if (fee0 > 0 || fee1 > 0) {
+            uint128 liquidity = slot1.liquidity;
+            // TODO: what if liquidity is 0? i.e. no currently in range LPs
+            //   this is at least better than burning the fees from flash loans!
+            require(liquidity > 0, 'L');
+            if (fee0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(fee0, FixedPoint128.Q128, liquidity);
+            if (fee1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(fee1, FixedPoint128.Q128, liquidity);
+        }
 
         emit Flash(msg.sender, amount0, amount1);
     }
