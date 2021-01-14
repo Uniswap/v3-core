@@ -1,14 +1,20 @@
 import bn from 'bignumber.js'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
-import { Test } from 'mocha'
-import { TestERC20 } from '../../typechain/TestERC20'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
 import { UniswapV3Pair } from '../../typechain/UniswapV3Pair'
+import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
+import { TestERC20 } from '../../typechain/TestERC20'
 
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
-export const MAX_LIQUIDITY_GROSS_PER_TICK = BigNumber.from('20282409603651670423947251286015')
+export const getMaxLiquidityPerTick = (tickSpacing: number) =>
+  BigNumber.from(2)
+    .pow(128)
+    .sub(1)
+    .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
+
+export const NUMBER_OF_ORACLE_OBSERVATIONS = 1024
 
 export enum FeeAmount {
   LOW = 600,
@@ -30,7 +36,6 @@ export function getCreate2Address(
   factoryAddress: string,
   [tokenA, tokenB]: [string, string],
   fee: number,
-  tickSpacing: number,
   bytecode: string
 ): string {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA]
@@ -69,13 +74,6 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
-
-
-export type StaticSwapFunction = (
-  amount: BigNumberish,
-  to: Wallet | string
-) => Promise<{ amountUsed: BigNumber; amountCalculated: BigNumber }>
-
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
@@ -83,7 +81,6 @@ export type MintFunction = (
   liquidity: BigNumberish,
   data?: string
 ) => Promise<ContractTransaction>
-export type InitializeFunction = (price: BigNumberish) => Promise<ContractTransaction>
 export interface PairFunctions {
   swapToLowerPrice: SwapFunction
   swapToHigherPrice: SwapFunction
@@ -92,7 +89,6 @@ export interface PairFunctions {
   swapExact1For0: SwapFunction
   swap1ForExact0: SwapFunction
   mint: MintFunction
-  initialize: InitializeFunction
 }
 export function createPairFunctions({
   token0,
@@ -103,9 +99,8 @@ export function createPairFunctions({
   swapTarget: TestUniswapV3Callee
   token0: TestERC20
   token1: TestERC20
-  pair: UniswapV3Pair
+  pair: MockTimeUniswapV3Pair
 }): PairFunctions {
-
   async function swapToSqrtPrice(
     inputToken: Contract,
     targetPrice: BigNumberish,
@@ -136,19 +131,19 @@ export function createPairFunctions({
         ? swapTarget.swapExact1For0
         : swapTarget.swap1ForExact0
 
-   await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
+    await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
     return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
   }
 
-  const swapToLowerPrice: SwapFunction = (sqrtPrice, to) => {
-    return swapToSqrtPrice(token0, sqrtPrice, to)
+  const swapToLowerPrice: SwapFunction = (sqrtPriceX96, to) => {
+    return swapToSqrtPrice(token0, sqrtPriceX96, to)
   }
 
-  const swapToHigherPrice: SwapFunction = (sqrtPrice, to) => {
-    return swapToSqrtPrice(token1, sqrtPrice, to)
+  const swapToHigherPrice: SwapFunction = (sqrtPriceX96, to) => {
+    return swapToSqrtPrice(token1, sqrtPriceX96, to)
   }
 
   const swapExact0For1: SwapFunction = (amount, to) => {
@@ -167,16 +162,10 @@ export function createPairFunctions({
     return swap(token1, [0, amount], to)
   }
 
-  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity, data = '0x') => {
+  const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
-  }
-
-  const initialize: InitializeFunction = async (price) => {
-    await token0.approve(swapTarget.address, constants.MaxUint256)
-    await token1.approve(swapTarget.address, constants.MaxUint256)
-    return swapTarget.initialize(pair.address, price)
   }
 
   return {
@@ -187,7 +176,6 @@ export function createPairFunctions({
     swapExact1For0,
     swap1ForExact0,
     mint,
-    initialize,
   }
 }
 
@@ -202,36 +190,27 @@ export function createMultiPairFunctions({
   pair0,
   pair1,
 }: {
-  inputToken: TestERC20,
+  inputToken: TestERC20
   swapTarget: TestUniswapV3Router
   pair0: UniswapV3Pair
   pair1: UniswapV3Pair
 }): MultiPairFunctions {
-
-
-  async function swap0ForExact2(
-    amountOut: BigNumberish, 
-    to: Wallet | string
-  ): Promise<ContractTransaction> {
-
+  async function swap0ForExact2(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
     const method = swapTarget.swap0ForExact2
-    await inputToken.approve(swapTarget.address, constants.MaxUint256)   
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
     return method([pair0.address, pair1.address], amountOut, toAddress, false)
   }
 
-  async function swap2ForExact0(
-    amountOut: BigNumberish, 
-    to: Wallet | string
-  ): Promise<ContractTransaction> {
+  async function swap2ForExact0(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
     const method = swapTarget.swap2ForExact0
-    await inputToken.approve(swapTarget.address, constants.MaxUint256) 
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
     return method([pair0.address, pair1.address], amountOut, toAddress, false)
   }
 
   return {
     swap0ForExact2,
-    swap2ForExact0
+    swap2ForExact0,
   }
 }
