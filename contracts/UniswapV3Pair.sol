@@ -132,25 +132,28 @@ contract UniswapV3Pair is IUniswapV3Pair {
         override
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
-        uint32 current = _blockTimestamp();
-        uint32 target = current - secondsAgo;
+        unchecked {
+            uint32 current = _blockTimestamp();
+            uint32 target = current - secondsAgo;
 
-        (Oracle.Observation memory before, Oracle.Observation memory atOrAfter) =
-            getSurroundingObservations(current, target);
+            (Oracle.Observation memory before, Oracle.Observation memory atOrAfter) =
+                getSurroundingObservations(current, target);
 
-        Oracle.Observation memory at;
-        if (target == atOrAfter.blockTimestamp) {
-            // if we're at the right boundary, make it so
-            at = atOrAfter;
-        } else {
-            // else, adjust counterfactually
-            uint32 delta = atOrAfter.blockTimestamp - before.blockTimestamp;
-            int24 tickDerived = int24((atOrAfter.tickCumulative - before.tickCumulative) / delta);
-            uint128 liquidityDerived = uint128((atOrAfter.liquidityCumulative - before.liquidityCumulative) / delta);
-            at = Oracle.transform(before, target, tickDerived, liquidityDerived);
+            Oracle.Observation memory at;
+            if (target == atOrAfter.blockTimestamp) {
+                // if we're at the right boundary, make it so
+                at = atOrAfter;
+            } else {
+                // else, adjust counterfactually
+                uint32 delta = atOrAfter.blockTimestamp - before.blockTimestamp;
+                int24 tickDerived = int24((atOrAfter.tickCumulative - before.tickCumulative) / delta);
+                uint128 liquidityDerived =
+                    uint128((atOrAfter.liquidityCumulative - before.liquidityCumulative) / delta);
+                at = Oracle.transform(before, target, tickDerived, liquidityDerived);
+            }
+
+            return (at.tickCumulative, at.liquidityCumulative);
         }
-
-        return (at.tickCumulative, at.liquidityCumulative);
     }
 
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
@@ -159,37 +162,40 @@ contract UniswapV3Pair is IUniswapV3Pair {
         view
         returns (Oracle.Observation memory before, Oracle.Observation memory)
     {
-        uint16 index = slot0.observationIndex;
+        unchecked {
+            uint16 index = slot0.observationIndex;
 
-        // first, set before to the oldest observation, and make sure it's initialized
-        before = observations[(index + 1) % Oracle.CARDINALITY];
-        if (!before.initialized) {
-            before = observations[0];
-            require(before.initialized, 'UI');
+            // first, set before to the oldest observation, and make sure it's initialized
+            before = observations[(index + 1) % Oracle.CARDINALITY];
+            if (!before.initialized) {
+                before = observations[0];
+                require(before.initialized, 'UI');
+            }
+
+            // ensure that the target is greater than the oldest observation (accounting for wrapping)
+            require(before.blockTimestamp < target || (before.blockTimestamp > current && target <= current), 'OLD');
+
+            // now, optimistically set before to the newest observation
+            before = observations[index];
+
+            // before proceeding, short-circuit if the target equals the newest observation, meaning we're in the same block
+            // but an interaction updated the oracle before this tx, so before is actually atOrAfter
+            if (target == before.blockTimestamp)
+                return (index == 0 ? observations[Oracle.CARDINALITY - 1] : observations[index - 1], before);
+
+            // adjust for overflow
+            uint256 beforeAdjusted = before.blockTimestamp;
+            uint256 targetAdjusted = target;
+            if (beforeAdjusted > current && targetAdjusted <= current) targetAdjusted += 2**32;
+            if (targetAdjusted > current) beforeAdjusted += 2**32;
+
+            // once here, check if we're right and return a counterfactual observation for atOrAfter
+            if (beforeAdjusted < targetAdjusted)
+                return (before, Oracle.transform(before, current, slot0.tick, liquidity));
+
+            // we're wrong, so perform binary search
+            return observations.binarySearch(target, index);
         }
-
-        // ensure that the target is greater than the oldest observation (accounting for wrapping)
-        require(before.blockTimestamp < target || (before.blockTimestamp > current && target <= current), 'OLD');
-
-        // now, optimistically set before to the newest observation
-        before = observations[index];
-
-        // before proceeding, short-circuit if the target equals the newest observation, meaning we're in the same block
-        // but an interaction updated the oracle before this tx, so before is actually atOrAfter
-        if (target == before.blockTimestamp)
-            return (index == 0 ? observations[Oracle.CARDINALITY - 1] : observations[index - 1], before);
-
-        // adjust for overflow
-        uint256 beforeAdjusted = before.blockTimestamp;
-        uint256 targetAdjusted = target;
-        if (beforeAdjusted > current && targetAdjusted <= current) targetAdjusted += 2**32;
-        if (targetAdjusted > current) beforeAdjusted += 2**32;
-
-        // once here, check if we're right and return a counterfactual observation for atOrAfter
-        if (beforeAdjusted < targetAdjusted) return (before, Oracle.transform(before, current, slot0.tick, liquidity));
-
-        // we're wrong, so perform binary search
-        return observations.binarySearch(target, index);
     }
 
     function checkTicks(int24 tickLower, int24 tickUpper) private view {
@@ -214,7 +220,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         Slot0 memory _slot0 =
             Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, observationIndex: 0, feeProtocol: 0, unlocked: true});
 
-        observations[_slot0.observationIndex] = Oracle.Observation({
+        observations[0] = Oracle.Observation({
             blockTimestamp: _blockTimestamp(),
             tickCumulative: 0,
             liquidityCumulative: 0,

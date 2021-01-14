@@ -1,141 +1,141 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair gas fee is off #burn above current price burn entire position after some time passes 1`] = `60401`;
+exports[`UniswapV3Pair gas fee is off #burn above current price burn entire position after some time passes 1`] = `59221`;
 
-exports[`UniswapV3Pair gas fee is off #burn above current price burn when only position using ticks 1`] = `60401`;
+exports[`UniswapV3Pair gas fee is off #burn above current price burn when only position using ticks 1`] = `59221`;
 
-exports[`UniswapV3Pair gas fee is off #burn above current price entire position burn but other positions are using the ticks 1`] = `84553`;
+exports[`UniswapV3Pair gas fee is off #burn above current price entire position burn but other positions are using the ticks 1`] = `82192`;
 
-exports[`UniswapV3Pair gas fee is off #burn above current price partial position burn 1`] = `97926`;
+exports[`UniswapV3Pair gas fee is off #burn above current price partial position burn 1`] = `95565`;
 
-exports[`UniswapV3Pair gas fee is off #burn around current price burn entire position after some time passes 1`] = `86168`;
+exports[`UniswapV3Pair gas fee is off #burn around current price burn entire position after some time passes 1`] = `85044`;
 
-exports[`UniswapV3Pair gas fee is off #burn around current price burn when only position using ticks 1`] = `82889`;
+exports[`UniswapV3Pair gas fee is off #burn around current price burn when only position using ticks 1`] = `81765`;
 
-exports[`UniswapV3Pair gas fee is off #burn around current price entire position burn but other positions are using the ticks 1`] = `112728`;
+exports[`UniswapV3Pair gas fee is off #burn around current price entire position burn but other positions are using the ticks 1`] = `110480`;
 
-exports[`UniswapV3Pair gas fee is off #burn around current price partial position burn 1`] = `126101`;
+exports[`UniswapV3Pair gas fee is off #burn around current price partial position burn 1`] = `123853`;
 
-exports[`UniswapV3Pair gas fee is off #burn below current price burn entire position after some time passes 1`] = `73235`;
+exports[`UniswapV3Pair gas fee is off #burn below current price burn entire position after some time passes 1`] = `72054`;
 
-exports[`UniswapV3Pair gas fee is off #burn below current price burn when only position using ticks 1`] = `73235`;
+exports[`UniswapV3Pair gas fee is off #burn below current price burn when only position using ticks 1`] = `72054`;
 
-exports[`UniswapV3Pair gas fee is off #burn below current price entire position burn but other positions are using the ticks 1`] = `85020`;
+exports[`UniswapV3Pair gas fee is off #burn below current price entire position burn but other positions are using the ticks 1`] = `82659`;
 
-exports[`UniswapV3Pair gas fee is off #burn below current price partial position burn 1`] = `98393`;
+exports[`UniswapV3Pair gas fee is off #burn below current price partial position burn 1`] = `96032`;
 
-exports[`UniswapV3Pair gas fee is off #mint above current price add to position after some time passes 1`] = `119832`;
+exports[`UniswapV3Pair gas fee is off #mint above current price add to position after some time passes 1`] = `117507`;
 
-exports[`UniswapV3Pair gas fee is off #mint above current price add to position existing 1`] = `119832`;
+exports[`UniswapV3Pair gas fee is off #mint above current price add to position existing 1`] = `117507`;
 
-exports[`UniswapV3Pair gas fee is off #mint above current price new position mint first in range 1`] = `188588`;
+exports[`UniswapV3Pair gas fee is off #mint above current price new position mint first in range 1`] = `186263`;
 
-exports[`UniswapV3Pair gas fee is off #mint above current price second position in same range 1`] = `134832`;
+exports[`UniswapV3Pair gas fee is off #mint above current price second position in same range 1`] = `132507`;
 
-exports[`UniswapV3Pair gas fee is off #mint around current price add to position after some time passes 1`] = `175521`;
+exports[`UniswapV3Pair gas fee is off #mint around current price add to position after some time passes 1`] = `173321`;
 
-exports[`UniswapV3Pair gas fee is off #mint around current price add to position existing 1`] = `164763`;
+exports[`UniswapV3Pair gas fee is off #mint around current price add to position existing 1`] = `162563`;
 
-exports[`UniswapV3Pair gas fee is off #mint around current price new position mint first in range 1`] = `324343`;
+exports[`UniswapV3Pair gas fee is off #mint around current price new position mint first in range 1`] = `322143`;
 
-exports[`UniswapV3Pair gas fee is off #mint around current price second position in same range 1`] = `179763`;
+exports[`UniswapV3Pair gas fee is off #mint around current price second position in same range 1`] = `177563`;
 
-exports[`UniswapV3Pair gas fee is off #mint below current price add to position after some time passes 1`] = `120352`;
+exports[`UniswapV3Pair gas fee is off #mint below current price add to position after some time passes 1`] = `118027`;
 
-exports[`UniswapV3Pair gas fee is off #mint below current price add to position existing 1`] = `120352`;
+exports[`UniswapV3Pair gas fee is off #mint below current price add to position existing 1`] = `118027`;
 
-exports[`UniswapV3Pair gas fee is off #mint below current price new position mint first in range 1`] = `310840`;
+exports[`UniswapV3Pair gas fee is off #mint below current price new position mint first in range 1`] = `308515`;
 
-exports[`UniswapV3Pair gas fee is off #mint below current price second position in same range 1`] = `135352`;
+exports[`UniswapV3Pair gas fee is off #mint below current price second position in same range 1`] = `133027`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `117469`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `117481`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block with no tick movement 1`] = `97705`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block with no tick movement 1`] = `97717`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `123649`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `122629`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `126043`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `123985`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `135400`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `135412`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `177085`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `172969`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `237085`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `232969`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `117469`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `117481`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 second swap in block with no tick movement 1`] = `98457`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 second swap in block with no tick movement 1`] = `98469`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `109372`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `108352`;
 
-exports[`UniswapV3Pair gas fee is off #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `118848`;
+exports[`UniswapV3Pair gas fee is off #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `116790`;
 
-exports[`UniswapV3Pair gas fee is on #burn above current price burn entire position after some time passes 1`] = `62246`;
+exports[`UniswapV3Pair gas fee is on #burn above current price burn entire position after some time passes 1`] = `61065`;
 
-exports[`UniswapV3Pair gas fee is on #burn above current price burn when only position using ticks 1`] = `62246`;
+exports[`UniswapV3Pair gas fee is on #burn above current price burn when only position using ticks 1`] = `61065`;
 
-exports[`UniswapV3Pair gas fee is on #burn above current price entire position burn but other positions are using the ticks 1`] = `88242`;
+exports[`UniswapV3Pair gas fee is on #burn above current price entire position burn but other positions are using the ticks 1`] = `85881`;
 
-exports[`UniswapV3Pair gas fee is on #burn above current price partial position burn 1`] = `101615`;
+exports[`UniswapV3Pair gas fee is on #burn above current price partial position burn 1`] = `99254`;
 
-exports[`UniswapV3Pair gas fee is on #burn around current price burn entire position after some time passes 1`] = `88012`;
+exports[`UniswapV3Pair gas fee is on #burn around current price burn entire position after some time passes 1`] = `86888`;
 
-exports[`UniswapV3Pair gas fee is on #burn around current price burn when only position using ticks 1`] = `84733`;
+exports[`UniswapV3Pair gas fee is on #burn around current price burn when only position using ticks 1`] = `83609`;
 
-exports[`UniswapV3Pair gas fee is on #burn around current price entire position burn but other positions are using the ticks 1`] = `116417`;
+exports[`UniswapV3Pair gas fee is on #burn around current price entire position burn but other positions are using the ticks 1`] = `114169`;
 
-exports[`UniswapV3Pair gas fee is on #burn around current price partial position burn 1`] = `129790`;
+exports[`UniswapV3Pair gas fee is on #burn around current price partial position burn 1`] = `127542`;
 
-exports[`UniswapV3Pair gas fee is on #burn below current price burn entire position after some time passes 1`] = `75079`;
+exports[`UniswapV3Pair gas fee is on #burn below current price burn entire position after some time passes 1`] = `73899`;
 
-exports[`UniswapV3Pair gas fee is on #burn below current price burn when only position using ticks 1`] = `75079`;
+exports[`UniswapV3Pair gas fee is on #burn below current price burn when only position using ticks 1`] = `73899`;
 
-exports[`UniswapV3Pair gas fee is on #burn below current price entire position burn but other positions are using the ticks 1`] = `88709`;
+exports[`UniswapV3Pair gas fee is on #burn below current price entire position burn but other positions are using the ticks 1`] = `86348`;
 
-exports[`UniswapV3Pair gas fee is on #burn below current price partial position burn 1`] = `102082`;
+exports[`UniswapV3Pair gas fee is on #burn below current price partial position burn 1`] = `99721`;
 
-exports[`UniswapV3Pair gas fee is on #mint above current price add to position after some time passes 1`] = `123521`;
+exports[`UniswapV3Pair gas fee is on #mint above current price add to position after some time passes 1`] = `121196`;
 
-exports[`UniswapV3Pair gas fee is on #mint above current price add to position existing 1`] = `123521`;
+exports[`UniswapV3Pair gas fee is on #mint above current price add to position existing 1`] = `121196`;
 
-exports[`UniswapV3Pair gas fee is on #mint above current price new position mint first in range 1`] = `192277`;
+exports[`UniswapV3Pair gas fee is on #mint above current price new position mint first in range 1`] = `189952`;
 
-exports[`UniswapV3Pair gas fee is on #mint above current price second position in same range 1`] = `138521`;
+exports[`UniswapV3Pair gas fee is on #mint above current price second position in same range 1`] = `136196`;
 
-exports[`UniswapV3Pair gas fee is on #mint around current price add to position after some time passes 1`] = `179210`;
+exports[`UniswapV3Pair gas fee is on #mint around current price add to position after some time passes 1`] = `177010`;
 
-exports[`UniswapV3Pair gas fee is on #mint around current price add to position existing 1`] = `168452`;
+exports[`UniswapV3Pair gas fee is on #mint around current price add to position existing 1`] = `166252`;
 
-exports[`UniswapV3Pair gas fee is on #mint around current price new position mint first in range 1`] = `328032`;
+exports[`UniswapV3Pair gas fee is on #mint around current price new position mint first in range 1`] = `325832`;
 
-exports[`UniswapV3Pair gas fee is on #mint around current price second position in same range 1`] = `183452`;
+exports[`UniswapV3Pair gas fee is on #mint around current price second position in same range 1`] = `181252`;
 
-exports[`UniswapV3Pair gas fee is on #mint below current price add to position after some time passes 1`] = `124041`;
+exports[`UniswapV3Pair gas fee is on #mint below current price add to position after some time passes 1`] = `121716`;
 
-exports[`UniswapV3Pair gas fee is on #mint below current price add to position existing 1`] = `124041`;
+exports[`UniswapV3Pair gas fee is on #mint below current price add to position existing 1`] = `121716`;
 
-exports[`UniswapV3Pair gas fee is on #mint below current price new position mint first in range 1`] = `314529`;
+exports[`UniswapV3Pair gas fee is on #mint below current price new position mint first in range 1`] = `312204`;
 
-exports[`UniswapV3Pair gas fee is on #mint below current price second position in same range 1`] = `139041`;
+exports[`UniswapV3Pair gas fee is on #mint below current price second position in same range 1`] = `136716`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `117469`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `117481`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block with no tick movement 1`] = `97705`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block with no tick movement 1`] = `97717`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `123649`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `122629`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `126043`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `123985`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `135400`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `135412`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `177085`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `172969`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `237085`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `232969`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `117469`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `117481`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 second swap in block with no tick movement 1`] = `98457`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 second swap in block with no tick movement 1`] = `98469`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `109372`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `108352`;
 
-exports[`UniswapV3Pair gas fee is on #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `118848`;
+exports[`UniswapV3Pair gas fee is on #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `116790`;

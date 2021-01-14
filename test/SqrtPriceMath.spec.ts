@@ -136,7 +136,8 @@ describe('SqrtPriceMath', () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
       const amountOut = 5
-      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, false)).to.be.revertedWith('SO')
+      // TODO: revert reason should be a panic
+      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, false)).to.be.revertedWith('')
     })
 
     it('succeeds if output amount is exactly the virtual reserves of token1', async () => {
@@ -151,7 +152,8 @@ describe('SqrtPriceMath', () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
       const amountOut = 262145
-      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, true)).to.be.revertedWith('SO')
+      // TODO: revert reason should be a panic
+      await expect(sqrtPriceMath.getNextPriceFromOutput(price, liquidity, amountOut, true)).to.be.revertedWith('')
     })
 
     it('puzzling echidna test', async () => {
@@ -199,9 +201,10 @@ describe('SqrtPriceMath', () => {
     })
 
     it('reverts if amountOut is impossible in one for zero direction', async () => {
+      // TODO: revert reason
       await expect(
         sqrtPriceMath.getNextPriceFromOutput(encodePriceSqrt(1, 1), 1, constants.MaxUint256, false)
-      ).to.be.revertedWith('SO')
+      ).to.be.revertedWith('')
     })
 
     it('zeroForOne = true gas', async () => {
