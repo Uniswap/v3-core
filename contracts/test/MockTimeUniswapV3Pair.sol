@@ -24,7 +24,10 @@ contract MockTimeUniswapV3Pair is UniswapV3Pair {
         for (uint16 i; i < _observations.length; i++) observations[i + offset] = _observations[i];
     }
 
-    function setOracleData(uint16 index, uint256 _time) external {
+    function setOracleData(int24 tick, uint128 _liquidity, uint16 index, uint256 _time) external {
+        slot0.tick = tick;
+        liquidity = _liquidity;
+
         slot0.observationIndex = index;
         time = _time;
     }

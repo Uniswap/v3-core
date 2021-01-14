@@ -15,7 +15,19 @@ library Oracle {
         bool initialized;
     }
 
-    function writeObservationIfNecessary(
+    function transform(Observation memory last, uint32 blockTimestamp, int24 tick, uint128 liquidity)
+        internal pure returns (Observation memory)
+    {
+        uint32 delta = blockTimestamp - last.blockTimestamp;
+        return Observation({
+            blockTimestamp: blockTimestamp,
+            tickCumulative: last.tickCumulative + int56(tick) * delta,
+            liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * delta,
+            initialized: true
+        });
+    }
+
+    function write(
         Observation[CARDINALITY] storage self,
         uint16 index,
         uint32 blockTimestamp,
@@ -27,27 +39,19 @@ library Oracle {
         if (last.blockTimestamp == blockTimestamp) return index;
 
         indexNext = (index + 1) % CARDINALITY;
-        uint32 timestampDelta = blockTimestamp - last.blockTimestamp;
-        self[indexNext] = Observation({
-            blockTimestamp: blockTimestamp,
-            tickCumulative: last.tickCumulative + int56(tick) * timestampDelta,
-            liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * timestampDelta,
-            initialized: true
-        });
+        self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
     }
 
     // this function only works if very specific conditions are true, which must be enforced elsewhere
     // note that even though we're not modifying self, it must be passed by ref to save gas
-    function scry(
+    function binarySearch(
         Observation[CARDINALITY] storage self,
         uint32 target,
         uint16 index
-    ) internal view returns (uint16 i) {
-        Observation memory atOrAfter;
-        uint256 beforeBlockTimestamp;
-
+    ) internal view returns (Oracle.Observation memory before, Oracle.Observation memory atOrAfter) {
         uint16 l = (index + 1) % CARDINALITY;
         uint16 r = l + CARDINALITY - 1;
+        uint16 i;
         while (true) {
             i = (l + r) / 2;
 
@@ -59,28 +63,26 @@ library Oracle {
                 continue;
             }
 
-            beforeBlockTimestamp = (i == CARDINALITY ? self[CARDINALITY - 1] : self[(i % CARDINALITY) - 1])
-                .blockTimestamp;
+            before = i == CARDINALITY ? self[CARDINALITY - 1] : self[(i % CARDINALITY) - 1];
 
-            // we've found the answer!
+            // check if we've found the answer!
             if (
-                (beforeBlockTimestamp < target && target <= atOrAfter.blockTimestamp) ||
-                (beforeBlockTimestamp > atOrAfter.blockTimestamp &&
-                    (beforeBlockTimestamp < target || target <= atOrAfter.blockTimestamp))
+                (before.blockTimestamp < target && target <= atOrAfter.blockTimestamp) ||
+                (before.blockTimestamp > atOrAfter.blockTimestamp &&
+                    (before.blockTimestamp < target || target <= atOrAfter.blockTimestamp))
             ) break;
 
-            uint256 mostRecent = self[r % CARDINALITY].blockTimestamp;
-            uint256 atOrAfterAdjusted = atOrAfter.blockTimestamp;
+            // adjust for overflow
             uint256 targetAdjusted = target;
-            if (atOrAfterAdjusted > mostRecent || targetAdjusted > mostRecent) {
-                if (atOrAfterAdjusted <= mostRecent) atOrAfterAdjusted += 2**32;
-                if (targetAdjusted <= mostRecent) targetAdjusted += 2**32;
+            uint256 atOrAfterAdjusted = atOrAfter.blockTimestamp;
+            uint256 newestAdjusted = self[r % CARDINALITY].blockTimestamp;
+            if (targetAdjusted > newestAdjusted || atOrAfterAdjusted > newestAdjusted) {
+                if (targetAdjusted <= newestAdjusted) targetAdjusted += 2**32;
+                if (atOrAfterAdjusted <= newestAdjusted) atOrAfterAdjusted += 2**32;
             }
 
             if (atOrAfterAdjusted < targetAdjusted) l = i + 1;
             else r = i - 1;
         }
-
-        i %= CARDINALITY;
     }
 }

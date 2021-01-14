@@ -8,11 +8,20 @@ import { FeeAmount, TICK_SPACINGS } from './shared/utilities'
 
 const CARDINALITY = 1024
 
-const UNINITIALIZED_OBSERVATION = {
-  blockTimestamp: 0,
-  tickCumulative: 0,
-  liquidityCumulative: 0,
-  initialized: false,
+interface Observation {
+  blockTimestamp: number
+  tickCumulative: number
+  liquidityCumulative: number
+  initialized: boolean
+}
+
+function getDefaultObservations(): Observation[] {
+  return new Array(CARDINALITY).fill(null).map(() => ({
+    blockTimestamp: 0,
+    tickCumulative: 0,
+    liquidityCumulative: 0,
+    initialized: false,
+  }))
 }
 
 function getSecondsAgo(then: number, now: number) {
@@ -20,12 +29,19 @@ function getSecondsAgo(then: number, now: number) {
   return result % 2 ** 32
 }
 
-async function setOracle(oracle: MockTimeUniswapV3Pair, observations: any, index: number = 0, time: number = 0) {
+async function setOracle(
+  oracle: MockTimeUniswapV3Pair,
+  observations: any,
+  index: number,
+  time = 0,
+  tick = 0,
+  liquidity = 0
+) {
   await Promise.all([
     oracle.setObservations(observations.slice(0, 341) as any, 0),
     oracle.setObservations(observations.slice(341, 682) as any, 341),
     oracle.setObservations(observations.slice(682, 1024) as any, 682),
-    oracle.setOracleData(index, time),
+    oracle.setOracleData(tick, liquidity, index, time),
   ])
 }
 
@@ -39,50 +55,10 @@ describe('Oracle', () => {
 
   let oracle: MockTimeUniswapV3Pair
 
-  describe('#getObservations', () => {
-    before('deploy pair', async () => {
-      const { createPair } = await loadFixture(pairFixture)
-      oracle = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM], 0)
-    })
-
-    it('length', async () => {
-      const observations = await oracle.getObservations([0, 1, 2])
-      expect(observations.length).to.be.eq(3)
-    })
-
-    it('contents', async () => {
-      const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)
-      observations[0] = {
-        blockTimestamp: 0,
-        tickCumulative: 0,
-        liquidityCumulative: 0,
-        initialized: true,
-      }
-      await setOracle(oracle, observations)
-      const obs = await oracle.getObservations([0, 1])
-      expect(obs[0].initialized).to.be.true
-    })
-
-    describe('#gas', async () => {
-      it('1', async () => {
-        await snapshotGasCost(await oracle.estimateGas.getObservations([0]))
-      })
-      it('2', async () => {
-        await snapshotGasCost(await oracle.estimateGas.getObservations([0, 1]))
-      })
-      it('10', async () => {
-        await snapshotGasCost(await oracle.estimateGas.getObservations(new Array(10).fill(0).map((_, i) => i)))
-      })
-      it('max', async () => {
-        await snapshotGasCost(await oracle.estimateGas.getObservations(new Array(CARDINALITY).fill(0).map((_, i) => i)))
-      }).timeout(60000)
-    })
-  })
-
   describe('#scry', () => {
     before('deploy pair', async () => {
       const { createPair } = await loadFixture(pairFixture)
-      oracle = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM], 0)
+      oracle = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
     })
 
     describe('failures', () => {
@@ -91,21 +67,24 @@ describe('Oracle', () => {
       })
 
       it('fails for single observation without any intervening time', async () => {
-        const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)
+        const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
           tickCumulative: 0,
           liquidityCumulative: 0,
           initialized: true,
         }
-        await setOracle(oracle, observations)
+        await setOracle(oracle, observations, 0)
         await expect(oracle.scry(0)).to.be.revertedWith('OLD')
       })
     })
 
     describe('successes', () => {
+      const tick = 123
+      const liquidity = 456
+
       it('timestamp equal to the most recent observation', async () => {
-        const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)
+        const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
           tickCumulative: 0,
@@ -114,34 +93,37 @@ describe('Oracle', () => {
         }
         observations[1] = {
           blockTimestamp: 1,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
+          tickCumulative: tick,
+          liquidityCumulative: liquidity,
           initialized: true,
         }
         await setOracle(oracle, observations, 1, 1)
+        const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
 
-        const index = await oracle.scry(0)
-
-        expect(index).to.be.eq(1)
+        expect(tickCumulative).to.be.eq(tick)
+        expect(liquidityCumulative).to.be.eq(liquidity)
       })
 
       it('timestamp greater than the most recent observation', async () => {
-        const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)
+        const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
           tickCumulative: 0,
           liquidityCumulative: 0,
           initialized: true,
         }
-        await setOracle(oracle, observations, 0, 1)
+        await setOracle(oracle, observations, 0, 2, tick, liquidity)
 
-        const index = await oracle.scry(0)
-
-        expect(index).to.be.eq(CARDINALITY)
+        let { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+        expect(tickCumulative).to.be.eq(tick)
+        expect(liquidityCumulative).to.be.eq(liquidity)
+        ;({ tickCumulative, liquidityCumulative } = await oracle.scry(0))
+        expect(tickCumulative).to.be.eq(tick * 2)
+        expect(liquidityCumulative).to.be.eq(liquidity * 2)
       })
 
       it('worst-case binary search', async () => {
-        const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)
+        const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
           tickCumulative: 0,
@@ -150,366 +132,22 @@ describe('Oracle', () => {
         }
         observations[1] = {
           blockTimestamp: 2,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
+          tickCumulative: tick * 2,
+          liquidityCumulative: liquidity * 2,
           initialized: true,
         }
-        await setOracle(oracle, observations, 1, 2)
+        await setOracle(oracle, observations, 1, 2, tick, liquidity)
 
-        const index = await oracle.scry(1)
+        const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
 
-        expect(index).to.be.eq(1)
-      })
-    })
-
-    describe('monotonic observations, unshifted', () => {
-      const timestampDelta = 13
-      const observations = new Array(CARDINALITY).fill(0).map((_, i) => {
-        return {
-          blockTimestamp: i * timestampDelta,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-      })
-
-      const oldest = observations[0].blockTimestamp
-      const now = observations[observations.length - 1].blockTimestamp + 1
-
-      before(async () => {
-        await setOracle(oracle, observations, observations.length - 1, now)
-      })
-
-      it('works for 1', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 1, now))
-
-        expect(index).to.be.eq(1)
-      })
-
-      it('works for 2', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 2, now))
-
-        expect(index).to.be.eq(1)
-      })
-
-      it('works for 13', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 13, now))
-
-        expect(index).to.be.eq(1)
-      })
-
-      it('works for 14', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 14, now))
-
-        expect(index).to.be.eq(2)
-      })
-
-      it('works for 6655', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 6655, now))
-
-        expect(index).to.be.eq(512)
-      })
-
-      it('works for 6656', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 6656, now))
-
-        expect(index).to.be.eq(512)
-      })
-
-      it('works for 6657', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 6657, now))
-
-        expect(index).to.be.eq(513)
-      })
-
-      it('works for 13298', async () => {
-        expect(getSecondsAgo(oldest + 13298, now)).to.be.eq(2)
-        const index = await oracle.scry(2)
-
-        expect(index).to.be.eq(1023)
-      })
-
-      it('works for 13299', async () => {
-        expect(getSecondsAgo(oldest + 13299, now)).to.be.eq(1)
-        const index = await oracle.scry(1)
-
-        expect(index).to.be.eq(1023)
-      })
-
-      it('works for 13300', async () => {
-        const index = await oracle.scry(0)
-
-        expect(index).to.be.eq(CARDINALITY)
-      })
-    })
-
-    describe('monotonic observations, shifted', () => {
-      const timestampDelta = 13
-
-      const observations = new Array(CARDINALITY).fill(0).map((_, i) => {
-        return {
-          blockTimestamp: i * timestampDelta,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-      })
-
-      const oldest = observations[0].blockTimestamp
-      const now = observations[observations.length - 1].blockTimestamp + 1
-
-      for (let i = 0; i < 100; i++) {
-        const shifted = observations.shift()
-        observations.push(shifted!)
-      }
-
-      before(async () => {
-        await setOracle(oracle, observations, 923, now)
-      })
-
-      it('works for 1', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 1, now))
-
-        expect(index).to.be.eq(CARDINALITY + (1 - 100))
-      })
-
-      it('works for 13', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 13, now))
-
-        expect(index).to.be.eq(CARDINALITY + (1 - 100))
-      })
-
-      it('works for 14', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 14, now))
-
-        expect(index).to.be.eq(CARDINALITY + (2 - 100))
-      })
-
-      it('works for 6655', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 6655, now))
-
-        expect(index).to.be.eq((CARDINALITY + (512 - 100)) % CARDINALITY)
-      })
-
-      it('works for 6656', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 6656, now))
-
-        expect(index).to.be.eq((CARDINALITY + (512 - 100)) % CARDINALITY)
-      })
-
-      it('works for 6657', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 6657, now))
-
-        expect(index).to.be.eq((CARDINALITY + (513 - 100)) % CARDINALITY)
-      })
-
-      it('works for 13298', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 13298, now))
-
-        expect(index).to.be.eq((CARDINALITY + (1023 - 100)) % CARDINALITY)
-      })
-
-      it('works for 13299', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 13299, now))
-
-        expect(index).to.be.eq((CARDINALITY + (1023 - 100)) % CARDINALITY)
-      })
-
-      it('works for 13300', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 13300, now))
-
-        expect(index).to.be.eq(CARDINALITY)
-      })
-    })
-
-    describe('non-monotonic observations, unshifted', () => {
-      const oldest = 4294964296
-      const timestampDelta = 13
-
-      const observations = new Array(CARDINALITY)
-        .fill(0)
-        .map(() => {
-          return {
-            blockTimestamp: oldest,
-            tickCumulative: 0,
-            liquidityCumulative: 0,
-            initialized: true,
-          }
-        })
-        .map((observation, i, arr) => {
-          if (i == 0) return observation
-          observation.blockTimestamp = (arr[i - 1].blockTimestamp + timestampDelta) % 2 ** 32
-          return observation
-        })
-
-      const now = observations[observations.length - 1].blockTimestamp + 2 ** 32 + 1
-
-      before(async () => {
-        await setOracle(oracle, observations, observations.length - 1, now)
-      })
-
-      it('works for +1', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 1, now))
-
-        expect(index).to.be.eq(1)
-      })
-
-      it('works for +2', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 2, now))
-
-        expect(index).to.be.eq(1)
-      })
-
-      it('works for +13', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 13, now))
-
-        expect(index).to.be.eq(1)
-      })
-
-      it('works for +14', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 14, now))
-
-        expect(index).to.be.eq(2)
-      })
-
-      it('works for boundary-2', async () => {
-        const index = await oracle.scry(getSecondsAgo(2 ** 32 - 2, now))
-
-        expect(index).to.be.eq(231)
-      })
-
-      it('works for boundary-1', async () => {
-        const index = await oracle.scry(getSecondsAgo(2 ** 32 - 1, now))
-
-        expect(index).to.be.eq(231)
-      })
-
-      it('works for boundary+1', async () => {
-        const index = await oracle.scry(getSecondsAgo(0, now))
-
-        expect(index).to.be.eq(231)
-      })
-
-      it('works for boundary+5', async () => {
-        const index = await oracle.scry(getSecondsAgo(4, now))
-
-        expect(index).to.be.eq(232)
-      })
-
-      it('works for newest-1', async () => {
-        const index = await oracle.scry(getSecondsAgo(now - 2, now))
-
-        expect(index).to.be.eq(1023)
-      })
-
-      it('works for newest', async () => {
-        const index = await oracle.scry(getSecondsAgo(now - 1, now))
-
-        expect(index).to.be.eq(1023)
-      })
-
-      it('works for newest+1', async () => {
-        const index = await oracle.scry(0)
-
-        expect(index).to.be.eq(CARDINALITY)
-      })
-    })
-
-    describe('non-monotonic observations, shifted', () => {
-      const oldest = 4294964296
-      const timestampDelta = 13
-
-      const observations = new Array(CARDINALITY)
-        .fill(0)
-        .map(() => {
-          return {
-            blockTimestamp: oldest,
-            tickCumulative: 0,
-            liquidityCumulative: 0,
-            initialized: true,
-          }
-        })
-        .map((observation, i, arr) => {
-          if (i == 0) return observation
-          observation.blockTimestamp = (arr[i - 1].blockTimestamp + timestampDelta) % 2 ** 32
-          return observation
-        })
-
-      const now = observations[observations.length - 1].blockTimestamp + 2 ** 32 + 1
-
-      for (let i = 0; i < 100; i++) {
-        const shifted = observations.shift()
-        observations.push(shifted!)
-      }
-
-      before(async () => {
-        await setOracle(oracle, observations, 923, now)
-      })
-
-      it('works for +1', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 1, now))
-
-        expect(index).to.be.eq(CARDINALITY + (1 - 100))
-      })
-
-      it('works for +13', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 13, now))
-
-        expect(index).to.be.eq(CARDINALITY + (1 - 100))
-      })
-
-      it('works for +14', async () => {
-        const index = await oracle.scry(getSecondsAgo(oldest + 14, now))
-
-        expect(index).to.be.eq(CARDINALITY + (2 - 100))
-      })
-
-      it('works for boundary-2', async () => {
-        const index = await oracle.scry(getSecondsAgo(2 ** 32 - 2, now))
-
-        expect(index).to.be.eq((CARDINALITY + (231 - 100)) % CARDINALITY)
-      })
-
-      it('works for boundary-1', async () => {
-        const index = await oracle.scry(getSecondsAgo(2 ** 32 - 1, now))
-
-        expect(index).to.be.eq((CARDINALITY + (231 - 100)) % CARDINALITY)
-      })
-
-      it('works for boundary+1', async () => {
-        const index = await oracle.scry(getSecondsAgo(0, now))
-
-        expect(index).to.be.eq((CARDINALITY + (231 - 100)) % CARDINALITY)
-      })
-
-      it('works for boundary+5', async () => {
-        const index = await oracle.scry(getSecondsAgo(4, now))
-
-        expect(index).to.be.eq((CARDINALITY + (232 - 100)) % CARDINALITY)
-      })
-
-      it('works for newest-1', async () => {
-        const index = await oracle.scry(getSecondsAgo(now - 2, now))
-
-        expect(index).to.be.eq((CARDINALITY + (1023 - 100)) % CARDINALITY)
-      })
-
-      it('works for newest', async () => {
-        const index = await oracle.scry(getSecondsAgo(now - 1, now))
-
-        expect(index).to.be.eq((CARDINALITY + (1023 - 100)) % CARDINALITY)
-      })
-
-      it('works for newest+1', async () => {
-        const index = await oracle.scry(0)
-
-        expect(index).to.be.eq(CARDINALITY)
+        expect(tickCumulative).to.be.eq(tick)
+        expect(liquidityCumulative).to.be.eq(liquidity)
       })
     })
 
     describe('gas', () => {
       it('scry cost for timestamp equal to the most recent observation', async () => {
-        const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)
+        const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
           tickCumulative: 0,
@@ -527,7 +165,7 @@ describe('Oracle', () => {
       })
 
       it('scry cost for timestamp greater than the most recent observation', async () => {
-        const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)
+        const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
           tickCumulative: 0,
@@ -539,7 +177,7 @@ describe('Oracle', () => {
       })
 
       it('scry cost for worst-case binary search', async () => {
-        const observations = new Array(CARDINALITY).fill(UNINITIALIZED_OBSERVATION)
+        const observations = getDefaultObservations()
         observations[0] = {
           blockTimestamp: 0,
           tickCumulative: 0,
@@ -554,6 +192,445 @@ describe('Oracle', () => {
         }
         await setOracle(oracle, observations, 1, 2)
         await snapshotGasCost(await oracle.estimateGas.scry(1))
+      })
+    })
+
+    describe('full cases', () => {
+      const timestampDelta = 13
+      const ticks = new Array(CARDINALITY).fill(0).map((_, i) => i * 3)
+      const liquidities = new Array(CARDINALITY).fill(0).map((_, i) => i * 4)
+
+      const tick = 123
+      const liquidity = 456
+
+      describe('monotonic observations, unshifted', () => {
+        const observations = getDefaultObservations()
+
+        for (let i = 0; i < observations.length; i++) {
+          observations[i].initialized = true
+          if (i === 0) continue
+
+          const last = observations[i - 1]
+
+          observations[i].blockTimestamp = (last.blockTimestamp + timestampDelta) % 2 ** 32
+          observations[i].tickCumulative = last.tickCumulative + ticks[i] * timestampDelta
+          observations[i].liquidityCumulative = last.liquidityCumulative + liquidities[i] * timestampDelta
+        }
+
+        const oldestIndex = 0
+        const newestIndex = observations.length - 1
+
+        const now = observations[newestIndex].blockTimestamp + 1
+
+        before(async () => {
+          await setOracle(oracle, observations, newestIndex, now, tick, liquidity)
+        })
+
+        it('works for +1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 1, now)
+          )
+          expect(tickCumulative).to.be.eq(ticks[1] * 1)
+          expect(liquidityCumulative).to.be.eq(liquidities[1] * 1)
+        })
+        it('works for +2', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 2, now)
+          )
+          expect(tickCumulative).to.be.eq(ticks[1] * 2)
+          expect(liquidityCumulative).to.be.eq(liquidities[1] * 2)
+        })
+
+        it('works for +13', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 13, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[1].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[1].liquidityCumulative)
+        })
+        it('works for +14', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 14, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[1].tickCumulative + ticks[2])
+          expect(liquidityCumulative).to.be.eq(observations[1].liquidityCumulative + liquidities[2])
+        })
+
+        it('works for +6655', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6655, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[511].tickCumulative + ticks[512] * 12)
+          expect(liquidityCumulative).to.be.eq(observations[511].liquidityCumulative + liquidities[512] * 12)
+        })
+        it('works for +6656', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6656, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[512].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[512].liquidityCumulative)
+        })
+        it('works for +6657', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6657, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[512].tickCumulative + ticks[513])
+          expect(liquidityCumulative).to.be.eq(observations[512].liquidityCumulative + liquidities[513])
+        })
+
+        it('works for -2', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(2)
+          expect(tickCumulative).to.be.eq(observations[newestIndex - 1].tickCumulative + ticks[1023] * 12)
+          expect(liquidityCumulative).to.be.eq(
+            observations[newestIndex - 1].liquidityCumulative + liquidities[1023] * 12
+          )
+        })
+        it('works for -1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+          expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative)
+        })
+        it('works for 0', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+          expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative + tick)
+          expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative + liquidity)
+        })
+      })
+
+      describe('monotonic observations, shifted', () => {
+        const observations = getDefaultObservations()
+
+        for (let i = 0; i < observations.length; i++) {
+          observations[i].initialized = true
+          if (i === 0) continue
+
+          const last = observations[i - 1]
+
+          observations[i].blockTimestamp = (last.blockTimestamp + timestampDelta) % 2 ** 32
+          observations[i].tickCumulative = last.tickCumulative + ticks[i] * timestampDelta
+          observations[i].liquidityCumulative = last.liquidityCumulative + liquidities[i] * timestampDelta
+        }
+
+        for (let i = 0; i < 100; i++) {
+          observations.push(observations.shift()!)
+        }
+
+        const oldestIndex = 924
+        const newestIndex = 923
+
+        const now = observations[newestIndex].blockTimestamp + 1
+
+        before(async () => {
+          await setOracle(oracle, observations, newestIndex, now, tick, liquidity)
+        })
+
+        it('works for +1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 1, now)
+          )
+          expect(tickCumulative).to.be.eq(ticks[1] * 1)
+          expect(liquidityCumulative).to.be.eq(liquidities[1] * 1)
+        })
+        it('works for +2', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 2, now)
+          )
+          expect(tickCumulative).to.be.eq(ticks[1] * 2)
+          expect(liquidityCumulative).to.be.eq(liquidities[1] * 2)
+        })
+
+        it('works for +13', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 13, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[oldestIndex + 1].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[oldestIndex + 1].liquidityCumulative)
+        })
+        it('works for +14', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 14, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[oldestIndex + 1].tickCumulative + ticks[2])
+          expect(liquidityCumulative).to.be.eq(observations[oldestIndex + 1].liquidityCumulative + liquidities[2])
+        })
+
+        it('works for +6655', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6655, now)
+          )
+          expect(tickCumulative).to.be.eq(
+            observations[(oldestIndex + 511) % CARDINALITY].tickCumulative + ticks[512] * 12
+          )
+          expect(liquidityCumulative).to.be.eq(
+            observations[(oldestIndex + 511) % CARDINALITY].liquidityCumulative + liquidities[512] * 12
+          )
+        })
+        it('works for +6656', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6656, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].liquidityCumulative)
+        })
+        it('works for +6657', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6657, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].tickCumulative + ticks[513])
+          expect(liquidityCumulative).to.be.eq(
+            observations[(oldestIndex + 512) % CARDINALITY].liquidityCumulative + liquidities[513]
+          )
+        })
+
+        it('works for -2', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(2)
+          expect(tickCumulative).to.be.eq(observations[newestIndex - 1].tickCumulative + ticks[1023] * 12)
+          expect(liquidityCumulative).to.be.eq(
+            observations[newestIndex - 1].liquidityCumulative + liquidities[1023] * 12
+          )
+        })
+        it('works for -1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+          expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative)
+        })
+        it('works for 0', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+          expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative + tick)
+          expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative + liquidity)
+        })
+      })
+
+      describe('non-monotonic observations, unshifted', () => {
+        const start = 4294964297
+
+        const observations = getDefaultObservations()
+
+        for (let i = 0; i < observations.length; i++) {
+          observations[i].initialized = true
+          if (i === 0) {
+            observations[i].blockTimestamp = start
+            continue
+          }
+
+          const last = observations[i - 1]
+
+          observations[i].blockTimestamp = (last.blockTimestamp + timestampDelta) % 2 ** 32
+          observations[i].tickCumulative = last.tickCumulative + ticks[i] * timestampDelta
+          observations[i].liquidityCumulative = last.liquidityCumulative + liquidities[i] * timestampDelta
+        }
+
+        const oldestIndex = 0
+        const newestIndex = observations.length - 1
+
+        const now = observations[newestIndex].blockTimestamp + 1
+
+        before(async () => {
+          await setOracle(oracle, observations, newestIndex, now, tick, liquidity)
+        })
+
+        it('works for +1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 1, now)
+          )
+          expect(tickCumulative).to.be.eq(ticks[1] * 1)
+          expect(liquidityCumulative).to.be.eq(liquidities[1] * 1)
+        })
+        it('works for +2', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 2, now)
+          )
+          expect(tickCumulative).to.be.eq(ticks[1] * 2)
+          expect(liquidityCumulative).to.be.eq(liquidities[1] * 2)
+        })
+
+        it('works for +13', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 13, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[1].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[1].liquidityCumulative)
+        })
+        it('works for +14', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 14, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[1].tickCumulative + ticks[2])
+          expect(liquidityCumulative).to.be.eq(observations[1].liquidityCumulative + liquidities[2])
+        })
+
+        it('works for boundary-1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(getSecondsAgo(2 ** 32 - 1, now))
+          expect(tickCumulative).to.be.eq(observations[230].tickCumulative + ticks[231] * 8)
+          expect(liquidityCumulative).to.be.eq(observations[230].liquidityCumulative + liquidities[231] * 8)
+        })
+        it('works for boundary+1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(getSecondsAgo(0, now))
+          expect(tickCumulative).to.be.eq(observations[230].tickCumulative + ticks[231] * 9)
+          expect(liquidityCumulative).to.be.eq(observations[230].liquidityCumulative + liquidities[231] * 9)
+        })
+
+        it('works for +6655', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6655, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[511].tickCumulative + ticks[512] * 12)
+          expect(liquidityCumulative).to.be.eq(observations[511].liquidityCumulative + liquidities[512] * 12)
+        })
+        it('works for +6656', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6656, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[512].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[512].liquidityCumulative)
+        })
+        it('works for +6657', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6657, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[512].tickCumulative + ticks[513])
+          expect(liquidityCumulative).to.be.eq(observations[512].liquidityCumulative + liquidities[513])
+        })
+
+        it('works for -2', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(2)
+          expect(tickCumulative).to.be.eq(observations[newestIndex - 1].tickCumulative + ticks[1023] * 12)
+          expect(liquidityCumulative).to.be.eq(
+            observations[newestIndex - 1].liquidityCumulative + liquidities[1023] * 12
+          )
+        })
+        it('works for -1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+          expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative)
+        })
+        it('works for 0', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+          expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative + tick)
+          expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative + liquidity)
+        })
+      })
+
+      describe('non-monotonic observations, shifted', () => {
+        const start = 4294964297
+
+        const observations = getDefaultObservations()
+
+        for (let i = 0; i < observations.length; i++) {
+          observations[i].initialized = true
+          if (i === 0) {
+            observations[i].blockTimestamp = start
+            continue
+          }
+
+          const last = observations[i - 1]
+
+          observations[i].blockTimestamp = (last.blockTimestamp + timestampDelta) % 2 ** 32
+          observations[i].tickCumulative = last.tickCumulative + ticks[i] * timestampDelta
+          observations[i].liquidityCumulative = last.liquidityCumulative + liquidities[i] * timestampDelta
+        }
+
+        for (let i = 0; i < 100; i++) {
+          observations.push(observations.shift()!)
+        }
+
+        const oldestIndex = 924
+        const newestIndex = 923
+
+        const now = observations[newestIndex].blockTimestamp + 1
+
+        before(async () => {
+          await setOracle(oracle, observations, newestIndex, now, tick, liquidity)
+        })
+
+        it('works for +1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 1, now)
+          )
+          expect(tickCumulative).to.be.eq(ticks[1] * 1)
+          expect(liquidityCumulative).to.be.eq(liquidities[1] * 1)
+        })
+        it('works for +2', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 2, now)
+          )
+          expect(tickCumulative).to.be.eq(ticks[1] * 2)
+          expect(liquidityCumulative).to.be.eq(liquidities[1] * 2)
+        })
+
+        it('works for +13', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 13, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[oldestIndex + 1].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[oldestIndex + 1].liquidityCumulative)
+        })
+        it('works for +14', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 14, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[oldestIndex + 1].tickCumulative + ticks[2])
+          expect(liquidityCumulative).to.be.eq(observations[oldestIndex + 1].liquidityCumulative + liquidities[2])
+        })
+
+        it('works for boundary-1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(getSecondsAgo(2 ** 32 - 1, now))
+          const index = (oldestIndex + 230) % CARDINALITY
+          expect(tickCumulative).to.be.eq(observations[index].tickCumulative + ticks[231] * 8)
+          expect(liquidityCumulative).to.be.eq(observations[index].liquidityCumulative + liquidities[231] * 8)
+        })
+        it('works for boundary+1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(getSecondsAgo(0, now))
+          const index = (oldestIndex + 230) % CARDINALITY
+          expect(tickCumulative).to.be.eq(observations[index].tickCumulative + ticks[231] * 9)
+          expect(liquidityCumulative).to.be.eq(observations[index].liquidityCumulative + liquidities[231] * 9)
+        })
+
+        it('works for +6655', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6655, now)
+          )
+          expect(tickCumulative).to.be.eq(
+            observations[(oldestIndex + 511) % CARDINALITY].tickCumulative + ticks[512] * 12
+          )
+          expect(liquidityCumulative).to.be.eq(
+            observations[(oldestIndex + 511) % CARDINALITY].liquidityCumulative + liquidities[512] * 12
+          )
+        })
+        it('works for +6656', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6656, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].liquidityCumulative)
+        })
+        it('works for +6657', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(
+            getSecondsAgo(observations[oldestIndex].blockTimestamp + 6657, now)
+          )
+          expect(tickCumulative).to.be.eq(observations[(oldestIndex + 512) % CARDINALITY].tickCumulative + ticks[513])
+          expect(liquidityCumulative).to.be.eq(
+            observations[(oldestIndex + 512) % CARDINALITY].liquidityCumulative + liquidities[513]
+          )
+        })
+
+        it('works for -2', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(2)
+          expect(tickCumulative).to.be.eq(observations[newestIndex - 1].tickCumulative + ticks[1023] * 12)
+          expect(liquidityCumulative).to.be.eq(
+            observations[newestIndex - 1].liquidityCumulative + liquidities[1023] * 12
+          )
+        })
+        it('works for -1', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+          expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative)
+          expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative)
+        })
+        it('works for 0', async () => {
+          const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+          expect(tickCumulative).to.be.eq(observations[newestIndex].tickCumulative + tick)
+          expect(liquidityCumulative).to.be.eq(observations[newestIndex].liquidityCumulative + liquidity)
+        })
       })
     })
   })

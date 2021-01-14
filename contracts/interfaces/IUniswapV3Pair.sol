@@ -2,8 +2,6 @@
 pragma solidity >=0.7.5;
 pragma abicoder v2;
 
-import '../libraries/Oracle.sol';
-
 interface IUniswapV3Pair {
     event Initialized(uint160 sqrtPrice, int24 tick);
     event Mint(
@@ -74,12 +72,7 @@ interface IUniswapV3Pair {
 
     function liquidity() external view returns (uint128);
 
-    function getObservations(uint16[] calldata indices)
-        external
-        view
-        returns (Oracle.Observation[] memory observations);
-
-    function scry(uint32 secondsAgo) external view returns (uint16 firstIndexAfter);
+    function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
 
     function tickBitmap(int16) external view returns (uint256);
 
