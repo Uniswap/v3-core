@@ -1,10 +1,7 @@
-import { BigNumber, constants } from 'ethers'
 import { ethers, waffle } from 'hardhat'
-import { MockTimeUniswapV3Pair } from '../typechain/MockTimeUniswapV3Pair'
+import { OracleTest } from '../typechain/OracleTest'
 import { expect } from './shared/expect'
-import { pairFixture } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
-import { FeeAmount, TICK_SPACINGS } from './shared/utilities'
 
 const CARDINALITY = 1024
 
@@ -30,18 +27,18 @@ function getSecondsAgo(then: number, now: number) {
 }
 
 async function setOracle(
-  oracle: MockTimeUniswapV3Pair,
-  observations: any,
-  index: number,
+  oracle: OracleTest,
+  observations: Observation[],
+  offset: number,
   time = 0,
   tick = 0,
   liquidity = 0
 ) {
   await Promise.all([
-    oracle.setObservations(observations.slice(0, 341) as any, 0),
-    oracle.setObservations(observations.slice(341, 682) as any, 341),
-    oracle.setObservations(observations.slice(682, 1024) as any, 682),
-    oracle.setOracleData(tick, liquidity, index, time),
+    oracle.setObservations(observations.slice(0, 341), 0),
+    oracle.setObservations(observations.slice(341, 682), 341),
+    oracle.setObservations(observations.slice(682, 1024), 682),
+    oracle.setOracleData(tick, liquidity, offset, time),
   ])
 }
 
@@ -53,149 +50,188 @@ describe('Oracle', () => {
     loadFixture = waffle.createFixtureLoader([wallet, other])
   })
 
-  let oracle: MockTimeUniswapV3Pair
+  const oracleFixture = async () => {
+    const oracleTestFactory = await ethers.getContractFactory('OracleTest')
+    return (await oracleTestFactory.deploy()) as OracleTest
+  }
 
   describe('#observationAt', () => {
-    before('deploy pair', async () => {
-      const { createPair } = await loadFixture(pairFixture)
-      oracle = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
-    })
-
-    describe('failures', () => {
-      it('fails while uninitialized', async () => {
-        await expect(oracle.observationAt(0)).to.be.revertedWith('UI')
+    describe('clean state tests', () => {
+      let oracle: OracleTest
+      beforeEach('deploy test oracle', async () => {
+        oracle = await loadFixture(oracleFixture)
       })
 
-      it('fails for single observation without any intervening time', async () => {
-        const observations = getDefaultObservations()
-        observations[0] = {
-          blockTimestamp: 0,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        await setOracle(oracle, observations, 0)
-        await expect(oracle.observationAt(0)).to.be.revertedWith('OLD')
-      })
-    })
+      describe('failures', () => {
+        it('fails while uninitialized', async () => {
+          await expect(oracle.observationAt(0)).to.be.revertedWith('UI')
+        })
 
-    describe('successes', () => {
-      const tick = 123
-      const liquidity = 456
-
-      it('timestamp equal to the most recent observation', async () => {
-        const observations = getDefaultObservations()
-        observations[0] = {
-          blockTimestamp: 0,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        observations[1] = {
-          blockTimestamp: 1,
-          tickCumulative: tick,
-          liquidityCumulative: liquidity,
-          initialized: true,
-        }
-        await setOracle(oracle, observations, 1, 1)
-        const { tickCumulative, liquidityCumulative } = await oracle.observationAt(0)
-
-        expect(tickCumulative).to.be.eq(tick)
-        expect(liquidityCumulative).to.be.eq(liquidity)
+        it('fails for single observation without any intervening time', async () => {
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 0,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+            ],
+            0
+          )
+          await expect(oracle.observationAt(0)).to.be.revertedWith('OLD')
+        })
       })
 
-      it('timestamp greater than the most recent observation', async () => {
-        const observations = getDefaultObservations()
-        observations[0] = {
-          blockTimestamp: 0,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        await setOracle(oracle, observations, 0, 2, tick, liquidity)
+      describe('successes', () => {
+        const tick = 123
+        const liquidity = 456
 
-        let { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
-        expect(tickCumulative).to.be.eq(tick)
-        expect(liquidityCumulative).to.be.eq(liquidity)
-        ;({ tickCumulative, liquidityCumulative } = await oracle.observationAt(0))
-        expect(tickCumulative).to.be.eq(tick * 2)
-        expect(liquidityCumulative).to.be.eq(liquidity * 2)
+        it('timestamp equal to the most recent observation', async () => {
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 0,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+              {
+                blockTimestamp: 1,
+                tickCumulative: tick,
+                liquidityCumulative: liquidity,
+                initialized: true,
+              },
+            ],
+            1,
+            1
+          )
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(0)
+
+          expect(tickCumulative).to.be.eq(tick)
+          expect(liquidityCumulative).to.be.eq(liquidity)
+        })
+
+        it('timestamp greater than the most recent observation', async () => {
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 0,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+            ],
+            0,
+            2,
+            tick,
+            liquidity
+          )
+
+          let { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
+          expect(tickCumulative).to.be.eq(tick)
+          expect(liquidityCumulative).to.be.eq(liquidity)
+          ;({ tickCumulative, liquidityCumulative } = await oracle.observationAt(0))
+          expect(tickCumulative).to.be.eq(tick * 2)
+          expect(liquidityCumulative).to.be.eq(liquidity * 2)
+        })
+
+        it('worst-case binary search', async () => {
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 0,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+              {
+                blockTimestamp: 2,
+                tickCumulative: tick * 2,
+                liquidityCumulative: liquidity * 2,
+                initialized: true,
+              },
+            ],
+            1,
+            2,
+            tick,
+            liquidity
+          )
+
+          const { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
+
+          expect(tickCumulative).to.be.eq(tick)
+          expect(liquidityCumulative).to.be.eq(liquidity)
+        })
       })
 
-      it('worst-case binary search', async () => {
-        const observations = getDefaultObservations()
-        observations[0] = {
-          blockTimestamp: 0,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        observations[1] = {
-          blockTimestamp: 2,
-          tickCumulative: tick * 2,
-          liquidityCumulative: liquidity * 2,
-          initialized: true,
-        }
-        await setOracle(oracle, observations, 1, 2, tick, liquidity)
+      describe('gas', () => {
+        it('timestamp equal to the most recent observation', async () => {
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 0,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+              {
+                blockTimestamp: 1,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+            ],
+            1,
+            1
+          )
+          await snapshotGasCost(oracle.getGasCostOfObservationAt(0))
+        })
 
-        const { tickCumulative, liquidityCumulative } = await oracle.observationAt(1)
+        it('timestamp greater than the most recent observation', async () => {
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 0,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+            ],
+            0,
+            1
+          )
+          await snapshotGasCost(oracle.getGasCostOfObservationAt(0))
+        })
 
-        expect(tickCumulative).to.be.eq(tick)
-        expect(liquidityCumulative).to.be.eq(liquidity)
-      })
-    })
-
-    describe('gas', () => {
-      it('timestamp equal to the most recent observation', async () => {
-        const observations = getDefaultObservations()
-        observations[0] = {
-          blockTimestamp: 0,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        observations[1] = {
-          blockTimestamp: 1,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        await setOracle(oracle, observations, 1, 1)
-        await snapshotGasCost(await oracle.estimateGas.observationAt(0))
-      })
-
-      it('timestamp greater than the most recent observation', async () => {
-        const observations = getDefaultObservations()
-        observations[0] = {
-          blockTimestamp: 0,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        await setOracle(oracle, observations, 0, 1)
-        await snapshotGasCost(await oracle.estimateGas.observationAt(0))
-      })
-
-      it('worst-case binary search', async () => {
-        const observations = getDefaultObservations()
-        observations[0] = {
-          blockTimestamp: 0,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        observations[1] = {
-          blockTimestamp: 2,
-          tickCumulative: 0,
-          liquidityCumulative: 0,
-          initialized: true,
-        }
-        await setOracle(oracle, observations, 1, 2)
-        await snapshotGasCost(await oracle.estimateGas.observationAt(1))
-      })
-
-      it('observations cost', async () => {
-        await snapshotGasCost(await oracle.estimateGas.observations(0))
+        it('worst-case binary search', async () => {
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 0,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+              {
+                blockTimestamp: 2,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+            ],
+            1,
+            2
+          )
+          await snapshotGasCost(oracle.getGasCostOfObservationAt(1))
+        })
       })
     })
 
@@ -226,8 +262,15 @@ describe('Oracle', () => {
 
         const now = observations[newestIndex].blockTimestamp + 1
 
-        before(async () => {
+        const observationsFixture = async () => {
+          const oracle = await oracleFixture()
           await setOracle(oracle, observations, newestIndex, now, tick, liquidity)
+          return oracle
+        }
+
+        let oracle: OracleTest
+        beforeEach('set the oracle', async () => {
+          oracle = await loadFixture(observationsFixture)
         })
 
         it('works for +1', async () => {
@@ -324,8 +367,15 @@ describe('Oracle', () => {
 
         const now = observations[newestIndex].blockTimestamp + 1
 
-        before(async () => {
+        const observationsFixture = async () => {
+          const oracle = await oracleFixture()
           await setOracle(oracle, observations, newestIndex, now, tick, liquidity)
+          return oracle
+        }
+
+        let oracle: OracleTest
+        beforeEach('set the oracle', async () => {
+          oracle = await loadFixture(observationsFixture)
         })
 
         it('works for +1', async () => {
@@ -429,8 +479,15 @@ describe('Oracle', () => {
 
         const now = observations[newestIndex].blockTimestamp + 1
 
-        before(async () => {
+        const observationsFixture = async () => {
+          const oracle = await oracleFixture()
           await setOracle(oracle, observations, newestIndex, now, tick, liquidity)
+          return oracle
+        }
+
+        let oracle: OracleTest
+        beforeEach('set the oracle', async () => {
+          oracle = await loadFixture(observationsFixture)
         })
 
         it('works for +1', async () => {
@@ -543,8 +600,15 @@ describe('Oracle', () => {
 
         const now = observations[newestIndex].blockTimestamp + 1
 
-        before(async () => {
+        const observationsFixture = async () => {
+          const oracle = await oracleFixture()
           await setOracle(oracle, observations, newestIndex, now, tick, liquidity)
+          return oracle
+        }
+
+        let oracle: OracleTest
+        beforeEach('set the oracle', async () => {
+          oracle = await loadFixture(observationsFixture)
         })
 
         it('works for +1', async () => {
