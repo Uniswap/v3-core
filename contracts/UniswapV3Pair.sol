@@ -136,7 +136,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function increaseObservationCardinalityTarget(uint16 observationCardinalityTarget)
-        external override onlyFactoryOwner
+        external
+        override
+        onlyFactoryOwner
     {
         require(observationCardinalityTarget > slot0.observationCardinalityTarget, 'LTE');
         slot0.observationCardinalityTarget = observationCardinalityTarget;
