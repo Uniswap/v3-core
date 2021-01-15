@@ -26,6 +26,9 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IUniswapV3MintCallback.sol';
 import './interfaces/IUniswapV3SwapCallback.sol';
 
+/// @title The Uniswap V3 Pair Contract.
+/// @notice The V3 pair allows for liquidity provisioning within user specified positions and swapping between two assets.
+/// @dev Liquidity positions are partitioned into "ticks", each tick is equally spaced and may have arbitrary depth of liquidity providing the token has a total supply of < 2**128.
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
@@ -41,13 +44,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     address public immutable override token1;
     uint24 public immutable override fee;
 
-    // how far apart initialized ticks must be
-    // e.g. a tickSpacing of 3 means ticks can be initialized every 3rd tick, i.e. ..., -6, -3, 0, 3, 6, ...
-    // int24 to avoid casting even though it's always positive
+    /// @notice How far apart initialized ticks must be
+    /// @dev e.g. a tickSpacing of 3 means ticks can be initialized every 3rd tick, i.e. ..., -6, -3, 0, 3, 6, ...
+    ///      int24 to avoid casting even though it's always positive
     int24 public immutable override tickSpacing;
 
-    // the minimum and maximum tick for the pair
-    // always a multiple of tickSpacing
+    /// @notice the minimum and maximum tick for the pair
+    /// @dev always a multiple of tickSpacing
     int24 public immutable override minTick;
     int24 public immutable override maxTick;
 
@@ -69,26 +72,27 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     Slot0 public override slot0;
 
-    // the current liquidity
+    /// @dev the current liquidity
     uint128 public override liquidity;
 
-    // see Oracle.sol
+    /// @dev see Oracle.sol
     Oracle.Observation[1024] public override observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
 
-    // see TickBitmap.sol
+    /// @dev see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;
 
-    // fee growth per unit of liquidity
+    /// @dev fee growth per unit of liquidity
     uint256 public override feeGrowthGlobal0X128;
     uint256 public override feeGrowthGlobal1X128;
 
-    // accumulated protocol fees in token0/token1 units
+    /// @dev accumulated protocol fees in token0/token1 units
     uint256 public override protocolFees0;
     uint256 public override protocolFees1;
 
     mapping(int24 => Tick.Info) public ticks;
     mapping(bytes32 => Position.Info) public positions;
 
+    /// @dev The Reentrancy guard modifier, function code is executed where _; is placed in modifier process, requiring external function calls to be performed after modified function has finished.
     modifier lock() {
         require(slot0.unlocked, 'LOK');
         slot0.unlocked = false;
@@ -96,11 +100,19 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlocked = true;
     }
 
+    /// @dev The factory owner modifier, requires the function caller to be the Uniswap V3 factory address before executing the function.
     modifier onlyFactoryOwner() {
         require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
         _;
     }
 
+    /// @notice The Pair constructor.
+    /// @dev Executed only once when a pair is initialized.
+    /// @param _factory The Uniswap V3 factory address.
+    /// @param _token0 The first token of the desired pair.
+    /// @param _token1 The second token of the desired pair.
+    /// @param _fee The fee of the desired pair.
+    /// @param _tickSpacing How far apart initialized ticks must be.
     constructor() {
         (address _factory, address _token0, address _token1, uint24 _fee, int24 _tickSpacing) =
             IUniswapV3PairDeployer(msg.sender).parameters();
@@ -113,24 +125,29 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
     }
 
+    /// @notice Returns the balance of token0 in the pair.
     function balance0() private view returns (uint256) {
         return balanceOfToken(token0);
     }
 
+    /// @notice Returns the balance of token1 in the pair.
     function balance1() private view returns (uint256) {
         return balanceOfToken(token1);
     }
 
+    /// @notice Returns the balance of a given ERC20 in the pair.
+    /// @param token The token whose balance will be returned.
     function balanceOfToken(address token) private view returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 
-    // returns the block timestamp % 2**32
+    /// @notice Returns the block timestamp % 2**32.
     // overridden for tests
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
     }
 
+    
     function observationAt(uint32 secondsAgo)
         external
         view
@@ -139,6 +156,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     {
         return observations.observationAt(_blockTimestamp(), secondsAgo, slot0.tick, slot0.observationIndex, liquidity);
     }
+
 
     function checkTicks(int24 tickLower, int24 tickUpper) private view {
         require(tickLower < tickUpper, 'TLU');
@@ -174,7 +192,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Initialized(sqrtPriceX96, tick);
     }
 
-    // gets and updates and gets a position with the given liquidity delta
+    /// @notice Add or remove a specified amount of liquidity from a specified range.
+    /// @notice Also sync a position and return accumulated fees from it to user as tokens.
+    /// @dev LiquidityDelta is sqrt(reserve0Virtual * reserve1Virtual), so it does not incorporate fees.
+    /// @param owner The owner of the position.
+    /// @param tickLower The lower tick boundary of the position.
+    /// @param tickUpper The upper tick boundary of the position.
+    /// @param liquidityDelta The delta of liquidity TODO
     function _updatePosition(
         address owner,
         int24 tickLower,
