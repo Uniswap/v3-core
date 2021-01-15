@@ -5,6 +5,6 @@ interface IUniswapV3FlashCallback {
     function uniswapV3FlashCallback(
         uint256 fee0,
         uint256 fee1,
-        bytes calldata
+        bytes calldata data
     ) external;
 }
