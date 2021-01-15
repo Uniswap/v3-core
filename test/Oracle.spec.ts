@@ -55,7 +55,7 @@ describe('Oracle', () => {
     return (await oracleTestFactory.deploy()) as OracleTest
   }
 
-  describe.only('#write', () => {
+  describe('#write', () => {
     let oracle: OracleTest
     beforeEach('deploy test oracle', async () => {
       oracle = await loadFixture(oracleFixture)

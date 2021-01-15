@@ -2,9 +2,6 @@
 pragma solidity >=0.5.0;
 
 library Oracle {
-    // the number of observations, at most one per block, stored in an array that is cycled over
-    uint16 internal constant MAX_CARDINALITY = 65535;
-
     struct Observation {
         // the block timestamp of the observation
         uint32 blockTimestamp;
@@ -37,7 +34,7 @@ library Oracle {
     // writes an oracle observation to the array, at most once per block
     // indices cycle, and must be kept track of in the parent contract
     function write(
-        Observation[MAX_CARDINALITY] storage self,
+        Observation[65536] storage self,
         uint16 index,
         uint32 blockTimestamp,
         int24 tick,
@@ -57,7 +54,7 @@ library Oracle {
     // the answer _must_ be contained in the array
     // note that even though we're not modifying self, it must be passed by ref to save gas
     function binarySearch(
-        Observation[MAX_CARDINALITY] storage self,
+        Observation[65536] storage self,
         uint32 target,
         uint16 index,
         uint16 cardinality
@@ -101,7 +98,7 @@ library Oracle {
 
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     function getSurroundingObservations(
-        Observation[MAX_CARDINALITY] storage self,
+        Observation[65536] storage self,
         uint32 current,
         uint32 target,
         int24 tick,
@@ -141,7 +138,7 @@ library Oracle {
 
     // constructs a counterfactual observation as of a particular time in the past, as long as we have observations before then
     function scry(
-        Observation[MAX_CARDINALITY] storage self,
+        Observation[65536] storage self,
         uint32 current,
         uint32 secondsAgo,
         int24 tick,

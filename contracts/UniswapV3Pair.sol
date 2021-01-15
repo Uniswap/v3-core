@@ -34,7 +34,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
-    using Oracle for Oracle.Observation[65535];
+    using Oracle for Oracle.Observation[65536];
 
     address public immutable override factory;
     address public immutable override token0;
@@ -64,7 +64,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // the current number of observations that are being stored
         uint16 observationCardinality;
         // the target number of observations to store
-        uint16 cardinalityTarget;
+        uint16 observationCardinalityTarget;
         // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
         uint8 feeProtocol;
         // whether the pair is locked
@@ -77,7 +77,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint128 public override liquidity;
 
     // see Oracle.sol
-    Oracle.Observation[65535] public override observations;
+    Oracle.Observation[65536] public override observations;
 
     // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;
@@ -177,7 +177,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 tick: tick,
                 observationIndex: 0,
                 observationCardinality: 1,
-                cardinalityTarget: 1,
+                observationCardinalityTarget: 1,
                 feeProtocol: 0,
                 unlocked: true
             });

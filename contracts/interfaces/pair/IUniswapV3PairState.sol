@@ -10,7 +10,7 @@ interface IUniswapV3PairState {
             int24 tick,
             uint16 observationIndex,
             uint16 observationCardinality,
-            uint16 cardinalityTarget,
+            uint16 observationCardinalityTarget,
             uint8 feeProtocol,
             bool unlocked
         );
