@@ -16,7 +16,7 @@ library Position {
         uint256 feesOwed1;
     }
 
-    function getPosition(
+    function get(
         mapping(bytes32 => Info) storage self,
         address owner,
         int24 tickLower,

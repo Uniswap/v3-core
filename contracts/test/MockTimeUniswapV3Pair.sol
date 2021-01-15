@@ -5,16 +5,22 @@ pragma abicoder v2;
 import '../UniswapV3Pair.sol';
 import '../UniswapV3PairDeployer.sol';
 
+import '../libraries/Oracle.sol';
+
 // used for testing time dependent behavior
 contract MockTimeUniswapV3Pair is UniswapV3Pair {
-    uint32 public time;
+    uint256 public time;
 
-    function setTime(uint32 _time) external {
+    function setTime(uint256 _time) external {
         require(_time > time, 'MockTimeUniswapV3Pair::setTime: time can only be advanced');
         time = _time;
     }
 
     function _blockTimestamp() internal view override returns (uint32) {
-        return time;
+        return uint32(time);
+    }
+
+    function initializeObservations(uint16 start, uint16 end) external {
+        for (uint16 i = start; i < end; i++) observations[i].initialized = true;
     }
 }

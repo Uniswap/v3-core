@@ -5,8 +5,9 @@ import '../interfaces/IERC20.sol';
 
 import '../libraries/SafeCast.sol';
 
-import '../interfaces/IUniswapV3MintCallback.sol';
-import '../interfaces/IUniswapV3SwapCallback.sol';
+import '../interfaces/callback/IUniswapV3MintCallback.sol';
+import '../interfaces/callback/IUniswapV3SwapCallback.sol';
+
 import '../interfaces/IUniswapV3Pair.sol';
 
 contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
@@ -63,7 +64,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint160 sqrtPriceX96,
         address recipient
     ) external {
-        // in the 0 for 1 case, we run into overflow in getNextPriceFromAmount1RoundingDown if this is not true:
+        // in the 0 for 1 case, we run into overflow in getNextSqrtPriceFromAmount1RoundingDown if this is not true:
         // amountSpecified < (2**160 - sqrtQ + 1) * l / 2**96
         // the amountSpecified below always satisfies this
         IUniswapV3Pair(pair).swap(
