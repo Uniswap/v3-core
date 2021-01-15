@@ -12,25 +12,33 @@ const TEST_ADDRESSES: [string, string] = [
   '0x2000000000000000000000000000000000000000',
 ]
 
+const createFixtureLoader = waffle.createFixtureLoader
+
 describe('UniswapV3Factory', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let factory: UniswapV3Factory
   let pairBytecode: string
-  beforeEach('deploy factory', async () => {
+  const fixture = async () => {
     const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
+    return (await factoryFactory.deploy()) as UniswapV3Factory
+  }
+
+  let loadFixture: ReturnType<typeof createFixtureLoader>
+  before('create fixture loader', async () => {
+    loadFixture = createFixtureLoader([wallet, other])
+  })
+
+  before('load pair bytecode', async () => {
     pairBytecode = (await ethers.getContractFactory('UniswapV3Pair')).bytecode
-    factory = (await factoryFactory.deploy(wallet.address)) as UniswapV3Factory
   })
 
-  it('owner is wallet', async () => {
+  beforeEach('deploy factory', async () => {
+    factory = await loadFixture(fixture)
+  })
+
+  it('owner is deployer', async () => {
     expect(await factory.owner()).to.eq(wallet.address)
-  })
-
-  it('owner does not have to be deployer', async () => {
-    const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
-    factory = (await factoryFactory.deploy(other.address)) as UniswapV3Factory
-    expect(await factory.owner()).to.eq(other.address)
   })
 
   it('initial pairs length is 0', async () => {

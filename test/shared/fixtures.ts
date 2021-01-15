@@ -1,4 +1,3 @@
-import { Signer, Wallet } from 'ethers'
 import { ethers } from 'hardhat'
 import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
@@ -13,9 +12,9 @@ interface FactoryFixture {
   factory: UniswapV3Factory
 }
 
-async function factoryFixture(owner: Signer): Promise<FactoryFixture> {
+async function factoryFixture(): Promise<FactoryFixture> {
   const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
-  const factory = (await factoryFactory.deploy(await owner.getAddress())) as UniswapV3Factory
+  const factory = (await factoryFactory.deploy()) as UniswapV3Factory
   return { factory }
 }
 
@@ -48,8 +47,8 @@ interface PairFixture extends TokensAndFactoryFixture {
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
 export const TEST_PAIR_START_TIME = 1601906400
 
-export const pairFixture: Fixture<PairFixture> = async function ([owner]: Wallet[]): Promise<PairFixture> {
-  const { factory } = await factoryFixture(owner)
+export const pairFixture: Fixture<PairFixture> = async function (): Promise<PairFixture> {
+  const { factory } = await factoryFixture()
   const { token0, token1, token2 } = await tokensFixture()
 
   const mockTimeUniswapV3PairDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PairDeployer')
