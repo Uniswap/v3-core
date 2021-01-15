@@ -135,11 +135,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function increaseObservationCardinalityTarget(uint16 observationCardinalityTarget)
-        external override onlyFactoryOwner
-    {
-        require(observationCardinalityTarget > slot0.observationCardinalityTarget, 'LTE');
-        slot0.observationCardinalityTarget = observationCardinalityTarget;
+    function increaseObservationCardinality(uint16 observationCardinality) external override {
+        uint16 target = slot0.observationCardinalityTarget;
+        require(observationCardinality > target, 'LTE');
+        for (uint16 i = target; i < observationCardinality; i++) observations[i].blockTimestamp = 1; // trigger SSTORE
+        slot0.observationCardinalityTarget = observationCardinality;
     }
 
     function scry(uint32 secondsAgo)

@@ -29,16 +29,16 @@ function getSecondsAgo(then: number, now: number) {
 async function setOracle(
   oracle: OracleTest,
   observations: Observation[],
-  offset: number,
+  index: number,
   time = 0,
   tick = 0,
   liquidity = 0
 ) {
   await Promise.all([
-    oracle.setObservations(observations.slice(0, 341), 0),
-    oracle.setObservations(observations.slice(341, 682), 341),
-    oracle.setObservations(observations.slice(682, 1024), 682),
-    oracle.setOracleData(tick, liquidity, offset, time, 1024, 1024),
+    oracle.setObservations(observations.slice(0, 341), 0, index),
+    oracle.setObservations(observations.slice(341, 682), 341, index),
+    oracle.setObservations(observations.slice(682, 1024), 682, index),
+    oracle.setOracleData(time, tick, liquidity, 1024, 1024),
   ])
 }
 
@@ -73,7 +73,6 @@ describe('Oracle', () => {
       await oracle.advanceTime(1)
       await oracle.write(3, 2)
       expect(await oracle.index()).to.eq(1)
-      // todo: why is this writing to index 1 instead of 0 first
       const { tickCumulative, liquidityCumulative, initialized, blockTimestamp } = await oracle.observations(1)
       expect(initialized).to.eq(true)
       expect(tickCumulative).to.eq(0)
@@ -88,9 +87,6 @@ describe('Oracle', () => {
       await oracle.write(-7, 6)
       await oracle.advanceTime(5)
       await oracle.write(-2, 4)
-
-      // todo: why is this writing to index 1 instead of 0 first
-      expect((await oracle.observations(0)).initialized).to.eq(false)
 
       expect(await oracle.index()).to.eq(3)
       let { tickCumulative, liquidityCumulative, initialized, blockTimestamp } = await oracle.observations(1)
@@ -121,9 +117,10 @@ describe('Oracle', () => {
       })
 
       describe('failures', () => {
-        it('fails while uninitialized', async () => {
-          await expect(oracle.scry(0)).to.be.revertedWith('UI')
-        })
+        // TODO this doesn't work anymore because we initialize in the constructor
+        // it('fails while uninitialized', async () => {
+        //   await expect(oracle.scry(0)).to.be.revertedWith('UI')
+        // })
 
         it('fails for single observation without any intervening time', async () => {
           await setOracle(
@@ -248,7 +245,7 @@ describe('Oracle', () => {
             1,
             1
           )
-          await snapshotGasCost(oracle.getGasCostOfObservationAt(0))
+          await snapshotGasCost(oracle.getGasCostOfScry(0))
         })
 
         it('timestamp greater than the most recent observation', async () => {
@@ -265,7 +262,7 @@ describe('Oracle', () => {
             0,
             1
           )
-          await snapshotGasCost(oracle.getGasCostOfObservationAt(0))
+          await snapshotGasCost(oracle.getGasCostOfScry(0))
         })
 
         it('worst-case binary search', async () => {
@@ -288,7 +285,7 @@ describe('Oracle', () => {
             1,
             2
           )
-          await snapshotGasCost(oracle.getGasCostOfObservationAt(1))
+          await snapshotGasCost(oracle.getGasCostOfScry(1))
         })
       })
     })

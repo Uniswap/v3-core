@@ -50,6 +50,8 @@ library Oracle {
         // if the conditions are right, we can bump the cardinality
         if (index == (cardinality - 1) && cardinalityTarget > cardinality) {
             cardinalityNext = cardinalityTarget;
+            // TODO we want to emit this
+            // emit ObservationCardinalityIncreased(cardinality, cardinalityTarget);
         } else {
             cardinalityNext = cardinality;
         }

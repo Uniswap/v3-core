@@ -10,7 +10,4 @@ interface IUniswapV3PairOwnerActions {
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external returns (uint256 amount0, uint256 amount1);
-
-    // allows factory owner to increase the observationCardinalityTarget
-    function increaseObservationCardinalityTarget(uint16 observationCardinalityTarget) external;
 }
