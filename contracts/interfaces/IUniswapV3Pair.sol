@@ -71,7 +71,7 @@ interface IUniswapV3Pair {
 
     function liquidity() external view returns (uint128);
 
-    function observationAt(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
+    function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
 
     function observations(uint256)
         external

@@ -539,7 +539,7 @@ describe('UniswapV3Pair', () => {
     // simulates an external call to get the cumulatives as of the current block timestamp
     async function getCumulatives(): Promise<{ blockTimestamp: number; tickCumulative: BigNumber }> {
       const blockTimestamp = await pair.time()
-      const { tickCumulative } = await pair.observationAt(0).catch(() => ({
+      const { tickCumulative } = await pair.scry(0).catch(() => ({
         tickCumulative: BigNumber.from(0),
       }))
 

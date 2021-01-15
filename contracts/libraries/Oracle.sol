@@ -137,7 +137,7 @@ library Oracle {
     }
 
     // constructs a counterfactual observation as of a particular time in the past, as long as we have observations before then
-    function observationAt(
+    function scry(
         Observation[CARDINALITY] storage self,
         uint32 current,
         uint32 secondsAgo,

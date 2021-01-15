@@ -21,7 +21,7 @@ contract OracleTest {
     function getGasCostOfObservationAt(uint32 secondsAgo) external view returns (uint256) {
         (uint32 _time, int24 _tick, uint128 _liquidity, uint16 _index) = (time, tick, liquidity, index);
         uint256 gasBefore = gasleft();
-        observations.observationAt(_time, secondsAgo, _tick, _index, _liquidity);
+        observations.scry(_time, secondsAgo, _tick, _index, _liquidity);
         return gasBefore - gasleft();
     }
 
@@ -37,11 +37,11 @@ contract OracleTest {
         time = _time;
     }
 
-    function observationAt(uint32 secondsAgo)
+    function scry(uint32 secondsAgo)
         external
         view
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
-        return observations.observationAt(time, secondsAgo, tick, index, liquidity);
+        return observations.scry(time, secondsAgo, tick, index, liquidity);
     }
 }
