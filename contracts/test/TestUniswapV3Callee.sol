@@ -77,14 +77,14 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         );
     }
 
-    event SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes data);
+    event SwapCallback(int256 amount0Delta, int256 amount1Delta);
 
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata data
     ) external override {
-        emit SwapCallback(amount0Delta, amount1Delta, data);
+        emit SwapCallback(amount0Delta, amount1Delta);
 
         address sender = abi.decode(data, (address));
 
@@ -106,14 +106,14 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         IUniswapV3Pair(pair).mint(recipient, tickLower, tickUpper, amount, abi.encode(msg.sender));
     }
 
-    event MintCallback(uint256 amount0Owed, uint256 amount1Owed, bytes data);
+    event MintCallback(uint256 amount0Owed, uint256 amount1Owed);
 
     function uniswapV3MintCallback(
         uint256 amount0Owed,
         uint256 amount1Owed,
         bytes calldata data
     ) external override {
-        emit MintCallback(amount0Owed, amount1Owed, data);
+        emit MintCallback(amount0Owed, amount1Owed);
 
         address sender = abi.decode(data, (address));
 
@@ -121,7 +121,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         if (amount1Owed > 0) IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, amount1Owed);
     }
 
-    event FlashCallback(uint256 fee0, uint256 fee1, bytes data);
+    event FlashCallback(uint256 fee0, uint256 fee1);
 
     function flash(
         address pair,
@@ -137,7 +137,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         uint256 fee1,
         bytes calldata data
     ) external override {
-        emit FlashCallback(fee0, fee1, data);
+        emit FlashCallback(fee0, fee1);
 
         (address sender, uint256 amount0, uint256 amount1) = abi.decode(data, (address, uint256, uint256));
         uint256 owed0 = amount0 + fee0;
