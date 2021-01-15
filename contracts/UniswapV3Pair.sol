@@ -23,8 +23,8 @@ import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
-import './interfaces/IUniswapV3MintCallback.sol';
-import './interfaces/IUniswapV3SwapCallback.sol';
+import './interfaces/callback/IUniswapV3MintCallback.sol';
+import './interfaces/callback/IUniswapV3SwapCallback.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint256;

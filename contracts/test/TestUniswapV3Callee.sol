@@ -5,8 +5,9 @@ import '../interfaces/IERC20.sol';
 
 import '../libraries/SafeCast.sol';
 
-import '../interfaces/IUniswapV3MintCallback.sol';
-import '../interfaces/IUniswapV3SwapCallback.sol';
+import '../interfaces/callback/IUniswapV3MintCallback.sol';
+import '../interfaces/callback/IUniswapV3SwapCallback.sol';
+
 import '../interfaces/IUniswapV3Pair.sol';
 
 contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
