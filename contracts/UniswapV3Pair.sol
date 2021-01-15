@@ -86,8 +86,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override protocolFees0;
     uint256 public override protocolFees1;
 
-    mapping(int24 => Tick.Info) public ticks;
-    mapping(bytes32 => Position.Info) public positions;
+    mapping(int24 => Tick.Info) public override ticks;
+    mapping(bytes32 => Position.Info) public override positions;
 
     modifier lock() {
         require(slot0.unlocked, 'LOK');

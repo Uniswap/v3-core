@@ -15,6 +15,28 @@ interface IUniswapV3PairState {
 
     function tickBitmap(int16) external view returns (uint256);
 
+    function ticks(int24)
+        external
+        view
+        returns (
+            uint128 liquidityGross,
+            int128 liquidityDelta,
+            uint32 secondsOutside,
+            uint256 feeGrowthOutside0X128,
+            uint256 feeGrowthOutside1X128
+        );
+
+    function positions(bytes32)
+        external
+        view
+        returns (
+            uint128 _liquidity,
+            uint256 feeGrowthInside0LastX128,
+            uint256 feeGrowthInside1LastX128,
+            uint256 feesOwed0,
+            uint256 feesOwed1
+        );
+
     function feeGrowthGlobal0X128() external view returns (uint256);
 
     function feeGrowthGlobal1X128() external view returns (uint256);
