@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Oracle #scry clean state tests gas timestamp equal to the most recent observation 1`] = `5068`;
+exports[`Oracle #scry clean state tests gas timestamp equal to the most recent observation 1`] = `5962`;
 
-exports[`Oracle #scry clean state tests gas timestamp greater than the most recent observation 1`] = `4555`;
+exports[`Oracle #scry clean state tests gas timestamp greater than the most recent observation 1`] = `5449`;
 
-exports[`Oracle #scry clean state tests gas worst-case binary search 1`] = `20982`;
+exports[`Oracle #scry clean state tests gas worst-case binary search 1`] = `22481`;

@@ -34,7 +34,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
-    using Oracle for Oracle.Observation[1024]; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
+    using Oracle for Oracle.Observation[65535];
 
     address public immutable override factory;
     address public immutable override token0;
@@ -61,6 +61,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tick;
         // the most-recently updated index of the observations array
         uint16 observationIndex;
+        // the current number of observations that are being stored
+        uint16 observationCardinality;
+        // the target number of observations to store
+        uint16 cardinalityTarget;
         // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
         uint8 feeProtocol;
         // whether the pair is locked
@@ -73,7 +77,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint128 public override liquidity;
 
     // see Oracle.sol
-    Oracle.Observation[1024] public override observations; // 1024 over Oracle.CARDINALITY is a hack to satisfy solidity
+    Oracle.Observation[65535] public override observations;
 
     // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;
@@ -137,7 +141,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         override
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
-        return observations.scry(_blockTimestamp(), secondsAgo, slot0.tick, slot0.observationIndex, liquidity);
+        return
+            observations.scry(
+                _blockTimestamp(),
+                secondsAgo,
+                slot0.tick,
+                slot0.observationIndex,
+                liquidity,
+                slot0.observationCardinality
+            );
     }
 
     function checkTicks(int24 tickLower, int24 tickUpper) private view {
@@ -160,7 +172,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick < maxTick, 'MAX');
 
         Slot0 memory _slot0 =
-            Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, observationIndex: 0, feeProtocol: 0, unlocked: true});
+            Slot0({
+                sqrtPriceX96: sqrtPriceX96,
+                tick: tick,
+                observationIndex: 0,
+                observationCardinality: 1,
+                cardinalityTarget: 1,
+                feeProtocol: 0,
+                unlocked: true
+            });
 
         observations[_slot0.observationIndex] = Oracle.Observation({
             blockTimestamp: _blockTimestamp(),
@@ -390,7 +410,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                     _slot0.observationIndex,
                     _blockTimestamp(),
                     _slot0.tick,
-                    liquidityBefore
+                    liquidityBefore,
+                    _slot0.observationCardinality
                 );
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
@@ -567,7 +588,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 cache.slot0Start.observationIndex,
                 cache.blockTimestamp,
                 cache.slot0Start.tick,
-                cache.liquidityStart
+                cache.liquidityStart,
+                cache.slot0Start.observationCardinality
             );
         }
 

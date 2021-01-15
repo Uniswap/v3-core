@@ -38,7 +38,7 @@ async function setOracle(
     oracle.setObservations(observations.slice(0, 341), 0),
     oracle.setObservations(observations.slice(341, 682), 341),
     oracle.setObservations(observations.slice(682, 1024), 682),
-    oracle.setOracleData(tick, liquidity, offset, time),
+    oracle.setOracleData(tick, liquidity, offset, time, 1024, 1024),
   ])
 }
 

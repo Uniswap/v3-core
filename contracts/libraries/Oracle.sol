@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 library Oracle {
     // the number of observations, at most one per block, stored in an array that is cycled over
-    uint16 internal constant CARDINALITY = 1024;
+    uint16 internal constant MAX_CARDINALITY = 65535;
 
     struct Observation {
         // the block timestamp of the observation
@@ -37,18 +37,19 @@ library Oracle {
     // writes an oracle observation to the array, at most once per block
     // indices cycle, and must be kept track of in the parent contract
     function write(
-        Observation[CARDINALITY] storage self,
+        Observation[MAX_CARDINALITY] storage self,
         uint16 index,
         uint32 blockTimestamp,
         int24 tick,
-        uint128 liquidity
+        uint128 liquidity,
+        uint16 cardinality
     ) internal returns (uint16 indexNext) {
         Observation memory last = self[index];
 
         // early return if we've already written an observation this block
         if (last.blockTimestamp == blockTimestamp) return index;
 
-        indexNext = (index + 1) % CARDINALITY;
+        indexNext = (index + 1) % cardinality;
         self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
     }
 
@@ -56,17 +57,18 @@ library Oracle {
     // the answer _must_ be contained in the array
     // note that even though we're not modifying self, it must be passed by ref to save gas
     function binarySearch(
-        Observation[CARDINALITY] storage self,
+        Observation[MAX_CARDINALITY] storage self,
         uint32 target,
-        uint16 index
+        uint16 index,
+        uint16 cardinality
     ) private view returns (Observation memory before, Observation memory atOrAfter) {
-        uint16 l = (index + 1) % CARDINALITY;
-        uint16 r = l + CARDINALITY - 1;
+        uint16 l = (index + 1) % cardinality;
+        uint16 r = l + cardinality - 1;
         uint16 i;
         while (true) {
             i = (l + r) / 2;
 
-            atOrAfter = self[i % CARDINALITY];
+            atOrAfter = self[i % cardinality];
 
             // we've landed on an uninitialized tick, keep searching higher (more recently)
             if (!atOrAfter.initialized) {
@@ -74,7 +76,7 @@ library Oracle {
                 continue;
             }
 
-            before = i == CARDINALITY ? self[CARDINALITY - 1] : self[(i % CARDINALITY) - 1];
+            before = i == cardinality ? self[cardinality - 1] : self[(i % cardinality) - 1];
 
             // check if we've found the answer!
             if (
@@ -86,7 +88,7 @@ library Oracle {
             // adjust for overflow
             uint256 targetAdjusted = target;
             uint256 atOrAfterAdjusted = atOrAfter.blockTimestamp;
-            uint256 newestAdjusted = self[r % CARDINALITY].blockTimestamp;
+            uint256 newestAdjusted = self[r % cardinality].blockTimestamp;
             if (targetAdjusted > newestAdjusted || atOrAfterAdjusted > newestAdjusted) {
                 if (targetAdjusted <= newestAdjusted) targetAdjusted += 2**32;
                 if (atOrAfterAdjusted <= newestAdjusted) atOrAfterAdjusted += 2**32;
@@ -99,15 +101,16 @@ library Oracle {
 
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     function getSurroundingObservations(
-        Observation[CARDINALITY] storage self,
+        Observation[MAX_CARDINALITY] storage self,
         uint32 current,
         uint32 target,
         int24 tick,
         uint16 index,
-        uint128 liquidity
+        uint128 liquidity,
+        uint16 cardinality
     ) private view returns (Observation memory before, Observation memory) {
         // first, set before to the oldest observation, and make sure it's initialized
-        before = self[(index + 1) % CARDINALITY];
+        before = self[(index + 1) % cardinality];
         if (!before.initialized) {
             before = self[0];
             require(before.initialized, 'UI');
@@ -121,7 +124,7 @@ library Oracle {
 
         // before proceeding, short-circuit if the target equals the newest observation, meaning we're in the same block
         // but an interaction updated the oracle before this tx, so before is actually atOrAfter
-        if (target == before.blockTimestamp) return (index == 0 ? self[CARDINALITY - 1] : self[index - 1], before);
+        if (target == before.blockTimestamp) return (index == 0 ? self[cardinality - 1] : self[index - 1], before);
 
         // adjust for overflow
         uint256 beforeAdjusted = before.blockTimestamp;
@@ -133,22 +136,23 @@ library Oracle {
         if (beforeAdjusted < targetAdjusted) return (before, transform(before, current, tick, liquidity));
 
         // we're wrong, so perform binary search
-        return binarySearch(self, target, index);
+        return binarySearch(self, target, index, cardinality);
     }
 
     // constructs a counterfactual observation as of a particular time in the past, as long as we have observations before then
     function scry(
-        Observation[CARDINALITY] storage self,
+        Observation[MAX_CARDINALITY] storage self,
         uint32 current,
         uint32 secondsAgo,
         int24 tick,
         uint16 index,
-        uint128 liquidity
+        uint128 liquidity,
+        uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         uint32 target = current - secondsAgo;
 
         (Observation memory before, Observation memory atOrAfter) =
-            getSurroundingObservations(self, current, target, tick, index, liquidity);
+            getSurroundingObservations(self, current, target, tick, index, liquidity, cardinality);
 
         Oracle.Observation memory at;
         if (target == atOrAfter.blockTimestamp) {
