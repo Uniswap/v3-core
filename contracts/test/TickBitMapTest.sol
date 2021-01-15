@@ -1,23 +1,12 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.5.0;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity =0.7.6;
 
-import '../libraries/TickBitMap.sol';
+import '../libraries/TickBitmap.sol';
 
-// a library for dealing with a bitmap of all ticks
-contract TickBitMapTest {
-    using TickBitMap for mapping(uint256 => uint256);
+contract TickBitmapTest {
+    using TickBitmap for mapping(int16 => uint256);
 
-    mapping(uint256 => uint256) public bitmap;
-
-    function isInitialized(int24 tick) external view returns (bool) {
-        return bitmap.isInitialized(tick);
-    }
-
-    function getGasCostOfIsInitialized(int24 tick) external view returns (uint256) {
-        uint256 gasBefore = gasleft();
-        bitmap.isInitialized(tick);
-        return gasBefore - gasleft();
-    }
+    mapping(int16 => uint256) public bitmap;
 
     function flipTick(int24 tick) external {
         bitmap.flipTick(tick);
@@ -43,13 +32,9 @@ contract TickBitMapTest {
         return gasBefore - gasleft();
     }
 
-    function nextInitializedTick(int24 tick, bool lte) external view returns (int24 next) {
-        return bitmap.nextInitializedTick(tick, lte);
-    }
-
-    function getGasCostOfNextInitializedTick(int24 tick, bool lte) external view returns (uint256) {
-        uint256 gasBefore = gasleft();
-        bitmap.nextInitializedTick(tick, lte);
-        return gasBefore - gasleft();
+    // returns whether the given tick is initialized
+    function isInitialized(int24 tick) external view returns (bool) {
+        (int24 next, bool initialized) = bitmap.nextInitializedTickWithinOneWord(tick, true);
+        return next == tick ? initialized : false;
     }
 }

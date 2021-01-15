@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Oracle #observationAt gas observations cost 1`] = `22648`;
+
+exports[`Oracle #observationAt gas timestamp equal to the most recent observation 1`] = `29276`;
+
+exports[`Oracle #observationAt gas timestamp greater than the most recent observation 1`] = `28763`;
+
+exports[`Oracle #observationAt gas worst-case binary search 1`] = `45202`;

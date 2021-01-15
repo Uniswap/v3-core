@@ -4,18 +4,22 @@ import '@nomiclabs/hardhat-waffle'
 
 export default {
   networks: {
-    // default configuration is fine
-    // hardhat: {
-    //   allowUnlimitedContractSize: true,
-    //   blockGasLimit: 12000000,
-    // },
+    hardhat: {
+      // allowUnlimitedContractSize: true,
+    },
   },
   solidity: {
-    version: '0.6.12',
+    version: '0.7.6',
     settings: {
       optimizer: {
         enabled: true,
         runs: 200,
+      },
+      metadata: {
+        // do not include the metadata hash, since this is machine dependent
+        // and we want all generated code to be deterministic
+        // https://docs.soliditylang.org/en/v0.7.6/metadata.html
+        bytecodeHash: 'none',
       },
     },
   },
