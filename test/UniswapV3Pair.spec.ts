@@ -1378,9 +1378,9 @@ describe('UniswapV3Pair', () => {
           })
 
           await Promise.all([
-            pair.setObservations(observations.slice(0, 341) as any, 0),
-            pair.setObservations(observations.slice(341, 682) as any, 341),
-            pair.setObservations(observations.slice(682, 1024) as any, 682),
+            pair.setObservations(observations.slice(0, 341), 0),
+            pair.setObservations(observations.slice(341, 682), 341),
+            pair.setObservations(observations.slice(682, 1024), 682),
           ])
         })
 
