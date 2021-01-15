@@ -182,7 +182,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int128 liquidityDelta,
         int24 tick
     ) private {
-        Position.Info storage position = positions.getPosition(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
 
         if (liquidityDelta < 0) {
             require(position.liquidity >= uint128(-liquidityDelta), 'CP');
@@ -275,7 +275,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) external override lock returns (uint256 amount0, uint256 amount1) {
         checkTicks(tickLower, tickUpper);
 
-        Position.Info storage position = positions.getPosition(msg.sender, tickLower, tickUpper);
+        Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
 
         amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
         amount1 = amount1Requested > position.feesOwed1 ? position.feesOwed1 : amount1Requested;
