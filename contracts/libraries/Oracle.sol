@@ -39,14 +39,22 @@ library Oracle {
         uint32 blockTimestamp,
         int24 tick,
         uint128 liquidity,
-        uint16 cardinality
-    ) internal returns (uint16 indexNext) {
+        uint16 cardinality,
+        uint16 cardinalityTarget
+    ) internal returns (uint16 indexNext, uint16 cardinalityNext) {
         Observation memory last = self[index];
 
         // early return if we've already written an observation this block
-        if (last.blockTimestamp == blockTimestamp) return index;
+        if (last.blockTimestamp == blockTimestamp) return (index, cardinality);
 
-        indexNext = (index + 1) % cardinality;
+        // if the conditions are right, we can bump the cardinality
+        if (index == (cardinality - 1) && cardinalityTarget > cardinality) {
+            cardinalityNext = cardinalityTarget;
+        } else {
+            cardinalityNext = cardinality;
+        }
+
+        indexNext = (index + 1) % cardinalityNext;
         self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
     }
 

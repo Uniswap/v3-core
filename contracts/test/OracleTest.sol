@@ -49,7 +49,7 @@ contract OracleTest {
 
     // write an observation, then change tick and liquidity
     function write(int24 _tick, uint128 _liquidity) external {
-        index = observations.write(index, time, tick, liquidity, cardinality);
+        (index, cardinality) = observations.write(index, time, tick, liquidity, cardinality, target);
         tick = _tick;
         liquidity = _liquidity;
     }

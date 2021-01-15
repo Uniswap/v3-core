@@ -135,6 +135,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
+    function increaseObservationCardinalityTarget(uint16 observationCardinalityTarget)
+        external override onlyFactoryOwner
+    {
+        require(observationCardinalityTarget > slot0.observationCardinalityTarget, 'LTE');
+        slot0.observationCardinalityTarget = observationCardinalityTarget;
+    }
+
     function scry(uint32 secondsAgo)
         external
         view
@@ -406,12 +413,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
 
                 // write an oracle entry
-                slot0.observationIndex = observations.write(
+                (slot0.observationIndex, slot0.observationCardinality) = observations.write(
                     _slot0.observationIndex,
                     _blockTimestamp(),
                     _slot0.tick,
                     liquidityBefore,
-                    _slot0.observationCardinality
+                    _slot0.observationCardinality,
+                    _slot0.observationCardinalityTarget
                 );
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
@@ -584,12 +592,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (state.tick != cache.slot0Start.tick) {
             slot0.tick = state.tick;
             // write an oracle entry if the price moved at least one tick
-            slot0.observationIndex = observations.write(
+            (slot0.observationIndex, slot0.observationCardinality) = observations.write(
                 cache.slot0Start.observationIndex,
                 cache.blockTimestamp,
                 cache.slot0Start.tick,
                 cache.liquidityStart,
-                cache.slot0Start.observationCardinality
+                cache.slot0Start.observationCardinality,
+                cache.slot0Start.observationCardinalityTarget
             );
         }
 
