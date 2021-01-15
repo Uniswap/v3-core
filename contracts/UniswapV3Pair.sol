@@ -131,13 +131,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function observationAt(uint32 secondsAgo)
+    function scry(uint32 secondsAgo)
         external
         view
         override
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
-        return observations.observationAt(_blockTimestamp(), secondsAgo, slot0.tick, slot0.observationIndex, liquidity);
+        return observations.scry(_blockTimestamp(), secondsAgo, slot0.tick, slot0.observationIndex, liquidity);
     }
 
     function checkTicks(int24 tickLower, int24 tickUpper) private view {

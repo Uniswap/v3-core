@@ -2,5 +2,5 @@
 pragma solidity >=0.5.0;
 
 interface IUniswapV3PairDerivedState {
-    function observationAt(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
+    function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
 }
