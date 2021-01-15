@@ -61,9 +61,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tick;
         // the most-recently updated index of the observations array
         uint16 observationIndex;
-        // the current number of observations that are being stored
+        // the current maximum number of observations that are being stored
         uint16 observationCardinality;
-        // the target number of observations to store
+        // the target maximum number of observations to store
         uint16 observationCardinalityTarget;
         // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
         uint8 feeProtocol;
