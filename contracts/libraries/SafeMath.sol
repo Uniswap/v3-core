@@ -26,11 +26,9 @@ library SafeMath {
      *
      * - Addition cannot overflow.
      */
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
+    function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        c = a + b;
         require(c >= a, 'AO');
-
-        return c;
     }
 
     /**
@@ -43,11 +41,9 @@ library SafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {
         require(b <= a, 'SO');
-        uint256 c = a - b;
-
-        return c;
+        c = a - b;
     }
 
     /**
@@ -81,7 +77,7 @@ library SafeMath {
      *
      * - Multiplication cannot overflow.
      */
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
         // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
@@ -89,9 +85,7 @@ library SafeMath {
             return 0;
         }
 
-        uint256 c = a * b;
+        c = a * b;
         require(c / a == b, 'MO');
-
-        return c;
     }
 }
