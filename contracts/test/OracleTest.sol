@@ -37,11 +37,7 @@ contract OracleTest {
         time = _time;
     }
 
-    function scry(uint32 secondsAgo)
-        external
-        view
-        returns (int56 tickCumulative, uint160 liquidityCumulative)
-    {
+    function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         return observations.scry(time, secondsAgo, tick, index, liquidity);
     }
 }
