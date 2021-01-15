@@ -25,7 +25,11 @@ contract OracleTest {
         });
     }
 
-    function setObservations(Oracle.Observation[] calldata _observations, uint16 offset, uint16 _index) external {
+    function setObservations(
+        Oracle.Observation[] calldata _observations,
+        uint16 offset,
+        uint16 _index
+    ) external {
         for (uint16 i; i < _observations.length; i++) observations[i + offset] = _observations[i];
         index = _index;
     }
