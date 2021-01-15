@@ -55,6 +55,64 @@ describe('Oracle', () => {
     return (await oracleTestFactory.deploy()) as OracleTest
   }
 
+  describe.only('#write', () => {
+    let oracle: OracleTest
+    beforeEach('deploy test oracle', async () => {
+      oracle = await loadFixture(oracleFixture)
+    })
+
+    it('does nothing if time has not changed', async () => {
+      await oracle.advanceTime(1)
+      await oracle.write(3, 2)
+      expect(await oracle.index()).to.eq(1)
+      await oracle.write(3, 2)
+      expect(await oracle.index()).to.eq(1)
+    })
+
+    it('writes an index if time has changed', async () => {
+      await oracle.advanceTime(1)
+      await oracle.write(3, 2)
+      expect(await oracle.index()).to.eq(1)
+      // todo: why is this writing to index 1 instead of 0 first
+      const { tickCumulative, liquidityCumulative, initialized, blockTimestamp } = await oracle.observations(1)
+      expect(initialized).to.eq(true)
+      expect(tickCumulative).to.eq(0)
+      expect(liquidityCumulative).to.eq(0)
+      expect(blockTimestamp).to.eq(1)
+    })
+
+    it('accumulates liquidity', async () => {
+      await oracle.advanceTime(3)
+      await oracle.write(3, 2)
+      await oracle.advanceTime(4)
+      await oracle.write(-7, 6)
+      await oracle.advanceTime(5)
+      await oracle.write(-2, 4)
+
+      // todo: why is this writing to index 1 instead of 0 first
+      expect((await oracle.observations(0)).initialized).to.eq(false)
+
+      expect(await oracle.index()).to.eq(3)
+      let { tickCumulative, liquidityCumulative, initialized, blockTimestamp } = await oracle.observations(1)
+      expect(initialized).to.eq(true)
+      expect(tickCumulative).to.eq(0)
+      expect(liquidityCumulative).to.eq(0)
+      expect(blockTimestamp).to.eq(3)
+      ;({ tickCumulative, liquidityCumulative, initialized, blockTimestamp } = await oracle.observations(2))
+      expect(initialized).to.eq(true)
+      expect(tickCumulative).to.eq(12)
+      expect(liquidityCumulative).to.eq(8)
+      expect(blockTimestamp).to.eq(7)
+      ;({ tickCumulative, liquidityCumulative, initialized, blockTimestamp } = await oracle.observations(3))
+      expect(initialized).to.eq(true)
+      expect(tickCumulative).to.eq(-23)
+      expect(liquidityCumulative).to.eq(38)
+      expect(blockTimestamp).to.eq(12)
+      ;({ tickCumulative, liquidityCumulative, initialized, blockTimestamp } = await oracle.observations(4))
+      expect(initialized).to.eq(false)
+    })
+  })
+
   describe('#scry', () => {
     describe('clean state tests', () => {
       let oracle: OracleTest

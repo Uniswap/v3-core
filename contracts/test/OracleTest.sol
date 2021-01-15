@@ -43,6 +43,17 @@ contract OracleTest {
         target = _target;
     }
 
+    function advanceTime(uint32 by) external {
+        time += by;
+    }
+
+    // write an observation, then change tick and liquidity
+    function write(int24 _tick, uint128 _liquidity) external {
+        index = observations.write(index, time, tick, liquidity, cardinality);
+        tick = _tick;
+        liquidity = _liquidity;
+    }
+
     function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         return observations.scry(time, secondsAgo, tick, index, liquidity, cardinality);
     }
