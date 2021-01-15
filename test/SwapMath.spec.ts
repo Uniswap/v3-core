@@ -39,7 +39,12 @@ describe('SwapMath', () => {
       expect(amountOut).to.eq('9925619580021728')
       expect(amountIn.add(feeAmount), 'entire amount is not used').to.lt(amount)
 
-      const priceAfterWholeInputAmount = await sqrtPriceMath.getNextPriceFromInput(price, liquidity, amount, zeroForOne)
+      const priceAfterWholeInputAmount = await sqrtPriceMath.getNextSqrtPriceFromInput(
+        price,
+        liquidity,
+        amount,
+        zeroForOne
+      )
 
       expect(sqrtQ, 'price is capped at price target').to.eq(priceTarget)
       expect(sqrtQ, 'price is less than price after whole input amount').to.lt(priceAfterWholeInputAmount)
@@ -66,7 +71,7 @@ describe('SwapMath', () => {
       expect(amountOut).to.eq('9925619580021728')
       expect(amountOut, 'entire amount out is not returned').to.lt(amount.mul(-1))
 
-      const priceAfterWholeOutputAmount = await sqrtPriceMath.getNextPriceFromOutput(
+      const priceAfterWholeOutputAmount = await sqrtPriceMath.getNextSqrtPriceFromOutput(
         price,
         liquidity,
         amount.mul(-1),
@@ -98,7 +103,7 @@ describe('SwapMath', () => {
       expect(amountOut).to.eq('666399946655997866')
       expect(amountIn.add(feeAmount), 'entire amount is used').to.eq(amount)
 
-      const priceAfterWholeInputAmountLessFee = await sqrtPriceMath.getNextPriceFromInput(
+      const priceAfterWholeInputAmountLessFee = await sqrtPriceMath.getNextSqrtPriceFromInput(
         price,
         liquidity,
         amount.sub(feeAmount),
@@ -129,7 +134,7 @@ describe('SwapMath', () => {
       expect(feeAmount).to.eq('1200720432259356')
       expect(amountOut).to.eq(amount.mul(-1))
 
-      const priceAfterWholeOutputAmount = await sqrtPriceMath.getNextPriceFromOutput(
+      const priceAfterWholeOutputAmount = await sqrtPriceMath.getNextSqrtPriceFromOutput(
         price,
         liquidity,
         amount.mul(-1),

@@ -4,43 +4,43 @@ pragma solidity =0.7.6;
 import '../libraries/SqrtPriceMath.sol';
 
 contract SqrtPriceMathTest {
-    function getNextPriceFromInput(
+    function getNextSqrtPriceFromInput(
         uint160 sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external pure returns (uint160 sqrtQ) {
-        return SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
+        return SqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
     }
 
-    function getGasCostOfGetNextPriceFromInput(
+    function getGasCostOfGetNextSqrtPriceFromInput(
         uint160 sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
+        SqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
         return gasBefore - gasleft();
     }
 
-    function getNextPriceFromOutput(
+    function getNextSqrtPriceFromOutput(
         uint160 sqrtP,
         uint128 liquidity,
         uint256 amountOut,
         bool zeroForOne
     ) external pure returns (uint160 sqrtQ) {
-        return SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
+        return SqrtPriceMath.getNextSqrtPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
     }
 
-    function getGasCostOfGetNextPriceFromOutput(
+    function getGasCostOfGetNextSqrtPriceFromOutput(
         uint160 sqrtP,
         uint128 liquidity,
         uint256 amountOut,
         bool zeroForOne
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
+        SqrtPriceMath.getNextSqrtPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
         return gasBefore - gasleft();
     }
 
