@@ -244,6 +244,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
+        // todo: better naming for these variables
         (uint256 feeProtocol0, uint256 feeProtocol1) =
             position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
         if (feeProtocol0 > 0) protocolFees0 += feeProtocol0;
