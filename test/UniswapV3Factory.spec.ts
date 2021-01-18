@@ -41,10 +41,6 @@ describe('UniswapV3Factory', () => {
     expect(await factory.owner()).to.eq(wallet.address)
   })
 
-  it('initial pairs length is 0', async () => {
-    expect(await factory.allPairsLength()).to.eq(0)
-  })
-
   it('factory bytecode size', async () => {
     expect(((await waffle.provider.getCode(factory.address)).length - 2) / 2).to.matchSnapshot()
   })
@@ -56,12 +52,8 @@ describe('UniswapV3Factory', () => {
   })
 
   it('initial enabled fee amounts', async () => {
-    expect(await factory.allEnabledFeeAmountsLength()).to.eq(3)
-    expect(await factory.allEnabledFeeAmounts(0)).to.eq(FeeAmount.LOW)
     expect(await factory.feeAmountTickSpacing(FeeAmount.LOW)).to.eq(TICK_SPACINGS[FeeAmount.LOW])
-    expect(await factory.allEnabledFeeAmounts(1)).to.eq(FeeAmount.MEDIUM)
     expect(await factory.feeAmountTickSpacing(FeeAmount.MEDIUM)).to.eq(TICK_SPACINGS[FeeAmount.MEDIUM])
-    expect(await factory.allEnabledFeeAmounts(2)).to.eq(FeeAmount.HIGH)
     expect(await factory.feeAmountTickSpacing(FeeAmount.HIGH)).to.eq(TICK_SPACINGS[FeeAmount.HIGH])
   })
 
@@ -75,14 +67,12 @@ describe('UniswapV3Factory', () => {
 
     await expect(create)
       .to.emit(factory, 'PairCreated')
-      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address, 1)
+      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
 
     await expect(factory.createPair(tokens[0], tokens[1], feeAmount)).to.be.revertedWith('PAE')
     await expect(factory.createPair(tokens[1], tokens[0], feeAmount)).to.be.revertedWith('PAE')
     expect(await factory.getPair(tokens[0], tokens[1], feeAmount), 'getPair in order').to.eq(create2Address)
     expect(await factory.getPair(tokens[1], tokens[0], feeAmount), 'getPair in reverse').to.eq(create2Address)
-    expect(await factory.allPairs(0), 'first pair in allPairs').to.eq(create2Address)
-    expect(await factory.allPairsLength(), 'number of pairs').to.eq(1)
 
     const pairContractFactory = await ethers.getContractFactory('UniswapV3Pair')
     const pair = pairContractFactory.attach(create2Address)
@@ -173,12 +163,6 @@ describe('UniswapV3Factory', () => {
     it('sets the fee amount in the mapping', async () => {
       await factory.enableFeeAmount(100, 5)
       expect(await factory.feeAmountTickSpacing(100)).to.eq(5)
-    })
-    it('appends to the list', async () => {
-      expect(await factory.allEnabledFeeAmountsLength()).to.eq(3)
-      await factory.enableFeeAmount(100, 5)
-      expect(await factory.allEnabledFeeAmountsLength()).to.eq(4)
-      expect(await factory.allEnabledFeeAmounts(3)).to.eq(100)
     })
     it('emits an event', async () => {
       await expect(factory.enableFeeAmount(100, 5)).to.emit(factory, 'FeeAmountEnabled').withArgs(100, 5)
