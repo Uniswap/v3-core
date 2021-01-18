@@ -45,4 +45,6 @@ interface IUniswapV3PairActions {
         uint256 amount1,
         bytes calldata data
     ) external;
+
+    function increaseObservationCardinality(uint16 observationCardinality) external;
 }
