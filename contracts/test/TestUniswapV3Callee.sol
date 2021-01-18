@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
+pragma abicoder v2;
 
 import '../interfaces/IERC20.sol';
 
@@ -9,6 +10,7 @@ import '../interfaces/callback/IUniswapV3MintCallback.sol';
 import '../interfaces/callback/IUniswapV3SwapCallback.sol';
 
 import '../interfaces/IUniswapV3Pair.sol';
+import '../interfaces/pair/IUniswapV3PairActions.sol';
 
 contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
     using SafeCast for uint256;
@@ -18,7 +20,15 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount0In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, true, amount0In.toInt256(), 0, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(
+            IUniswapV3PairActions.SwapParams({
+                recipient: recipient,
+                zeroForOne: true,
+                amountSpecified: amount0In.toInt256(),
+                sqrtPriceLimitX96: 0,
+                data: abi.encode(msg.sender)
+            })
+        );
     }
 
     function swap0ForExact1(
@@ -26,7 +36,15 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, true, -amount1Out.toInt256(), 0, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(
+            IUniswapV3PairActions.SwapParams({
+                recipient: recipient,
+                zeroForOne: true,
+                amountSpecified: -amount1Out.toInt256(),
+                sqrtPriceLimitX96: 0,
+                data: abi.encode(msg.sender)
+            })
+        );
     }
 
     function swapExact1For0(
@@ -34,7 +52,15 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount1In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, false, amount1In.toInt256(), uint160(-1), abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(
+            IUniswapV3PairActions.SwapParams({
+                recipient: recipient,
+                zeroForOne: false,
+                amountSpecified: amount1In.toInt256(),
+                sqrtPriceLimitX96: uint160(-1),
+                data: abi.encode(msg.sender)
+            })
+        );
     }
 
     function swap1ForExact0(
@@ -42,7 +68,15 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         uint256 amount0Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, false, -amount0Out.toInt256(), uint160(-1), abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(
+            IUniswapV3PairActions.SwapParams({
+                recipient: recipient,
+                zeroForOne: false,
+                amountSpecified: -amount0Out.toInt256(),
+                sqrtPriceLimitX96: uint160(-1),
+                data: abi.encode(msg.sender)
+            })
+        );
     }
 
     function swapToLowerSqrtPrice(
@@ -51,11 +85,13 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         address recipient
     ) external {
         IUniswapV3Pair(pair).swap(
-            recipient,
-            true,
-            int256(2**255 - 1), // max int256
-            sqrtPriceX96,
-            abi.encode(msg.sender)
+            IUniswapV3PairActions.SwapParams({
+                recipient: recipient,
+                zeroForOne: true,
+                amountSpecified: int256(2**255 - 1),
+                sqrtPriceLimitX96: sqrtPriceX96,
+                data: abi.encode(msg.sender)
+            })
         );
     }
 
@@ -68,11 +104,13 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback {
         // amountSpecified < (2**160 - sqrtQ + 1) * l / 2**96
         // the amountSpecified below always satisfies this
         IUniswapV3Pair(pair).swap(
-            recipient,
-            false,
-            int256((2**160 - sqrtPriceX96 + 1) / 2**96 - 1),
-            sqrtPriceX96,
-            abi.encode(msg.sender)
+            IUniswapV3PairActions.SwapParams({
+                recipient: recipient,
+                zeroForOne: false,
+                amountSpecified: int256((2**160 - sqrtPriceX96 + 1) / 2**96 - 1),
+                sqrtPriceLimitX96: sqrtPriceX96,
+                data: abi.encode(msg.sender)
+            })
         );
     }
 

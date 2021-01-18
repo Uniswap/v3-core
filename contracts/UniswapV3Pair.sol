@@ -453,40 +453,38 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 feeAmount;
     }
 
-    // positive (negative) numbers specify exact input (output) amounts
-    function swap(
-        address recipient,
-        bool zeroForOne,
-        int256 amountSpecified,
-        uint160 sqrtPriceLimitX96,
-        bytes calldata data
-    ) external override {
-        require(amountSpecified != 0, 'AS');
+    function swap(SwapParams calldata params) external override {
+        require(params.amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
 
         require(_slot0.unlocked, 'LOK');
-        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
+        require(
+            params.zeroForOne
+                ? params.sqrtPriceLimitX96 < _slot0.sqrtPriceX96
+                : params.sqrtPriceLimitX96 > _slot0.sqrtPriceX96,
+            'SPL'
+        );
 
         slot0.unlocked = false;
 
         SwapCache memory cache =
             SwapCache({slot0Start: _slot0, liquidityStart: liquidity, blockTimestamp: _blockTimestamp()});
 
-        bool exactInput = amountSpecified > 0;
+        bool exactInput = params.amountSpecified > 0;
 
         SwapState memory state =
             SwapState({
-                amountSpecifiedRemaining: amountSpecified,
+                amountSpecifiedRemaining: params.amountSpecified,
                 amountCalculated: 0,
                 sqrtPriceX96: cache.slot0Start.sqrtPriceX96,
                 tick: cache.slot0Start.tick,
-                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
+                feeGrowthGlobalX128: params.zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
                 liquidity: cache.liquidityStart
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
-        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
+        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != params.sqrtPriceLimitX96) {
             StepComputations memory step;
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
@@ -494,7 +492,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
             (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
                 state.tick,
                 tickSpacing,
-                zeroForOne
+                params.zeroForOne
             );
 
             // get the price for the next tick
@@ -502,8 +500,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
-                (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)
-                    ? sqrtPriceLimitX96
+                (
+                    params.zeroForOne
+                        ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+                        : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
+                )
+                    ? params.sqrtPriceLimitX96
                     : step.sqrtPriceNextX96,
                 state.liquidity,
                 state.amountSpecifiedRemaining,
@@ -524,25 +526,25 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
-                require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
+                require(params.zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
 
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     int128 liquidityDelta =
                         ticks.cross(
                             step.tickNext,
-                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
-                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
+                            (params.zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
+                            (params.zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
                             cache.blockTimestamp
                         );
 
                     // update liquidity, subtract from right to left, add from left to right
-                    state.liquidity = zeroForOne
+                    state.liquidity = params.zeroForOne
                         ? state.liquidity.subDelta(liquidityDelta)
                         : state.liquidity.addDelta(liquidityDelta);
                 }
 
-                state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
+                state.tick = params.zeroForOne ? step.tickNext - 1 : step.tickNext;
             } else {
                 // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), but haven't moved
                 if (state.sqrtPriceX96 != step.sqrtPriceStartX96)
@@ -568,29 +570,30 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
-        zeroForOne ? feeGrowthGlobal0X128 = state.feeGrowthGlobalX128 : feeGrowthGlobal1X128 = state
+        params.zeroForOne ? feeGrowthGlobal0X128 = state.feeGrowthGlobalX128 : feeGrowthGlobal1X128 = state
             .feeGrowthGlobalX128;
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
             exactInput
-                ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
-                : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);
+                ? (params.amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
+                : (state.amountCalculated, params.amountSpecified - state.amountSpecifiedRemaining);
 
-        (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
+        (address tokenIn, address tokenOut) = params.zeroForOne ? (token0, token1) : (token1, token0);
 
         // transfer the output
-        TransferHelper.safeTransfer(tokenOut, recipient, uint256(-amountOut));
+        TransferHelper.safeTransfer(tokenOut, params.recipient, uint256(-amountOut));
 
         // callback for the input
         uint256 balanceBefore = balanceOfToken(tokenIn);
-        zeroForOne
-            ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, data)
-            : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, data);
+        params.zeroForOne
+            ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, params.data)
+            : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, params.data);
         require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn), 'IIA');
 
-        if (zeroForOne) emit Swap(msg.sender, recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
-        else emit Swap(msg.sender, recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
+        if (params.zeroForOne)
+            emit Swap(msg.sender, params.recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
+        else emit Swap(msg.sender, params.recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
 
         slot0.unlocked = true;
     }

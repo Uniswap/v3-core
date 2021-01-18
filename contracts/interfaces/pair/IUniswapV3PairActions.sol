@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
+pragma abicoder v2;
 
 interface IUniswapV3PairActions {
     // initialize the pair
@@ -31,13 +32,15 @@ interface IUniswapV3PairActions {
         uint128 amount
     ) external returns (uint256 amount0, uint256 amount1);
 
-    function swap(
-        address recipient,
-        bool zeroForOne,
-        int256 amountSpecified,
-        uint160 sqrtPriceLimit,
-        bytes calldata data
-    ) external;
+    struct SwapParams {
+        address recipient;
+        bool zeroForOne;
+        int256 amountSpecified;
+        uint160 sqrtPriceLimitX96;
+        bytes data;
+    }
+
+    function swap(SwapParams calldata params) external;
 
     function increaseObservationCardinality(uint16 observationCardinality) external;
 }

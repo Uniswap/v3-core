@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
+pragma abicoder v2;
 
 import './pair/IUniswapV3PairImmutables.sol';
 import './pair/IUniswapV3PairEvents.sol';
