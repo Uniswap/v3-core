@@ -13,11 +13,6 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
     uint24[] public override allEnabledFeeAmounts;
 
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPair;
-    address[] public override allPairs;
-
-    function allPairsLength() external view override returns (uint256) {
-        return allPairs.length;
-    }
 
     function allEnabledFeeAmountsLength() external view override returns (uint256) {
         return allEnabledFeeAmounts.length;
@@ -44,11 +39,10 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         require(tickSpacing != 0, 'FNA');
         require(getPair[token0][token1][fee] == address(0), 'PAE');
         pair = deploy(address(this), token0, token1, fee, tickSpacing);
-        allPairs.push(pair);
         getPair[token0][token1][fee] = pair;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
         getPair[token1][token0][fee] = pair;
-        emit PairCreated(token0, token1, fee, tickSpacing, pair, allPairs.length);
+        emit PairCreated(token0, token1, fee, tickSpacing, pair);
     }
 
     function setOwner(address _owner) external override {
