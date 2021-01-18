@@ -34,7 +34,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
-    using Oracle for Oracle.Observation[65536];
+    using Oracle for Oracle.Observation[65535];
 
     address public immutable override factory;
     address public immutable override token0;
@@ -77,7 +77,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint128 public override liquidity;
 
     // see Oracle.sol
-    Oracle.Observation[65536] public override observations;
+    Oracle.Observation[65535] public override observations;
 
     // see TickBitmap.sol
     mapping(int16 => uint256) public override tickBitmap;

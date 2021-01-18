@@ -34,7 +34,7 @@ library Oracle {
     // writes an oracle observation to the array, at most once per block
     // indices cycle, and must be kept track of in the parent contract
     function write(
-        Observation[65536] storage self,
+        Observation[65535] storage self,
         uint16 index,
         uint32 blockTimestamp,
         int24 tick,
@@ -64,7 +64,7 @@ library Oracle {
     // the answer _must_ be contained in the array
     // note that even though we're not modifying self, it must be passed by ref to save gas
     function binarySearch(
-        Observation[65536] storage self,
+        Observation[65535] storage self,
         uint32 target,
         uint16 index,
         uint16 cardinality
@@ -108,7 +108,7 @@ library Oracle {
 
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     function getSurroundingObservations(
-        Observation[65536] storage self,
+        Observation[65535] storage self,
         uint32 current,
         uint32 target,
         int24 tick,
@@ -148,7 +148,7 @@ library Oracle {
 
     // constructs a counterfactual observation as of a particular time in the past, as long as we have observations before then
     function scry(
-        Observation[65536] storage self,
+        Observation[65535] storage self,
         uint32 current,
         uint32 secondsAgo,
         int24 tick,
