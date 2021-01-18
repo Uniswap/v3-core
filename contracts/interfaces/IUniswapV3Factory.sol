@@ -8,16 +8,11 @@ interface IUniswapV3Factory {
         address indexed token1,
         uint24 indexed fee,
         int24 tickSpacing,
-        address pair,
-        uint256 index
+        address pair
     );
     event FeeAmountEnabled(uint24 indexed fee, int24 indexed tickSpacing);
 
     function owner() external view returns (address);
-
-    function allPairs(uint256) external view returns (address pair);
-
-    function allPairsLength() external view returns (uint256);
 
     function allEnabledFeeAmounts(uint256) external view returns (uint24);
 

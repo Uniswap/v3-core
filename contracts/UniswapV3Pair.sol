@@ -9,7 +9,7 @@ import './libraries/SafeMath.sol';
 import './libraries/SignedSafeMath.sol';
 
 import './libraries/SafeCast.sol';
-import './libraries/MixedSafeMath.sol';
+import './libraries/LiquidityMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
@@ -31,10 +31,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
     using SafeCast for uint256;
-    using MixedSafeMath for uint128;
+    using LiquidityMath for uint128;
     using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
+    using Position for Position.Info;
     using Oracle for Oracle.Observation[65535];
 
     address public immutable override factory;
@@ -212,12 +213,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
     ) private {
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
 
-        if (liquidityDelta < 0) {
-            require(position.liquidity >= uint128(-liquidityDelta), 'CP');
-        } else if (liquidityDelta == 0) {
-            require(position.liquidity > 0, 'NP'); // disallow updates for 0 liquidity positions
-        }
-
         uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
         uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
         uint32 blockTimestamp = _blockTimestamp();
@@ -250,54 +245,23 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
-        // calculate accumulated fees
-        uint256 feesOwed0 =
-            FullMath.mulDiv(
-                feeGrowthInside0X128 - position.feeGrowthInside0LastX128,
-                position.liquidity,
-                FixedPoint128.Q128
-            );
-        uint256 feesOwed1 =
-            FullMath.mulDiv(
-                feeGrowthInside1X128 - position.feeGrowthInside1LastX128,
-                position.liquidity,
-                FixedPoint128.Q128
-            );
+        // todo: better naming for these variables
+        (uint256 feeProtocol0, uint256 feeProtocol1) =
+            position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
+        if (feeProtocol0 > 0) protocolFees0 += feeProtocol0;
+        if (feeProtocol1 > 0) protocolFees1 += feeProtocol1;
 
-        // collect protocol fee
-        uint8 feeProtocol = slot0.feeProtocol;
-        if (feeProtocol > 0) {
-            uint256 fee0 = feesOwed0 / feeProtocol;
-            feesOwed0 -= fee0;
-            protocolFees0 += fee0;
-
-            uint256 fee1 = feesOwed1 / feeProtocol;
-            feesOwed1 -= fee1;
-            protocolFees1 += fee1;
-        }
-
-        // update the position
-        position.liquidity = uint128(position.liquidity.addi(liquidityDelta));
-        position.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-        position.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        position.feesOwed0 += feesOwed0;
-        position.feesOwed1 += feesOwed1;
-
-        // clear any tick or position data that is no longer needed
+        // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
             if (flippedLower) ticks.clear(tickLower);
             if (flippedUpper) ticks.clear(tickUpper);
-            if (position.liquidity == 0) {
-                delete position.feeGrowthInside0LastX128;
-                delete position.feeGrowthInside1LastX128;
-            }
         }
     }
 
     function collect(
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external override lock returns (uint256 amount0, uint256 amount1) {
@@ -435,7 +399,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // downcasting is safe because of gross liquidity checks
-                liquidity = uint128(liquidityBefore.addi(params.liquidityDelta));
+                liquidity = liquidityBefore.addDelta(params.liquidityDelta);
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -492,10 +456,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // positive (negative) numbers specify exact input (output) amounts
     function swap(
+        address recipient,
         bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
-        address recipient,
         bytes calldata data
     ) external override {
         require(amountSpecified != 0, 'AS');
@@ -573,10 +537,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             cache.blockTimestamp
                         );
 
-                    // update liquidity, subi from right to left, addi from left to right
-                    zeroForOne
-                        ? state.liquidity = uint128(state.liquidity.subi(liquidityDelta))
-                        : state.liquidity = uint128(state.liquidity.addi(liquidityDelta));
+                    // update liquidity, subtract from right to left, add from left to right
+                    state.liquidity = zeroForOne
+                        ? state.liquidity.subDelta(liquidityDelta)
+                        : state.liquidity.addDelta(liquidityDelta);
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
