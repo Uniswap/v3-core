@@ -684,11 +684,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);
 
-        if (flash0) require(balance0Before.add(fee0) <= balance0());
-        if (flash1) require(balance1Before.add(fee1) <= balance1());
-
-        if (flash0) feeGrowthGlobal0X128 += FullMath.mulDiv(fee0, FixedPoint128.Q128, _liquidity);
-        if (flash1) feeGrowthGlobal1X128 += FullMath.mulDiv(fee1, FixedPoint128.Q128, _liquidity);
+        if (flash0) {
+            require(balance0Before.add(fee0) <= balance0());
+            feeGrowthGlobal0X128 += FullMath.mulDiv(fee0, FixedPoint128.Q128, _liquidity);
+        }
+        if (flash1) {
+            require(balance1Before.add(fee1) <= balance1());
+            feeGrowthGlobal1X128 += FullMath.mulDiv(fee1, FixedPoint128.Q128, _liquidity);
+        }
 
         emit Flash(msg.sender, recipient, amount0, amount1);
     }
