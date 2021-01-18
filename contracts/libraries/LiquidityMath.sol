@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0;
 
 import './SafeMath.sol';
-import './SafeCast.sol';
 
 // contains functions for applying signed liquidity delta values to unsigned liquidity values
 library LiquidityMath {
