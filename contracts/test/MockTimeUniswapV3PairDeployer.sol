@@ -16,7 +16,7 @@ contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
 
     Parameters public override parameters;
 
-    event PairCreated(address pair);
+    event PairDeployed(address pair);
 
     function deploy(
         address factory,
@@ -29,7 +29,7 @@ contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
         pair = address(
             new MockTimeUniswapV3Pair{salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing))}()
         );
-        emit PairCreated(pair);
+        emit PairDeployed(pair);
         delete parameters;
     }
 }
