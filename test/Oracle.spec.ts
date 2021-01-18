@@ -32,13 +32,15 @@ async function setOracle(
   index: number,
   time = 0,
   tick = 0,
-  liquidity = 0
+  liquidity = 0,
+  cardinality = 1024,
+  target = 1024
 ) {
   await Promise.all([
     oracle.setObservations(observations.slice(0, 341), 0, index),
     oracle.setObservations(observations.slice(341, 682), 341, index),
     oracle.setObservations(observations.slice(682, 1024), 682, index),
-    oracle.setOracleData(time, tick, liquidity, 1024, 1024),
+    oracle.setOracleData(time, tick, liquidity, cardinality, target),
   ])
 }
 
@@ -114,6 +116,66 @@ describe('Oracle', () => {
       let oracle: OracleTest
       beforeEach('deploy test oracle', async () => {
         oracle = await loadFixture(oracleFixture)
+      })
+
+      describe('advancing cardinality target', () => {
+        // TODO add more test cases here
+        it('simple advance successful', async () => {
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 0,
+                tickCumulative: 0,
+                liquidityCumulative: 0,
+                initialized: true,
+              },
+            ],
+            0,
+            13,
+            2,
+            3,
+            1,
+            1
+          )
+
+          await oracle.write(5, 5)
+
+          const observation = await oracle.observations(0)
+          expect(observation.blockTimestamp).to.be.eq(13)
+          expect(observation.tickCumulative).to.be.eq(26)
+          expect(observation.liquidityCumulative).to.be.eq(39)
+          expect(observation.initialized).to.be.true
+
+          await setOracle(
+            oracle,
+            [
+              {
+                blockTimestamp: 13,
+                tickCumulative: 26,
+                liquidityCumulative: 39,
+                initialized: true,
+              },
+            ],
+            0,
+            14,
+            5,
+            5,
+            1,
+            2
+          )
+
+          await oracle.write(5, 5)
+
+          const observation0 = await oracle.observations(0)
+          expect(observation0).to.deep.eq(observation)
+
+          const observation1 = await oracle.observations(1)
+          expect(observation1.blockTimestamp).to.be.eq(14)
+          expect(observation1.tickCumulative).to.be.eq(31)
+          expect(observation1.liquidityCumulative).to.be.eq(44)
+          expect(observation1.initialized).to.be.true
+        })
       })
 
       describe('failures', () => {
