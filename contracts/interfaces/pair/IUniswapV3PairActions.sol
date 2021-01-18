@@ -16,9 +16,9 @@ interface IUniswapV3PairActions {
 
     // collect fees
     function collect(
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external returns (uint256 amount0, uint256 amount1);
@@ -32,10 +32,10 @@ interface IUniswapV3PairActions {
     ) external returns (uint256 amount0, uint256 amount1);
 
     function swap(
+        address recipient,
         bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimit,
-        address recipient,
         bytes calldata data
     ) external;
 
