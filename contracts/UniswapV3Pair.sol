@@ -258,9 +258,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function collect(
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
-        address recipient,
         uint256 amount0Requested,
         uint256 amount1Requested
     ) external override lock returns (uint256 amount0, uint256 amount1) {
@@ -455,10 +455,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     // positive (negative) numbers specify exact input (output) amounts
     function swap(
+        address recipient,
         bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
-        address recipient,
         bytes calldata data
     ) external override {
         require(amountSpecified != 0, 'AS');
