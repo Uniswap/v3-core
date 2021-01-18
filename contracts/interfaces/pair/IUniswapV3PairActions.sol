@@ -38,4 +38,6 @@ interface IUniswapV3PairActions {
         address recipient,
         bytes calldata data
     ) external;
+
+    function increaseObservationCardinality(uint16 observationCardinality) external;
 }

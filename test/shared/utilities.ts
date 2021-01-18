@@ -12,8 +12,6 @@ export const getMaxLiquidityPerTick = (tickSpacing: number) =>
     .sub(1)
     .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
 
-export const NUMBER_OF_ORACLE_OBSERVATIONS = 1024
-
 export enum FeeAmount {
   LOW = 600,
   MEDIUM = 3000,
