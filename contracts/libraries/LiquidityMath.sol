@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 import './SafeMath.sol';
 import './SafeCast.sol';
 
-// contains functions for applying liquidity delta values which are signed integers, to liquidity values, which are signed
+// contains functions for applying signed liquidity delta values to unsigned liquidity values
 library LiquidityMath {
     function toUint128(uint256 y) private pure returns (uint128 z) {
         require((z = uint128(y)) == y, 'DO');
