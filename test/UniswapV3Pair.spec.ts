@@ -817,7 +817,7 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -tickSpacing
       const upperTick = tickSpacing
       await mint(wallet.address, lowerTick, upperTick, expandTo18Decimals(1000))
-      await expect(pair.burn(wallet.address, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith('CP')
+      await expect(pair.burn(wallet.address, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith('LS')
     })
 
     it('collect fees within the current price after swap', async () => {

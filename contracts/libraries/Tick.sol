@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 import './SqrtTickMath.sol';
 import './SafeCast.sol';
-import './MixedSafeMath.sol';
+import './LiquidityMath.sol';
 import './SignedSafeMath.sol';
 
 library Tick {
@@ -104,7 +104,7 @@ library Tick {
 
         if (liquidityDelta != 0) {
             uint128 liquidityGrossBefore = info.liquidityGross;
-            uint128 liquidityGrossAfter = SafeCast.toUint128(MixedSafeMath.addi(liquidityGrossBefore, liquidityDelta));
+            uint128 liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta);
 
             require(liquidityGrossAfter <= maxLiquidity, 'LO');
 
