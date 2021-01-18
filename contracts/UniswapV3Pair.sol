@@ -290,6 +290,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    /// @notice Collects the fees due to the owner of a given position and transfers them to the recipient.
+    /// @param tickLower The lower boundary tick of the position.
+    /// @param tickUpper The upper boundary tick of the position.
+    /// @param recipient The recipient to which the fee dues will be transferred.
+    /// @param amount0Requested The amount of requested fee dues collected in token0.
+    /// @param amount1Requested The amount of requested fee dues collected in token1.
     function collect(
         int24 tickLower,
         int24 tickUpper,
