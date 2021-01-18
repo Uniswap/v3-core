@@ -507,9 +507,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         );
 
                     // update liquidity, subi from right to left, addi from left to right
-                    zeroForOne ? state.liquidity = state.liquidity.subi(liquidityDelta) : state.liquidity = state
-                        .liquidity
-                        .addi(liquidityDelta);
+                    state.liquidity = zeroForOne
+                        ? state.liquidity.subi(liquidityDelta)
+                        : state.liquidity.addi(liquidityDelta);
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
