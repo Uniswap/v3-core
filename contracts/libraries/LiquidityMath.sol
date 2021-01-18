@@ -10,11 +10,11 @@ library LiquidityMath {
         require((z = uint128(y)) == y, 'DO');
     }
 
-    function addi(uint128 x, int128 y) internal pure returns (uint128 z) {
+    function addDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
         z = toUint128(y < 0 ? SafeMath.sub(x, uint256(-y)) : SafeMath.add(x, uint256(y)));
     }
 
-    function subi(uint128 x, int128 y) internal pure returns (uint128 z) {
+    function subDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
         z = toUint128(y < 0 ? SafeMath.add(x, uint256(-y)) : SafeMath.sub(x, uint256(y)));
     }
 }

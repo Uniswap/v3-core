@@ -368,7 +368,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 );
 
                 // downcasting is safe because of gross liquidity checks
-                liquidity = liquidityBefore.addi(params.liquidityDelta);
+                liquidity = liquidityBefore.addDelta(params.liquidityDelta);
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -506,10 +506,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             cache.blockTimestamp
                         );
 
-                    // update liquidity, subi from right to left, addi from left to right
+                    // update liquidity, subtract from right to left, add from left to right
                     state.liquidity = zeroForOne
-                        ? state.liquidity.subi(liquidityDelta)
-                        : state.liquidity.addi(liquidityDelta);
+                        ? state.liquidity.subDelta(liquidityDelta)
+                        : state.liquidity.addDelta(liquidityDelta);
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;

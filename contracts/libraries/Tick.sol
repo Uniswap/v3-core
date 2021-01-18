@@ -104,7 +104,7 @@ library Tick {
 
         if (liquidityDelta != 0) {
             uint128 liquidityGrossBefore = info.liquidityGross;
-            uint128 liquidityGrossAfter = LiquidityMath.addi(liquidityGrossBefore, liquidityDelta);
+            uint128 liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta);
 
             require(liquidityGrossAfter <= maxLiquidity, 'LO');
 

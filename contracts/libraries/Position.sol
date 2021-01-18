@@ -60,7 +60,7 @@ library Position {
             protocolFees1 = fee1;
         }
 
-        uint128 liquidityNext = LiquidityMath.addi(self.liquidity, liquidityDelta);
+        uint128 liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta);
 
         // update the position
         self.liquidity = liquidityNext;
