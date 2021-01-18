@@ -12,8 +12,6 @@ export const getMaxLiquidityPerTick = (tickSpacing: number) =>
     .sub(1)
     .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
 
-export const NUMBER_OF_ORACLE_OBSERVATIONS = 1024
-
 export enum FeeAmount {
   LOW = 600,
   MEDIUM = 3000,
@@ -72,6 +70,11 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
+export type FlashFunction = (
+  amount0: BigNumberish,
+  amount1: BigNumberish,
+  to: Wallet | string
+) => Promise<ContractTransaction>
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
@@ -86,6 +89,7 @@ export interface PairFunctions {
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
   swap1ForExact0: SwapFunction
+  flash: FlashFunction
   mint: MintFunction
 }
 export function createPairFunctions({
@@ -166,6 +170,10 @@ export function createPairFunctions({
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
   }
 
+  const flash: FlashFunction = async (amount0, amount1, to) => {
+    return swapTarget.flash(pair.address, typeof to === 'string' ? to : to.address, amount0, amount1)
+  }
+
   return {
     swapToLowerPrice,
     swapToHigherPrice,
@@ -174,5 +182,6 @@ export function createPairFunctions({
     swapExact1For0,
     swap1ForExact0,
     mint,
+    flash,
   }
 }
