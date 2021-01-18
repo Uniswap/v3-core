@@ -1394,6 +1394,9 @@ describe('UniswapV3Pair', () => {
           .to.emit(token1, 'Transfer')
           .withArgs(pair.address, other.address, balance1)
       })
+      it('fails if both amounts are 0', async () => {
+        await expect(flash(0, 0, other.address)).to.be.revertedWith('A')
+      })
       it('fails if flash amount is greater than token balance', async () => {
         await expect(flash(balance0.add(1), balance1, other.address)).to.be.revertedWith('')
         await expect(flash(balance0, balance1.add(1), other.address)).to.be.revertedWith('')

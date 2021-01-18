@@ -627,32 +627,37 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount1,
         bytes calldata data
     ) external override lock {
-        require(amount0 > 0 || amount1 > 0, 'A');
+        bool flash0 = amount0 > 0;
+        bool flash1 = amount1 > 0;
+        require(flash0 || flash1, 'A');
+
         uint128 _liquidity = liquidity;
-        // no liquidity to attribute fees to
         require(_liquidity > 0, 'L');
 
-        uint256 fee0 = amount0 > 0 ? SqrtPriceMath.mulDivRoundingUp(amount0, fee, 1e6) : 0;
-        uint256 fee1 = amount1 > 0 ? SqrtPriceMath.mulDivRoundingUp(amount1, fee, 1e6) : 0;
-
+        uint256 fee0;
+        uint256 fee1;
         uint256 balance0Before;
         uint256 balance1Before;
 
-        if (amount0 > 0) balance0Before = balance0();
-        if (amount1 > 0) balance1Before = balance1();
+        if (flash0) {
+            balance0Before = balance0();
+            fee0 = SqrtPriceMath.mulDivRoundingUp(amount0, fee, 1e6);
+        }
+        if (flash1) {
+            balance1Before = balance1();
+            fee1 = SqrtPriceMath.mulDivRoundingUp(amount1, fee, 1e6);
+        }
 
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+        if (flash0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (flash1) TransferHelper.safeTransfer(token1, recipient, amount1);
 
         IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);
 
-        if (amount0 > 0) require(balance0Before.add(fee0) <= balance0());
-        if (amount1 > 0) require(balance1Before.add(fee1) <= balance1());
+        if (flash0) require(balance0Before.add(fee0) <= balance0());
+        if (flash1) require(balance1Before.add(fee1) <= balance1());
 
-        if (fee0 > 0 || fee1 > 0) {
-            if (fee0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(fee0, FixedPoint128.Q128, _liquidity);
-            if (fee1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(fee1, FixedPoint128.Q128, _liquidity);
-        }
+        if (flash0) feeGrowthGlobal0X128 += FullMath.mulDiv(fee0, FixedPoint128.Q128, _liquidity);
+        if (flash1) feeGrowthGlobal1X128 += FullMath.mulDiv(fee1, FixedPoint128.Q128, _liquidity);
 
         emit Flash(msg.sender, recipient, amount0, amount1);
     }
