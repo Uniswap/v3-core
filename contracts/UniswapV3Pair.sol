@@ -136,6 +136,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
+    // increases the target observation cardinality, callable by anyone. does not lock the contract because
+    // it is always safe to call, even within the callback of a swap or mint.
     function increaseObservationCardinality(uint16 observationCardinality) external override {
         uint16 target = slot0.observationCardinalityTarget;
         require(observationCardinality > target, 'LTE');
