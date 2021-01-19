@@ -19,6 +19,7 @@ import {
   SwapFunction,
   MintFunction,
   getMaxLiquidityPerTick,
+  FlashFunction,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
@@ -54,6 +55,7 @@ describe('UniswapV3Pair', () => {
   let maxTick: number
 
   let mint: MintFunction
+  let flash: FlashFunction
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
   let createPair: ThenArg<ReturnType<typeof pairFixture>>['createPair']
@@ -76,6 +78,7 @@ describe('UniswapV3Pair', () => {
         swapExact1For0,
         swap1ForExact0,
         mint,
+        flash,
       } = createPairFunctions({
         token0,
         token1,
@@ -1340,5 +1343,122 @@ describe('UniswapV3Pair', () => {
     expect((await pair.slot0()).sqrtPriceX96, 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
     expect(await pair.liquidity(), 'pair has run tick transition and liquidity changed').to.eq(liquidity.mul(2))
     expect(secondsOutsideAfter, 'the tick transition updated the seconds outside').to.not.eq(secondsOutsideBefore)
+  })
+
+  describe('#flash', () => {
+    it('fails if not initialized', async () => {
+      await expect(flash(100, 200, other.address)).to.be.revertedWith('LOK')
+      await expect(flash(100, 0, other.address)).to.be.revertedWith('LOK')
+      await expect(flash(0, 200, other.address)).to.be.revertedWith('LOK')
+    })
+    it('fails if no liquidity', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await expect(flash(100, 200, other.address)).to.be.revertedWith('L')
+      await expect(flash(100, 0, other.address)).to.be.revertedWith('L')
+      await expect(flash(0, 200, other.address)).to.be.revertedWith('L')
+    })
+    describe('after liquidity added', () => {
+      let balance0: BigNumber
+      let balance1: BigNumber
+      beforeEach('add some tokens', async () => {
+        await initializeAtZeroTick(pair)
+        ;[balance0, balance1] = await Promise.all([token0.balanceOf(pair.address), token1.balanceOf(pair.address)])
+      })
+
+      it('emits an event', async () => {
+        await expect(flash(1001, 2001, other.address))
+          .to.emit(pair, 'Flash')
+          .withArgs(swapTarget.address, other.address, 1001, 2001, 4, 7)
+      })
+
+      it('transfers the amount0 to the recipient', async () => {
+        await expect(flash(100, 200, other.address))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, other.address, 100)
+      })
+      it('transfers the amount1 to the recipient', async () => {
+        await expect(flash(100, 200, other.address))
+          .to.emit(token1, 'Transfer')
+          .withArgs(pair.address, other.address, 200)
+      })
+      it('can flash only token0', async () => {
+        await expect(flash(101, 0, other.address))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, other.address, 101)
+          .to.not.emit(token1, 'Transfer')
+      })
+      it('can flash only token1', async () => {
+        await expect(flash(0, 102, other.address))
+          .to.emit(token1, 'Transfer')
+          .withArgs(pair.address, other.address, 102)
+          .to.not.emit(token0, 'Transfer')
+      })
+      it('can flash entire token balance', async () => {
+        await expect(flash(balance0, balance1, other.address))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, other.address, balance0)
+          .to.emit(token1, 'Transfer')
+          .withArgs(pair.address, other.address, balance1)
+      })
+      it('no-op if both amounts are 0', async () => {
+        await expect(flash(0, 0, other.address)).to.not.emit(token0, 'Transfer').to.not.emit(token1, 'Transfer')
+      })
+      it('fails if flash amount is greater than token balance', async () => {
+        await expect(flash(balance0.add(1), balance1, other.address)).to.be.revertedWith('')
+        await expect(flash(balance0, balance1.add(1), other.address)).to.be.revertedWith('')
+      })
+      it('calls the flash callback on the sender with correct fee amounts', async () => {
+        await expect(flash(1001, 2002, other.address)).to.emit(swapTarget, 'FlashCallback').withArgs(4, 7)
+      })
+      it('increases the fee growth by the expected amount', async () => {
+        await flash(1001, 2002, other.address)
+        expect(await pair.feeGrowthGlobal0X128()).to.eq(
+          BigNumber.from(4).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+        )
+        expect(await pair.feeGrowthGlobal1X128()).to.eq(
+          BigNumber.from(7).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+        )
+      })
+      it('fails if original balance not returned in either token', async () => {
+        await expect(flash(1000, 0, other.address, 999, 0)).to.be.revertedWith('')
+        await expect(flash(0, 1000, other.address, 0, 999)).to.be.revertedWith('')
+      })
+      it('fails if underpays either token', async () => {
+        await expect(flash(1000, 0, other.address, 1002, 0)).to.be.revertedWith('F0')
+        await expect(flash(0, 1000, other.address, 0, 1002)).to.be.revertedWith('F1')
+      })
+      it('allows donating token0', async () => {
+        await expect(flash(0, 0, constants.AddressZero, 567, 0))
+          .to.emit(token0, 'Transfer')
+          .withArgs(wallet.address, pair.address, 567)
+          .to.not.emit(token1, 'Transfer')
+        expect(await pair.feeGrowthGlobal0X128()).to.eq(
+          BigNumber.from(567).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+        )
+      })
+      it('allows donating token1', async () => {
+        await expect(flash(0, 0, constants.AddressZero, 0, 678))
+          .to.emit(token1, 'Transfer')
+          .withArgs(wallet.address, pair.address, 678)
+          .to.not.emit(token0, 'Transfer')
+        expect(await pair.feeGrowthGlobal1X128()).to.eq(
+          BigNumber.from(678).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+        )
+      })
+      it('allows donating token0 and token1 together', async () => {
+        await expect(flash(0, 0, constants.AddressZero, 789, 1234))
+          .to.emit(token0, 'Transfer')
+          .withArgs(wallet.address, pair.address, 789)
+          .to.emit(token1, 'Transfer')
+          .withArgs(wallet.address, pair.address, 1234)
+
+        expect(await pair.feeGrowthGlobal0X128()).to.eq(
+          BigNumber.from(789).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+        )
+        expect(await pair.feeGrowthGlobal1X128()).to.eq(
+          BigNumber.from(1234).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+        )
+      })
+    })
   })
 })
