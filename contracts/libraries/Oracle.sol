@@ -67,7 +67,10 @@ library Oracle {
         self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
     }
 
-    // grow the cardinality array
+    // grow the observations array. observations array length is stored in cardinality and target. cardinality cannot be
+    // changed unless the index is currently the last element of the array, to avoid reordering in all other cases.
+    // the cardinality is either immediately changed if the above is true, or changed on the next write when the write
+    // fills the last index lt current cardinality.
     function grow(
         Observation[65535] storage self,
         uint16 index,
