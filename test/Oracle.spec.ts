@@ -30,7 +30,7 @@ async function checkObservation(
   ).to.deep.eq(observation)
 }
 
-describe.only('Oracle', () => {
+describe('Oracle', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>

@@ -147,7 +147,8 @@ library Oracle {
         beforeOrAt = self[(index + 1) % cardinality];
         if (!beforeOrAt.initialized) {
             beforeOrAt = self[0];
-            require(beforeOrAt.initialized, 'UI');
+            // cardinality should not be > 0 unless at least one observation is initialized
+            assert(beforeOrAt.initialized);
         }
 
         // ensure that the target is greater than the oldest observation (accounting for wrapping)
