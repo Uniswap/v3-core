@@ -96,6 +96,7 @@ describe('Oracle', () => {
       expect(await oracle.cardinality()).to.eq(5)
       expect(await oracle.target()).to.eq(5)
     })
+
     it('does not touch the first slot', async () => {
       await oracle.grow(5)
       await checkObservation(oracle, 0, {
@@ -105,6 +106,7 @@ describe('Oracle', () => {
         initialized: true,
       })
     })
+
     it('adds data to all the slots', async () => {
       await oracle.grow(5)
       for (let i = 1; i < 5; i++) {
@@ -117,12 +119,40 @@ describe('Oracle', () => {
       }
     })
 
-    it('gas for growing by 1 slot', async () => {
+    it('does not change the target when index != cardinality - 1', async () => {
+      await oracle.grow(2)
+      await oracle.grow(5)
+      expect(await oracle.cardinality()).to.eq(2)
+      expect(await oracle.target()).to.eq(5)
+    })
+
+    it('grow after wrap', async () => {
+      await oracle.grow(2)
+      await oracle.update({ advanceTimeBy: 2, liquidity: 1, tick: 1 }) // index is now 1
+      await oracle.update({ advanceTimeBy: 2, liquidity: 1, tick: 1 }) // index is now 0 again
+      expect(await oracle.index()).to.eq(0)
+      await oracle.grow(3)
+      expect(await oracle.index()).to.eq(0)
+      expect(await oracle.cardinality()).to.eq(2)
+      expect(await oracle.target()).to.eq(3)
+    })
+
+    it('gas for growing by 1 slot when index == cardinality - 1', async () => {
       await snapshotGasCost(oracle.grow(2))
     })
 
-    it('gas for growing by 10 slots', async () => {
+    it('gas for growing by 10 slots when index == cardinality - 1', async () => {
       await snapshotGasCost(oracle.grow(11))
+    })
+
+    it('gas for growing by 1 slot when index != cardinality - 1', async () => {
+      await oracle.grow(2)
+      await snapshotGasCost(oracle.grow(3))
+    })
+
+    it('gas for growing by 10 slots when index != cardinality - 1', async () => {
+      await oracle.grow(2)
+      await snapshotGasCost(oracle.grow(12))
     })
   })
 
