@@ -39,5 +39,12 @@ interface IUniswapV3PairActions {
         bytes calldata data
     ) external;
 
+    function flash(
+        address recipient,
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) external;
+
     function increaseObservationCardinality(uint16 observationCardinality) external;
 }

@@ -70,6 +70,13 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
+export type FlashFunction = (
+  amount0: BigNumberish,
+  amount1: BigNumberish,
+  to: Wallet | string,
+  pay0?: BigNumberish,
+  pay1?: BigNumberish
+) => Promise<ContractTransaction>
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
@@ -84,6 +91,7 @@ export interface PairFunctions {
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
   swap1ForExact0: SwapFunction
+  flash: FlashFunction
   mint: MintFunction
 }
 export function createPairFunctions({
@@ -164,6 +172,25 @@ export function createPairFunctions({
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
   }
 
+  const flash: FlashFunction = async (amount0, amount1, to, pay0?: BigNumberish, pay1?: BigNumberish) => {
+    const fee = await pair.fee()
+    if (typeof pay0 === 'undefined') {
+      pay0 = BigNumber.from(amount0)
+        .mul(fee)
+        .add(1e6 - 1)
+        .div(1e6)
+        .add(amount0)
+    }
+    if (typeof pay1 === 'undefined') {
+      pay1 = BigNumber.from(amount1)
+        .mul(fee)
+        .add(1e6 - 1)
+        .div(1e6)
+        .add(amount1)
+    }
+    return swapTarget.flash(pair.address, typeof to === 'string' ? to : to.address, amount0, amount1, pay0, pay1)
+  }
+
   return {
     swapToLowerPrice,
     swapToHigherPrice,
@@ -172,5 +199,6 @@ export function createPairFunctions({
     swapExact1For0,
     swap1ForExact0,
     mint,
+    flash,
   }
 }
