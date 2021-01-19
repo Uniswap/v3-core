@@ -142,7 +142,7 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) private view returns (Observation memory before, Observation memory) {
+    ) private view returns (Observation memory before, Observation memory atOrAfter) {
         // first, set before to the oldest observation, and make sure it's initialized
         before = self[(index + 1) % cardinality];
         if (!before.initialized) {
