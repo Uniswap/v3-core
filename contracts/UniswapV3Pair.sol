@@ -186,20 +186,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
-        Slot0 memory _slot0 =
-            Slot0({
-                sqrtPriceX96: sqrtPriceX96,
-                tick: tick,
-                observationIndex: 0,
-                observationCardinality: 1,
-                observationCardinalityTarget: 1,
-                feeProtocol: 0,
-                unlocked: true
-            });
+        (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
 
-        observations.initialize(_blockTimestamp());
-
-        slot0 = _slot0;
+        slot0 = Slot0({
+            sqrtPriceX96: sqrtPriceX96,
+            tick: tick,
+            observationIndex: 0,
+            observationCardinality: cardinality,
+            observationCardinalityTarget: target,
+            feeProtocol: 0,
+            unlocked: true
+        });
 
         emit Initialized(sqrtPriceX96, tick);
     }
