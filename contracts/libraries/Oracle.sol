@@ -142,32 +142,34 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) private view returns (Observation memory before, Observation memory atOrAfter) {
+    ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
         // first, set before to the oldest observation, and make sure it's initialized
-        before = self[(index + 1) % cardinality];
-        if (!before.initialized) {
-            before = self[0];
-            require(before.initialized, 'UI');
+        beforeOrAt = self[(index + 1) % cardinality];
+        if (!beforeOrAt.initialized) {
+            beforeOrAt = self[0];
+            require(beforeOrAt.initialized, 'UI');
         }
 
         // ensure that the target is greater than the oldest observation (accounting for wrapping)
-        require(before.blockTimestamp < target || (before.blockTimestamp > current && target <= current), 'OLD');
+        require(
+            beforeOrAt.blockTimestamp <= target || (beforeOrAt.blockTimestamp > current && target <= current), 'OLD'
+        );
 
         // now, optimistically set before to the newest observation
-        before = self[index];
+        beforeOrAt = self[index];
 
         // before proceeding, short-circuit if the target equals the newest observation, meaning we're in the same block
         // but an interaction updated the oracle before this tx, so before is actually atOrAfter
-        if (target == before.blockTimestamp) return (index == 0 ? self[cardinality - 1] : self[index - 1], before);
+        if (target == beforeOrAt.blockTimestamp) return (beforeOrAt, atOrAfter);
 
         // adjust for overflow
-        uint256 beforeAdjusted = before.blockTimestamp;
+        uint256 beforeAdjusted = beforeOrAt.blockTimestamp;
         uint256 targetAdjusted = target;
         if (beforeAdjusted > current && targetAdjusted <= current) targetAdjusted += 2**32;
         if (targetAdjusted > current) beforeAdjusted += 2**32;
 
         // once here, check if we're right and return a counterfactual observation for atOrAfter
-        if (beforeAdjusted < targetAdjusted) return (before, transform(before, current, tick, liquidity));
+        if (beforeAdjusted < targetAdjusted) return (beforeOrAt, transform(beforeOrAt, current, tick, liquidity));
 
         // we're wrong, so perform binary search
         return binarySearch(self, target, index, cardinality);
@@ -186,19 +188,24 @@ library Oracle {
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         uint32 target = time - secondsAgo;
 
-        (Observation memory before, Observation memory atOrAfter) =
+        (Observation memory beforeOrAt, Observation memory atOrAfter) =
             getSurroundingObservations(self, time, target, tick, index, liquidity, cardinality);
 
         Oracle.Observation memory at;
-        if (target == atOrAfter.blockTimestamp) {
+        if (target == beforeOrAt.blockTimestamp) {
+            // if we're at the left boundary, make it so
+            at = beforeOrAt;
+        } else if (target == atOrAfter.blockTimestamp) {
             // if we're at the right boundary, make it so
             at = atOrAfter;
         } else {
             // else, adjust counterfactually
-            uint32 delta = atOrAfter.blockTimestamp - before.blockTimestamp;
-            int24 tickDerived = int24((atOrAfter.tickCumulative - before.tickCumulative) / delta);
-            uint128 liquidityDerived = uint128((atOrAfter.liquidityCumulative - before.liquidityCumulative) / delta);
-            at = transform(before, target, tickDerived, liquidityDerived);
+            uint32 delta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
+            int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
+            uint128 liquidityDerived = uint128(
+                (atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / delta
+            );
+            at = transform(beforeOrAt, target, tickDerived, liquidityDerived);
         }
 
         return (at.tickCumulative, at.liquidityCumulative);
