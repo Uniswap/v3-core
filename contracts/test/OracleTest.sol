@@ -30,6 +30,10 @@ contract OracleTest {
         (cardinality, target) = observations.initialize(params.time);
     }
 
+    function advanceTime(uint32 by) public {
+        time += by;
+    }
+
     struct UpdateParams {
         uint32 advanceTimeBy;
         int24 tick;
@@ -38,7 +42,7 @@ contract OracleTest {
 
     // write an observation, then change tick and liquidity
     function update(UpdateParams calldata params) external {
-        time += params.advanceTimeBy;
+        advanceTime(params.advanceTimeBy);
         (index, cardinality) = observations.write(index, time, tick, liquidity, cardinality, target);
         tick = params.tick;
         liquidity = params.liquidity;
