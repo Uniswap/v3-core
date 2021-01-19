@@ -43,14 +43,48 @@ describe('Oracle', () => {
     return (await oracleTestFactory.deploy()) as OracleTest
   }
 
+  describe('#initialize', () => {})
+
+  describe('#grow', () => {})
+
   describe('#write', () => {
     let oracle: OracleTest
-    beforeEach('deploy test oracle', async () => {
-      oracle = await loadFixture(oracleFixture)
+
+    const fixture = async () => {
+      const oracle = await oracleFixture()
       await oracle.initialize({
         time: 0,
         tick: 0,
         liquidity: 0,
+      })
+      return oracle
+    }
+
+    beforeEach('deploy test oracle', async () => {
+      oracle = await loadFixture(fixture)
+    })
+
+    it('single element array gets overwritten', async () => {
+      await oracle.update({ advanceTimeBy: 1, tick: 2, liquidity: 5 })
+      await checkObservation(oracle, 0, {
+        initialized: true,
+        liquidityCumulative: 0,
+        tickCumulative: 0,
+        blockTimestamp: 1,
+      })
+      await oracle.update({ advanceTimeBy: 5, tick: -1, liquidity: 8 })
+      await checkObservation(oracle, 0, {
+        initialized: true,
+        liquidityCumulative: 25,
+        tickCumulative: 10,
+        blockTimestamp: 6,
+      })
+      await oracle.update({ advanceTimeBy: 3, tick: 2, liquidity: 3 })
+      await checkObservation(oracle, 0, {
+        initialized: true,
+        liquidityCumulative: 49,
+        tickCumulative: 7,
+        blockTimestamp: 9,
       })
     })
 
