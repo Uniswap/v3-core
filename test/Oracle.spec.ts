@@ -43,7 +43,33 @@ describe('Oracle', () => {
     return (await oracleTestFactory.deploy()) as OracleTest
   }
 
-  describe('#initialize', () => {})
+  describe('#initialize', () => {
+    let oracle: OracleTest
+    beforeEach(async () => {
+      oracle = await oracleFixture()
+    })
+    it('index is 0', async () => {
+      await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
+      expect(await oracle.index()).to.eq(0)
+    })
+    it('cardinality is 1', async () => {
+      await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
+      expect(await oracle.cardinality()).to.eq(1)
+    })
+    it('target is 1', async () => {
+      await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
+      expect(await oracle.target()).to.eq(1)
+    })
+    it('sets first slot timestamp only', async () => {
+      await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
+      await checkObservation(oracle, 0, {
+        initialized: true,
+        blockTimestamp: 1,
+        tickCumulative: 0,
+        liquidityCumulative: 0,
+      })
+    })
+  })
 
   describe('#grow', () => {})
 
