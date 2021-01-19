@@ -47,6 +47,22 @@ contract OracleEchidnaTest {
         oracle.grow(target);
     }
 
+    function echidna_timeWeightedResultAssertions(uint32 secondsAgo0, uint32 secondsAgo1) external view returns (bool) {
+        require(secondsAgo0 != secondsAgo1);
+        if (secondsAgo0 > secondsAgo1) (secondsAgo0, secondsAgo1) = (secondsAgo1, secondsAgo0);
+
+        uint32 timeElapsed = secondsAgo1 - secondsAgo0;
+
+        (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.scry(secondsAgo0);
+        (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.scry(secondsAgo1);
+        int56 timeWeightedTick = (tickCumulative1 - tickCumulative0) / timeElapsed;
+        uint160 timeWeightedLiquidity = (liquidityCumulative1 - liquidityCumulative0) / timeElapsed;
+        return
+            timeWeightedLiquidity <= type(uint128).max &&
+            timeWeightedTick <= type(int24).max &&
+            timeWeightedTick >= type(int24).min;
+    }
+
     function echidna_indexAlwaysLtCardinality() external view returns (bool) {
         return oracle.index() < oracle.cardinality() || !initialized;
     }
@@ -54,4 +70,6 @@ contract OracleEchidnaTest {
     function echidna_cardinalityAlwaysLteTarget() external view returns (bool) {
         return oracle.cardinality() <= oracle.target();
     }
+
+    // todo: check we can always scry up to oldest observation if initialized
 }
