@@ -7,6 +7,7 @@ import './OracleTest.sol';
 contract OracleEchidnaTest {
     OracleTest private oracle;
 
+    bool initialized;
     uint32 timePassed;
 
     constructor() {
@@ -19,6 +20,7 @@ contract OracleEchidnaTest {
         uint128 liquidity
     ) external {
         oracle.initialize(OracleTest.InitializeParams({time: time, tick: tick, liquidity: liquidity}));
+        initialized = true;
     }
 
     function limitTimePassed(uint32 by) private {
@@ -46,7 +48,7 @@ contract OracleEchidnaTest {
     }
 
     function echidna_indexAlwaysLtCardinality() external view returns (bool) {
-        return oracle.index() < oracle.cardinality();
+        return oracle.index() < oracle.cardinality() || !initialized;
     }
 
     function echidna_cardinalityAlwaysLteTarget() external view returns (bool) {
