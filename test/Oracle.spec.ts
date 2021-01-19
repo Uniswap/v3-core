@@ -30,7 +30,7 @@ async function checkObservation(
   ).to.deep.eq(observation)
 }
 
-describe('Oracle', () => {
+describe.only('Oracle', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>
@@ -210,6 +210,23 @@ describe('Oracle', () => {
         liquidityCumulative: 0,
         initialized: true,
         blockTimestamp: 6,
+      })
+    })
+
+    it('grows cardinality when writing past', async () => {
+      await oracle.grow(2)
+      await oracle.grow(4)
+      expect(await oracle.cardinality()).to.eq(2)
+      await oracle.update({ advanceTimeBy: 3, tick: 5, liquidity: 6 })
+      expect(await oracle.cardinality()).to.eq(2)
+      await oracle.update({ advanceTimeBy: 4, tick: 6, liquidity: 4 })
+      expect(await oracle.cardinality()).to.eq(4)
+      expect(await oracle.index()).to.eq(2)
+      await checkObservation(oracle, 2, {
+        liquidityCumulative: 24,
+        tickCumulative: 20,
+        initialized: true,
+        blockTimestamp: 7,
       })
     })
 
