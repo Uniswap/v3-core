@@ -96,8 +96,8 @@ library Oracle {
         uint16 index,
         uint16 cardinality
     ) private view returns (Observation memory before, Observation memory atOrAfter) {
-        uint16 l = (index + 1) % cardinality;
-        uint16 r = l + cardinality - 1;
+        uint16 l = (index + 1) % cardinality; // oldest observation
+        uint16 r = l + cardinality - 1; // newest observation
         uint16 i;
         while (true) {
             i = (l + r) / 2;
@@ -110,13 +110,13 @@ library Oracle {
                 continue;
             }
 
-            before = i == cardinality ? self[cardinality - 1] : self[(i % cardinality) - 1];
+            before = (i == 0 || i == cardinality) ? self[cardinality - 1] : self[(i % cardinality) - 1];
 
             // check if we've found the answer!
             if (
-                (before.blockTimestamp < target && target <= atOrAfter.blockTimestamp) ||
+                (before.blockTimestamp <= target && target <= atOrAfter.blockTimestamp) ||
                 (before.blockTimestamp > atOrAfter.blockTimestamp &&
-                    (before.blockTimestamp < target || target <= atOrAfter.blockTimestamp))
+                    (before.blockTimestamp <= target || target <= atOrAfter.blockTimestamp))
             ) break;
 
             // adjust for overflow
