@@ -230,6 +230,22 @@ describe.only('Oracle', () => {
       })
     })
 
+    it('wraps around', async () => {
+      await oracle.grow(3)
+      await oracle.update({ advanceTimeBy: 3, tick: 1, liquidity: 2 })
+      await oracle.update({ advanceTimeBy: 4, tick: 2, liquidity: 3 })
+      await oracle.update({ advanceTimeBy: 5, tick: 3, liquidity: 4 })
+
+      expect(await oracle.index()).to.eq(0)
+
+      await checkObservation(oracle, 0, {
+        liquidityCumulative: 23,
+        tickCumulative: 14,
+        initialized: true,
+        blockTimestamp: 12,
+      })
+    })
+
     it('accumulates liquidity', async () => {
       await oracle.grow(4)
 
