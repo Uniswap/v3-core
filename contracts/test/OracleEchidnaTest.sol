@@ -47,7 +47,7 @@ contract OracleEchidnaTest {
         oracle.grow(target);
     }
 
-    function echidna_timeWeightedResultAssertions(uint32 secondsAgo0, uint32 secondsAgo1) external view returns (bool) {
+    function checkTimeWeightedResultAssertions(uint32 secondsAgo0, uint32 secondsAgo1) external view {
         require(secondsAgo0 != secondsAgo1);
         if (secondsAgo0 > secondsAgo1) (secondsAgo0, secondsAgo1) = (secondsAgo1, secondsAgo0);
 
@@ -57,10 +57,9 @@ contract OracleEchidnaTest {
         (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.scry(secondsAgo1);
         int56 timeWeightedTick = (tickCumulative1 - tickCumulative0) / timeElapsed;
         uint160 timeWeightedLiquidity = (liquidityCumulative1 - liquidityCumulative0) / timeElapsed;
-        return
-            timeWeightedLiquidity <= type(uint128).max &&
-            timeWeightedTick <= type(int24).max &&
-            timeWeightedTick >= type(int24).min;
+        assert(timeWeightedLiquidity <= type(uint128).max);
+        assert(timeWeightedTick <= type(int24).max);
+        assert(timeWeightedTick >= type(int24).min);
     }
 
     function echidna_indexAlwaysLtCardinality() external view returns (bool) {
