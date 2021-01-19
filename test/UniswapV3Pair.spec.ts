@@ -1413,6 +1413,10 @@ describe('UniswapV3Pair', () => {
           BigNumber.from(7).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
         )
       })
+      it('fails if underpays either token', async () => {
+        await expect(flash(1000, 0, other.address, true)).to.be.revertedWith('')
+        await expect(flash(0, 1000, other.address, true)).to.be.revertedWith('')
+      })
     })
   })
 })

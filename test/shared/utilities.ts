@@ -73,7 +73,8 @@ export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promis
 export type FlashFunction = (
   amount0: BigNumberish,
   amount1: BigNumberish,
-  to: Wallet | string
+  to: Wallet | string,
+  underpay?: boolean
 ) => Promise<ContractTransaction>
 export type MintFunction = (
   recipient: string,
@@ -170,8 +171,8 @@ export function createPairFunctions({
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
   }
 
-  const flash: FlashFunction = async (amount0, amount1, to) => {
-    return swapTarget.flash(pair.address, typeof to === 'string' ? to : to.address, amount0, amount1)
+  const flash: FlashFunction = async (amount0, amount1, to, underpay = false) => {
+    return swapTarget.flash(pair.address, typeof to === 'string' ? to : to.address, amount0, amount1, underpay)
   }
 
   return {
