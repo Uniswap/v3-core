@@ -1368,7 +1368,7 @@ describe('UniswapV3Pair', () => {
       it('emits an event', async () => {
         await expect(flash(1001, 2001, other.address))
           .to.emit(pair, 'Flash')
-          .withArgs(swapTarget.address, other.address, 1001, 2001, 3, 7)
+          .withArgs(swapTarget.address, other.address, 1001, 2001, 4, 7)
       })
 
       it('transfers the amount0 to the recipient', async () => {

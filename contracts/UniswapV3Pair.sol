@@ -643,8 +643,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(paid0 >= fee0, 'F0');
         require(paid1 >= fee1, 'F1');
 
-        feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
-        feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
+        if (paid0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
+        if (paid1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
 
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
     }
