@@ -19,8 +19,4 @@ contract MockTimeUniswapV3Pair is UniswapV3Pair {
     function _blockTimestamp() internal view override returns (uint32) {
         return uint32(time);
     }
-
-    function initializeObservations(uint16 start, uint16 end) external {
-        for (uint16 i = start; i < end; i++) observations[i].initialized = true;
-    }
 }
