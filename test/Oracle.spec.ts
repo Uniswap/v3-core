@@ -165,6 +165,7 @@ describe.only('Oracle', () => {
 
     it('single element array gets overwritten', async () => {
       await oracle.update({ advanceTimeBy: 1, tick: 2, liquidity: 5 })
+      expect(await oracle.index()).to.eq(0)
       await checkObservation(oracle, 0, {
         initialized: true,
         liquidityCumulative: 0,
@@ -172,6 +173,7 @@ describe.only('Oracle', () => {
         blockTimestamp: 1,
       })
       await oracle.update({ advanceTimeBy: 5, tick: -1, liquidity: 8 })
+      expect(await oracle.index()).to.eq(0)
       await checkObservation(oracle, 0, {
         initialized: true,
         liquidityCumulative: 25,
@@ -179,6 +181,7 @@ describe.only('Oracle', () => {
         blockTimestamp: 6,
       })
       await oracle.update({ advanceTimeBy: 3, tick: 2, liquidity: 3 })
+      expect(await oracle.index()).to.eq(0)
       await checkObservation(oracle, 0, {
         initialized: true,
         liquidityCumulative: 49,

@@ -173,20 +173,21 @@ library Oracle {
         return binarySearch(self, target, index, cardinality);
     }
 
-    // constructs a counterfactual observation as of a particular time in the past, as long as we have observations before then
+    // constructs a counterfactual observation as of a particular time in the past (or now) as long as we have
+    // an observation before then
     function scry(
         Observation[65535] storage self,
-        uint32 current,
+        uint32 time,
         uint32 secondsAgo,
         int24 tick,
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
-        uint32 target = current - secondsAgo;
+        uint32 target = time - secondsAgo;
 
         (Observation memory before, Observation memory atOrAfter) =
-            getSurroundingObservations(self, current, target, tick, index, liquidity, cardinality);
+            getSurroundingObservations(self, time, target, tick, index, liquidity, cardinality);
 
         Oracle.Observation memory at;
         if (target == atOrAfter.blockTimestamp) {
