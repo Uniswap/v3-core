@@ -271,21 +271,34 @@ describe('Oracle', () => {
       expect(liquidityCumulative).to.eq(0)
     })
 
-    it('counterfactual using single observation', async () => {
+    it('single observation in past but not old enough', async () => {
+      await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+      await oracle.advanceTime(3)
+      await expect(oracle.scry(4)).to.be.revertedWith('OLD')
+    })
+
+    it('single observation in past at exactly seconds ago', async () => {
+      await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+      await oracle.advanceTime(3)
+      const { tickCumulative, liquidityCumulative } = await oracle.scry(3)
+      expect(tickCumulative).to.eq(0)
+      expect(liquidityCumulative).to.eq(0)
+    })
+
+    it('single observation in past counterfactually computed before seconds ago', async () => {
+      await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+      await oracle.advanceTime(3)
+      const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+      expect(tickCumulative).to.eq(4)
+      expect(liquidityCumulative).to.eq(8)
+    })
+
+    it('single observation in past, counterfactual', async () => {
       await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
       await oracle.advanceTime(3)
       const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
       expect(tickCumulative).to.eq(6)
       expect(liquidityCumulative).to.eq(12)
-    })
-
-    it('works if current second has observation', async () => {
-      await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-      await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-      const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
-
-      expect(tickCumulative).to.eq(-20)
-      expect(liquidityCumulative).to.eq(20)
     })
 
     it('two observations in chronological order', async () => {
@@ -297,7 +310,7 @@ describe('Oracle', () => {
       expect(liquidityCumulative).to.eq(20)
     })
 
-    it('two observations in chronological order + counterfactual', async () => {
+    it('two observations in chronological order + counterfactual since latest', async () => {
       await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
       await oracle.grow(2)
       await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
@@ -305,6 +318,26 @@ describe('Oracle', () => {
       const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
       expect(tickCumulative).to.eq(-13)
       expect(liquidityCumulative).to.eq(34)
+    })
+
+    it('two observations in chronological order + time exactly equal to older observation', async () => {
+      await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+      await oracle.grow(2)
+      await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+      await oracle.advanceTime(7)
+      const { tickCumulative, liquidityCumulative } = await oracle.scry(11)
+      expect(tickCumulative).to.eq(0)
+      expect(liquidityCumulative).to.eq(0)
+    })
+
+    it('two observations in chronological order + counterfactual between the two', async () => {
+      await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+      await oracle.grow(2)
+      await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+      await oracle.advanceTime(7)
+      const { tickCumulative, liquidityCumulative } = await oracle.scry(9)
+      expect(tickCumulative).to.eq(-10)
+      expect(liquidityCumulative).to.eq(10)
     })
 
     it('gas for single observation at current time', async () => {
@@ -317,13 +350,5 @@ describe('Oracle', () => {
       await oracle.advanceTime(5)
       await snapshotGasCost(oracle.getGasCostOfScry(0))
     })
-
-    //   describe('monotonic observations, shifted', () => {})
-    //
-    //   describe('monotonic observations, unshifted', () => {})
-    //
-    //   describe('non-monotonic observations, unshifted', () => {})
-    //
-    //   describe('non-monotonic observations, shifted', () => {})
   })
 })
