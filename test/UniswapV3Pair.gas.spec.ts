@@ -33,7 +33,7 @@ describe('UniswapV3Pair gas tests', () => {
     describe(feeProtocol > 0 ? 'fee is on' : 'fee is off', () => {
       const startingPrice = encodePriceSqrt(100001, 100000)
       const startingTick = 0
-      const startingTime = TEST_PAIR_START_TIME + 2
+      const startingTime = TEST_PAIR_START_TIME + 3
       const feeAmount = FeeAmount.MEDIUM
       const tickSpacing = TICK_SPACINGS[feeAmount]
       const minTick = getMinTick(tickSpacing)
@@ -44,21 +44,17 @@ describe('UniswapV3Pair gas tests', () => {
 
         const pair = await fix.createPair(feeAmount, tickSpacing)
 
-        await Promise.all([
-          pair.initializeObservations(0, 341),
-          pair.initializeObservations(341, 682),
-          pair.initializeObservations(682, 1024),
-        ])
-
         await pair.setFeeProtocol(feeProtocol)
 
         const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({ ...fix, pair })
 
         await pair.initialize(encodePriceSqrt(1, 1))
+        await pair.increaseObservationCardinality(4)
+        await pair.setTime(TEST_PAIR_START_TIME + 1)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))
 
         await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await pair.setTime(TEST_PAIR_START_TIME + 1)
+        await pair.setTime(TEST_PAIR_START_TIME + 2)
         await swapToHigherPrice(startingPrice, wallet.address)
         await pair.setTime(startingTime)
         expect((await pair.slot0()).tick).to.eq(startingTick)

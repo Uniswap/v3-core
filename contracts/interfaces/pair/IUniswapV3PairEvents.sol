@@ -40,4 +40,12 @@ interface IUniswapV3PairEvents {
     event FeeProtocolChanged(uint8 feeProtocolOld, uint8 feeProtocolNew);
     event CollectProtocol(address indexed recipient, uint256 amount0, uint256 amount1);
     event ObservationCardinalityIncreased(uint16 observationCardinalityOld, uint16 observationCardinalityNew);
+    event Flash(
+        address indexed sender,
+        address indexed recipient,
+        uint256 amount0,
+        uint256 amount1,
+        uint256 paid0,
+        uint256 paid1
+    );
 }
