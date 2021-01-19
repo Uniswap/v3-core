@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Oracle #grow gas for growing by 1 slot 1`] = `49416`;
+
+exports[`Oracle #grow gas for growing by 10 slots 1`] = `237858`;
+
+exports[`Oracle #initialize gas 1`] = `70142`;

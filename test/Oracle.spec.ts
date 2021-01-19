@@ -43,10 +43,20 @@ describe('Oracle', () => {
     return (await oracleTestFactory.deploy()) as OracleTest
   }
 
+  const initializedOracleFixture = async () => {
+    const oracle = await oracleFixture()
+    await oracle.initialize({
+      time: 0,
+      tick: 0,
+      liquidity: 0,
+    })
+    return oracle
+  }
+
   describe('#initialize', () => {
     let oracle: OracleTest
-    beforeEach(async () => {
-      oracle = await oracleFixture()
+    beforeEach('deploy test oracle', async () => {
+      oracle = await loadFixture(oracleFixture)
     })
     it('index is 0', async () => {
       await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
@@ -69,25 +79,58 @@ describe('Oracle', () => {
         liquidityCumulative: 0,
       })
     })
+    it('gas', async () => {
+      await snapshotGasCost(oracle.initialize({ liquidity: 1, tick: 1, time: 1 }))
+    })
   })
 
-  describe('#grow', () => {})
+  describe('#grow', () => {
+    let oracle: OracleTest
+    beforeEach('deploy initialized test oracle', async () => {
+      oracle = await loadFixture(initializedOracleFixture)
+    })
+
+    it('increases the cardinality and target for the first call', async () => {
+      await oracle.grow(5)
+      expect(await oracle.index()).to.eq(0)
+      expect(await oracle.cardinality()).to.eq(5)
+      expect(await oracle.target()).to.eq(5)
+    })
+    it('does not touch the first slot', async () => {
+      await oracle.grow(5)
+      await checkObservation(oracle, 0, {
+        liquidityCumulative: 0,
+        tickCumulative: 0,
+        blockTimestamp: 0,
+        initialized: true,
+      })
+    })
+    it('adds data to all the slots', async () => {
+      await oracle.grow(5)
+      for (let i = 1; i < 5; i++) {
+        await checkObservation(oracle, i, {
+          liquidityCumulative: 0,
+          tickCumulative: 0,
+          blockTimestamp: 1,
+          initialized: false,
+        })
+      }
+    })
+
+    it('gas for growing by 1 slot', async () => {
+      await snapshotGasCost(oracle.grow(2))
+    })
+
+    it('gas for growing by 10 slots', async () => {
+      await snapshotGasCost(oracle.grow(11))
+    })
+  })
 
   describe('#write', () => {
     let oracle: OracleTest
 
-    const fixture = async () => {
-      const oracle = await oracleFixture()
-      await oracle.initialize({
-        time: 0,
-        tick: 0,
-        liquidity: 0,
-      })
-      return oracle
-    }
-
-    beforeEach('deploy test oracle', async () => {
-      oracle = await loadFixture(fixture)
+    beforeEach('deploy initialized test oracle', async () => {
+      oracle = await loadFixture(initializedOracleFixture)
     })
 
     it('single element array gets overwritten', async () => {
