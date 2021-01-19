@@ -152,7 +152,8 @@ library Oracle {
 
         // ensure that the target is greater than the oldest observation (accounting for wrapping)
         require(
-            beforeOrAt.blockTimestamp <= target || (beforeOrAt.blockTimestamp > current && target <= current), 'OLD'
+            beforeOrAt.blockTimestamp <= target || (beforeOrAt.blockTimestamp > current && target <= current),
+            'OLD'
         );
 
         // now, optimistically set before to the newest observation
@@ -202,9 +203,8 @@ library Oracle {
             // else, adjust counterfactually
             uint32 delta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
             int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
-            uint128 liquidityDerived = uint128(
-                (atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / delta
-            );
+            uint128 liquidityDerived =
+                uint128((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / delta);
             at = transform(beforeOrAt, target, tickDerived, liquidityDerived);
         }
 
