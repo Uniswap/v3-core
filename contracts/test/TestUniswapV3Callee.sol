@@ -127,9 +127,10 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         address recipient,
         uint256 amount0,
         uint256 amount1,
-        bool underpay
+        uint256 pay0,
+        uint256 pay1
     ) external {
-        IUniswapV3Pair(pair).flash(recipient, amount0, amount1, abi.encode(msg.sender, amount0, amount1, underpay));
+        IUniswapV3Pair(pair).flash(recipient, amount0, amount1, abi.encode(msg.sender, pay0, pay1));
     }
 
     function uniswapV3FlashCallback(
@@ -139,17 +140,9 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
     ) external override {
         emit FlashCallback(fee0, fee1);
 
-        (address sender, uint256 amount0, uint256 amount1, bool underpay) =
-            abi.decode(data, (address, uint256, uint256, bool));
-        uint256 owed0 = amount0 + fee0;
-        uint256 owed1 = amount1 + fee1;
-        // underpays by 1 wei
-        if (underpay) {
-            if (owed0 > 0) owed0--;
-            if (owed1 > 0) owed1--;
-        }
+        (address sender, uint256 pay0, uint256 pay1) = abi.decode(data, (address, uint256, uint256));
 
-        if (owed0 > 0) IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, owed0);
-        if (owed1 > 0) IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, owed1);
+        if (pay0 > 0) IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, pay0);
+        if (pay1 > 0) IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, pay1);
     }
 }
