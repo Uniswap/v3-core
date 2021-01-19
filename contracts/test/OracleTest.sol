@@ -44,9 +44,8 @@ contract OracleTest {
         liquidity = params.liquidity;
     }
 
-    function setTarget(uint16 _target) external {
-        require(_target > target, 'cannot decrease target');
-        target = _target;
+    function grow(uint16 _target) external {
+        (cardinality, target) = observations.grow(index, cardinality, target, _target);
     }
 
     function getGasCostOfScry(uint32 secondsAgo) external view returns (uint256) {

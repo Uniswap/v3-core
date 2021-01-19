@@ -67,6 +67,23 @@ library Oracle {
         self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
     }
 
+    // grow the cardinality array
+    function grow(
+        Observation[65535] storage self,
+        uint16 index,
+        uint16 cardinalityOld,
+        uint16 targetOld,
+        uint16 targetNew
+    ) internal returns (uint16 cardinality, uint16 target) {
+        require(targetOld < targetNew, 'LTE');
+        // store in each slot to prevent fresh SSTOREs in swaps
+        // this data will not be used because the initialized boolean is still false
+        for (uint16 i = targetOld; i < targetNew; i++) self[i].blockTimestamp = 1;
+        // if the index is already at the last element of the array, immediately grow the cardinality
+        cardinality = index == cardinalityOld - 1 ? targetNew : cardinalityOld;
+        target = targetNew;
+    }
+
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     // the answer _must_ be contained in the array
     // note that even though we're not modifying self, it must be passed by ref to save gas

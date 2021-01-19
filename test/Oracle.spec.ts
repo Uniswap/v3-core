@@ -55,7 +55,7 @@ describe('Oracle', () => {
     })
 
     it('does nothing if time has not changed', async () => {
-      await oracle.setTarget(2)
+      await oracle.grow(2)
       await oracle.update({ advanceTimeBy: 1, tick: 3, liquidity: 2 })
       expect(await oracle.index()).to.eq(1)
       await oracle.update({ advanceTimeBy: 0, tick: -5, liquidity: 9 })
@@ -63,7 +63,7 @@ describe('Oracle', () => {
     })
 
     it('writes an index if time has changed', async () => {
-      await oracle.setTarget(3)
+      await oracle.grow(3)
       await oracle.update({ advanceTimeBy: 6, tick: 3, liquidity: 2 })
       expect(await oracle.index()).to.eq(1)
       await oracle.update({ advanceTimeBy: 4, tick: -5, liquidity: 9 })
@@ -78,7 +78,7 @@ describe('Oracle', () => {
     })
 
     it('accumulates liquidity', async () => {
-      await oracle.setTarget(4)
+      await oracle.grow(4)
 
       await oracle.update({ advanceTimeBy: 3, tick: 3, liquidity: 2 })
       await oracle.update({ advanceTimeBy: 4, tick: -7, liquidity: 6 })

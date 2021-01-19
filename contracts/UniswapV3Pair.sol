@@ -136,14 +136,15 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function increaseObservationCardinality(uint16 observationCardinality) external override {
-        uint16 observationCardinalityOld = slot0.observationCardinalityTarget;
-        require(observationCardinalityOld < observationCardinality, 'LTE');
-        // store in each slot to prevent fresh SSTOREs in swaps
-        // this data will not be used because the initialized boolean is still false
-        for (uint16 i = observationCardinalityOld; i < observationCardinality; i++) observations[i].blockTimestamp = 1;
-        slot0.observationCardinalityTarget = observationCardinality;
-        emit ObservationCardinalityIncreased(observationCardinalityOld, observationCardinality);
+    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override {
+        Slot0 memory _slot0 = slot0;
+        (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
+            _slot0.observationIndex,
+            _slot0.observationCardinality,
+            _slot0.observationCardinalityTarget,
+            observationCardinalityTarget
+        );
+        emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
     }
 
     function scry(uint32 secondsAgo)
