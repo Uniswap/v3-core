@@ -137,10 +137,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     function increaseObservationCardinality(uint16 observationCardinality) external override {
-        uint16 target = slot0.observationCardinalityTarget;
-        require(observationCardinality > target, 'LTE');
-        for (uint16 i = target; i < observationCardinality; i++) observations[i].blockTimestamp = 1; // trigger SSTORE
+        uint16 observationCardinalityOld = slot0.observationCardinalityTarget;
+        require(observationCardinalityOld < observationCardinality, 'LTE');
+        // store in each slot to prevent fresh SSTOREs in swaps
+        // this data will not be used because the initialized boolean is still false
+        for (uint16 i = observationCardinalityOld; i < observationCardinality; i++) observations[i].blockTimestamp = 1;
         slot0.observationCardinalityTarget = observationCardinality;
+        emit ObservationCardinalityIncreased(observationCardinalityOld, observationCardinality);
     }
 
     function scry(uint32 secondsAgo)
@@ -190,12 +193,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 unlocked: true
             });
 
-        observations[_slot0.observationIndex] = Oracle.Observation({
-            blockTimestamp: _blockTimestamp(),
-            tickCumulative: 0,
-            liquidityCumulative: 0,
-            initialized: true
-        });
+        observations.initialize(_blockTimestamp());
 
         slot0 = _slot0;
 

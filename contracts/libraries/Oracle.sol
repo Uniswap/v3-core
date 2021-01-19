@@ -31,6 +31,15 @@ library Oracle {
             });
     }
 
+    // initialize the oracle array by writing the first slot. called once for the lifecycle of the observations array.
+    function initialize(Observation[65535] storage self, uint32 time)
+        internal
+        returns (uint16 cardinality, uint16 target)
+    {
+        self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 0, initialized: true});
+        return (1, 1);
+    }
+
     // writes an oracle observation to the array, at most once per block
     // indices cycle, and must be kept track of in the parent contract
     function write(
@@ -50,8 +59,6 @@ library Oracle {
         // if the conditions are right, we can bump the cardinality
         if (index == (cardinality - 1) && cardinalityTarget > cardinality) {
             cardinalityNext = cardinalityTarget;
-            // TODO we want to emit this
-            // emit ObservationCardinalityIncreased(cardinality, cardinalityTarget);
         } else {
             cardinalityNext = cardinality;
         }
