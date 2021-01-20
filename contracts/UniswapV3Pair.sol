@@ -137,9 +137,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    // increases the target observation cardinality, callable by anyone. does not lock the contract because
-    // it is always safe to call, even within the callback of a swap or mint.
-    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override {
+    // increases the target observation cardinality, callable by anyone after initialize.
+    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override lock {
         Slot0 memory _slot0 = slot0;
         (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
             _slot0.observationIndex,
