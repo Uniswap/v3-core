@@ -49,9 +49,11 @@ contract OracleEchidnaTest {
 
     function checkTimeWeightedResultAssertions(uint32 secondsAgo0, uint32 secondsAgo1) external view {
         require(secondsAgo0 != secondsAgo1);
-        if (secondsAgo0 > secondsAgo1) (secondsAgo0, secondsAgo1) = (secondsAgo1, secondsAgo0);
+        require(initialized);
+        // secondsAgo0 should be the larger one
+        if (secondsAgo0 < secondsAgo1) (secondsAgo0, secondsAgo1) = (secondsAgo1, secondsAgo0);
 
-        uint32 timeElapsed = secondsAgo1 - secondsAgo0;
+        uint32 timeElapsed = secondsAgo0 - secondsAgo1;
 
         (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.scry(secondsAgo0);
         (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.scry(secondsAgo1);
