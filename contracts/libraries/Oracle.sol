@@ -97,10 +97,10 @@ library Oracle {
         uint16 cardinality
     ) private view returns (Observation memory before, Observation memory atOrAfter) {
         uint16 l = (index + 1) % cardinality; // oldest observation
-        uint16 r = l + cardinality - 1; // newest observation
+        uint16 r = index; // newest observation
         uint16 i;
         while (true) {
-            i = (l + r) / 2;
+            i = ((r - l) % cardinality) / 2 + l;
 
             atOrAfter = self[i % cardinality];
 

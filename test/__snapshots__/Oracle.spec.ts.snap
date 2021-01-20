@@ -13,3 +13,129 @@ exports[`Oracle #initialize gas 1`] = `70116`;
 exports[`Oracle #scry gas for single observation at current time 1`] = `3825`;
 
 exports[`Oracle #scry gas for single observation at current time counterfactually computed 1`] = `4456`;
+
+exports[`Oracle full oracle can scry after the latest observation counterfactual 1`] = `
+Object {
+  "hex": "-0x0688451fbd",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry after the latest observation counterfactual 2`] = `
+Object {
+  "hex": "0x0688451fbd",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry at exactly the latest observation 1`] = `
+Object {
+  "hex": "-0x0688431e77",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry at exactly the latest observation 2`] = `
+Object {
+  "hex": "0x0688431e77",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry at exactly the latest observation after some time passes 1`] = `
+Object {
+  "hex": "-0x0688431e77",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry at exactly the latest observation after some time passes 2`] = `
+Object {
+  "hex": "0x0688431e77",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry into the ordered portion with exact seconds ago 1`] = `
+Object {
+  "hex": "-0x06832ce32d",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry into the ordered portion with exact seconds ago 2`] = `
+Object {
+  "hex": "0x06832ce32d",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry into the ordered portion with unexact seconds ago 1`] = `
+Object {
+  "hex": "-0x068327e1f7",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry into the ordered portion with unexact seconds ago 2`] = `
+Object {
+  "hex": "0x068327e1f7",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry into the unordered portion of array at exact seconds ago of observation 1`] = `
+Object {
+  "hex": "-0x067e18a3b3",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry into the unordered portion of array at exact seconds ago of observation 2`] = `
+Object {
+  "hex": "0x067e18a3b3",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry into the unordered portion of array at seconds ago between observations 1`] = `
+Object {
+  "hex": "-0x067e13a471",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry into the unordered portion of array at seconds ago between observations 2`] = `
+Object {
+  "hex": "0x067e13a471",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry the oldest observation 13*65534 + 5 seconds ago if time has elapsed 1`] = `
+Object {
+  "hex": "-0x02af12",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry the oldest observation 13*65534 + 5 seconds ago if time has elapsed 2`] = `
+Object {
+  "hex": "0x02af12",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry the oldest observation 13*65534 seconds ago 1`] = `
+Object {
+  "hex": "-0x02af12",
+  "type": "BigNumber",
+}
+`;
+
+exports[`Oracle full oracle can scry the oldest observation 13*65534 seconds ago 2`] = `
+Object {
+  "hex": "0x02af12",
+  "type": "BigNumber",
+}
+`;
