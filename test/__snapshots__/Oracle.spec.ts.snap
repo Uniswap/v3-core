@@ -10,6 +10,26 @@ exports[`Oracle #grow gas for growing by 10 slots when index == cardinality - 1 
 
 exports[`Oracle #initialize gas 1`] = `70116`;
 
-exports[`Oracle #scry gas for single observation at current time 1`] = `3825`;
+exports[`Oracle #scry before initialization gas for single observation at current time 1`] = `3870`;
 
-exports[`Oracle #scry gas for single observation at current time counterfactually computed 1`] = `4456`;
+exports[`Oracle #scry before initialization gas for single observation at current time counterfactually computed 1`] = `4501`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 5 gas between oldest and oldest + 1 1`] = `14716`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 5 gas latest equal 1`] = `3870`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 5 gas latest transform 1`] = `4501`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 5 gas middle 1`] = `14761`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 5 gas oldest 1`] = `7055`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 4294967291 gas between oldest and oldest + 1 1`] = `14716`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 4294967291 gas latest equal 1`] = `3870`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 4294967291 gas latest transform 1`] = `4501`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 4294967291 gas middle 1`] = `14761`;
+
+exports[`Oracle #scry initialized with 5 observations with starting time of 4294967291 gas oldest 1`] = `7055`;
