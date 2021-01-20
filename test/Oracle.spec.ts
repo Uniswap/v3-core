@@ -5,7 +5,7 @@ import { expect } from './shared/expect'
 import { TEST_PAIR_START_TIME } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
-describe('Oracle', () => {
+describe.only('Oracle', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>
