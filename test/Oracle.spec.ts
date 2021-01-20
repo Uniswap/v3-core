@@ -456,46 +456,59 @@ describe('Oracle', () => {
 
     it('can scry into the ordered portion with exact seconds ago', async () => {
       const { tickCumulative, liquidityCumulative } = await oracle.scry(100 * 13)
-      expect(tickCumulative).to.eq(2)
-      expect(liquidityCumulative).to.eq(2)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
     })
 
     it('can scry into the ordered portion with unexact seconds ago', async () => {
       const { tickCumulative, liquidityCumulative } = await oracle.scry(100 * 13 + 5)
-      expect(tickCumulative).to.eq(2)
-      expect(liquidityCumulative).to.eq(2)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
+    })
+
+    it('can scry at exactly the latest observation', async () => {
+      const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
+    })
+
+    it('can scry at exactly the latest observation after some time passes', async () => {
+      await oracle.advanceTime(5)
+      const { tickCumulative, liquidityCumulative } = await oracle.scry(5)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
     })
 
     it('can scry after the latest observation counterfactual', async () => {
       await oracle.advanceTime(5)
       const { tickCumulative, liquidityCumulative } = await oracle.scry(3)
-      expect(tickCumulative).to.eq(2)
-      expect(liquidityCumulative).to.eq(2)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
     })
 
     it('can scry into the unordered portion of array at exact seconds ago of observation', async () => {
       const { tickCumulative, liquidityCumulative } = await oracle.scry(200 * 13)
-      expect(tickCumulative).to.eq(2)
-      expect(liquidityCumulative).to.eq(2)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
     })
 
     it('can scry into the unordered portion of array at seconds ago between observations', async () => {
       const { tickCumulative, liquidityCumulative } = await oracle.scry(200 * 13 + 5)
-      expect(tickCumulative).to.eq(2)
-      expect(liquidityCumulative).to.eq(2)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
     })
 
     it('can scry the oldest observation 13*65534 seconds ago', async () => {
       const { tickCumulative, liquidityCumulative } = await oracle.scry(13 * 65534)
-      expect(tickCumulative).to.eq(5)
-      expect(liquidityCumulative).to.eq(15)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
     })
 
     it('can scry the oldest observation 13*65534 + 5 seconds ago if time has elapsed', async () => {
       await oracle.advanceTime(5)
       const { tickCumulative, liquidityCumulative } = await oracle.scry(13 * 65534 + 5)
-      expect(tickCumulative).to.eq(5)
-      expect(liquidityCumulative).to.eq(15)
+      expect(tickCumulative).to.matchSnapshot()
+      expect(liquidityCumulative).to.matchSnapshot()
     })
   })
 })
