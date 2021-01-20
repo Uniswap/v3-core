@@ -142,6 +142,33 @@ describe('UniswapV3Pair', () => {
     })
   })
 
+  describe('#increaseObservationCardinality', () => {
+    it('can only be called after initialize', async () => {
+      await expect(pair.increaseObservationCardinality(2)).to.be.revertedWith('LOK')
+    })
+    it('emits an event', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await expect(pair.increaseObservationCardinality(2))
+        .to.emit(pair, 'ObservationCardinalityIncreased')
+        .withArgs(1, 2)
+    })
+    it('increases cardinality and target first time', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await pair.increaseObservationCardinality(2)
+      const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
+      expect(observationCardinality).to.eq(2)
+      expect(observationCardinalityTarget).to.eq(2)
+    })
+    it('increases only target if it has not yet grown', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await pair.increaseObservationCardinality(2)
+      await pair.increaseObservationCardinality(3)
+      const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
+      expect(observationCardinality).to.eq(2)
+      expect(observationCardinalityTarget).to.eq(3)
+    })
+  })
+
   describe('#mint', () => {
     it('fails if not initialized', async () => {
       await expect(mint(wallet.address, -tickSpacing, tickSpacing, 0)).to.be.revertedWith('LOK')

@@ -137,13 +137,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    // increases the target observation cardinality, callable by anyone. does not lock the contract because
-    // it is always safe to call, even within the callback of a swap or mint.
-    function increaseObservationCardinality(uint16 observationCardinality) external override {
-        uint16 target = slot0.observationCardinalityTarget;
-        require(observationCardinality > target, 'LTE');
-        for (uint16 i = target; i < observationCardinality; i++) observations[i].blockTimestamp = 1; // trigger SSTORE
-        slot0.observationCardinalityTarget = observationCardinality;
+    // increases the target observation cardinality, callable by anyone after initialize.
+    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override lock {
+        Slot0 memory _slot0 = slot0;
+        (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
+            _slot0.observationIndex,
+            _slot0.observationCardinality,
+            _slot0.observationCardinalityTarget,
+            observationCardinalityTarget
+        );
+        emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
     }
 
     function scry(uint32 secondsAgo)
@@ -182,25 +185,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
-        Slot0 memory _slot0 =
-            Slot0({
-                sqrtPriceX96: sqrtPriceX96,
-                tick: tick,
-                observationIndex: 0,
-                observationCardinality: 1,
-                observationCardinalityTarget: 1,
-                feeProtocol: 0,
-                unlocked: true
-            });
+        (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
 
-        observations[_slot0.observationIndex] = Oracle.Observation({
-            blockTimestamp: _blockTimestamp(),
-            tickCumulative: 0,
-            liquidityCumulative: 0,
-            initialized: true
+        slot0 = Slot0({
+            sqrtPriceX96: sqrtPriceX96,
+            tick: tick,
+            observationIndex: 0,
+            observationCardinality: cardinality,
+            observationCardinalityTarget: target,
+            feeProtocol: 0,
+            unlocked: true
         });
-
-        slot0 = _slot0;
 
         emit Initialized(sqrtPriceX96, tick);
     }
