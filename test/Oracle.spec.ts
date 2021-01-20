@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish } from 'ethers'
+import { BigNumberish } from 'ethers'
 import { ethers, waffle } from 'hardhat'
 import { OracleTest } from '../typechain/OracleTest'
 import checkObservationEquals from './shared/checkObservationEquals'
