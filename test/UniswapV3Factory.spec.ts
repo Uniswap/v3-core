@@ -12,29 +12,33 @@ const TEST_ADDRESSES: [string, string] = [
   '0x2000000000000000000000000000000000000000',
 ]
 
+const createFixtureLoader = waffle.createFixtureLoader
+
 describe('UniswapV3Factory', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let factory: UniswapV3Factory
   let pairBytecode: string
-  beforeEach('deploy factory', async () => {
+  const fixture = async () => {
     const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
+    return (await factoryFactory.deploy()) as UniswapV3Factory
+  }
+
+  let loadFixture: ReturnType<typeof createFixtureLoader>
+  before('create fixture loader', async () => {
+    loadFixture = createFixtureLoader([wallet, other])
+  })
+
+  before('load pair bytecode', async () => {
     pairBytecode = (await ethers.getContractFactory('UniswapV3Pair')).bytecode
-    factory = (await factoryFactory.deploy(wallet.address)) as UniswapV3Factory
   })
 
-  it('owner is wallet', async () => {
+  beforeEach('deploy factory', async () => {
+    factory = await loadFixture(fixture)
+  })
+
+  it('owner is deployer', async () => {
     expect(await factory.owner()).to.eq(wallet.address)
-  })
-
-  it('owner does not have to be deployer', async () => {
-    const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
-    factory = (await factoryFactory.deploy(other.address)) as UniswapV3Factory
-    expect(await factory.owner()).to.eq(other.address)
-  })
-
-  it('initial pairs length is 0', async () => {
-    expect(await factory.allPairsLength()).to.eq(0)
   })
 
   it('factory bytecode size', async () => {
@@ -67,14 +71,12 @@ describe('UniswapV3Factory', () => {
 
     await expect(create)
       .to.emit(factory, 'PairCreated')
-      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address, 1)
+      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
 
     await expect(factory.createPair(tokens[0], tokens[1], feeAmount)).to.be.revertedWith('PAE')
     await expect(factory.createPair(tokens[1], tokens[0], feeAmount)).to.be.revertedWith('PAE')
     expect(await factory.getPair(tokens[0], tokens[1], feeAmount), 'getPair in order').to.eq(create2Address)
     expect(await factory.getPair(tokens[1], tokens[0], feeAmount), 'getPair in reverse').to.eq(create2Address)
-    expect(await factory.allPairs(0), 'first pair in allPairs').to.eq(create2Address)
-    expect(await factory.allPairsLength(), 'number of pairs').to.eq(1)
 
     const pairContractFactory = await ethers.getContractFactory('UniswapV3Pair')
     const pair = pairContractFactory.attach(create2Address)

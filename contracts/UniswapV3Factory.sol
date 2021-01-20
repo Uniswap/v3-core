@@ -13,23 +13,18 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
     uint24[] public override allEnabledFeeAmounts;
 
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPair;
-    address[] public override allPairs;
-
-    function allPairsLength() external view override returns (uint256) {
-        return allPairs.length;
-    }
 
     function allEnabledFeeAmountsLength() external view override returns (uint256) {
         return allEnabledFeeAmounts.length;
     }
 
-    constructor(address _owner) {
-        owner = _owner;
-        emit OwnerChanged(address(0), _owner);
+    constructor() {
+        owner = msg.sender;
+        emit OwnerChanged(address(0), msg.sender);
 
-        _enableFeeAmount(600, 12);
-        _enableFeeAmount(3000, 60);
-        _enableFeeAmount(9000, 180);
+        enableFeeAmount(600, 12);
+        enableFeeAmount(3000, 60);
+        enableFeeAmount(9000, 180);
     }
 
     function createPair(
@@ -44,11 +39,10 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         require(tickSpacing != 0, 'FNA');
         require(getPair[token0][token1][fee] == address(0), 'PAE');
         pair = deploy(address(this), token0, token1, fee, tickSpacing);
-        allPairs.push(pair);
         getPair[token0][token1][fee] = pair;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
         getPair[token1][token0][fee] = pair;
-        emit PairCreated(token0, token1, fee, tickSpacing, pair, allPairs.length);
+        emit PairCreated(token0, token1, fee, tickSpacing, pair);
     }
 
     function setOwner(address _owner) external override {
@@ -57,7 +51,8 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         owner = _owner;
     }
 
-    function _enableFeeAmount(uint24 fee, int24 tickSpacing) private {
+    function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
+        require(msg.sender == owner, 'OO');
         require(fee < 1000000, 'FEE');
         require(tickSpacing > 0, 'TS');
         require(feeAmountTickSpacing[fee] == 0, 'FAI');
@@ -65,11 +60,5 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         feeAmountTickSpacing[fee] = tickSpacing;
         allEnabledFeeAmounts.push(fee);
         emit FeeAmountEnabled(fee, tickSpacing);
-    }
-
-    function enableFeeAmount(uint24 fee, int24 tickSpacing) external override {
-        require(msg.sender == owner, 'OO');
-
-        _enableFeeAmount(fee, tickSpacing);
     }
 }

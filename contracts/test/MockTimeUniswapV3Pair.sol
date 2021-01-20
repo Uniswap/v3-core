@@ -19,21 +19,4 @@ contract MockTimeUniswapV3Pair is UniswapV3Pair {
     function _blockTimestamp() internal view override returns (uint32) {
         return uint32(time);
     }
-
-    function setObservations(Oracle.Observation[] calldata _observations, uint16 offset) external {
-        for (uint16 i; i < _observations.length; i++) observations[i + offset] = _observations[i];
-    }
-
-    function setOracleData(
-        int24 tick,
-        uint128 _liquidity,
-        uint16 index,
-        uint256 _time
-    ) external {
-        slot0.tick = tick;
-        liquidity = _liquidity;
-
-        slot0.observationIndex = index;
-        time = _time;
-    }
 }

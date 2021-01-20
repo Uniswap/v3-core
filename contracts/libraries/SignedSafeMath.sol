@@ -19,7 +19,7 @@ library SignedSafeMath {
      *
      * - Multiplication cannot overflow.
      */
-    function mul(int256 a, int256 b) internal pure returns (int256) {
+    function mul(int256 a, int256 b) internal pure returns (int256 c) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
         // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
@@ -29,10 +29,8 @@ library SignedSafeMath {
 
         require(!(a == -1 && b == _INT256_MIN), 'SSM');
 
-        int256 c = a * b;
+        c = a * b;
         require(c / a == b, 'SSM');
-
-        return c;
     }
 
     /**
@@ -45,11 +43,9 @@ library SignedSafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(int256 a, int256 b) internal pure returns (int256) {
-        int256 c = a - b;
+    function sub(int256 a, int256 b) internal pure returns (int256 c) {
+        c = a - b;
         require((b >= 0 && c <= a) || (b < 0 && c > a), 'SSO');
-
-        return c;
     }
 
     /**
@@ -62,10 +58,8 @@ library SignedSafeMath {
      *
      * - Addition cannot overflow.
      */
-    function add(int256 a, int256 b) internal pure returns (int256) {
-        int256 c = a + b;
+    function add(int256 a, int256 b) internal pure returns (int256 c) {
+        c = a + b;
         require((b >= 0 && c >= a) || (b < 0 && c < a), 'SAO');
-
-        return c;
     }
 }

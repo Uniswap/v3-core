@@ -22,13 +22,13 @@ contract SqrtPriceMathEchidnaTest {
         }
     }
 
-    function getNextPriceFromInputInvariants(
+    function getNextSqrtPriceFromInputInvariants(
         uint160 sqrtP,
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
     ) external pure {
-        uint160 sqrtQ = SqrtPriceMath.getNextPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
+        uint160 sqrtQ = SqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
 
         if (zeroForOne) {
             assert(sqrtQ <= sqrtP);
@@ -39,13 +39,13 @@ contract SqrtPriceMathEchidnaTest {
         }
     }
 
-    function getNextPriceFromOutputInvariants(
+    function getNextSqrtPriceFromOutputInvariants(
         uint160 sqrtP,
         uint128 liquidity,
         uint256 amountOut,
         bool zeroForOne
     ) external pure {
-        uint160 sqrtQ = SqrtPriceMath.getNextPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
+        uint160 sqrtQ = SqrtPriceMath.getNextSqrtPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
 
         if (zeroForOne) {
             assert(sqrtQ <= sqrtP);

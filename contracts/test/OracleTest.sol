@@ -5,43 +5,61 @@ pragma abicoder v2;
 import '../libraries/Oracle.sol';
 
 contract OracleTest {
-    using Oracle for Oracle.Observation[1024];
+    using Oracle for Oracle.Observation[65535];
 
-    Oracle.Observation[1024] public observations;
+    Oracle.Observation[65535] public observations;
 
     uint32 public time;
     int24 public tick;
     uint128 public liquidity;
     uint16 public index;
+    uint16 public cardinality;
+    uint16 public target;
 
-    function setObservations(Oracle.Observation[] calldata _observations, uint16 offset) external {
-        for (uint16 i; i < _observations.length; i++) observations[i + offset] = _observations[i];
+    struct InitializeParams {
+        uint32 time;
+        int24 tick;
+        uint128 liquidity;
     }
 
-    function getGasCostOfObservationAt(uint32 secondsAgo) external view returns (uint256) {
+    function initialize(InitializeParams calldata params) external {
+        require(cardinality == 0, 'already initialized');
+        time = params.time;
+        tick = params.tick;
+        liquidity = params.liquidity;
+        (cardinality, target) = observations.initialize(params.time);
+    }
+
+    function advanceTime(uint32 by) public {
+        time += by;
+    }
+
+    struct UpdateParams {
+        uint32 advanceTimeBy;
+        int24 tick;
+        uint128 liquidity;
+    }
+
+    // write an observation, then change tick and liquidity
+    function update(UpdateParams calldata params) external {
+        advanceTime(params.advanceTimeBy);
+        (index, cardinality) = observations.write(index, time, tick, liquidity, cardinality, target);
+        tick = params.tick;
+        liquidity = params.liquidity;
+    }
+
+    function grow(uint16 _target) external {
+        (cardinality, target) = observations.grow(index, cardinality, target, _target);
+    }
+
+    function getGasCostOfScry(uint32 secondsAgo) external view returns (uint256) {
         (uint32 _time, int24 _tick, uint128 _liquidity, uint16 _index) = (time, tick, liquidity, index);
         uint256 gasBefore = gasleft();
-        observations.observationAt(_time, secondsAgo, _tick, _index, _liquidity);
+        observations.scry(_time, secondsAgo, _tick, _index, _liquidity, cardinality);
         return gasBefore - gasleft();
     }
 
-    function setOracleData(
-        int24 _tick,
-        uint128 _liquidity,
-        uint16 _index,
-        uint32 _time
-    ) external {
-        tick = _tick;
-        liquidity = _liquidity;
-        index = _index;
-        time = _time;
-    }
-
-    function observationAt(uint32 secondsAgo)
-        external
-        view
-        returns (int56 tickCumulative, uint160 liquidityCumulative)
-    {
-        return observations.observationAt(time, secondsAgo, tick, index, liquidity);
+    function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+        return observations.scry(time, secondsAgo, tick, index, liquidity, cardinality);
     }
 }
