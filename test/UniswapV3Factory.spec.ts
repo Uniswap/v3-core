@@ -52,12 +52,8 @@ describe('UniswapV3Factory', () => {
   })
 
   it('initial enabled fee amounts', async () => {
-    expect(await factory.allEnabledFeeAmountsLength()).to.eq(3)
-    expect(await factory.allEnabledFeeAmounts(0)).to.eq(FeeAmount.LOW)
     expect(await factory.feeAmountTickSpacing(FeeAmount.LOW)).to.eq(TICK_SPACINGS[FeeAmount.LOW])
-    expect(await factory.allEnabledFeeAmounts(1)).to.eq(FeeAmount.MEDIUM)
     expect(await factory.feeAmountTickSpacing(FeeAmount.MEDIUM)).to.eq(TICK_SPACINGS[FeeAmount.MEDIUM])
-    expect(await factory.allEnabledFeeAmounts(2)).to.eq(FeeAmount.HIGH)
     expect(await factory.feeAmountTickSpacing(FeeAmount.HIGH)).to.eq(TICK_SPACINGS[FeeAmount.HIGH])
   })
 
@@ -167,12 +163,6 @@ describe('UniswapV3Factory', () => {
     it('sets the fee amount in the mapping', async () => {
       await factory.enableFeeAmount(100, 5)
       expect(await factory.feeAmountTickSpacing(100)).to.eq(5)
-    })
-    it('appends to the list', async () => {
-      expect(await factory.allEnabledFeeAmountsLength()).to.eq(3)
-      await factory.enableFeeAmount(100, 5)
-      expect(await factory.allEnabledFeeAmountsLength()).to.eq(4)
-      expect(await factory.allEnabledFeeAmounts(3)).to.eq(100)
     })
     it('emits an event', async () => {
       await expect(factory.enableFeeAmount(100, 5)).to.emit(factory, 'FeeAmountEnabled').withArgs(100, 5)
