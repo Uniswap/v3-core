@@ -417,7 +417,7 @@ describe('Oracle', () => {
     }
     let oracle: OracleTest
     beforeEach('set up observations', async () => {
-      oracle = await oracleFixture5Observations()
+      oracle = await loadFixture(oracleFixture5Observations)
     })
 
     it('index, cardinality, target', async () => {
