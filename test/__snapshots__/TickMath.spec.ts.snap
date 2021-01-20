@@ -10,16 +10,16 @@ exports[`TickMath #getRatioAtTick gas tick -887272 1`] = `928`;
 
 exports[`TickMath #getRatioAtTick gas tick 0 1`] = `702`;
 
-exports[`TickMath #getRatioAtTick gas tick 50 1`] = `804`;
+exports[`TickMath #getRatioAtTick gas tick 50 1`] = `807`;
 
-exports[`TickMath #getRatioAtTick gas tick 500 1`] = `873`;
+exports[`TickMath #getRatioAtTick gas tick 500 1`] = `876`;
 
-exports[`TickMath #getRatioAtTick gas tick 1000 1`] = `873`;
+exports[`TickMath #getRatioAtTick gas tick 1000 1`] = `876`;
 
-exports[`TickMath #getRatioAtTick gas tick 887272 1`] = `965`;
+exports[`TickMath #getRatioAtTick gas tick 887272 1`] = `968`;
 
-exports[`TickMath #getTickAtRatio gas cost another random price 1`] = `2281`;
+exports[`TickMath #getTickAtRatio gas cost another random price 1`] = `2284`;
 
-exports[`TickMath #getTickAtRatio gas cost price exactly at 0 1`] = `2075`;
+exports[`TickMath #getTickAtRatio gas cost price exactly at 0 1`] = `2078`;
 
-exports[`TickMath #getTickAtRatio gas cost random price 1`] = `2259`;
+exports[`TickMath #getTickAtRatio gas cost random price 1`] = `2265`;
