@@ -14,10 +14,6 @@ interface IUniswapV3Factory {
 
     function owner() external view returns (address);
 
-    function allEnabledFeeAmounts(uint256) external view returns (uint24);
-
-    function allEnabledFeeAmountsLength() external view returns (uint256);
-
     function feeAmountTickSpacing(uint24 fee) external view returns (int24);
 
     function getPair(
