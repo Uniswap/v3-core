@@ -47,7 +47,7 @@ contract OracleEchidnaTest {
         oracle.grow(target);
     }
 
-    function checkTimeWeightedResultAssertions(uint32 secondsAgo0, uint32 secondsAgo1) external view {
+    function checkTimeWeightedResultAssertions(uint32 secondsAgo0, uint32 secondsAgo1) private view {
         require(secondsAgo0 != secondsAgo1);
         require(initialized);
         // secondsAgo0 should be the larger one
