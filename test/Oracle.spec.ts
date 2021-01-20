@@ -401,4 +401,56 @@ describe('Oracle', () => {
       await snapshotGasCost(oracle.getGasCostOfScry(0))
     })
   })
+
+  describe.skip('full oracle', function () {
+    this.timeout(1_200_000)
+
+    let oracle: OracleTest
+
+    const BATCH_SIZE = 300
+
+    const maxedOutOracleFixture = async () => {
+      const oracle = await oracleFixture()
+      await oracle.initialize({ liquidity: 0, tick: 0, time: 1 })
+      let cardinality = await oracle.cardinality()
+      while (cardinality < 65535) {
+        const cardinalityNext = Math.min(65535, cardinality + BATCH_SIZE)
+        console.log('growing from', cardinality, 'to', cardinalityNext)
+        await oracle.grow(cardinalityNext)
+        cardinality = cardinalityNext
+      }
+
+      for (let i = 0; i < 65535; i += BATCH_SIZE) {
+        console.log('batch update starting at', i)
+        const batch = Array(BATCH_SIZE)
+          .fill(null)
+          .map((_, j) => ({
+            advanceTimeBy: 13,
+            tick: -i - j,
+            liquidity: i + j,
+          }))
+        await oracle.batchUpdate(batch)
+      }
+
+      return oracle
+    }
+
+    beforeEach('create a full oracle', async () => {
+      oracle = await loadFixture(maxedOutOracleFixture)
+    })
+
+    it('has max target', async () => {
+      expect(await oracle.target()).to.eq(65535)
+    })
+
+    it('has max cardinality', async () => {
+      expect(await oracle.cardinality()).to.eq(65535)
+    })
+
+    it('can scry 13*65534 seconds ago', async () => {
+      const { tickCumulative, liquidityCumulative } = await oracle.scry(13 * 65534)
+      expect(tickCumulative).to.eq(5)
+      expect(liquidityCumulative).to.eq(15)
+    })
+  })
 })
