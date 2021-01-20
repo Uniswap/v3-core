@@ -25,6 +25,7 @@ import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
+import './interfaces/callback/IUniswapV3FlashCallback.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair {
     using SafeMath for uint256;
@@ -136,11 +137,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    function increaseObservationCardinality(uint16 observationCardinality) external override {
-        uint16 target = slot0.observationCardinalityTarget;
-        require(observationCardinality > target, 'LTE');
-        for (uint16 i = target; i < observationCardinality; i++) observations[i].blockTimestamp = 1; // trigger SSTORE
-        slot0.observationCardinalityTarget = observationCardinality;
+    // increases the target observation cardinality, callable by anyone after initialize.
+    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override lock {
+        Slot0 memory _slot0 = slot0;
+        (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
+            _slot0.observationIndex,
+            _slot0.observationCardinality,
+            _slot0.observationCardinalityTarget,
+            observationCardinalityTarget
+        );
+        emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
     }
 
     function scry(uint32 secondsAgo)
@@ -179,25 +185,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
-        Slot0 memory _slot0 =
-            Slot0({
-                sqrtPriceX96: sqrtPriceX96,
-                tick: tick,
-                observationIndex: 0,
-                observationCardinality: 1,
-                observationCardinalityTarget: 1,
-                feeProtocol: 0,
-                unlocked: true
-            });
+        (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
 
-        observations[_slot0.observationIndex] = Oracle.Observation({
-            blockTimestamp: _blockTimestamp(),
-            tickCumulative: 0,
-            liquidityCumulative: 0,
-            initialized: true
+        slot0 = Slot0({
+            sqrtPriceX96: sqrtPriceX96,
+            tick: tick,
+            observationIndex: 0,
+            observationCardinality: cardinality,
+            observationCardinalityTarget: target,
+            feeProtocol: 0,
+            unlocked: true
         });
-
-        slot0 = _slot0;
 
         emit Initialized(sqrtPriceX96, tick);
     }
@@ -613,5 +611,36 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
 
         emit CollectProtocol(recipient, amount0, amount1);
+    }
+
+    function flash(
+        address recipient,
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) external override lock {
+        uint128 _liquidity = liquidity;
+        require(_liquidity > 0, 'L');
+
+        uint256 fee0 = SqrtPriceMath.mulDivRoundingUp(amount0, fee, 1e6);
+        uint256 fee1 = SqrtPriceMath.mulDivRoundingUp(amount1, fee, 1e6);
+        uint256 balance0Before = balance0();
+        uint256 balance1Before = balance1();
+
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+
+        IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);
+
+        uint256 paid0 = balance0().sub(balance0Before);
+        uint256 paid1 = balance1().sub(balance1Before);
+
+        require(paid0 >= fee0, 'F0');
+        require(paid1 >= fee1, 'F1');
+
+        if (paid0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
+        if (paid1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
+
+        emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
     }
 }
