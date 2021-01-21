@@ -578,7 +578,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
 
         // transfer the output
-        TransferHelper.safeTransfer(tokenOut, recipient, uint256(-amountOut));
+        if (amountOut != 0) TransferHelper.safeTransfer(tokenOut, recipient, uint256(-amountOut));
 
         // callback for the input
         uint256 balanceBefore = balanceOfToken(tokenIn);

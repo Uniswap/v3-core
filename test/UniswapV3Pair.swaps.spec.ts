@@ -133,6 +133,7 @@ async function executeSwap(
 }
 
 const DEFAULT_PAIR_SWAP_TESTS: SwapTestCase[] = [
+  // swap large amounts in/out
   {
     zeroForOne: true,
     exactOut: false,
@@ -149,10 +150,32 @@ const DEFAULT_PAIR_SWAP_TESTS: SwapTestCase[] = [
     amount1: expandTo18Decimals(1),
   },
   {
+    zeroForOne: false,
+    exactOut: true,
+    amount0: expandTo18Decimals(1),
+  },
+  // swap small amounts in/out
+  {
+    zeroForOne: true,
+    exactOut: false,
+    amount0: 1000,
+  },
+  {
+    zeroForOne: false,
+    exactOut: false,
+    amount1: 1000,
+  },
+  {
     zeroForOne: true,
     exactOut: true,
-    amount1: expandTo18Decimals(1),
+    amount1: 1000,
   },
+  {
+    zeroForOne: false,
+    exactOut: true,
+    amount0: 1000,
+  },
+  // swap arbitrary input to price
   {
     sqrtPriceLimit: encodePriceSqrt(5, 2),
     zeroForOne: false,
@@ -252,10 +275,90 @@ const TEST_PAIRS: PairTestCase[] = [
       },
     ],
   },
+  {
+    description: 'medium fee, 1:1 price, 0 liquidity, all liquidity around current price',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickUpper: -TICK_SPACINGS[FeeAmount.MEDIUM],
+        liquidity: expandTo18Decimals(2),
+      },
+      {
+        tickLower: TICK_SPACINGS[FeeAmount.HIGH],
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'medium fee, 1:1 price, additional liquidity around current price',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        liquidity: expandTo18Decimals(2),
+      },
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickUpper: -TICK_SPACINGS[FeeAmount.MEDIUM],
+        liquidity: expandTo18Decimals(2),
+      },
+      {
+        tickLower: TICK_SPACINGS[FeeAmount.HIGH],
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'low fee, large liquidity around current price (stable swap)',
+    feeAmount: FeeAmount.LOW,
+    tickSpacing: TICK_SPACINGS[FeeAmount.LOW],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: -TICK_SPACINGS[FeeAmount.LOW],
+        tickUpper: TICK_SPACINGS[FeeAmount.LOW],
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'medium fee, token0 liquidity only',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: 0,
+        tickUpper: 2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'medium fee, token1 liquidity only',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: -2000 * TICK_SPACINGS[FeeAmount.MEDIUM],
+        tickUpper: 0,
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
 ]
 
 describe('UniswapV3Pair swap tests', () => {
-  const [wallet, other] = waffle.provider.getWallets()
+  const [wallet] = waffle.provider.getWallets()
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
 
@@ -306,7 +409,13 @@ describe('UniswapV3Pair swap tests', () => {
           try {
             await tx
           } catch (error) {
-            expect(error.message).to.matchSnapshot('swap error')
+            expect({
+              swapError: error.message,
+              pairBalance0: pairBalance0.toString(),
+              pairBalance1: pairBalance1.toString(),
+              pairPriceBefore: formatPrice(slot0.sqrtPriceX96),
+              tickBefore: slot0.tick,
+            }).to.matchSnapshot('swap error')
             return
           }
           const [pairBalance0After, pairBalance1After, slot0After] = await Promise.all([
@@ -344,17 +453,18 @@ describe('UniswapV3Pair swap tests', () => {
               slot0After.tick
             )
 
+          const executionPrice = new Decimal(pairBalance1Delta.toString()).div(pairBalance0Delta.toString()).mul(-1)
+
           expect({
+            amount0Before: pairBalance0.toString(),
+            amount1Before: pairBalance1.toString(),
             amount0Delta: pairBalance0Delta.toString(),
             amount1Delta: pairBalance1Delta.toString(),
             tickBefore: slot0.tick,
             pairPriceBefore: formatPrice(slot0.sqrtPriceX96),
             tickAfter: slot0After.tick,
             pairPriceAfter: formatPrice(slot0After.sqrtPriceX96),
-            executionPrice: new Decimal(pairBalance1Delta.toString())
-              .div(pairBalance0Delta.toString())
-              .mul(-1)
-              .toPrecision(5),
+            executionPrice: executionPrice.toPrecision(5),
           }).to.matchSnapshot('balances')
         })
       }
