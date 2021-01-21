@@ -72,7 +72,7 @@ contract SqrtPriceMathEchidnaTest {
         assert(amount0Up - amount0Down < 2);
     }
 
-    // ensure that liquidity / sqrt(Q) - liquidity / sqrt(P) equals
+    // ensure that chained division is always equal to the full-precision case for
     // liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
     function getAmount0DeltaEquivalency(
         uint160 sqrtP,
