@@ -246,6 +246,66 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap exactly 1.0000 token0 for token1 1`] = `
+Object {
+  "balance0Delta": "-1000000000000000000",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "1000000000000000000",
+  "pairBalance1Delta": "-86123526743846551",
+  "pairPriceAfter": "0.074620",
+  "pairPriceBefore": "0.10000",
+  "tickAfter": -25955,
+  "tickBefore": -23028,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap exactly 1.0000 token1 for token0 1`] = `
+Object {
+  "balance0Delta": "0",
+  "balance1Delta": "-1000000000000000000",
+  "pairBalance0Delta": "-3869747612262812753",
+  "pairBalance1Delta": "1000000000000000000",
+  "pairPriceAfter": "0.66378",
+  "pairPriceBefore": "0.10000",
+  "tickAfter": -4099,
+  "tickBefore": -23028,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 1`] = `"reverted with error: VM Exception while processing transaction: revert TN"`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 2`] = `"reverted with error: VM Exception while processing transaction: revert TN"`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for token1 to price 0.40000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `
+Object {
+  "balance0Delta": "0",
+  "balance1Delta": "-634358607857247611",
+  "pairBalance0Delta": "-3162277660168379331",
+  "pairBalance1Delta": "634358607857247611",
+  "pairPriceAfter": "0.40000",
+  "pairPriceBefore": "0.10000",
+  "tickAfter": -9164,
+  "tickBefore": -23028,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token1 for token0 to price 2.5000 1`] = `
+Object {
+  "balance0Delta": "0",
+  "balance1Delta": "-2537434431428990440",
+  "pairBalance0Delta": "-5059644256269406930",
+  "pairBalance1Delta": "2537434431428990440",
+  "pairPriceAfter": "2.5000",
+  "pairPriceBefore": "0.10000",
+  "tickAfter": 9163,
+  "tickBefore": -23028,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap exactly 1.0000 token0 for token1 1`] = `
 Object {
   "balance0Delta": "-1000000000000000000",

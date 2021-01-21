@@ -238,6 +238,19 @@ const TEST_PAIRS: PairTestCase[] = [
       },
     ],
   },
+  {
+    description: 'medium fee, 1:10 price, 2e18 max range liquidity',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(1, 10),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
 ]
 
 describe('UniswapV3Pair swap tests', () => {
