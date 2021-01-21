@@ -18,7 +18,7 @@ library FullMath {
         if (mm < l) h -= 1;
     }
 
-    /// @dev That calculates x×y÷z, rounds the result down, and throws in case z is zero or if the result 
+    /// @dev Calculates x×y÷z, rounds the result down, and throws in case z is zero or if the result 
     ///      does not fit into uint256.
     /// @param x
     /// @param y
