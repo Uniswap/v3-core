@@ -15,6 +15,7 @@ import {
   getMinTick,
   TICK_SPACINGS,
 } from './shared/utilities'
+import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 
 const createFixtureLoader = waffle.createFixtureLoader
 const { constants } = ethers
@@ -259,13 +260,13 @@ describe('UniswapV3Pair swap tests', () => {
   let loadFixture: ReturnType<typeof createFixtureLoader>
 
   before('create fixture loader', async () => {
-    loadFixture = createFixtureLoader([wallet, other])
+    loadFixture = createFixtureLoader([wallet])
   })
 
   for (const pairCase of TEST_PAIRS) {
     describe(pairCase.description, () => {
       const pairCaseFixture = async () => {
-        const { createPair, token0, token1, swapTarget } = await pairFixture([wallet, other], waffle.provider)
+        const { createPair, token0, token1, swapTarget } = await pairFixture([wallet], waffle.provider)
         const pair = await createPair(pairCase.feeAmount, pairCase.tickSpacing)
         const pairFunctions = createPairFunctions({ token0, token1, pair, swapTarget })
         await pair.initialize(pairCase.startingPrice)
@@ -274,14 +275,12 @@ describe('UniswapV3Pair swap tests', () => {
           await pairFunctions.mint(constants.AddressZero, position.tickLower, position.tickUpper, position.liquidity)
         }
 
-        const [balance0, balance1, pairBalance0, pairBalance1] = await Promise.all([
-          token0.balanceOf(wallet.address),
-          token1.balanceOf(wallet.address),
+        const [pairBalance0, pairBalance1] = await Promise.all([
           token0.balanceOf(pair.address),
           token1.balanceOf(pair.address),
         ])
 
-        return { token0, token1, pair, pairFunctions, pairBalance0, pairBalance1 }
+        return { token0, token1, pair, pairFunctions, pairBalance0, pairBalance1, swapTarget }
       }
 
       let token0: TestERC20
@@ -291,17 +290,21 @@ describe('UniswapV3Pair swap tests', () => {
       let pairBalance1: BigNumber
 
       let pair: MockTimeUniswapV3Pair
+      let swapTarget: TestUniswapV3Callee
       let pairFunctions: PairFunctions
 
       beforeEach('load fixture', async () => {
-        ;({ token0, token1, pair, pairFunctions, pairBalance0, pairBalance1 } = await loadFixture(pairCaseFixture))
+        ;({ token0, token1, pair, pairFunctions, pairBalance0, pairBalance1, swapTarget } = await loadFixture(
+          pairCaseFixture
+        ))
       })
 
       for (const testCase of pairCase.swapTests ?? DEFAULT_PAIR_SWAP_TESTS) {
         it(swapCaseToDescription(testCase), async () => {
           const slot0 = await pair.slot0()
+          const tx = executeSwap(pair, testCase, pairFunctions)
           try {
-            await executeSwap(pair, testCase, pairFunctions)
+            await tx
           } catch (error) {
             expect(`reverted with error: ${error.message}`).to.matchSnapshot()
             return
@@ -313,6 +316,33 @@ describe('UniswapV3Pair swap tests', () => {
           ])
           const pairBalance0Delta = pairBalance0After.sub(pairBalance0)
           const pairBalance1Delta = pairBalance1After.sub(pairBalance1)
+
+          // check all the events were emitted corresponding to balance changes
+          if (pairBalance0Delta.eq(0)) await expect(tx).to.not.emit(token0, 'Transfer')
+          else if (pairBalance0Delta.lt(0))
+            await expect(tx)
+              .to.emit(token0, 'Transfer')
+              .withArgs(pair.address, RECIPIENT_ADDRESS, pairBalance0Delta.mul(-1))
+          else await expect(tx).to.emit(token0, 'Transfer').withArgs(wallet.address, pair.address, pairBalance0Delta)
+
+          if (pairBalance1Delta.eq(0)) await expect(tx).to.not.emit(token1, 'Transfer')
+          else if (pairBalance1Delta.lt(0))
+            await expect(tx)
+              .to.emit(token1, 'Transfer')
+              .withArgs(pair.address, RECIPIENT_ADDRESS, pairBalance1Delta.mul(-1))
+          else await expect(tx).to.emit(token1, 'Transfer').withArgs(wallet.address, pair.address, pairBalance1Delta)
+
+          // check that the swap event was emitted too
+          await expect(tx)
+            .to.emit(pair, 'Swap')
+            .withArgs(
+              swapTarget.address,
+              RECIPIENT_ADDRESS,
+              pairBalance0Delta,
+              pairBalance1Delta,
+              slot0After.sqrtPriceX96,
+              slot0After.tick
+            )
 
           expect({
             amount0Delta: pairBalance0Delta.toString(),
