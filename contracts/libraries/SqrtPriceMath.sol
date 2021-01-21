@@ -90,7 +90,7 @@ library SqrtPriceMath {
                 : getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
     }
 
-    // calculate liquidity / sqrt(Q) - liquidity / sqrt(P)
+    // calculates liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
     function getAmount0Delta(
         uint160 sqrtPX96, // square root of current price
         uint160 sqrtQX96, // square root of target price
