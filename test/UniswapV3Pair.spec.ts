@@ -1261,8 +1261,7 @@ describe('UniswapV3Pair', () => {
     await expect(swapExact0For1(3, wallet.address))
       .to.emit(token0, 'Transfer')
       .withArgs(wallet.address, pair.address, 3)
-      .to.emit(token1, 'Transfer')
-      .withArgs(pair.address, wallet.address, 0)
+      .to.not.emit(token1, 'Transfer')
 
     const { secondsOutside: secondsOutsideAfter } = await pair.ticks(-24081)
 
