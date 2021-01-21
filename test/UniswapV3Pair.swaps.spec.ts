@@ -240,7 +240,7 @@ const TEST_PAIRS: PairTestCase[] = [
   },
 ]
 
-describe.only('UniswapV3Pair swap tests', () => {
+describe('UniswapV3Pair swap tests', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
