@@ -622,8 +622,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 _liquidity = liquidity;
         require(_liquidity > 0, 'L');
 
-        uint256 fee0 = SqrtPriceMath.mulDivRoundingUp(amount0, fee, 1e6);
-        uint256 fee1 = SqrtPriceMath.mulDivRoundingUp(amount1, fee, 1e6);
+        uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);
+        uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);
         uint256 balance0Before = balance0();
         uint256 balance1Before = balance1();
 
