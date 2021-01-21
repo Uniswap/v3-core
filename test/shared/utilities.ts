@@ -81,8 +81,7 @@ export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
   tickUpper: BigNumberish,
-  liquidity: BigNumberish,
-  data?: string
+  liquidity: BigNumberish
 ) => Promise<ContractTransaction>
 export interface PairFunctions {
   swapToLowerPrice: SwapFunction
