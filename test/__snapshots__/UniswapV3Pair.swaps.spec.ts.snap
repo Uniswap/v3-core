@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UniswapV3Pair swap tests default low fee at 1:1 price with 2e18 liquidity across range swap exactly 1.0000 token0 for token1 1`] = `
+Object {
+  "balance0Delta": "-1.0000",
+  "balance1Delta": "0.0000",
+  "pairBalance0Delta": "1.0000",
+  "pairBalance1Delta": "-0.66640",
+}
+`;
