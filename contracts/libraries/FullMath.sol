@@ -45,4 +45,12 @@ library FullMath {
         r *= 2 - d * r;
         return l * r;
     }
+
+    function mulDivRoundingUp(
+        uint256 x,
+        uint256 y,
+        uint256 d
+    ) internal pure returns (uint256) {
+        return mulDiv(x, y, d) + (mulmod(x, y, d) > 0 ? 1 : 0);
+    }
 }

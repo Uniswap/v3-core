@@ -80,7 +80,7 @@ library SwapMath {
             // we didn't reach the target, so take the remainder of the maximum input as fee
             feeAmount = uint256(amountRemaining) - amountIn;
         } else {
-            feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
+            feeAmount = FullMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
         }
     }
 }
