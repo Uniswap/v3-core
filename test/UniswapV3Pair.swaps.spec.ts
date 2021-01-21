@@ -281,14 +281,12 @@ describe('UniswapV3Pair swap tests', () => {
           token1.balanceOf(pair.address),
         ])
 
-        return { token0, token1, pair, pairFunctions, balance0, balance1, pairBalance0, pairBalance1 }
+        return { token0, token1, pair, pairFunctions, pairBalance0, pairBalance1 }
       }
 
       let token0: TestERC20
       let token1: TestERC20
 
-      let balance0: BigNumber
-      let balance1: BigNumber
       let pairBalance0: BigNumber
       let pairBalance1: BigNumber
 
@@ -296,9 +294,7 @@ describe('UniswapV3Pair swap tests', () => {
       let pairFunctions: PairFunctions
 
       beforeEach('load fixture', async () => {
-        ;({ token0, token1, balance0, balance1, pair, pairFunctions, pairBalance0, pairBalance1 } = await loadFixture(
-          pairCaseFixture
-        ))
+        ;({ token0, token1, pair, pairFunctions, pairBalance0, pairBalance1 } = await loadFixture(pairCaseFixture))
       })
 
       for (const testCase of pairCase.swapTests ?? DEFAULT_PAIR_SWAP_TESTS) {
@@ -310,23 +306,17 @@ describe('UniswapV3Pair swap tests', () => {
             expect(`reverted with error: ${error.message}`).to.matchSnapshot()
             return
           }
-          const [balance0After, balance1After, pairBalance0After, pairBalance1After, slot0After] = await Promise.all([
-            token0.balanceOf(wallet.address),
-            token1.balanceOf(wallet.address),
+          const [pairBalance0After, pairBalance1After, slot0After] = await Promise.all([
             token0.balanceOf(pair.address),
             token1.balanceOf(pair.address),
             pair.slot0(),
           ])
-          const balance0Delta = balance0After.sub(balance0)
-          const balance1Delta = balance1After.sub(balance1)
           const pairBalance0Delta = pairBalance0After.sub(pairBalance0)
           const pairBalance1Delta = pairBalance1After.sub(pairBalance1)
 
           expect({
-            balance0Delta: balance0Delta.toString(),
-            balance1Delta: balance1Delta.toString(),
-            pairBalance0Delta: pairBalance0Delta.toString(),
-            pairBalance1Delta: pairBalance1Delta.toString(),
+            amount0Delta: pairBalance0Delta.toString(),
+            amount1Delta: pairBalance1Delta.toString(),
             tickBefore: slot0.tick,
             pairPriceBefore: formatPrice(slot0.sqrtPriceX96),
             tickAfter: slot0After.tick,
