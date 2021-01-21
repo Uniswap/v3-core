@@ -1,10 +1,157 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pair swap tests default low fee at 1:1 price with 2e18 liquidity across range swap exactly 1.0000 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000 token0 for token1 1`] = `
 Object {
-  "balance0Delta": "-1.0000",
-  "balance1Delta": "0.0000",
-  "pairBalance0Delta": "1.0000",
-  "pairBalance1Delta": "-0.66640",
+  "balance0Delta": "-1000000000000000000",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "1000000000000000000",
+  "pairBalance1Delta": "-662654630558341691",
+  "pairPriceAfter": "0.00000000015569",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -8050,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000 token1 for token0 1`] = `
+Object {
+  "balance0Delta": "0",
+  "balance1Delta": "-1000000000000000000",
+  "pairBalance0Delta": "-662654630558341691",
+  "pairBalance1Delta": "1000000000000000000",
+  "pairPriceAfter": "0.00000000034820",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": 8049,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 1`] = `
+Object {
+  "balance0Delta": "-2018163471241170535",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "2018163471241170535",
+  "pairBalance1Delta": "-1000000000000000000",
+  "pairPriceAfter": "0.00000000011642",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -13864,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 2`] = `
+Object {
+  "balance0Delta": "-2018163471241170535",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "2018163471241170535",
+  "pairBalance1Delta": "-1000000000000000000",
+  "pairPriceAfter": "0.00000000011642",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -13864,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000 token0 for token1 1`] = `
+Object {
+  "balance0Delta": "-1000000000000000000",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "1000000000000000000",
+  "pairBalance1Delta": "-666399946655997863",
+  "pairPriceAfter": "0.00000000015525",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -8106,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000 token1 for token0 1`] = `
+Object {
+  "balance0Delta": "0",
+  "balance1Delta": "-1000000000000000000",
+  "pairBalance0Delta": "-666399946655997863",
+  "pairBalance1Delta": "1000000000000000000",
+  "pairPriceAfter": "0.00000000034918",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": 8105,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 1`] = `
+Object {
+  "balance0Delta": "-2001200720432259367",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "2001200720432259367",
+  "pairBalance1Delta": "-1000000000000000000",
+  "pairPriceAfter": "0.00000000011642",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -13864,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 2`] = `
+Object {
+  "balance0Delta": "-2001200720432259367",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "2001200720432259367",
+  "pairBalance1Delta": "-1000000000000000000",
+  "pairPriceAfter": "0.00000000011642",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -13864,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000 token0 for token1 1`] = `
+Object {
+  "balance0Delta": "-1000000000000000000",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "1000000000000000000",
+  "pairBalance1Delta": "-665331998665331998",
+  "pairPriceAfter": "0.00000000015538",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -8090,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000 token1 for token0 1`] = `
+Object {
+  "balance0Delta": "0",
+  "balance1Delta": "-1000000000000000000",
+  "pairBalance0Delta": "-665331998665331998",
+  "pairBalance1Delta": "1000000000000000000",
+  "pairPriceAfter": "0.00000000034890",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": 8089,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 1`] = `
+Object {
+  "balance0Delta": "-2006018054162487463",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "2006018054162487463",
+  "pairBalance1Delta": "-1000000000000000000",
+  "pairPriceAfter": "0.00000000011642",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -13864,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 2`] = `
+Object {
+  "balance0Delta": "-2006018054162487463",
+  "balance1Delta": "0",
+  "pairBalance0Delta": "2006018054162487463",
+  "pairBalance1Delta": "-1000000000000000000",
+  "pairPriceAfter": "0.00000000011642",
+  "pairPriceBefore": "0.00000000023283",
+  "tickAfter": -13864,
+  "tickBefore": 0,
 }
 `;

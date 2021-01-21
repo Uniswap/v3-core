@@ -37,7 +37,7 @@ interface PairTestCase {
 
 const TEST_PAIRS: PairTestCase[] = [
   {
-    description: 'default low fee at 1:1 price with 2e18 liquidity across range',
+    description: 'low fee, 1:1 price, 2e18 max range liquidity',
     feeAmount: FeeAmount.LOW,
     tickSpacing: TICK_SPACINGS[FeeAmount.LOW],
     startingPrice: encodePriceSqrt(1, 1),
@@ -49,12 +49,37 @@ const TEST_PAIRS: PairTestCase[] = [
       },
     ],
   },
+  {
+    description: 'medium fee, 1:1 price, 2e18 max range liquidity',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'high fee, 1:1 price, 2e18 max range liquidity',
+    feeAmount: FeeAmount.HIGH,
+    tickSpacing: TICK_SPACINGS[FeeAmount.HIGH],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
 ]
 
 interface BaseSwapTestCase {
   zeroForOne: boolean
   sqrtPriceLimit?: BigNumber
-  recipient: string | Wallet
 }
 interface SwapExact0For1TestCase extends BaseSwapTestCase {
   zeroForOne: true
@@ -117,7 +142,7 @@ function swapCaseToDescription(testCase: SwapTestCase): string {
       if (testCase.zeroForOne) {
         return `swap exactly ${formatTokenAmount(testCase.amount0)} token0 for token1${priceClause}`
       } else {
-        return `swap exactly ${formatTokenAmount(testCase.amount1)} token0 for token1${priceClause}`
+        return `swap exactly ${formatTokenAmount(testCase.amount1)} token1 for token0${priceClause}`
       }
     }
   } else {
@@ -131,6 +156,9 @@ function swapCaseToDescription(testCase: SwapTestCase): string {
 
 type PairFunctions = ReturnType<typeof createPairFunctions>
 
+// can't use address zero because the ERC20 token does not allow it
+const RECIPIENT_ADDRESS = constants.AddressZero.slice(0, -1) + '1'
+
 async function executeSwap(
   pair: MockTimeUniswapV3Pair,
   testCase: SwapTestCase,
@@ -140,22 +168,22 @@ async function executeSwap(
   if ('exactOut' in testCase) {
     if (testCase.exactOut) {
       if (testCase.zeroForOne) {
-        swap = await pairFunctions.swap0ForExact1(testCase.amount1, testCase.recipient)
+        swap = await pairFunctions.swap0ForExact1(testCase.amount1, RECIPIENT_ADDRESS)
       } else {
-        swap = await pairFunctions.swap1ForExact0(testCase.amount0, testCase.recipient)
+        swap = await pairFunctions.swap1ForExact0(testCase.amount0, RECIPIENT_ADDRESS)
       }
     } else {
       if (testCase.zeroForOne) {
-        swap = await pairFunctions.swapExact0For1(testCase.amount0, testCase.recipient)
+        swap = await pairFunctions.swapExact0For1(testCase.amount0, RECIPIENT_ADDRESS)
       } else {
-        swap = await pairFunctions.swapExact1For0(testCase.amount1, testCase.recipient)
+        swap = await pairFunctions.swapExact1For0(testCase.amount1, RECIPIENT_ADDRESS)
       }
     }
   } else {
     if (testCase.zeroForOne) {
-      swap = await pairFunctions.swapToLowerPrice(testCase.sqrtPriceLimit, testCase.recipient)
+      swap = await pairFunctions.swapToLowerPrice(testCase.sqrtPriceLimit, RECIPIENT_ADDRESS)
     } else {
-      swap = await pairFunctions.swapToHigherPrice(testCase.sqrtPriceLimit, testCase.recipient)
+      swap = await pairFunctions.swapToHigherPrice(testCase.sqrtPriceLimit, RECIPIENT_ADDRESS)
     }
   }
   return swap
@@ -168,10 +196,24 @@ describe.only('UniswapV3Pair swap tests', () => {
 
   const SWAP_TEST_CASES: SwapTestCase[] = [
     {
-      amount0: expandTo18Decimals(1),
       zeroForOne: true,
       exactOut: false,
-      recipient: other,
+      amount0: expandTo18Decimals(1),
+    },
+    {
+      zeroForOne: false,
+      exactOut: false,
+      amount1: expandTo18Decimals(1),
+    },
+    {
+      zeroForOne: true,
+      exactOut: true,
+      amount1: expandTo18Decimals(1),
+    },
+    {
+      zeroForOne: true,
+      exactOut: true,
+      amount1: expandTo18Decimals(1),
     },
   ]
 
@@ -220,12 +262,14 @@ describe.only('UniswapV3Pair swap tests', () => {
 
       for (const testCase of SWAP_TEST_CASES) {
         it(swapCaseToDescription(testCase), async () => {
+          const slot0 = await pair.slot0()
           await executeSwap(pair, testCase, pairFunctions)
-          const [balance0After, balance1After, pairBalance0After, pairBalance1After] = await Promise.all([
+          const [balance0After, balance1After, pairBalance0After, pairBalance1After, slot0After] = await Promise.all([
             token0.balanceOf(wallet.address),
             token1.balanceOf(wallet.address),
             token0.balanceOf(pair.address),
             token1.balanceOf(pair.address),
+            pair.slot0(),
           ])
           const balance0Delta = balance0After.sub(balance0)
           const balance1Delta = balance1After.sub(balance1)
@@ -233,10 +277,14 @@ describe.only('UniswapV3Pair swap tests', () => {
           const pairBalance1Delta = pairBalance1After.sub(pairBalance1)
 
           expect({
-            balance0Delta: formatTokenAmount(balance0Delta),
-            balance1Delta: formatTokenAmount(balance1Delta),
-            pairBalance0Delta: formatTokenAmount(pairBalance0Delta),
-            pairBalance1Delta: formatTokenAmount(pairBalance1Delta),
+            balance0Delta: balance0Delta.toString(),
+            balance1Delta: balance1Delta.toString(),
+            pairBalance0Delta: pairBalance0Delta.toString(),
+            pairBalance1Delta: pairBalance1Delta.toString(),
+            tickBefore: slot0.tick,
+            pairPriceBefore: formatPrice(slot0.sqrtPriceX96),
+            tickAfter: slot0After.tick,
+            pairPriceAfter: formatPrice(slot0After.sqrtPriceX96),
           }).to.matchSnapshot('balances')
         })
       }
