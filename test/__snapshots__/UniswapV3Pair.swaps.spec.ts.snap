@@ -55,9 +55,9 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
-exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
 exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 2.5000 1`] = `
 Object {
@@ -125,9 +125,9 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
-exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
 exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 2.5000 1`] = `
 Object {
@@ -195,9 +195,9 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
 exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 2.5000 1`] = `
 Object {
@@ -232,13 +232,13 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 1`] = `"reverted with error: VM Exception while processing transaction: revert TN"`;
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 1`] = `"VM Exception while processing transaction: revert TN"`;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 2`] = `"reverted with error: VM Exception while processing transaction: revert TN"`;
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 2`] = `"VM Exception while processing transaction: revert TN"`;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for token1 to price 0.40000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for token1 to price 0.40000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for token1 to price 2.5000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
 exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `
 Object {
@@ -328,6 +328,6 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token1 for token0 to price 0.40000 1`] = `"VM Exception while processing transaction: revert SPL"`;
 
-exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token1 for token0 to price 2.5000 1`] = `"reverted with error: VM Exception while processing transaction: revert SPL"`;
+exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token1 for token0 to price 2.5000 1`] = `"VM Exception while processing transaction: revert SPL"`;

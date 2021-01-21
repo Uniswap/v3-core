@@ -306,7 +306,7 @@ describe('UniswapV3Pair swap tests', () => {
           try {
             await tx
           } catch (error) {
-            expect(`reverted with error: ${error.message}`).to.matchSnapshot()
+            expect(error.message).to.matchSnapshot('swap error')
             return
           }
           const [pairBalance0After, pairBalance1After, slot0After] = await Promise.all([
