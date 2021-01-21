@@ -4,9 +4,8 @@ pragma solidity >=0.5.0;
 /// @title LiquidityMath
 /// @notice contains functions for applying signed liquidity delta values to unsigned liquidity values
 library LiquidityMath {
-    
-    /// @param x 
-    /// @param y 
+    /// @param x
+    /// @param y
     /// @return z
     function addDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
         if (y < 0) {
@@ -16,7 +15,7 @@ library LiquidityMath {
         }
     }
 
-    /// @param x 
+    /// @param x
     /// @param y
     /// @return z
     function subDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
