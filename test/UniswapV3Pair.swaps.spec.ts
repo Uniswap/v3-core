@@ -1,12 +1,10 @@
-import { ContractReceipt } from '@ethersproject/contracts/src.ts/index'
 import { Decimal } from 'decimal.js'
-import { BigNumber, BigNumberish, ContractTransaction, Wallet } from 'ethers'
+import { BigNumber, BigNumberish, ContractTransaction } from 'ethers'
 import { ethers, waffle } from 'hardhat'
 import { MockTimeUniswapV3Pair } from '../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../typechain/TestERC20'
 import { expect } from './shared/expect'
 import { pairFixture } from './shared/fixtures'
-import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
   createPairFunctions,
@@ -20,62 +18,6 @@ import {
 
 const createFixtureLoader = waffle.createFixtureLoader
 const { constants } = ethers
-
-interface Position {
-  tickLower: number
-  tickUpper: number
-  liquidity: BigNumberish
-}
-
-interface PairTestCase {
-  description: string
-  feeAmount: number
-  tickSpacing: number
-  startingPrice: BigNumber
-  positions: Position[]
-}
-
-const TEST_PAIRS: PairTestCase[] = [
-  {
-    description: 'low fee, 1:1 price, 2e18 max range liquidity',
-    feeAmount: FeeAmount.LOW,
-    tickSpacing: TICK_SPACINGS[FeeAmount.LOW],
-    startingPrice: encodePriceSqrt(1, 1),
-    positions: [
-      {
-        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.LOW]),
-        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.LOW]),
-        liquidity: expandTo18Decimals(2),
-      },
-    ],
-  },
-  {
-    description: 'medium fee, 1:1 price, 2e18 max range liquidity',
-    feeAmount: FeeAmount.MEDIUM,
-    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
-    startingPrice: encodePriceSqrt(1, 1),
-    positions: [
-      {
-        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
-        liquidity: expandTo18Decimals(2),
-      },
-    ],
-  },
-  {
-    description: 'high fee, 1:1 price, 2e18 max range liquidity',
-    feeAmount: FeeAmount.HIGH,
-    tickSpacing: TICK_SPACINGS[FeeAmount.HIGH],
-    startingPrice: encodePriceSqrt(1, 1),
-    positions: [
-      {
-        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
-        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
-        liquidity: expandTo18Decimals(2),
-      },
-    ],
-  },
-]
 
 interface BaseSwapTestCase {
   zeroForOne: boolean
@@ -189,33 +131,119 @@ async function executeSwap(
   return swap
 }
 
+const DEFAULT_PAIR_SWAP_TESTS: SwapTestCase[] = [
+  {
+    zeroForOne: true,
+    exactOut: false,
+    amount0: expandTo18Decimals(1),
+  },
+  {
+    zeroForOne: false,
+    exactOut: false,
+    amount1: expandTo18Decimals(1),
+  },
+  {
+    zeroForOne: true,
+    exactOut: true,
+    amount1: expandTo18Decimals(1),
+  },
+  {
+    zeroForOne: true,
+    exactOut: true,
+    amount1: expandTo18Decimals(1),
+  },
+  {
+    sqrtPriceLimit: encodePriceSqrt(5, 2),
+    zeroForOne: false,
+  },
+  {
+    sqrtPriceLimit: encodePriceSqrt(2, 5),
+    zeroForOne: true,
+  },
+  {
+    sqrtPriceLimit: encodePriceSqrt(5, 2),
+    zeroForOne: true,
+  },
+  {
+    sqrtPriceLimit: encodePriceSqrt(2, 5),
+    zeroForOne: false,
+  },
+]
+
+interface Position {
+  tickLower: number
+  tickUpper: number
+  liquidity: BigNumberish
+}
+
+interface PairTestCase {
+  description: string
+  feeAmount: number
+  tickSpacing: number
+  startingPrice: BigNumber
+  positions: Position[]
+  swapTests?: SwapTestCase[]
+}
+
+const TEST_PAIRS: PairTestCase[] = [
+  {
+    description: 'low fee, 1:1 price, 2e18 max range liquidity',
+    feeAmount: FeeAmount.LOW,
+    tickSpacing: TICK_SPACINGS[FeeAmount.LOW],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.LOW]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.LOW]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'medium fee, 1:1 price, 2e18 max range liquidity',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'high fee, 1:1 price, 2e18 max range liquidity',
+    feeAmount: FeeAmount.HIGH,
+    tickSpacing: TICK_SPACINGS[FeeAmount.HIGH],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'medium fee, 10:1 price, 2e18 max range liquidity',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(10, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+]
+
 describe.only('UniswapV3Pair swap tests', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
-
-  const SWAP_TEST_CASES: SwapTestCase[] = [
-    {
-      zeroForOne: true,
-      exactOut: false,
-      amount0: expandTo18Decimals(1),
-    },
-    {
-      zeroForOne: false,
-      exactOut: false,
-      amount1: expandTo18Decimals(1),
-    },
-    {
-      zeroForOne: true,
-      exactOut: true,
-      amount1: expandTo18Decimals(1),
-    },
-    {
-      zeroForOne: true,
-      exactOut: true,
-      amount1: expandTo18Decimals(1),
-    },
-  ]
 
   before('create fixture loader', async () => {
     loadFixture = createFixtureLoader([wallet, other])
@@ -260,10 +288,15 @@ describe.only('UniswapV3Pair swap tests', () => {
         ))
       })
 
-      for (const testCase of SWAP_TEST_CASES) {
+      for (const testCase of pairCase.swapTests ?? DEFAULT_PAIR_SWAP_TESTS) {
         it(swapCaseToDescription(testCase), async () => {
           const slot0 = await pair.slot0()
-          await executeSwap(pair, testCase, pairFunctions)
+          try {
+            await executeSwap(pair, testCase, pairFunctions)
+          } catch (error) {
+            expect(`reverted with error: ${error.message}`).to.matchSnapshot()
+            return
+          }
           const [balance0After, balance1After, pairBalance0After, pairBalance1After, slot0After] = await Promise.all([
             token0.balanceOf(wallet.address),
             token1.balanceOf(wallet.address),
