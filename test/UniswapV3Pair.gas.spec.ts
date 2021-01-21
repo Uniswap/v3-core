@@ -50,13 +50,13 @@ describe('UniswapV3Pair gas tests', () => {
 
         await pair.initialize(encodePriceSqrt(1, 1))
         await pair.increaseObservationCardinality(4)
-        await pair.setTime(TEST_PAIR_START_TIME + 1)
+        await pair.advanceTime(1)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))
 
         await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await pair.setTime(TEST_PAIR_START_TIME + 2)
+        await pair.advanceTime(1)
         await swapToHigherPrice(startingPrice, wallet.address)
-        await pair.setTime(startingTime)
+        await pair.advanceTime(1)
         expect((await pair.slot0()).tick).to.eq(startingTick)
         expect((await pair.slot0()).sqrtPriceX96).to.eq(startingPrice)
 
@@ -152,7 +152,7 @@ describe('UniswapV3Pair gas tests', () => {
             expandTo18Decimals(1)
           )
           await swapExact0For1(2, wallet.address)
-          await pair.setTime(startingTime + 1)
+          await pair.advanceTime(1)
           await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
           expect((await pair.slot0()).tick).to.be.lte(startingTick - 4 * tickSpacing)
         })
@@ -167,7 +167,7 @@ describe('UniswapV3Pair gas tests', () => {
           )
           await swapExact0For1(expandTo18Decimals(1), wallet.address)
           await swapToHigherPrice(startingPrice, wallet.address)
-          await pair.setTime(startingTime + 1)
+          await pair.advanceTime(1)
           await snapshotGasCost(swapExact0For1(expandTo18Decimals(1), wallet.address))
           expect((await pair.slot0()).tick).to.be.lt(tickSpacing * -4)
         })
@@ -205,7 +205,7 @@ describe('UniswapV3Pair gas tests', () => {
             })
             it('add to position after some time passes', async () => {
               await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
-              await pair.setTime(startingTime + 1)
+              await pair.advanceTime(1)
               await snapshotGasCost(mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1)))
             })
           })
@@ -247,7 +247,7 @@ describe('UniswapV3Pair gas tests', () => {
               await snapshotGasCost(pair.burn(wallet.address, tickLower, tickUpper, expandTo18Decimals(1)))
             })
             it('burn entire position after some time passes', async () => {
-              await pair.setTime(startingTime + 1)
+              await pair.advanceTime(1)
               await snapshotGasCost(pair.burn(wallet.address, tickLower, tickUpper, expandTo18Decimals(1)))
             })
           })

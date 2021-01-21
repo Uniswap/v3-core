@@ -343,7 +343,7 @@ describe('UniswapV3Pair', () => {
               initialized: true,
               liquidityCumulative: 0,
             })
-            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await pair.advanceTime(1)
             await mint(wallet.address, -240, 0, 100)
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
@@ -403,7 +403,7 @@ describe('UniswapV3Pair', () => {
               initialized: true,
               liquidityCumulative: 0,
             })
-            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await pair.advanceTime(1)
             await mint(wallet.address, minTick, maxTick, 100)
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: -23028,
@@ -452,7 +452,7 @@ describe('UniswapV3Pair', () => {
               initialized: true,
               liquidityCumulative: 0,
             })
-            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await pair.advanceTime(1)
             await mint(wallet.address, -46080, -23040, 100)
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
@@ -560,7 +560,7 @@ describe('UniswapV3Pair', () => {
 
     it('clears the position fee growth snapshot if no more liquidity', async () => {
       // some activity that would make the ticks non-zero
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
       await swapExact1For0(expandTo18Decimals(1), wallet.address)
@@ -583,7 +583,7 @@ describe('UniswapV3Pair', () => {
       const tickLower = minTick + tickSpacing
       const tickUpper = maxTick - tickSpacing
       // some activity that would make the ticks non-zero
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       await mint(wallet.address, tickLower, tickUpper, 1)
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
       await pair.burn(wallet.address, tickLower, tickUpper, 1)
@@ -595,7 +595,7 @@ describe('UniswapV3Pair', () => {
       const tickLower = minTick + tickSpacing
       const tickUpper = maxTick - tickSpacing
       // some activity that would make the ticks non-zero
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       await mint(wallet.address, tickLower, tickUpper, 1)
       await mint(wallet.address, tickLower + tickSpacing, tickUpper, 1)
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
@@ -608,7 +608,7 @@ describe('UniswapV3Pair', () => {
       const tickLower = minTick + tickSpacing
       const tickUpper = maxTick - tickSpacing
       // some activity that would make the ticks non-zero
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       await mint(wallet.address, tickLower, tickUpper, 1)
       await mint(wallet.address, tickLower, tickUpper - tickSpacing, 1)
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
@@ -645,7 +645,7 @@ describe('UniswapV3Pair', () => {
     it('blockTimestamp is always current timestamp', async () => {
       let { blockTimestamp } = await getCumulatives()
       expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       ;({ blockTimestamp } = await getCumulatives())
       expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME + 10)
     })
@@ -654,7 +654,7 @@ describe('UniswapV3Pair', () => {
     it('tick accumulator increases by tick over time', async () => {
       let { tickCumulative } = await getCumulatives()
       expect(tickCumulative).to.eq(0)
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       ;({ tickCumulative } = await getCumulatives())
       expect(tickCumulative).to.eq(0)
     })
@@ -662,7 +662,7 @@ describe('UniswapV3Pair', () => {
     it('tick accumulator after swap', async () => {
       // moves to tick -1
       await swapExact0For1(1000, wallet.address)
-      await pair.setTime(TEST_PAIR_START_TIME + 4)
+      await pair.advanceTime(4)
       let { tickCumulative } = await getCumulatives()
       expect(tickCumulative).to.eq(-4)
     })
@@ -670,10 +670,10 @@ describe('UniswapV3Pair', () => {
     it('tick accumulator after two swaps', async () => {
       await swapExact0For1(expandTo18Decimals(1).div(2), wallet.address)
       expect((await pair.slot0()).tick).to.eq(-4452)
-      await pair.setTime(TEST_PAIR_START_TIME + 4)
+      await pair.advanceTime(4)
       await swapExact1For0(expandTo18Decimals(1).div(4), wallet.address)
       expect((await pair.slot0()).tick).to.eq(-1558)
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(6)
       let { tickCumulative } = await getCumulatives()
       // -4452*4 + -1558*6
       expect(tickCumulative).to.eq(-27156)
