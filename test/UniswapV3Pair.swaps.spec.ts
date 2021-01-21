@@ -149,9 +149,9 @@ const DEFAULT_PAIR_SWAP_TESTS: SwapTestCase[] = [
     amount1: expandTo18Decimals(1),
   },
   {
-    zeroForOne: true,
+    zeroForOne: false,
     exactOut: true,
-    amount1: expandTo18Decimals(1),
+    amount0: expandTo18Decimals(1),
   },
   {
     zeroForOne: true,
@@ -169,9 +169,9 @@ const DEFAULT_PAIR_SWAP_TESTS: SwapTestCase[] = [
     amount1: 1000,
   },
   {
-    zeroForOne: true,
+    zeroForOne: false,
     exactOut: true,
-    amount1: 1000,
+    amount0: 1000,
   },
   {
     sqrtPriceLimit: encodePriceSqrt(5, 2),
