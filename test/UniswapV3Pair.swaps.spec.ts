@@ -410,6 +410,8 @@ describe('UniswapV3Pair swap tests', () => {
               swapError: error.message,
               pairBalance0: pairBalance0.toString(),
               pairBalance1: pairBalance1.toString(),
+              pairPriceBefore: formatPrice(slot0.sqrtPriceX96),
+              tickBefore: slot0.tick,
             }).to.matchSnapshot('swap error')
             return
           }

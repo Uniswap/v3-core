@@ -130,7 +130,9 @@ exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity 
 Object {
   "pairBalance0": "2000000000000000000",
   "pairBalance1": "2000000000000000000",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -138,7 +140,9 @@ exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity 
 Object {
   "pairBalance0": "2000000000000000000",
   "pairBalance1": "2000000000000000000",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -286,7 +290,9 @@ exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity s
 Object {
   "pairBalance0": "2000000000000000000",
   "pairBalance1": "2000000000000000000",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -294,7 +300,9 @@ exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity s
 Object {
   "pairBalance0": "2000000000000000000",
   "pairBalance1": "2000000000000000000",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -344,7 +352,9 @@ exports[`UniswapV3Pair swap tests low fee, large liquidity around current price 
 Object {
   "pairBalance0": "1199580111974806",
   "pairBalance1": "1199580111974806",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -352,7 +362,9 @@ exports[`UniswapV3Pair swap tests low fee, large liquidity around current price 
 Object {
   "pairBalance0": "1199580111974806",
   "pairBalance1": "1199580111974806",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -388,7 +400,9 @@ exports[`UniswapV3Pair swap tests low fee, large liquidity around current price 
 Object {
   "pairBalance0": "1199580111974806",
   "pairBalance1": "1199580111974806",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -396,7 +410,9 @@ exports[`UniswapV3Pair swap tests low fee, large liquidity around current price 
 Object {
   "pairBalance0": "1199580111974806",
   "pairBalance1": "1199580111974806",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -418,7 +434,9 @@ exports[`UniswapV3Pair swap tests low fee, large liquidity around current price 
 Object {
   "pairBalance0": "1199580111974806",
   "pairBalance1": "1199580111974806",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -426,7 +444,9 @@ exports[`UniswapV3Pair swap tests low fee, large liquidity around current price 
 Object {
   "pairBalance0": "1199580111974806",
   "pairBalance1": "1199580111974806",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -574,7 +594,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquid
 Object {
   "pairBalance0": "1982081649422850916",
   "pairBalance1": "1994009290088178439",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -582,7 +604,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquid
 Object {
   "pairBalance0": "1982081649422850916",
   "pairBalance1": "1994009290088178439",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -730,7 +754,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidit
 Object {
   "pairBalance0": "2000000000000000000",
   "pairBalance1": "2000000000000000000",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -738,7 +764,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidit
 Object {
   "pairBalance0": "2000000000000000000",
   "pairBalance1": "2000000000000000000",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -886,7 +914,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity ar
 Object {
   "pairBalance0": "3982081649422850916",
   "pairBalance1": "3994009290088178439",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -894,7 +924,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity ar
 Object {
   "pairBalance0": "3982081649422850916",
   "pairBalance1": "3994009290088178439",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -1000,7 +1032,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidi
 Object {
   "pairBalance0": "6324555320336758664",
   "pairBalance1": "632455532033675867",
+  "pairPriceBefore": "0.10000",
   "swapError": "VM Exception while processing transaction: revert TN",
+  "tickBefore": -23028,
 }
 `;
 
@@ -1008,7 +1042,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidi
 Object {
   "pairBalance0": "6324555320336758664",
   "pairBalance1": "632455532033675867",
+  "pairPriceBefore": "0.10000",
   "swapError": "VM Exception while processing transaction: revert TN",
+  "tickBefore": -23028,
 }
 `;
 
@@ -1016,7 +1052,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidi
 Object {
   "pairBalance0": "6324555320336758664",
   "pairBalance1": "632455532033675867",
+  "pairPriceBefore": "0.10000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": -23028,
 }
 `;
 
@@ -1024,7 +1062,9 @@ exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidi
 Object {
   "pairBalance0": "6324555320336758664",
   "pairBalance1": "632455532033675867",
+  "pairPriceBefore": "0.10000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": -23028,
 }
 `;
 
@@ -1200,7 +1240,9 @@ exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidi
 Object {
   "pairBalance0": "632455532033675867",
   "pairBalance1": "6324555320336758664",
+  "pairPriceBefore": "10.000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 23027,
 }
 `;
 
@@ -1208,7 +1250,9 @@ exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidi
 Object {
   "pairBalance0": "632455532033675867",
   "pairBalance1": "6324555320336758664",
+  "pairPriceBefore": "10.000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 23027,
 }
 `;
 
@@ -1216,7 +1260,9 @@ exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap exactly
 Object {
   "pairBalance0": "1995041008271423675",
   "pairBalance1": "0",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -1238,7 +1284,9 @@ exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap exactly
 Object {
   "pairBalance0": "1995041008271423675",
   "pairBalance1": "0",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -1260,7 +1308,9 @@ exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token0 
 Object {
   "pairBalance0": "1995041008271423675",
   "pairBalance1": "0",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -1268,7 +1318,9 @@ exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token0 
 Object {
   "pairBalance0": "1995041008271423675",
   "pairBalance1": "0",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -1276,7 +1328,9 @@ exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token0 
 Object {
   "pairBalance0": "1995041008271423675",
   "pairBalance1": "0",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -1284,7 +1338,9 @@ exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token0 
 Object {
   "pairBalance0": "1995041008271423675",
   "pairBalance1": "0",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -1306,7 +1362,9 @@ exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token0 
 Object {
   "pairBalance0": "1995041008271423675",
   "pairBalance1": "0",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -1314,7 +1372,9 @@ exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token1 
 Object {
   "pairBalance0": "1995041008271423675",
   "pairBalance1": "0",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -1350,7 +1410,9 @@ exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap exactly
 Object {
   "pairBalance0": "0",
   "pairBalance1": "1995041008271423675",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -1372,7 +1434,9 @@ exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap exactly
 Object {
   "pairBalance0": "0",
   "pairBalance1": "1995041008271423675",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert T",
+  "tickBefore": 0,
 }
 `;
 
@@ -1450,7 +1514,9 @@ exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap token0 
 Object {
   "pairBalance0": "0",
   "pairBalance1": "1995041008271423675",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
@@ -1458,7 +1524,9 @@ exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap token1 
 Object {
   "pairBalance0": "0",
   "pairBalance1": "1995041008271423675",
+  "pairPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": 0,
 }
 `;
 
