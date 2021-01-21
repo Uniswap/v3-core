@@ -16,8 +16,8 @@ library Position {
         uint256 feeGrowthInside0LastX128;
         uint256 feeGrowthInside1LastX128;
         // the fees owed to the position owner in token0/token1
-        uint256 feesOwed0;
-        uint256 feesOwed1;
+        uint128 feesOwed0;
+        uint128 feesOwed1;
     }
 
     function get(
@@ -65,8 +65,8 @@ library Position {
         self.liquidity = liquidityNext;
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        self.feesOwed0 += feesOwed0;
-        self.feesOwed1 += feesOwed1;
+        self.feesOwed0 = LiquidityMath.addCapped(self.feesOwed0, feesOwed0);
+        self.feesOwed1 = LiquidityMath.addCapped(self.feesOwed1, feesOwed1);
 
         // clear position data that is no longer needed
         if (liquidityDelta < 0 && liquidityNext == 0) {

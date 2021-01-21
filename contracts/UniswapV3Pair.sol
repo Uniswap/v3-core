@@ -75,25 +75,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     Slot0 public override slot0;
 
-    // the current liquidity
-    uint128 public override liquidity;
-
-    // see Oracle.sol
-    Oracle.Observation[65535] public override observations;
-
-    // see TickBitmap.sol
-    mapping(int16 => uint256) public override tickBitmap;
-
     // fee growth per unit of liquidity
     uint256 public override feeGrowthGlobal0X128;
     uint256 public override feeGrowthGlobal1X128;
 
     // accumulated protocol fees in token0/token1 units
-    uint256 public override protocolFees0;
-    uint256 public override protocolFees1;
+    uint128 public override protocolFees0;
+    uint128 public override protocolFees1;
+
+    // the current liquidity
+    uint128 public override liquidity;
 
     mapping(int24 => Tick.Info) public override ticks;
+    mapping(int16 => uint256) public override tickBitmap;
     mapping(bytes32 => Position.Info) public override positions;
+    Oracle.Observation[65535] public override observations;
 
     modifier lock() {
         require(slot0.unlocked, 'LOK');
@@ -245,8 +241,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // todo: better naming for these variables
         (uint256 feeProtocol0, uint256 feeProtocol1) =
             position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
-        if (feeProtocol0 > 0) protocolFees0 += feeProtocol0;
-        if (feeProtocol1 > 0) protocolFees1 += feeProtocol1;
+        if (feeProtocol0 > 0) protocolFees0 = protocolFees0.addCapped(feeProtocol0);
+        if (feeProtocol1 > 0) protocolFees1 = protocolFees1.addCapped(feeProtocol1);
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
@@ -259,9 +255,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+        uint128 amount0Requested,
+        uint128 amount1Requested
+    ) external override lock returns (uint128 amount0, uint128 amount1) {
         checkTicks(tickLower, tickUpper);
 
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
@@ -595,9 +591,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function collectProtocol(
         address recipient,
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
+        uint128 amount0Requested,
+        uint128 amount1Requested
+    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
         amount0 = amount0Requested > protocolFees0 ? protocolFees0 : amount0Requested;
         amount1 = amount1Requested > protocolFees1 ? protocolFees1 : amount1Requested;
 
