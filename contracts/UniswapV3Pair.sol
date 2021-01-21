@@ -416,6 +416,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 liquidityStart;
         // the timestamp of the current block
         uint32 blockTimestamp;
+        // the fee growth global of the output token, cached when we cross a tick
+        uint256 feeGrowthGlobalOtherX128;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
@@ -432,6 +434,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 feeGrowthGlobalX128;
         // the current liquidity in range
         uint128 liquidity;
+        // whether we've crossed any initialized ticks
+        bool crossed;
     }
 
     struct StepComputations {
@@ -469,7 +473,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlocked = false;
 
         SwapCache memory cache =
-            SwapCache({slot0Start: _slot0, liquidityStart: liquidity, blockTimestamp: _blockTimestamp()});
+            SwapCache({
+                slot0Start: _slot0,
+                liquidityStart: liquidity,
+                blockTimestamp: _blockTimestamp(),
+                feeGrowthGlobalOtherX128: 0
+            });
 
         bool exactInput = amountSpecified > 0;
 
@@ -480,7 +489,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 sqrtPriceX96: cache.slot0Start.sqrtPriceX96,
                 tick: cache.slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
-                liquidity: cache.liquidityStart
+                liquidity: cache.liquidityStart,
+                crossed: false
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -526,11 +536,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
+                    if (!state.crossed) {
+                        state.crossed = true;
+                        cache.feeGrowthGlobalOtherX128 = zeroForOne ? feeGrowthGlobal1X128 : feeGrowthGlobal0X128;
+                    }
+
                     int128 liquidityDelta =
                         ticks.cross(
                             step.tickNext,
-                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
-                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
+                            (zeroForOne ? state.feeGrowthGlobalX128 : cache.feeGrowthGlobalOtherX128),
+                            (zeroForOne ? cache.feeGrowthGlobalOtherX128 : state.feeGrowthGlobalX128),
                             cache.blockTimestamp
                         );
 
