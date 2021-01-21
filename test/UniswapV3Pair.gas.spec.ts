@@ -173,6 +173,16 @@ describe('UniswapV3Pair gas tests', () => {
         })
       })
 
+      describe.only('#poke', () => {
+        const tickLower = startingTick - tickSpacing
+        const tickUpper = startingTick + tickSpacing
+        it('best case', async () => {
+          await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
+          await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
+          await snapshotGasCost(mint(wallet.address, tickLower, tickUpper, 0))
+        })
+      })
+
       describe('#mint', () => {
         for (const { description, tickLower, tickUpper } of [
           {
