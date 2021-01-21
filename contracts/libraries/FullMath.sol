@@ -5,7 +5,6 @@ pragma solidity >=0.4.0;
 /// @notice This library provides solutions for securely handling percents and proportions while preventing overflow.
 /// @dev Addresses the dynamic of "phantom overflow" where an intermediary multiplication step inside of a larger calculation may trigger overflow of uint256.
 /// @dev taken from https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
-
 library FullMath {
     /// @notice Multiplies two 256-bit uint's, and returns the result as a 512-bit uint split into two 256-bit parts.
     /// @param x The multiplicand
