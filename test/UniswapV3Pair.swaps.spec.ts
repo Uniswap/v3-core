@@ -133,6 +133,7 @@ async function executeSwap(
 }
 
 const DEFAULT_PAIR_SWAP_TESTS: SwapTestCase[] = [
+  // swap large amounts in/out
   {
     zeroForOne: true,
     exactOut: false,
@@ -153,6 +154,7 @@ const DEFAULT_PAIR_SWAP_TESTS: SwapTestCase[] = [
     exactOut: true,
     amount0: expandTo18Decimals(1),
   },
+  // swap small amounts in/out
   {
     zeroForOne: true,
     exactOut: false,
@@ -173,6 +175,7 @@ const DEFAULT_PAIR_SWAP_TESTS: SwapTestCase[] = [
     exactOut: true,
     amount0: 1000,
   },
+  // swap arbitrary input to price
   {
     sqrtPriceLimit: encodePriceSqrt(5, 2),
     zeroForOne: false,
