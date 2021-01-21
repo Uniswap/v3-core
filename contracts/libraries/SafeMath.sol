@@ -90,7 +90,7 @@ library SafeMath {
     }
 
     function isMulSafe(uint256 x, uint256 y) internal pure returns (bool) {
-        return (x * y) / x == y;
+        return x == 0 || (x * y) / x == y;
     }
 
     function isAddSafe(uint256 x, uint256 y) internal pure returns (bool) {

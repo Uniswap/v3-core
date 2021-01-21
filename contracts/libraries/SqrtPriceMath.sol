@@ -113,14 +113,6 @@ library SqrtPriceMath {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtPX96 - sqrtQX96;
 
-        if (uint256(sqrtPX96).isMulSafe(sqrtQX96)) {
-            uint256 denominator = uint256(sqrtPX96) * sqrtQX96;
-            return
-                roundUp
-                    ? FullMath.mulDivRoundingUp(numerator1, numerator2, denominator)
-                    : FullMath.mulDiv(numerator1, numerator2, denominator);
-        }
-
         return
             roundUp
                 ? divRoundingUp(FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
