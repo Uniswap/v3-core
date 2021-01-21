@@ -343,7 +343,7 @@ describe('UniswapV3Pair', () => {
               initialized: true,
               liquidityCumulative: 0,
             })
-            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await pair.advanceTime(1)
             await mint(wallet.address, -240, 0, 100)
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
@@ -403,7 +403,7 @@ describe('UniswapV3Pair', () => {
               initialized: true,
               liquidityCumulative: 0,
             })
-            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await pair.advanceTime(1)
             await mint(wallet.address, minTick, maxTick, 100)
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: -23028,
@@ -452,7 +452,7 @@ describe('UniswapV3Pair', () => {
               initialized: true,
               liquidityCumulative: 0,
             })
-            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await pair.advanceTime(1)
             await mint(wallet.address, -46080, -23040, 100)
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
@@ -560,7 +560,7 @@ describe('UniswapV3Pair', () => {
 
     it('clears the position fee growth snapshot if no more liquidity', async () => {
       // some activity that would make the ticks non-zero
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
       await swapExact1For0(expandTo18Decimals(1), wallet.address)
@@ -583,7 +583,7 @@ describe('UniswapV3Pair', () => {
       const tickLower = minTick + tickSpacing
       const tickUpper = maxTick - tickSpacing
       // some activity that would make the ticks non-zero
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       await mint(wallet.address, tickLower, tickUpper, 1)
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
       await pair.burn(wallet.address, tickLower, tickUpper, 1)
@@ -595,7 +595,7 @@ describe('UniswapV3Pair', () => {
       const tickLower = minTick + tickSpacing
       const tickUpper = maxTick - tickSpacing
       // some activity that would make the ticks non-zero
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       await mint(wallet.address, tickLower, tickUpper, 1)
       await mint(wallet.address, tickLower + tickSpacing, tickUpper, 1)
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
@@ -608,7 +608,7 @@ describe('UniswapV3Pair', () => {
       const tickLower = minTick + tickSpacing
       const tickUpper = maxTick - tickSpacing
       // some activity that would make the ticks non-zero
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       await mint(wallet.address, tickLower, tickUpper, 1)
       await mint(wallet.address, tickLower, tickUpper - tickSpacing, 1)
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
@@ -645,7 +645,7 @@ describe('UniswapV3Pair', () => {
     it('blockTimestamp is always current timestamp', async () => {
       let { blockTimestamp } = await getCumulatives()
       expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       ;({ blockTimestamp } = await getCumulatives())
       expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME + 10)
     })
@@ -654,7 +654,7 @@ describe('UniswapV3Pair', () => {
     it('tick accumulator increases by tick over time', async () => {
       let { tickCumulative } = await getCumulatives()
       expect(tickCumulative).to.eq(0)
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(10)
       ;({ tickCumulative } = await getCumulatives())
       expect(tickCumulative).to.eq(0)
     })
@@ -662,7 +662,7 @@ describe('UniswapV3Pair', () => {
     it('tick accumulator after swap', async () => {
       // moves to tick -1
       await swapExact0For1(1000, wallet.address)
-      await pair.setTime(TEST_PAIR_START_TIME + 4)
+      await pair.advanceTime(4)
       let { tickCumulative } = await getCumulatives()
       expect(tickCumulative).to.eq(-4)
     })
@@ -670,178 +670,17 @@ describe('UniswapV3Pair', () => {
     it('tick accumulator after two swaps', async () => {
       await swapExact0For1(expandTo18Decimals(1).div(2), wallet.address)
       expect((await pair.slot0()).tick).to.eq(-4452)
-      await pair.setTime(TEST_PAIR_START_TIME + 4)
+      await pair.advanceTime(4)
       await swapExact1For0(expandTo18Decimals(1).div(4), wallet.address)
       expect((await pair.slot0()).tick).to.eq(-1558)
-      await pair.setTime(TEST_PAIR_START_TIME + 10)
+      await pair.advanceTime(6)
       let { tickCumulative } = await getCumulatives()
       // -4452*4 + -1558*6
       expect(tickCumulative).to.eq(-27156)
     })
   })
 
-  describe('swaps', () => {
-    for (const feeAmount of [FeeAmount.LOW, FeeAmount.MEDIUM, FeeAmount.HIGH]) {
-      const tickSpacing = TICK_SPACINGS[feeAmount]
-
-      describe(`fee: ${feeAmount}`, () => {
-        beforeEach('initialize at zero tick', async () => {
-          pair = await createPair(feeAmount, tickSpacing)
-          await initializeAtZeroTick(pair)
-        })
-
-        describe('swap to price', () => {
-          it('swapToLowerPrice', async () => {
-            const PRICE = BigNumber.from(2).pow(96).mul(999).div(1000)
-            const IN = {
-              [FeeAmount.LOW]: '2003203924356617',
-              [FeeAmount.MEDIUM]: '2008026080242732',
-              [FeeAmount.HIGH]: '2020183654896068',
-            }[feeAmount]
-            const OUT = '2000000000000000'
-
-            await expect(swapToLowerPrice(PRICE, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN)
-              .to.emit(token1, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-            expect((await pair.slot0()).sqrtPriceX96).to.eq(PRICE)
-          })
-
-          it('swapToHigherPrice', async () => {
-            const PRICE = BigNumber.from(2).pow(96).mul(1001).div(1000)
-            const IN = {
-              [FeeAmount.LOW]: '2001200720432260',
-              [FeeAmount.MEDIUM]: '2006018054162488',
-              [FeeAmount.HIGH]: '2018163471241171',
-            }[feeAmount]
-            const OUT = '1998001998001998'
-
-            await expect(swapToHigherPrice(PRICE, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-              .to.emit(token1, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN)
-            expect((await pair.slot0()).sqrtPriceX96).to.eq(PRICE)
-          })
-        })
-
-        describe('swap 1000 in', () => {
-          const IN = 1000
-          const OUT = {
-            [FeeAmount.LOW]: 998,
-            [FeeAmount.MEDIUM]: 996,
-            [FeeAmount.HIGH]: 990,
-          }[feeAmount]
-
-          it('swapExact0For1', async () => {
-            await expect(swapExact0For1(IN, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN)
-              .to.emit(token1, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-            expect((await pair.slot0()).tick).to.eq(-1)
-          })
-
-          it('swap0ForExact1', async () => {
-            await expect(swap0ForExact1(OUT, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN)
-              .to.emit(token1, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-            expect((await pair.slot0()).tick).to.eq(-1)
-          })
-
-          it('swapExact1For0', async () => {
-            await expect(swapExact1For0(IN, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-              .to.emit(token1, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN)
-            expect((await pair.slot0()).tick).to.eq(0)
-          })
-
-          it('swap1ForExact0', async () => {
-            await expect(swap1ForExact0(OUT, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-              .to.emit(token1, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN)
-            expect((await pair.slot0()).tick).to.eq(0)
-          })
-        })
-
-        describe('swap 1e18 in, crossing several initialized ticks', () => {
-          const commonTickSpacing = TICK_SPACINGS[FeeAmount.HIGH] // works because this is a multiple of lower fee amounts
-
-          const IN = expandTo18Decimals(1)
-          const OUT = {
-            [FeeAmount.LOW]: '680406940877446372',
-            [FeeAmount.MEDIUM]: '679319045855941784',
-            [FeeAmount.HIGH]: '676591598947405339',
-          }[feeAmount]
-
-          it('swapExact0For1', async () => {
-            await mint(wallet.address, commonTickSpacing * -2, commonTickSpacing * -1, expandTo18Decimals(1))
-            await mint(wallet.address, commonTickSpacing * -4, commonTickSpacing * -2, expandTo18Decimals(1))
-            await expect(swapExact0For1(IN, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN)
-              .to.emit(token1, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-            expect((await pair.slot0()).tick).to.be.lt(commonTickSpacing * -4)
-          })
-
-          it('swap0ForExact1', async () => {
-            const IN_ADJUSTED = {
-              [FeeAmount.LOW]: IN,
-              [FeeAmount.MEDIUM]: IN.sub(1),
-              [FeeAmount.HIGH]: IN,
-            }[feeAmount]
-
-            await mint(wallet.address, commonTickSpacing * -2, commonTickSpacing * -1, expandTo18Decimals(1))
-            await mint(wallet.address, commonTickSpacing * -4, commonTickSpacing * -2, expandTo18Decimals(1))
-            await expect(swap0ForExact1(OUT, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN_ADJUSTED)
-              .to.emit(token1, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-            expect((await pair.slot0()).tick).to.be.lt(commonTickSpacing * -4)
-          })
-
-          it('swapExact1For0', async () => {
-            await mint(wallet.address, commonTickSpacing, commonTickSpacing * 2, expandTo18Decimals(1))
-            await mint(wallet.address, commonTickSpacing * 2, commonTickSpacing * 4, expandTo18Decimals(1))
-            await expect(swapExact1For0(IN, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-              .to.emit(token1, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN)
-            expect((await pair.slot0()).tick).to.be.gt(commonTickSpacing * 4)
-          })
-
-          it('swap1ForExact0', async () => {
-            const IN_ADJUSTED = {
-              [FeeAmount.LOW]: IN,
-              [FeeAmount.MEDIUM]: IN.sub(1),
-              [FeeAmount.HIGH]: IN,
-            }[feeAmount]
-
-            await mint(wallet.address, commonTickSpacing, commonTickSpacing * 2, expandTo18Decimals(1))
-            await mint(wallet.address, commonTickSpacing * 2, commonTickSpacing * 4, expandTo18Decimals(1))
-            await expect(swap1ForExact0(OUT, wallet.address))
-              .to.emit(token0, 'Transfer')
-              .withArgs(pair.address, wallet.address, OUT)
-              .to.emit(token1, 'Transfer')
-              .withArgs(wallet.address, pair.address, IN_ADJUSTED)
-            expect((await pair.slot0()).tick).to.be.gt(commonTickSpacing * 4)
-          })
-        })
-      })
-    }
-  })
-
-  describe('miscellaneous setPosition tests', () => {
+  describe('miscellaneous mint tests', () => {
     beforeEach('initialize at zero tick', async () => {
       pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
       await initializeAtZeroTick(pair)

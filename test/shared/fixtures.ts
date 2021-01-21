@@ -69,10 +69,7 @@ export const pairFixture: Fixture<PairFixture> = async function (): Promise<Pair
 
       const receipt = await tx.wait()
       const pairAddress = receipt.events?.[0].args?.pair as string
-      const pair = mockTimeUniswapV3PairFactory.attach(pairAddress) as MockTimeUniswapV3Pair
-
-      await pair.setTime(TEST_PAIR_START_TIME)
-      return pair
+      return mockTimeUniswapV3PairFactory.attach(pairAddress) as MockTimeUniswapV3Pair
     },
   }
 }
