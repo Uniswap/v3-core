@@ -126,7 +126,7 @@ function formatTokenAmount(num: BigNumberish): string {
 }
 
 function formatPrice(price: BigNumberish): string {
-  return new Decimal(price.toString()).dividedBy(new Decimal(2).pow(128)).toPrecision(5)
+  return new Decimal(price.toString()).dividedBy(new Decimal(2).pow(96)).pow(2).toPrecision(5)
 }
 
 function swapCaseToDescription(testCase: SwapTestCase): string {
