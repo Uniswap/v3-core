@@ -48,6 +48,30 @@ contract OracleTest {
         liquidity = params.liquidity;
     }
 
+    function batchUpdate(UpdateParams[] calldata params) external {
+        // sload everything
+        int24 _tick = tick;
+        uint128 _liquidity = liquidity;
+        uint16 _index = index;
+        uint16 _cardinality = cardinality;
+        uint16 _target = target;
+        uint32 _time = time;
+
+        for (uint256 i = 0; i < params.length; i++) {
+            _time += params[i].advanceTimeBy;
+            (_index, _cardinality) = observations.write(_index, _time, _tick, _liquidity, _cardinality, _target);
+            _tick = params[i].tick;
+            _liquidity = params[i].liquidity;
+        }
+
+        // sstore everything
+        tick = _tick;
+        liquidity = _liquidity;
+        index = _index;
+        cardinality = _cardinality;
+        time = _time;
+    }
+
     function grow(uint16 _target) external {
         (cardinality, target) = observations.grow(index, cardinality, target, _target);
     }

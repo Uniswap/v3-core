@@ -3,6 +3,7 @@ import { BigNumber, BigNumberish, constants, Wallet } from 'ethers'
 import { TestERC20 } from '../typechain/TestERC20'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { MockTimeUniswapV3Pair } from '../typechain/MockTimeUniswapV3Pair'
+import checkObservationEquals from './shared/checkObservationEquals'
 import { expect } from './shared/expect'
 
 import { pairFixture, TEST_PAIR_START_TIME } from './shared/fixtures'
@@ -135,6 +136,15 @@ describe('UniswapV3Pair', () => {
       expect(sqrtPriceX96).to.eq(price)
       expect(observationIndex).to.eq(0)
       expect((await pair.slot0()).tick).to.eq(-6932)
+    })
+    it('initializes the first observations slot', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      checkObservationEquals(await pair.observations(0), {
+        liquidityCumulative: 0,
+        initialized: true,
+        blockTimestamp: TEST_PAIR_START_TIME,
+        tickCumulative: 0,
+      })
     })
     it('emits a Initialized event with the input tick', async () => {
       const price = encodePriceSqrt(1, 2)
@@ -325,6 +335,23 @@ describe('UniswapV3Pair', () => {
             expect(feeGrowthOutside1X128).to.eq(0)
             expect(secondsOutside).to.eq(0)
           })
+
+          it('does not write an observation', async () => {
+            checkObservationEquals(await pair.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_PAIR_START_TIME,
+              initialized: true,
+              liquidityCumulative: 0,
+            })
+            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await mint(wallet.address, -240, 0, 100)
+            checkObservationEquals(await pair.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_PAIR_START_TIME,
+              initialized: true,
+              liquidityCumulative: 0,
+            })
+          })
         })
 
         describe('including current price', () => {
@@ -368,6 +395,23 @@ describe('UniswapV3Pair', () => {
             expect(await token0.balanceOf(pair.address)).to.eq(9997)
             expect(await token1.balanceOf(pair.address)).to.eq(1001)
           })
+
+          it('writes an observation', async () => {
+            checkObservationEquals(await pair.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_PAIR_START_TIME,
+              initialized: true,
+              liquidityCumulative: 0,
+            })
+            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await mint(wallet.address, minTick, maxTick, 100)
+            checkObservationEquals(await pair.observations(0), {
+              tickCumulative: -23028,
+              blockTimestamp: TEST_PAIR_START_TIME + 1,
+              initialized: true,
+              liquidityCumulative: 3161,
+            })
+          })
         })
 
         describe('below current price', () => {
@@ -399,6 +443,23 @@ describe('UniswapV3Pair', () => {
             await pair.burn(wallet.address, -46080, -46020, 10000)
             expect(await token0.balanceOf(pair.address)).to.eq(9996)
             expect(await token1.balanceOf(pair.address)).to.eq(1001)
+          })
+
+          it('does not write an observation', async () => {
+            checkObservationEquals(await pair.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_PAIR_START_TIME,
+              initialized: true,
+              liquidityCumulative: 0,
+            })
+            await pair.setTime(TEST_PAIR_START_TIME + 1)
+            await mint(wallet.address, -46080, -23040, 100)
+            checkObservationEquals(await pair.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_PAIR_START_TIME,
+              initialized: true,
+              liquidityCumulative: 0,
+            })
           })
         })
       })

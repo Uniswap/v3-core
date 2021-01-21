@@ -97,10 +97,10 @@ library Oracle {
         uint16 cardinality
     ) private view returns (Observation memory before, Observation memory atOrAfter) {
         uint16 l = (index + 1) % cardinality; // oldest observation
-        uint16 r = l + cardinality - 1; // newest observation
+        uint16 r = index; // newest observation
         uint16 i;
         while (true) {
-            i = (l + r) / 2;
+            i = ((r - l) % cardinality) / 2 + l;
 
             atOrAfter = self[i % cardinality];
 
@@ -136,7 +136,7 @@ library Oracle {
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     function getSurroundingObservations(
         Observation[65535] storage self,
-        uint32 current,
+        uint32 time,
         uint32 target,
         int24 tick,
         uint16 index,
@@ -151,11 +151,8 @@ library Oracle {
             assert(beforeOrAt.initialized);
         }
 
-        // ensure that the target is greater than the oldest observation (accounting for wrapping)
-        require(
-            beforeOrAt.blockTimestamp <= target || (beforeOrAt.blockTimestamp > current && target <= current),
-            'OLD'
-        );
+        // ensure that the target is greater than the oldest observation (accounting for block timestamp overflow)
+        require(beforeOrAt.blockTimestamp <= target && (target <= time || beforeOrAt.blockTimestamp >= time), 'OLD');
 
         // now, optimistically set before to the newest observation
         beforeOrAt = self[index];
@@ -167,11 +164,11 @@ library Oracle {
         // adjust for overflow
         uint256 beforeAdjusted = beforeOrAt.blockTimestamp;
         uint256 targetAdjusted = target;
-        if (beforeAdjusted > current && targetAdjusted <= current) targetAdjusted += 2**32;
-        if (targetAdjusted > current) beforeAdjusted += 2**32;
+        if (beforeAdjusted > time && targetAdjusted <= time) targetAdjusted += 2**32;
+        if (targetAdjusted > time) beforeAdjusted += 2**32;
 
         // once here, check if we're right and return a counterfactual observation for atOrAfter
-        if (beforeAdjusted < targetAdjusted) return (beforeOrAt, transform(beforeOrAt, current, tick, liquidity));
+        if (beforeAdjusted < targetAdjusted) return (beforeOrAt, transform(beforeOrAt, time, tick, liquidity));
 
         // we're wrong, so perform binary search
         return binarySearch(self, target, index, cardinality);

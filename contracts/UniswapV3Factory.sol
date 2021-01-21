@@ -10,13 +10,7 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
     address public override owner;
 
     mapping(uint24 => int24) public override feeAmountTickSpacing;
-    uint24[] public override allEnabledFeeAmounts;
-
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPair;
-
-    function allEnabledFeeAmountsLength() external view override returns (uint256) {
-        return allEnabledFeeAmounts.length;
-    }
 
     constructor() {
         owner = msg.sender;
@@ -58,7 +52,6 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         require(feeAmountTickSpacing[fee] == 0, 'FAI');
 
         feeAmountTickSpacing[fee] = tickSpacing;
-        allEnabledFeeAmounts.push(fee);
         emit FeeAmountEnabled(fee, tickSpacing);
     }
 }
