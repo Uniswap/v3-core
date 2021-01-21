@@ -90,8 +90,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
 
         if (amount0Delta > 0) {
             IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Delta));
-        } else {
-            // we know amount1Delta :> 0
+        } else if (amount1Delta > 0) {
             IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Delta));
         }
     }
