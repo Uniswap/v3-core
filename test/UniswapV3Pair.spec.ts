@@ -1007,14 +1007,14 @@ describe('UniswapV3Pair', () => {
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('1199999999999998')
+      expect(token0Fees).to.eq('1199999999999999')
       expect(token1Fees).to.eq(0)
       ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('1799999999999997')
+      expect(token0Fees).to.eq('1799999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1100,7 +1100,7 @@ describe('UniswapV3Pair', () => {
       })
 
       // 6 bips * 2e18
-      expect(token0Fees).to.eq('1199999999999998')
+      expect(token0Fees).to.eq('1199999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1156,7 +1156,7 @@ describe('UniswapV3Pair', () => {
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '500000000000000')
 
-      expect(await pair.protocolFees0()).to.be.eq('199999999999998')
+      expect(await pair.protocolFees0()).to.be.eq('199999999999999')
       expect(await pair.protocolFees1()).to.be.eq(0)
     })
   })
