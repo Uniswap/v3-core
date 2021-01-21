@@ -19,7 +19,7 @@ library FullMath {
     }
 
     /// @notice Calculates x×y÷z, rounds the result down, and throws in case z is zero or if the result
-    ///      does not fit into uint256. Allows math to resolve to a uint256 despite a potential intermediary step that may unnecessarily trigger overflow
+    ///      does not fit into uint256. Allows math to resolve to a uint256 despite a potential intermediate product that overflows 256 bits
     /// @param x The multiplicand
     /// @param y The multiplier
     /// @param d The divisor
