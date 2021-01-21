@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
+import '../libraries/SafeMath.sol';
 import '../libraries/FullMath.sol';
 import '../libraries/SqrtPriceMath.sol';
+import '../libraries/FixedPoint96.sol';
 
 contract SqrtPriceMathEchidnaTest {
     function mulDivRoundingUpInvariants(
@@ -68,6 +70,31 @@ contract SqrtPriceMathEchidnaTest {
         assert(amount0Down <= amount0Up);
         // diff is 0 or 1
         assert(amount0Up - amount0Down < 2);
+    }
+
+    // ensure that chained division is always equal to the full-precision case for
+    // liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
+    function getAmount0DeltaEquivalency(
+        uint160 sqrtP,
+        uint160 sqrtQ,
+        uint128 liquidity,
+        bool roundUp
+    ) external pure {
+        require(sqrtP >= sqrtQ);
+        require(sqrtP > 0 && sqrtQ > 0);
+        require(SafeMath.isMulSafe(sqrtP, sqrtQ));
+
+        uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
+        uint256 numerator2 = sqrtP - sqrtQ;
+        uint256 denominator = uint256(sqrtP) * sqrtQ;
+
+        uint256 safeResult =
+            roundUp
+                ? FullMath.mulDivRoundingUp(numerator1, numerator2, denominator)
+                : FullMath.mulDiv(numerator1, numerator2, denominator);
+        uint256 fullResult = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, roundUp);
+
+        assert(safeResult == fullResult);
     }
 
     function getAmount1DeltaInvariants(
