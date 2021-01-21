@@ -351,6 +351,10 @@ describe('UniswapV3Pair swap tests', () => {
             pairPriceBefore: formatPrice(slot0.sqrtPriceX96),
             tickAfter: slot0After.tick,
             pairPriceAfter: formatPrice(slot0After.sqrtPriceX96),
+            executionPrice: new Decimal(pairBalance1Delta.toString())
+              .div(pairBalance0Delta.toString())
+              .mul(-1)
+              .toPrecision(5),
           }).to.matchSnapshot('balances')
         })
       }
