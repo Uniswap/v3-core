@@ -16,9 +16,7 @@ library SqrtPriceMath {
         return (x / d) + (x % d > 0 ? 1 : 0);
     }
 
-    // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
-    // or, if this is impossible because of overflow,
-    // liquidity / (liquidity / sqrt(P) +- x)
+    // calculates liquidity / (liquidity / sqrt(P) +- x)
     function getNextSqrtPriceFromAmount0RoundingUp(
         uint160 sqrtPX96,
         uint128 liquidity,
@@ -26,14 +24,6 @@ library SqrtPriceMath {
         bool add
     ) private pure returns (uint160) {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-
-        if (
-            amount.isMulSafe(sqrtPX96) &&
-            (add ? numerator1.isAddSafe(amount * sqrtPX96) : numerator1 > amount * sqrtPX96)
-        ) {
-            uint256 denominator = add ? (numerator1 + amount * sqrtPX96) : (numerator1 - amount * sqrtPX96);
-            return FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
-        }
 
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
         require(denominator1 != 0, 'OUT');
@@ -100,8 +90,7 @@ library SqrtPriceMath {
                 : getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
     }
 
-    // calculate liquidity / sqrt(Q) - liquidity / sqrt(P), i.e.
-    // liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
+    // calculates liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
     function getAmount0Delta(
         uint160 sqrtPX96, // square root of current price
         uint160 sqrtQX96, // square root of target price
@@ -112,14 +101,6 @@ library SqrtPriceMath {
 
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtPX96 - sqrtQX96;
-
-        if (uint256(sqrtPX96).isMulSafe(sqrtQX96)) {
-            uint256 denominator = uint256(sqrtPX96) * sqrtQX96;
-            return
-                roundUp
-                    ? FullMath.mulDivRoundingUp(numerator1, numerator2, denominator)
-                    : FullMath.mulDiv(numerator1, numerator2, denominator);
-        }
 
         return
             roundUp
