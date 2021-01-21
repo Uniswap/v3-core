@@ -9,11 +9,11 @@ import '../libraries/Oracle.sol';
 
 // used for testing time dependent behavior
 contract MockTimeUniswapV3Pair is UniswapV3Pair {
-    uint256 public time;
+    // Monday, October 5, 2020 9:00:00 AM GMT-05:00
+    uint256 public time = 1601906400;
 
-    function setTime(uint256 _time) external {
-        require(_time > time, 'MockTimeUniswapV3Pair::setTime: time can only be advanced');
-        time = _time;
+    function advanceTime(uint256 by) external {
+        time += by;
     }
 
     function _blockTimestamp() internal view override returns (uint32) {
