@@ -450,6 +450,8 @@ describe('UniswapV3Pair swap tests', () => {
               slot0After.tick
             )
 
+          const executionPrice = new Decimal(pairBalance1Delta.toString()).div(pairBalance0Delta.toString()).mul(-1)
+
           expect({
             amount0Before: pairBalance0.toString(),
             amount1Before: pairBalance1.toString(),
@@ -459,10 +461,7 @@ describe('UniswapV3Pair swap tests', () => {
             pairPriceBefore: formatPrice(slot0.sqrtPriceX96),
             tickAfter: slot0After.tick,
             pairPriceAfter: formatPrice(slot0After.sqrtPriceX96),
-            executionPrice: new Decimal(pairBalance1Delta.toString())
-              .div(pairBalance0Delta.toString())
-              .mul(-1)
-              .toPrecision(5),
+            executionPrice: executionPrice.toPrecision(5),
           }).to.matchSnapshot('balances')
         })
       }
