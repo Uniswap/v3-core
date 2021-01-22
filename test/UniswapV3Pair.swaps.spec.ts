@@ -359,7 +359,7 @@ const TEST_PAIRS: PairTestCase[] = [
     description: 'close to max price',
     feeAmount: FeeAmount.MEDIUM,
     tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
-    startingPrice: encodePriceSqrt(BigNumber.from(2).pow(126), 1),
+    startingPrice: encodePriceSqrt(BigNumber.from(2).pow(127), 1),
     positions: [
       {
         tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
@@ -372,7 +372,7 @@ const TEST_PAIRS: PairTestCase[] = [
     description: 'close to min price',
     feeAmount: FeeAmount.MEDIUM,
     tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
-    startingPrice: encodePriceSqrt(1, BigNumber.from(2).pow(126)),
+    startingPrice: encodePriceSqrt(1, BigNumber.from(2).pow(127)),
     positions: [
       {
         tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
