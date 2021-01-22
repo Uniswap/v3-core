@@ -2,6 +2,7 @@ import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
 import { expect } from './shared/expect'
+import { encodePriceSqrt } from './shared/utilities'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
@@ -36,6 +37,15 @@ describe('SqrtTickMath', () => {
         '1461373636630004318706518188784493106690254656249'
       )
     })
+
+    it('min tick ratio is less than js implementation', async () => {
+      expect(await sqrtTickMath.getSqrtRatioAtTick(MIN_TICK)).to.be.lt(encodePriceSqrt(1, BigNumber.from(2).pow(127)))
+    })
+
+    it('max tick ratio is greater than js implementation', async () => {
+      expect(await sqrtTickMath.getSqrtRatioAtTick(MAX_TICK)).to.be.gt(encodePriceSqrt(BigNumber.from(2).pow(127), 1))
+    })
+
     it('max tick', async () => {
       expect(await sqrtTickMath.getSqrtRatioAtTick(MAX_TICK)).to.eq('1461446703485210103287273052203988822378723970342')
     })
