@@ -51,7 +51,7 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-bn.config({ EXPONENTIAL_AT: 999999 })
+bn.config({ EXPONENTIAL_AT: 999999, DECIMAL_PLACES: 40 })
 
 // returns the sqrt price as a 64x96
 export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
