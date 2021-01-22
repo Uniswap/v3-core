@@ -21,6 +21,7 @@ library SecondsOutside {
     ) internal {
         if (tick < tickCurrent) {
             (int24 wordPos, uint8 shift) = position(tick, tickSpacing);
+            // todo: not safe for multiple initializes without clears
             self[wordPos] += time << shift;
         }
     }
