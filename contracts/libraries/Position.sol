@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import './FullMath.sol';
 import './FixedPoint128.sol';
 import './LiquidityMath.sol';
+import './SafeMath.sol';
 
 // positions represent an owner account's liquidity at a given lower/upper tick combination, and store additional state
 // for tracking fees owed to the position.
@@ -69,8 +70,8 @@ library Position {
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (feesOwed0 > 0 || feesOwed1 > 0) {
-            self.feesOwed0 = LiquidityMath.addCapped(_self.feesOwed0, feesOwed0);
-            self.feesOwed1 = LiquidityMath.addCapped(_self.feesOwed1, feesOwed1);
+            self.feesOwed0 = SafeMath.addCapped(_self.feesOwed0, feesOwed0);
+            self.feesOwed1 = SafeMath.addCapped(_self.feesOwed1, feesOwed1);
         }
 
         // clear position data that is no longer needed

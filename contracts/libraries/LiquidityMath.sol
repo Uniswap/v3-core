@@ -18,11 +18,4 @@ library LiquidityMath {
             require((z = x - uint128(y)) <= x, 'LS');
         }
     }
-
-    function addCapped(uint128 x, uint256 y) internal pure returns (uint128 z) {
-        z = uint128(x + y);
-        if (z < x) {
-            z = type(uint128).max;
-        }
-    }
 }
