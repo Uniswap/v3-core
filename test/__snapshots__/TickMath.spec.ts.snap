@@ -18,8 +18,8 @@ exports[`TickMath #getRatioAtTick gas tick 1000 1`] = `894`;
 
 exports[`TickMath #getRatioAtTick gas tick 887272 1`] = `986`;
 
-exports[`TickMath #getTickAtRatio gas cost another random price 1`] = `2359`;
+exports[`TickMath #getTickAtRatio gas cost another random price 1`] = `2395`;
 
-exports[`TickMath #getTickAtRatio gas cost price exactly at 0 1`] = `2159`;
+exports[`TickMath #getTickAtRatio gas cost price exactly at 0 1`] = `2195`;
 
-exports[`TickMath #getTickAtRatio gas cost random price 1`] = `2340`;
+exports[`TickMath #getTickAtRatio gas cost random price 1`] = `2376`;

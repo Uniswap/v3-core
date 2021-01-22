@@ -240,13 +240,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
-        // todo: better naming for these variables
         (uint256 protocolFees0New, uint256 protocolFees1New) =
             position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
         if (protocolFees0New > 0 || protocolFees1New > 0) {
             ProtocolFees memory _protocolFees = protocolFees;
-            if (protocolFees0New > 0) protocolFees.token0 = _protocolFees.token0.addCapped(protocolFees0New);
-            if (protocolFees1New > 0) protocolFees.token1 = _protocolFees.token1.addCapped(protocolFees1New);
+            protocolFees.token0 = _protocolFees.token0.addCapped(protocolFees0New);
+            protocolFees.token1 = _protocolFees.token1.addCapped(protocolFees1New);
         }
 
         // clear any tick data that is no longer needed
