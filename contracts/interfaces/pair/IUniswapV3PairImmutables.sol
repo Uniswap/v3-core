@@ -16,5 +16,9 @@ interface IUniswapV3PairImmutables {
 
     function maxTick() external view returns (int24);
 
+    function minPriceX96() external view returns (uint160);
+
+    function maxPriceX96() external view returns (uint160);
+
     function maxLiquidityPerTick() external view returns (uint128);
 }

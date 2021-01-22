@@ -28,11 +28,17 @@ library Tick {
         returns (
             int24 minTick,
             int24 maxTick,
+            uint160 minPriceX96,
+            uint160 maxPriceX96,
             uint128 maxLiquidityPerTick
         )
     {
         minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
         maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
+
+        minPriceX96 = SqrtTickMath.getSqrtRatioAtTick(minTick) + 1;
+        maxPriceX96 = SqrtTickMath.getSqrtRatioAtTick(maxTick) - 1;
+
         uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;
         maxLiquidityPerTick = type(uint128).max / numTicks;
     }

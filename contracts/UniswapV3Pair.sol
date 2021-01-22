@@ -53,6 +53,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int24 public immutable override minTick;
     int24 public immutable override maxTick;
 
+    // the minimum and maximum price the pair
+    uint160 public immutable override minPriceX96;
+    uint160 public immutable override maxPriceX96;
+
     // the maximum amount of liquidity that can use any individual tick
     uint128 public immutable override maxLiquidityPerTick;
 
@@ -114,7 +118,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         fee = _fee;
         tickSpacing = _tickSpacing;
 
-        (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
+        (minTick, maxTick, minPriceX96, maxPriceX96, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
     }
 
     function balance0() private view returns (uint256) {
@@ -465,6 +469,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes calldata data
     ) external override {
         require(amountSpecified != 0, 'AS');
+        require(sqrtPriceLimitX96 >= minPriceX96, 'PLL');
+        require(sqrtPriceLimitX96 <= maxPriceX96, 'PLH');
 
         Slot0 memory _slot0 = slot0;
 
@@ -527,8 +533,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
-                require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
-
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     int128 liquidityDelta =

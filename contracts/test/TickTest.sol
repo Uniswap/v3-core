@@ -15,6 +15,8 @@ contract TickTest {
         returns (
             int24 minTick,
             int24 maxTick,
+            uint160 minPriceX96,
+            uint160 maxPriceX96,
             uint128 maxLiquidityPerTick
         )
     {
