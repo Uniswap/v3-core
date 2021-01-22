@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.5.0;
 
+/// @title Oracle
+/// @notice The Oracle library provides an array of price and liquidity data useful for a wide variety of system designs.
+/// @dev Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the 
+///     length of the oracle array. The new slot will be added after the full length of the observation array is populated.
+///     The most recent observation is available by passing 0 to the observe function.
 library Oracle {
     struct Observation {
         // the block timestamp of the observation
@@ -13,8 +18,12 @@ library Oracle {
         bool initialized;
     }
 
-    // transforms an oracle observation in a subsequent observation, given the passage of time and current values
-    // blockTimestamp _must_ be at or after last.blockTimestamp (accounting for overflow)
+    /// @notice transforms an oracle observation in a subsequent observation, given the passage of time and current values
+    /// @dev blockTimestamp _must_ be at or after last.blockTimestamp (accounting for overflow)
+    /// @param last 
+    /// @param blockTimestamp
+    /// @param liquidity
+    /// @return Observation
     function transform(
         Observation memory last,
         uint32 blockTimestamp,
@@ -31,7 +40,11 @@ library Oracle {
             });
     }
 
-    // initialize the oracle array by writing the first slot. called once for the lifecycle of the observations array.
+    /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array.
+    /// @param self
+    /// @param time
+    /// @return cardinality
+    /// @return target
     function initialize(Observation[65535] storage self, uint32 time)
         internal
         returns (uint16 cardinality, uint16 target)
@@ -40,8 +53,17 @@ library Oracle {
         return (1, 1);
     }
 
-    // writes an oracle observation to the array, at most once per block
-    // indices cycle, and must be kept track of in the parent contract
+    /// @notice writes an oracle observation to the array, at most once per block
+    ///     indices cycle, and must be kept track of in the parent contract
+    /// @param self
+    /// @param index
+    /// @param blockTimestamp
+    /// @param tick
+    /// @param liquidity
+    /// @param cardinality
+    /// @param cardinalityTarget
+    /// @return indexNext
+    /// @return cardinalityNext
     function write(
         Observation[65535] storage self,
         uint16 index,
@@ -67,10 +89,17 @@ library Oracle {
         self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
     }
 
-    // grow the observations array. observations array length is stored in cardinality and target. cardinality cannot be
+    /// @notice Grow the observations array. Observations array length is stored in cardinality and target. cardinality cannot be
     // changed unless the index is currently the last element of the array, to avoid reordering in all other cases.
     // the cardinality is either immediately changed if the above is true, or changed on the next write when the write
     // fills the last index lt current cardinality.
+    /// @param self
+    /// @param index
+    /// @param cardinalityOld
+    /// @param targetOld
+    /// @param targetNew
+    /// @return cardinality
+    /// @return target
     function grow(
         Observation[65535] storage self,
         uint16 index,
@@ -90,6 +119,12 @@ library Oracle {
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     // the answer _must_ be contained in the array
     // note that even though we're not modifying self, it must be passed by ref to save gas
+    /// @param self
+    /// @param target
+    /// @param index
+    /// @param cardinality
+    /// @return before
+    /// @return atOrAfter
     function binarySearch(
         Observation[65535] storage self,
         uint32 target,
@@ -133,7 +168,16 @@ library Oracle {
         }
     }
 
-    // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
+    /// @notice fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
+    /// @param self
+    /// @param time
+    /// @param target
+    /// @param tick
+    /// @param index 
+    /// @param liquidity
+    /// @param cardinality
+    /// @return beforeOrAt
+    /// @return atOrAfter
     function getSurroundingObservations(
         Observation[65535] storage self,
         uint32 time,
@@ -174,8 +218,17 @@ library Oracle {
         return binarySearch(self, target, index, cardinality);
     }
 
-    // constructs a counterfactual observation as of a particular time in the past (or now) as long as we have
-    // an observation before then
+    /// @notice constructs a counterfactual observation as of a particular time in the past (or now) as long as we have
+    ///  an observation before then
+    /// @param self
+    /// @param time
+    /// @param secondsAgo
+    /// @param tick
+    /// @param index
+    /// @param liquidity
+    /// @param cardinality
+    /// @return tickCumulative
+    /// @return liquidityCumulative
     function scry(
         Observation[65535] storage self,
         uint32 time,
