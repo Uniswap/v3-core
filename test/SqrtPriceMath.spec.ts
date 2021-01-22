@@ -375,22 +375,10 @@ describe('SqrtPriceMath', () => {
       const amountIn = '406'
 
       const sqrtQ = await sqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne)
-      expect(sqrtQ).to.eq('1025574284609383582879745519381046521910001013158')
+      expect(sqrtQ).to.eq('1025574284609383582614317949100778057966413819637')
 
       const amount0Delta = await sqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true)
       expect(amount0Delta).to.eq('406')
     })
-  })
-
-  it.only('assertion failed', async () => {
-    const test = (await (
-      await ethers.getContractFactory('SqrtPriceMathEchidnaTest')
-    ).deploy()) as SqrtPriceMathEchidnaTest
-    const sqrtP = 3
-    const liquidity = 1
-    const add = false
-    const amountOut = 0
-
-    await test.getNextSqrtPriceFromAmount0RoundingUpErrorBounds(sqrtP, liquidity, amountOut, add)
   })
 })
