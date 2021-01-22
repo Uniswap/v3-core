@@ -513,7 +513,7 @@ describe('UniswapV3Pair', () => {
           feesOwed0,
         } = await pair.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing))
         expect(liquidity).to.eq(1)
-        expect(feeGrowthInside0LastX128).to.eq('102084710076280876066876910167217752')
+        expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
         expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
         expect(feesOwed0).to.eq(0)
         expect(feesOwed1).to.eq(0)
@@ -1007,7 +1007,7 @@ describe('UniswapV3Pair', () => {
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('1199999999999998')
+      expect(token0Fees).to.eq('1199999999999999')
       expect(token1Fees).to.eq(0)
       ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
@@ -1100,7 +1100,7 @@ describe('UniswapV3Pair', () => {
       })
 
       // 6 bips * 2e18
-      expect(token0Fees).to.eq('1199999999999998')
+      expect(token0Fees).to.eq('1199999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1156,7 +1156,7 @@ describe('UniswapV3Pair', () => {
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '500000000000000')
 
-      expect(await pair.protocolFees0()).to.be.eq('199999999999998')
+      expect(await pair.protocolFees0()).to.be.eq('199999999999999')
       expect(await pair.protocolFees1()).to.be.eq(0)
     })
   })
@@ -1211,7 +1211,7 @@ describe('UniswapV3Pair', () => {
           await swapExact0For1(expandTo18Decimals(1), wallet.address)
           await expect(pair.burn(wallet.address, -121200, -120000, liquidityAmount))
             .to.emit(token0, 'Transfer')
-            .withArgs(pair.address, wallet.address, '997000000000000000')
+            .withArgs(pair.address, wallet.address, '996999999999999999')
             .to.emit(token1, 'Transfer')
             .withArgs(pair.address, wallet.address, '30027458295511')
           expect((await pair.slot0()).tick).to.eq(-120197)

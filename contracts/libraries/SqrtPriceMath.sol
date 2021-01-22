@@ -23,6 +23,7 @@ library SqrtPriceMath {
         uint256 amount,
         bool add
     ) internal pure returns (uint160) {
+        if (amount == 0) return sqrtPX96;
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
@@ -38,6 +39,7 @@ library SqrtPriceMath {
         uint256 amount,
         bool add
     ) internal pure returns (uint160) {
+        if (amount == 0) return sqrtPX96;
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
         uint256 quotient =
@@ -64,7 +66,6 @@ library SqrtPriceMath {
     ) internal pure returns (uint160 sqrtQX96) {
         require(sqrtPX96 > 0, 'P');
         require(liquidity > 0, 'L');
-        if (amountIn == 0) return sqrtPX96;
 
         // round to make sure that we don't pass the target price
         return
@@ -81,7 +82,6 @@ library SqrtPriceMath {
     ) internal pure returns (uint160 sqrtQX96) {
         require(sqrtPX96 > 0, 'P');
         require(liquidity > 0, 'L');
-        if (amountOut == 0) return sqrtPX96;
 
         // round to make sure that we pass the target price
         return
