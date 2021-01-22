@@ -4,8 +4,8 @@ pragma solidity >=0.5.0;
 /// @title Oracle
 /// @notice The Oracle library provides an array of price and liquidity data useful for a wide variety of system designs.
 /// @dev Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the 
-///     length of the oracle array. The new slot will be added after the full length of the observation array is populated.
-///     The most recent observation is available by passing 0 to the observe function.
+///     length of the oracle array. The new slot will be added after the full length of observations is populated.
+///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to the observe function.
 library Oracle {
     struct Observation {
         // the block timestamp of the observation
@@ -19,7 +19,7 @@ library Oracle {
     }
 
     /// @notice transforms an oracle observation in a subsequent observation, given the passage of time and current values
-    /// @dev blockTimestamp _must_ be at or after last.blockTimestamp (accounting for overflow)
+    /// @dev blockTimestamp _must_ be at, or after, last.blockTimestamp (accounting for overflow)
     /// @param last 
     /// @param blockTimestamp
     /// @param liquidity
@@ -42,7 +42,7 @@ library Oracle {
 
     /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array.
     /// @param self
-    /// @param time
+    /// @param time The time of the oracle initialization, expressed in UNIX.
     /// @return cardinality
     /// @return target
     function initialize(Observation[65535] storage self, uint32 time)
