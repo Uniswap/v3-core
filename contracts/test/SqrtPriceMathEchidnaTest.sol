@@ -90,6 +90,10 @@ contract SqrtPriceMathEchidnaTest {
             assert(sqrtQX96 >= sqrtPX96);
         }
 
+        if (amount == 0) {
+            assert(sqrtPX96 == sqrtQX96);
+        }
+
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
         uint256 denominator = add ? (numerator1.add(amount.mul(sqrtPX96))) : (numerator1.sub(amount.mul(sqrtPX96)));

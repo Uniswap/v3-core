@@ -380,4 +380,14 @@ describe('SqrtPriceMath', () => {
       expect(amount0Delta).to.eq('406')
     })
   })
+
+  it.only('assertion failed', async () => {
+    const sqrtP = 3
+    const liquidity = 1
+    const zeroForOne = true
+    const amountOut = 0
+
+    const sqrtQ = await sqrtPriceMath.getNextSqrtPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne)
+    expect(sqrtQ).to.eq(3)
+  })
 })
