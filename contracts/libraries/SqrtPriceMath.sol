@@ -20,14 +20,21 @@ library SqrtPriceMath {
         uint256 amount,
         bool add
     ) internal pure returns (uint160) {
+        if (amount == 0) return sqrtPX96;
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
-        if (
-            amount.isMulSafe(sqrtPX96) &&
-            (add ? numerator1.isAddSafe(amount * sqrtPX96) : numerator1 > amount * sqrtPX96)
-        ) {
-            uint256 denominator = add ? (numerator1 + amount * sqrtPX96) : (numerator1 - amount * sqrtPX96);
-            return FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
+        uint256 product = amount * sqrtPX96;
+        if (product / amount == sqrtPX96) {
+            if (add) {
+                uint256 denominator = numerator1 + product;
+                if (denominator >= numerator1)
+                    // always fits in 160 bits
+                    return uint160(FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator));
+            } else {
+                uint256 denominator = numerator1 - product;
+                if (denominator <= numerator1 && denominator != 0)
+                    return FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
+            }
         }
 
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
@@ -69,7 +76,6 @@ library SqrtPriceMath {
     ) internal pure returns (uint160 sqrtQX96) {
         require(sqrtPX96 > 0, 'P');
         require(liquidity > 0, 'L');
-        if (amountIn == 0) return sqrtPX96;
 
         // round to make sure that we don't pass the target price
         return
@@ -86,7 +92,6 @@ library SqrtPriceMath {
     ) internal pure returns (uint160 sqrtQX96) {
         require(sqrtPX96 > 0, 'P');
         require(liquidity > 0, 'L');
-        if (amountOut == 0) return sqrtPX96;
 
         // round to make sure that we pass the target price
         return
