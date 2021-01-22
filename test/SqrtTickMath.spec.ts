@@ -39,15 +39,11 @@ describe('SqrtTickMath', () => {
     })
 
     it('min tick ratio is less than js implementation', async () => {
-      expect(await sqrtTickMath.getSqrtRatioAtTick(MIN_TICK)).to.be.lt(
-        encodePriceSqrt(1, BigNumber.from(2).pow(127).sub(1))
-      )
+      expect(await sqrtTickMath.getSqrtRatioAtTick(MIN_TICK)).to.be.lt(encodePriceSqrt(1, BigNumber.from(2).pow(127)))
     })
 
     it('max tick ratio is greater than js implementation', async () => {
-      expect(await sqrtTickMath.getSqrtRatioAtTick(MAX_TICK)).to.be.gt(
-        encodePriceSqrt(BigNumber.from(2).pow(127).sub(1), 1)
-      )
+      expect(await sqrtTickMath.getSqrtRatioAtTick(MAX_TICK)).to.be.gt(encodePriceSqrt(BigNumber.from(2).pow(127), 1))
     })
 
     it('max tick', async () => {
