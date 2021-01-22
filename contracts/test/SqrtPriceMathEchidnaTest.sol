@@ -124,7 +124,7 @@ contract SqrtPriceMathEchidnaTest {
     ) external pure {
         require(sqrtP >= sqrtQ);
         require(sqrtP > 0 && sqrtQ > 0);
-        require(SafeMath.isMulSafe(sqrtP, sqrtQ));
+        require((sqrtP * sqrtQ) / sqrtP == sqrtQ);
 
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtP - sqrtQ;
