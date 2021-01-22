@@ -15,7 +15,13 @@ interface IUniswapV3PairState {
             bool unlocked
         );
 
-    function tickBitmap(int16) external view returns (uint256);
+    function feeGrowthGlobal0X128() external view returns (uint256);
+
+    function feeGrowthGlobal1X128() external view returns (uint256);
+
+    function protocolFees() external view returns (uint128 token0, uint128 token1);
+
+    function liquidity() external view returns (uint128);
 
     function ticks(int24)
         external
@@ -28,6 +34,8 @@ interface IUniswapV3PairState {
             uint256 feeGrowthOutside1X128
         );
 
+    function tickBitmap(int16) external view returns (uint256);
+
     function positions(bytes32)
         external
         view
@@ -35,19 +43,9 @@ interface IUniswapV3PairState {
             uint128 _liquidity,
             uint256 feeGrowthInside0LastX128,
             uint256 feeGrowthInside1LastX128,
-            uint256 feesOwed0,
-            uint256 feesOwed1
+            uint128 feesOwed0,
+            uint128 feesOwed1
         );
-
-    function feeGrowthGlobal0X128() external view returns (uint256);
-
-    function feeGrowthGlobal1X128() external view returns (uint256);
-
-    function liquidity() external view returns (uint128);
-
-    function protocolFees0() external view returns (uint256);
-
-    function protocolFees1() external view returns (uint256);
 
     function observations(uint256)
         external

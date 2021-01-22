@@ -72,28 +72,26 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // whether the pair is locked
         bool unlocked;
     }
-
     Slot0 public override slot0;
-
-    // the current liquidity
-    uint128 public override liquidity;
-
-    // see Oracle.sol
-    Oracle.Observation[65535] public override observations;
-
-    // see TickBitmap.sol
-    mapping(int16 => uint256) public override tickBitmap;
 
     // fee growth per unit of liquidity
     uint256 public override feeGrowthGlobal0X128;
     uint256 public override feeGrowthGlobal1X128;
 
     // accumulated protocol fees in token0/token1 units
-    uint256 public override protocolFees0;
-    uint256 public override protocolFees1;
+    struct ProtocolFees {
+        uint128 token0;
+        uint128 token1;
+    }
+    ProtocolFees public override protocolFees;
+
+    // the current liquidity
+    uint128 public override liquidity;
 
     mapping(int24 => Tick.Info) public override ticks;
+    mapping(int16 => uint256) public override tickBitmap;
     mapping(bytes32 => Position.Info) public override positions;
+    Oracle.Observation[65535] public override observations;
 
     modifier lock() {
         require(slot0.unlocked, 'LOK');
@@ -242,11 +240,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
-        // todo: better naming for these variables
-        (uint256 feeProtocol0, uint256 feeProtocol1) =
+        (uint256 protocolFees0New, uint256 protocolFees1New) =
             position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
-        if (feeProtocol0 > 0) protocolFees0 += feeProtocol0;
-        if (feeProtocol1 > 0) protocolFees1 += feeProtocol1;
+        if (protocolFees0New > 0 || protocolFees1New > 0) {
+            ProtocolFees memory _protocolFees = protocolFees;
+            protocolFees.token0 = _protocolFees.token0.addCapped(protocolFees0New);
+            protocolFees.token1 = _protocolFees.token1.addCapped(protocolFees1New);
+        }
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
@@ -259,9 +259,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+        uint128 amount0Requested,
+        uint128 amount1Requested
+    ) external override lock returns (uint128 amount0, uint128 amount1) {
         checkTicks(tickLower, tickUpper);
 
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
@@ -595,18 +595,20 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function collectProtocol(
         address recipient,
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
-        amount0 = amount0Requested > protocolFees0 ? protocolFees0 : amount0Requested;
-        amount1 = amount1Requested > protocolFees1 ? protocolFees1 : amount1Requested;
+        uint128 amount0Requested,
+        uint128 amount1Requested
+    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
+        ProtocolFees memory _protocolFees = protocolFees;
+
+        amount0 = amount0Requested > _protocolFees.token0 ? _protocolFees.token0 : amount0Requested;
+        amount1 = amount1Requested > _protocolFees.token1 ? _protocolFees.token1 : amount1Requested;
 
         if (amount0 > 0) {
-            protocolFees0 -= amount0;
+            protocolFees.token0 -= amount0;
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
-            protocolFees1 -= amount1;
+            protocolFees.token1 -= amount1;
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 

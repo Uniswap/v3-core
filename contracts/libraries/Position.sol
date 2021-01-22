@@ -16,8 +16,8 @@ library Position {
         uint256 feeGrowthInside0LastX128;
         uint256 feeGrowthInside1LastX128;
         // the fees owed to the position owner in token0/token1
-        uint256 feesOwed0;
-        uint256 feesOwed1;
+        uint128 feesOwed0;
+        uint128 feesOwed1;
     }
 
     function get(
@@ -37,16 +37,21 @@ library Position {
         uint256 feeGrowthInside1X128,
         uint8 feeProtocol
     ) internal returns (uint256 protocolFees0, uint256 protocolFees1) {
+        Info memory _self = self;
+
+        uint128 liquidityNext;
         if (liquidityDelta == 0) {
-            // disallow pokes for 0 liquidity positions
-            require(self.liquidity > 0, 'NP');
+            require(_self.liquidity > 0, 'NP'); // disallow pokes for 0 liquidity positions
+            liquidityNext = _self.liquidity;
+        } else {
+            liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
         }
 
         // calculate accumulated fees
         uint256 feesOwed0 =
-            FullMath.mulDiv(feeGrowthInside0X128 - self.feeGrowthInside0LastX128, self.liquidity, FixedPoint128.Q128);
+            FullMath.mulDiv(feeGrowthInside0X128 - _self.feeGrowthInside0LastX128, _self.liquidity, FixedPoint128.Q128);
         uint256 feesOwed1 =
-            FullMath.mulDiv(feeGrowthInside1X128 - self.feeGrowthInside1LastX128, self.liquidity, FixedPoint128.Q128);
+            FullMath.mulDiv(feeGrowthInside1X128 - _self.feeGrowthInside1LastX128, _self.liquidity, FixedPoint128.Q128);
 
         // collect protocol fee
         if (feeProtocol > 0) {
@@ -59,17 +64,17 @@ library Position {
             protocolFees1 = fee1;
         }
 
-        uint128 liquidityNext = LiquidityMath.addDelta(self.liquidity, liquidityDelta);
-
         // update the position
-        self.liquidity = liquidityNext;
+        if (liquidityDelta != 0) self.liquidity = liquidityNext;
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        self.feesOwed0 += feesOwed0;
-        self.feesOwed1 += feesOwed1;
+        if (feesOwed0 > 0 || feesOwed1 > 0) {
+            self.feesOwed0 = LiquidityMath.addCapped(_self.feesOwed0, feesOwed0);
+            self.feesOwed1 = LiquidityMath.addCapped(_self.feesOwed1, feesOwed1);
+        }
 
         // clear position data that is no longer needed
-        if (liquidityDelta < 0 && liquidityNext == 0) {
+        if (liquidityNext == 0) {
             delete self.feeGrowthInside0LastX128;
             delete self.feeGrowthInside1LastX128;
         }
