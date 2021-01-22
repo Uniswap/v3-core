@@ -19,9 +19,9 @@ interface IUniswapV3PairActions {
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint256 amount0Requested,
-        uint256 amount1Requested
-    ) external returns (uint256 amount0, uint256 amount1);
+        uint128 amount0Requested,
+        uint128 amount1Requested
+    ) external returns (uint128 amount0, uint128 amount1);
 
     // burn the sender's liquidity
     function burn(

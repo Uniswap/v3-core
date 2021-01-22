@@ -444,10 +444,18 @@ describe('UniswapV3Pair swap tests', () => {
             }).to.matchSnapshot('swap error')
             return
           }
-          const [pairBalance0After, pairBalance1After, slot0After] = await Promise.all([
+          const [
+            pairBalance0After,
+            pairBalance1After,
+            slot0After,
+            feeGrowthGlobal0X128,
+            feeGrowthGlobal1X128,
+          ] = await Promise.all([
             token0.balanceOf(pair.address),
             token1.balanceOf(pair.address),
             pair.slot0(),
+            pair.feeGrowthGlobal0X128(),
+            pair.feeGrowthGlobal1X128(),
           ])
           const pairBalance0Delta = pairBalance0After.sub(pairBalance0)
           const pairBalance1Delta = pairBalance1After.sub(pairBalance1)
@@ -486,6 +494,8 @@ describe('UniswapV3Pair swap tests', () => {
             amount1Before: pairBalance1.toString(),
             amount0Delta: pairBalance0Delta.toString(),
             amount1Delta: pairBalance1Delta.toString(),
+            feeGrowthGlobal0X128Delta: feeGrowthGlobal0X128.toString(),
+            feeGrowthGlobal1X128Delta: feeGrowthGlobal1X128.toString(),
             tickBefore: slot0.tick,
             pairPriceBefore: formatPrice(slot0.sqrtPriceX96),
             tickAfter: slot0After.tick,
