@@ -210,32 +210,39 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
         uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
-        uint32 blockTimestamp = _blockTimestamp();
 
-        bool flippedLower =
-            ticks.update(
-                tickLower,
-                tick,
-                liquidityDelta,
-                _feeGrowthGlobal0X128,
-                _feeGrowthGlobal1X128,
-                blockTimestamp,
-                false,
-                maxLiquidityPerTick
-            );
-        if (flippedLower) tickBitmap.flipTick(tickLower, tickSpacing);
-        bool flippedUpper =
-            ticks.update(
-                tickUpper,
-                tick,
-                liquidityDelta,
-                _feeGrowthGlobal0X128,
-                _feeGrowthGlobal1X128,
-                blockTimestamp,
-                true,
-                maxLiquidityPerTick
-            );
-        if (flippedUpper) tickBitmap.flipTick(tickUpper, tickSpacing);
+        // if we need to update the ticks, do it
+        bool flippedLower;
+        bool flippedUpper;
+        if (liquidityDelta != 0) {
+            uint32 blockTimestamp = _blockTimestamp();
+
+            flippedLower =
+                ticks.update(
+                    tickLower,
+                    tick,
+                    liquidityDelta,
+                    _feeGrowthGlobal0X128,
+                    _feeGrowthGlobal1X128,
+                    blockTimestamp,
+                    false,
+                    maxLiquidityPerTick
+                );
+            flippedUpper =
+                ticks.update(
+                    tickUpper,
+                    tick,
+                    liquidityDelta,
+                    _feeGrowthGlobal0X128,
+                    _feeGrowthGlobal1X128,
+                    blockTimestamp,
+                    true,
+                    maxLiquidityPerTick
+                );
+
+            if (flippedLower) tickBitmap.flipTick(tickLower, tickSpacing);
+            if (flippedUpper) tickBitmap.flipTick(tickUpper, tickSpacing);
+        }
 
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
