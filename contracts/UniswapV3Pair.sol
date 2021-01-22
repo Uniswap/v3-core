@@ -217,28 +217,26 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (liquidityDelta != 0) {
             uint32 blockTimestamp = _blockTimestamp();
 
-            flippedLower =
-                ticks.update(
-                    tickLower,
-                    tick,
-                    liquidityDelta,
-                    _feeGrowthGlobal0X128,
-                    _feeGrowthGlobal1X128,
-                    blockTimestamp,
-                    false,
-                    maxLiquidityPerTick
-                );
-            flippedUpper =
-                ticks.update(
-                    tickUpper,
-                    tick,
-                    liquidityDelta,
-                    _feeGrowthGlobal0X128,
-                    _feeGrowthGlobal1X128,
-                    blockTimestamp,
-                    true,
-                    maxLiquidityPerTick
-                );
+            flippedLower = ticks.update(
+                tickLower,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                blockTimestamp,
+                false,
+                maxLiquidityPerTick
+            );
+            flippedUpper = ticks.update(
+                tickUpper,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                blockTimestamp,
+                true,
+                maxLiquidityPerTick
+            );
 
             if (flippedLower) tickBitmap.flipTick(tickLower, tickSpacing);
             if (flippedUpper) tickBitmap.flipTick(tickUpper, tickSpacing);
