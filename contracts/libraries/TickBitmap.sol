@@ -49,7 +49,7 @@ library TickBitmap {
             // if there are no initialized ticks to the left of the current tick, return leftmost in the word
             return
                 masked == 0
-                    ? (tick + 1 + int24(uint8(-1) - bitPos), false)
+                    ? (tick + 1 + int24(type(uint8).max - bitPos), false)
                     : (tick + 1 + int24(BitMath.leastSignificantBit(masked) - bitPos), true);
         }
     }
