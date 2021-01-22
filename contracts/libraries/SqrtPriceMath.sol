@@ -22,7 +22,7 @@ library SqrtPriceMath {
         uint128 liquidity,
         uint256 amount,
         bool add
-    ) private pure returns (uint160) {
+    ) internal pure returns (uint160) {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
