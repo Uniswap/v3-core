@@ -5,7 +5,7 @@ import '@nomiclabs/hardhat-waffle'
 export default {
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: true,
+      // allowUnlimitedContractSize: true,
     },
   },
   solidity: {
@@ -13,7 +13,7 @@ export default {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 100,
       },
       metadata: {
         // do not include the metadata hash, since this is machine dependent
