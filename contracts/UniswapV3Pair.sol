@@ -72,7 +72,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         // whether the pair is locked
         bool unlocked;
     }
-
     Slot0 public override slot0;
 
     // fee growth per unit of liquidity
@@ -80,8 +79,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     uint256 public override feeGrowthGlobal1X128;
 
     // accumulated protocol fees in token0/token1 units
-    uint128 public override protocolFees0;
-    uint128 public override protocolFees1;
+    struct ProtocolFees {
+        uint128 token0;
+        uint128 token1;
+    }
+    ProtocolFees public override protocolFees;
 
     // the current liquidity
     uint128 public override liquidity;
@@ -239,10 +241,13 @@ contract UniswapV3Pair is IUniswapV3Pair {
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
         // todo: better naming for these variables
-        (uint256 feeProtocol0, uint256 feeProtocol1) =
+        (uint256 protocolFees0New, uint256 protocolFees1New) =
             position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
-        if (feeProtocol0 > 0) protocolFees0 = protocolFees0.addCapped(feeProtocol0);
-        if (feeProtocol1 > 0) protocolFees1 = protocolFees1.addCapped(feeProtocol1);
+        if (protocolFees0New > 0 || protocolFees1New > 0) {
+            ProtocolFees memory _protocolFees = protocolFees;
+            protocolFees.token0 = _protocolFees.token0.addCapped(protocolFees0New);
+            protocolFees.token1 = _protocolFees.token1.addCapped(protocolFees1New);
+        }
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
@@ -594,15 +599,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint128 amount0Requested,
         uint128 amount1Requested
     ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
-        amount0 = amount0Requested > protocolFees0 ? protocolFees0 : amount0Requested;
-        amount1 = amount1Requested > protocolFees1 ? protocolFees1 : amount1Requested;
+        ProtocolFees memory _protocolFees = protocolFees;
+
+        amount0 = amount0Requested > _protocolFees.token0 ? _protocolFees.token0 : amount0Requested;
+        amount1 = amount1Requested > _protocolFees.token1 ? _protocolFees.token1 : amount1Requested;
 
         if (amount0 > 0) {
-            protocolFees0 -= amount0;
+            protocolFees.token0 -= amount0;
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
-            protocolFees1 -= amount1;
+            protocolFees.token1 -= amount1;
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 

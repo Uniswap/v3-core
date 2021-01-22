@@ -16,12 +16,9 @@ interface IUniswapV3PairState {
         );
 
     function feeGrowthGlobal0X128() external view returns (uint256);
-
     function feeGrowthGlobal1X128() external view returns (uint256);
 
-    function protocolFees0() external view returns (uint128);
-
-    function protocolFees1() external view returns (uint128);
+    function protocolFees() external view returns (uint128 token0, uint128 token1);
 
     function liquidity() external view returns (uint128);
 
