@@ -1159,7 +1159,6 @@ describe('UniswapV3Pair', () => {
       await expect(pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '500000000000000')
-
       ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
       expect(token0ProtocolFees).to.eq('199999999999998')
       expect(token1ProtocolFees).to.eq(0)
