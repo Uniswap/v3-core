@@ -92,7 +92,6 @@ library SqrtPriceMath {
     ) internal pure returns (uint160 sqrtQX96) {
         require(sqrtPX96 > 0, 'P');
         require(liquidity > 0, 'L');
-        if (amountOut == 0) return sqrtPX96;
 
         // round to make sure that we pass the target price
         return

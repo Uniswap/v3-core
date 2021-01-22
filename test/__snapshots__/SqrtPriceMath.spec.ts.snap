@@ -12,6 +12,6 @@ exports[`SqrtPriceMath #getNextSqrtPriceFromInput zeroForOne = false gas 1`] = `
 
 exports[`SqrtPriceMath #getNextSqrtPriceFromInput zeroForOne = true gas 1`] = `743`;
 
-exports[`SqrtPriceMath #getNextSqrtPriceFromOutput zeroForOne = false gas 1`] = `885`;
+exports[`SqrtPriceMath #getNextSqrtPriceFromOutput zeroForOne = false gas 1`] = `868`;
 
-exports[`SqrtPriceMath #getNextSqrtPriceFromOutput zeroForOne = true gas 1`] = `657`;
+exports[`SqrtPriceMath #getNextSqrtPriceFromOutput zeroForOne = true gas 1`] = `640`;
