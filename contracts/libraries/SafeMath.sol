@@ -89,14 +89,6 @@ library SafeMath {
         require(c / a == b, 'MO');
     }
 
-    function isMulSafe(uint256 x, uint256 y) internal pure returns (bool) {
-        return x == 0 || (x * y) / x == y;
-    }
-
-    function isAddSafe(uint256 x, uint256 y) internal pure returns (bool) {
-        return x <= type(uint256).max - y;
-    }
-
     function addCapped(uint128 x, uint256 y) internal pure returns (uint128 z) {
         z = uint128(x + y);
         if (z < x) {
