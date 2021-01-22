@@ -37,7 +37,7 @@ library Oracle {
         returns (uint16 cardinality, uint16 target)
     {
         self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 0, initialized: true});
-        return (1, 1);
+        return grow(self, 0, 1, 1, 2);
     }
 
     // writes an oracle observation to the array, at most once per block
@@ -82,8 +82,11 @@ library Oracle {
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the initialized boolean is still false
         for (uint16 i = targetOld; i < targetNew; i++) self[i].blockTimestamp = 1;
-        // if the index is already at the last element of the array, immediately grow the cardinality
-        cardinality = index == cardinalityOld - 1 ? targetNew : cardinalityOld;
+        // if the index is already at the last element of the array, or the array still contains uninitialized entries,
+        // immediately grow the cardinality
+        cardinality = (index == (cardinalityOld - 1) || !self[cardinalityOld - 1].initialized)
+            ? targetNew
+            : cardinalityOld;
         target = targetNew;
     }
 

@@ -160,23 +160,15 @@ describe('UniswapV3Pair', () => {
     })
     it('emits an event', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
-      await expect(pair.increaseObservationCardinality(2))
+      await expect(pair.increaseObservationCardinality(3))
         .to.emit(pair, 'ObservationCardinalityIncreased')
-        .withArgs(1, 2)
+        .withArgs(2, 3)
     })
     it('increases cardinality and target first time', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
-      await pair.increaseObservationCardinality(2)
-      const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
-      expect(observationCardinality).to.eq(2)
-      expect(observationCardinalityTarget).to.eq(2)
-    })
-    it('increases only target if it has not yet grown', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
-      await pair.increaseObservationCardinality(2)
       await pair.increaseObservationCardinality(3)
       const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
-      expect(observationCardinality).to.eq(2)
+      expect(observationCardinality).to.eq(3)
       expect(observationCardinalityTarget).to.eq(3)
     })
   })
@@ -407,7 +399,7 @@ describe('UniswapV3Pair', () => {
             })
             await pair.advanceTime(1)
             await mint(wallet.address, minTick, maxTick, 100)
-            checkObservationEquals(await pair.observations(0), {
+            checkObservationEquals(await pair.observations(1), {
               tickCumulative: -23028,
               blockTimestamp: TEST_PAIR_START_TIME + 1,
               initialized: true,

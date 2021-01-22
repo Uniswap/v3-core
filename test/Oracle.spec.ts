@@ -38,13 +38,13 @@ describe('Oracle', () => {
       await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
       expect(await oracle.index()).to.eq(0)
     })
-    it('cardinality is 1', async () => {
+    it('cardinality is 2', async () => {
       await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
-      expect(await oracle.cardinality()).to.eq(1)
+      expect(await oracle.cardinality()).to.eq(2)
     })
-    it('target is 1', async () => {
+    it('target is 2', async () => {
       await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
-      expect(await oracle.target()).to.eq(1)
+      expect(await oracle.target()).to.eq(2)
     })
     it('sets first slot timestamp only', async () => {
       await oracle.initialize({ liquidity: 1, tick: 1, time: 1 })
@@ -95,15 +95,7 @@ describe('Oracle', () => {
       }
     })
 
-    it('does not change the target when index != cardinality - 1', async () => {
-      await oracle.grow(2)
-      await oracle.grow(5)
-      expect(await oracle.cardinality()).to.eq(2)
-      expect(await oracle.target()).to.eq(5)
-    })
-
     it('grow after wrap', async () => {
-      await oracle.grow(2)
       await oracle.update({ advanceTimeBy: 2, liquidity: 1, tick: 1 }) // index is now 1
       await oracle.update({ advanceTimeBy: 2, liquidity: 1, tick: 1 }) // index is now 0 again
       expect(await oracle.index()).to.eq(0)
@@ -114,7 +106,7 @@ describe('Oracle', () => {
     })
 
     it('gas for growing by 1 slot when index == cardinality - 1', async () => {
-      await snapshotGasCost(oracle.grow(2))
+      await snapshotGasCost(oracle.grow(3))
     })
 
     it('gas for growing by 10 slots when index == cardinality - 1', async () => {
@@ -122,12 +114,12 @@ describe('Oracle', () => {
     })
 
     it('gas for growing by 1 slot when index != cardinality - 1', async () => {
-      await oracle.grow(2)
-      await snapshotGasCost(oracle.grow(3))
+      await oracle.grow(3)
+      await snapshotGasCost(oracle.grow(4))
     })
 
     it('gas for growing by 10 slots when index != cardinality - 1', async () => {
-      await oracle.grow(2)
+      await oracle.grow(3)
       await snapshotGasCost(oracle.grow(12))
     })
   })
@@ -139,10 +131,10 @@ describe('Oracle', () => {
       oracle = await loadFixture(initializedOracleFixture)
     })
 
-    it('single element array gets overwritten', async () => {
+    it('initial array gets overwritten', async () => {
       await oracle.update({ advanceTimeBy: 1, tick: 2, liquidity: 5 })
-      expect(await oracle.index()).to.eq(0)
-      checkObservationEquals(await oracle.observations(0), {
+      expect(await oracle.index()).to.eq(1)
+      checkObservationEquals(await oracle.observations(1), {
         initialized: true,
         liquidityCumulative: 0,
         tickCumulative: 0,
@@ -156,9 +148,21 @@ describe('Oracle', () => {
         tickCumulative: 10,
         blockTimestamp: 6,
       })
+      checkObservationEquals(await oracle.observations(1), {
+        initialized: true,
+        liquidityCumulative: 0,
+        tickCumulative: 0,
+        blockTimestamp: 1,
+      })
       await oracle.update({ advanceTimeBy: 3, tick: 2, liquidity: 3 })
-      expect(await oracle.index()).to.eq(0)
+      expect(await oracle.index()).to.eq(1)
       checkObservationEquals(await oracle.observations(0), {
+        initialized: true,
+        liquidityCumulative: 25,
+        tickCumulative: 10,
+        blockTimestamp: 6,
+      })
+      checkObservationEquals(await oracle.observations(1), {
         initialized: true,
         liquidityCumulative: 49,
         tickCumulative: 7,
@@ -167,7 +171,6 @@ describe('Oracle', () => {
     })
 
     it('does nothing if time has not changed', async () => {
-      await oracle.grow(2)
       await oracle.update({ advanceTimeBy: 1, tick: 3, liquidity: 2 })
       expect(await oracle.index()).to.eq(1)
       await oracle.update({ advanceTimeBy: 0, tick: -5, liquidity: 9 })
@@ -190,11 +193,10 @@ describe('Oracle', () => {
     })
 
     it('grows cardinality when writing past', async () => {
-      await oracle.grow(2)
       await oracle.grow(4)
-      expect(await oracle.cardinality()).to.eq(2)
+      expect(await oracle.cardinality()).to.eq(4)
       await oracle.update({ advanceTimeBy: 3, tick: 5, liquidity: 6 })
-      expect(await oracle.cardinality()).to.eq(2)
+      expect(await oracle.cardinality()).to.eq(4)
       await oracle.update({ advanceTimeBy: 4, tick: 6, liquidity: 4 })
       expect(await oracle.cardinality()).to.eq(4)
       expect(await oracle.index()).to.eq(2)
@@ -313,7 +315,6 @@ describe('Oracle', () => {
 
       it('two observations in chronological order 0 seconds ago exact', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
         await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
         const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
         expect(tickCumulative).to.eq(-20)
@@ -322,7 +323,6 @@ describe('Oracle', () => {
 
       it('two observations in chronological order 0 seconds ago counterfactual', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
         await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
         await oracle.advanceTime(7)
         const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
@@ -332,7 +332,6 @@ describe('Oracle', () => {
 
       it('two observations in chronological order seconds ago is exactly on first observation', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
         await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
         await oracle.advanceTime(7)
         const { tickCumulative, liquidityCumulative } = await oracle.scry(11)
@@ -342,7 +341,6 @@ describe('Oracle', () => {
 
       it('two observations in chronological order seconds ago is between first and second', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
         await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
         await oracle.advanceTime(7)
         const { tickCumulative, liquidityCumulative } = await oracle.scry(9)
@@ -352,7 +350,6 @@ describe('Oracle', () => {
 
       it('two observations in reverse order 0 seconds ago exact', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
         await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
         await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
         const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
@@ -362,7 +359,6 @@ describe('Oracle', () => {
 
       it('two observations in reverse order 0 seconds ago counterfactual', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
         await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
         await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
         await oracle.advanceTime(7)
@@ -373,7 +369,6 @@ describe('Oracle', () => {
 
       it('two observations in reverse order seconds ago is exactly on first observation', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
         await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
         await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
         await oracle.advanceTime(7)
@@ -384,7 +379,6 @@ describe('Oracle', () => {
 
       it('two observations in reverse order seconds ago is between first and second', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
         await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
         await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
         await oracle.advanceTime(7)
