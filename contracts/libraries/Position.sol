@@ -66,7 +66,7 @@ library Position {
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (feesOwed0 > 0) self.feesOwed0 = LiquidityMath.addCapped(self.feesOwed0, feesOwed0);
-        if (feesOwed1 > 1) self.feesOwed1 = LiquidityMath.addCapped(self.feesOwed1, feesOwed1);
+        if (feesOwed1 > 0) self.feesOwed1 = LiquidityMath.addCapped(self.feesOwed1, feesOwed1);
 
         // clear position data that is no longer needed
         if (liquidityDelta < 0 && liquidityNext == 0) {
