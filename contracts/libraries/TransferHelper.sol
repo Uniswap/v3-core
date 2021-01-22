@@ -2,8 +2,14 @@
 
 pragma solidity >=0.6.0;
 
-// helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
+/// @title TransferHelper
+/// @notice This library contains helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
+    /// @notice Transfers tokens from msg.sender to a recipient
+    /// @dev calls transfer on token contract via abi.encodeWithSelector, errors with TF if transfer fails
+    /// @param token The contract address of the token which will be transferred
+    /// @param to The recipient of the transfer
+    /// @param value The value of the transfer
     function safeTransfer(
         address token,
         address to,
@@ -14,6 +20,12 @@ library TransferHelper {
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'TF');
     }
 
+    /// @notice Transfers tokens from an arbitrary address to a recipient
+    /// @dev calls transferFrom on token contract via abi.encodeWithSelector, errors with TFF if transfer fails
+    /// @param token The contract address of the token which will be transferred
+    /// @param from The address of the account from which the transfer will be initiated
+    /// @param to The recipient of the transfer
+    /// @param value The value of the transfer
     function safeTransferFrom(
         address token,
         address from,
