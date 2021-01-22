@@ -35,7 +35,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         uint256 amount1In,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, false, amount1In.toInt256(), uint160(-1), abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(recipient, false, amount1In.toInt256(), type(uint160).max, abi.encode(msg.sender));
     }
 
     function swap1ForExact0(
@@ -43,7 +43,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         uint256 amount0Out,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, false, -amount0Out.toInt256(), uint160(-1), abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(recipient, false, -amount0Out.toInt256(), type(uint160).max, abi.encode(msg.sender));
     }
 
     function swapToLowerSqrtPrice(
