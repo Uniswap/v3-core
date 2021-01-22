@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
@@ -26,9 +27,9 @@ interface TokensFixture {
 
 async function tokensFixture(): Promise<TokensFixture> {
   const tokenFactory = await ethers.getContractFactory('TestERC20')
-  const tokenA = (await tokenFactory.deploy(expandTo18Decimals(10_000))) as TestERC20
-  const tokenB = (await tokenFactory.deploy(expandTo18Decimals(10_000))) as TestERC20
-  const tokenC = (await tokenFactory.deploy(expandTo18Decimals(10_000))) as TestERC20
+  const tokenA = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
+  const tokenB = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
+  const tokenC = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
 
   const [token0, token1, token2] = [tokenA, tokenB, tokenC].sort((tokenA, tokenB) =>
     tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? -1 : 1
