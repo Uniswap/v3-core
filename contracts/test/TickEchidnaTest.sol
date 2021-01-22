@@ -17,6 +17,6 @@ contract TickEchidnaTest {
 
         uint256 numTicks = uint256((maxTick - minTick) / tickSpacing) + 1;
         // max liquidity at every tick is less than the cap
-        assert(uint256(maxLiquidityPerTick) * numTicks <= uint128(-1));
+        assert(uint256(maxLiquidityPerTick) * numTicks <= type(uint128).max);
     }
 }

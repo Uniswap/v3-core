@@ -34,7 +34,7 @@ library Tick {
         minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
         maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
         uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;
-        maxLiquidityPerTick = uint128(-1) / numTicks;
+        maxLiquidityPerTick = type(uint128).max / numTicks;
     }
 
     function getFeeGrowthInside(
