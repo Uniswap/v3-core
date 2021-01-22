@@ -88,30 +88,28 @@ library Tick {
     ) internal returns (bool flipped) {
         Tick.Info storage info = self[tick];
 
-        if (liquidityDelta != 0) {
-            uint128 liquidityGrossBefore = info.liquidityGross;
-            uint128 liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta);
+        uint128 liquidityGrossBefore = info.liquidityGross;
+        uint128 liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta);
 
-            require(liquidityGrossAfter <= maxLiquidity, 'LO');
+        require(liquidityGrossAfter <= maxLiquidity, 'LO');
 
-            flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
+        flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
 
-            if (liquidityGrossBefore == 0) {
-                // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
-                if (tick <= tickCurrent) {
-                    info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
-                    info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
-                    info.secondsOutside = blockTimestamp;
-                }
+        if (liquidityGrossBefore == 0) {
+            // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
+            if (tick <= tickCurrent) {
+                info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
+                info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
+                info.secondsOutside = blockTimestamp;
             }
-
-            info.liquidityGross = liquidityGrossAfter;
-
-            // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-            info.liquidityDelta = upper
-                ? SafeCast.toInt128(SignedSafeMath.sub(info.liquidityDelta, liquidityDelta))
-                : SafeCast.toInt128(SignedSafeMath.add(info.liquidityDelta, liquidityDelta));
         }
+
+        info.liquidityGross = liquidityGrossAfter;
+
+        // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
+        info.liquidityDelta = upper
+            ? SafeCast.toInt128(SignedSafeMath.sub(info.liquidityDelta, liquidityDelta))
+            : SafeCast.toInt128(SignedSafeMath.add(info.liquidityDelta, liquidityDelta));
     }
 
     function clear(mapping(int24 => Tick.Info) storage self, int24 tick) internal {
