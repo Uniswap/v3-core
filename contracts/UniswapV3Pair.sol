@@ -16,6 +16,7 @@ import './libraries/SqrtTickMath.sol';
 import './libraries/SpacedTickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
+import './libraries/SecondsOutside.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
 
@@ -33,6 +34,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     using SafeCast for uint256;
     using LiquidityMath for uint128;
     using SpacedTickBitmap for mapping(int16 => uint256);
+    using SecondsOutside for mapping(int24 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
@@ -92,6 +94,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     mapping(int16 => uint256) public override tickBitmap;
     mapping(bytes32 => Position.Info) public override positions;
     Oracle.Observation[65535] public override observations;
+    mapping(int24 => uint256) public override secondsOutside;
 
     modifier lock() {
         require(slot0.unlocked, 'LOK');
@@ -223,7 +226,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 liquidityDelta,
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
-                blockTimestamp,
                 false,
                 maxLiquidityPerTick
             );
@@ -233,13 +235,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
                 liquidityDelta,
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
-                blockTimestamp,
                 true,
                 maxLiquidityPerTick
             );
 
-            if (flippedLower) tickBitmap.flipTick(tickLower, tickSpacing);
-            if (flippedUpper) tickBitmap.flipTick(tickUpper, tickSpacing);
+            if (flippedLower) {
+                tickBitmap.flipTick(tickLower, tickSpacing);
+                secondsOutside.initialize(tickLower, tick, blockTimestamp, tickSpacing);
+            }
+            if (flippedUpper) {
+                tickBitmap.flipTick(tickUpper, tickSpacing);
+                secondsOutside.initialize(tickUpper, tick, blockTimestamp, tickSpacing);
+            }
         }
 
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
@@ -535,9 +542,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         ticks.cross(
                             step.tickNext,
                             (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
-                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
-                            cache.blockTimestamp
+                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
                         );
+
+                    secondsOutside.cross(step.tickNext, cache.blockTimestamp, tickSpacing);
 
                     // update liquidity, subtract from right to left, add from left to right
                     state.liquidity = zeroForOne
