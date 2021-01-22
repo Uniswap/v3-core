@@ -7,8 +7,6 @@ import '../libraries/SqrtPriceMath.sol';
 import '../libraries/FixedPoint96.sol';
 
 contract SqrtPriceMathEchidnaTest {
-    using SafeMath for uint256;
-
     function mulDivRoundingUpInvariants(
         uint256 x,
         uint256 y,
