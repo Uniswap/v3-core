@@ -378,7 +378,7 @@ describe('SqrtPriceMath', () => {
       expect(sqrtQ).to.eq('1025574284609383582614317949100778057966413819637')
 
       const amount0Delta = await sqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true)
-      expect(amount0Delta).to.eq('407')
+      expect(amount0Delta).to.eq('406')
     })
   })
 })

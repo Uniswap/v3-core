@@ -1014,7 +1014,7 @@ describe('UniswapV3Pair', () => {
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('1799999999999997')
+      expect(token0Fees).to.eq('1799999999999999')
       expect(token1Fees).to.eq(0)
     })
 
