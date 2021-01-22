@@ -74,7 +74,7 @@ contract SqrtPriceMathEchidnaTest {
         assert(amount0Up - amount0Down < 2);
     }
 
-    function getNextSqrtPriceFromAmount0RoundingUpErrorBounds(
+    function getNextSqrtPriceFromAmount0RoundingUpInvariants(
         uint160 sqrtPX96,
         uint128 liquidity,
         uint256 amount,
@@ -93,22 +93,27 @@ contract SqrtPriceMathEchidnaTest {
         if (amount == 0) {
             assert(sqrtPX96 == sqrtQX96);
         }
+    }
 
-        uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
+    function getNextSqrtPriceFromAmount1RoundingDownInvariants(
+        uint160 sqrtPX96,
+        uint128 liquidity,
+        uint256 amount,
+        bool add
+    ) external pure {
+        require(sqrtPX96 > 0);
+        require(liquidity > 0);
+        uint160 sqrtQX96 = SqrtPriceMath.getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add);
 
-        uint256 denominator = add ? (numerator1.add(amount.mul(sqrtPX96))) : (numerator1.sub(amount.mul(sqrtPX96)));
-        uint256 fullPrecisionResult = FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator);
         if (add) {
-            // in exact input, next price is less than current price
-            // and full precision result should move price further
-            assert(fullPrecisionResult <= sqrtQX96);
+            assert(sqrtQX96 >= sqrtPX96);
         } else {
-            // in exact output, next price is greater than current price
-            // and full precision result should not move price as far
-            assert(fullPrecisionResult <= sqrtQX96);
+            assert(sqrtQX96 <= sqrtPX96);
         }
-        uint256 error = add ? uint256(sqrtQX96) - fullPrecisionResult : fullPrecisionResult - uint256(sqrtQX96);
-        assert(error < 4);
+
+        if (amount == 0) {
+            assert(sqrtPX96 == sqrtQX96);
+        }
     }
 
     // ensure that chained division is always equal to the full-precision case for

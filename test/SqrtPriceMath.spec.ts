@@ -1,6 +1,7 @@
 import { BigNumber, constants } from 'ethers'
 import { ethers } from 'hardhat'
 import { SqrtPriceMathTest } from '../typechain/SqrtPriceMathTest'
+import { SqrtPriceMathEchidnaTest } from '../typechain/SqrtPriceMathEchidnaTest'
 
 import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
@@ -382,12 +383,14 @@ describe('SqrtPriceMath', () => {
   })
 
   it.only('assertion failed', async () => {
+    const test = (await (
+      await ethers.getContractFactory('SqrtPriceMathEchidnaTest')
+    ).deploy()) as SqrtPriceMathEchidnaTest
     const sqrtP = 3
     const liquidity = 1
-    const zeroForOne = true
+    const add = false
     const amountOut = 0
 
-    const sqrtQ = await sqrtPriceMath.getNextSqrtPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne)
-    expect(sqrtQ).to.eq(3)
+    await test.getNextSqrtPriceFromAmount0RoundingUpErrorBounds(sqrtP, liquidity, amountOut, add)
   })
 })
