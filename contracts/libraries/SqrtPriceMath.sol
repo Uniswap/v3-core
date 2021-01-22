@@ -25,8 +25,7 @@ library SqrtPriceMath {
     ) internal pure returns (uint160) {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
-        uint256 denominator1 =
-            add ? divRoundingUp(numerator1, sqrtPX96).add(amount) : divRoundingUp(numerator1, sqrtPX96).sub(amount);
+        uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
         require(denominator1 != 0, 'OUT');
 
         return divRoundingUp(numerator1, denominator1).toUint160();

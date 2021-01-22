@@ -50,27 +50,27 @@ exports[`UniswapV3Pair gas tests fee is off #mint below current price second pos
 
 exports[`UniswapV3Pair gas tests fee is off #poke best case 1`] = `55197`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `110287`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `110171`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block with no tick movement 1`] = `88606`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block with no tick movement 1`] = `92744`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `112363`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `112257`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `114875`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `114822`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `122627`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `122521`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `154750`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `154644`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `214773`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `214667`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `110287`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `110171`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 second swap in block with no tick movement 1`] = `92979`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 second swap in block with no tick movement 1`] = `92873`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `99825`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `99719`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `108591`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `108538`;
 
 exports[`UniswapV3Pair gas tests fee is on #burn above current price burn entire position after some time passes 1`] = `58100`;
 
@@ -122,24 +122,24 @@ exports[`UniswapV3Pair gas tests fee is on #mint below current price second posi
 
 exports[`UniswapV3Pair gas tests fee is on #poke best case 1`] = `55197`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `110287`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `110171`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block with no tick movement 1`] = `88606`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block with no tick movement 1`] = `92744`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `112363`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `112257`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `114875`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block, large swap crossing several initialized ticks 1`] = `114822`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `122627`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block, large swap, no initialized crossings 1`] = `122521`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `154750`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 large swap crossing several initialized ticks after some time passes (seconds outside is set) 1`] = `154644`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `214773`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 large swap crossing several initialized ticks second time after some time passes 1`] = `214667`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `110287`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 second swap in block moves tick, no initialized crossings 1`] = `110171`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 second swap in block with no tick movement 1`] = `92979`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 second swap in block with no tick movement 1`] = `92873`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `99825`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 second swap in block, large swap crossing a single initialized tick 1`] = `99719`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `108591`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 second swap in block, large swap crossing several initialized ticks 1`] = `108538`;
