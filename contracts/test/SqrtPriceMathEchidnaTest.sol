@@ -58,6 +58,48 @@ contract SqrtPriceMathEchidnaTest {
         }
     }
 
+    function getNextSqrtPriceFromAmount0RoundingUpInvariants(
+        uint160 sqrtPX96,
+        uint128 liquidity,
+        uint256 amount,
+        bool add
+    ) external pure {
+        require(sqrtPX96 > 0);
+        require(liquidity > 0);
+        uint160 sqrtQX96 = SqrtPriceMath.getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amount, add);
+
+        if (add) {
+            assert(sqrtQX96 <= sqrtPX96);
+        } else {
+            assert(sqrtQX96 >= sqrtPX96);
+        }
+
+        if (amount == 0) {
+            assert(sqrtPX96 == sqrtQX96);
+        }
+    }
+
+    function getNextSqrtPriceFromAmount1RoundingDownInvariants(
+        uint160 sqrtPX96,
+        uint128 liquidity,
+        uint256 amount,
+        bool add
+    ) external pure {
+        require(sqrtPX96 > 0);
+        require(liquidity > 0);
+        uint160 sqrtQX96 = SqrtPriceMath.getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amount, add);
+
+        if (add) {
+            assert(sqrtQX96 >= sqrtPX96);
+        } else {
+            assert(sqrtQX96 <= sqrtPX96);
+        }
+
+        if (amount == 0) {
+            assert(sqrtPX96 == sqrtQX96);
+        }
+    }
+
     function getAmount0DeltaInvariants(
         uint160 sqrtP,
         uint160 sqrtQ,

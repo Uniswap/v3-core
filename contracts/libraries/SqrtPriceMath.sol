@@ -24,7 +24,7 @@ library SqrtPriceMath {
         uint128 liquidity,
         uint256 amount,
         bool add
-    ) private pure returns (uint160) {
+    ) internal pure returns (uint160) {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
         if (
@@ -47,7 +47,7 @@ library SqrtPriceMath {
         uint128 liquidity,
         uint256 amount,
         bool add
-    ) private pure returns (uint160) {
+    ) internal pure returns (uint160) {
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
         uint256 quotient =
