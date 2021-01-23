@@ -7,7 +7,7 @@ import '../interfaces/IERC20.sol';
 /// @notice This library contains helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
     /// @notice Transfers tokens from msg.sender to a recipient
-    /// @dev Calls transfer on token contract via abi.encodeWithSelector, errors with TF if transfer fails
+    /// @dev Calls transfer on token contract, errors with TF if transfer fails
     /// @param token The contract address of the token which will be transferred
     /// @param to The recipient of the transfer
     /// @param value The value of the transfer
