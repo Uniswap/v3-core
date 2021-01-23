@@ -2,14 +2,14 @@
 pragma solidity =0.7.6;
 
 contract NoDelegateCall {
-    address private immutable me;
+    address private immutable original;
 
     constructor() {
-        me = address(this);
+        original = address(this);
     }
 
     modifier noDelegateCall() {
-        require(address(this) == me);
+        require(address(this) == original);
         _;
     }
 }
