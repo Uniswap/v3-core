@@ -8,7 +8,7 @@ library SecondsOutside {
 
         int24 compressed = tick / tickSpacing;
 
-        wordPos = compressed / 8;
+        wordPos = compressed >> 3;
         shift = uint8(compressed % 8) * 32;
     }
 
@@ -16,21 +16,29 @@ library SecondsOutside {
         mapping(int24 => uint256) storage self,
         int24 tick,
         int24 tickCurrent,
-        uint32 time,
+        int24 tickSpacing,
+        uint32 time
+    ) internal {
+        if (tick <= tickCurrent) {
+            (int24 wordPos, uint8 shift) = position(tick, tickSpacing);
+            self[wordPos] += uint256(time) << shift;
+        }
+    }
+
+    function clear(
+        mapping(int24 => uint256) storage self,
+        int24 tick,
         int24 tickSpacing
     ) internal {
-        if (tick < tickCurrent) {
-            (int24 wordPos, uint8 shift) = position(tick, tickSpacing);
-            // todo: not safe for multiple initializes without clears
-            self[wordPos] += time << shift;
-        }
+        (int24 wordPos, uint8 shift) = position(tick, tickSpacing);
+        self[wordPos] &= type(uint256).max - (uint256(type(uint32).max) << shift);
     }
 
     function cross(
         mapping(int24 => uint256) storage self,
         int24 tick,
-        uint32 time,
-        int24 tickSpacing
+        int24 tickSpacing,
+        uint32 time
     ) internal {
         (int24 wordPos, uint8 shift) = position(tick, tickSpacing);
         uint256 prev = self[wordPos];

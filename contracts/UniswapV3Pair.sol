@@ -241,11 +241,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
             if (flippedLower) {
                 tickBitmap.flipTick(tickLower, tickSpacing);
-                secondsOutside.initialize(tickLower, tick, blockTimestamp, tickSpacing);
+                secondsOutside.initialize(tickLower, tick, tickSpacing, blockTimestamp);
             }
             if (flippedUpper) {
                 tickBitmap.flipTick(tickUpper, tickSpacing);
-                secondsOutside.initialize(tickUpper, tick, blockTimestamp, tickSpacing);
+                secondsOutside.initialize(tickUpper, tick, tickSpacing, blockTimestamp);
             }
         }
 
@@ -262,8 +262,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
-            if (flippedLower) ticks.clear(tickLower);
-            if (flippedUpper) ticks.clear(tickUpper);
+            if (flippedLower) {
+                ticks.clear(tickLower);
+                secondsOutside.clear(tickLower, tickSpacing);
+            }
+            if (flippedUpper) {
+                ticks.clear(tickUpper);
+                secondsOutside.clear(tickUpper, tickSpacing);
+            }
         }
     }
 
@@ -545,7 +551,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
                             (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
                         );
 
-                    secondsOutside.cross(step.tickNext, cache.blockTimestamp, tickSpacing);
+                    secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
                     // update liquidity, subtract from right to left, add from left to right
                     state.liquidity = zeroForOne
