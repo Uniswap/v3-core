@@ -54,8 +54,8 @@ contract UniswapV3Pair is IUniswapV3Pair {
     int24 public immutable override maxTick;
 
     // the minimum and maximum price the pair
-    uint160 public immutable override minPriceX96;
-    uint160 public immutable override maxPriceX96;
+    uint160 public immutable override minSqrtPriceX96;
+    uint160 public immutable override maxSqrtPriceX96;
 
     // the maximum amount of liquidity that can use any individual tick
     uint128 public immutable override maxLiquidityPerTick;
@@ -118,7 +118,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
         fee = _fee;
         tickSpacing = _tickSpacing;
 
-        (minTick, maxTick, minPriceX96, maxPriceX96, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
+        (minTick, maxTick, minSqrtPriceX96, maxSqrtPriceX96, maxLiquidityPerTick) = Tick.tickSpacingToParameters(
+            _tickSpacing
+        );
     }
 
     function balance0() private view returns (uint256) {
@@ -182,10 +184,9 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, 'AI');
+        require(sqrtPriceX96 >= minSqrtPriceX96 && sqrtPriceX96 <= maxSqrtPriceX96, 'P');
 
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        require(tick >= minTick, 'MIN');
-        require(tick < maxTick, 'MAX');
 
         (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
 
@@ -469,13 +470,16 @@ contract UniswapV3Pair is IUniswapV3Pair {
         bytes calldata data
     ) external override {
         require(amountSpecified != 0, 'AS');
-        require(sqrtPriceLimitX96 >= minPriceX96, 'PLL');
-        require(sqrtPriceLimitX96 <= maxPriceX96, 'PLH');
 
         Slot0 memory _slot0 = slot0;
 
         require(_slot0.unlocked, 'LOK');
-        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
+        require(
+            zeroForOne
+                ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 && sqrtPriceLimitX96 >= minSqrtPriceX96
+                : sqrtPriceLimitX96 > _slot0.sqrtPriceX96 && sqrtPriceLimitX96 <= maxSqrtPriceX96,
+            'SPL'
+        );
 
         slot0.unlocked = false;
 

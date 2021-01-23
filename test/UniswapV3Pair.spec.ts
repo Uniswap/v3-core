@@ -114,10 +114,10 @@ describe('UniswapV3Pair', () => {
       await expect(pair.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('AI')
     })
     it('fails if starting price is too low', async () => {
-      await expect(pair.initialize(1)).to.be.revertedWith('R')
+      await expect(pair.initialize(1)).to.be.revertedWith('P')
     })
     it('fails if starting price is too high', async () => {
-      await expect(pair.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('R')
+      await expect(pair.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('P')
     })
     it('fails if starting price is too low or high', async () => {
       const minTick = await pair.minTick()
@@ -127,8 +127,8 @@ describe('UniswapV3Pair', () => {
       const badMinPrice = (await sqrtTickMath.getSqrtRatioAtTick(minTick)).sub(1)
       const badMaxPrice = await sqrtTickMath.getSqrtRatioAtTick(maxTick)
 
-      await expect(pair.initialize(badMinPrice)).to.be.revertedWith('MIN')
-      await expect(pair.initialize(badMaxPrice)).to.be.revertedWith('MAX')
+      await expect(pair.initialize(badMinPrice)).to.be.revertedWith('P')
+      await expect(pair.initialize(badMaxPrice)).to.be.revertedWith('P')
     })
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
