@@ -92,7 +92,7 @@ describe('UniswapV3Pair', () => {
     expect(await pair1.token1()).to.eq(token2.address)
   })
 
-  describe('multi-swaps', () => {
+  describe.only('multi-swaps', () => {
     let inputToken: TestERC20
     let outputToken: TestERC20
 

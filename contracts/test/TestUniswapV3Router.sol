@@ -4,7 +4,7 @@ pragma solidity =0.7.6;
 import '../libraries/SafeCast.sol';
 
 import '../interfaces/IERC20.sol';
-import '../interfaces/IUniswapV3SwapCallback.sol';
+import '../interfaces/callback/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
 contract TestUniswapV3Router is IUniswapV3SwapCallback {
@@ -12,32 +12,37 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
     // flash swaps for an exact amount of token0 in the output pair
     function swapForExact0Multi(
+        address recipient,
         address pairInput,
         address pairOutput,
-        uint256 amount0Out,
-        address recipient
+        uint256 amount0Out
     ) external {
         address[] memory pairs = new address[](1);
         pairs[0] = pairInput;
         IUniswapV3Pair(pairOutput).swap(
+            recipient,
             false,
             -amount0Out.toInt256(),
             uint160(-1),
-            recipient,
             abi.encode(pairs, msg.sender)
         );
     }
 
     // flash swaps for an exact amount of token1 in the output pair
     function swapForExact1Multi(
+        address recipient,
         address pairInput,
         address pairOutput,
-        uint256 amount1Out,
-        address recipient
+        uint256 amount1Out
     ) external {
         address[] memory pairs = new address[](1);
         pairs[0] = pairInput;
-        IUniswapV3Pair(pairOutput).swap(true, -amount1Out.toInt256(), 0, recipient, abi.encode(pairs, msg.sender));
+        IUniswapV3Pair(pairOutput).swap(
+            recipient, 
+            true, 
+            -amount1Out.toInt256(), 
+            0, 
+            abi.encode(pairs, msg.sender));
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
@@ -59,10 +64,10 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
             bool zeroForOne = tokenToBePaid == IUniswapV3Pair(pairs[0]).token1();
             IUniswapV3Pair(pairs[0]).swap(
+                msg.sender,
                 zeroForOne,
                 -amountToBePaid,
                 zeroForOne ? 0 : uint160(-1),
-                msg.sender,
                 abi.encode(new address[](0), payer)
             );
         } else {
