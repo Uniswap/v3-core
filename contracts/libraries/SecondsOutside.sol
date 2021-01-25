@@ -21,7 +21,7 @@ library SecondsOutside {
     ) internal {
         if (tick <= tickCurrent) {
             (int24 wordPos, uint8 shift) = position(tick, tickSpacing);
-            self[wordPos] += uint256(time) << shift;
+            self[wordPos] |= uint256(time) << shift;
         }
     }
 
@@ -31,7 +31,7 @@ library SecondsOutside {
         int24 tickSpacing
     ) internal {
         (int24 wordPos, uint8 shift) = position(tick, tickSpacing);
-        self[wordPos] &= type(uint256).max - (uint256(type(uint32).max) << shift);
+        self[wordPos] &= ~(uint256(type(uint32).max) << shift);
     }
 
     function cross(
@@ -44,7 +44,7 @@ library SecondsOutside {
         uint256 prev = self[wordPos];
         uint32 timePrev = uint32(prev >> shift);
         uint32 timeNext = time - timePrev;
-        self[wordPos] = (prev ^ (uint256(timePrev) << shift)) + (uint256(timeNext) << shift);
+        self[wordPos] = (prev ^ (uint256(timePrev) << shift)) | (uint256(timeNext) << shift);
     }
 
     // returns seconds outside for the given tick
