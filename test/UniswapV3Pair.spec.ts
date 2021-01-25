@@ -21,12 +21,11 @@ import {
   MintFunction,
   getMaxLiquidityPerTick,
   FlashFunction,
+  MaxUint128,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
 import { SwapMathTest } from '../typechain/SwapMathTest'
-
-const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
 
 const createFixtureLoader = waffle.createFixtureLoader
 

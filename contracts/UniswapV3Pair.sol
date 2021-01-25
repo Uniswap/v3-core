@@ -275,12 +275,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
         amount1 = amount1Requested > position.feesOwed1 ? position.feesOwed1 : amount1Requested;
 
-        position.feesOwed0 -= amount0;
-        position.feesOwed1 -= amount1;
+        if (amount0 > 0) {
+            position.feesOwed0 -= amount0;
+            TransferHelper.safeTransfer(token0, recipient, amount0);
+        }
+        if (amount1 > 0) {
+            position.feesOwed1 -= amount1;
+            TransferHelper.safeTransfer(token1, recipient, amount1);
+        }
 
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
-        if (amount0 > 0 || amount1 > 0) emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
+        // note that spurious `Collect` events can be emitted with zero amounts - just ignore them
+        emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
     function mint(
