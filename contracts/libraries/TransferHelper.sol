@@ -4,7 +4,7 @@ pragma solidity >=0.6.0;
 import '../interfaces/IERC20.sol';
 
 /// @title TransferHelper
-/// @notice This library contains helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
+/// @notice Contains helper methods for interacting with ERC20 tokens that do not consistently return true/false
 library TransferHelper {
     /// @notice Transfers tokens from msg.sender to a recipient
     /// @dev Calls transfer on token contract, errors with TF if transfer fails
