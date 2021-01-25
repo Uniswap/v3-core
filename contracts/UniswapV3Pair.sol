@@ -268,7 +268,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tickUpper,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock noDelegateCall returns (uint128 amount0, uint128 amount1) {
+    ) external override lock returns (uint128 amount0, uint128 amount1) {
         checkTicks(tickLower, tickUpper);
 
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
