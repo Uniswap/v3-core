@@ -4,6 +4,8 @@ import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 
+export const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
+
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
 export const getMaxLiquidityPerTick = (tickSpacing: number) =>
