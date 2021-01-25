@@ -13,9 +13,6 @@ library Tick {
         uint128 liquidityGross;
         // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
         int128 liquidityDelta;
-        // seconds spent on the _other_ side of this tick (relative to the current tick)
-        // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        uint32 secondsOutside;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint256 feeGrowthOutside0X128;
@@ -82,7 +79,6 @@ library Tick {
         int128 liquidityDelta,
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128,
-        uint32 blockTimestamp,
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
@@ -100,7 +96,6 @@ library Tick {
             if (tick <= tickCurrent) {
                 info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
                 info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
-                info.secondsOutside = blockTimestamp;
             }
         }
 
@@ -120,13 +115,11 @@ library Tick {
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
         uint256 feeGrowthGlobal0X128,
-        uint256 feeGrowthGlobal1X128,
-        uint32 blockTimestamp
+        uint256 feeGrowthGlobal1X128
     ) internal returns (int128 liquidityDelta) {
         Tick.Info storage info = self[tick];
         info.feeGrowthOutside0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128;
         info.feeGrowthOutside1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128;
-        info.secondsOutside = blockTimestamp - info.secondsOutside; // overflow is desired
         liquidityDelta = info.liquidityDelta;
     }
 }
