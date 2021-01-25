@@ -56,7 +56,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         uint160 sqrtPriceX96,
         address recipient
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, true, SqrtTickMath.MIN_PRICE + 1, sqrtPriceX96, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(recipient, true, type(int256).max, sqrtPriceX96, abi.encode(msg.sender));
     }
 
     function swapToHigherSqrtPrice(
@@ -67,7 +67,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         // in the 0 for 1 case, we run into overflow in getNextSqrtPriceFromAmount1RoundingDown if this is not true:
         // amountSpecified < (2**160 - sqrtQ + 1) * l / 2**96
         // the amountSpecified below always satisfies this
-        IUniswapV3Pair(pair).swap(recipient, false, SqrtTickMath.MAX_PRICE - 1, sqrtPriceX96, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(recipient, false, type(int256).max, sqrtPriceX96, abi.encode(msg.sender));
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
