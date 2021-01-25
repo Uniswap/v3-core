@@ -629,5 +629,30 @@ describe('Oracle', () => {
         tickCumulative: '-175890',
       })
     })
+
+    it('gas cost of scry(0)', async () => {
+      await snapshotGasCost(oracle.getGasCostOfScry(0))
+    })
+    it('gas cost of scry(200 * 13)', async () => {
+      await snapshotGasCost(oracle.getGasCostOfScry(200 + 13))
+    })
+    it('gas cost of scry(200 * 13 + 5)', async () => {
+      await snapshotGasCost(oracle.getGasCostOfScry(200 + 13 + 5))
+    })
+    it('gas cost of scry(0) after 5 seconds', async () => {
+      await oracle.advanceTime(5)
+      await snapshotGasCost(oracle.getGasCostOfScry(0))
+    })
+    it('gas cost of scry(5) after 5 seconds', async () => {
+      await oracle.advanceTime(5)
+      await snapshotGasCost(oracle.getGasCostOfScry(5))
+    })
+    it('gas cost of scry(oldest)', async () => {
+      await snapshotGasCost(oracle.getGasCostOfScry(65534 * 13))
+    })
+    it('gas cost of scry(oldest) after 5 seconds', async () => {
+      await oracle.advanceTime(5)
+      await snapshotGasCost(oracle.getGasCostOfScry(65534 * 13 + 5))
+    })
   })
 })
