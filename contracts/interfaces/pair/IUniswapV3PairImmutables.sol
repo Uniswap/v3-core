@@ -12,9 +12,5 @@ interface IUniswapV3PairImmutables {
 
     function tickSpacing() external view returns (int24);
 
-    function minTick() external view returns (int24);
-
-    function maxTick() external view returns (int24);
-
     function maxLiquidityPerTick() external view returns (uint128);
 }

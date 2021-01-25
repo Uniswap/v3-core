@@ -49,11 +49,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     // int24 to avoid casting even though it's always positive
     int24 public immutable override tickSpacing;
 
-    // the minimum and maximum tick for the pair
-    // always a multiple of tickSpacing
-    int24 public immutable override minTick;
-    int24 public immutable override maxTick;
-
     // the maximum amount of liquidity that can use any individual tick
     uint128 public immutable override maxLiquidityPerTick;
 
@@ -115,7 +110,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         fee = _fee;
         tickSpacing = _tickSpacing;
 
-        (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
+        maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
     }
 
     function balance0() private view returns (uint256) {
@@ -166,10 +161,10 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             );
     }
 
-    function checkTicks(int24 tickLower, int24 tickUpper) private view {
+    function checkTicks(int24 tickLower, int24 tickUpper) private pure {
         require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= minTick, 'TLM');
-        require(tickUpper <= maxTick, 'TUM');
+        require(tickLower >= SqrtTickMath.MIN_TICK, 'TLM');
+        require(tickUpper <= SqrtTickMath.MAX_TICK, 'TUM');
     }
 
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
@@ -182,8 +177,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         require(slot0.sqrtPriceX96 == 0, 'AI');
 
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        require(tick >= minTick, 'MIN');
-        require(tick < maxTick, 'MAX');
 
         (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
 
@@ -524,8 +517,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
-                require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
-
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     int128 liquidityDelta =

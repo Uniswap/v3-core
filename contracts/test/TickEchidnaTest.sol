@@ -7,7 +7,12 @@ contract TickEchidnaTest {
     function checkTickSpacingToParametersInvariants(int24 tickSpacing) external pure {
         require(tickSpacing <= SqrtTickMath.MAX_TICK);
         require(tickSpacing > 0);
-        (int24 minTick, int24 maxTick, uint128 maxLiquidityPerTick) = Tick.tickSpacingToParameters(tickSpacing);
+
+        int24 minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
+        int24 maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
+
+        uint128 maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing);
+
         // symmetry around 0 tick
         assert(maxTick == -minTick);
         // positive max tick

@@ -133,7 +133,7 @@ Object {
   "pairBalance0": "1",
   "pairBalance1": "26087635650665564424699143612505016738",
   "pairPriceBefore": "1.7014e+38",
-  "swapError": "VM Exception while processing transaction: revert TN",
+  "swapError": "VM Exception while processing transaction: revert T",
   "tickBefore": 880340,
 }
 `;
@@ -143,7 +143,7 @@ Object {
   "pairBalance0": "1",
   "pairBalance1": "26087635650665564424699143612505016738",
   "pairPriceBefore": "1.7014e+38",
-  "swapError": "VM Exception while processing transaction: revert TN",
+  "swapError": "VM Exception while processing transaction: revert T",
   "tickBefore": 880340,
 }
 `;
@@ -237,7 +237,7 @@ Object {
   "pairBalance0": "26037782196502120275425782622539039026",
   "pairBalance1": "1",
   "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
-  "swapError": "VM Exception while processing transaction: revert TN",
+  "swapError": "VM Exception while processing transaction: revert T",
   "tickBefore": -880303,
 }
 `;
@@ -247,7 +247,7 @@ Object {
   "pairBalance0": "26037782196502120275425782622539039026",
   "pairBalance1": "1",
   "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
-  "swapError": "VM Exception while processing transaction: revert TN",
+  "swapError": "VM Exception while processing transaction: revert T",
   "tickBefore": -880303,
 }
 `;
@@ -1477,7 +1477,7 @@ Object {
   "pairBalance0": "6324555320336758664",
   "pairBalance1": "632455532033675867",
   "pairPriceBefore": "0.10000",
-  "swapError": "VM Exception while processing transaction: revert TN",
+  "swapError": "VM Exception while processing transaction: revert T",
   "tickBefore": -23028,
 }
 `;
@@ -1715,7 +1715,7 @@ Object {
   "pairBalance0": "632455532033675867",
   "pairBalance1": "6324555320336758664",
   "pairPriceBefore": "10.000",
-  "swapError": "VM Exception while processing transaction: revert TN",
+  "swapError": "VM Exception while processing transaction: revert T",
   "tickBefore": 23027,
 }
 `;
