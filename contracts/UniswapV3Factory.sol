@@ -43,13 +43,13 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
         emit PairCreated(token0, token1, fee, tickSpacing, pair);
     }
 
-    function setOwner(address _owner) external override noDelegateCall {
+    function setOwner(address _owner) external override {
         require(msg.sender == owner, 'OO');
         emit OwnerChanged(owner, _owner);
         owner = _owner;
     }
 
-    function enableFeeAmount(uint24 fee, int24 tickSpacing) public override noDelegateCall {
+    function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
         require(msg.sender == owner, 'OO');
         require(fee < 1000000, 'FEE');
         require(tickSpacing > 0, 'TS');
