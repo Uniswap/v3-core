@@ -269,8 +269,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint128 amount0Requested,
         uint128 amount1Requested
     ) external override lock returns (uint128 amount0, uint128 amount1) {
-        checkTicks(tickLower, tickUpper);
-
+        // we don't need to checkTicks here, because invalid positions will never have non-zero feesOwed{0,1}
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
 
         amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
@@ -285,6 +284,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
+        // note that spurious `Collect` events can be emitted with zero amounts - just ignore them
         emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
