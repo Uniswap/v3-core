@@ -268,24 +268,19 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tickUpper,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock noDelegateCall returns (uint128 amount0, uint128 amount1) {
-        checkTicks(tickLower, tickUpper);
-
+    ) external override lock returns (uint128 amount0, uint128 amount1) {
+        // we don't need to checkTicks here, because invalid positions will never have non-zero feesOwed{0,1}
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
 
         amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
         amount1 = amount1Requested > position.feesOwed1 ? position.feesOwed1 : amount1Requested;
 
-        if (amount0 > 0) {
-            position.feesOwed0 -= amount0;
-            TransferHelper.safeTransfer(token0, recipient, amount0);
-        }
-        if (amount1 > 0) {
-            position.feesOwed1 -= amount1;
-            TransferHelper.safeTransfer(token1, recipient, amount1);
-        }
+        position.feesOwed0 -= amount0;
+        position.feesOwed1 -= amount1;
 
-        emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+        if (amount0 > 0 || amount1 > 0) emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
     function mint(
