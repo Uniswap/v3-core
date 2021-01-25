@@ -293,7 +293,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) public override lock noDelegateCall {
+    ) external override lock noDelegateCall {
         require(amount < 2**127, 'MA');
 
         (int256 amount0Int, int256 amount1Int) =
