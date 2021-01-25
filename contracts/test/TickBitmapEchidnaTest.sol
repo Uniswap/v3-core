@@ -10,18 +10,18 @@ contract TickBitmapEchidnaTest {
 
     // returns whether the given tick is initialized
     function isInitialized(int24 tick) private view returns (bool) {
-        (int24 next, bool initialized) = bitmap.nextInitializedTickWithinOneWord(tick, true);
+        (int24 next, bool initialized) = bitmap.nextInitializedTickWithinOneWord(tick, 1, true);
         return next == tick ? initialized : false;
     }
 
     function flipTick(int24 tick) external {
         bool before = isInitialized(tick);
-        bitmap.flipTick(tick);
+        bitmap.flipTick(tick, 1);
         assert(isInitialized(tick) == !before);
     }
 
     function checkNextInitializedTickWithinOneWordInvariants(int24 tick, bool lte) external view {
-        (int24 next, bool initialized) = bitmap.nextInitializedTickWithinOneWord(tick, lte);
+        (int24 next, bool initialized) = bitmap.nextInitializedTickWithinOneWord(tick, 1, lte);
         if (lte) {
             // type(int24).min + 256
             require(tick >= -8388352);

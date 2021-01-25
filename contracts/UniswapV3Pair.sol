@@ -13,7 +13,7 @@ import './libraries/LiquidityMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
-import './libraries/SpacedTickBitmap.sol';
+import './libraries/TickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
 import './libraries/SecondsOutside.sol';
@@ -34,7 +34,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using SignedSafeMath for int256;
     using SafeCast for uint256;
     using LiquidityMath for uint128;
-    using SpacedTickBitmap for mapping(int16 => uint256);
+    using TickBitmap for mapping(int16 => uint256);
     using SecondsOutside for mapping(int24 => uint256);
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
