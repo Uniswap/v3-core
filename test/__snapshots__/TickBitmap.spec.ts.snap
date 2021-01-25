@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`TickBitmap #flipTick gas cost of flipping a tick that results in deleting a word 1`] = `13791`;
+exports[`TickBitmap #flipTick gas cost of flipping a tick that results in deleting a word 1`] = `13769`;
 
-exports[`TickBitmap #flipTick gas cost of flipping first tick in word to initialized 1`] = `42594`;
+exports[`TickBitmap #flipTick gas cost of flipping first tick in word to initialized 1`] = `42550`;
 
-exports[`TickBitmap #flipTick gas cost of flipping second tick in word to initialized 1`] = `27594`;
+exports[`TickBitmap #flipTick gas cost of flipping second tick in word to initialized 1`] = `27550`;
 
 exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost for entire word 1`] = `1174`;
 
@@ -14,6 +14,6 @@ exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost on bo
 
 exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost for entire word 1`] = `1172`;
 
-exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost just below boundary 1`] = `1514`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost just below boundary 1`] = `1502`;
 
 exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost on boundary 1`] = `1172`;
