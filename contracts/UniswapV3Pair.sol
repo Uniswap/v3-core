@@ -151,7 +151,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
     }
 
-    function secondsInside(int24 tickLower, int24 tickUpper) external view override returns (uint32) {
+    function secondsInside(int24 tickLower, int24 tickUpper) external view override noDelegateCall returns (uint32) {
         checkTicks(tickLower, tickUpper);
         require(ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0, 'X');
         return secondsOutside.secondsInside(tickLower, tickUpper, slot0.tick, tickSpacing, _blockTimestamp());
