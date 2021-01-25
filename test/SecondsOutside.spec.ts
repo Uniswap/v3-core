@@ -173,22 +173,66 @@ describe('SecondsOutside', () => {
   })
 
   describe('#secondsInside', () => {
-    it('is correct if tick is inside range', async () => {
-      await secondsOutside.initialize(1, 2, 1, TEST_PAIR_START_TIME)
-      await secondsOutside.initialize(4, 2, 1, TEST_PAIR_START_TIME)
-      expect(await secondsOutside.secondsInside(1, 4, 3, 1, TEST_PAIR_START_TIME + 15)).to.eq(15)
+    describe('starts inside range', () => {
+      it('is correct if tick is inside range', async () => {
+        await secondsOutside.initialize(1, 2, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 2, 1, TEST_PAIR_START_TIME)
+        expect(await secondsOutside.secondsInside(1, 4, 3, 1, TEST_PAIR_START_TIME + 15)).to.eq(15)
+      })
+      it('is correct if tick is above range', async () => {
+        await secondsOutside.initialize(1, 2, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 2, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.cross(4, 1, TEST_PAIR_START_TIME + 10)
+        expect(await secondsOutside.secondsInside(1, 4, 6, 1, TEST_PAIR_START_TIME + 15)).to.eq(10)
+      })
+      it('is correct if tick is below range', async () => {
+        await secondsOutside.initialize(1, 2, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 2, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.cross(1, 1, TEST_PAIR_START_TIME + 9)
+        expect(await secondsOutside.secondsInside(1, 4, 0, 1, TEST_PAIR_START_TIME + 32)).to.eq(9)
+      })
     })
-    it('is correct if tick is above range', async () => {
-      await secondsOutside.initialize(1, 2, 1, TEST_PAIR_START_TIME)
-      await secondsOutside.initialize(4, 2, 1, TEST_PAIR_START_TIME)
-      await secondsOutside.cross(4, 1, TEST_PAIR_START_TIME + 10)
-      expect(await secondsOutside.secondsInside(1, 4, 6, 1, TEST_PAIR_START_TIME + 15)).to.eq(10)
+
+    describe('starts below range', () => {
+      it('is correct if tick is inside range', async () => {
+        await secondsOutside.initialize(1, 0, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 0, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.cross(1, 1, TEST_PAIR_START_TIME + 5)
+        expect(await secondsOutside.secondsInside(1, 4, 2, 1, TEST_PAIR_START_TIME + 15)).to.eq(10)
+      })
+      it('is correct if tick is above range', async () => {
+        await secondsOutside.initialize(1, 0, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 0, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.cross(1, 1, TEST_PAIR_START_TIME + 10)
+        await secondsOutside.cross(4, 1, TEST_PAIR_START_TIME + 15)
+        expect(await secondsOutside.secondsInside(1, 4, 6, 1, TEST_PAIR_START_TIME + 20)).to.eq(5)
+      })
+      it('is correct if tick is below range', async () => {
+        await secondsOutside.initialize(1, 0, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 0, 1, TEST_PAIR_START_TIME)
+        expect(await secondsOutside.secondsInside(1, 4, 0, 1, TEST_PAIR_START_TIME + 32)).to.eq(0)
+      })
     })
-    it('is correct if tick is below range', async () => {
-      await secondsOutside.initialize(1, 2, 1, TEST_PAIR_START_TIME)
-      await secondsOutside.initialize(4, 2, 1, TEST_PAIR_START_TIME)
-      await secondsOutside.cross(1, 1, TEST_PAIR_START_TIME + 9)
-      expect(await secondsOutside.secondsInside(1, 4, 0, 1, TEST_PAIR_START_TIME + 32)).to.eq(9)
+
+    describe('starts above range', () => {
+      it('is correct if tick is inside range', async () => {
+        await secondsOutside.initialize(1, 5, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 5, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.cross(4, 1, TEST_PAIR_START_TIME + 5)
+        expect(await secondsOutside.secondsInside(1, 4, 2, 1, TEST_PAIR_START_TIME + 15)).to.eq(10)
+      })
+      it('is correct if tick is above range', async () => {
+        await secondsOutside.initialize(1, 5, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 5, 1, TEST_PAIR_START_TIME)
+        expect(await secondsOutside.secondsInside(1, 4, 6, 1, TEST_PAIR_START_TIME + 20)).to.eq(0)
+      })
+      it('is correct if tick is below range', async () => {
+        await secondsOutside.initialize(1, 5, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.initialize(4, 5, 1, TEST_PAIR_START_TIME)
+        await secondsOutside.cross(4, 1, TEST_PAIR_START_TIME + 10)
+        await secondsOutside.cross(1, 1, TEST_PAIR_START_TIME + 15)
+        expect(await secondsOutside.secondsInside(1, 4, 0, 1, TEST_PAIR_START_TIME + 32)).to.eq(5)
+      })
     })
   })
 })
