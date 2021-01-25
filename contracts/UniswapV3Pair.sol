@@ -33,6 +33,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
     using SafeCast for uint256;
+    using SafeCast for int256;
     using LiquidityMath for uint128;
     using SpacedTickBitmap for mapping(int16 => uint256);
     using SecondsOutside for mapping(int24 => uint256);
@@ -105,7 +106,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     modifier onlyFactoryOwner() {
-        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
+        require(msg.sender == IUniswapV3Factory(factory).owner());
         _;
     }
 
@@ -182,7 +183,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
-        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4), 'FP');
+        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
         emit FeeProtocolChanged(slot0.feeProtocol, feeProtocol);
         slot0.feeProtocol = feeProtocol;
     }
@@ -314,15 +315,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint128 amount,
         bytes calldata data
     ) external override lock noDelegateCall {
-        require(amount < 2**127, 'MA');
-
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
                 SetPositionParams({
                     owner: recipient,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    liquidityDelta: int128(amount)
+                    liquidityDelta: int256(amount).toInt128()
                 })
             );
 
@@ -348,7 +347,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tickUpper,
         uint128 amount
     ) external override lock noDelegateCall returns (uint256 amount0, uint256 amount1) {
-        require(amount > 0 && amount < 2**127, 'BA');
+        require(amount > 0, 'B');
 
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
@@ -356,7 +355,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     owner: msg.sender,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    liquidityDelta: -int128(amount)
+                    liquidityDelta: -int256(amount).toInt128()
                 })
             );
 

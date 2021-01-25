@@ -932,12 +932,12 @@ describe('UniswapV3Pair', () => {
     })
 
     it('cannot be changed out of bounds', async () => {
-      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('FP')
-      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('FP')
+      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
     })
 
     it('cannot be changed by addresses that are not owner', async () => {
-      await expect(pair.connect(other).setFeeProtocol(6)).to.be.revertedWith('OO')
+      await expect(pair.connect(other).setFeeProtocol(6)).to.be.revertedWith('')
     })
 
     async function swapAndGetFeesOwed({
