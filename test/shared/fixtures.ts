@@ -6,7 +6,6 @@ import { UniswapV3Factory } from '../../typechain/UniswapV3Factory'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 import { MockTimeUniswapV3PairDeployer } from '../../typechain/MockTimeUniswapV3PairDeployer'
 
-import { expandTo18Decimals } from './utilities'
 import { Fixture } from 'ethereum-waffle'
 
 interface FactoryFixture {

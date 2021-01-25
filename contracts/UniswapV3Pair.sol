@@ -483,7 +483,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         Slot0 memory _slot0 = slot0;
 
         require(_slot0.unlocked, 'LOK');
-        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
+        require(
+            zeroForOne
+                ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 && sqrtPriceLimitX96 > SqrtTickMath.MIN_PRICE
+                : sqrtPriceLimitX96 > _slot0.sqrtPriceX96 && sqrtPriceLimitX96 < SqrtTickMath.MAX_PRICE,
+            'SPL'
+        );
 
         slot0.unlocked = false;
 
