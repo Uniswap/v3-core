@@ -33,9 +33,9 @@ interface IUniswapV3PairState {
             uint256 feeGrowthOutside1X128
         );
 
-    function secondsOutside(int24) external view returns (uint256);
-
     function tickBitmap(int16) external view returns (uint256);
+
+    function secondsOutside(int24) external view returns (uint256);
 
     function positions(bytes32)
         external

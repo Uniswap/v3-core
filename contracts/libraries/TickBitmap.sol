@@ -15,8 +15,13 @@ library TickBitmap {
     }
 
     // flips the tick from uninitialized to initialized, or vice versa
-    function flipTick(mapping(int16 => uint256) storage self, int24 tick) internal {
-        (int16 wordPos, uint8 bitPos) = position(tick);
+    function flipTick(
+        mapping(int16 => uint256) storage self,
+        int24 tick,
+        int24 tickSpacing
+    ) internal {
+        require(tick % tickSpacing == 0, 'TS'); // ensure that the tick is spaced
+        (int16 wordPos, uint8 bitPos) = position(tick / tickSpacing);
         uint256 mask = 1 << bitPos;
         self[wordPos] ^= mask;
     }
@@ -26,31 +31,35 @@ library TickBitmap {
     function nextInitializedTickWithinOneWord(
         mapping(int16 => uint256) storage self,
         int24 tick,
+        int24 tickSpacing,
         bool lte
     ) internal view returns (int24 next, bool initialized) {
+        int24 compressed = tick / tickSpacing;
+        if (tick < 0 && tick % tickSpacing != 0) compressed--; // round towards negative infinity
+
         if (lte) {
-            (int16 wordPos, uint8 bitPos) = position(tick);
+            (int16 wordPos, uint8 bitPos) = position(compressed);
             // all the 1s at or to the right of the current bitPos
             uint256 mask = (1 << bitPos) - 1 + (1 << bitPos);
             uint256 masked = self[wordPos] & mask;
 
             // if there are no initialized ticks to the right of or at the current tick, return rightmost in the word
-            return
-                masked == 0
-                    ? (tick - int24(bitPos), false)
-                    : (tick - int24(bitPos - BitMath.mostSignificantBit(masked)), true);
+            initialized = masked != 0;
+            next = initialized
+                ? (compressed - int24(bitPos - BitMath.mostSignificantBit(masked))) * tickSpacing
+                : (compressed - int24(bitPos)) * tickSpacing;
         } else {
             // start from the word of the next tick, since the current tick state doesn't matter
-            (int16 wordPos, uint8 bitPos) = position(tick + 1);
+            (int16 wordPos, uint8 bitPos) = position(compressed + 1);
             // all the 1s at or to the left of the bitPos
             uint256 mask = ~((1 << bitPos) - 1);
             uint256 masked = self[wordPos] & mask;
 
             // if there are no initialized ticks to the left of the current tick, return leftmost in the word
-            return
-                masked == 0
-                    ? (tick + 1 + int24(type(uint8).max - bitPos), false)
-                    : (tick + 1 + int24(BitMath.leastSignificantBit(masked) - bitPos), true);
+            initialized = masked != 0;
+            next = initialized
+                ? (compressed + 1 + int24(BitMath.leastSignificantBit(masked) - bitPos)) * tickSpacing
+                : (compressed + 1 + int24(type(uint8).max - bitPos)) * tickSpacing;
         }
     }
 }
