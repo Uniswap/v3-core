@@ -17,8 +17,8 @@ interface IUniswapV3PairEvents {
         int24 indexed tickLower,
         int24 indexed tickUpper,
         address recipient,
-        uint256 amount0,
-        uint256 amount1
+        uint128 amount0,
+        uint128 amount1
     );
     event Burn(
         address indexed owner,
@@ -38,7 +38,7 @@ interface IUniswapV3PairEvents {
         int24 tick
     );
     event FeeProtocolChanged(uint8 feeProtocolOld, uint8 feeProtocolNew);
-    event CollectProtocol(address indexed recipient, uint256 amount0, uint256 amount1);
+    event CollectProtocol(address indexed recipient, uint128 amount0, uint128 amount1);
     event ObservationCardinalityIncreased(uint16 observationCardinalityOld, uint16 observationCardinalityNew);
     event Flash(
         address indexed sender,

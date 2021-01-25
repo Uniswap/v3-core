@@ -11,11 +11,6 @@ library SqrtPriceMath {
     using SafeMath for uint256;
     using SafeCast for uint256;
 
-    function divRoundingUp(uint256 x, uint256 d) internal pure returns (uint256) {
-        // addition is safe because (uint256(-1) / 1) + (uint256(-1) % 1 > 0 ? 1 : 0) == uint256(-1)
-        return (x / d) + (x % d > 0 ? 1 : 0);
-    }
-
     // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
     // or, if this is impossible because of overflow,
     // liquidity / (liquidity / sqrt(P) +- x)
@@ -24,21 +19,28 @@ library SqrtPriceMath {
         uint128 liquidity,
         uint256 amount,
         bool add
-    ) private pure returns (uint160) {
+    ) internal pure returns (uint160) {
+        if (amount == 0) return sqrtPX96;
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
-        if (
-            amount.isMulSafe(sqrtPX96) &&
-            (add ? numerator1.isAddSafe(amount * sqrtPX96) : numerator1 > amount * sqrtPX96)
-        ) {
-            uint256 denominator = add ? (numerator1 + amount * sqrtPX96) : (numerator1 - amount * sqrtPX96);
-            return FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
+        uint256 product = amount * sqrtPX96;
+        if (product / amount == sqrtPX96) {
+            if (add) {
+                uint256 denominator = numerator1 + product;
+                if (denominator >= numerator1)
+                    // always fits in 160 bits
+                    return uint160(FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator));
+            } else {
+                uint256 denominator = numerator1 - product;
+                if (denominator <= numerator1 && denominator != 0)
+                    return FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
+            }
         }
 
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
         require(denominator1 != 0, 'OUT');
 
-        return divRoundingUp(numerator1, denominator1).toUint160();
+        return SafeMath.divRoundingUp(numerator1, denominator1).toUint160();
     }
 
     // calculate sqrt(P) +- y / liquidity
@@ -47,19 +49,19 @@ library SqrtPriceMath {
         uint128 liquidity,
         uint256 amount,
         bool add
-    ) private pure returns (uint160) {
+    ) internal pure returns (uint160) {
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
         uint256 quotient =
             add
                 ? (
-                    amount <= uint160(-1)
+                    amount <= type(uint160).max
                         ? (amount << FixedPoint96.RESOLUTION) / liquidity
                         : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
                 )
                 : (
-                    amount <= uint160(-1)
-                        ? divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                    amount <= type(uint160).max
+                        ? SafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
                         : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
                 );
 
@@ -74,7 +76,6 @@ library SqrtPriceMath {
     ) internal pure returns (uint160 sqrtQX96) {
         require(sqrtPX96 > 0, 'P');
         require(liquidity > 0, 'L');
-        if (amountIn == 0) return sqrtPX96;
 
         // round to make sure that we don't pass the target price
         return
@@ -91,7 +92,6 @@ library SqrtPriceMath {
     ) internal pure returns (uint160 sqrtQX96) {
         require(sqrtPX96 > 0, 'P');
         require(liquidity > 0, 'L');
-        if (amountOut == 0) return sqrtPX96;
 
         // round to make sure that we pass the target price
         return
@@ -115,7 +115,7 @@ library SqrtPriceMath {
 
         return
             roundUp
-                ? divRoundingUp(FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
+                ? SafeMath.divRoundingUp(FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
                 : FullMath.mulDiv(numerator1, numerator2, sqrtPX96) / sqrtQX96;
     }
 

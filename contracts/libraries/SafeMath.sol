@@ -89,11 +89,15 @@ library SafeMath {
         require(c / a == b, 'MO');
     }
 
-    function isMulSafe(uint256 x, uint256 y) internal pure returns (bool) {
-        return x == 0 || (x * y) / x == y;
+    function addCapped(uint128 x, uint256 y) internal pure returns (uint128 z) {
+        z = uint128(x + y);
+        if (z < x) {
+            z = type(uint128).max;
+        }
     }
 
-    function isAddSafe(uint256 x, uint256 y) internal pure returns (bool) {
-        return x <= uint256(-1) - y;
+    function divRoundingUp(uint256 x, uint256 d) internal pure returns (uint256) {
+        // addition is safe because (type(uint256).max / 1) + (type(uint256).max % 1 > 0 ? 1 : 0) == type(uint256).max
+        return (x / d) + (x % d > 0 ? 1 : 0);
     }
 }

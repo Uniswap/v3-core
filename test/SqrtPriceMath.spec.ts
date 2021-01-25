@@ -70,7 +70,7 @@ describe('SqrtPriceMath', () => {
       expect(sqrtQ).to.eq('72025602285694852357767227579')
     })
 
-    it('amountIn > uint96(-1) and zeroForOne = true', async () => {
+    it('amountIn > type(uint96).max and zeroForOne = true', async () => {
       expect(
         await sqrtPriceMath.getNextSqrtPriceFromInput(
           encodePriceSqrt(1, 1),
