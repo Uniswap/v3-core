@@ -11,6 +11,7 @@ import {
   encodePriceSqrt,
   expandTo18Decimals,
   FeeAmount,
+  getMaxLiquidityPerTick,
   getMaxTick,
   getMinTick,
   TICK_SPACINGS,
@@ -378,6 +379,19 @@ const TEST_PAIRS: PairTestCase[] = [
         tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'max full range liquidity at 1:1 price with default fee',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: encodePriceSqrt(1, 1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        liquidity: getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
       },
     ],
   },
