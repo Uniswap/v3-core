@@ -271,7 +271,7 @@ describe('Oracle', () => {
 
       it('fails if an older observation does not exist', async () => {
         await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
-        await expect(oracle.scry(1)).to.be.revertedWith('OLD')
+        await expect(oracle.scry(1)).to.be.revertedWith('')
       })
 
       it('single observation at current time', async () => {
@@ -284,7 +284,7 @@ describe('Oracle', () => {
       it('single observation in past but not earlier than secondsAgo', async () => {
         await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
         await oracle.advanceTime(3)
-        await expect(oracle.scry(4)).to.be.revertedWith('OLD')
+        await expect(oracle.scry(4)).to.be.revertedWith('')
       })
 
       it('single observation in past at exactly seconds ago', async () => {
@@ -458,9 +458,9 @@ describe('Oracle', () => {
           expect(liquidityCumulative).to.eq(72)
         })
         it('older than oldest reverts', async () => {
-          await expect(oracle.scry(15)).to.be.revertedWith('OLD')
+          await expect(oracle.scry(15)).to.be.revertedWith('')
           await oracle.advanceTime(5)
-          await expect(oracle.scry(20)).to.be.revertedWith('OLD')
+          await expect(oracle.scry(20)).to.be.revertedWith('')
         })
         it('oldest observation', async () => {
           const { tickCumulative, liquidityCumulative } = await oracle.scry(14)

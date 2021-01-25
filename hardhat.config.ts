@@ -5,7 +5,7 @@ import '@nomiclabs/hardhat-waffle'
 export default {
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: true,
+      allowUnlimitedContractSize: false,
     },
   },
   solidity: {
@@ -13,7 +13,7 @@ export default {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 2000,
+        runs: 1500,
       },
       debug: {
         // How to treat revert (and require) reason strings. Settings are
