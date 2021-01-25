@@ -69,16 +69,20 @@ describe('UniswapV3Factory', () => {
       .to.emit(factory, 'PairCreated')
       .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
 
-    await expect(factory.createPair(tokens[0], tokens[1], feeAmount)).to.be.revertedWith('PAE')
-    await expect(factory.createPair(tokens[1], tokens[0], feeAmount)).to.be.revertedWith('PAE')
-    expect(await factory.getPair(tokens[0], tokens[1], feeAmount), 'getPair in order').to.eq(create2Address)
-    expect(await factory.getPair(tokens[1], tokens[0], feeAmount), 'getPair in reverse').to.eq(create2Address)
+    await expect(factory.createPair(tokens[0], tokens[1], feeAmount)).to.be.revertedWith('E')
+    await expect(factory.createPair(tokens[1], tokens[0], feeAmount)).to.be.revertedWith('E')
 
     const pairContractFactory = await ethers.getContractFactory('UniswapV3Pair')
     const pair = pairContractFactory.attach(create2Address)
+
+    const token0 = await pair.token0()
+    const token1 = await pair.token1()
+
+    expect(await factory.getPair(token0, token1, feeAmount), 'getPair in order').to.eq(create2Address)
+
     expect(await pair.factory(), 'pair factory address').to.eq(factory.address)
-    expect(await pair.token0(), 'pair token0').to.eq(TEST_ADDRESSES[0])
-    expect(await pair.token1(), 'pair token1').to.eq(TEST_ADDRESSES[1])
+    expect(token0, 'pair token0').to.eq(TEST_ADDRESSES[0])
+    expect(token1, 'pair token1').to.eq(TEST_ADDRESSES[1])
     expect(await pair.fee(), 'pair fee').to.eq(feeAmount)
     expect(await pair.tickSpacing(), 'pair tick spacing').to.eq(tickSpacing)
   }
@@ -100,23 +104,19 @@ describe('UniswapV3Factory', () => {
     })
 
     it('fails if token a == token b', async () => {
-      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[0], FeeAmount.LOW)).to.be.revertedWith('A=B')
+      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[0], FeeAmount.LOW)).to.be.revertedWith('')
     })
 
     it('fails if token a is 0 or token b is 0', async () => {
-      await expect(factory.createPair(TEST_ADDRESSES[0], constants.AddressZero, FeeAmount.LOW)).to.be.revertedWith(
-        'A=0'
-      )
-      await expect(factory.createPair(constants.AddressZero, TEST_ADDRESSES[0], FeeAmount.LOW)).to.be.revertedWith(
-        'A=0'
-      )
+      await expect(factory.createPair(TEST_ADDRESSES[0], constants.AddressZero, FeeAmount.LOW)).to.be.revertedWith('')
+      await expect(factory.createPair(constants.AddressZero, TEST_ADDRESSES[0], FeeAmount.LOW)).to.be.revertedWith('')
       await expect(factory.createPair(constants.AddressZero, constants.AddressZero, FeeAmount.LOW)).to.be.revertedWith(
-        'A=B'
+        ''
       )
     })
 
     it('fails if fee amount is not enabled', async () => {
-      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], 250)).to.be.revertedWith('FNA')
+      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], 250)).to.be.revertedWith('T')
     })
 
     it('gas', async () => {
@@ -126,7 +126,7 @@ describe('UniswapV3Factory', () => {
 
   describe('#setOwner', () => {
     it('fails if caller is not owner', async () => {
-      await expect(factory.connect(other).setOwner(wallet.address)).to.be.revertedWith('OO')
+      await expect(factory.connect(other).setOwner(wallet.address)).to.be.revertedWith('')
     })
 
     it('updates owner', async () => {
@@ -142,23 +142,23 @@ describe('UniswapV3Factory', () => {
 
     it('cannot be called by original owner', async () => {
       await factory.setOwner(other.address)
-      await expect(factory.setOwner(wallet.address)).to.be.revertedWith('OO')
+      await expect(factory.setOwner(wallet.address)).to.be.revertedWith('')
     })
   })
 
   describe('#enableFeeAmount', () => {
     it('fails if caller is not owner', async () => {
-      await expect(factory.connect(other).enableFeeAmount(100, 2)).to.be.revertedWith('OO')
+      await expect(factory.connect(other).enableFeeAmount(100, 2)).to.be.revertedWith('')
     })
     it('fails if fee is too great', async () => {
-      await expect(factory.enableFeeAmount(1000000, 10)).to.be.revertedWith('FEE')
+      await expect(factory.enableFeeAmount(1000000, 10)).to.be.revertedWith('')
     })
     it('fails if tick spacing is too small', async () => {
-      await expect(factory.enableFeeAmount(500, 0)).to.be.revertedWith('TS')
+      await expect(factory.enableFeeAmount(500, 0)).to.be.revertedWith('')
     })
     it('fails if already initialized', async () => {
       await factory.enableFeeAmount(100, 5)
-      await expect(factory.enableFeeAmount(100, 10)).to.be.revertedWith('FAI')
+      await expect(factory.enableFeeAmount(100, 10)).to.be.revertedWith('')
     })
     it('sets the fee amount in the mapping', async () => {
       await factory.enableFeeAmount(100, 5)
