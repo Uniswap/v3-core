@@ -185,6 +185,14 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+        require(cardinality > 0, 'I');
+        if (secondsAgo == 0) {
+            // because cardinality is 0, the last observation is necessarily initialized
+            Observation memory last = self[index];
+            if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
+            return (last.tickCumulative, last.liquidityCumulative);
+        }
+
         uint32 target = time - secondsAgo;
 
         (Observation memory beforeOrAt, Observation memory atOrAfter) =

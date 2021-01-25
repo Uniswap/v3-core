@@ -27,8 +27,9 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
+import './NoDelegateCall.sol';
 
-contract UniswapV3Pair is IUniswapV3Pair {
+contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
     using SafeCast for uint256;
@@ -139,7 +140,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // increases the target observation cardinality, callable by anyone after initialize.
-    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override lock {
+    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override lock noDelegateCall {
         Slot0 memory _slot0 = slot0;
         (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
             _slot0.observationIndex,
@@ -160,6 +161,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         external
         view
         override
+        noDelegateCall
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
         return
@@ -285,7 +287,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock returns (uint128 amount0, uint128 amount1) {
+    ) external override lock noDelegateCall returns (uint128 amount0, uint128 amount1) {
         checkTicks(tickLower, tickUpper);
 
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
@@ -311,7 +313,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) public override lock {
+    ) external override lock noDelegateCall {
         require(amount < 2**127, 'MA');
 
         (int256 amount0Int, int256 amount1Int) =
@@ -345,7 +347,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+    ) external override lock noDelegateCall returns (uint256 amount0, uint256 amount1) {
         require(amount > 0 && amount < 2**127, 'BA');
 
         (int256 amount0Int, int256 amount1Int) =
@@ -482,7 +484,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
         bytes calldata data
-    ) external override {
+    ) external override noDelegateCall {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
@@ -622,7 +624,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         address recipient,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
+    ) external override lock noDelegateCall onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
         ProtocolFees memory _protocolFees = protocolFees;
 
         amount0 = amount0Requested > _protocolFees.token0 ? _protocolFees.token0 : amount0Requested;
@@ -645,7 +647,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
-    ) external override lock {
+    ) external override lock noDelegateCall {
         uint128 _liquidity = liquidity;
         require(_liquidity > 0, 'L');
 
