@@ -46,8 +46,8 @@ library TickBitmap {
             // if there are no initialized ticks to the right of or at the current tick, return rightmost in the word
             initialized = masked != 0;
             next = initialized
-                ? compressed - int24(bitPos - BitMath.mostSignificantBit(masked))
-                : compressed - int24(bitPos);
+                ? (compressed - int24(bitPos - BitMath.mostSignificantBit(masked))) * tickSpacing
+                : (compressed - int24(bitPos)) * tickSpacing;
         } else {
             // start from the word of the next tick, since the current tick state doesn't matter
             (int16 wordPos, uint8 bitPos) = position(compressed + 1);
@@ -58,10 +58,8 @@ library TickBitmap {
             // if there are no initialized ticks to the left of the current tick, return leftmost in the word
             initialized = masked != 0;
             next = initialized
-                ? compressed + 1 + int24(BitMath.leastSignificantBit(masked) - bitPos)
-                : compressed + 1 + int24(type(uint8).max - bitPos);
+                ? (compressed + 1 + int24(BitMath.leastSignificantBit(masked) - bitPos)) * tickSpacing
+                : (compressed + 1 + int24(type(uint8).max - bitPos)) * tickSpacing;
         }
-
-        next *= tickSpacing;
     }
 }
