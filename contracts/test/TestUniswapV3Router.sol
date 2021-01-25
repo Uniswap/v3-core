@@ -37,12 +37,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
     ) external {
         address[] memory pairs = new address[](1);
         pairs[0] = pairInput;
-        IUniswapV3Pair(pairOutput).swap(
-            recipient, 
-            true, 
-            -amount1Out.toInt256(), 
-            0, 
-            abi.encode(pairs, msg.sender));
+        IUniswapV3Pair(pairOutput).swap(recipient, true, -amount1Out.toInt256(), 0, abi.encode(pairs, msg.sender));
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
