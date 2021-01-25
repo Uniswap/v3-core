@@ -152,6 +152,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         external
         view
         override
+        noDelegateCall
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
         return
