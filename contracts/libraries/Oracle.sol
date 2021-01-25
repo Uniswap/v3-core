@@ -185,9 +185,9 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+        require(cardinality > 0, 'I');
         if (secondsAgo == 0) {
-            // if cardinality is 0, the last observation is necessarily initialized
-            require(cardinality > 0, 'I');
+            // because cardinality is 0, the last observation is necessarily initialized
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
             return (last.tickCumulative, last.liquidityCumulative);
