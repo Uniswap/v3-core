@@ -8,7 +8,7 @@ contract TickOverflowSafetyEchidnaTest {
 
     int24 private constant MIN_TICK = -16;
     int24 private constant MAX_TICK = 16;
-    uint128 private constant MAX_LIQUIDITY = uint128(-1) / 32;
+    uint128 private constant MAX_LIQUIDITY = type(uint128).max / 32;
 
     mapping(int24 => Tick.Info) private ticks;
     int24 private tick = 0;
@@ -16,8 +16,8 @@ contract TickOverflowSafetyEchidnaTest {
     // used to track how much total liquidity has been added. should never be negative
     int256 totalLiquidity = 0;
     // half the cap of fee growth has happened, this can overflow
-    uint256 private feeGrowthGlobal0X128 = uint256(-1) / 2;
-    uint256 private feeGrowthGlobal1X128 = uint256(-1) / 2;
+    uint256 private feeGrowthGlobal0X128 = type(uint256).max / 2;
+    uint256 private feeGrowthGlobal1X128 = type(uint256).max / 2;
     // how much total growth has happened, this cannot overflow
     uint256 private totalGrowth0 = 0;
     uint256 private totalGrowth1 = 0;
@@ -56,7 +56,6 @@ contract TickOverflowSafetyEchidnaTest {
                 liquidityDelta,
                 feeGrowthGlobal0X128,
                 feeGrowthGlobal1X128,
-                time,
                 false,
                 MAX_LIQUIDITY
             );
@@ -67,7 +66,6 @@ contract TickOverflowSafetyEchidnaTest {
                 liquidityDelta,
                 feeGrowthGlobal0X128,
                 feeGrowthGlobal1X128,
-                time,
                 true,
                 MAX_LIQUIDITY
             );
@@ -118,10 +116,10 @@ contract TickOverflowSafetyEchidnaTest {
         while (tick != target) {
             if (tick < target) {
                 if (ticks[tick + 1].liquidityGross > 0)
-                    ticks.cross(tick + 1, feeGrowthGlobal0X128, feeGrowthGlobal1X128, time);
+                    ticks.cross(tick + 1, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
                 tick++;
             } else {
-                if (ticks[tick].liquidityGross > 0) ticks.cross(tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128, time);
+                if (ticks[tick].liquidityGross > 0) ticks.cross(tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
                 tick--;
             }
         }

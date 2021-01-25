@@ -36,14 +36,19 @@ library SwapMath {
                 : SqrtPriceMath.getAmount1Delta(sqrtPX96, sqrtPTargetX96, liquidity, true);
             if (amountRemainingLessFee >= amountIn) sqrtQX96 = sqrtPTargetX96;
             else
-                sqrtQX96 = SqrtPriceMath.getNextPriceFromInput(sqrtPX96, liquidity, amountRemainingLessFee, zeroForOne);
+                sqrtQX96 = SqrtPriceMath.getNextSqrtPriceFromInput(
+                    sqrtPX96,
+                    liquidity,
+                    amountRemainingLessFee,
+                    zeroForOne
+                );
         } else {
             amountOut = zeroForOne
                 ? SqrtPriceMath.getAmount1Delta(sqrtPTargetX96, sqrtPX96, liquidity, false)
                 : SqrtPriceMath.getAmount0Delta(sqrtPTargetX96, sqrtPX96, liquidity, false);
             if (uint256(-amountRemaining) >= amountOut) sqrtQX96 = sqrtPTargetX96;
             else
-                sqrtQX96 = SqrtPriceMath.getNextPriceFromOutput(
+                sqrtQX96 = SqrtPriceMath.getNextSqrtPriceFromOutput(
                     sqrtPX96,
                     liquidity,
                     uint256(-amountRemaining),
@@ -75,7 +80,7 @@ library SwapMath {
             // we didn't reach the target, so take the remainder of the maximum input as fee
             feeAmount = uint256(amountRemaining) - amountIn;
         } else {
-            feeAmount = SqrtPriceMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
+            feeAmount = FullMath.mulDivRoundingUp(amountIn, feePips, 1e6 - feePips);
         }
     }
 }

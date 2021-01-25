@@ -5,6 +5,8 @@ import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
 import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
 
+export const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
+
 export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
 export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
 export const getMaxLiquidityPerTick = (tickSpacing: number) =>
@@ -12,8 +14,6 @@ export const getMaxLiquidityPerTick = (tickSpacing: number) =>
     .pow(128)
     .sub(1)
     .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
-
-export const NUMBER_OF_ORACLE_OBSERVATIONS = 1024
 
 export enum FeeAmount {
   LOW = 600,
@@ -54,7 +54,7 @@ export function getCreate2Address(
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }
 
-bn.config({ EXPONENTIAL_AT: 999999 })
+bn.config({ EXPONENTIAL_AT: 999999, DECIMAL_PLACES: 40 })
 
 // returns the sqrt price as a 64x96
 export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
@@ -73,12 +73,18 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
 }
 
 export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
+export type FlashFunction = (
+  amount0: BigNumberish,
+  amount1: BigNumberish,
+  to: Wallet | string,
+  pay0?: BigNumberish,
+  pay1?: BigNumberish
+) => Promise<ContractTransaction>
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
   tickUpper: BigNumberish,
-  liquidity: BigNumberish,
-  data?: string
+  liquidity: BigNumberish
 ) => Promise<ContractTransaction>
 export interface PairFunctions {
   swapToLowerPrice: SwapFunction
@@ -87,6 +93,7 @@ export interface PairFunctions {
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
   swap1ForExact0: SwapFunction
+  flash: FlashFunction
   mint: MintFunction
 }
 export function createPairFunctions({
@@ -167,6 +174,25 @@ export function createPairFunctions({
     return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
   }
 
+  const flash: FlashFunction = async (amount0, amount1, to, pay0?: BigNumberish, pay1?: BigNumberish) => {
+    const fee = await pair.fee()
+    if (typeof pay0 === 'undefined') {
+      pay0 = BigNumber.from(amount0)
+        .mul(fee)
+        .add(1e6 - 1)
+        .div(1e6)
+        .add(amount0)
+    }
+    if (typeof pay1 === 'undefined') {
+      pay1 = BigNumber.from(amount1)
+        .mul(fee)
+        .add(1e6 - 1)
+        .div(1e6)
+        .add(amount1)
+    }
+    return swapTarget.flash(pair.address, typeof to === 'string' ? to : to.address, amount0, amount1, pay0, pay1)
+  }
+
   return {
     swapToLowerPrice,
     swapToHigherPrice,
@@ -175,6 +201,7 @@ export function createPairFunctions({
     swapExact1For0,
     swap1ForExact0,
     mint,
+    flash,
   }
 }
 
