@@ -9,7 +9,7 @@ contract NoDelegateCall {
     }
 
     modifier noDelegateCall() {
-        require(address(this) == original);
+        assert(address(this) == original);
         _;
     }
 }
