@@ -265,10 +265,6 @@ describe('Oracle', () => {
         oracle = await loadFixture(oracleFixture)
       })
 
-      it('fails before initialize', async () => {
-        await expect(oracle.scry(0)).to.be.revertedWith('')
-      })
-
       it('fails if an older observation does not exist', async () => {
         await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
         await expect(oracle.scry(1)).to.be.revertedWith('OLD')

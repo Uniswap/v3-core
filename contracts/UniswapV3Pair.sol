@@ -112,10 +112,36 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     constructor() {
         int24 _tickSpacing;
-        (factory, token0, token1, fee, _tickSpacing) = IUniswapV3PairDeployer(msg.sender).parameters();
-        tickSpacing = _tickSpacing;
+        uint160 sqrtPriceX96;
+        (factory, token0, token1, fee, _tickSpacing, sqrtPriceX96) = IUniswapV3PairDeployer(msg.sender).parameters();
 
-        (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
+        tickSpacing = _tickSpacing;
+        int24 _minTick;
+        int24 _maxTick;
+        (_minTick, _maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
+        minTick = _minTick;
+        maxTick = _maxTick;
+
+        // ensure the tick which includes the passed price is allowed
+        int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
+        require(tick >= _minTick, 'MIN');
+        require(tick < _maxTick, 'MAX');
+
+        // initialize the oracle
+        (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
+
+        // initialize contract state
+        slot0 = Slot0({
+            sqrtPriceX96: sqrtPriceX96,
+            tick: tick,
+            observationIndex: 0,
+            observationCardinality: cardinality,
+            observationCardinalityTarget: target,
+            feeProtocol: 0,
+            unlocked: true
+        });
+
+        emit Initialized(sqrtPriceX96, tick);
     }
 
     function checkTicks(int24 tickLower, int24 tickUpper) private view {
@@ -170,7 +196,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     // locked to prevent this from being called before
     function increaseObservationCardinality(uint16 observationCardinalityTarget) external override noDelegateCall {
         Slot0 memory _slot0 = slot0;
-        require(_slot0.observationCardinality > 0, 'OC'); // pair must be initialized to call this function
         (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
             _slot0.observationIndex,
             _slot0.observationCardinality,
@@ -178,29 +203,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             observationCardinalityTarget
         );
         emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
-    }
-
-    // not locked because it initializes unlocked
-    function initialize(uint160 sqrtPriceX96) external override {
-        require(slot0.sqrtPriceX96 == 0, 'AI');
-
-        int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        require(tick >= minTick, 'MIN');
-        require(tick < maxTick, 'MAX');
-
-        (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
-
-        slot0 = Slot0({
-            sqrtPriceX96: sqrtPriceX96,
-            tick: tick,
-            observationIndex: 0,
-            observationCardinality: cardinality,
-            observationCardinalityTarget: target,
-            feeProtocol: 0,
-            unlocked: true
-        });
-
-        emit Initialized(sqrtPriceX96, tick);
     }
 
     struct SetPositionParams {

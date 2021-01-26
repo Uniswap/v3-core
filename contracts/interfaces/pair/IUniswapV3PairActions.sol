@@ -2,9 +2,6 @@
 pragma solidity >=0.5.0;
 
 interface IUniswapV3PairActions {
-    // initialize the pair
-    function initialize(uint160 sqrtPriceX96) external;
-
     // mint some liquidity to an address
     function mint(
         address recipient,

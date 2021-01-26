@@ -143,13 +143,9 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
-        // first, set before to the oldest observation, and make sure it's initialized
+        // first, set before to the oldest observation
         beforeOrAt = self[(index + 1) % cardinality];
-        if (!beforeOrAt.initialized) {
-            beforeOrAt = self[0];
-            // cardinality should not be > 0 unless at least one observation is initialized
-            assert(beforeOrAt.initialized);
-        }
+        if (!beforeOrAt.initialized) beforeOrAt = self[0];
 
         // ensure that the target is greater than the oldest observation (accounting for block timestamp overflow)
         require(beforeOrAt.blockTimestamp <= target && (target <= time || beforeOrAt.blockTimestamp >= time), 'OLD');
@@ -185,9 +181,7 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
-        require(cardinality > 0, 'I');
         if (secondsAgo == 0) {
-            // because cardinality is 0, the last observation is necessarily initialized
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
             return (last.tickCumulative, last.liquidityCumulative);

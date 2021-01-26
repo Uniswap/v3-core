@@ -28,7 +28,8 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
     function createPair(
         address tokenA,
         address tokenB,
-        uint24 fee
+        uint24 fee,
+        uint160 sqrtPriceX96
     ) external override noDelegateCall returns (address pair) {
         require(tokenA != tokenB, 'A=B');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
@@ -36,7 +37,7 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0, 'FNA');
         require(getPair[token0][token1][fee] == address(0), 'PAE');
-        pair = deploy(address(this), token0, token1, fee, tickSpacing);
+        pair = deploy(address(this), token0, token1, fee, tickSpacing, sqrtPriceX96);
         getPair[token0][token1][fee] = pair;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
         getPair[token1][token0][fee] = pair;

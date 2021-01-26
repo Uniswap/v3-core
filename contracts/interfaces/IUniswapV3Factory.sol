@@ -25,7 +25,8 @@ interface IUniswapV3Factory {
     function createPair(
         address tokenA,
         address tokenB,
-        uint24 fee
+        uint24 fee,
+        uint160 sqrtPriceX96
     ) external returns (address pair);
 
     function setOwner(address) external;

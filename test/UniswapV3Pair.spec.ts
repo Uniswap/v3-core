@@ -70,8 +70,8 @@ describe('UniswapV3Pair', () => {
     ;({ token0, token1, token2, factory, createPair, swapTargetCallee: swapTarget } = await loadFixture(pairFixture))
 
     const oldCreatePair = createPair
-    createPair = async (_feeAmount, _tickSpacing) => {
-      const pair = await oldCreatePair(_feeAmount, _tickSpacing)
+    createPair = async (_feeAmount, _tickSpacing, sqrtPrice) => {
+      const pair = await oldCreatePair(_feeAmount, _tickSpacing, sqrtPrice)
       ;({
         swapToLowerPrice,
         swapToHigherPrice,
@@ -95,7 +95,7 @@ describe('UniswapV3Pair', () => {
     }
 
     // default to the 30 bips pair
-    pair = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM])
+    pair = await createPair(FeeAmount.MEDIUM, TICK_SPACINGS[FeeAmount.MEDIUM], encodePriceSqrt(1, 1))
   })
 
   it('constructor initializes immutables', async () => {
@@ -108,38 +108,13 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#initialize', () => {
-    it('fails if already initialized', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
-      await expect(pair.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('AI')
-    })
-    it('fails if starting price is too low', async () => {
-      await expect(pair.initialize(1)).to.be.revertedWith('R')
-    })
-    it('fails if starting price is too high', async () => {
-      await expect(pair.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('R')
-    })
-    it('fails if starting price is too low or high', async () => {
-      const minTick = await pair.minTick()
-      const maxTick = await pair.maxTick()
-
-      const sqrtTickMath = (await (await ethers.getContractFactory('SqrtTickMathTest')).deploy()) as SqrtTickMathTest
-      const badMinPrice = (await sqrtTickMath.getSqrtRatioAtTick(minTick)).sub(1)
-      const badMaxPrice = await sqrtTickMath.getSqrtRatioAtTick(maxTick)
-
-      await expect(pair.initialize(badMinPrice)).to.be.revertedWith('MIN')
-      await expect(pair.initialize(badMaxPrice)).to.be.revertedWith('MAX')
-    })
     it('sets initial variables', async () => {
-      const price = encodePriceSqrt(1, 2)
-      await pair.initialize(price)
-
       const { sqrtPriceX96, observationIndex } = await pair.slot0()
-      expect(sqrtPriceX96).to.eq(price)
+      expect(sqrtPriceX96).to.eq(encodePriceSqrt(1, 1))
       expect(observationIndex).to.eq(0)
-      expect((await pair.slot0()).tick).to.eq(-6932)
+      expect((await pair.slot0()).tick).to.eq(0)
     })
     it('initializes the first observations slot', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
       checkObservationEquals(await pair.observations(0), {
         liquidityCumulative: 0,
         initialized: true,
@@ -147,31 +122,21 @@ describe('UniswapV3Pair', () => {
         tickCumulative: 0,
       })
     })
-    it('emits a Initialized event with the input tick', async () => {
-      const price = encodePriceSqrt(1, 2)
-      await expect(pair.initialize(price)).to.emit(pair, 'Initialized').withArgs(price, -6932)
-    })
   })
 
   describe('#increaseObservationCardinality', () => {
-    it('can only be called after initialize', async () => {
-      await expect(pair.increaseObservationCardinality(2)).to.be.revertedWith('OC')
-    })
     it('emits an event', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
       await expect(pair.increaseObservationCardinality(2))
         .to.emit(pair, 'ObservationCardinalityIncreased')
         .withArgs(1, 2)
     })
     it('increases cardinality and target first time', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
       await pair.increaseObservationCardinality(2)
       const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
       expect(observationCardinality).to.eq(2)
       expect(observationCardinalityTarget).to.eq(2)
     })
     it('increases only target if it has not yet grown', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
       await pair.increaseObservationCardinality(2)
       await pair.increaseObservationCardinality(3)
       const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
@@ -181,12 +146,9 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#mint', () => {
-    it('fails if not initialized', async () => {
-      await expect(mint(wallet.address, -tickSpacing, tickSpacing, 0)).to.be.revertedWith('LOK')
-    })
     describe('after initialization', () => {
-      beforeEach('initialize the pair at price of 10:1', async () => {
-        await pair.initialize(encodePriceSqrt(1, 10))
+      beforeEach('swap the pair to a price of 10:1', async () => {
+        await swapToLowerPrice(encodePriceSqrt(1, 10), wallet)
         await mint(wallet.address, minTick, maxTick, 3161)
       })
 
@@ -608,7 +570,6 @@ describe('UniswapV3Pair', () => {
   // the combined amount of liquidity that the pair is initialized with (including the 1 minimum liquidity that is burned)
   const initializeLiquidityAmount = expandTo18Decimals(2)
   async function initializeAtZeroTick(pair: MockTimeUniswapV3Pair): Promise<void> {
-    await pair.initialize(encodePriceSqrt(1, 1))
     const [min, max] = await Promise.all([pair.minTick(), pair.maxTick()])
     await mint(wallet.address, min, max, initializeLiquidityAmount)
   }
@@ -669,7 +630,7 @@ describe('UniswapV3Pair', () => {
 
   describe('miscellaneous mint tests', () => {
     beforeEach('initialize at zero tick', async () => {
-      pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
+      pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW], encodePriceSqrt(1, 1))
       await initializeAtZeroTick(pair)
     })
 
@@ -917,8 +878,7 @@ describe('UniswapV3Pair', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
     beforeEach(async () => {
-      pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
-      await pair.initialize(encodePriceSqrt(1, 1))
+      pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW], encodePriceSqrt(1, 1))
       await mint(wallet.address, minTick, maxTick, liquidityAmount)
     })
 
@@ -1153,23 +1113,19 @@ describe('UniswapV3Pair', () => {
 
     describe('tickSpacing = 12', () => {
       beforeEach('deploy pair', async () => {
-        pair = await createPair(FeeAmount.MEDIUM, 12)
+        pair = await createPair(FeeAmount.MEDIUM, 12, encodePriceSqrt(1, 1))
       })
       it('min and max tick are multiples of 12', async () => {
         expect(await pair.minTick()).to.eq(-887268)
         expect(await pair.maxTick()).to.eq(887268)
       })
       it('initialize sets min and max ticks', async () => {
-        await pair.initialize(encodePriceSqrt(1, 1))
         const { liquidityGross: minTickLiquidityGross } = await pair.ticks(-887268)
         const { liquidityGross: maxLiquidityPerTick } = await pair.ticks(887268)
         expect(minTickLiquidityGross).to.eq(0)
         expect(maxLiquidityPerTick).to.eq(0)
       })
       describe('post initialize', () => {
-        beforeEach('initialize pair', async () => {
-          await pair.initialize(encodePriceSqrt(1, 1))
-        })
         it('mint can only be called for multiples of 12', async () => {
           await expect(mint(wallet.address, -6, 0, 1)).to.be.revertedWith('TS')
           await expect(mint(wallet.address, 0, 6, 1)).to.be.revertedWith('TS')
@@ -1206,13 +1162,12 @@ describe('UniswapV3Pair', () => {
 
   // https://github.com/Uniswap/uniswap-v3-core/issues/214
   it('tick transition cannot run twice if zero for one swap ends at fractional price just below tick', async () => {
-    pair = await createPair(FeeAmount.MEDIUM, 1)
     const sqrtTickMath = (await (await ethers.getContractFactory('SqrtTickMathTest')).deploy()) as SqrtTickMathTest
     const swapMath = (await (await ethers.getContractFactory('SwapMathTest')).deploy()) as SwapMathTest
     const p0 = (await sqrtTickMath.getSqrtRatioAtTick(-24081)).add(1)
+    pair = await createPair(FeeAmount.MEDIUM, 1, p0)
     // initialize at a price of ~0.3 token1/token0
     // meaning if you swap in 2 token0, you should end up getting 0 token1
-    await pair.initialize(p0)
     expect(await pair.liquidity(), 'current pair liquidity is 1').to.eq(0)
     expect((await pair.slot0()).tick, 'pair tick is -24081').to.eq(-24081)
 
@@ -1251,13 +1206,7 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#flash', () => {
-    it('fails if not initialized', async () => {
-      await expect(flash(100, 200, other.address)).to.be.revertedWith('LOK')
-      await expect(flash(100, 0, other.address)).to.be.revertedWith('LOK')
-      await expect(flash(0, 200, other.address)).to.be.revertedWith('LOK')
-    })
     it('fails if no liquidity', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
       await expect(flash(100, 200, other.address)).to.be.revertedWith('L')
       await expect(flash(100, 0, other.address)).to.be.revertedWith('L')
       await expect(flash(0, 200, other.address)).to.be.revertedWith('L')

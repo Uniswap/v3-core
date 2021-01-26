@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
 import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
@@ -47,6 +47,7 @@ interface PairFixture extends TokensAndFactoryFixture {
   createPair(
     fee: number,
     tickSpacing: number,
+    sqrtPrice: BigNumberish,
     firstToken?: TestERC20,
     secondToken?: TestERC20
   ): Promise<MockTimeUniswapV3Pair>
@@ -75,18 +76,19 @@ export const pairFixture: Fixture<PairFixture> = async function (): Promise<Pair
     factory,
     swapTargetCallee,
     swapTargetRouter,
-    createPair: async (fee, tickSpacing, firstToken = token0, secondToken = token1) => {
+    createPair: async (fee, tickSpacing, sqrtPrice, firstToken = token0, secondToken = token1) => {
       const mockTimePairDeployer = (await mockTimeUniswapV3PairDeployerFactory.deploy()) as MockTimeUniswapV3PairDeployer
       const tx = await mockTimePairDeployer.deploy(
         factory.address,
         firstToken.address,
         secondToken.address,
         fee,
-        tickSpacing
+        tickSpacing,
+        sqrtPrice
       )
 
       const receipt = await tx.wait()
-      const pairAddress = receipt.events?.[0].args?.pair as string
+      const pairAddress = receipt.events?.[1].args?.pair as string
       return mockTimeUniswapV3PairFactory.attach(pairAddress) as MockTimeUniswapV3Pair
     },
   }

@@ -6,8 +6,6 @@ import { expect } from './shared/expect'
 import { pairFixture, TEST_PAIR_START_TIME } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
-import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
-
 import {
   expandTo18Decimals,
   FeeAmount,
@@ -36,7 +34,6 @@ describe('UniswapV3Pair gas tests', () => {
     describe(feeProtocol > 0 ? 'fee is on' : 'fee is off', () => {
       const startingPrice = encodePriceSqrt(100001, 100000)
       const startingTick = 0
-      const startingTime = TEST_PAIR_START_TIME + 3
       const feeAmount = FeeAmount.MEDIUM
       const tickSpacing = TICK_SPACINGS[feeAmount]
       const minTick = getMinTick(tickSpacing)
@@ -45,7 +42,7 @@ describe('UniswapV3Pair gas tests', () => {
       const gasTestFixture = async ([wallet]: Wallet[]) => {
         const fix = await pairFixture([wallet], waffle.provider)
 
-        const pair = await fix.createPair(feeAmount, tickSpacing)
+        const pair = await fix.createPair(feeAmount, tickSpacing, encodePriceSqrt(1, 1))
 
         await pair.setFeeProtocol(feeProtocol)
 
@@ -56,7 +53,6 @@ describe('UniswapV3Pair gas tests', () => {
           pair,
         })
 
-        await pair.initialize(encodePriceSqrt(1, 1))
         await pair.increaseObservationCardinality(4)
         await pair.advanceTime(1)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))

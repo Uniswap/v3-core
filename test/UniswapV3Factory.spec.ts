@@ -1,9 +1,14 @@
+import { BigNumber } from 'ethers'
 import { ethers, waffle } from 'hardhat'
+import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 
-import { FeeAmount, getCreate2Address, TICK_SPACINGS } from './shared/utilities'
+import { encodePriceSqrt, FeeAmount, getCreate2Address, TICK_SPACINGS } from './shared/utilities'
+
+const MIN_TICK = -887272
+const MAX_TICK = MIN_TICK * -1
 
 const { constants } = ethers
 
@@ -46,7 +51,7 @@ describe('UniswapV3Factory', () => {
   })
 
   it('pair bytecode size', async () => {
-    await factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM)
+    await factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM, encodePriceSqrt(1, 1))
     const pairAddress = getCreate2Address(factory.address, TEST_ADDRESSES, FeeAmount.MEDIUM, pairBytecode)
     expect(((await waffle.provider.getCode(pairAddress)).length - 2) / 2).to.matchSnapshot()
   })
@@ -63,19 +68,24 @@ describe('UniswapV3Factory', () => {
     tickSpacing: number = TICK_SPACINGS[feeAmount]
   ) {
     const create2Address = getCreate2Address(factory.address, tokens, feeAmount, pairBytecode)
-    const create = factory.createPair(tokens[0], tokens[1], feeAmount)
-
-    await expect(create)
-      .to.emit(factory, 'PairCreated')
-      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
-
-    await expect(factory.createPair(tokens[0], tokens[1], feeAmount)).to.be.revertedWith('PAE')
-    await expect(factory.createPair(tokens[1], tokens[0], feeAmount)).to.be.revertedWith('PAE')
-    expect(await factory.getPair(tokens[0], tokens[1], feeAmount), 'getPair in order').to.eq(create2Address)
-    expect(await factory.getPair(tokens[1], tokens[0], feeAmount), 'getPair in reverse').to.eq(create2Address)
 
     const pairContractFactory = await ethers.getContractFactory('UniswapV3Pair')
     const pair = pairContractFactory.attach(create2Address)
+
+    const price = encodePriceSqrt(1, 1)
+    const create = factory.createPair(tokens[0], tokens[1], feeAmount, price)
+
+    await expect(create)
+      .to.emit(pair, 'Initialized')
+      .withArgs(price, 0)
+      .to.emit(factory, 'PairCreated')
+      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
+
+    await expect(factory.createPair(tokens[0], tokens[1], feeAmount, encodePriceSqrt(1, 1))).to.be.revertedWith('PAE')
+    await expect(factory.createPair(tokens[1], tokens[0], feeAmount, encodePriceSqrt(1, 1))).to.be.revertedWith('PAE')
+    expect(await factory.getPair(tokens[0], tokens[1], feeAmount), 'getPair in order').to.eq(create2Address)
+    expect(await factory.getPair(tokens[1], tokens[0], feeAmount), 'getPair in reverse').to.eq(create2Address)
+
     expect(await pair.factory(), 'pair factory address').to.eq(factory.address)
     expect(await pair.token0(), 'pair token0').to.eq(TEST_ADDRESSES[0])
     expect(await pair.token1(), 'pair token1').to.eq(TEST_ADDRESSES[1])
@@ -100,27 +110,64 @@ describe('UniswapV3Factory', () => {
     })
 
     it('fails if token a == token b', async () => {
-      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[0], FeeAmount.LOW)).to.be.revertedWith('A=B')
+      await expect(
+        factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[0], FeeAmount.LOW, encodePriceSqrt(1, 1))
+      ).to.be.revertedWith('A=B')
     })
 
     it('fails if token a is 0 or token b is 0', async () => {
-      await expect(factory.createPair(TEST_ADDRESSES[0], constants.AddressZero, FeeAmount.LOW)).to.be.revertedWith(
-        'A=0'
-      )
-      await expect(factory.createPair(constants.AddressZero, TEST_ADDRESSES[0], FeeAmount.LOW)).to.be.revertedWith(
-        'A=0'
-      )
-      await expect(factory.createPair(constants.AddressZero, constants.AddressZero, FeeAmount.LOW)).to.be.revertedWith(
-        'A=B'
-      )
+      await expect(
+        factory.createPair(TEST_ADDRESSES[0], constants.AddressZero, FeeAmount.LOW, encodePriceSqrt(1, 1))
+      ).to.be.revertedWith('A=0')
+      await expect(
+        factory.createPair(constants.AddressZero, TEST_ADDRESSES[0], FeeAmount.LOW, encodePriceSqrt(1, 1))
+      ).to.be.revertedWith('A=0')
+      await expect(
+        factory.createPair(constants.AddressZero, constants.AddressZero, FeeAmount.LOW, encodePriceSqrt(1, 1))
+      ).to.be.revertedWith('A=B')
     })
 
     it('fails if fee amount is not enabled', async () => {
-      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], 250)).to.be.revertedWith('FNA')
+      await expect(
+        factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], 250, encodePriceSqrt(1, 1))
+      ).to.be.revertedWith('FNA')
+    })
+
+    it('fails if starting price is too low', async () => {
+      // hardhat eats the error, but i manually confirmed that this is throwing because of 'R'
+      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM, 1)).to.be.reverted
+    })
+
+    it('fails if starting price is too high', async () => {
+      // hardhat eats the error, but i manually confirmed that this is throwing because of 'R'
+      await expect(
+        factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM, BigNumber.from(2).pow(160).sub(1))
+      ).to.be.reverted
+    })
+
+    it('fails if starting price is too low or high for the tick spacing', async () => {
+      const feeAmount = FeeAmount.LOW
+      const spacing = TICK_SPACINGS[feeAmount]
+
+      const minTick = Math.ceil(MIN_TICK / spacing) * spacing
+      const maxTick = Math.floor(MAX_TICK / spacing) * spacing
+
+      const sqrtTickMath = (await (await ethers.getContractFactory('SqrtTickMathTest')).deploy()) as SqrtTickMathTest
+      const badMinPrice = (await sqrtTickMath.getSqrtRatioAtTick(minTick)).sub(1)
+      const badMaxPrice = await sqrtTickMath.getSqrtRatioAtTick(maxTick)
+
+      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, badMinPrice)).to.be.revertedWith(
+        'MIN'
+      )
+      await expect(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, badMaxPrice)).to.be.revertedWith(
+        'MAX'
+      )
     })
 
     it('gas', async () => {
-      await snapshotGasCost(factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM))
+      await snapshotGasCost(
+        factory.createPair(TEST_ADDRESSES[0], TEST_ADDRESSES[1], FeeAmount.MEDIUM, encodePriceSqrt(1, 1))
+      )
     })
   })
 

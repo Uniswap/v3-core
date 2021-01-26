@@ -12,6 +12,7 @@ contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
         address token1;
         uint24 fee;
         int24 tickSpacing;
+        uint160 sqrtPriceX96;
     }
 
     Parameters public override parameters;
@@ -23,9 +24,17 @@ contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
         address token0,
         address token1,
         uint24 fee,
-        int24 tickSpacing
+        int24 tickSpacing,
+        uint160 sqrtPriceX96
     ) external returns (address pair) {
-        parameters = Parameters({factory: factory, token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
+        parameters = Parameters({
+            factory: factory,
+            token0: token0,
+            token1: token1,
+            fee: fee,
+            tickSpacing: tickSpacing,
+            sqrtPriceX96: sqrtPriceX96
+        });
         pair = address(
             new MockTimeUniswapV3Pair{salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing))}()
         );

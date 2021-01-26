@@ -19,7 +19,7 @@ import {
 } from './shared/utilities'
 import { TestUniswapV3Router } from '../typechain/TestUniswapV3Router'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
-import { Test } from 'mocha'
+import { BigNumberish } from 'ethers'
 
 const feeAmount = FeeAmount.MEDIUM
 const tickSpacing = TICK_SPACINGS[feeAmount]
@@ -62,10 +62,11 @@ describe('UniswapV3Pair', () => {
     const createPairWrapped = async (
       amount: number,
       spacing: number,
+      sqrtPrice: BigNumberish,
       firstToken: TestERC20,
       secondToken: TestERC20
     ): Promise<[MockTimeUniswapV3Pair, any]> => {
-      const pair = await createPair(amount, spacing, firstToken, secondToken)
+      const pair = await createPair(amount, spacing, sqrtPrice, firstToken, secondToken)
       const pairFunctions = createPairFunctions({
         swapTarget: swapTargetCallee,
         token0: firstToken,
@@ -78,8 +79,8 @@ describe('UniswapV3Pair', () => {
     }
 
     // default to the 30 bips pair
-    ;[pair0, pair0Functions] = await createPairWrapped(feeAmount, tickSpacing, token0, token1)
-    ;[pair1, pair1Functions] = await createPairWrapped(feeAmount, tickSpacing, token1, token2)
+    ;[pair0, pair0Functions] = await createPairWrapped(feeAmount, tickSpacing, encodePriceSqrt(1, 1), token0, token1)
+    ;[pair1, pair1Functions] = await createPairWrapped(feeAmount, tickSpacing, encodePriceSqrt(1, 1), token1, token2)
   })
 
   it('constructor initializes immutables', async () => {
@@ -98,9 +99,6 @@ describe('UniswapV3Pair', () => {
     beforeEach('initialize both pairs', async () => {
       inputToken = token0
       outputToken = token2
-
-      await pair0.initialize(encodePriceSqrt(1, 1))
-      await pair1.initialize(encodePriceSqrt(1, 1))
 
       await pair0Functions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
       await pair1Functions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))

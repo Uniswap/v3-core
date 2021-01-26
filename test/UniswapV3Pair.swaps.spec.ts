@@ -414,9 +414,8 @@ describe('UniswapV3Pair swap tests', () => {
           [wallet],
           waffle.provider
         )
-        const pair = await createPair(pairCase.feeAmount, pairCase.tickSpacing)
+        const pair = await createPair(pairCase.feeAmount, pairCase.tickSpacing, pairCase.startingPrice)
         const pairFunctions = createPairFunctions({ swapTarget, token0, token1, pair })
-        await pair.initialize(pairCase.startingPrice)
         // mint all positions
         for (const position of pairCase.positions) {
           await pairFunctions.mint(constants.AddressZero, position.tickLower, position.tickUpper, position.liquidity)
