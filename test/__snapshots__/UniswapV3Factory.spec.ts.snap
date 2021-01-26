@@ -2,6 +2,6 @@
 
 exports[`UniswapV3Factory #createPair gas 1`] = `4704517`;
 
-exports[`UniswapV3Factory factory bytecode size 1`] = `25894`;
+exports[`UniswapV3Factory factory bytecode size 1`] = `25910`;
 
 exports[`UniswapV3Factory pair bytecode size 1`] = `22859`;
