@@ -97,9 +97,9 @@ export interface PairFunctions {
   mint: MintFunction
 }
 export function createPairFunctions({
+  swapTarget,
   token0,
   token1,
-  swapTarget,
   pair,
 }: {
   swapTarget: TestUniswapV3Callee

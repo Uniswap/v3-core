@@ -47,7 +47,7 @@ describe('UniswapV3Pair gas tests', () => {
 
         await pair.setFeeProtocol(feeProtocol)
 
-        const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({ ...fix, pair })
+        //const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({ ...fix, pair })
 
         await pair.initialize(encodePriceSqrt(1, 1))
         await pair.increaseObservationCardinality(4)
