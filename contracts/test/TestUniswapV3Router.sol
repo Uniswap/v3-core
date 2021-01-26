@@ -23,7 +23,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             recipient,
             false,
             -amount0Out.toInt256(),
-            uint160(-1),
+            type(uint160).max,
             abi.encode(pairs, msg.sender)
         );
     }
