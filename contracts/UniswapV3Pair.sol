@@ -356,7 +356,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external lock override {
+    ) external override lock {
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
                 SetPositionParams({
