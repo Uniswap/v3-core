@@ -220,7 +220,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     // effect some changes to a position
     function _setPosition(SetPositionParams memory params)
         private
-        lock
         noDelegateCall
         returns (int256 amount0, int256 amount1)
     {
@@ -350,14 +349,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         }
     }
 
-    // lock and noDelegateCall are applied indirectly via _setPosition
+    // noDelegateCall is applied indirectly via _setPosition
     function mint(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external override {
+    ) external lock override {
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
                 SetPositionParams({
@@ -410,13 +409,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
-    // lock and noDelegateCall are applied indirectly via _setPosition
+    // noDelegateCall is applied indirectly via _setPosition
     function burn(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override returns (uint256 amount0, uint256 amount1) {
+    ) external override lock returns (uint256 amount0, uint256 amount1) {
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
                 SetPositionParams({
