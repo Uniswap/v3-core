@@ -83,6 +83,32 @@ describe('Oracle', () => {
       })
     })
 
+    it('is no op if oracle is already gte that size', async () => {
+      await oracle.grow(5)
+      await oracle.grow(3)
+      expect(await oracle.index()).to.eq(0)
+      expect(await oracle.cardinality()).to.eq(5)
+      expect(await oracle.target()).to.eq(5)
+    })
+
+    it('does not mess with cardinality if target is already gt that size', async () => {
+      await oracle.grow(5)
+      await oracle.grow(10)
+      await oracle.grow(7)
+      expect(await oracle.index()).to.eq(0)
+      expect(await oracle.cardinality()).to.eq(5)
+      expect(await oracle.target()).to.eq(10)
+    })
+
+    it('does not mess with cardinality if target is already eq size', async () => {
+      await oracle.grow(5)
+      await oracle.grow(10)
+      await oracle.grow(10)
+      expect(await oracle.index()).to.eq(0)
+      expect(await oracle.cardinality()).to.eq(5)
+      expect(await oracle.target()).to.eq(10)
+    })
+
     it('adds data to all the slots', async () => {
       await oracle.grow(5)
       for (let i = 1; i < 5; i++) {
