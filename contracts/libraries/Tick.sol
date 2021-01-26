@@ -19,19 +19,11 @@ library Tick {
         uint256 feeGrowthOutside1X128;
     }
 
-    function tickSpacingToParameters(int24 tickSpacing)
-        internal
-        pure
-        returns (
-            int24 minTick,
-            int24 maxTick,
-            uint128 maxLiquidityPerTick
-        )
-    {
-        minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
-        maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
+    function tickSpacingToMaxLiquidityPerTick(int24 tickSpacing) internal pure returns (uint128) {
+        int24 minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
+        int24 maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
         uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;
-        maxLiquidityPerTick = type(uint128).max / numTicks;
+        return type(uint128).max / numTicks;
     }
 
     function getFeeGrowthInside(

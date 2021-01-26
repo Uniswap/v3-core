@@ -124,7 +124,8 @@ export function createPairFunctions({
   async function swap(
     inputToken: Contract,
     [amountIn, amountOut]: [BigNumberish, BigNumberish],
-    to: Wallet | string
+    to: Wallet | string,
+    sqrtPriceLimitX96?: BigNumber
   ): Promise<ContractTransaction> {
     const exactInput = amountOut === 0
 
@@ -137,11 +138,18 @@ export function createPairFunctions({
         ? swapTarget.swapExact1For0
         : swapTarget.swap1ForExact0
 
+    if (typeof sqrtPriceLimitX96 === 'undefined') {
+      if (inputToken === token0) {
+        sqrtPriceLimitX96 = BigNumber.from('4295128739').add(1)
+      } else {
+        sqrtPriceLimitX96 = BigNumber.from('1461446703485210103287273052203988822378723970342').sub(1)
+      }
+    }
     await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return method(pair.address, exactInput ? amountIn : amountOut, toAddress)
+    return method(pair.address, exactInput ? amountIn : amountOut, toAddress, sqrtPriceLimitX96)
   }
 
   const swapToLowerPrice: SwapFunction = (sqrtPriceX96, to) => {

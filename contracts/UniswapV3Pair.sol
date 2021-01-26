@@ -52,11 +52,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     // int24 to avoid casting even though it's always positive
     int24 public immutable override tickSpacing;
 
-    // the minimum and maximum tick for the pair
-    // always a multiple of tickSpacing
-    int24 public immutable override minTick;
-    int24 public immutable override maxTick;
-
     // the maximum amount of liquidity that can use any individual tick
     uint128 public immutable override maxLiquidityPerTick;
 
@@ -116,16 +111,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         (factory, token0, token1, fee, _tickSpacing, sqrtPriceX96) = IUniswapV3PairDeployer(msg.sender).parameters();
         tickSpacing = _tickSpacing;
 
-        int24 _minTick;
-        int24 _maxTick;
-        (_minTick, _maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
-        minTick = _minTick;
-        maxTick = _maxTick;
+        maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
 
-        // ensure the tick which includes the passed price is allowed
-        int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        require(tick >= _minTick, 'MIN');
-        require(tick < _maxTick, 'MAX');
+        require(sqrtPriceX96 > SqrtTickMath.MIN_PRICE && sqrtPriceX96 < SqrtTickMath.MAX_PRICE);
 
         // initialize the oracle
         (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
@@ -133,7 +121,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         // initialize contract state
         slot0 = Slot0({
             sqrtPriceX96: sqrtPriceX96,
-            tick: tick,
+            tick: SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96),
             observationIndex: 0,
             observationCardinality: cardinality,
             observationCardinalityTarget: target,
@@ -142,10 +130,10 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         });
     }
 
-    function checkTicks(int24 tickLower, int24 tickUpper) private view {
+    function checkTicks(int24 tickLower, int24 tickUpper) private pure {
         require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= minTick, 'TLM');
-        require(tickUpper <= maxTick, 'TUM');
+        require(tickLower >= SqrtTickMath.MIN_TICK, 'TLM');
+        require(tickUpper <= SqrtTickMath.MAX_TICK, 'TUM');
     }
 
     // returns the block timestamp % 2**32
@@ -487,7 +475,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         Slot0 memory _slot0 = slot0;
 
         require(_slot0.unlocked, 'LOK');
-        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
+        require(
+            zeroForOne
+                ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 && sqrtPriceLimitX96 > SqrtTickMath.MIN_PRICE
+                : sqrtPriceLimitX96 > _slot0.sqrtPriceX96 && sqrtPriceLimitX96 < SqrtTickMath.MAX_PRICE,
+            'SPL'
+        );
 
         slot0.unlocked = false;
 
@@ -518,6 +511,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 zeroForOne
             );
 
+            if (step.tickNext < SqrtTickMath.MIN_TICK) {
+                step.tickNext = SqrtTickMath.MIN_TICK;
+            } else if (step.tickNext > SqrtTickMath.MAX_TICK) {
+                step.tickNext = SqrtTickMath.MAX_TICK;
+            }
+
             // get the price for the next tick
             step.sqrtPriceNextX96 = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
@@ -545,8 +544,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
-                require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
-
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     int128 liquidityDelta =

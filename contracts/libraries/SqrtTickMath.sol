@@ -12,6 +12,12 @@ library SqrtTickMath {
     int24 internal constant MIN_TICK = -887272;
     int24 internal constant MAX_TICK = -MIN_TICK;
 
+    // getSqrtRatioAtTick(MIN_TICK)
+    uint160 internal constant MIN_PRICE = 4295128739;
+
+    // getSqrtRatioAtTick(MAX_TICK)
+    uint160 internal constant MAX_PRICE = 1461446703485210103287273052203988822378723970342;
+
     function getSqrtRatioAtTick(int24 tick) internal pure returns (uint160) {
         return uint160(SafeMath.divRoundingUp(TickMath.getRatioAtTick(tick), 1 << 32));
     }
