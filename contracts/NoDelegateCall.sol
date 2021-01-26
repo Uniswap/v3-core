@@ -8,8 +8,12 @@ contract NoDelegateCall {
         original = address(this);
     }
 
+    function checkNotDelegateCall() private view {
+        require(address(this) == original);
+    }
+
     modifier noDelegateCall() {
-        assert(address(this) == original);
+        checkNotDelegateCall();
         _;
     }
 }
