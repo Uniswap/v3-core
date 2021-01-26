@@ -6,6 +6,8 @@ import { expect } from './shared/expect'
 import { pairFixture, TEST_PAIR_START_TIME } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
+import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
+
 import {
   expandTo18Decimals,
   FeeAmount,
@@ -47,7 +49,12 @@ describe('UniswapV3Pair gas tests', () => {
 
         await pair.setFeeProtocol(feeProtocol)
 
-        const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({ ...fix, pair })
+        const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({
+          swapTarget: fix.swapTargetCallee,
+          token0: fix.token0,
+          token1: fix.token1,
+          pair,
+        })
 
         await pair.initialize(encodePriceSqrt(1, 1))
         await pair.increaseObservationCardinality(4)
