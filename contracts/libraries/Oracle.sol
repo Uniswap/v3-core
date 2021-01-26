@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 /// @title Oracle
-/// @notice The Oracle library provides an array of price and liquidity data useful for a wide variety of system designs.
+/// @notice Provides price and liquidity data useful for a wide variety of system designs.
 /// @dev Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the 
 ///     length of the oracle array. The new slot will be added after the full length of observations is populated.
 ///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to the observe function.
