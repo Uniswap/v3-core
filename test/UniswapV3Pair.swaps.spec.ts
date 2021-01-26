@@ -442,9 +442,15 @@ describe('UniswapV3Pair swap tests', () => {
       let pairFunctions: PairFunctions
 
       beforeEach('load fixture', async () => {
-        ;({ token0, token1, pair, pairFunctions, pairBalance0, pairBalance1, swapTargetCallee: swapTarget } = await loadFixture(
-          pairCaseFixture
-        ))
+        ;({
+          token0,
+          token1,
+          pair,
+          pairFunctions,
+          pairBalance0,
+          pairBalance1,
+          swapTargetCallee: swapTarget,
+        } = await loadFixture(pairCaseFixture))
       })
 
       for (const testCase of pairCase.swapTests ?? DEFAULT_PAIR_SWAP_TESTS) {
