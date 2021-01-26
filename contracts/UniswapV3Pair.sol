@@ -114,8 +114,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 _tickSpacing;
         uint160 sqrtPriceX96;
         (factory, token0, token1, fee, _tickSpacing, sqrtPriceX96) = IUniswapV3PairDeployer(msg.sender).parameters();
-
         tickSpacing = _tickSpacing;
+
         int24 _minTick;
         int24 _maxTick;
         (_minTick, _maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
