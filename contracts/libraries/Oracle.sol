@@ -78,7 +78,8 @@ library Oracle {
         uint16 targetOld,
         uint16 targetNew
     ) internal returns (uint16 cardinality, uint16 target) {
-        require(targetOld < targetNew, 'LTE');
+        // no op if old target is new target
+        if (targetNew <= targetOld) return (cardinalityOld, targetOld);
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the initialized boolean is still false
         for (uint16 i = targetOld; i < targetNew; i++) self[i].blockTimestamp = 1;
