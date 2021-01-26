@@ -22,9 +22,6 @@ contract TickOverflowSafetyEchidnaTest {
     uint256 private totalGrowth0 = 0;
     uint256 private totalGrowth1 = 0;
 
-    // the current time mod 2**32
-    uint32 time = 1;
-
     function increaseFeeGrowthGlobal0X128(uint256 amount) external {
         require(totalGrowth0 + amount > totalGrowth0); // overflow check
         feeGrowthGlobal0X128 += amount; // overflow desired
@@ -35,10 +32,6 @@ contract TickOverflowSafetyEchidnaTest {
         require(totalGrowth1 + amount > totalGrowth1); // overflow check
         feeGrowthGlobal1X128 += amount; // overflow desired
         totalGrowth1 += amount;
-    }
-
-    function increaseTime(uint32 by) external {
-        time += by;
     }
 
     function setPosition(
