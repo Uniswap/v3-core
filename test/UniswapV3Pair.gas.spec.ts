@@ -8,7 +8,6 @@ import snapshotGasCost from './shared/snapshotGasCost'
 
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 
-
 import {
   expandTo18Decimals,
   FeeAmount,
@@ -21,8 +20,6 @@ import {
   getMaxTick,
   MaxUint128,
 } from './shared/utilities'
-
-
 
 const createFixtureLoader = waffle.createFixtureLoader
 
@@ -47,13 +44,17 @@ describe('UniswapV3Pair gas tests', () => {
 
       const gasTestFixture = async ([wallet]: Wallet[]) => {
         const fix = await pairFixture([wallet], waffle.provider)
-        const {swapTargetCallee } = await pairFixture([wallet], waffle.provider)
+        const { swapTargetCallee } = await pairFixture([wallet], waffle.provider)
 
         const pair = await fix.createPair(feeAmount, tickSpacing)
 
         await pair.setFeeProtocol(feeProtocol)
 
-        const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({ swapTarget: swapTargetCallee, ...fix, pair })
+        const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({
+          swapTarget: swapTargetCallee,
+          ...fix,
+          pair,
+        })
 
         await pair.initialize(encodePriceSqrt(1, 1))
         await pair.increaseObservationCardinality(4)
@@ -76,7 +77,6 @@ describe('UniswapV3Pair gas tests', () => {
       let mint: MintFunction
 
       //let swapTarget: TestUniswapV3Callee
-
 
       beforeEach('load the fixture', async () => {
         ;({ swapExact0For1, pair, mint, swapToHigherPrice } = await loadFixture(gasTestFixture))
