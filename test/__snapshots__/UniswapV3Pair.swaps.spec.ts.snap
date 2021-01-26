@@ -1019,15 +1019,15 @@ Object {
 exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap token1 for token0 to price 2.5000 1`] = `
 Object {
   "amount0Before": "11505743598341114571255423385623647",
-  "amount0Delta": "-18391403841488335474",
+  "amount0Delta": "-4228872409409224753601131224936259",
   "amount1Before": "11505743598341114571255423385506404",
-  "amount1Delta": "18446744073709551613",
-  "executionPrice": "1.0030",
+  "amount1Delta": "6706554036096900675845906992220230",
+  "executionPrice": "1.5859",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "1636687367941597865075",
-  "pairPriceAfter": "1.0000",
+  "feeGrowthGlobal1X128Delta": "595039006852697512464428097884749099",
+  "pairPriceAfter": "2.5000",
   "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
+  "tickAfter": 9163,
   "tickBefore": 0,
 }
 `;
