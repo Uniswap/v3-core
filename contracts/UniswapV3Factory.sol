@@ -5,8 +5,9 @@ import './interfaces/IUniswapV3Factory.sol';
 
 import './UniswapV3Pair.sol';
 import './UniswapV3PairDeployer.sol';
+import './NoDelegateCall.sol';
 
-contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
+contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegateCall {
     address public override owner;
 
     mapping(uint24 => int24) public override feeAmountTickSpacing;
@@ -16,16 +17,19 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer {
         owner = msg.sender;
         emit OwnerChanged(address(0), msg.sender);
 
-        enableFeeAmount(600, 12);
-        enableFeeAmount(3000, 60);
-        enableFeeAmount(9000, 180);
+        feeAmountTickSpacing[600] = 12;
+        emit FeeAmountEnabled(600, 12);
+        feeAmountTickSpacing[3000] = 60;
+        emit FeeAmountEnabled(3000, 60);
+        feeAmountTickSpacing[9000] = 180;
+        emit FeeAmountEnabled(9000, 180);
     }
 
     function createPair(
         address tokenA,
         address tokenB,
         uint24 fee
-    ) external override returns (address pair) {
+    ) external override noDelegateCall returns (address pair) {
         require(tokenA != tokenB, 'A=B');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'A=0');

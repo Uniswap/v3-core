@@ -4,6 +4,7 @@ import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { UniswapV3Factory } from '../../typechain/UniswapV3Factory'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
+import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
 import { MockTimeUniswapV3PairDeployer } from '../../typechain/MockTimeUniswapV3PairDeployer'
 
 import { expandTo18Decimals } from './utilities'
@@ -41,8 +42,14 @@ async function tokensFixture(): Promise<TokensFixture> {
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
 interface PairFixture extends TokensAndFactoryFixture {
-  swapTarget: TestUniswapV3Callee
-  createPair(fee: number, tickSpacing: number): Promise<MockTimeUniswapV3Pair>
+  swapTargetCallee: TestUniswapV3Callee
+  swapTargetRouter: TestUniswapV3Router
+  createPair(
+    fee: number,
+    tickSpacing: number,
+    firstToken?: TestERC20,
+    secondToken?: TestERC20
+  ): Promise<MockTimeUniswapV3Pair>
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
@@ -54,19 +61,29 @@ export const pairFixture: Fixture<PairFixture> = async function (): Promise<Pair
 
   const mockTimeUniswapV3PairDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PairDeployer')
   const mockTimeUniswapV3PairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
-  const payAndForwardContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
 
-  const swapTarget = (await payAndForwardContractFactory.deploy()) as TestUniswapV3Callee
+  const calleeContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
+  const routerContractFactory = await ethers.getContractFactory('TestUniswapV3Router')
+
+  const swapTargetCallee = (await calleeContractFactory.deploy()) as TestUniswapV3Callee
+  const swapTargetRouter = (await routerContractFactory.deploy()) as TestUniswapV3Router
 
   return {
     token0,
     token1,
     token2,
     factory,
-    swapTarget,
-    createPair: async (fee, tickSpacing) => {
+    swapTargetCallee,
+    swapTargetRouter,
+    createPair: async (fee, tickSpacing, firstToken = token0, secondToken = token1) => {
       const mockTimePairDeployer = (await mockTimeUniswapV3PairDeployerFactory.deploy()) as MockTimeUniswapV3PairDeployer
-      const tx = await mockTimePairDeployer.deploy(factory.address, token0.address, token1.address, fee, tickSpacing)
+      const tx = await mockTimePairDeployer.deploy(
+        factory.address,
+        firstToken.address,
+        secondToken.address,
+        fee,
+        tickSpacing
+      )
 
       const receipt = await tx.wait()
       const pairAddress = receipt.events?.[0].args?.pair as string

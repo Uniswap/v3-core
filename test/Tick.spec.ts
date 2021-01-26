@@ -91,7 +91,6 @@ describe('TickTest', () => {
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 2,
         feeGrowthOutside1X128: 3,
-        secondsOutside: 0,
         liquidityGross: 0,
         liquidityDelta: 0,
       })
@@ -104,7 +103,6 @@ describe('TickTest', () => {
       await tickTest.setTick(-2, {
         feeGrowthOutside0X128: 2,
         feeGrowthOutside1X128: 3,
-        secondsOutside: 0,
         liquidityGross: 0,
         liquidityDelta: 0,
       })
@@ -117,14 +115,12 @@ describe('TickTest', () => {
       await tickTest.setTick(-2, {
         feeGrowthOutside0X128: 2,
         feeGrowthOutside1X128: 3,
-        secondsOutside: 0,
         liquidityGross: 0,
         liquidityDelta: 0,
       })
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 4,
         feeGrowthOutside1X128: 1,
-        secondsOutside: 0,
         liquidityGross: 0,
         liquidityDelta: 0,
       })
@@ -137,14 +133,12 @@ describe('TickTest', () => {
       await tickTest.setTick(-2, {
         feeGrowthOutside0X128: constants.MaxUint256.sub(3),
         feeGrowthOutside1X128: constants.MaxUint256.sub(2),
-        secondsOutside: 0,
         liquidityGross: 0,
         liquidityDelta: 0,
       })
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 3,
         feeGrowthOutside1X128: 5,
-        secondsOutside: 0,
         liquidityGross: 0,
         liquidityDelta: 0,
       })

@@ -13,9 +13,10 @@ import './libraries/LiquidityMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 import './libraries/SqrtTickMath.sol';
-import './libraries/SpacedTickBitmap.sol';
+import './libraries/TickBitmap.sol';
 import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
+import './libraries/SecondsOutside.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
 
@@ -26,14 +27,17 @@ import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
+import './NoDelegateCall.sol';
 
-contract UniswapV3Pair is IUniswapV3Pair {
+contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
     using SafeCast for uint256;
+    using SafeCast for int256;
     using LiquidityMath for uint128;
-    using SpacedTickBitmap for mapping(int16 => uint256);
     using Tick for mapping(int24 => Tick.Info);
+    using TickBitmap for mapping(int16 => uint256);
+    using SecondsOutside for mapping(int24 => uint256);
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
     using Oracle for Oracle.Observation[65535];
@@ -90,6 +94,7 @@ contract UniswapV3Pair is IUniswapV3Pair {
 
     mapping(int24 => Tick.Info) public override ticks;
     mapping(int16 => uint256) public override tickBitmap;
+    mapping(int24 => uint256) public override secondsOutside;
     mapping(bytes32 => Position.Info) public override positions;
     Oracle.Observation[65535] public override observations;
 
@@ -117,6 +122,18 @@ contract UniswapV3Pair is IUniswapV3Pair {
         (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
     }
 
+    function checkTicks(int24 tickLower, int24 tickUpper) private view {
+        require(tickLower < tickUpper, 'TLU');
+        require(tickLower >= minTick, 'TLM');
+        require(tickUpper <= maxTick, 'TUM');
+    }
+
+    // returns the block timestamp % 2**32
+    // overridden for tests
+    function _blockTimestamp() internal view virtual returns (uint32) {
+        return uint32(block.timestamp); // truncation is desired
+    }
+
     function balance0() private view returns (uint256) {
         return balanceOfToken(token0);
     }
@@ -129,28 +146,17 @@ contract UniswapV3Pair is IUniswapV3Pair {
         return IERC20(token).balanceOf(address(this));
     }
 
-    // returns the block timestamp % 2**32
-    // overridden for tests
-    function _blockTimestamp() internal view virtual returns (uint32) {
-        return uint32(block.timestamp); // truncation is desired
-    }
-
-    // increases the target observation cardinality, callable by anyone after initialize.
-    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override lock {
-        Slot0 memory _slot0 = slot0;
-        (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
-            _slot0.observationIndex,
-            _slot0.observationCardinality,
-            _slot0.observationCardinalityTarget,
-            observationCardinalityTarget
-        );
-        emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
+    function secondsInside(int24 tickLower, int24 tickUpper) external view override noDelegateCall returns (uint32) {
+        checkTicks(tickLower, tickUpper);
+        require(ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0, 'X');
+        return secondsOutside.secondsInside(tickLower, tickUpper, slot0.tick, tickSpacing, _blockTimestamp());
     }
 
     function scry(uint32 secondsAgo)
         external
         view
         override
+        noDelegateCall
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
         return
@@ -164,18 +170,21 @@ contract UniswapV3Pair is IUniswapV3Pair {
             );
     }
 
-    function checkTicks(int24 tickLower, int24 tickUpper) private view {
-        require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= minTick, 'TLM');
-        require(tickUpper <= maxTick, 'TUM');
+    // increases the target observation cardinality, callable by anyone after initialize.
+    // locked to prevent this from being called before
+    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override noDelegateCall {
+        Slot0 memory _slot0 = slot0;
+        require(_slot0.observationCardinality > 0, 'OC'); // pair must be initialized to call this function
+        (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
+            _slot0.observationIndex,
+            _slot0.observationCardinality,
+            _slot0.observationCardinalityTarget,
+            observationCardinalityTarget
+        );
+        emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
     }
 
-    function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
-        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4), 'FP');
-        emit FeeProtocolChanged(slot0.feeProtocol, feeProtocol);
-        slot0.feeProtocol = feeProtocol;
-    }
-
+    // not locked because it initializes unlocked
     function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, 'AI');
 
@@ -198,156 +207,6 @@ contract UniswapV3Pair is IUniswapV3Pair {
         emit Initialized(sqrtPriceX96, tick);
     }
 
-    // gets and updates and gets a position with the given liquidity delta
-    function _updatePosition(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
-        int128 liquidityDelta,
-        int24 tick
-    ) private {
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-
-        uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
-        uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
-
-        // if we need to update the ticks, do it
-        bool flippedLower;
-        bool flippedUpper;
-        if (liquidityDelta != 0) {
-            uint32 blockTimestamp = _blockTimestamp();
-
-            flippedLower = ticks.update(
-                tickLower,
-                tick,
-                liquidityDelta,
-                _feeGrowthGlobal0X128,
-                _feeGrowthGlobal1X128,
-                blockTimestamp,
-                false,
-                maxLiquidityPerTick
-            );
-            flippedUpper = ticks.update(
-                tickUpper,
-                tick,
-                liquidityDelta,
-                _feeGrowthGlobal0X128,
-                _feeGrowthGlobal1X128,
-                blockTimestamp,
-                true,
-                maxLiquidityPerTick
-            );
-
-            if (flippedLower) tickBitmap.flipTick(tickLower, tickSpacing);
-            if (flippedUpper) tickBitmap.flipTick(tickUpper, tickSpacing);
-        }
-
-        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
-            ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
-
-        (uint256 protocolFees0New, uint256 protocolFees1New) =
-            position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
-        if (protocolFees0New > 0 || protocolFees1New > 0) {
-            ProtocolFees memory _protocolFees = protocolFees;
-            protocolFees.token0 = SafeMath.addCapped(_protocolFees.token0, protocolFees0New);
-            protocolFees.token1 = SafeMath.addCapped(_protocolFees.token1, protocolFees1New);
-        }
-
-        // clear any tick data that is no longer needed
-        if (liquidityDelta < 0) {
-            if (flippedLower) ticks.clear(tickLower);
-            if (flippedUpper) ticks.clear(tickUpper);
-        }
-    }
-
-    function collect(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount0Requested,
-        uint128 amount1Requested
-    ) external override lock returns (uint128 amount0, uint128 amount1) {
-        checkTicks(tickLower, tickUpper);
-
-        Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
-
-        amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
-        amount1 = amount1Requested > position.feesOwed1 ? position.feesOwed1 : amount1Requested;
-
-        if (amount0 > 0) {
-            position.feesOwed0 -= amount0;
-            TransferHelper.safeTransfer(token0, recipient, amount0);
-        }
-        if (amount1 > 0) {
-            position.feesOwed1 -= amount1;
-            TransferHelper.safeTransfer(token1, recipient, amount1);
-        }
-
-        emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
-    }
-
-    function mint(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount,
-        bytes calldata data
-    ) public override lock {
-        require(amount < 2**127, 'MA');
-
-        (int256 amount0Int, int256 amount1Int) =
-            _setPosition(
-                SetPositionParams({
-                    owner: recipient,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: int128(amount)
-                })
-            );
-
-        uint256 amount0 = uint256(amount0Int);
-        uint256 amount1 = uint256(amount1Int);
-
-        if (amount0 > 0 || amount1 > 0) {
-            uint256 balance0Before;
-            uint256 balance1Before;
-            if (amount0 > 0) balance0Before = balance0();
-            if (amount1 > 0) balance1Before = balance1();
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
-            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
-        }
-
-        emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
-    }
-
-    function burn(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
-        require(amount > 0 && amount < 2**127, 'BA');
-
-        (int256 amount0Int, int256 amount1Int) =
-            _setPosition(
-                SetPositionParams({
-                    owner: msg.sender,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: -int128(amount)
-                })
-            );
-
-        amount0 = uint256(-amount0Int);
-        amount1 = uint256(-amount1Int);
-
-        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
-        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
-
-        emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
-    }
-
     struct SetPositionParams {
         // the address that owns the position
         address owner;
@@ -359,7 +218,11 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // effect some changes to a position
-    function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
+    function _setPosition(SetPositionParams memory params)
+        private
+        noDelegateCall
+        returns (int256 amount0, int256 amount1)
+    {
         checkTicks(params.tickLower, params.tickUpper);
 
         Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
@@ -414,6 +277,164 @@ contract UniswapV3Pair is IUniswapV3Pair {
         }
     }
 
+    // gets and updates and gets a position with the given liquidity delta
+    function _updatePosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int128 liquidityDelta,
+        int24 tick
+    ) private {
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+        uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
+        uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
+
+        // if we need to update the ticks, do it
+        bool flippedLower;
+        bool flippedUpper;
+        if (liquidityDelta != 0) {
+            uint32 blockTimestamp = _blockTimestamp();
+
+            flippedLower = ticks.update(
+                tickLower,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                false,
+                maxLiquidityPerTick
+            );
+            flippedUpper = ticks.update(
+                tickUpper,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                true,
+                maxLiquidityPerTick
+            );
+
+            if (flippedLower) {
+                tickBitmap.flipTick(tickLower, tickSpacing);
+                secondsOutside.initialize(tickLower, tick, tickSpacing, blockTimestamp);
+            }
+            if (flippedUpper) {
+                tickBitmap.flipTick(tickUpper, tickSpacing);
+                secondsOutside.initialize(tickUpper, tick, tickSpacing, blockTimestamp);
+            }
+        }
+
+        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
+            ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
+
+        (uint256 protocolFees0New, uint256 protocolFees1New) =
+            position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
+        if (protocolFees0New > 0 || protocolFees1New > 0) {
+            ProtocolFees memory _protocolFees = protocolFees;
+            protocolFees.token0 = SafeMath.addCapped(_protocolFees.token0, protocolFees0New);
+            protocolFees.token1 = SafeMath.addCapped(_protocolFees.token1, protocolFees1New);
+        }
+
+        // clear any tick data that is no longer needed
+        if (liquidityDelta < 0) {
+            if (flippedLower) {
+                ticks.clear(tickLower);
+                secondsOutside.clear(tickLower, tickSpacing);
+            }
+            if (flippedUpper) {
+                ticks.clear(tickUpper);
+                secondsOutside.clear(tickUpper, tickSpacing);
+            }
+        }
+    }
+
+    // noDelegateCall is applied indirectly via _setPosition
+    function mint(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount,
+        bytes calldata data
+    ) external override lock {
+        (int256 amount0Int, int256 amount1Int) =
+            _setPosition(
+                SetPositionParams({
+                    owner: recipient,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: int256(amount).toInt128()
+                })
+            );
+
+        uint256 amount0 = uint256(amount0Int);
+        uint256 amount1 = uint256(amount1Int);
+
+        if (amount0 > 0 || amount1 > 0) {
+            uint256 balance0Before;
+            uint256 balance1Before;
+            if (amount0 > 0) balance0Before = balance0();
+            if (amount1 > 0) balance1Before = balance1();
+            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
+            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
+            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
+        }
+
+        emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
+    }
+
+    function collect(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount0Requested,
+        uint128 amount1Requested
+    ) external override lock returns (uint128 amount0, uint128 amount1) {
+        // we don't need to checkTicks here, because invalid positions will never have non-zero feesOwed{0,1}
+        Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
+
+        amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
+        amount1 = amount1Requested > position.feesOwed1 ? position.feesOwed1 : amount1Requested;
+
+        if (amount0 > 0) {
+            position.feesOwed0 -= amount0;
+            TransferHelper.safeTransfer(token0, recipient, amount0);
+        }
+        if (amount1 > 0) {
+            position.feesOwed1 -= amount1;
+            TransferHelper.safeTransfer(token1, recipient, amount1);
+        }
+
+        // note that spurious `Collect` events can be emitted with zero amounts - just ignore them
+        emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
+    }
+
+    // noDelegateCall is applied indirectly via _setPosition
+    function burn(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external override lock returns (uint256 amount0, uint256 amount1) {
+        (int256 amount0Int, int256 amount1Int) =
+            _setPosition(
+                SetPositionParams({
+                    owner: msg.sender,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: -int256(amount).toInt128()
+                })
+            );
+
+        amount0 = uint256(-amount0Int);
+        amount1 = uint256(-amount1Int);
+
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+
+        emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
+    }
+
     struct SwapCache {
         // the value of slot0 at the beginning of the swap
         Slot0 slot0Start;
@@ -457,13 +478,14 @@ contract UniswapV3Pair is IUniswapV3Pair {
     }
 
     // positive (negative) numbers specify exact input (output) amounts
+    // manually locked for the sake of gas efficiency
     function swap(
         address recipient,
         bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
         bytes calldata data
-    ) external override {
+    ) external override noDelegateCall {
         require(amountSpecified != 0, 'AS');
 
         Slot0 memory _slot0 = slot0;
@@ -535,9 +557,10 @@ contract UniswapV3Pair is IUniswapV3Pair {
                         ticks.cross(
                             step.tickNext,
                             (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
-                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
-                            cache.blockTimestamp
+                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
                         );
+
+                    secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
                     // update liquidity, subtract from right to left, add from left to right
                     state.liquidity = zeroForOne
@@ -598,34 +621,12 @@ contract UniswapV3Pair is IUniswapV3Pair {
         slot0.unlocked = true;
     }
 
-    function collectProtocol(
-        address recipient,
-        uint128 amount0Requested,
-        uint128 amount1Requested
-    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
-        ProtocolFees memory _protocolFees = protocolFees;
-
-        amount0 = amount0Requested > _protocolFees.token0 ? _protocolFees.token0 : amount0Requested;
-        amount1 = amount1Requested > _protocolFees.token1 ? _protocolFees.token1 : amount1Requested;
-
-        if (amount0 > 0) {
-            protocolFees.token0 -= amount0;
-            TransferHelper.safeTransfer(token0, recipient, amount0);
-        }
-        if (amount1 > 0) {
-            protocolFees.token1 -= amount1;
-            TransferHelper.safeTransfer(token1, recipient, amount1);
-        }
-
-        emit CollectProtocol(recipient, amount0, amount1);
-    }
-
     function flash(
         address recipient,
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
-    ) external override lock {
+    ) external override lock noDelegateCall {
         uint128 _liquidity = liquidity;
         require(_liquidity > 0, 'L');
 
@@ -649,5 +650,33 @@ contract UniswapV3Pair is IUniswapV3Pair {
         if (paid1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
 
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
+    }
+
+    function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
+        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4), 'FP');
+        emit FeeProtocolChanged(slot0.feeProtocol, feeProtocol);
+        slot0.feeProtocol = feeProtocol;
+    }
+
+    function collectProtocol(
+        address recipient,
+        uint128 amount0Requested,
+        uint128 amount1Requested
+    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
+        ProtocolFees memory _protocolFees = protocolFees;
+
+        amount0 = amount0Requested > _protocolFees.token0 ? _protocolFees.token0 : amount0Requested;
+        amount1 = amount1Requested > _protocolFees.token1 ? _protocolFees.token1 : amount1Requested;
+
+        if (amount0 > 0) {
+            protocolFees.token0 -= amount0;
+            TransferHelper.safeTransfer(token0, recipient, amount0);
+        }
+        if (amount1 > 0) {
+            protocolFees.token1 -= amount1;
+            TransferHelper.safeTransfer(token1, recipient, amount1);
+        }
+
+        emit CollectProtocol(recipient, amount0, amount1);
     }
 }
