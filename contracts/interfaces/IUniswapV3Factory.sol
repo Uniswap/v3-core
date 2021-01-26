@@ -8,6 +8,7 @@ interface IUniswapV3Factory {
         address indexed token1,
         uint24 indexed fee,
         int24 tickSpacing,
+        uint160 sqrtPriceX96,
         address pair
     );
     event FeeAmountEnabled(uint24 indexed fee, int24 indexed tickSpacing);

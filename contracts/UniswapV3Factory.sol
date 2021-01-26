@@ -41,7 +41,7 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
         getPair[token0][token1][fee] = pair;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
         getPair[token1][token0][fee] = pair;
-        emit PairCreated(token0, token1, fee, tickSpacing, pair);
+        emit PairCreated(token0, token1, fee, tickSpacing, sqrtPriceX96, pair);
     }
 
     function setOwner(address _owner) external override {

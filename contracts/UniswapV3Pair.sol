@@ -140,8 +140,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             feeProtocol: 0,
             unlocked: true
         });
-
-        emit Initialized(sqrtPriceX96, tick);
     }
 
     function checkTicks(int24 tickLower, int24 tickUpper) private view {
@@ -613,8 +611,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, data);
         require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn), 'IIA');
 
-        if (zeroForOne) emit Swap(msg.sender, recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
-        else emit Swap(msg.sender, recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
+        if (zeroForOne) emit Swap(msg.sender, recipient, amountIn, amountOut, state.sqrtPriceX96);
+        else emit Swap(msg.sender, recipient, amountOut, amountIn, state.sqrtPriceX96);
 
         slot0.unlocked = true;
     }

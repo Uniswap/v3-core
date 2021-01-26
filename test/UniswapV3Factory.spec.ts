@@ -76,10 +76,8 @@ describe('UniswapV3Factory', () => {
     const create = factory.createPair(tokens[0], tokens[1], feeAmount, price)
 
     await expect(create)
-      .to.emit(pair, 'Initialized')
-      .withArgs(price, 0)
       .to.emit(factory, 'PairCreated')
-      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
+      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, price, create2Address)
 
     await expect(factory.createPair(tokens[0], tokens[1], feeAmount, encodePriceSqrt(1, 1))).to.be.revertedWith('PAE')
     await expect(factory.createPair(tokens[1], tokens[0], feeAmount, encodePriceSqrt(1, 1))).to.be.revertedWith('PAE')

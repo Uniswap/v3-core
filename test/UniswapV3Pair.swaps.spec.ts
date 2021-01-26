@@ -500,8 +500,7 @@ describe('UniswapV3Pair swap tests', () => {
               RECIPIENT_ADDRESS,
               pairBalance0Delta,
               pairBalance1Delta,
-              slot0After.sqrtPriceX96,
-              slot0After.tick
+              slot0After.sqrtPriceX96
             )
 
           const executionPrice = new Decimal(pairBalance1Delta.toString()).div(pairBalance0Delta.toString()).mul(-1)

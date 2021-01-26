@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0;
 
 interface IUniswapV3PairEvents {
-    event Initialized(uint160 sqrtPrice, int24 tick);
     event Mint(
         address indexed owner,
         int24 indexed tickLower,
@@ -34,8 +33,7 @@ interface IUniswapV3PairEvents {
         address indexed recipient,
         int256 amount0,
         int256 amount1,
-        uint160 sqrtPrice,
-        int24 tick
+        uint160 sqrtPrice
     );
     event Flash(
         address indexed sender,
