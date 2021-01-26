@@ -28,13 +28,7 @@ interface IUniswapV3PairEvents {
         uint256 amount0,
         uint256 amount1
     );
-    event Swap(
-        address indexed payer,
-        address indexed recipient,
-        int256 amount0,
-        int256 amount1,
-        uint160 sqrtPrice
-    );
+    event Swap(address indexed payer, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPrice);
     event Flash(
         address indexed sender,
         address indexed recipient,
