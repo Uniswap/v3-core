@@ -67,7 +67,7 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy fixture', async () => {
-    ;({ token0, token1, token2, factory, createPair, swapTarget } = await loadFixture(pairFixture))
+    ;({ token0, token1, token2, factory, createPair, swapTargetCallee: swapTarget } = await loadFixture(pairFixture))
 
     const oldCreatePair = createPair
     createPair = async (_feeAmount, _tickSpacing) => {
@@ -142,7 +142,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#increaseObservationCardinality', () => {
     it('can only be called after initialize', async () => {
-      await expect(pair.increaseObservationCardinality(2)).to.be.revertedWith('LOK')
+      await expect(pair.increaseObservationCardinality(2)).to.be.revertedWith('OC')
     })
     it('emits an event', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))

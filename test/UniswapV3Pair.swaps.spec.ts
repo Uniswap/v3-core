@@ -6,6 +6,8 @@ import { TestERC20 } from '../typechain/TestERC20'
 import { expect } from './shared/expect'
 import { pairFixture } from './shared/fixtures'
 
+import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
+
 import {
   createPairFunctions,
   encodePriceSqrt,
@@ -16,7 +18,6 @@ import {
   getMinTick,
   TICK_SPACINGS,
 } from './shared/utilities'
-import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 
 const createFixtureLoader = waffle.createFixtureLoader
 const { constants } = ethers
@@ -409,9 +410,12 @@ describe('UniswapV3Pair swap tests', () => {
   for (const pairCase of TEST_PAIRS) {
     describe(pairCase.description, () => {
       const pairCaseFixture = async () => {
-        const { createPair, token0, token1, swapTarget } = await pairFixture([wallet], waffle.provider)
+        const { createPair, token0, token1, swapTargetCallee: swapTarget } = await pairFixture(
+          [wallet],
+          waffle.provider
+        )
         const pair = await createPair(pairCase.feeAmount, pairCase.tickSpacing)
-        const pairFunctions = createPairFunctions({ token0, token1, pair, swapTarget })
+        const pairFunctions = createPairFunctions({ swapTarget, token0, token1, pair })
         await pair.initialize(pairCase.startingPrice)
         // mint all positions
         for (const position of pairCase.positions) {
