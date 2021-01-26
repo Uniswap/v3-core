@@ -19,7 +19,6 @@ import {
 } from './shared/utilities'
 import { TestUniswapV3Router } from '../typechain/TestUniswapV3Router'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
-import snapshotGasCost from './shared/snapshotGasCost'
 import { Test } from 'mocha'
 
 const feeAmount = FeeAmount.MEDIUM
@@ -127,22 +126,6 @@ describe('UniswapV3Pair', () => {
         .withArgs(pair0.address, pair1.address, 102)
         .to.emit(inputToken, 'Transfer')
         .withArgs(wallet.address, pair0.address, 104)
-    })
-
-    it('gas', async () => {
-      const token0OfPairOutput = await pair1.token0()
-      const ForExact0 = outputToken.address === token0OfPairOutput
-
-      const { swapForExact0Multi, swapForExact1Multi } = createMultiPairFunctions({
-        inputToken: token0,
-        swapTarget: swapTargetRouter,
-        pairInput: pair0,
-        pairOutput: pair1,
-      })
-
-      const method = ForExact0 ? swapForExact0Multi : swapForExact1Multi
-
-      await snapshotGasCost(method(100, wallet.address))
     })
   })
 })

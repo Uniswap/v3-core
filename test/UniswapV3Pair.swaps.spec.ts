@@ -410,11 +410,12 @@ describe('UniswapV3Pair swap tests', () => {
   for (const pairCase of TEST_PAIRS) {
     describe(pairCase.description, () => {
       const pairCaseFixture = async () => {
-        const { createPair, token0, token1, swapTargetCallee } = await pairFixture([wallet], waffle.provider)
-
-        const pair = await createPair(pairCase.feeAmount, pairCase.tickSpacing, token0, token1)
-
-        const pairFunctions = createPairFunctions({ swapTarget: swapTargetCallee, token0, token1, pair })
+        const { createPair, token0, token1, swapTargetCallee: swapTarget } = await pairFixture(
+          [wallet],
+          waffle.provider
+        )
+        const pair = await createPair(pairCase.feeAmount, pairCase.tickSpacing)
+        const pairFunctions = createPairFunctions({ swapTarget, token0, token1, pair })
         await pair.initialize(pairCase.startingPrice)
         // mint all positions
         for (const position of pairCase.positions) {
@@ -426,7 +427,7 @@ describe('UniswapV3Pair swap tests', () => {
           token1.balanceOf(pair.address),
         ])
 
-        return { token0, token1, pair, pairFunctions, pairBalance0, pairBalance1, swapTargetCallee }
+        return { token0, token1, pair, pairFunctions, pairBalance0, pairBalance1, swapTarget }
       }
 
       let token0: TestERC20
@@ -440,15 +441,9 @@ describe('UniswapV3Pair swap tests', () => {
       let pairFunctions: PairFunctions
 
       beforeEach('load fixture', async () => {
-        ;({
-          token0,
-          token1,
-          pair,
-          pairFunctions,
-          pairBalance0,
-          pairBalance1,
-          swapTargetCallee: swapTarget,
-        } = await loadFixture(pairCaseFixture))
+        ;({ token0, token1, pair, pairFunctions, pairBalance0, pairBalance1, swapTarget } = await loadFixture(
+          pairCaseFixture
+        ))
       })
 
       for (const testCase of pairCase.swapTests ?? DEFAULT_PAIR_SWAP_TESTS) {

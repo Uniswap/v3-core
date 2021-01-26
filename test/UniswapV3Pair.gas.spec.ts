@@ -44,15 +44,15 @@ describe('UniswapV3Pair gas tests', () => {
 
       const gasTestFixture = async ([wallet]: Wallet[]) => {
         const fix = await pairFixture([wallet], waffle.provider)
-        const { swapTargetCallee } = await pairFixture([wallet], waffle.provider)
 
         const pair = await fix.createPair(feeAmount, tickSpacing)
 
         await pair.setFeeProtocol(feeProtocol)
 
         const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({
-          swapTarget: swapTargetCallee,
-          ...fix,
+          swapTarget: fix.swapTargetCallee,
+          token0: fix.token0,
+          token1: fix.token1,
           pair,
         })
 
@@ -68,15 +68,13 @@ describe('UniswapV3Pair gas tests', () => {
         expect((await pair.slot0()).tick).to.eq(startingTick)
         expect((await pair.slot0()).sqrtPriceX96).to.eq(startingPrice)
 
-        return { pair, swapExact0For1, mint, swapToHigherPrice, swapTargetCallee }
+        return { pair, swapExact0For1, mint, swapToHigherPrice }
       }
 
       let swapExact0For1: SwapFunction
       let swapToHigherPrice: SwapFunction
       let pair: MockTimeUniswapV3Pair
       let mint: MintFunction
-
-      //let swapTarget: TestUniswapV3Callee
 
       beforeEach('load the fixture', async () => {
         ;({ swapExact0For1, pair, mint, swapToHigherPrice } = await loadFixture(gasTestFixture))
