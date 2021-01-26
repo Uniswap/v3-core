@@ -171,8 +171,10 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     // increases the target observation cardinality, callable by anyone after initialize.
-    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override lock noDelegateCall {
+    // locked to prevent this from being called before 
+    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override noDelegateCall {
         Slot0 memory _slot0 = slot0;
+        require(_slot0.observationCardinality > 0, 'OC'); // pair must be initialized to call this function
         (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
             _slot0.observationIndex,
             _slot0.observationCardinality,
@@ -182,6 +184,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
     }
 
+    // not locked because it initializes unlocked
     function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, 'AI');
 
@@ -215,7 +218,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     // effect some changes to a position
-    function _setPosition(SetPositionParams memory params) private returns (int256 amount0, int256 amount1) {
+    function _setPosition(SetPositionParams memory params)
+        private
+        lock
+        noDelegateCall
+        returns (int256 amount0, int256 amount1)
+    {
         checkTicks(params.tickLower, params.tickUpper);
 
         Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
@@ -342,13 +350,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         }
     }
 
+    // lock and noDelegateCall are applied indirectly via _setPosition
     function mint(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external override lock noDelegateCall {
+    ) external override {
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
                 SetPositionParams({
@@ -401,12 +410,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
+    // lock and noDelegateCall are applied indirectly via _setPosition
     function burn(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override lock noDelegateCall returns (uint256 amount0, uint256 amount1) {
+    ) external override returns (uint256 amount0, uint256 amount1) {
         (int256 amount0Int, int256 amount1Int) =
             _setPosition(
                 SetPositionParams({
@@ -469,6 +479,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     // positive (negative) numbers specify exact input (output) amounts
+    // manually locked for the sake of gas efficiency
     function swap(
         address recipient,
         bool zeroForOne,
@@ -652,7 +663,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         address recipient,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock noDelegateCall onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
+    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
         ProtocolFees memory _protocolFees = protocolFees;
 
         amount0 = amount0Requested > _protocolFees.token0 ? _protocolFees.token0 : amount0Requested;
