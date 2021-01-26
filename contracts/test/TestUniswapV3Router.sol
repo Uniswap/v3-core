@@ -62,7 +62,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
                 msg.sender,
                 zeroForOne,
                 -amountToBePaid,
-                zeroForOne ? 0 : uint160(-1),
+                zeroForOne ? 0 : type(uint160).max,
                 abi.encode(new address[](0), payer)
             );
         } else {
