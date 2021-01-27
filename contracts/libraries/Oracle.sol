@@ -122,13 +122,14 @@ library Oracle {
             i = (l + r) / 2;
 
             beforeOrAt = self[i % cardinality];
-            atOrAfter = self[(i + 1) % cardinality];
 
-            // we've landed on or are 1 away from an uninitialized tick, keep searching higher (more recently)
-            if (!beforeOrAt.initialized || !atOrAfter.initialized) {
+            // we've landed on an uninitialized tick, keep searching higher (more recently)
+            if (!beforeOrAt.initialized) {
                 l = i + 1;
                 continue;
             }
+
+            atOrAfter = self[(i + 1) % cardinality];
 
             bool targetAtOrAfter = lte(time, beforeOrAt.blockTimestamp, target);
 
