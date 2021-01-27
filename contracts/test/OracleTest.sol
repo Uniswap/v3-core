@@ -73,7 +73,7 @@ contract OracleTest {
     }
 
     function grow(uint16 _target) external {
-        (cardinality, target) = observations.grow(index, cardinality, target, _target);
+        target = observations.grow(target, _target);
     }
 
     function getGasCostOfScry(uint32 secondsAgo) external view returns (uint256) {

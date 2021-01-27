@@ -66,10 +66,10 @@ describe('Oracle', () => {
       oracle = await loadFixture(initializedOracleFixture)
     })
 
-    it('increases the cardinality and target for the first call', async () => {
+    it('increases the target for the first call', async () => {
       await oracle.grow(5)
       expect(await oracle.index()).to.eq(0)
-      expect(await oracle.cardinality()).to.eq(5)
+      expect(await oracle.cardinality()).to.eq(1)
       expect(await oracle.target()).to.eq(5)
     })
 
@@ -87,26 +87,8 @@ describe('Oracle', () => {
       await oracle.grow(5)
       await oracle.grow(3)
       expect(await oracle.index()).to.eq(0)
-      expect(await oracle.cardinality()).to.eq(5)
+      expect(await oracle.cardinality()).to.eq(1)
       expect(await oracle.target()).to.eq(5)
-    })
-
-    it('does not mess with cardinality if target is already gt that size', async () => {
-      await oracle.grow(5)
-      await oracle.grow(10)
-      await oracle.grow(7)
-      expect(await oracle.index()).to.eq(0)
-      expect(await oracle.cardinality()).to.eq(5)
-      expect(await oracle.target()).to.eq(10)
-    })
-
-    it('does not mess with cardinality if target is already eq size', async () => {
-      await oracle.grow(5)
-      await oracle.grow(10)
-      await oracle.grow(10)
-      expect(await oracle.index()).to.eq(0)
-      expect(await oracle.cardinality()).to.eq(5)
-      expect(await oracle.target()).to.eq(10)
     })
 
     it('adds data to all the slots', async () => {
@@ -119,13 +101,6 @@ describe('Oracle', () => {
           initialized: false,
         })
       }
-    })
-
-    it('does not change the target when index != cardinality - 1', async () => {
-      await oracle.grow(2)
-      await oracle.grow(5)
-      expect(await oracle.cardinality()).to.eq(2)
-      expect(await oracle.target()).to.eq(5)
     })
 
     it('grow after wrap', async () => {
@@ -218,9 +193,9 @@ describe('Oracle', () => {
     it('grows cardinality when writing past', async () => {
       await oracle.grow(2)
       await oracle.grow(4)
-      expect(await oracle.cardinality()).to.eq(2)
+      expect(await oracle.cardinality()).to.eq(1)
       await oracle.update({ advanceTimeBy: 3, tick: 5, liquidity: 6 })
-      expect(await oracle.cardinality()).to.eq(2)
+      expect(await oracle.cardinality()).to.eq(4)
       await oracle.update({ advanceTimeBy: 4, tick: 6, liquidity: 4 })
       expect(await oracle.cardinality()).to.eq(4)
       expect(await oracle.index()).to.eq(2)
@@ -546,12 +521,12 @@ describe('Oracle', () => {
     const maxedOutOracleFixture = async () => {
       const oracle = await oracleFixture()
       await oracle.initialize({ liquidity: 0, tick: 0, time: STARTING_TIME })
-      let cardinality = await oracle.cardinality()
-      while (cardinality < 65535) {
-        const cardinalityNext = Math.min(65535, cardinality + BATCH_SIZE)
-        console.log('growing from', cardinality, 'to', cardinalityNext)
+      let cardinalityTarget = await oracle.target()
+      while (cardinalityTarget < 65535) {
+        const cardinalityNext = Math.min(65535, cardinalityTarget + BATCH_SIZE)
+        console.log('growing from', cardinalityTarget, 'to', cardinalityNext)
         await oracle.grow(cardinalityNext)
-        cardinality = cardinalityNext
+        cardinalityTarget = cardinalityNext
       }
 
       for (let i = 0; i < 65535; i += BATCH_SIZE) {

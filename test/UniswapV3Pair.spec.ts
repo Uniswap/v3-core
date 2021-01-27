@@ -167,16 +167,8 @@ describe('UniswapV3Pair', () => {
       await pair.initialize(encodePriceSqrt(1, 1))
       await pair.increaseObservationCardinality(2)
       const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
-      expect(observationCardinality).to.eq(2)
+      expect(observationCardinality).to.eq(1)
       expect(observationCardinalityTarget).to.eq(2)
-    })
-    it('increases only target if it has not yet grown', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
-      await pair.increaseObservationCardinality(2)
-      await pair.increaseObservationCardinality(3)
-      const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
-      expect(observationCardinality).to.eq(2)
-      expect(observationCardinalityTarget).to.eq(3)
     })
   })
 

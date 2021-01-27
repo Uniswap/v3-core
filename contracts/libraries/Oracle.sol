@@ -41,8 +41,9 @@ library Oracle {
         return (1, 1);
     }
 
-    // writes an oracle observation to the array, at most once per block
-    // indices cycle, and must be kept track of in the parent contract
+    // writes an oracle observation to the array, at most once per block. indices cycle, and must be tracked externally
+    // if the index is at the end of the allowable array length (according to current cardinality), and the target is
+    // greater than the current cardinality, we can increase the cardinality. this restriction is to preserve ordering
     function write(
         Observation[65535] storage self,
         uint16 index,
@@ -68,25 +69,14 @@ library Oracle {
         self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
     }
 
-    // grow the observations array. observations array length is stored in cardinality and target. cardinality cannot be
-    // changed unless the index is currently the last element of the array, to avoid reordering in all other cases.
-    // the cardinality is either immediately changed if the above is true, or changed on the next write when the write
-    // fills the last index lt current cardinality.
-    function grow(
-        Observation[65535] storage self,
-        uint16 index,
-        uint16 cardinalityOld,
-        uint16 targetOld,
-        uint16 targetNew
-    ) internal returns (uint16 cardinality, uint16 target) {
-        // no op if old target is new target
-        if (targetNew <= targetOld) return (cardinalityOld, targetOld);
+    // increase the target cardinality of the observations array
+    function grow(Observation[65535] storage self, uint16 current, uint16 proposed) internal returns (uint16) {
+        // no-op if the proposed target isn't greater than the current
+        if (proposed <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the initialized boolean is still false
-        for (uint16 i = targetOld; i < targetNew; i++) self[i].blockTimestamp = 1;
-        // if the index is already at the last element of the array, immediately grow the cardinality
-        cardinality = index == cardinalityOld - 1 ? targetNew : cardinalityOld;
-        target = targetNew;
+        for (uint16 i = current; i < proposed; i++) self[i].blockTimestamp = 1;
+        return proposed;
     }
 
     // comparator for 32-bit timestamps
