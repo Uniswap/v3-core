@@ -80,7 +80,7 @@ contract OracleEchidnaTest {
         return success;
     }
 
-    function checkTimeWeightedAveragesAlwaysFitsType(uint32 secondsAgo) private view {
+    function checkTimeWeightedAveragesAlwaysFitsType(uint32 secondsAgo) external view {
         require(initialized);
         require(secondsAgo > 0);
         (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.scry(secondsAgo);
