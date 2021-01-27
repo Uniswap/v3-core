@@ -52,7 +52,10 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
     function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
         require(msg.sender == owner, 'OO');
         require(fee < 1000000, 'FEE');
-        require(tickSpacing > 0, 'TS');
+        // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
+        // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
+        // 16384 ticks represents a >5x price change with ticks of 1 bips
+        require(tickSpacing > 0 && tickSpacing < 16384, 'TS');
         require(feeAmountTickSpacing[fee] == 0, 'FAI');
 
         feeAmountTickSpacing[fee] = tickSpacing;
