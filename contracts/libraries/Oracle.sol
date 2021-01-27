@@ -163,7 +163,7 @@ library Oracle {
                 return (beforeOrAt, atOrAfter);
             } else {
                 // otherwise, we need to transform
-                return (beforeOrAt, transform(beforeOrAt, time, tick, liquidity));
+                return (beforeOrAt, transform(beforeOrAt, target, tick, liquidity));
             }
         }
 
