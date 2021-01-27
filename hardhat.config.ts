@@ -13,7 +13,7 @@ export default {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 50,
+        runs: 2350,
       },
       debug: {
         // How to treat revert (and require) reason strings. Settings are
