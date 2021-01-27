@@ -2,10 +2,11 @@
 pragma solidity >=0.5.0;
 
 /// @title Oracle
-/// @notice Provides price and liquidity data useful for a wide variety of system designs.
-/// @dev Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the 
+/// @notice Provides price and liquidity data useful for a wide variety of system designs
+/// @dev Instances of stored oracle data, "observations", are collected in the oracle array
+///     Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the 
 ///     length of the oracle array. The new slot will be added after the full length of observations is populated.
-///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to the observe function.
+///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to the scry function.
 library Oracle {
     struct Observation {
         // the block timestamp of the observation
@@ -90,9 +91,9 @@ library Oracle {
     }
 
     /// @notice Grow the observations array. Observations array length is stored in cardinality and target. cardinality cannot be
-    // changed unless the index is currently the last element of the array, to avoid reordering in all other cases.
-    // the cardinality is either immediately changed if the above is true, or changed on the next write when the write
-    // fills the last index lt current cardinality.
+    /// changed unless the index is currently the last element of the array, to avoid reordering in all other cases.
+    /// the cardinality is either immediately changed if the above is true, or changed on the next write when the write
+    /// fills the last index lt current cardinality.
     /// @param self
     /// @param index
     /// @param cardinalityOld
@@ -218,13 +219,12 @@ library Oracle {
         return binarySearch(self, target, index, cardinality);
     }
 
-    /// @notice constructs a counterfactual observation as of a particular time in the past (or now) as long as we have
-    ///  an observation before then
-    /// @param self
-    /// @param time
-    /// @param secondsAgo
-    /// @param tick
-    /// @param index
+    /// @notice Constructs an observation of a particular time, now or in the past.
+    /// @dev Called from the pair contract. Contingent on having >=1 observations before the call. 0 may be passed as `secondsAgo' to return the present pair data
+    /// @param time The time of the observation
+    /// @param secondsAgo The amount of seconds passed, before which to return an observation
+    /// @param tick The current tick of the observation
+    /// @param index 
     /// @param liquidity
     /// @param cardinality
     /// @return tickCumulative
