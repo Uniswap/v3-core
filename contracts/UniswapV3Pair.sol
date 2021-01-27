@@ -106,12 +106,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     constructor() {
-        (address _factory, address _token0, address _token1, uint24 _fee, int24 _tickSpacing) =
-            IUniswapV3PairDeployer(msg.sender).parameters();
-        factory = _factory;
-        token0 = _token0;
-        token1 = _token1;
-        fee = _fee;
+        int24 _tickSpacing;
+        (factory, token0, token1, fee, _tickSpacing) = IUniswapV3PairDeployer(msg.sender).parameters();
         tickSpacing = _tickSpacing;
 
         maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
