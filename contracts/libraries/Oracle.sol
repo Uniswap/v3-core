@@ -153,7 +153,10 @@ library Oracle {
         }
 
         // ensure that the touchpoint is greater than the oldest observation (accounting for block timestamp overflow)
-        require(beforeOrAt.blockTimestamp <= touchpoint && (touchpoint <= time || beforeOrAt.blockTimestamp >= time), 'OLD');
+        require(
+            beforeOrAt.blockTimestamp <= touchpoint && (touchpoint <= time || beforeOrAt.blockTimestamp >= time),
+            'OLD'
+        );
 
         // now, optimistically set before to the newest observation
         beforeOrAt = self[index];
