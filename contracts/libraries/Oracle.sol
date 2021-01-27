@@ -19,10 +19,10 @@ library Oracle {
         bool initialized;
     }
 
-    /// @notice transforms an oracle observation in a subsequent observation, given the passage of time and current values. Called by grow after the current observation array has been filled.
+    /// @notice transforms an oracle observation in a subsequent observation, given the passage of time and current values.
     /// @dev blockTimestamp _must_ be at, or after, last.blockTimestamp (accounting for overflow)
     /// @param last The last observation
-    /// @param blockTimestamp The time of the call, expressed in UNIX
+    /// @param blockTimestamp The timestamp of the observation, expressed in UNIX, truncated to uint32
     /// @param liquidity
     /// @return Observation
     function transform(
@@ -42,10 +42,10 @@ library Oracle {
     }
 
     /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array.
-    /// @param self
-    /// @param time The time of the oracle initialization, expressed in UNIX, via block.timestamp
-    /// @return cardinality
-    /// @return target
+    /// @param self The stored oracle array
+    /// @param time The time of the oracle initialization, expressed in UNIX, via block.timestamp truncated to uint32
+    /// @return cardinality The number of populated elements in the oracle array
+    /// @return target The number of elements to be added to the oracle array
     function initialize(Observation[65535] storage self, uint32 time)
         internal
         returns (uint16 cardinality, uint16 target)
@@ -56,12 +56,12 @@ library Oracle {
 
     /// @notice writes an oracle observation to the array, at most once per block
     ///     indices cycle, and must be kept track of in the parent contract
-    /// @param self
-    /// @param index
-    /// @param blockTimestamp
+    /// @param self The stored oracle array
+    /// @param index The location of a given observation within the oracle array
+    /// @param blockTimestamp The timestamp of the observation, expressed in UNIX, truncated to uint32
     /// @param tick
     /// @param liquidity
-    /// @param cardinality
+    /// @param cardinality The number of populated elements in the oracle array
     /// @param cardinalityTarget
     /// @return indexNext
     /// @return cardinalityNext
@@ -94,13 +94,13 @@ library Oracle {
     /// changed unless the index is currently the last element of the array, to avoid reordering in all other cases.
     /// the cardinality is either immediately changed if the above is true, or changed on the next write when the write
     /// fills the last index lt current cardinality.
-    /// @param self
-    /// @param index
+    /// @param self The stored oracle array
+    /// @param index The location of a given observation within the oracle array
     /// @param cardinalityOld
     /// @param targetOld
     /// @param targetNew
-    /// @return cardinality
-    /// @return target
+    /// @return cardinality The number of populated elements in the oracle array
+    /// @return target The number of elements to be added to the oracle array
     function grow(
         Observation[65535] storage self,
         uint16 index,
@@ -121,10 +121,10 @@ library Oracle {
     /// @notice fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
     ///      the answer _must_ be contained in the array
     ///      note that even though we're not modifying self, it must be passed by ref to save gas
-    /// @param self
-    /// @param target
-    /// @param index
-    /// @param cardinality
+    /// @param self The stored oracle array
+    /// @param target The number of elements to be added to the oracle array
+    /// @param index The location of a given observation within the oracle array
+    /// @param cardinality The number of populated elements in the oracle array
     /// @return before
     /// @return atOrAfter
     function binarySearch(
@@ -171,18 +171,18 @@ library Oracle {
     }
 
     /// @notice fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
-    /// @param self
-    /// @param time
+    /// @param self The stored oracle array
+    /// @param time The time of the observation, expressed in UNIX, through block.timestamp truncated to uint32
     /// @param target
     /// @param tick
-    /// @param index
+    /// @param index The location of a given observation within the oracle array
     /// @param liquidity
-    /// @param cardinality
+    /// @param cardinality The number of populated elements in the oracle array
     /// @return beforeOrAt
     /// @return atOrAfter
     function getSurroundingObservations(
         Observation[65535] storage self,
-        uint32 time,
+        uint32 time, 
         uint32 target,
         int24 tick,
         uint16 index,
@@ -220,12 +220,14 @@ library Oracle {
         return binarySearch(self, target, index, cardinality);
     }
 
-    /// @notice Constructs an observation of a particular time, now or in the past.
+    /// @notice Constructs a counterfactual observation of a particular time, now or in the past.
     /// @dev Called from the pair contract. Contingent on having >=1 observations before the call. 0 may be passed as `secondsAgo' to return the present pair data
-    /// @param time The time of the observation
-    /// @param secondsAgo The amount of seconds passed, before which to return an observation
+    ///      if called with a timestamp falling between two consecutive observations, scry() returns an observation as it would appear if a block were mined at the time of the call
+    /// @param self The stored oracle array
+    /// @param time The time of the observation, expressed in UNIX, through block.timestamp truncated to uint32
+    /// @param secondsAgo The amount of reach back, in seconds, at which to return an observation
     /// @param tick The current tick of the observation
-    /// @param index 
+    /// @param index The location of a given observation within the oracle array
     /// @param liquidity
     /// @param cardinality
     /// @return tickCumulative
