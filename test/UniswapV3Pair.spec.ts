@@ -67,7 +67,7 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy fixture', async () => {
-    ;({ token0, token1, token2, factory, createPair, swapTarget } = await loadFixture(pairFixture))
+    ;({ token0, token1, token2, factory, createPair, swapTargetCallee: swapTarget } = await loadFixture(pairFixture))
 
     const oldCreatePair = createPair
     createPair = async (_feeAmount, _tickSpacing) => {

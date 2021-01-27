@@ -1,8 +1,9 @@
 import bn from 'bignumber.js'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
+import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
+import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
 import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
-import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 
 export const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
 
@@ -96,9 +97,9 @@ export interface PairFunctions {
   mint: MintFunction
 }
 export function createPairFunctions({
+  swapTarget,
   token0,
   token1,
-  swapTarget,
   pair,
 }: {
   swapTarget: TestUniswapV3Callee
@@ -201,5 +202,41 @@ export function createPairFunctions({
     swap1ForExact0,
     mint,
     flash,
+  }
+}
+
+export interface MultiPairFunctions {
+  swapForExact0Multi: SwapFunction
+  swapForExact1Multi: SwapFunction
+}
+
+export function createMultiPairFunctions({
+  inputToken,
+  swapTarget,
+  pairInput,
+  pairOutput,
+}: {
+  inputToken: TestERC20
+  swapTarget: TestUniswapV3Router
+  pairInput: MockTimeUniswapV3Pair
+  pairOutput: MockTimeUniswapV3Pair
+}): MultiPairFunctions {
+  async function swapForExact0Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swapForExact0Multi
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+    const toAddress = typeof to === 'string' ? to : to.address
+    return method(toAddress, pairInput.address, pairOutput.address, amountOut)
+  }
+
+  async function swapForExact1Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swapForExact1Multi
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+    const toAddress = typeof to === 'string' ? to : to.address
+    return method(toAddress, pairInput.address, pairOutput.address, amountOut)
+  }
+
+  return {
+    swapForExact0Multi,
+    swapForExact1Multi,
   }
 }
