@@ -118,14 +118,13 @@ library Oracle {
         target = targetNew;
     }
 
-    /// @notice fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
-    /// @dev the answer must be contained in the array
-    ///      note that even though we're not modifying self, it must be passed by ref to save gas
+    /// @notice fetches the observations before and atOrAfter a target, used when a counterfactual observation is not possible
+    /// @dev the answer must be contained in the array, note that even though we're not modifying self it must be passed by ref to save gas
     /// @param self The stored oracle array
-    /// @param target The number of elements to be added to the oracle array
+    /// @param target The length of the oracle array, independent of population
     /// @param index The location of a given observation within the oracle array
     /// @param cardinality The number of populated elements in the oracle array
-    /// @return before
+    /// @return before The observation 
     /// @return atOrAfter
     function binarySearch(
         Observation[65535] storage self,
