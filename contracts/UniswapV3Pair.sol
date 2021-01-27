@@ -516,12 +516,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 zeroForOne
             );
 
-            if (step.tickNext < SqrtTickMath.MIN_TICK) {
-                step.tickNext = SqrtTickMath.MIN_TICK;
-            } else if (step.tickNext > SqrtTickMath.MAX_TICK) {
-                step.tickNext = SqrtTickMath.MAX_TICK;
-            }
-
             // get the price for the next tick
             step.sqrtPriceNextX96 = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 

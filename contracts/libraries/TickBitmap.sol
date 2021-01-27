@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import './BitMath.sol';
+import './SqrtTickMath.sol';
 
 // a library for dealing with a bitmap of all ticks initialized states, represented as mapping(int16 => uint256)
 // the mapping uses int16 for keys since ticks are represented as int24 and there are 256 (2^8) bits per word
@@ -34,6 +35,9 @@ library TickBitmap {
         int24 tickSpacing,
         bool lte
     ) internal view returns (int24 next, bool initialized) {
+        // ensure that we can move in the required direction
+        lte ? assert(tick > SqrtTickMath.MIN_TICK) : assert(tick < SqrtTickMath.MAX_TICK);
+
         int24 compressed = tick / tickSpacing;
         if (tick < 0 && tick % tickSpacing != 0) compressed--; // round towards negative infinity
 
@@ -63,5 +67,8 @@ library TickBitmap {
                 ? (compressed + 1 + int24(BitMath.leastSignificantBit(masked) - bitPos)) * tickSpacing
                 : (compressed + 1 + int24(type(uint8).max - bitPos)) * tickSpacing;
         }
+
+        // ensure we haven't overshot the min or max tick
+        lte ? require(next >= SqrtTickMath.MIN_TICK, 'MIN') : require(next <= SqrtTickMath.MAX_TICK, 'MAX');
     }
 }
