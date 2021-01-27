@@ -23,7 +23,7 @@ contract OracleTest {
     }
 
     function initialize(InitializeParams calldata params) external {
-        require(cardinality == 0, 'already initialized');
+        require(cardinality == 0);
         time = params.time;
         tick = params.tick;
         liquidity = params.liquidity;

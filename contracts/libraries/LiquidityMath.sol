@@ -5,17 +5,17 @@ pragma solidity >=0.5.0;
 library LiquidityMath {
     function addDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
         if (y < 0) {
-            require((z = x - uint128(-y)) < x, 'LS');
+            require((z = x - uint128(-y)) < x);
         } else {
-            require((z = x + uint128(y)) >= x, 'LA');
+            require((z = x + uint128(y)) >= x);
         }
     }
 
     function subDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
         if (y < 0) {
-            require((z = x + uint128(-y)) > x, 'LA');
+            require((z = x + uint128(-y)) > x);
         } else {
-            require((z = x - uint128(y)) <= x, 'LS');
+            require((z = x - uint128(y)) <= x);
         }
     }
 }

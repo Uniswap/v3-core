@@ -17,11 +17,11 @@ describe('SqrtTickMath', () => {
 
   describe('#getSqrtRatioAtTick', () => {
     it('throws for too low', async () => {
-      await expect(sqrtTickMath.getSqrtRatioAtTick(MIN_TICK - 1)).to.be.revertedWith('T')
+      await expect(sqrtTickMath.getSqrtRatioAtTick(MIN_TICK - 1)).to.be.revertedWith('')
     })
 
     it('throws for too low', async () => {
-      await expect(sqrtTickMath.getSqrtRatioAtTick(MAX_TICK + 1)).to.be.revertedWith('T')
+      await expect(sqrtTickMath.getSqrtRatioAtTick(MAX_TICK + 1)).to.be.revertedWith('')
     })
 
     it('min tick', async () => {
@@ -53,13 +53,13 @@ describe('SqrtTickMath', () => {
 
   describe('#getTickAtSqrtRatio', () => {
     it('throws for too low', async () => {
-      await expect(sqrtTickMath.getTickAtSqrtRatio(BigNumber.from('4295128738').sub(1))).to.be.revertedWith('R')
+      await expect(sqrtTickMath.getTickAtSqrtRatio(BigNumber.from('4295128738').sub(1))).to.be.revertedWith('')
     })
 
     it('throws for too high', async () => {
       await expect(
         sqrtTickMath.getTickAtSqrtRatio(BigNumber.from('1461446703485210103287273052203988822378723970342').add(1))
-      ).to.be.revertedWith('R')
+      ).to.be.revertedWith('')
     })
 
     it('ratio of min tick', async () => {

@@ -38,7 +38,7 @@ library SqrtPriceMath {
         }
 
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
-        require(denominator1 != 0, 'OUT');
+        require(denominator1 != 0);
 
         return SafeMath.divRoundingUp(numerator1, denominator1).toUint160();
     }
@@ -74,8 +74,8 @@ library SqrtPriceMath {
         uint256 amountIn,
         bool zeroForOne
     ) internal pure returns (uint160 sqrtQX96) {
-        require(sqrtPX96 > 0, 'P');
-        require(liquidity > 0, 'L');
+        require(sqrtPX96 > 0);
+        require(liquidity > 0);
 
         // round to make sure that we don't pass the target price
         return
@@ -90,8 +90,8 @@ library SqrtPriceMath {
         uint256 amountOut,
         bool zeroForOne
     ) internal pure returns (uint160 sqrtQX96) {
-        require(sqrtPX96 > 0, 'P');
-        require(liquidity > 0, 'L');
+        require(sqrtPX96 > 0);
+        require(liquidity > 0);
 
         // round to make sure that we pass the target price
         return

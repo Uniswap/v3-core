@@ -153,7 +153,7 @@ library Oracle {
         }
 
         // ensure that the target is greater than the oldest observation (accounting for block timestamp overflow)
-        require(beforeOrAt.blockTimestamp <= target && (target <= time || beforeOrAt.blockTimestamp >= time), 'OLD');
+        require(beforeOrAt.blockTimestamp <= target && (target <= time || beforeOrAt.blockTimestamp >= time));
 
         // now, optimistically set before to the newest observation
         beforeOrAt = self[index];
@@ -186,7 +186,7 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
-        require(cardinality > 0, 'I');
+        require(cardinality > 0);
         if (secondsAgo == 0) {
             // because cardinality is 0, the last observation is necessarily initialized
             Observation memory last = self[index];

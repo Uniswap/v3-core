@@ -99,14 +99,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     Oracle.Observation[65535] public override observations;
 
     modifier lock() {
-        require(slot0.unlocked, 'LOK');
+        require(slot0.unlocked);
         slot0.unlocked = false;
         _;
         slot0.unlocked = true;
     }
 
     modifier onlyFactoryOwner() {
-        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
+        require(msg.sender == IUniswapV3Factory(factory).owner());
         _;
     }
 
@@ -119,9 +119,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     function checkTicks(int24 tickLower, int24 tickUpper) private view {
-        require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= minTick, 'TLM');
-        require(tickUpper <= maxTick, 'TUM');
+        require(tickLower < tickUpper);
+        require(tickLower >= minTick);
+        require(tickUpper <= maxTick);
     }
 
     // returns the block timestamp % 2**32
@@ -144,7 +144,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     function secondsInside(int24 tickLower, int24 tickUpper) external view override noDelegateCall returns (uint32) {
         checkTicks(tickLower, tickUpper);
-        require(ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0, 'X');
+        require(ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0);
         return secondsOutside.secondsInside(tickLower, tickUpper, slot0.tick, tickSpacing, _blockTimestamp());
     }
 
@@ -170,7 +170,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     // locked to prevent this from being called before
     function increaseObservationCardinality(uint16 observationCardinalityTarget) external override noDelegateCall {
         Slot0 memory _slot0 = slot0;
-        require(_slot0.observationCardinality > 0, 'OC'); // pair must be initialized to call this function
+        require(_slot0.observationCardinality > 0); // pair must be initialized to call this function
         (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
             _slot0.observationIndex,
             _slot0.observationCardinality,
@@ -182,11 +182,11 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     // not locked because it initializes unlocked
     function initialize(uint160 sqrtPriceX96) external override {
-        require(slot0.sqrtPriceX96 == 0, 'AI');
+        require(slot0.sqrtPriceX96 == 0);
 
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        require(tick >= minTick, 'MIN');
-        require(tick < maxTick, 'MAX');
+        require(tick >= minTick);
+        require(tick < maxTick);
 
         (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
 
@@ -372,8 +372,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             if (amount0 > 0) balance0Before = balance0();
             if (amount1 > 0) balance1Before = balance1();
             IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
-            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
+            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0());
+            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1());
         }
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
@@ -482,12 +482,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint160 sqrtPriceLimitX96,
         bytes calldata data
     ) external override noDelegateCall {
-        require(amountSpecified != 0, 'AS');
+        require(amountSpecified != 0);
 
         Slot0 memory _slot0 = slot0;
 
-        require(_slot0.unlocked, 'LOK');
-        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
+        require(_slot0.unlocked);
+        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96);
 
         slot0.unlocked = false;
 
@@ -545,7 +545,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // shift tick if we reached the next price target
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
-                require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
+                require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick);
 
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
@@ -609,7 +609,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         zeroForOne
             ? IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountIn, amountOut, data)
             : IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amountOut, amountIn, data);
-        require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn), 'IIA');
+        require(balanceBefore.add(uint256(amountIn)) >= balanceOfToken(tokenIn));
 
         if (zeroForOne) emit Swap(msg.sender, recipient, amountIn, amountOut, state.sqrtPriceX96, state.tick);
         else emit Swap(msg.sender, recipient, amountOut, amountIn, state.sqrtPriceX96, state.tick);
@@ -624,7 +624,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         bytes calldata data
     ) external override lock noDelegateCall {
         uint128 _liquidity = liquidity;
-        require(_liquidity > 0, 'L');
+        require(_liquidity > 0);
 
         uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);
         uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);
@@ -639,8 +639,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 paid0 = balance0().sub(balance0Before);
         uint256 paid1 = balance1().sub(balance1Before);
 
-        require(paid0 >= fee0, 'F0');
-        require(paid1 >= fee1, 'F1');
+        require(paid0 >= fee0);
+        require(paid1 >= fee1);
 
         if (paid0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
         if (paid1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
@@ -649,7 +649,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
-        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4), 'FP');
+        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
         emit FeeProtocolChanged(slot0.feeProtocol, feeProtocol);
         slot0.feeProtocol = feeProtocol;
     }

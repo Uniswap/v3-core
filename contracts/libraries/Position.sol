@@ -42,7 +42,7 @@ library Position {
 
         uint128 liquidityNext;
         if (liquidityDelta == 0) {
-            require(_self.liquidity > 0, 'NP'); // disallow pokes for 0 liquidity positions
+            require(_self.liquidity > 0); // disallow pokes for 0 liquidity positions
             liquidityNext = _self.liquidity;
         } else {
             liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);

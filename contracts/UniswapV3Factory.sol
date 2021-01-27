@@ -30,12 +30,12 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
         address tokenB,
         uint24 fee
     ) external override noDelegateCall returns (address pair) {
-        require(tokenA != tokenB, 'A=B');
+        require(tokenA != tokenB);
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'A=0');
+        require(token0 != address(0));
         int24 tickSpacing = feeAmountTickSpacing[fee];
-        require(tickSpacing != 0, 'FNA');
-        require(getPair[token0][token1][fee] == address(0), 'PAE');
+        require(tickSpacing != 0);
+        require(getPair[token0][token1][fee] == address(0));
         pair = deploy(address(this), token0, token1, fee, tickSpacing);
         getPair[token0][token1][fee] = pair;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
@@ -44,19 +44,19 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
     }
 
     function setOwner(address _owner) external override {
-        require(msg.sender == owner, 'OO');
+        require(msg.sender == owner);
         emit OwnerChanged(owner, _owner);
         owner = _owner;
     }
 
     function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
-        require(msg.sender == owner, 'OO');
-        require(fee < 1000000, 'FEE');
+        require(msg.sender == owner);
+        require(fee < 1000000);
         // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
         // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
         // 16384 ticks represents a >5x price change with ticks of 1 bips
-        require(tickSpacing > 0 && tickSpacing < 16384, 'TS');
-        require(feeAmountTickSpacing[fee] == 0, 'FAI');
+        require(tickSpacing > 0 && tickSpacing < 16384);
+        require(feeAmountTickSpacing[fee] == 0);
 
         feeAmountTickSpacing[fee] = tickSpacing;
         emit FeeAmountEnabled(fee, tickSpacing);

@@ -110,13 +110,13 @@ describe('UniswapV3Pair', () => {
   describe('#initialize', () => {
     it('fails if already initialized', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
-      await expect(pair.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('AI')
+      await expect(pair.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('')
     })
     it('fails if starting price is too low', async () => {
-      await expect(pair.initialize(1)).to.be.revertedWith('R')
+      await expect(pair.initialize(1)).to.be.revertedWith('')
     })
     it('fails if starting price is too high', async () => {
-      await expect(pair.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('R')
+      await expect(pair.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('')
     })
     it('fails if starting price is too low or high', async () => {
       const minTick = await pair.minTick()
@@ -126,8 +126,8 @@ describe('UniswapV3Pair', () => {
       const badMinPrice = (await sqrtTickMath.getSqrtRatioAtTick(minTick)).sub(1)
       const badMaxPrice = await sqrtTickMath.getSqrtRatioAtTick(maxTick)
 
-      await expect(pair.initialize(badMinPrice)).to.be.revertedWith('MIN')
-      await expect(pair.initialize(badMaxPrice)).to.be.revertedWith('MAX')
+      await expect(pair.initialize(badMinPrice)).to.be.revertedWith('')
+      await expect(pair.initialize(badMaxPrice)).to.be.revertedWith('')
     })
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
@@ -155,7 +155,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#increaseObservationCardinality', () => {
     it('can only be called after initialize', async () => {
-      await expect(pair.increaseObservationCardinality(2)).to.be.revertedWith('OC')
+      await expect(pair.increaseObservationCardinality(2)).to.be.revertedWith('')
     })
     it('emits an event', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
@@ -182,7 +182,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#mint', () => {
     it('fails if not initialized', async () => {
-      await expect(mint(wallet.address, -tickSpacing, tickSpacing, 0)).to.be.revertedWith('LOK')
+      await expect(mint(wallet.address, -tickSpacing, tickSpacing, 0)).to.be.revertedWith('')
     })
     describe('after initialization', () => {
       beforeEach('initialize the pair at price of 10:1', async () => {
@@ -192,22 +192,22 @@ describe('UniswapV3Pair', () => {
 
       describe('failure cases', () => {
         it('fails if tickLower greater than tickUpper', async () => {
-          await expect(mint(wallet.address, 1, 0, 1)).to.be.revertedWith('TLU')
+          await expect(mint(wallet.address, 1, 0, 1)).to.be.revertedWith('')
         })
         it('fails if tickLower less than min tick', async () => {
-          await expect(mint(wallet.address, minTick - 1, 0, 1)).to.be.revertedWith('TLM')
+          await expect(mint(wallet.address, minTick - 1, 0, 1)).to.be.revertedWith('')
         })
         it('fails if tickUpper greater than max tick', async () => {
-          await expect(mint(wallet.address, 0, maxTick + 1, 1)).to.be.revertedWith('TUM')
+          await expect(mint(wallet.address, 0, maxTick + 1, 1)).to.be.revertedWith('')
         })
         it('fails if amount exceeds the max', async () => {
           const maxLiquidityGross = await pair.maxLiquidityPerTick()
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))
-          ).to.be.revertedWith('LO')
+          ).to.be.revertedWith('')
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)
-          ).to.not.be.revertedWith('LO')
+          ).to.not.be.revertedWith('')
         })
         it('fails if total amount at tick exceeds the max', async () => {
           await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1000)
@@ -215,16 +215,16 @@ describe('UniswapV3Pair', () => {
           const maxLiquidityGross = await pair.maxLiquidityPerTick()
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
+          ).to.be.revertedWith('')
           await expect(
             mint(wallet.address, minTick + tickSpacing * 2, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
+          ).to.be.revertedWith('')
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing * 2, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
+          ).to.be.revertedWith('')
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000))
-          ).to.not.be.revertedWith('LO')
+          ).to.not.be.revertedWith('')
         })
       })
 
@@ -496,7 +496,7 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
-        await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.revertedWith('NP')
+        await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.revertedWith('')
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         let {
@@ -734,7 +734,7 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -tickSpacing
       const upperTick = tickSpacing
       await mint(wallet.address, lowerTick, upperTick, expandTo18Decimals(1000))
-      await expect(pair.burn(wallet.address, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith('LS')
+      await expect(pair.burn(wallet.address, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith('')
     })
 
     it('collect fees within the current price after swap', async () => {
@@ -932,12 +932,12 @@ describe('UniswapV3Pair', () => {
     })
 
     it('cannot be changed out of bounds', async () => {
-      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('FP')
-      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('FP')
+      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
     })
 
     it('cannot be changed by addresses that are not owner', async () => {
-      await expect(pair.connect(other).setFeeProtocol(6)).to.be.revertedWith('OO')
+      await expect(pair.connect(other).setFeeProtocol(6)).to.be.revertedWith('')
     })
 
     async function swapAndGetFeesOwed({
@@ -1171,8 +1171,8 @@ describe('UniswapV3Pair', () => {
           await pair.initialize(encodePriceSqrt(1, 1))
         })
         it('mint can only be called for multiples of 12', async () => {
-          await expect(mint(wallet.address, -6, 0, 1)).to.be.revertedWith('TS')
-          await expect(mint(wallet.address, 0, 6, 1)).to.be.revertedWith('TS')
+          await expect(mint(wallet.address, -6, 0, 1)).to.be.revertedWith('')
+          await expect(mint(wallet.address, 0, 6, 1)).to.be.revertedWith('')
         })
         it('mint can be called with multiples of 12', async () => {
           await mint(wallet.address, 12, 24, 1)
@@ -1252,15 +1252,15 @@ describe('UniswapV3Pair', () => {
 
   describe('#flash', () => {
     it('fails if not initialized', async () => {
-      await expect(flash(100, 200, other.address)).to.be.revertedWith('LOK')
-      await expect(flash(100, 0, other.address)).to.be.revertedWith('LOK')
-      await expect(flash(0, 200, other.address)).to.be.revertedWith('LOK')
+      await expect(flash(100, 200, other.address)).to.be.revertedWith('')
+      await expect(flash(100, 0, other.address)).to.be.revertedWith('')
+      await expect(flash(0, 200, other.address)).to.be.revertedWith('')
     })
     it('fails if no liquidity', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
-      await expect(flash(100, 200, other.address)).to.be.revertedWith('L')
-      await expect(flash(100, 0, other.address)).to.be.revertedWith('L')
-      await expect(flash(0, 200, other.address)).to.be.revertedWith('L')
+      await expect(flash(100, 200, other.address)).to.be.revertedWith('')
+      await expect(flash(100, 0, other.address)).to.be.revertedWith('')
+      await expect(flash(0, 200, other.address)).to.be.revertedWith('')
     })
     describe('after liquidity added', () => {
       let balance0: BigNumber
@@ -1329,8 +1329,8 @@ describe('UniswapV3Pair', () => {
         await expect(flash(0, 1000, other.address, 0, 999)).to.be.revertedWith('')
       })
       it('fails if underpays either token', async () => {
-        await expect(flash(1000, 0, other.address, 1002, 0)).to.be.revertedWith('F0')
-        await expect(flash(0, 1000, other.address, 0, 1002)).to.be.revertedWith('F1')
+        await expect(flash(1000, 0, other.address, 1002, 0)).to.be.revertedWith('')
+        await expect(flash(0, 1000, other.address, 0, 1002)).to.be.revertedWith('')
       })
       it('allows donating token0', async () => {
         await expect(flash(0, 0, constants.AddressZero, 567, 0))
