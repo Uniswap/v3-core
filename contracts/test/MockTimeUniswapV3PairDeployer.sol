@@ -2,8 +2,10 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import './MockTimeUniswapV3Pair.sol';
 import '../interfaces/IUniswapV3PairDeployer.sol';
+import '../interfaces/IUniswapV3Pair.sol';
+
+import './MockTimeUniswapV3Pair.sol';
 
 contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
     struct Parameters {
@@ -12,7 +14,6 @@ contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
         address token1;
         uint24 fee;
         int24 tickSpacing;
-        uint160 sqrtPriceX96;
     }
 
     Parameters public override parameters;
@@ -27,17 +28,11 @@ contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
         int24 tickSpacing,
         uint160 sqrtPriceX96
     ) external returns (address pair) {
-        parameters = Parameters({
-            factory: factory,
-            token0: token0,
-            token1: token1,
-            fee: fee,
-            tickSpacing: tickSpacing,
-            sqrtPriceX96: sqrtPriceX96
-        });
+        parameters = Parameters({factory: factory, token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
         pair = address(
             new MockTimeUniswapV3Pair{salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing))}()
         );
+        IUniswapV3Pair(pair).initialize(sqrtPriceX96);
         emit PairDeployed(pair);
         delete parameters;
     }

@@ -2,6 +2,7 @@
 pragma solidity =0.7.6;
 
 import './interfaces/IUniswapV3Factory.sol';
+import './interfaces/IUniswapV3Pair.sol';
 
 import './UniswapV3Pair.sol';
 import './UniswapV3PairDeployer.sol';
@@ -37,7 +38,8 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0, 'FNA');
         require(getPair[token0][token1][fee] == address(0), 'PAE');
-        pair = deploy(address(this), token0, token1, fee, tickSpacing, sqrtPriceX96);
+        pair = deploy(address(this), token0, token1, fee, tickSpacing);
+        IUniswapV3Pair(pair).initialize(sqrtPriceX96);
         getPair[token0][token1][fee] = pair;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
         getPair[token1][token0][fee] = pair;

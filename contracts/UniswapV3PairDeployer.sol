@@ -12,7 +12,6 @@ contract UniswapV3PairDeployer is IUniswapV3PairDeployer {
         address token1;
         uint24 fee;
         int24 tickSpacing;
-        uint160 sqrtPriceX96;
     }
 
     Parameters public override parameters;
@@ -22,17 +21,9 @@ contract UniswapV3PairDeployer is IUniswapV3PairDeployer {
         address token0,
         address token1,
         uint24 fee,
-        int24 tickSpacing,
-        uint160 sqrtPriceX96
+        int24 tickSpacing
     ) internal returns (address pair) {
-        parameters = Parameters({
-            factory: factory,
-            token0: token0,
-            token1: token1,
-            fee: fee,
-            tickSpacing: tickSpacing,
-            sqrtPriceX96: sqrtPriceX96
-        });
+        parameters = Parameters({factory: factory, token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
         pair = address(new UniswapV3Pair{salt: keccak256(abi.encode(token0, token1, fee))}());
         delete parameters;
     }

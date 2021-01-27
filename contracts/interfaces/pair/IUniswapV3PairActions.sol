@@ -44,4 +44,7 @@ interface IUniswapV3PairActions {
     ) external;
 
     function increaseObservationCardinality(uint16 observationCardinality) external;
+
+    // only called by the factory
+    function initialize(uint160 sqrtPriceX96) external;
 }

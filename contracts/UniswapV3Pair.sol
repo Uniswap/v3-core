@@ -112,20 +112,20 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     constructor() {
         int24 _tickSpacing;
-        uint160 sqrtPriceX96;
-        (factory, token0, token1, fee, _tickSpacing, sqrtPriceX96) = IUniswapV3PairDeployer(msg.sender).parameters();
+        (factory, token0, token1, fee, _tickSpacing) = IUniswapV3PairDeployer(msg.sender).parameters();
         tickSpacing = _tickSpacing;
 
-        int24 _minTick;
-        int24 _maxTick;
-        (_minTick, _maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
-        minTick = _minTick;
-        maxTick = _maxTick;
+        (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
+    }
+
+    // called once by the factory immediately after the constructor
+    function initialize(uint160 sqrtPriceX96) external override {
+        require(slot0.sqrtPriceX96 == 0); // enforces that this can only be called once
 
         // ensure the tick which includes the passed price is allowed
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        require(tick >= _minTick, 'MIN');
-        require(tick < _maxTick, 'MAX');
+        require(tick >= minTick, 'MIN');
+        require(tick < maxTick, 'MAX');
 
         // initialize the oracle
         (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
