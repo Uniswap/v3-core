@@ -93,7 +93,7 @@ library Oracle {
     // note that even though we're not modifying self, it must be passed by ref to save gas
     function binarySearch(
         Observation[65535] storage self,
-        uint32 target,
+        uint32 touchpoint,
         uint16 index,
         uint16 cardinality
     ) private view returns (Observation memory before, Observation memory atOrAfter) {
@@ -115,30 +115,30 @@ library Oracle {
 
             // check if we've found the answer!
             if (
-                (before.blockTimestamp <= target && target <= atOrAfter.blockTimestamp) ||
+                (before.blockTimestamp <= touchpoint && touchpoint <= atOrAfter.blockTimestamp) ||
                 (before.blockTimestamp > atOrAfter.blockTimestamp &&
-                    (before.blockTimestamp <= target || target <= atOrAfter.blockTimestamp))
+                    (before.blockTimestamp <= touchpoint || touchpoint <= atOrAfter.blockTimestamp))
             ) break;
 
             // adjust for overflow
-            uint256 targetAdjusted = target;
+            uint256 touchpointAdjusted = touchpoint;
             uint256 atOrAfterAdjusted = atOrAfter.blockTimestamp;
             uint256 newestAdjusted = self[r % cardinality].blockTimestamp;
-            if (targetAdjusted > newestAdjusted || atOrAfterAdjusted > newestAdjusted) {
-                if (targetAdjusted <= newestAdjusted) targetAdjusted += 2**32;
+            if (touchpointAdjusted > newestAdjusted || atOrAfterAdjusted > newestAdjusted) {
+                if (touchpointAdjusted <= newestAdjusted) touchpointAdjusted += 2**32;
                 if (atOrAfterAdjusted <= newestAdjusted) atOrAfterAdjusted += 2**32;
             }
 
-            if (atOrAfterAdjusted < targetAdjusted) l = i + 1;
+            if (atOrAfterAdjusted < touchpointAdjusted) l = i + 1;
             else r = i - 1;
         }
     }
 
-    // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
+    // fetches the observations before and atOrAfter a touchpoint, i.e. where this range is satisfied: (before, atOrAfter]
     function getSurroundingObservations(
         Observation[65535] storage self,
         uint32 time,
-        uint32 target,
+        uint32 touchpoint,
         int24 tick,
         uint16 index,
         uint128 liquidity,
@@ -152,27 +152,27 @@ library Oracle {
             assert(beforeOrAt.initialized);
         }
 
-        // ensure that the target is greater than the oldest observation (accounting for block timestamp overflow)
-        require(beforeOrAt.blockTimestamp <= target && (target <= time || beforeOrAt.blockTimestamp >= time), 'OLD');
+        // ensure that the touchpoint is greater than the oldest observation (accounting for block timestamp overflow)
+        require(beforeOrAt.blockTimestamp <= touchpoint && (touchpoint <= time || beforeOrAt.blockTimestamp >= time), 'OLD');
 
         // now, optimistically set before to the newest observation
         beforeOrAt = self[index];
 
-        // before proceeding, short-circuit if the target equals the newest observation, meaning we're in the same block
+        // before proceeding, short-circuit if the touchpoint equals the newest observation, meaning we're in the same block
         // but an interaction updated the oracle before this tx, so before is actually atOrAfter
-        if (target == beforeOrAt.blockTimestamp) return (beforeOrAt, atOrAfter);
+        if (touchpoint == beforeOrAt.blockTimestamp) return (beforeOrAt, atOrAfter);
 
         // adjust for overflow
         uint256 beforeAdjusted = beforeOrAt.blockTimestamp;
-        uint256 targetAdjusted = target;
-        if (beforeAdjusted > time && targetAdjusted <= time) targetAdjusted += 2**32;
-        if (targetAdjusted > time) beforeAdjusted += 2**32;
+        uint256 touchpointAdjusted = touchpoint;
+        if (beforeAdjusted > time && touchpointAdjusted <= time) touchpointAdjusted += 2**32;
+        if (touchpointAdjusted > time) beforeAdjusted += 2**32;
 
         // once here, check if we're right and return a counterfactual observation for atOrAfter
-        if (beforeAdjusted < targetAdjusted) return (beforeOrAt, transform(beforeOrAt, time, tick, liquidity));
+        if (beforeAdjusted < touchpointAdjusted) return (beforeOrAt, transform(beforeOrAt, time, tick, liquidity));
 
         // we're wrong, so perform binary search
-        return binarySearch(self, target, index, cardinality);
+        return binarySearch(self, touchpoint, index, cardinality);
     }
 
     // constructs a counterfactual observation as of a particular time in the past (or now) as long as we have
@@ -194,16 +194,16 @@ library Oracle {
             return (last.tickCumulative, last.liquidityCumulative);
         }
 
-        uint32 target = time - secondsAgo;
+        uint32 touchpoint = time - secondsAgo;
 
         (Observation memory beforeOrAt, Observation memory atOrAfter) =
-            getSurroundingObservations(self, time, target, tick, index, liquidity, cardinality);
+            getSurroundingObservations(self, time, touchpoint, tick, index, liquidity, cardinality);
 
         Oracle.Observation memory at;
-        if (target == beforeOrAt.blockTimestamp) {
+        if (touchpoint == beforeOrAt.blockTimestamp) {
             // if we're at the left boundary, make it so
             at = beforeOrAt;
-        } else if (target == atOrAfter.blockTimestamp) {
+        } else if (touchpoint == atOrAfter.blockTimestamp) {
             // if we're at the right boundary, make it so
             at = atOrAfter;
         } else {
@@ -212,7 +212,7 @@ library Oracle {
             int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
             uint128 liquidityDerived =
                 uint128((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / delta);
-            at = transform(beforeOrAt, target, tickDerived, liquidityDerived);
+            at = transform(beforeOrAt, touchpoint, tickDerived, liquidityDerived);
         }
 
         return (at.tickCumulative, at.liquidityCumulative);
