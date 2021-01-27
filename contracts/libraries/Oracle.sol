@@ -144,7 +144,6 @@ library Oracle {
     ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
         // optimistically set before to the newest observation
         beforeOrAt = self[index];
-        assert(beforeOrAt.initialized);
 
         // if the target is chronologically at or after the newest observation, we can early return
         if (lte(time, beforeOrAt.blockTimestamp, target)) {
@@ -179,7 +178,6 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
-        require(cardinality > 0, 'I');
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);

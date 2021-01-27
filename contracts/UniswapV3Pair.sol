@@ -155,21 +155,25 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         noDelegateCall
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
+        Slot0 memory _slot0 = slot0;
+        require(_slot0.observationCardinality > 0, 'I');
+
         return
             observations.scry(
                 _blockTimestamp(),
                 secondsAgo,
-                slot0.tick,
-                slot0.observationIndex,
+                _slot0.tick,
+                _slot0.observationIndex,
                 liquidity,
-                slot0.observationCardinality
+                _slot0.observationCardinality
             );
     }
 
     // increases the target observation cardinality, callable by anyone after initialize.
     function increaseObservationCardinality(uint16 cardinalityProposed) external override noDelegateCall {
         Slot0 memory _slot0 = slot0;
-        require(_slot0.observationCardinality > 0, 'OC'); // pair must be initialized to call this function
+        require(_slot0.observationCardinality > 0, 'I');
+
         uint16 targetNext = observations.grow(_slot0.observationCardinalityTarget, cardinalityProposed);
         slot0.observationCardinalityTarget = targetNext;
         emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, targetNext);

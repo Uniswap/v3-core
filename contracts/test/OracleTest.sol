@@ -84,6 +84,7 @@ contract OracleTest {
     }
 
     function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+        require(cardinality > 0, 'I');
         return observations.scry(time, secondsAgo, tick, index, liquidity, cardinality);
     }
 }

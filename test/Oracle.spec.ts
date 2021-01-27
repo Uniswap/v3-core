@@ -267,7 +267,7 @@ describe('Oracle', () => {
       })
 
       it('fails before initialize', async () => {
-        await expect(oracle.scry(0)).to.be.revertedWith('')
+        await expect(oracle.scry(0)).to.be.revertedWith('I')
       })
 
       it('fails if an older observation does not exist', async () => {
