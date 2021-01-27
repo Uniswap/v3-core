@@ -427,6 +427,12 @@ describe('Oracle', () => {
         expect(liquidityCumulative).to.eq(22)
       })
 
+      it('gas for scry since most recent', async () => {
+        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+        await oracle.advanceTime(2)
+        await snapshotGasCost(oracle.getGasCostOfScry(1))
+      })
+
       it('gas for single observation at current time', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
         await snapshotGasCost(oracle.getGasCostOfScry(0))
