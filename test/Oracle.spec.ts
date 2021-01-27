@@ -300,6 +300,14 @@ describe('Oracle', () => {
         await expect(oracle.scry(1)).to.be.revertedWith('')
       })
 
+      it('does not fail across overflow boundary', async () => {
+        await oracle.initialize({ liquidity: 4, tick: 2, time: 2 ** 32 - 1 })
+        await oracle.advanceTime(2)
+        const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+        expect(tickCumulative).to.be.eq(2)
+        expect(liquidityCumulative).to.be.eq(4)
+      })
+
       it('single observation at current time', async () => {
         await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
         const { tickCumulative, liquidityCumulative } = await oracle.scry(0)
@@ -417,6 +425,12 @@ describe('Oracle', () => {
         const { tickCumulative, liquidityCumulative } = await oracle.scry(9)
         expect(tickCumulative).to.eq(-19)
         expect(liquidityCumulative).to.eq(22)
+      })
+
+      it('gas for scry since most recent', async () => {
+        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+        await oracle.advanceTime(2)
+        await snapshotGasCost(oracle.getGasCostOfScry(1))
       })
 
       it('gas for single observation at current time', async () => {

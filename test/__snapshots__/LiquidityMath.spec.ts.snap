@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LiquidityMath #addDelta gas add 1`] = `162`;
+
+exports[`LiquidityMath #addDelta gas sub 1`] = `176`;
+
+exports[`LiquidityMath #subDelta gas add 1`] = `176`;
+
+exports[`LiquidityMath #subDelta gas sub 1`] = `162`;
