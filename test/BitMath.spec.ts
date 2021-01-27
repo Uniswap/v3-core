@@ -17,7 +17,7 @@ describe('BitMath', () => {
 
   describe('#mostSignificantBit', () => {
     it('0', async () => {
-      await expect(bitMath.mostSignificantBit(0)).to.be.revertedWith('MSB')
+      await expect(bitMath.mostSignificantBit(0)).to.be.revertedWith('')
     })
     it('1', async () => {
       expect(await bitMath.mostSignificantBit(1)).to.eq(0)
@@ -48,7 +48,7 @@ describe('BitMath', () => {
 
   describe('#leastSignificantBit', () => {
     it('0', async () => {
-      await expect(bitMath.leastSignificantBit(0)).to.be.revertedWith('LSB')
+      await expect(bitMath.leastSignificantBit(0)).to.be.revertedWith('')
     })
     it('1', async () => {
       expect(await bitMath.leastSignificantBit(1)).to.eq(0)
