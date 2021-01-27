@@ -12,11 +12,11 @@ contract SqrtTickMathTest {
         return SqrtTickMath.getTickAtSqrtRatio(sqrtP);
     }
 
-    function MIN_PRICE() external pure returns (uint160) {
-        return SqrtTickMath.MIN_PRICE;
+    function MIN_SQRT_PRICE() external pure returns (uint160) {
+        return SqrtTickMath.MIN_SQRT_PRICE;
     }
 
-    function MAX_PRICE() external pure returns (uint160) {
-        return SqrtTickMath.MAX_PRICE;
+    function MAX_SQRT_PRICE() external pure returns (uint160) {
+        return SqrtTickMath.MAX_SQRT_PRICE;
     }
 }
