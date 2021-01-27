@@ -92,7 +92,11 @@ library Oracle {
     // comparator for 32-bit timestamps
     // safe for 0 or 1 overflows
     // a and b _must_ be chronologically before or equal to time
-    function lte(uint32 time, uint32 a, uint32 b) private pure returns (bool) {
+    function lte(
+        uint32 time,
+        uint32 a,
+        uint32 b
+    ) private pure returns (bool) {
         uint256 aAdjusted = a;
         uint256 bAdjusted = b;
 
