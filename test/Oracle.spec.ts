@@ -300,6 +300,14 @@ describe('Oracle', () => {
         await expect(oracle.scry(1)).to.be.revertedWith('OLD')
       })
 
+      it('does not fail across overflow boundary', async () => {
+        await oracle.initialize({ liquidity: 4, tick: 2, time: 2 ** 32 - 1 })
+        await oracle.advanceTime(2)
+        const { tickCumulative, liquidityCumulative } = await oracle.scry(1)
+        expect(tickCumulative).to.be.eq(2)
+        expect(liquidityCumulative).to.be.eq(4)
+      })
+
       it('single observation at current time', async () => {
         await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
         const { tickCumulative, liquidityCumulative } = await oracle.scry(0)

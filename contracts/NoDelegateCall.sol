@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-contract NoDelegateCall {
+abstract contract NoDelegateCall {
     address private immutable original;
 
     constructor() {
@@ -9,7 +9,7 @@ contract NoDelegateCall {
     }
 
     modifier noDelegateCall() {
-        assert(address(this) == original);
+        require(address(this) == original);
         _;
     }
 }
