@@ -19,10 +19,10 @@ library Oracle {
         bool initialized;
     }
 
-    /// @notice transforms an oracle observation in a subsequent observation, given the passage of time and current values
+    /// @notice transforms an oracle observation in a subsequent observation, given the passage of time and current values. Called by grow after the current observation array has been filled.
     /// @dev blockTimestamp _must_ be at, or after, last.blockTimestamp (accounting for overflow)
-    /// @param last 
-    /// @param blockTimestamp
+    /// @param last The last observation
+    /// @param blockTimestamp The time of the call, expressed in UNIX
     /// @param liquidity
     /// @return Observation
     function transform(
@@ -43,7 +43,7 @@ library Oracle {
 
     /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array.
     /// @param self
-    /// @param time The time of the oracle initialization, expressed in UNIX.
+    /// @param time The time of the oracle initialization, expressed in UNIX, via block.timestamp
     /// @return cardinality
     /// @return target
     function initialize(Observation[65535] storage self, uint32 time)
@@ -117,9 +117,9 @@ library Oracle {
         target = targetNew;
     }
 
-    // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
-    // the answer _must_ be contained in the array
-    // note that even though we're not modifying self, it must be passed by ref to save gas
+    /// @notice fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
+    ///      the answer _must_ be contained in the array
+    ///      note that even though we're not modifying self, it must be passed by ref to save gas
     /// @param self
     /// @param target
     /// @param index
@@ -174,7 +174,7 @@ library Oracle {
     /// @param time
     /// @param target
     /// @param tick
-    /// @param index 
+    /// @param index
     /// @param liquidity
     /// @param cardinality
     /// @return beforeOrAt
