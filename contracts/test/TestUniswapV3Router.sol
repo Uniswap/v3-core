@@ -3,7 +3,7 @@ pragma solidity =0.7.6;
 
 import '../libraries/SafeCast.sol';
 
-import '../interfaces/IERC20.sol';
+import '../interfaces/IERC20Minimal.sol';
 import '../interfaces/callback/IUniswapV3SwapCallback.sol';
 import '../interfaces/IUniswapV3Pair.sol';
 
@@ -67,9 +67,17 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             );
         } else {
             if (amount0Delta > 0) {
-                IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(payer, msg.sender, uint256(amount0Delta));
+                IERC20Minimal(IUniswapV3Pair(msg.sender).token0()).transferFrom(
+                    payer,
+                    msg.sender,
+                    uint256(amount0Delta)
+                );
             } else {
-                IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(payer, msg.sender, uint256(amount1Delta));
+                IERC20Minimal(IUniswapV3Pair(msg.sender).token1()).transferFrom(
+                    payer,
+                    msg.sender,
+                    uint256(amount1Delta)
+                );
             }
         }
     }

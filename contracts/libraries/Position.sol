@@ -6,8 +6,9 @@ import './FixedPoint128.sol';
 import './LiquidityMath.sol';
 import './SafeMath.sol';
 
-// positions represent an owner account's liquidity at a given lower/upper tick combination, and store additional state
-// for tracking fees owed to the position.
+/// @title Position
+/// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
+/// @dev Positions store additional state for tracking fees owed to the position
 library Position {
     // info stored for each user's position
     struct Info {
@@ -21,6 +22,12 @@ library Position {
         uint128 feesOwed1;
     }
 
+    /// @notice Returns the Info struct of a position, given an owner and position boundaries
+    /// @param self The mapping containing all user positions
+    /// @param owner The address of the position owner
+    /// @param tickLower The lower tick boundary of the position
+    /// @param tickUpper The upper tick boundary of the position
+    /// @return position The position info struct of the given owners' position
     function get(
         mapping(bytes32 => Info) storage self,
         address owner,
@@ -30,7 +37,14 @@ library Position {
         position = self[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    // updates the position with the liquidity delta, returning the owed fees
+    /// @notice Credits accumulated fees to a user's position, and returns fees owed to to the protocol
+    /// @param self The mapping containing all user positions
+    /// @param liquidityDelta The change in pair liquidity as a result of the position update
+    /// @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
+    /// @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
+    /// @param feeProtocol The current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
+    /// @return protocolFees0 The fees due to the protocol, in token0
+    /// @return protocolFees1 The fees due to the protocol, in token1
     function update(
         Info storage self,
         int128 liquidityDelta,
