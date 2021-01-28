@@ -35,14 +35,15 @@ library Oracle {
     // initialize the oracle array by writing the first slot. called once for the lifecycle of the observations array.
     function initialize(Observation[65535] storage self, uint32 time)
         internal
-        returns (uint16 cardinality, uint16 target)
+        returns (uint16 cardinality, uint16 cardinalityNext)
     {
         self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 0, initialized: true});
         return (1, 1);
     }
 
-    // writes an oracle observation to the array, at most once per block
-    // indices cycle, and must be kept track of in the parent contract
+    // writes an oracle observation to the array, at most once per block. indices cycle, and must be tracked externally
+    // if the index is at the end of the allowable array length (according to cardinality), and the next cardinality
+    // is greater than the current one, we can increase cardinality. this restriction is to preserve ordering
     function write(
         Observation[65535] storage self,
         uint16 index,
@@ -50,43 +51,37 @@ library Oracle {
         int24 tick,
         uint128 liquidity,
         uint16 cardinality,
-        uint16 cardinalityTarget
-    ) internal returns (uint16 indexNext, uint16 cardinalityNext) {
+        uint16 cardinalityNext
+    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         Observation memory last = self[index];
 
         // early return if we've already written an observation this block
         if (last.blockTimestamp == blockTimestamp) return (index, cardinality);
 
         // if the conditions are right, we can bump the cardinality
-        if (cardinalityTarget > cardinality && index == (cardinality - 1)) {
-            cardinalityNext = cardinalityTarget;
+        if (cardinalityNext > cardinality && index == (cardinality - 1)) {
+            cardinalityUpdated = cardinalityNext;
         } else {
-            cardinalityNext = cardinality;
+            cardinalityUpdated = cardinality;
         }
 
-        indexNext = (index + 1) % cardinalityNext;
-        self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
+        indexUpdated = (index + 1) % cardinalityUpdated;
+        self[indexUpdated] = transform(last, blockTimestamp, tick, liquidity);
     }
 
-    // grow the observations array. observations array length is stored in cardinality and target. cardinality cannot be
-    // changed unless the index is currently the last element of the array, to avoid reordering in all other cases.
-    // the cardinality is either immediately changed if the above is true, or changed on the next write when the write
-    // fills the last index lt current cardinality.
+    // prepares the observations array to store up to next observations
     function grow(
         Observation[65535] storage self,
-        uint16 index,
-        uint16 cardinalityOld,
-        uint16 targetOld,
-        uint16 targetNew
-    ) internal returns (uint16 cardinality, uint16 target) {
-        // no op if old target is new target
-        if (targetNew <= targetOld) return (cardinalityOld, targetOld);
+        uint16 current,
+        uint16 next
+    ) internal returns (uint16) {
+        require(current > 0, 'I');
+        // no-op if the passed next value isn't greater than the current next value
+        if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the initialized boolean is still false
-        for (uint16 i = targetOld; i < targetNew; i++) self[i].blockTimestamp = 1;
-        // if the index is already at the last element of the array, immediately grow the cardinality
-        cardinality = index == cardinalityOld - 1 ? targetNew : cardinalityOld;
-        target = targetNew;
+        for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1;
+        return next;
     }
 
     // comparator for 32-bit timestamps
@@ -141,7 +136,7 @@ library Oracle {
         }
     }
 
-    // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
+    // fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
     // there _must_ be at least 1 initialized observation
     function getSurroundingObservations(
         Observation[65535] storage self,
@@ -154,7 +149,6 @@ library Oracle {
     ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
         // optimistically set before to the newest observation
         beforeOrAt = self[index];
-        assert(beforeOrAt.initialized);
 
         // if the target is chronologically at or after the newest observation, we can early return
         if (lte(time, beforeOrAt.blockTimestamp, target)) {
@@ -190,6 +184,7 @@ library Oracle {
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         require(cardinality > 0, 'I');
+
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);

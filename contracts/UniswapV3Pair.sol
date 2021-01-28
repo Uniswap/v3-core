@@ -64,8 +64,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint16 observationIndex;
         // the current maximum number of observations that are being stored
         uint16 observationCardinality;
-        // the target maximum number of observations to store
-        uint16 observationCardinalityTarget;
+        // the next maximum number of observations to store, triggered in observations.write
+        uint16 observationCardinalityNext;
         // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
         uint8 feeProtocol;
         // whether the pair is locked
@@ -161,18 +161,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             );
     }
 
-    // increases the target observation cardinality, callable by anyone after initialize.
-    // locked to prevent this from being called before
-    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override noDelegateCall {
-        Slot0 memory _slot0 = slot0;
-        require(_slot0.observationCardinality > 0, 'OC'); // pair must be initialized to call this function
-        (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
-            _slot0.observationIndex,
-            _slot0.observationCardinality,
-            _slot0.observationCardinalityTarget,
-            observationCardinalityTarget
-        );
-        emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
+    // increases the next observation cardinality, callable by anyone after initialize.
+    function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external override noDelegateCall {
+        uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
+        uint16 observationCardinalityNextNew =
+            observations.grow(observationCardinalityNextOld, observationCardinalityNext);
+        slot0.observationCardinalityNext = observationCardinalityNextNew;
+        emit ObservationCardinalityNextIncreased(observationCardinalityNextOld, observationCardinalityNextNew);
     }
 
     // not locked because it initializes unlocked
@@ -181,14 +176,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
-        (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
+        (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(_blockTimestamp());
 
         slot0 = Slot0({
             sqrtPriceX96: sqrtPriceX96,
             tick: tick,
             observationIndex: 0,
             observationCardinality: cardinality,
-            observationCardinalityTarget: target,
+            observationCardinalityNext: cardinalityNext,
             feeProtocol: 0,
             unlocked: true
         });
@@ -196,7 +191,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Initialized(sqrtPriceX96, tick);
     }
 
-    struct SetPositionParams {
+    struct ModifyPositionParams {
         // the address that owns the position
         address owner;
         // the lower and upper tick of the position
@@ -207,7 +202,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     // effect some changes to a position
-    function _setPosition(SetPositionParams memory params)
+    function _modifyPosition(ModifyPositionParams memory params)
         private
         noDelegateCall
         returns (int256 amount0, int256 amount1)
@@ -238,7 +233,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     _slot0.tick,
                     liquidityBefore,
                     _slot0.observationCardinality,
-                    _slot0.observationCardinalityTarget
+                    _slot0.observationCardinalityNext
                 );
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
@@ -338,7 +333,18 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         }
     }
 
-    // noDelegateCall is applied indirectly via _setPosition
+    // noDelegateCall is applied indirectly via _modifyPosition
+    function poke(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) external override lock {
+        _modifyPosition(
+            ModifyPositionParams({owner: owner, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: 0})
+        );
+    }
+
+    // noDelegateCall is applied indirectly via _modifyPosition
     function mint(
         address recipient,
         int24 tickLower,
@@ -346,9 +352,10 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint128 amount,
         bytes calldata data
     ) external override lock {
+        require(amount > 0);
         (int256 amount0Int, int256 amount1Int) =
-            _setPosition(
-                SetPositionParams({
+            _modifyPosition(
+                ModifyPositionParams({
                     owner: recipient,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
@@ -359,15 +366,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 amount0 = uint256(amount0Int);
         uint256 amount1 = uint256(amount1Int);
 
-        if (amount0 > 0 || amount1 > 0) {
-            uint256 balance0Before;
-            uint256 balance1Before;
-            if (amount0 > 0) balance0Before = balance0();
-            if (amount1 > 0) balance1Before = balance1();
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
-            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
-        }
+        // todo: we need some test coverage to prove amount0Int/amount1Int are always positive and amount0 > 0 || amount1 > 0 is always true
+
+        uint256 balance0Before;
+        uint256 balance1Before;
+        if (amount0 > 0) balance0Before = balance0();
+        if (amount1 > 0) balance1Before = balance1();
+        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
+        if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
+        if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
     }
@@ -398,16 +405,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
-    // noDelegateCall is applied indirectly via _setPosition
+    // noDelegateCall is applied indirectly via _modifyPosition
     function burn(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
+        require(amount > 0);
         (int256 amount0Int, int256 amount1Int) =
-            _setPosition(
-                SetPositionParams({
+            _modifyPosition(
+                ModifyPositionParams({
                     owner: msg.sender,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
@@ -547,7 +555,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             if (state.liquidity > 0)
                 state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
-            // shift tick if we reached the next price target
+            // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
@@ -586,7 +594,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 cache.slot0Start.tick,
                 cache.liquidityStart,
                 cache.slot0Start.observationCardinality,
-                cache.slot0Start.observationCardinalityTarget
+                cache.slot0Start.observationCardinalityNext
             );
         }
 

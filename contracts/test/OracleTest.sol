@@ -14,7 +14,7 @@ contract OracleTest {
     uint128 public liquidity;
     uint16 public index;
     uint16 public cardinality;
-    uint16 public target;
+    uint16 public cardinalityNext;
 
     struct InitializeParams {
         uint32 time;
@@ -27,7 +27,7 @@ contract OracleTest {
         time = params.time;
         tick = params.tick;
         liquidity = params.liquidity;
-        (cardinality, target) = observations.initialize(params.time);
+        (cardinality, cardinalityNext) = observations.initialize(params.time);
     }
 
     function advanceTime(uint32 by) public {
@@ -43,7 +43,7 @@ contract OracleTest {
     // write an observation, then change tick and liquidity
     function update(UpdateParams calldata params) external {
         advanceTime(params.advanceTimeBy);
-        (index, cardinality) = observations.write(index, time, tick, liquidity, cardinality, target);
+        (index, cardinality) = observations.write(index, time, tick, liquidity, cardinality, cardinalityNext);
         tick = params.tick;
         liquidity = params.liquidity;
     }
@@ -54,12 +54,19 @@ contract OracleTest {
         uint128 _liquidity = liquidity;
         uint16 _index = index;
         uint16 _cardinality = cardinality;
-        uint16 _target = target;
+        uint16 _cardinalityNext = cardinalityNext;
         uint32 _time = time;
 
         for (uint256 i = 0; i < params.length; i++) {
             _time += params[i].advanceTimeBy;
-            (_index, _cardinality) = observations.write(_index, _time, _tick, _liquidity, _cardinality, _target);
+            (_index, _cardinality) = observations.write(
+                _index,
+                _time,
+                _tick,
+                _liquidity,
+                _cardinality,
+                _cardinalityNext
+            );
             _tick = params[i].tick;
             _liquidity = params[i].liquidity;
         }
@@ -72,8 +79,8 @@ contract OracleTest {
         time = _time;
     }
 
-    function grow(uint16 _target) external {
-        (cardinality, target) = observations.grow(index, cardinality, target, _target);
+    function grow(uint16 _cardinalityNext) external {
+        cardinalityNext = observations.grow(cardinalityNext, _cardinalityNext);
     }
 
     function getGasCostOfScry(uint32 secondsAgo) external view returns (uint256) {
