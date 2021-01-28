@@ -28,7 +28,7 @@ library SafeMath {
      */
     function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
         c = a + b;
-        require(c >= a, 'AO');
+        require(c >= a);
     }
 
     /**
@@ -42,7 +42,7 @@ library SafeMath {
      * - Subtraction cannot overflow.
      */
     function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {
-        require(b <= a, 'SO');
+        require(b <= a);
         c = a - b;
     }
 
@@ -86,7 +86,7 @@ library SafeMath {
         }
 
         c = a * b;
-        require(c / a == b, 'MO');
+        require(c / a == b);
     }
 
     function addCapped(uint128 x, uint256 y) internal pure returns (uint128 z) {

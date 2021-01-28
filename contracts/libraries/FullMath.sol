@@ -32,7 +32,7 @@ library FullMath {
         if (x == 0 || (x * y) / x == y) return ((x * y) / d);
 
         (uint256 l, uint256 h) = fullMul(x, y);
-        require(h < d, 'FMD');
+        require(h < d);
 
         // subtract remainder
         uint256 mm = mulmod(x, y, d);
