@@ -69,7 +69,7 @@ library Oracle {
         self[indexUpdated] = transform(last, blockTimestamp, tick, liquidity);
     }
 
-    // increase the cardinality of the observations array
+    // prepares the observations array to store up to next observations
     function grow(
         Observation[65535] storage self,
         uint16 current,
