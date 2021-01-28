@@ -19,7 +19,7 @@ library SignedSafeMath {
      */
     function sub(int256 a, int256 b) internal pure returns (int256 c) {
         c = a - b;
-        require((b >= 0 && c <= a) || (b < 0 && c > a), 'SSO');
+        require((b >= 0 && c <= a) || (b < 0 && c > a));
     }
 
     /**
@@ -34,6 +34,6 @@ library SignedSafeMath {
      */
     function add(int256 a, int256 b) internal pure returns (int256 c) {
         c = a + b;
-        require((b >= 0 && c >= a) || (b < 0 && c < a), 'SAO');
+        require((b >= 0 && c >= a) || (b < 0 && c < a));
     }
 }

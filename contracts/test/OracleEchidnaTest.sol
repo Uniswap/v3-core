@@ -7,8 +7,8 @@ import './OracleTest.sol';
 contract OracleEchidnaTest {
     OracleTest private oracle;
 
-    bool initialized;
-    uint32 timePassed;
+    bool private initialized;
+    uint32 private timePassed;
 
     constructor() {
         oracle = new OracleTest();
@@ -43,8 +43,8 @@ contract OracleEchidnaTest {
         oracle.update(OracleTest.UpdateParams({advanceTimeBy: advanceTimeBy, tick: tick, liquidity: liquidity}));
     }
 
-    function grow(uint16 target) external {
-        oracle.grow(target);
+    function grow(uint16 cardinality) external {
+        oracle.grow(cardinality);
     }
 
     function checkTimeWeightedResultAssertions(uint32 secondsAgo0, uint32 secondsAgo1) private view {
@@ -68,9 +68,38 @@ contract OracleEchidnaTest {
         return oracle.index() < oracle.cardinality() || !initialized;
     }
 
-    function echidna_cardinalityAlwaysLteTarget() external view returns (bool) {
-        return oracle.cardinality() <= oracle.target();
+    function echidna_AlwaysInitialized() external view returns (bool) {
+        (, , , bool isInitialized) = oracle.observations(0);
+        return oracle.cardinality() == 0 || isInitialized;
     }
 
-    // todo: check we can always scry up to oldest observation if initialized
+    function echidna_cardinalityAlwaysLteNext() external view returns (bool) {
+        return oracle.cardinality() <= oracle.cardinalityNext();
+    }
+
+    function echidna_canAlwaysScry0IfInitialized() external view returns (bool) {
+        if (!initialized) {
+            return true;
+        }
+        (bool success, ) = address(oracle).staticcall(abi.encodeWithSelector(OracleTest.scry.selector, 0));
+        return success;
+    }
+
+    function checkTimeWeightedAveragesAlwaysFitsType(uint32 secondsAgo) external view {
+        require(initialized);
+        require(secondsAgo > 0);
+        (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.scry(secondsAgo);
+        (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.scry(0);
+
+        // compute the time weighted tick, rounding consistently
+        int56 numerator = tickCumulative1 - tickCumulative0;
+        int56 timeWeightedTick = numerator / int56(secondsAgo);
+        if (numerator < 0 && numerator % int56(secondsAgo) != 0) {
+            timeWeightedTick--;
+        }
+
+        // the time weighted averages fit in their respective accumulated types
+        assert(timeWeightedTick <= type(int24).max && timeWeightedTick >= type(int24).min);
+        assert((liquidityCumulative1 - liquidityCumulative0) / uint160(secondsAgo) <= type(uint128).max);
+    }
 }

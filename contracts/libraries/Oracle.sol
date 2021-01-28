@@ -6,7 +6,7 @@ pragma solidity >=0.5.0;
 /// @dev Instances of stored oracle data, "observations", are collected in the oracle array
 ///     Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the 
 ///     length of the oracle array. The new slot will be added after the full length of observations is populated.
-///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to the scry function.
+///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to scry()
 library Oracle {
     struct Observation {
         // the block timestamp of the observation
@@ -19,10 +19,12 @@ library Oracle {
         bool initialized;
     }
 
-    /// @notice Writes over a previous observation in a subsequent observation, given the passage of time and current values.
-    /// @dev blockTimestamp _must_ be at, or after, last.blockTimestamp (accounting for overflow)
+    /// @notice Writes over (transforms) a previous observation in a subsequent observation, given the passage of time and current values
+    /// @dev blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp,
+    ///     safe for 0 or 1 overflows
     /// @param last The last populated element in the oracle array
     /// @param blockTimestamp The timestamp of the observation, expressed in UNIX, truncated to uint32
+    /// @param tick The active tick at the time of the observation
     /// @param liquidity The total pair liquidity at the time of the call
     /// @return Observation The newly populated observation
     function transform(
@@ -41,14 +43,14 @@ library Oracle {
             });
     }
 
-    /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array.
+    /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array
     /// @param self The stored oracle array
     /// @param time The time of the oracle initialization, expressed in UNIX, via block.timestamp truncated to uint32
     /// @return cardinality The number of populated elements in the oracle array
     /// @return target The length of the oracle array, independent of population
     function initialize(Observation[65535] storage self, uint32 time)
         internal
-        returns (uint16 cardinality, uint16 target)
+        returns (uint16 cardinality, uint16 cardinalityNext)
     {
         self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 0, initialized: true});
         return (1, 1);
@@ -65,6 +67,9 @@ library Oracle {
     /// @param cardinalityTarget The new number of elements in the oracle array, the surplus of which, when compared to cardinality, will be added to the array
     /// @return indexNext The first new element to be populated in the oracle array
     /// @return cardinalityNext The new cardinality of the oracle array
+    // writes an oracle observation to the array, at most once per block. indices cycle, and must be tracked externally
+    // if the index is at the end of the allowable array length (according to cardinality), and the next cardinality
+    // is greater than the current one, we can increase cardinality. this restriction is to preserve ordering
     function write(
         Observation[65535] storage self,
         uint16 index,
@@ -72,22 +77,22 @@ library Oracle {
         int24 tick,
         uint128 liquidity,
         uint16 cardinality,
-        uint16 cardinalityTarget
-    ) internal returns (uint16 indexNext, uint16 cardinalityNext) {
+        uint16 cardinalityNext
+    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         Observation memory last = self[index];
 
         // early return if we've already written an observation this block
         if (last.blockTimestamp == blockTimestamp) return (index, cardinality);
 
         // if the conditions are right, we can bump the cardinality
-        if (index == (cardinality - 1) && cardinalityTarget > cardinality) {
-            cardinalityNext = cardinalityTarget;
+        if (cardinalityNext > cardinality && index == (cardinality - 1)) {
+            cardinalityUpdated = cardinalityNext;
         } else {
-            cardinalityNext = cardinality;
+            cardinalityUpdated = cardinality;
         }
 
-        indexNext = (index + 1) % cardinalityNext;
-        self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
+        indexUpdated = (index + 1) % cardinalityUpdated;
+        self[indexUpdated] = transform(last, blockTimestamp, tick, liquidity);
     }
 
     /// @notice Grow the observations array. Observations array length is stored in cardinality and target. cardinality cannot be
@@ -101,71 +106,78 @@ library Oracle {
     /// @param targetNew The new length of the oracle array, independent of population
     /// @return cardinality The number of populated elements in the oracle array
     /// @return target The new length of the oracle array, independent of population
+    // prepares the observations array to store up to next observations
     function grow(
         Observation[65535] storage self,
-        uint16 index,
-        uint16 cardinalityOld,
-        uint16 targetOld,
-        uint16 targetNew
-    ) internal returns (uint16 cardinality, uint16 target) {
-        // no op if old target is new target
-        if (targetNew <= targetOld) return (cardinalityOld, targetOld);
+        uint16 current,
+        uint16 next
+    ) internal returns (uint16) {
+        require(current > 0, 'I');
+        // no-op if the passed next value isn't greater than the current next value
+        if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the initialized boolean is still false
-        for (uint16 i = targetOld; i < targetNew; i++) self[i].blockTimestamp = 1;
-        // if the index is already at the last element of the array, immediately grow the cardinality
-        cardinality = index == cardinalityOld - 1 ? targetNew : cardinalityOld;
-        target = targetNew;
+        for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1;
+        return next;
     }
 
-    /// @notice fetches the observations before and atOrAfter a target, used when a counterfactual observation is not possible
+    // comparator for 32-bit timestamps
+    // safe for 0 or 1 overflows
+    // a and b _must_ be chronologically before or equal to time
+    function lte(
+        uint32 time,
+        uint32 a,
+        uint32 b
+    ) private pure returns (bool) {
+        // if there hasn't been overflow, no need to adjust
+        if (a <= time && b <= time) return a <= b;
+
+        uint256 aAdjusted = a > time ? a : a + 2**32;
+        uint256 bAdjusted = b > time ? b : b + 2**32;
+
+        return aAdjusted <= bAdjusted;
+    }
+
+    /// @notice fetches the observations beforeOrAt and atOrAfter a target, used when a counterfactual observation is not possible
     /// @dev the answer must be contained in the array, note that even though we're not modifying self it must be passed by ref to save gas
     /// @param self The stored oracle array
     /// @param target The length of the oracle array, independent of population
     /// @param index The location of a given observation within the oracle array
     /// @param cardinality The number of populated elements in the oracle array
-    /// @return before The observation 
+    /// @return beforeOrAt The observation 
     /// @return atOrAfter
+    // fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    // the answer _must_ be contained in the array
     function binarySearch(
         Observation[65535] storage self,
+        uint32 time,
         uint32 target,
         uint16 index,
         uint16 cardinality
-    ) private view returns (Observation memory before, Observation memory atOrAfter) {
-        uint16 l = (index + 1) % cardinality; // oldest observation
-        uint16 r = index; // newest observation
-        uint16 i;
+    ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
+        uint256 l = (index + 1) % cardinality; // oldest observation
+        uint256 r = l + cardinality - 1; // newest observation
+        uint256 i;
         while (true) {
-            i = ((r - l) % cardinality) / 2 + l;
+            i = (l + r) / 2;
 
-            atOrAfter = self[i % cardinality];
+            beforeOrAt = self[i % cardinality];
 
             // we've landed on an uninitialized tick, keep searching higher (more recently)
-            if (!atOrAfter.initialized) {
+            if (!beforeOrAt.initialized) {
                 l = i + 1;
                 continue;
             }
 
-            before = (i == 0 || i == cardinality) ? self[cardinality - 1] : self[(i % cardinality) - 1];
+            atOrAfter = self[(i + 1) % cardinality];
+
+            bool targetAtOrAfter = lte(time, beforeOrAt.blockTimestamp, target);
 
             // check if we've found the answer!
-            if (
-                (before.blockTimestamp <= target && target <= atOrAfter.blockTimestamp) ||
-                (before.blockTimestamp > atOrAfter.blockTimestamp &&
-                    (before.blockTimestamp <= target || target <= atOrAfter.blockTimestamp))
-            ) break;
+            if (targetAtOrAfter && lte(time, target, atOrAfter.blockTimestamp)) break;
 
-            // adjust for overflow
-            uint256 targetAdjusted = target;
-            uint256 atOrAfterAdjusted = atOrAfter.blockTimestamp;
-            uint256 newestAdjusted = self[r % cardinality].blockTimestamp;
-            if (targetAdjusted > newestAdjusted || atOrAfterAdjusted > newestAdjusted) {
-                if (targetAdjusted <= newestAdjusted) targetAdjusted += 2**32;
-                if (atOrAfterAdjusted <= newestAdjusted) atOrAfterAdjusted += 2**32;
-            }
-
-            if (atOrAfterAdjusted < targetAdjusted) l = i + 1;
-            else r = i - 1;
+            if (!targetAtOrAfter) r = i - 1;
+            else l = i + 1;
         }
     }
 
@@ -180,6 +192,8 @@ library Oracle {
     /// @param cardinality The number of populated elements in the oracle array
     /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
     /// @return atOrAfter The observation which occurred at, or after, the given timestamp
+    // fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    // there _must_ be at least 1 initialized observation
     function getSurroundingObservations(
         Observation[65535] storage self,
         uint32 time, 
@@ -189,35 +203,29 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
-        // first, set before to the oldest observation, and make sure it's initialized
-        beforeOrAt = self[(index + 1) % cardinality];
-        if (!beforeOrAt.initialized) {
-            beforeOrAt = self[0];
-            // cardinality should not be > 0 unless at least one observation is initialized
-            assert(beforeOrAt.initialized);
-        }
-
-        // ensure that the target is greater than the oldest observation (accounting for block timestamp overflow)
-        require(beforeOrAt.blockTimestamp <= target && (target <= time || beforeOrAt.blockTimestamp >= time), 'OLD');
-
-        // now, optimistically set before to the newest observation
+        // optimistically set before to the newest observation
         beforeOrAt = self[index];
 
-        // before proceeding, short-circuit if the target equals the newest observation, meaning we're in the same block
-        // but an interaction updated the oracle before this tx, so before is actually atOrAfter
-        if (target == beforeOrAt.blockTimestamp) return (beforeOrAt, atOrAfter);
+        // if the target is chronologically at or after the newest observation, we can early return
+        if (lte(time, beforeOrAt.blockTimestamp, target)) {
+            if (beforeOrAt.blockTimestamp == target) {
+                // if newest observation equals target, we're in the same block, so we can ignore atOrAfter
+                return (beforeOrAt, atOrAfter);
+            } else {
+                // otherwise, we need to transform
+                return (beforeOrAt, transform(beforeOrAt, target, tick, liquidity));
+            }
+        }
 
-        // adjust for overflow
-        uint256 beforeAdjusted = beforeOrAt.blockTimestamp;
-        uint256 targetAdjusted = target;
-        if (beforeAdjusted > time && targetAdjusted <= time) targetAdjusted += 2**32;
-        if (targetAdjusted > time) beforeAdjusted += 2**32;
+        // now, set before to the oldest observation
+        beforeOrAt = self[(index + 1) % cardinality];
+        if (!beforeOrAt.initialized) beforeOrAt = self[0];
 
-        // once here, check if we're right and return a counterfactual observation for atOrAfter
-        if (beforeAdjusted < targetAdjusted) return (beforeOrAt, transform(beforeOrAt, time, tick, liquidity));
+        // ensure that the target is chronologically at or after the oldest observation
+        require(lte(time, beforeOrAt.blockTimestamp, target), 'OLD');
 
-        // we're wrong, so perform binary search
-        return binarySearch(self, target, index, cardinality);
+        // if we've reached this point, we have to binary search
+        return binarySearch(self, time, target, index, cardinality);
     }
 
     /// @notice Constructs a observation of a particular time, now or in the past.
@@ -231,6 +239,8 @@ library Oracle {
     /// @param liquidity The total pair liquidity at the time of the call
     /// @return tickCumulative The tick * time elapsed since the pair was first initialized
     /// @return liquidityCumulative The liquidity * time elapsed since the pair was first initialized
+    // constructs a counterfactual observation as of a particular time in the past (or now) as long as we have
+    // an observation at or before then
     function scry(
         Observation[65535] storage self,
         uint32 time,
@@ -241,8 +251,8 @@ library Oracle {
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         require(cardinality > 0, 'I');
+
         if (secondsAgo == 0) {
-            // because cardinality is 0, the last observation is necessarily initialized
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
             return (last.tickCumulative, last.liquidityCumulative);
@@ -255,13 +265,13 @@ library Oracle {
 
         Oracle.Observation memory at;
         if (target == beforeOrAt.blockTimestamp) {
-            // if we're at the left boundary, make it so
+            // we're at the left boundary
             at = beforeOrAt;
         } else if (target == atOrAfter.blockTimestamp) {
-            // if we're at the right boundary, make it so
+            // we're at the right boundary
             at = atOrAfter;
         } else {
-            // else, adjust counterfactually
+            // we're in the middle
             uint32 delta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
             int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
             uint128 liquidityDerived =
