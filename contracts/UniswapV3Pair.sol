@@ -5,6 +5,7 @@ pragma abicoder v2;
 import './libraries/FullMath.sol';
 import './libraries/TransferHelper.sol';
 
+import './libraries/FeeMath.sol';
 import './libraries/SafeMath.sol';
 import './libraries/SignedSafeMath.sol';
 
@@ -323,8 +324,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
         if (protocolFees0New > 0 || protocolFees1New > 0) {
             ProtocolFees memory _protocolFees = protocolFees;
-            protocolFees.token0 = SafeMath.addCapped(_protocolFees.token0, protocolFees0New);
-            protocolFees.token1 = SafeMath.addCapped(_protocolFees.token1, protocolFees1New);
+            protocolFees.token0 = FeeMath.addCapped(_protocolFees.token0, protocolFees0New);
+            protocolFees.token1 = FeeMath.addCapped(_protocolFees.token1, protocolFees1New);
         }
 
         // clear any tick data that is no longer needed
