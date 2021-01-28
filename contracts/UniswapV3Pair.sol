@@ -198,7 +198,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Initialized(sqrtPriceX96, tick);
     }
 
-    struct SetPositionParams {
+    struct ModifyPositionParams {
         // the address that owns the position
         address owner;
         // the lower and upper tick of the position
@@ -209,7 +209,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     // effect some changes to a position
-    function _setPosition(SetPositionParams memory params)
+    function _modifyPosition(ModifyPositionParams memory params)
         private
         noDelegateCall
         returns (int256 amount0, int256 amount1)
@@ -340,7 +340,18 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         }
     }
 
-    // noDelegateCall is applied indirectly via _setPosition
+    // noDelegateCall is applied indirectly via _modifyPosition
+    function poke(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) external override lock {
+        _modifyPosition(
+            ModifyPositionParams({owner: owner, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: 0})
+        );
+    }
+
+    // noDelegateCall is applied indirectly via _modifyPosition
     function mint(
         address recipient,
         int24 tickLower,
@@ -348,9 +359,10 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint128 amount,
         bytes calldata data
     ) external override lock {
+        require(amount > 0);
         (int256 amount0Int, int256 amount1Int) =
-            _setPosition(
-                SetPositionParams({
+            _modifyPosition(
+                ModifyPositionParams({
                     owner: recipient,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
@@ -361,15 +373,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 amount0 = uint256(amount0Int);
         uint256 amount1 = uint256(amount1Int);
 
-        if (amount0 > 0 || amount1 > 0) {
-            uint256 balance0Before;
-            uint256 balance1Before;
-            if (amount0 > 0) balance0Before = balance0();
-            if (amount1 > 0) balance1Before = balance1();
-            IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-            if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
-            if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
-        }
+        // todo: we need some test coverage to prove amount0Int/amount1Int are always positive and amount0 > 0 || amount1 > 0 is always true
+
+        uint256 balance0Before;
+        uint256 balance1Before;
+        if (amount0 > 0) balance0Before = balance0();
+        if (amount1 > 0) balance1Before = balance1();
+        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
+        if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
+        if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
 
         emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
     }
@@ -400,16 +412,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
     }
 
-    // noDelegateCall is applied indirectly via _setPosition
+    // noDelegateCall is applied indirectly via _modifyPosition
     function burn(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
+        require(amount > 0);
         (int256 amount0Int, int256 amount1Int) =
-            _setPosition(
-                SetPositionParams({
+            _modifyPosition(
+                ModifyPositionParams({
                     owner: msg.sender,
                     tickLower: tickLower,
                     tickUpper: tickUpper,

@@ -5,6 +5,13 @@ interface IUniswapV3PairActions {
     // initialize the pair
     function initialize(uint160 sqrtPriceX96) external;
 
+    // update a position's fees owed to account protocol fees
+    function poke(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) external;
+
     // mint some liquidity to an address
     function mint(
         address recipient,
