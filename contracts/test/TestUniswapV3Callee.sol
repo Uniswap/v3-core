@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '../interfaces/IERC20.sol';
+import '../interfaces/IERC20Minimal.sol';
 
 import '../libraries/SafeCast.sol';
 
@@ -74,9 +74,9 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         emit SwapCallback(amount0Delta, amount1Delta);
 
         if (amount0Delta > 0) {
-            IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Delta));
+            IERC20Minimal(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, uint256(amount0Delta));
         } else if (amount1Delta > 0) {
-            IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Delta));
+            IERC20Minimal(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Delta));
         } else {
             // if both are not gt 0, both must be 0.
             assert(amount0Delta == 0 && amount1Delta == 0);
@@ -103,8 +103,10 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
         address sender = abi.decode(data, (address));
 
         emit MintCallback(amount0Owed, amount1Owed);
-        if (amount0Owed > 0) IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, amount0Owed);
-        if (amount1Owed > 0) IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, amount1Owed);
+        if (amount0Owed > 0)
+            IERC20Minimal(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, amount0Owed);
+        if (amount1Owed > 0)
+            IERC20Minimal(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, amount1Owed);
     }
 
     event FlashCallback(uint256 fee0, uint256 fee1);
@@ -129,7 +131,7 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
 
         (address sender, uint256 pay0, uint256 pay1) = abi.decode(data, (address, uint256, uint256));
 
-        if (pay0 > 0) IERC20(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, pay0);
-        if (pay1 > 0) IERC20(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, pay1);
+        if (pay0 > 0) IERC20Minimal(IUniswapV3Pair(msg.sender).token0()).transferFrom(sender, msg.sender, pay0);
+        if (pay1 > 0) IERC20Minimal(IUniswapV3Pair(msg.sender).token1()).transferFrom(sender, msg.sender, pay1);
     }
 }
