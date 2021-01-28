@@ -8,8 +8,12 @@ abstract contract NoDelegateCall {
         original = address(this);
     }
 
-    modifier noDelegateCall() {
+    function checkNotDelegateCall() private view {
         require(address(this) == original);
+    }
+
+    modifier noDelegateCall() {
+        checkNotDelegateCall();
         _;
     }
 }
