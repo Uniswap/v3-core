@@ -69,7 +69,7 @@ contract OracleEchidnaTest {
     }
 
     function echidna_AlwaysInitialized() external view returns (bool) {
-        (,,, bool isInitialized) = oracle.observations(0);
+        (, , , bool isInitialized) = oracle.observations(0);
         return oracle.cardinality() == 0 || isInitialized;
     }
 
