@@ -269,9 +269,9 @@ describe('UniswapV3Pair gas tests', () => {
         it('best case', async () => {
           await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await mint(wallet.address, tickLower, tickUpper, 0)
+          await pair.poke(wallet.address, tickLower, tickUpper)
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await snapshotGasCost(mint(wallet.address, tickLower, tickUpper, 0))
+          await snapshotGasCost(pair.poke(wallet.address, tickLower, tickUpper))
         })
       })
 
@@ -282,7 +282,7 @@ describe('UniswapV3Pair gas tests', () => {
         it('close to worst case', async () => {
           await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await mint(wallet.address, tickLower, tickUpper, 0) // poke to accumulate fees
+          await pair.poke(wallet.address, tickLower, tickUpper) // poke to accumulate fees
           await snapshotGasCost(pair.collect(wallet.address, tickLower, tickUpper, MaxUint128, MaxUint128))
         })
       })
