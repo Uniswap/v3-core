@@ -68,6 +68,11 @@ contract OracleEchidnaTest {
         return oracle.index() < oracle.cardinality() || !initialized;
     }
 
+    function echidna_AlwaysInitialized() external view returns (bool) {
+        (,,, bool isInitialized) = oracle.observations(0);
+        return oracle.cardinality() == 0 || isInitialized;
+    }
+
     function echidna_cardinalityAlwaysLteNext() external view returns (bool) {
         return oracle.cardinality() <= oracle.cardinalityNext();
     }

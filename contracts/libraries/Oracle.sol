@@ -75,7 +75,7 @@ library Oracle {
         uint16 current,
         uint16 next
     ) internal returns (uint16) {
-        // no-op if the passed next value isn't greater than the current
+        // no-op if the passed next value isn't greater than the current next value
         if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the initialized boolean is still false

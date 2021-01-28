@@ -166,12 +166,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             );
     }
 
-    // increases the observation cardinality, callable by anyone after initialize.
-    function increaseObservationCardinality(uint16 observationCardinality) external override noDelegateCall {
+    // increases the next observation cardinality, callable by anyone after initialize.
+    function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external override noDelegateCall {
         require(slot0.observationCardinality > 0, 'I');
         uint16 last = slot0.observationCardinalityNext; // for the event
-        slot0.observationCardinalityNext = observations.grow(slot0.observationCardinalityNext, observationCardinality);
-        emit ObservationCardinalityIncreased(last, slot0.observationCardinalityNext);
+        slot0.observationCardinalityNext = observations.grow(
+            slot0.observationCardinalityNext,
+            observationCardinalityNext
+        );
+        emit ObservationCardinalityNextIncreased(last, slot0.observationCardinalityNext);
     }
 
     // not locked because it initializes unlocked
