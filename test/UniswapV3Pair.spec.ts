@@ -163,12 +163,12 @@ describe('UniswapV3Pair', () => {
         .to.emit(pair, 'ObservationCardinalityIncreased')
         .withArgs(1, 2)
     })
-    it('increases cardinality and target first time', async () => {
+    it('increases cardinality and cardinality next first time', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
       await pair.increaseObservationCardinality(2)
-      const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
+      const { observationCardinality, observationCardinalityNext } = await pair.slot0()
       expect(observationCardinality).to.eq(1)
-      expect(observationCardinalityTarget).to.eq(2)
+      expect(observationCardinalityNext).to.eq(2)
     })
   })
 

@@ -35,15 +35,15 @@ library Oracle {
     // initialize the oracle array by writing the first slot. called once for the lifecycle of the observations array.
     function initialize(Observation[65535] storage self, uint32 time)
         internal
-        returns (uint16 cardinality, uint16 target)
+        returns (uint16 cardinality, uint16 cardinalityNext)
     {
         self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 0, initialized: true});
         return (1, 1);
     }
 
     // writes an oracle observation to the array, at most once per block. indices cycle, and must be tracked externally
-    // if the index is at the end of the allowable array length (according to current cardinality), and the target is
-    // greater than the current cardinality, we can increase the cardinality. this restriction is to preserve ordering
+    // if the index is at the end of the allowable array length (according to cardinality), and the next cardinality
+    // is greater than the current one, we can increase cardinality. this restriction is to preserve ordering
     function write(
         Observation[65535] storage self,
         uint16 index,
@@ -51,36 +51,36 @@ library Oracle {
         int24 tick,
         uint128 liquidity,
         uint16 cardinality,
-        uint16 cardinalityTarget
-    ) internal returns (uint16 indexNext, uint16 cardinalityNext) {
+        uint16 cardinalityNext
+    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         Observation memory last = self[index];
 
         // early return if we've already written an observation this block
         if (last.blockTimestamp == blockTimestamp) return (index, cardinality);
 
         // if the conditions are right, we can bump the cardinality
-        if (cardinalityTarget > cardinality && index == (cardinality - 1)) {
-            cardinalityNext = cardinalityTarget;
+        if (cardinalityNext > cardinality && index == (cardinality - 1)) {
+            cardinalityUpdated = cardinalityNext;
         } else {
-            cardinalityNext = cardinality;
+            cardinalityUpdated = cardinality;
         }
 
-        indexNext = (index + 1) % cardinalityNext;
-        self[indexNext] = transform(last, blockTimestamp, tick, liquidity);
+        indexUpdated = (index + 1) % cardinalityUpdated;
+        self[indexUpdated] = transform(last, blockTimestamp, tick, liquidity);
     }
 
-    // increase the target cardinality of the observations array
+    // increase the cardinality of the observations array
     function grow(
         Observation[65535] storage self,
         uint16 current,
-        uint16 proposed
+        uint16 next
     ) internal returns (uint16) {
-        // no-op if the proposed target isn't greater than the current
-        if (proposed <= current) return current;
+        // no-op if the passed next value isn't greater than the current
+        if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the initialized boolean is still false
-        for (uint16 i = current; i < proposed; i++) self[i].blockTimestamp = 1;
-        return proposed;
+        for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1;
+        return next;
     }
 
     // comparator for 32-bit timestamps
@@ -135,7 +135,7 @@ library Oracle {
         }
     }
 
-    // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
+    // fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
     // there _must_ be at least 1 initialized observation
     function getSurroundingObservations(
         Observation[65535] storage self,
@@ -182,6 +182,8 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+        require(cardinality > 0, 'I');
+
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);

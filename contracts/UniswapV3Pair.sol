@@ -69,8 +69,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint16 observationIndex;
         // the current maximum number of observations that are being stored
         uint16 observationCardinality;
-        // the target maximum number of observations to store
-        uint16 observationCardinalityTarget;
+        // the next maximum number of observations to store, triggered in observations.write
+        uint16 observationCardinalityNext;
         // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
         uint8 feeProtocol;
         // whether the pair is locked
@@ -155,28 +155,26 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         noDelegateCall
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
-        Slot0 memory _slot0 = slot0;
-        require(_slot0.observationCardinality > 0, 'I');
-
         return
             observations.scry(
                 _blockTimestamp(),
                 secondsAgo,
-                _slot0.tick,
-                _slot0.observationIndex,
+                slot0.tick,
+                slot0.observationIndex,
                 liquidity,
-                _slot0.observationCardinality
+                slot0.observationCardinality
             );
     }
 
-    // increases the target observation cardinality, callable by anyone after initialize.
-    function increaseObservationCardinality(uint16 cardinalityProposed) external override noDelegateCall {
-        Slot0 memory _slot0 = slot0;
-        require(_slot0.observationCardinality > 0, 'I');
-
-        uint16 targetNext = observations.grow(_slot0.observationCardinalityTarget, cardinalityProposed);
-        slot0.observationCardinalityTarget = targetNext;
-        emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, targetNext);
+    // increases the observation cardinality, callable by anyone after initialize.
+    function increaseObservationCardinality(uint16 observationCardinality) external override noDelegateCall {
+        require(slot0.observationCardinality > 0, 'I');
+        uint16 last = slot0.observationCardinalityNext; // for the event
+        slot0.observationCardinalityNext = observations.grow(
+            slot0.observationCardinalityNext,
+            observationCardinality
+        );
+        emit ObservationCardinalityIncreased(last, slot0.observationCardinalityNext);
     }
 
     // not locked because it initializes unlocked
@@ -187,14 +185,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
-        (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
+        (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(_blockTimestamp());
 
         slot0 = Slot0({
             sqrtPriceX96: sqrtPriceX96,
             tick: tick,
             observationIndex: 0,
             observationCardinality: cardinality,
-            observationCardinalityTarget: target,
+            observationCardinalityNext: cardinalityNext,
             feeProtocol: 0,
             unlocked: true
         });
@@ -244,7 +242,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     _slot0.tick,
                     liquidityBefore,
                     _slot0.observationCardinality,
-                    _slot0.observationCardinalityTarget
+                    _slot0.observationCardinalityNext
                 );
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
@@ -542,7 +540,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             if (state.liquidity > 0)
                 state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
-            // shift tick if we reached the next price target
+            // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
 
@@ -583,7 +581,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 cache.slot0Start.tick,
                 cache.liquidityStart,
                 cache.slot0Start.observationCardinality,
-                cache.slot0Start.observationCardinalityTarget
+                cache.slot0Start.observationCardinalityNext
             );
         }
 

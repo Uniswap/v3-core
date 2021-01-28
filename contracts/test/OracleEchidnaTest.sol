@@ -43,8 +43,8 @@ contract OracleEchidnaTest {
         oracle.update(OracleTest.UpdateParams({advanceTimeBy: advanceTimeBy, tick: tick, liquidity: liquidity}));
     }
 
-    function grow(uint16 target) external {
-        oracle.grow(target);
+    function grow(uint16 cardinality) external {
+        oracle.grow(cardinality);
     }
 
     function checkTimeWeightedResultAssertions(uint32 secondsAgo0, uint32 secondsAgo1) private view {
@@ -68,8 +68,8 @@ contract OracleEchidnaTest {
         return oracle.index() < oracle.cardinality() || !initialized;
     }
 
-    function echidna_cardinalityAlwaysLteTarget() external view returns (bool) {
-        return oracle.cardinality() <= oracle.target();
+    function echidna_cardinalityAlwaysLteNext() external view returns (bool) {
+        return oracle.cardinality() <= oracle.cardinalityNext();
     }
 
     function echidna_canAlwaysScry0IfInitialized() external view returns (bool) {
