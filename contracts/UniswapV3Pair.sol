@@ -20,7 +20,7 @@ import './libraries/SecondsOutside.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
 
-import './interfaces/IERC20.sol';
+import './interfaces/IERC20Minimal.sol';
 import './interfaces/IUniswapV3Pair.sol';
 import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -139,7 +139,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     function balanceOfToken(address token) private view returns (uint256) {
-        return IERC20(token).balanceOf(address(this));
+        return IERC20Minimal(token).balanceOf(address(this));
     }
 
     function secondsInside(int24 tickLower, int24 tickUpper) external view override noDelegateCall returns (uint32) {

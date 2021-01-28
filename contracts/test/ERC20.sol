@@ -2,7 +2,7 @@
 
 pragma solidity ^0.7.0;
 
-import '../interfaces/IERC20.sol';
+import '../interfaces/IERC20Minimal.sol';
 import '../libraries/SafeMath.sol';
 
 /**
@@ -29,7 +29,7 @@ import '../libraries/SafeMath.sol';
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is IERC20 {
+contract ERC20 is IERC20Minimal {
     using SafeMath for uint256;
 
     mapping(address => uint256) private _balances;
@@ -92,7 +92,7 @@ contract ERC20 is IERC20 {
     /**
      * @dev See {IERC20-totalSupply}.
      */
-    function totalSupply() public view override returns (uint256) {
+    function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
 
