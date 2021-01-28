@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
+import './FeeMath.sol';
 import './FullMath.sol';
 import './SafeMath.sol';
 
@@ -40,7 +41,7 @@ library SqrtPriceMath {
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
         require(denominator1 != 0, 'OUT');
 
-        return SafeMath.divRoundingUp(numerator1, denominator1).toUint160();
+        return FeeMath.divRoundingUp(numerator1, denominator1).toUint160();
     }
 
     // calculate sqrt(P) +- y / liquidity
@@ -61,7 +62,7 @@ library SqrtPriceMath {
                 )
                 : (
                     amount <= type(uint160).max
-                        ? SafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                        ? FeeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
                         : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
                 );
 
@@ -115,7 +116,7 @@ library SqrtPriceMath {
 
         return
             roundUp
-                ? SafeMath.divRoundingUp(FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
+                ? FeeMath.divRoundingUp(FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
                 : FullMath.mulDiv(numerator1, numerator2, sqrtPX96) / sqrtQX96;
     }
 
