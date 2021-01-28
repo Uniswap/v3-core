@@ -70,7 +70,11 @@ library Oracle {
     }
 
     // increase the target cardinality of the observations array
-    function grow(Observation[65535] storage self, uint16 current, uint16 proposed) internal returns (uint16) {
+    function grow(
+        Observation[65535] storage self,
+        uint16 current,
+        uint16 proposed
+    ) internal returns (uint16) {
         // no-op if the proposed target isn't greater than the current
         if (proposed <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
