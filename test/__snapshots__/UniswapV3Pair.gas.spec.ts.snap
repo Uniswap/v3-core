@@ -4,25 +4,25 @@ exports[`UniswapV3Pair gas tests fee is off #burn above current price burn entir
 
 exports[`UniswapV3Pair gas tests fee is off #burn above current price burn when only position using ticks 1`] = `56685`;
 
-exports[`UniswapV3Pair gas tests fee is off #burn above current price entire position burn but other positions are using the ticks 1`] = `76676`;
+exports[`UniswapV3Pair gas tests fee is off #burn above current price entire position burn but other positions are using the ticks 1`] = `76675`;
 
-exports[`UniswapV3Pair gas tests fee is off #burn above current price partial position burn 1`] = `90049`;
+exports[`UniswapV3Pair gas tests fee is off #burn above current price partial position burn 1`] = `90048`;
 
-exports[`UniswapV3Pair gas tests fee is off #burn around current price burn entire position after some time passes 1`] = `83352`;
+exports[`UniswapV3Pair gas tests fee is off #burn around current price burn entire position after some time passes 1`] = `83351`;
 
 exports[`UniswapV3Pair gas tests fee is off #burn around current price burn when only position using ticks 1`] = `80028`;
 
-exports[`UniswapV3Pair gas tests fee is off #burn around current price entire position burn but other positions are using the ticks 1`] = `104559`;
+exports[`UniswapV3Pair gas tests fee is off #burn around current price entire position burn but other positions are using the ticks 1`] = `104558`;
 
-exports[`UniswapV3Pair gas tests fee is off #burn around current price partial position burn 1`] = `117932`;
+exports[`UniswapV3Pair gas tests fee is off #burn around current price partial position burn 1`] = `117931`;
 
 exports[`UniswapV3Pair gas tests fee is off #burn below current price burn entire position after some time passes 1`] = `69507`;
 
 exports[`UniswapV3Pair gas tests fee is off #burn below current price burn when only position using ticks 1`] = `69507`;
 
-exports[`UniswapV3Pair gas tests fee is off #burn below current price entire position burn but other positions are using the ticks 1`] = `77314`;
+exports[`UniswapV3Pair gas tests fee is off #burn below current price entire position burn but other positions are using the ticks 1`] = `77313`;
 
-exports[`UniswapV3Pair gas tests fee is off #burn below current price partial position burn 1`] = `90687`;
+exports[`UniswapV3Pair gas tests fee is off #burn below current price partial position burn 1`] = `90686`;
 
 exports[`UniswapV3Pair gas tests fee is off #collect close to worst case 1`] = `41817`;
 
@@ -78,25 +78,25 @@ exports[`UniswapV3Pair gas tests fee is on #burn above current price burn entire
 
 exports[`UniswapV3Pair gas tests fee is on #burn above current price burn when only position using ticks 1`] = `56685`;
 
-exports[`UniswapV3Pair gas tests fee is on #burn above current price entire position burn but other positions are using the ticks 1`] = `76676`;
+exports[`UniswapV3Pair gas tests fee is on #burn above current price entire position burn but other positions are using the ticks 1`] = `76675`;
 
-exports[`UniswapV3Pair gas tests fee is on #burn above current price partial position burn 1`] = `90049`;
+exports[`UniswapV3Pair gas tests fee is on #burn above current price partial position burn 1`] = `90048`;
 
-exports[`UniswapV3Pair gas tests fee is on #burn around current price burn entire position after some time passes 1`] = `83352`;
+exports[`UniswapV3Pair gas tests fee is on #burn around current price burn entire position after some time passes 1`] = `83351`;
 
 exports[`UniswapV3Pair gas tests fee is on #burn around current price burn when only position using ticks 1`] = `80028`;
 
-exports[`UniswapV3Pair gas tests fee is on #burn around current price entire position burn but other positions are using the ticks 1`] = `104559`;
+exports[`UniswapV3Pair gas tests fee is on #burn around current price entire position burn but other positions are using the ticks 1`] = `104558`;
 
-exports[`UniswapV3Pair gas tests fee is on #burn around current price partial position burn 1`] = `117932`;
+exports[`UniswapV3Pair gas tests fee is on #burn around current price partial position burn 1`] = `117931`;
 
 exports[`UniswapV3Pair gas tests fee is on #burn below current price burn entire position after some time passes 1`] = `69507`;
 
 exports[`UniswapV3Pair gas tests fee is on #burn below current price burn when only position using ticks 1`] = `69507`;
 
-exports[`UniswapV3Pair gas tests fee is on #burn below current price entire position burn but other positions are using the ticks 1`] = `77314`;
+exports[`UniswapV3Pair gas tests fee is on #burn below current price entire position burn but other positions are using the ticks 1`] = `77313`;
 
-exports[`UniswapV3Pair gas tests fee is on #burn below current price partial position burn 1`] = `90687`;
+exports[`UniswapV3Pair gas tests fee is on #burn below current price partial position burn 1`] = `90686`;
 
 exports[`UniswapV3Pair gas tests fee is on #collect close to worst case 1`] = `41817`;
 

@@ -106,7 +106,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     modifier onlyFactoryOwner() {
-        require(msg.sender == IUniswapV3Factory(factory).owner(), 'OO');
+        require(msg.sender == IUniswapV3Factory(factory).owner());
         _;
     }
 
@@ -649,7 +649,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
-        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4), 'FP');
+        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
         emit FeeProtocolChanged(slot0.feeProtocol, feeProtocol);
         slot0.feeProtocol = feeProtocol;
     }
