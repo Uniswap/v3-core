@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 /// @title Oracle
 /// @notice Provides price and liquidity data useful for a wide variety of system designs
 /// @dev Instances of stored oracle data, "observations", are collected in the oracle array
-///     Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the 
+///     Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the
 ///     length of the oracle array. The new slot will be added after the full length of observations is populated.
 ///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to scry()
 library Oracle {
@@ -56,7 +56,7 @@ library Oracle {
     }
 
     /// @notice Writes an oracle observation to the array
-    /// @dev Writable at most once per block indices cycle, and must be tracked externally. if the index 
+    /// @dev Writable at most once per block indices cycle, and must be tracked externally. if the index
     ///     is at the end of the allowable array length (according to cardinality), and the next cardinality
     ///     is greater than the current one, cardinality may be increased. this restriction is created to preserve ordering.
     /// @param self The stored oracle array
@@ -191,7 +191,7 @@ library Oracle {
     /// @return atOrAfter The observation which occurred at, or after, the given timestamp
     function getSurroundingObservations(
         Observation[65535] storage self,
-        uint32 time, 
+        uint32 time,
         uint32 target,
         int24 tick,
         uint16 index,
