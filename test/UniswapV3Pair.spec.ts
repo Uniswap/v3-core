@@ -153,7 +153,7 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('#increaseObservationCardinality', () => {
+  describe('#increaseObservationCardinalityNext', () => {
     it('can only be called after initialize', async () => {
       await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('I')
     })
