@@ -44,7 +44,7 @@ contract TestERC20 is IERC20Minimal {
         uint256 allowanceBefore = allowance[sender][msg.sender];
         require(allowanceBefore >= amount, 'allowance insufficient');
 
-        if (allowanceBefore != type(uint256).max) allowance[sender][msg.sender] = allowanceBefore - amount;
+        allowance[sender][msg.sender] = allowanceBefore - amount;
 
         uint256 balanceRecipient = balanceOf[recipient];
         require(balanceRecipient + amount >= balanceRecipient, 'overflow balance recipient');
