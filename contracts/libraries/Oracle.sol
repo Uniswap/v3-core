@@ -13,8 +13,9 @@ library Oracle {
         bool initialized;
     }
 
-    // transforms an oracle observation in a subsequent observation, given the passage of time and current values
-    // blockTimestamp _must_ be at or after last.blockTimestamp (accounting for overflow)
+    // transforms an oracle observation into a subsequent observation, given the passage of time and current values
+    // blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp
+    // safe for 0 or 1 overflows
     function transform(
         Observation memory last,
         uint32 blockTimestamp,
@@ -57,7 +58,7 @@ library Oracle {
         if (last.blockTimestamp == blockTimestamp) return (index, cardinality);
 
         // if the conditions are right, we can bump the cardinality
-        if (index == (cardinality - 1) && cardinalityTarget > cardinality) {
+        if (cardinalityTarget > cardinality && index == (cardinality - 1)) {
             cardinalityNext = cardinalityTarget;
         } else {
             cardinalityNext = cardinality;
@@ -88,53 +89,60 @@ library Oracle {
         target = targetNew;
     }
 
-    // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
+    // comparator for 32-bit timestamps
+    // safe for 0 or 1 overflows
+    // a and b _must_ be chronologically before or equal to time
+    function lte(
+        uint32 time,
+        uint32 a,
+        uint32 b
+    ) private pure returns (bool) {
+        // if there hasn't been overflow, no need to adjust
+        if (a <= time && b <= time) return a <= b;
+
+        uint256 aAdjusted = a > time ? a : a + 2**32;
+        uint256 bAdjusted = b > time ? b : b + 2**32;
+
+        return aAdjusted <= bAdjusted;
+    }
+
+    // fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
     // the answer _must_ be contained in the array
-    // note that even though we're not modifying self, it must be passed by ref to save gas
     function binarySearch(
         Observation[65535] storage self,
+        uint32 time,
         uint32 target,
         uint16 index,
         uint16 cardinality
-    ) private view returns (Observation memory before, Observation memory atOrAfter) {
-        uint16 l = (index + 1) % cardinality; // oldest observation
-        uint16 r = index; // newest observation
-        uint16 i;
+    ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
+        uint256 l = (index + 1) % cardinality; // oldest observation
+        uint256 r = l + cardinality - 1; // newest observation
+        uint256 i;
         while (true) {
-            i = ((r - l) % cardinality) / 2 + l;
+            i = (l + r) / 2;
 
-            atOrAfter = self[i % cardinality];
+            beforeOrAt = self[i % cardinality];
 
             // we've landed on an uninitialized tick, keep searching higher (more recently)
-            if (!atOrAfter.initialized) {
+            if (!beforeOrAt.initialized) {
                 l = i + 1;
                 continue;
             }
 
-            before = (i == 0 || i == cardinality) ? self[cardinality - 1] : self[(i % cardinality) - 1];
+            atOrAfter = self[(i + 1) % cardinality];
+
+            bool targetAtOrAfter = lte(time, beforeOrAt.blockTimestamp, target);
 
             // check if we've found the answer!
-            if (
-                (before.blockTimestamp <= target && target <= atOrAfter.blockTimestamp) ||
-                (before.blockTimestamp > atOrAfter.blockTimestamp &&
-                    (before.blockTimestamp <= target || target <= atOrAfter.blockTimestamp))
-            ) break;
+            if (targetAtOrAfter && lte(time, target, atOrAfter.blockTimestamp)) break;
 
-            // adjust for overflow
-            uint256 targetAdjusted = target;
-            uint256 atOrAfterAdjusted = atOrAfter.blockTimestamp;
-            uint256 newestAdjusted = self[r % cardinality].blockTimestamp;
-            if (targetAdjusted > newestAdjusted || atOrAfterAdjusted > newestAdjusted) {
-                if (targetAdjusted <= newestAdjusted) targetAdjusted += 2**32;
-                if (atOrAfterAdjusted <= newestAdjusted) atOrAfterAdjusted += 2**32;
-            }
-
-            if (atOrAfterAdjusted < targetAdjusted) l = i + 1;
-            else r = i - 1;
+            if (!targetAtOrAfter) r = i - 1;
+            else l = i + 1;
         }
     }
 
     // fetches the observations before and atOrAfter a target, i.e. where this range is satisfied: (before, atOrAfter]
+    // there _must_ be at least 1 initialized observation
     function getSurroundingObservations(
         Observation[65535] storage self,
         uint32 time,
@@ -144,39 +152,34 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
-        // first, set before to the oldest observation, and make sure it's initialized
-        beforeOrAt = self[(index + 1) % cardinality];
-        if (!beforeOrAt.initialized) {
-            beforeOrAt = self[0];
-            // cardinality should not be > 0 unless at least one observation is initialized
-            assert(beforeOrAt.initialized);
+        // optimistically set before to the newest observation
+        beforeOrAt = self[index];
+        assert(beforeOrAt.initialized);
+
+        // if the target is chronologically at or after the newest observation, we can early return
+        if (lte(time, beforeOrAt.blockTimestamp, target)) {
+            if (beforeOrAt.blockTimestamp == target) {
+                // if newest observation equals target, we're in the same block, so we can ignore atOrAfter
+                return (beforeOrAt, atOrAfter);
+            } else {
+                // otherwise, we need to transform
+                return (beforeOrAt, transform(beforeOrAt, target, tick, liquidity));
+            }
         }
 
-        // ensure that the target is greater than the oldest observation (accounting for block timestamp overflow)
-        require(beforeOrAt.blockTimestamp <= target && (target <= time || beforeOrAt.blockTimestamp >= time), 'OLD');
+        // now, set before to the oldest observation
+        beforeOrAt = self[(index + 1) % cardinality];
+        if (!beforeOrAt.initialized) beforeOrAt = self[0];
 
-        // now, optimistically set before to the newest observation
-        beforeOrAt = self[index];
+        // ensure that the target is chronologically at or after the oldest observation
+        require(lte(time, beforeOrAt.blockTimestamp, target), 'OLD');
 
-        // before proceeding, short-circuit if the target equals the newest observation, meaning we're in the same block
-        // but an interaction updated the oracle before this tx, so before is actually atOrAfter
-        if (target == beforeOrAt.blockTimestamp) return (beforeOrAt, atOrAfter);
-
-        // adjust for overflow
-        uint256 beforeAdjusted = beforeOrAt.blockTimestamp;
-        uint256 targetAdjusted = target;
-        if (beforeAdjusted > time && targetAdjusted <= time) targetAdjusted += 2**32;
-        if (targetAdjusted > time) beforeAdjusted += 2**32;
-
-        // once here, check if we're right and return a counterfactual observation for atOrAfter
-        if (beforeAdjusted < targetAdjusted) return (beforeOrAt, transform(beforeOrAt, time, tick, liquidity));
-
-        // we're wrong, so perform binary search
-        return binarySearch(self, target, index, cardinality);
+        // if we've reached this point, we have to binary search
+        return binarySearch(self, time, target, index, cardinality);
     }
 
     // constructs a counterfactual observation as of a particular time in the past (or now) as long as we have
-    // an observation before then
+    // an observation at or before then
     function scry(
         Observation[65535] storage self,
         uint32 time,
@@ -188,7 +191,6 @@ library Oracle {
     ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         require(cardinality > 0, 'I');
         if (secondsAgo == 0) {
-            // because cardinality is 0, the last observation is necessarily initialized
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
             return (last.tickCumulative, last.liquidityCumulative);
@@ -201,13 +203,13 @@ library Oracle {
 
         Oracle.Observation memory at;
         if (target == beforeOrAt.blockTimestamp) {
-            // if we're at the left boundary, make it so
+            // we're at the left boundary
             at = beforeOrAt;
         } else if (target == atOrAfter.blockTimestamp) {
-            // if we're at the right boundary, make it so
+            // we're at the right boundary
             at = atOrAfter;
         } else {
-            // else, adjust counterfactually
+            // we're in the middle
             uint32 delta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
             int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
             uint128 liquidityDerived =

@@ -7,8 +7,8 @@ import './OracleTest.sol';
 contract OracleEchidnaTest {
     OracleTest private oracle;
 
-    bool initialized;
-    uint32 timePassed;
+    bool private initialized;
+    uint32 private timePassed;
 
     constructor() {
         oracle = new OracleTest();
@@ -72,5 +72,29 @@ contract OracleEchidnaTest {
         return oracle.cardinality() <= oracle.target();
     }
 
-    // todo: check we can always scry up to oldest observation if initialized
+    function echidna_canAlwaysScry0IfInitialized() external view returns (bool) {
+        if (!initialized) {
+            return true;
+        }
+        (bool success, ) = address(oracle).staticcall(abi.encodeWithSelector(OracleTest.scry.selector, 0));
+        return success;
+    }
+
+    function checkTimeWeightedAveragesAlwaysFitsType(uint32 secondsAgo) external view {
+        require(initialized);
+        require(secondsAgo > 0);
+        (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.scry(secondsAgo);
+        (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.scry(0);
+
+        // compute the time weighted tick, rounding consistently
+        int56 numerator = tickCumulative1 - tickCumulative0;
+        int56 timeWeightedTick = numerator / int56(secondsAgo);
+        if (numerator < 0 && numerator % int56(secondsAgo) != 0) {
+            timeWeightedTick--;
+        }
+
+        // the time weighted averages fit in their respective accumulated types
+        assert(timeWeightedTick <= type(int24).max && timeWeightedTick >= type(int24).min);
+        assert((liquidityCumulative1 - liquidityCumulative0) / uint160(secondsAgo) <= type(uint128).max);
+    }
 }
