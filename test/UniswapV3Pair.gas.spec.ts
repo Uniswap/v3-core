@@ -286,6 +286,12 @@ describe('UniswapV3Pair gas tests', () => {
           await snapshotGasCost(pair.collect(wallet.address, tickLower, tickUpper, MaxUint128, MaxUint128))
         })
       })
+
+      describe('#increaseObservationCardinalityNext', () => {
+        it('gas grow by 1 slot', async () => {
+          await snapshotGasCost(pair.increaseObservationCardinalityNext(5))
+        })
+      })
     })
   }
 })

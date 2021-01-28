@@ -1358,4 +1358,39 @@ describe('UniswapV3Pair', () => {
       })
     })
   })
+
+  describe('#increaseObservationCardinalityNext', () => {
+    it('cannot be called before initialization', async () => {
+      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('')
+    })
+    describe('after initialization', () => {
+      beforeEach('initialize the pair', () => pair.initialize(encodePriceSqrt(1, 1)))
+      it('oracle starting state after initialization', async () => {
+        const { observationCardinality, observationIndex, observationCardinalityNext } = await pair.slot0()
+        expect(observationCardinality).to.eq(1)
+        expect(observationIndex).to.eq(0)
+        expect(observationCardinalityNext).to.eq(1)
+        const { liquidityCumulative, tickCumulative, initialized, blockTimestamp } = await pair.observations(0)
+        expect(liquidityCumulative).to.eq(0)
+        expect(tickCumulative).to.eq(0)
+        expect(initialized).to.eq(true)
+        expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
+      })
+      it('increases observation cardinality next', async () => {
+        await pair.increaseObservationCardinalityNext(2)
+        const { observationCardinality, observationIndex, observationCardinalityNext } = await pair.slot0()
+        expect(observationCardinality).to.eq(1)
+        expect(observationIndex).to.eq(0)
+        expect(observationCardinalityNext).to.eq(2)
+      })
+      it('is no op if target is already exceeded', async () => {
+        await pair.increaseObservationCardinalityNext(5)
+        await pair.increaseObservationCardinalityNext(3)
+        const { observationCardinality, observationIndex, observationCardinalityNext } = await pair.slot0()
+        expect(observationCardinality).to.eq(1)
+        expect(observationIndex).to.eq(0)
+        expect(observationCardinalityNext).to.eq(5)
+      })
+    })
+  })
 })

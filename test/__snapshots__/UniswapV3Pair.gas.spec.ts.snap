@@ -26,6 +26,8 @@ exports[`UniswapV3Pair gas tests fee is off #burn below current price partial po
 
 exports[`UniswapV3Pair gas tests fee is off #collect close to worst case 1`] = `41531`;
 
+exports[`UniswapV3Pair gas tests fee is off #increaseObservationCardinalityNext gas grow by 1 slot 1`] = `51724`;
+
 exports[`UniswapV3Pair gas tests fee is off #mint above current price add to position after some time passes 1`] = `113391`;
 
 exports[`UniswapV3Pair gas tests fee is off #mint above current price add to position existing 1`] = `113391`;
@@ -99,6 +101,8 @@ exports[`UniswapV3Pair gas tests fee is on #burn below current price entire posi
 exports[`UniswapV3Pair gas tests fee is on #burn below current price partial position burn 1`] = `90686`;
 
 exports[`UniswapV3Pair gas tests fee is on #collect close to worst case 1`] = `41531`;
+
+exports[`UniswapV3Pair gas tests fee is on #increaseObservationCardinalityNext gas grow by 1 slot 1`] = `51724`;
 
 exports[`UniswapV3Pair gas tests fee is on #mint above current price add to position after some time passes 1`] = `113391`;
 
