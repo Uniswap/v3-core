@@ -7,7 +7,7 @@ import './LiquidityMath.sol';
 import './SafeMath.sol';
 
 /// @title Position
-/// @notice Positions represent an owner address's provisioned liquidity at a given lower & upper tick boundary
+/// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
 /// @dev Positions store additional state for tracking fees owed to the position
 library Position {
     // info stored for each user's position
@@ -23,8 +23,8 @@ library Position {
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
-    /// @param self The stored instance of a users position
-    /// @param owner The address of the position owner, passed via msg.sender
+    /// @param self The mapping containing all user positions
+    /// @param owner The address of the position owner
     /// @param tickLower The lower tick boundary of the position
     /// @param tickUpper The upper tick boundary of the position
     /// @return position The position info struct of the given owners' position
@@ -37,14 +37,14 @@ library Position {
         position = self[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    /// @notice Returns liquidity fees due to owner and updates position delta
-    /// @param self The stored instance of a users position
+    /// @notice Credits accumulated fees to a user's position, and returns fees owed to to the protocol
+    /// @param self The mapping containing all user positions
     /// @param liquidityDelta The change in pair liquidity as a result of the position update
-    /// @param feeGrowthInside0X128 The fee growth inside the token0 position
-    /// @param feeGrowthInside1X128 The fee growth inside the token1 position
+    /// @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
+    /// @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
     /// @param feeProtocol The current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
-    /// @return protocolFees0 The fees due to position owner, in token0
-    /// @return protocolFees1 The fees due to position owner, in token1
+    /// @return protocolFees0 The fees due to the protocol, in token0
+    /// @return protocolFees1 The fees due to the protocol, in token1
     function update(
         Info storage self,
         int128 liquidityDelta,
