@@ -932,12 +932,12 @@ describe('UniswapV3Pair', () => {
     })
 
     it('cannot be changed out of bounds', async () => {
-      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('FP')
-      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('FP')
+      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
     })
 
     it('cannot be changed by addresses that are not owner', async () => {
-      await expect(pair.connect(other).setFeeProtocol(6)).to.be.revertedWith('OO')
+      await expect(pair.connect(other).setFeeProtocol(6)).to.be.revertedWith('')
     })
 
     async function swapAndGetFeesOwed({
@@ -1171,8 +1171,8 @@ describe('UniswapV3Pair', () => {
           await pair.initialize(encodePriceSqrt(1, 1))
         })
         it('mint can only be called for multiples of 12', async () => {
-          await expect(mint(wallet.address, -6, 0, 1)).to.be.revertedWith('TS')
-          await expect(mint(wallet.address, 0, 6, 1)).to.be.revertedWith('TS')
+          await expect(mint(wallet.address, -6, 0, 1)).to.be.revertedWith('')
+          await expect(mint(wallet.address, 0, 6, 1)).to.be.revertedWith('')
         })
         it('mint can be called with multiples of 12', async () => {
           await mint(wallet.address, 12, 24, 1)

@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 // enables packing
 library SecondsOutside {
     function position(int24 tick, int24 tickSpacing) private pure returns (int24 wordPos, uint8 shift) {
-        require(tick % tickSpacing == 0, 'TS');
+        require(tick % tickSpacing == 0);
 
         int24 compressed = tick / tickSpacing;
 

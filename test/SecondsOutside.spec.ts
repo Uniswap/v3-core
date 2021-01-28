@@ -21,7 +21,7 @@ describe('SecondsOutside', () => {
 
   describe('#initialize', () => {
     it('reverts if tick is not multiple of tickSpacing', async () => {
-      await expect(secondsOutside.initialize(1, 8, 4, TEST_PAIR_START_TIME)).to.be.revertedWith('TS')
+      await expect(secondsOutside.initialize(1, 8, 4, TEST_PAIR_START_TIME)).to.be.revertedWith('')
     })
     it('tick 0 at current tick', async () => {
       const tick = 0
