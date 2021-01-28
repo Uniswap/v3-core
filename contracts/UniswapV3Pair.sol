@@ -170,10 +170,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     function increaseObservationCardinality(uint16 observationCardinality) external override noDelegateCall {
         require(slot0.observationCardinality > 0, 'I');
         uint16 last = slot0.observationCardinalityNext; // for the event
-        slot0.observationCardinalityNext = observations.grow(
-            slot0.observationCardinalityNext,
-            observationCardinality
-        );
+        slot0.observationCardinalityNext = observations.grow(slot0.observationCardinalityNext, observationCardinality);
         emit ObservationCardinalityIncreased(last, slot0.observationCardinalityNext);
     }
 
