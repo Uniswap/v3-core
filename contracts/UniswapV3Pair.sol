@@ -69,8 +69,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint16 observationIndex;
         // the current maximum number of observations that are being stored
         uint16 observationCardinality;
-        // the target maximum number of observations to store
-        uint16 observationCardinalityTarget;
+        // the next maximum number of observations to store, triggered in observations.write
+        uint16 observationCardinalityNext;
         // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
         uint8 feeProtocol;
         // whether the pair is locked
@@ -166,18 +166,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             );
     }
 
-    // increases the target observation cardinality, callable by anyone after initialize.
-    // locked to prevent this from being called before
-    function increaseObservationCardinality(uint16 observationCardinalityTarget) external override noDelegateCall {
-        Slot0 memory _slot0 = slot0;
-        require(_slot0.observationCardinality > 0, 'OC'); // pair must be initialized to call this function
-        (slot0.observationCardinality, slot0.observationCardinalityTarget) = observations.grow(
-            _slot0.observationIndex,
-            _slot0.observationCardinality,
-            _slot0.observationCardinalityTarget,
-            observationCardinalityTarget
-        );
-        emit ObservationCardinalityIncreased(_slot0.observationCardinalityTarget, observationCardinalityTarget);
+    // increases the next observation cardinality, callable by anyone after initialize.
+    function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external override noDelegateCall {
+        uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
+        uint16 observationCardinalityNextNew =
+            observations.grow(observationCardinalityNextOld, observationCardinalityNext);
+        slot0.observationCardinalityNext = observationCardinalityNextNew;
+        emit ObservationCardinalityNextIncreased(observationCardinalityNextOld, observationCardinalityNextNew);
     }
 
     // not locked because it initializes unlocked
@@ -188,14 +183,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         require(tick >= minTick, 'MIN');
         require(tick < maxTick, 'MAX');
 
-        (uint16 cardinality, uint16 target) = observations.initialize(_blockTimestamp());
+        (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(_blockTimestamp());
 
         slot0 = Slot0({
             sqrtPriceX96: sqrtPriceX96,
             tick: tick,
             observationIndex: 0,
             observationCardinality: cardinality,
-            observationCardinalityTarget: target,
+            observationCardinalityNext: cardinalityNext,
             feeProtocol: 0,
             unlocked: true
         });
@@ -245,7 +240,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     _slot0.tick,
                     liquidityBefore,
                     _slot0.observationCardinality,
-                    _slot0.observationCardinalityTarget
+                    _slot0.observationCardinalityNext
                 );
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
@@ -543,7 +538,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             if (state.liquidity > 0)
                 state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
-            // shift tick if we reached the next price target
+            // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
 
@@ -584,7 +579,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 cache.slot0Start.tick,
                 cache.liquidityStart,
                 cache.slot0Start.observationCardinality,
-                cache.slot0Start.observationCardinalityTarget
+                cache.slot0Start.observationCardinalityNext
             );
         }
 

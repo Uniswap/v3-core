@@ -57,7 +57,7 @@ describe('UniswapV3Pair gas tests', () => {
         })
 
         await pair.initialize(encodePriceSqrt(1, 1))
-        await pair.increaseObservationCardinality(4)
+        await pair.increaseObservationCardinalityNext(4)
         await pair.advanceTime(1)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))
 
@@ -284,6 +284,12 @@ describe('UniswapV3Pair gas tests', () => {
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
           await mint(wallet.address, tickLower, tickUpper, 0) // poke to accumulate fees
           await snapshotGasCost(pair.collect(wallet.address, tickLower, tickUpper, MaxUint128, MaxUint128))
+        })
+      })
+
+      describe('#increaseObservationCardinalityNext', () => {
+        it('gas grow by 1 slot', async () => {
+          await snapshotGasCost(pair.increaseObservationCardinalityNext(5))
         })
       })
     })

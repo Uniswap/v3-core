@@ -153,30 +153,22 @@ describe('UniswapV3Pair', () => {
     })
   })
 
-  describe('#increaseObservationCardinality', () => {
+  describe('#increaseObservationCardinalityNext', () => {
     it('can only be called after initialize', async () => {
-      await expect(pair.increaseObservationCardinality(2)).to.be.revertedWith('OC')
+      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('I')
     })
     it('emits an event', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
-      await expect(pair.increaseObservationCardinality(2))
-        .to.emit(pair, 'ObservationCardinalityIncreased')
+      await expect(pair.increaseObservationCardinalityNext(2))
+        .to.emit(pair, 'ObservationCardinalityNextIncreased')
         .withArgs(1, 2)
     })
-    it('increases cardinality and target first time', async () => {
+    it('increases cardinality and cardinality next first time', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
-      await pair.increaseObservationCardinality(2)
-      const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
-      expect(observationCardinality).to.eq(2)
-      expect(observationCardinalityTarget).to.eq(2)
-    })
-    it('increases only target if it has not yet grown', async () => {
-      await pair.initialize(encodePriceSqrt(1, 1))
-      await pair.increaseObservationCardinality(2)
-      await pair.increaseObservationCardinality(3)
-      const { observationCardinality, observationCardinalityTarget } = await pair.slot0()
-      expect(observationCardinality).to.eq(2)
-      expect(observationCardinalityTarget).to.eq(3)
+      await pair.increaseObservationCardinalityNext(2)
+      const { observationCardinality, observationCardinalityNext } = await pair.slot0()
+      expect(observationCardinality).to.eq(1)
+      expect(observationCardinalityNext).to.eq(2)
     })
   })
 
@@ -1363,6 +1355,41 @@ describe('UniswapV3Pair', () => {
         expect(await pair.feeGrowthGlobal1X128()).to.eq(
           BigNumber.from(1234).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
         )
+      })
+    })
+  })
+
+  describe('#increaseObservationCardinalityNext', () => {
+    it('cannot be called before initialization', async () => {
+      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('')
+    })
+    describe('after initialization', () => {
+      beforeEach('initialize the pair', () => pair.initialize(encodePriceSqrt(1, 1)))
+      it('oracle starting state after initialization', async () => {
+        const { observationCardinality, observationIndex, observationCardinalityNext } = await pair.slot0()
+        expect(observationCardinality).to.eq(1)
+        expect(observationIndex).to.eq(0)
+        expect(observationCardinalityNext).to.eq(1)
+        const { liquidityCumulative, tickCumulative, initialized, blockTimestamp } = await pair.observations(0)
+        expect(liquidityCumulative).to.eq(0)
+        expect(tickCumulative).to.eq(0)
+        expect(initialized).to.eq(true)
+        expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
+      })
+      it('increases observation cardinality next', async () => {
+        await pair.increaseObservationCardinalityNext(2)
+        const { observationCardinality, observationIndex, observationCardinalityNext } = await pair.slot0()
+        expect(observationCardinality).to.eq(1)
+        expect(observationIndex).to.eq(0)
+        expect(observationCardinalityNext).to.eq(2)
+      })
+      it('is no op if target is already exceeded', async () => {
+        await pair.increaseObservationCardinalityNext(5)
+        await pair.increaseObservationCardinalityNext(3)
+        const { observationCardinality, observationIndex, observationCardinalityNext } = await pair.slot0()
+        expect(observationCardinality).to.eq(1)
+        expect(observationIndex).to.eq(0)
+        expect(observationCardinalityNext).to.eq(5)
       })
     })
   })
