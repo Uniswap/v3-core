@@ -6,8 +6,7 @@ import './libraries/FullMath.sol';
 import './libraries/TransferHelper.sol';
 
 import './libraries/FeeMath.sol';
-import './libraries/SafeMath.sol';
-import './libraries/SignedSafeMath.sol';
+import './libraries/CheapSafeMath.sol';
 
 import './libraries/SafeCast.sol';
 import './libraries/LiquidityMath.sol';
@@ -31,8 +30,8 @@ import './interfaces/callback/IUniswapV3FlashCallback.sol';
 import './NoDelegateCall.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
-    using SafeMath for uint256;
-    using SignedSafeMath for int256;
+    using CheapSafeMath for uint256;
+    using CheapSafeMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
     using LiquidityMath for uint128;

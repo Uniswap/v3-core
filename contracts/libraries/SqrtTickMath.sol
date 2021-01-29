@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0;
 
 import './TickMath.sol';
-import './SafeMath.sol';
 import './FeeMath.sol';
 
 // returns and takes sqrt prices for 1 bips ticks
