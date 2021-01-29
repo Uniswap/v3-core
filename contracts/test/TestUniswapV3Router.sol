@@ -24,7 +24,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             recipient,
             false,
             -amount0Out.toInt256(),
-            SqrtTickMath.MAX_SQRT_PRICE - 1,
+            SqrtTickMath.MAX_SQRT_RATIO - 1,
             abi.encode(pairs, msg.sender)
         );
     }
@@ -42,7 +42,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             recipient,
             true,
             -amount1Out.toInt256(),
-            SqrtTickMath.MIN_SQRT_PRICE + 1,
+            SqrtTickMath.MIN_SQRT_RATIO + 1,
             abi.encode(pairs, msg.sender)
         );
     }
@@ -69,7 +69,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
                 msg.sender,
                 zeroForOne,
                 -amountToBePaid,
-                zeroForOne ? SqrtTickMath.MIN_SQRT_PRICE + 1 : SqrtTickMath.MAX_SQRT_PRICE - 1,
+                zeroForOne ? SqrtTickMath.MIN_SQRT_RATIO + 1 : SqrtTickMath.MAX_SQRT_RATIO - 1,
                 abi.encode(new address[](0), payer)
             );
         } else {

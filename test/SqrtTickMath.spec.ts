@@ -51,14 +51,14 @@ describe('SqrtTickMath', () => {
     })
   })
 
-  describe('#MIN_SQRT_PRICE', async () => {
+  describe('#MIN_SQRT_RATIO', async () => {
     it('equals #getSqrtRatioAtTick(MIN_TICK)', async () => {
-      expect(await sqrtTickMath.getSqrtRatioAtTick(MIN_TICK)).to.eq(await sqrtTickMath.MIN_SQRT_PRICE())
+      expect(await sqrtTickMath.getSqrtRatioAtTick(MIN_TICK)).to.eq(await sqrtTickMath.MIN_SQRT_RATIO())
     })
   })
-  describe('#MAX_SQRT_PRICE', async () => {
+  describe('#MAX_SQRT_RATIO', async () => {
     it('equals #getSqrtRatioAtTick(MAX_TICK)', async () => {
-      expect(await sqrtTickMath.getSqrtRatioAtTick(MAX_TICK)).to.eq(await sqrtTickMath.MAX_SQRT_PRICE())
+      expect(await sqrtTickMath.getSqrtRatioAtTick(MAX_TICK)).to.eq(await sqrtTickMath.MAX_SQRT_RATIO())
     })
   })
 
