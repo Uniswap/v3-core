@@ -52,7 +52,7 @@ exports[`UniswapV3Pair gas tests fee is off #mint below current price new positi
 
 exports[`UniswapV3Pair gas tests fee is off #mint below current price second position in same range 1`] = `120115`;
 
-exports[`UniswapV3Pair gas tests fee is off #poke best case 1`] = `40844`;
+exports[`UniswapV3Pair gas tests fee is off #poke best case 1`] = `43123`;
 
 exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `101715`;
 
@@ -128,7 +128,7 @@ exports[`UniswapV3Pair gas tests fee is on #mint below current price new positio
 
 exports[`UniswapV3Pair gas tests fee is on #mint below current price second position in same range 1`] = `120115`;
 
-exports[`UniswapV3Pair gas tests fee is on #poke best case 1`] = `40844`;
+exports[`UniswapV3Pair gas tests fee is on #poke best case 1`] = `43123`;
 
 exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `101715`;
 

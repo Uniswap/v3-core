@@ -148,8 +148,8 @@ describe('UniswapV3Pair', () => {
       })
     })
     it('emits a Initialized event with the input tick', async () => {
-      const price = encodePriceSqrt(1, 2)
-      await expect(pair.initialize(price)).to.emit(pair, 'Initialized').withArgs(price, -6932)
+      const sqrtPriceX96 = encodePriceSqrt(1, 2)
+      await expect(pair.initialize(sqrtPriceX96)).to.emit(pair, 'Initialize').withArgs(sqrtPriceX96, -6932)
     })
   })
 
@@ -160,8 +160,15 @@ describe('UniswapV3Pair', () => {
     it('emits an event', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
       await expect(pair.increaseObservationCardinalityNext(2))
-        .to.emit(pair, 'ObservationCardinalityNextIncreased')
+        .to.emit(pair, 'IncreaseObservationCardinalityNext')
         .withArgs(1, 2)
+    })
+    it('emits an event', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await pair.increaseObservationCardinalityNext(3)
+      await expect(pair.increaseObservationCardinalityNext(2))
+        .to.emit(pair, 'IncreaseObservationCardinalityNext')
+        .withArgs(3, 3)
     })
     it('increases cardinality and cardinality next first time', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
