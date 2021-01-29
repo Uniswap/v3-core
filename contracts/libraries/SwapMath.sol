@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import './SafeMath.sol';
 import './FullMath.sol';
-
 import './SqrtPriceMath.sol';
 
 library SwapMath {
-    using SafeMath for uint256;
-
     // compute the state changes for the swap step
     function computeSwapStep(
         uint160 sqrtPX96,

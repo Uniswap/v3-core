@@ -3,13 +3,13 @@ pragma solidity >=0.5.0;
 
 import './FeeMath.sol';
 import './FullMath.sol';
-import './SafeMath.sol';
+import './CheapSafeMath.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
 
 library SqrtPriceMath {
-    using SafeMath for uint256;
+    using CheapSafeMath for uint256;
     using SafeCast for uint256;
 
     // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
