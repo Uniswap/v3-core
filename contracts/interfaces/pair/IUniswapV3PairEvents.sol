@@ -124,5 +124,5 @@ interface IUniswapV3PairEvents {
     /// @param recipient address that receives the collected protocol fees
     /// @param amount0 amount of token0 protocol fees that is withdrawn
     /// @param amount0 amount of token1 protocol fees that is withdrawn
-    event CollectProtocol(address indexed sender, address indexed recipient, uint128 amount0, uint128 amount1);
+    event CollectProtocol(address indexed sender, address indexed recipient, uint256 amount0, uint256 amount1);
 }
