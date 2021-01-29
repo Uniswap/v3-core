@@ -1325,8 +1325,8 @@ describe('UniswapV3Pair', () => {
         )
       })
       it('fails if original balance not returned in either token', async () => {
-        await expect(flash(1000, 0, other.address, 999, 0)).to.be.revertedWith('')
-        await expect(flash(0, 1000, other.address, 0, 999)).to.be.revertedWith('')
+        await expect(flash(1000, 0, other.address, 999, 0)).to.be.revertedWith('F0')
+        await expect(flash(0, 1000, other.address, 0, 999)).to.be.revertedWith('F1')
       })
       it('fails if underpays either token', async () => {
         await expect(flash(1000, 0, other.address, 1002, 0)).to.be.revertedWith('F0')
