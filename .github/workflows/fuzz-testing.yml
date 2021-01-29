@@ -23,6 +23,7 @@ jobs:
           - TickOverflowSafetyEchidnaTest
           - OracleEchidnaTest
           - BitMathEchidnaTest
+          - CheapSafeMathEchidnaTest
 
     steps:
       - uses: actions/checkout@v2
