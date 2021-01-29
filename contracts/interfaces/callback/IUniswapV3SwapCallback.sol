@@ -11,6 +11,7 @@ interface IUniswapV3SwapCallback {
     ///     the end of the swap. If positive, the callback must send that amount of token1 to the pair.
     /// @param data any data passed through by the caller via the IUniswapV3PairActions#swap call
     /// @dev The caller of this method must be checked to be a UniswapV3Pair deployed by the canonical factory
+    /// @dev amount0 and amount1 can both be 0
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,

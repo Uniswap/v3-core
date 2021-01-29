@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
+import './FeeMath.sol';
 import './FullMath.sol';
 import './FixedPoint128.sol';
 import './LiquidityMath.sol';
-import './SafeMath.sol';
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
@@ -84,8 +84,8 @@ library Position {
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (feesOwed0 > 0 || feesOwed1 > 0) {
-            self.feesOwed0 = SafeMath.addCapped(_self.feesOwed0, feesOwed0);
-            self.feesOwed1 = SafeMath.addCapped(_self.feesOwed1, feesOwed1);
+            self.feesOwed0 = FeeMath.addCapped(_self.feesOwed0, feesOwed0);
+            self.feesOwed1 = FeeMath.addCapped(_self.feesOwed1, feesOwed1);
         }
 
         // clear position data that is no longer needed
