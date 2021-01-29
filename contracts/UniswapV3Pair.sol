@@ -644,11 +644,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);
 
-        uint256 paid0 = balance0().sub(balance0Before);
-        uint256 paid1 = balance1().sub(balance1Before);
+        uint256 balance0After = balance0();
+        uint256 balance1After = balance1();
 
-        require(paid0 >= fee0, 'F0');
-        require(paid1 >= fee1, 'F1');
+        require(balance0Before.add(fee0) <= balance0After, 'F0');
+        require(balance1Before.add(fee1) <= balance1After, 'F1');
+
+        // sub is safe because we know balanceAfter is gt balanceBefore by at least fee
+        uint256 paid0 = balance0After - balance0Before;
+        uint256 paid1 = balance1After - balance1Before;
 
         if (paid0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
         if (paid1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
