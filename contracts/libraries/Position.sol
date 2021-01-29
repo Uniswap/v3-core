@@ -5,7 +5,6 @@ import './FeeMath.sol';
 import './FullMath.sol';
 import './FixedPoint128.sol';
 import './LiquidityMath.sol';
-import './SafeMath.sol';
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary

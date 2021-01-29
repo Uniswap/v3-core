@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 import './SqrtTickMath.sol';
 import './SafeCast.sol';
 import './LiquidityMath.sol';
-import './SignedSafeMath.sol';
+import './LowGasSafeMath.sol';
 
 library Tick {
     // info stored for each initialized individual tick
@@ -95,8 +95,8 @@ library Tick {
 
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
         info.liquidityDelta = upper
-            ? SafeCast.toInt128(SignedSafeMath.sub(info.liquidityDelta, liquidityDelta))
-            : SafeCast.toInt128(SignedSafeMath.add(info.liquidityDelta, liquidityDelta));
+            ? SafeCast.toInt128(LowGasSafeMath.sub(info.liquidityDelta, liquidityDelta))
+            : SafeCast.toInt128(LowGasSafeMath.add(info.liquidityDelta, liquidityDelta));
     }
 
     function clear(mapping(int24 => Tick.Info) storage self, int24 tick) internal {

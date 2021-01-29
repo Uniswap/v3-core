@@ -2,8 +2,7 @@
 pragma solidity >=0.5.0;
 
 import './TickMath.sol';
-import './SafeMath.sol';
-import './FeeMath.sol';
+import './LowGasSafeMath.sol';
 
 // returns and takes sqrt prices for 1 bips ticks
 library SqrtTickMath {
@@ -20,7 +19,7 @@ library SqrtTickMath {
     uint160 internal constant MAX_SQRT_PRICE = 1461446703485210103287273052203988822378723970342;
 
     function getSqrtRatioAtTick(int24 tick) internal pure returns (uint160) {
-        return uint160(FeeMath.divRoundingUp(TickMath.getRatioAtTick(tick), 1 << 32));
+        return uint160(LowGasSafeMath.divRoundingUp(TickMath.getRatioAtTick(tick), 1 << 32));
     }
 
     function getTickAtSqrtRatio(uint160 sqrtPX96) internal pure returns (int24) {
