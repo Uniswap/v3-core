@@ -157,18 +157,22 @@ describe('UniswapV3Pair', () => {
     it('can only be called after initialize', async () => {
       await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('I')
     })
-    it('emits an event', async () => {
+    it('emits an event including both old and new', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
       await expect(pair.increaseObservationCardinalityNext(2))
         .to.emit(pair, 'IncreaseObservationCardinalityNext')
         .withArgs(1, 2)
     })
-    it('emits an event', async () => {
+    it('does not emit an event for no op call', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
       await pair.increaseObservationCardinalityNext(3)
-      await expect(pair.increaseObservationCardinalityNext(2))
-        .to.emit(pair, 'IncreaseObservationCardinalityNext')
-        .withArgs(3, 3)
+      await expect(pair.increaseObservationCardinalityNext(2)).to.not.emit(pair, 'IncreaseObservationCardinalityNext')
+    })
+    it('does not change cardinality next if less than current', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await pair.increaseObservationCardinalityNext(3)
+      await pair.increaseObservationCardinalityNext(2)
+      expect((await pair.slot0()).observationCardinalityNext).to.eq(3)
     })
     it('increases cardinality and cardinality next first time', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
