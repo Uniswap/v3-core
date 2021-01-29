@@ -8,9 +8,4 @@ library FeeMath {
             z = type(uint128).max;
         }
     }
-
-    function divRoundingUp(uint256 x, uint256 d) internal pure returns (uint256) {
-        // addition is safe because (type(uint256).max / 1) + (type(uint256).max % 1 > 0 ? 1 : 0) == type(uint256).max
-        return (x / d) + (x % d > 0 ? 1 : 0);
-    }
 }
