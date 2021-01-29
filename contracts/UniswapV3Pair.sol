@@ -81,6 +81,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     // fee growth per unit of liquidity
     uint256 public override feeGrowthGlobal0X128;
     uint256 public override feeGrowthGlobal1X128;
+    int128 public q0;
+    int128 public q1;
 
     // accumulated protocol fees in token0/token1 units
     struct ProtocolFees {
@@ -462,6 +464,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 feeGrowthGlobalX128;
         // the current liquidity in range
         uint128 liquidity;
+        int256 q0Delta;
+        int256 q1Delta;
     }
 
     struct StepComputations {
@@ -511,7 +515,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 sqrtPriceX96: cache.slot0Start.sqrtPriceX96,
                 tick: cache.slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
-                liquidity: cache.liquidityStart
+                liquidity: cache.liquidityStart,
+                q0Delta: 0,
+                q1Delta: 0
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -548,8 +554,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             }
 
             // update global fee tracker
-            if (state.liquidity > 0)
-                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
+            if (state.liquidity > 0) {
+                uint256 delta = FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
+                if (cache.slot0Start.feeProtocol == 0) {
+                    state.feeGrowthGlobalX128 += delta;
+                } else {
+                    state.feeGrowthGlobalX128 += delta - delta / cache.slot0Start.feeProtocol;
+                }
+            }
 
             // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
@@ -563,6 +575,39 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                             (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
                             (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
                         );
+
+                    uint256 q0DeltaUnsigned = FullMath.mulDiv(
+                        (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128)
+                            .add((1 << 224) / state.sqrtPriceX96),
+                        liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
+                        FixedPoint128.Q128
+                    );
+                    uint256 q1DeltaUnsigned = FullMath.mulDiv(
+                        (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
+                            .add(uint256(state.sqrtPriceX96) << 32),
+                        liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
+                        FixedPoint128.Q128
+                    );
+
+                    if (zeroForOne) {
+                        state.q0Delta = state.q0Delta.add(
+                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
+                                .sub((step.amountIn + step.feeAmount).toInt256())
+                        );
+                        state.q1Delta = state.q1Delta.add(
+                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
+                                .add(step.amountOut.toInt256())
+                        );
+                    } else {
+                        state.q0Delta = state.q0Delta.add(
+                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
+                                .add(step.amountOut.toInt256())
+                        );
+                        state.q1Delta = state.q1Delta.add(
+                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
+                                .sub((step.amountIn + step.feeAmount).toInt256())
+                        );
+                    }
 
                     secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
@@ -606,6 +651,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             exactInput
                 ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
                 : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);
+
+        if (state.q0Delta != 0) q0 = int256(q0).add(state.q0Delta).toInt128();
+        if (state.q1Delta != 0) q1 = int256(q1).add(state.q1Delta).toInt128();
 
         (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
 
@@ -656,30 +704,69 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
     }
 
-    function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
-        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
-        emit FeeProtocolChanged(slot0.feeProtocol, feeProtocol);
+    function setFeeProtocol(uint8 feeProtocol) external override lock onlyFactoryOwner {
+        uint8 feeProtocolOld = slot0.feeProtocol;
+        if (feeProtocol > 0) {
+            require(feeProtocolOld == 0); // TODO this might not be necessary, or might just involve some recomputing
+            require(feeProtocol <= 10 && feeProtocol >= 4);
+
+            // initializes offets, rounding down
+            // TODO maybe the qs can start off as negative? if so, the below will error out
+            q0 = FullMath.mulDiv(
+                feeGrowthGlobal0X128.add((1 << 224) / slot0.sqrtPriceX96),
+                liquidity,
+                FixedPoint128.Q128
+            ).sub(balance0()).toInt256().toInt128();
+            q1 = FullMath.mulDiv(
+                feeGrowthGlobal1X128.add(uint256(slot0.sqrtPriceX96) << 32),
+                liquidity,
+                FixedPoint128.Q128
+            ).sub(balance1()).toInt256().toInt128();
+        } else {
+            // TODO is this right/necessary?
+            q0 = 0;
+            q1 = 0;
+        }
+        emit FeeProtocolChanged(feeProtocolOld, feeProtocol);
         slot0.feeProtocol = feeProtocol;
     }
 
     function collectProtocol(
         address recipient,
-        uint128 amount0Requested,
-        uint128 amount1Requested
-    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
-        ProtocolFees memory _protocolFees = protocolFees;
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
+        require(slot0.feeProtocol > 0); // TODO this might not be necessary?
 
-        amount0 = amount0Requested > _protocolFees.token0 ? _protocolFees.token0 : amount0Requested;
-        amount1 = amount1Requested > _protocolFees.token1 ? _protocolFees.token1 : amount1Requested;
+        int256 termA0 = balance0().toInt256().add(q0);
+        if (termA0 > 0) {
+            uint256 termB0 = FullMath.mulDivRoundingUp(
+                feeGrowthGlobal0X128.add((1 << 224) / slot0.sqrtPriceX96),
+                liquidity,
+                FixedPoint128.Q128
+            );
+            if (uint256(termA0) > termB0) {
+                amount0 = uint256(termA0) - termB0;
+            }
+        }
 
-        if (amount0 > 0) {
-            protocolFees.token0 -= amount0;
-            TransferHelper.safeTransfer(token0, recipient, amount0);
+        int256 termA1 = balance1().toInt256().add(q1);
+        if (termA1 > 0) {
+            uint256 termB1 = FullMath.mulDivRoundingUp(
+                feeGrowthGlobal1X128.add(uint256(slot0.sqrtPriceX96) << 32),
+                liquidity,
+                FixedPoint128.Q128
+            );
+            if (uint256(termA1) > termB1) {
+                amount1 = uint256(termA1) - termB1;
+            }
         }
-        if (amount1 > 0) {
-            protocolFees.token1 -= amount1;
-            TransferHelper.safeTransfer(token1, recipient, amount1);
-        }
+
+        amount0 = amount0Requested > amount0 ? amount0 : amount0Requested;
+        amount1 = amount1Requested > amount1 ? amount1 : amount1Requested;
+
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
 
         emit CollectProtocol(recipient, amount0, amount1);
     }

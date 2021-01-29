@@ -7,7 +7,7 @@ interface IUniswapV3PairOwnerActions {
     // allows factory owner to collect protocol fees
     function collectProtocol(
         address recipient,
-        uint128 amount0Requested,
-        uint128 amount1Requested
-    ) external returns (uint128 amount0, uint128 amount1);
+        uint256 amount0Requested,
+        uint256 amount1Requested
+    ) external returns (uint256 amount0, uint256 amount1);
 }

@@ -50,5 +50,5 @@ interface IUniswapV3PairEvents {
         uint16 observationCardinalityNextNew
     );
     event FeeProtocolChanged(uint8 feeProtocolOld, uint8 feeProtocolNew);
-    event CollectProtocol(address indexed recipient, uint128 amount0, uint128 amount1);
+    event CollectProtocol(address indexed recipient, uint256 amount0, uint256 amount1);
 }
