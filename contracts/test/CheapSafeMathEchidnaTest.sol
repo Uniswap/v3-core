@@ -3,7 +3,7 @@ pragma solidity =0.7.6;
 
 import '../libraries/CheapSafeMath.sol';
 
-library CheapSafeMathEchidnaTest {
+contract CheapSafeMathEchidnaTest {
     function checkAdd(uint256 x, uint256 y) external pure {
         uint256 z = CheapSafeMath.add(x, y);
         assert(z == x + y);
