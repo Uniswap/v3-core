@@ -288,8 +288,11 @@ describe('UniswapV3Pair gas tests', () => {
       })
 
       describe('#increaseObservationCardinalityNext', () => {
-        it('gas grow by 1 slot', async () => {
+        it('grow by 1 slot', async () => {
           await snapshotGasCost(pair.increaseObservationCardinalityNext(5))
+        })
+        it('no op', async () => {
+          await snapshotGasCost(pair.increaseObservationCardinalityNext(3))
         })
       })
     })

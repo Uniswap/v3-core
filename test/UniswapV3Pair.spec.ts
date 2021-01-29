@@ -148,8 +148,8 @@ describe('UniswapV3Pair', () => {
       })
     })
     it('emits a Initialized event with the input tick', async () => {
-      const price = encodePriceSqrt(1, 2)
-      await expect(pair.initialize(price)).to.emit(pair, 'Initialized').withArgs(price, -6932)
+      const sqrtPriceX96 = encodePriceSqrt(1, 2)
+      await expect(pair.initialize(sqrtPriceX96)).to.emit(pair, 'Initialize').withArgs(sqrtPriceX96, -6932)
     })
   })
 
@@ -157,11 +157,22 @@ describe('UniswapV3Pair', () => {
     it('can only be called after initialize', async () => {
       await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('I')
     })
-    it('emits an event', async () => {
+    it('emits an event including both old and new', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
       await expect(pair.increaseObservationCardinalityNext(2))
-        .to.emit(pair, 'ObservationCardinalityNextIncreased')
+        .to.emit(pair, 'IncreaseObservationCardinalityNext')
         .withArgs(1, 2)
+    })
+    it('does not emit an event for no op call', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await pair.increaseObservationCardinalityNext(3)
+      await expect(pair.increaseObservationCardinalityNext(2)).to.not.emit(pair, 'IncreaseObservationCardinalityNext')
+    })
+    it('does not change cardinality next if less than current', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await pair.increaseObservationCardinalityNext(3)
+      await pair.increaseObservationCardinalityNext(2)
+      expect((await pair.slot0()).observationCardinalityNext).to.eq(3)
     })
     it('increases cardinality and cardinality next first time', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))

@@ -172,7 +172,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint16 observationCardinalityNextNew =
             observations.grow(observationCardinalityNextOld, observationCardinalityNext);
         slot0.observationCardinalityNext = observationCardinalityNextNew;
-        emit ObservationCardinalityNextIncreased(observationCardinalityNextOld, observationCardinalityNextNew);
+        if (observationCardinalityNextOld != observationCardinalityNextNew)
+            emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
     }
 
     // not locked because it initializes unlocked
@@ -195,7 +196,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             unlocked: true
         });
 
-        emit Initialized(sqrtPriceX96, tick);
+        emit Initialize(sqrtPriceX96, tick);
     }
 
     struct ModifyPositionParams {
@@ -349,6 +350,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         _modifyPosition(
             ModifyPositionParams({owner: owner, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: 0})
         );
+        emit Poke(msg.sender, owner, tickLower, tickUpper);
     }
 
     // noDelegateCall is applied indirectly via _modifyPosition
@@ -383,7 +385,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');
         if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');
 
-        emit Mint(recipient, tickLower, tickUpper, msg.sender, amount, amount0, amount1);
+        emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
 
     function collect(
@@ -408,8 +410,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
-        // note that spurious `Collect` events can be emitted with zero amounts - just ignore them
-        emit Collect(msg.sender, tickLower, tickUpper, recipient, amount0, amount1);
+        emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
     }
 
     // noDelegateCall is applied indirectly via _modifyPosition
@@ -436,7 +437,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
 
-        emit Burn(msg.sender, tickLower, tickUpper, recipient, amount, amount0, amount1);
+        emit Burn(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
 
     struct SwapCache {
@@ -662,7 +663,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
         require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
-        emit FeeProtocolChanged(slot0.feeProtocol, feeProtocol);
+        emit SetFeeProtocol(slot0.feeProtocol, feeProtocol);
         slot0.feeProtocol = feeProtocol;
     }
 
@@ -685,6 +686,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
-        emit CollectProtocol(recipient, amount0, amount1);
+        emit CollectProtocol(msg.sender, recipient, amount0, amount1);
     }
 }
