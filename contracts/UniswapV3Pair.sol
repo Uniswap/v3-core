@@ -577,36 +577,44 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                             (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
                         );
 
-                    uint256 q0DeltaUnsigned = FullMath.mulDiv(
-                        (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128)
-                            .add((1 << 224) / state.sqrtPriceX96),
-                        liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
-                        FixedPoint128.Q128
-                    );
-                    uint256 q1DeltaUnsigned = FullMath.mulDiv(
-                        (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
-                            .add(uint256(state.sqrtPriceX96) << 32),
-                        liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
-                        FixedPoint128.Q128
-                    );
+                    uint256 q0DeltaUnsigned =
+                        FullMath.mulDiv(
+                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128).add(
+                                (1 << 224) / state.sqrtPriceX96
+                            ),
+                            liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
+                            FixedPoint128.Q128
+                        );
+                    uint256 q1DeltaUnsigned =
+                        FullMath.mulDiv(
+                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128).add(
+                                uint256(state.sqrtPriceX96) << 32
+                            ),
+                            liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
+                            FixedPoint128.Q128
+                        );
 
                     if (zeroForOne) {
                         state.q0Delta = state.q0Delta.add(
-                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
-                                .sub((step.amountIn + step.feeAmount).toInt256())
+                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256()).sub(
+                                (step.amountIn + step.feeAmount).toInt256()
+                            )
                         );
                         state.q1Delta = state.q1Delta.add(
-                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
-                                .add(step.amountOut.toInt256())
+                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256()).add(
+                                step.amountOut.toInt256()
+                            )
                         );
                     } else {
                         state.q0Delta = state.q0Delta.add(
-                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
-                                .add(step.amountOut.toInt256())
+                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256()).add(
+                                step.amountOut.toInt256()
+                            )
                         );
                         state.q1Delta = state.q1Delta.add(
-                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
-                                .sub((step.amountIn + step.feeAmount).toInt256())
+                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256()).sub(
+                                (step.amountIn + step.feeAmount).toInt256()
+                            )
                         );
                     }
 
@@ -717,16 +725,16 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // initializes offets, rounding down
             // TODO maybe the qs can start off as negative? if so, the below will error out
-            q0 = FullMath.mulDiv(
-                feeGrowthGlobal0X128.add((1 << 224) / slot0.sqrtPriceX96),
-                liquidity,
-                FixedPoint128.Q128
-            ).sub(balance0()).toInt256().toInt128();
-            q1 = FullMath.mulDiv(
-                feeGrowthGlobal1X128.add(uint256(slot0.sqrtPriceX96) << 32),
-                liquidity,
-                FixedPoint128.Q128
-            ).sub(balance1()).toInt256().toInt128();
+            q0 = FullMath
+                .mulDiv(feeGrowthGlobal0X128.add((1 << 224) / slot0.sqrtPriceX96), liquidity, FixedPoint128.Q128)
+                .sub(balance0())
+                .toInt256()
+                .toInt128();
+            q1 = FullMath
+                .mulDiv(feeGrowthGlobal1X128.add(uint256(slot0.sqrtPriceX96) << 32), liquidity, FixedPoint128.Q128)
+                .sub(balance1())
+                .toInt256()
+                .toInt128();
         } else {
             // TODO is this right/necessary?
             q0 = 0;
@@ -745,11 +753,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         int256 termA0 = balance0().toInt256().add(q0);
         if (termA0 > 0) {
-            uint256 termB0 = FullMath.mulDivRoundingUp(
-                feeGrowthGlobal0X128.add((1 << 224) / slot0.sqrtPriceX96),
-                liquidity,
-                FixedPoint128.Q128
-            );
+            uint256 termB0 =
+                FullMath.mulDivRoundingUp(
+                    feeGrowthGlobal0X128.add((1 << 224) / slot0.sqrtPriceX96),
+                    liquidity,
+                    FixedPoint128.Q128
+                );
             if (uint256(termA0) > termB0) {
                 amount0 = uint256(termA0) - termB0;
             }
@@ -757,11 +766,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         int256 termA1 = balance1().toInt256().add(q1);
         if (termA1 > 0) {
-            uint256 termB1 = FullMath.mulDivRoundingUp(
-                feeGrowthGlobal1X128.add(uint256(slot0.sqrtPriceX96) << 32),
-                liquidity,
-                FixedPoint128.Q128
-            );
+            uint256 termB1 =
+                FullMath.mulDivRoundingUp(
+                    feeGrowthGlobal1X128.add(uint256(slot0.sqrtPriceX96) << 32),
+                    liquidity,
+                    FixedPoint128.Q128
+                );
             if (uint256(termA1) > termB1) {
                 amount1 = uint256(termA1) - termB1;
             }
