@@ -15,8 +15,7 @@
   },
   "files": [
     "contracts/interfaces",
-    "contracts/libraries",
-    "artifacts"
+    "artifacts/contracts"
   ],
   "engines": {
     "node": ">=10"
