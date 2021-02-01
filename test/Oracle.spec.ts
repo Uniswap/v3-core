@@ -521,12 +521,12 @@ describe('Oracle', () => {
     const maxedOutOracleFixture = async () => {
       const oracle = await oracleFixture()
       await oracle.initialize({ liquidity: 0, tick: 0, time: STARTING_TIME })
-      let cardinalityTarget = await oracle.cardinalityNext()
-      while (cardinalityTarget < 65535) {
-        const cardinalityNext = Math.min(65535, cardinalityTarget + BATCH_SIZE)
-        console.log('growing from', cardinalityTarget, 'to', cardinalityNext)
-        await oracle.grow(cardinalityNext)
-        cardinalityTarget = cardinalityNext
+      let cardinalityNext = await oracle.cardinalityNext()
+      while (cardinalityNext < 65535) {
+        const growTo = Math.min(65535, cardinalityNext + BATCH_SIZE)
+        console.log('growing from', cardinalityNext, 'to', growTo)
+        await oracle.grow(growTo)
+        cardinalityNext = growTo
       }
 
       for (let i = 0; i < 65535; i += BATCH_SIZE) {
