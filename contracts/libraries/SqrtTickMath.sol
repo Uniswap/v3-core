@@ -7,16 +7,14 @@ import './LowGasSafeMath.sol';
 /// @title Math library for computing sqrt(price) from ticks
 /// @notice Computes sqrt(price) from ticks of size 1.0001 as fixed point Q64.96 numbers
 library SqrtTickMath {
-    // these values come from log base 1.0001 of 2**128
-    // i.e. the assumption is the price cannot exceed 2**128 or 2**-128 because the total supply of both tokens
-    // is assumed to be less than 2**128
+    /// @dev The minimum tick that may be passed to #getSqrtRatioAtTick
     int24 internal constant MIN_TICK = -887272;
+    /// @dev The maximum tick that may be passed to #getSqrtRatioAtTick
     int24 internal constant MAX_TICK = -MIN_TICK;
 
-    // getSqrtRatioAtTick(MIN_TICK)
+    /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
-
-    // getSqrtRatioAtTick(MAX_TICK)
+    /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
     /// @notice Gets the sqrt(price) associated with a given tick as a fixed point Q64.96 number
