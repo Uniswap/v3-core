@@ -59,6 +59,12 @@ library FullMath {
         return l * r;
     }
 
+    /// @notice Calculates x×y÷z, rounds the result up, and throws in case z is zero or if the result
+    ///      does not fit into uint256.
+    /// @param x The multiplicand
+    /// @param y The multiplier
+    /// @param d The divisor
+    /// @return The result
     function mulDivRoundingUp(
         uint256 x,
         uint256 y,
