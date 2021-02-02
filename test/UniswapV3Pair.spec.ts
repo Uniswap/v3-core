@@ -24,6 +24,7 @@ import {
   MaxUint128,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
+import { TestUniswapV3ReentrantCallee } from '../typechain/TestUniswapV3ReentrantCallee'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
 import { SwapMathTest } from '../typechain/SwapMathTest'
 
@@ -1429,6 +1430,22 @@ describe('UniswapV3Pair', () => {
     it('emits an event when unchanged', async () => {
       await pair.setFeeProtocol(7)
       await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 7)
+    })
+  })
+
+  describe('#lock', () => {
+    beforeEach('initialize the pair', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+    })
+
+    it.only('cannot reenter from swap callback', async () => {
+      const reentrant = (await (
+        await ethers.getContractFactory('TestUniswapV3ReentrantCallee')
+      ).deploy()) as TestUniswapV3ReentrantCallee
+
+      // the tests happen in solidity
+      await expect(reentrant.swapToReenter(pair.address)).to.be.revertedWith('Unable to reenter')
     })
   })
 })
