@@ -10,7 +10,7 @@ import './pair/IUniswapV3PairDerivedState.sol';
 
 /// @title The interface for a Uniswap V3 Pair
 /// @notice A Uniswap pair facilitates swapping and automated market making between any two assets that strictly conform
-///     to the ERC20 specification
+/// to the ERC20 specification
 /// @dev The pair interface is broken up into many smaller pieces
 interface IUniswapV3Pair is
     IUniswapV3PairImmutables,

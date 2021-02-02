@@ -7,10 +7,15 @@ import './UniswapV3Pair.sol';
 import './UniswapV3PairDeployer.sol';
 import './NoDelegateCall.sol';
 
+/// @title Canonical Uniswap V3 pair factory
+/// @notice Deploys Uniswap V3 pairs and manages ownership and control over pair protocol fees
 contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegateCall {
+    /// @inheritdoc IUniswapV3Factory
     address public override owner;
 
+    /// @inheritdoc IUniswapV3Factory
     mapping(uint24 => int24) public override feeAmountTickSpacing;
+    /// @inheritdoc IUniswapV3Factory
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPair;
 
     constructor() {
@@ -25,6 +30,7 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
         emit FeeAmountEnabled(9000, 180);
     }
 
+    /// @inheritdoc IUniswapV3Factory
     function createPair(
         address tokenA,
         address tokenB,
@@ -43,12 +49,14 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PairDeployer, NoDelegat
         emit PairCreated(token0, token1, fee, tickSpacing, pair);
     }
 
+    /// @inheritdoc IUniswapV3Factory
     function setOwner(address _owner) external override {
         require(msg.sender == owner);
         emit OwnerChanged(owner, _owner);
         owner = _owner;
     }
 
+    /// @inheritdoc IUniswapV3Factory
     function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
         require(msg.sender == owner);
         require(fee < 1000000);

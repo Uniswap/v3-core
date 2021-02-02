@@ -5,7 +5,7 @@ pragma solidity >=0.5.0;
 /// @notice Contains pair methods that can be called by anyone
 interface IUniswapV3PairActions {
     /// @notice Sets the initial price for the pair
-    /// @dev price is represented as a sqrt(token1/token0) Q64.96 value
+    /// @dev Price is represented as a sqrt(token1/token0) Q64.96 value
     /// @param sqrtPriceX96 the initial sqrt price of the pair as a Q64.96
     function initialize(uint160 sqrtPriceX96) external;
 
@@ -22,9 +22,8 @@ interface IUniswapV3PairActions {
 
     /// @notice Adds liquidity for the given recipient/tickLower/tickUpper position
     /// @dev The caller of this method receives a callback in the form of IUniswapV3MintCallback#uniswapV3MintCallback
-    ///     in which they must pay any token0 or token1 owed for the liquidity
-    /// @dev The amount of token0/token1 due depends on tickLower, tickUpper, the amount of liquidity and the current
-    ///     price
+    /// in which they must pay any token0 or token1 owed for the liquidity. The amount of token0/token1 due depends
+    /// on tickLower, tickUpper, the amount of liquidity and the current price.
     /// @param recipient the address for which the liquidity will be created
     /// @param tickLower the lower tick of the position for which to add liquidity
     /// @param tickUpper the upper tick of the position for which to add liquidity
@@ -42,7 +41,7 @@ interface IUniswapV3PairActions {
     /// @dev Does not recompute fees, which must be done either via mint, burn or poke
     /// @dev Must be called by the position owner
     /// @dev amounts requested can be 0 to not withdraw fees for that token, or greater than the fees owed to withdraw
-    ///     all fees owed
+    /// all fees owed
     /// @param recipient the address which should receive the fees collected
     /// @param tickLower the lower tick of the position for which to collect fees
     /// @param tickUpper the upper tick of the position for which to collect fees
@@ -79,7 +78,7 @@ interface IUniswapV3PairActions {
     /// @param zeroForOne true iff the swap is from token0 to token1, false if from token1 to token0
     /// @param amountSpecified either the exact input (positive) or exact output (negative) amount
     /// @param sqrtPriceLimitX96 the Q64.96 sqrt price limit. If zero for one, the price cannot be less than this
-    ///     value after the swap. If one for zero, the price cannot be greater than this value after the swap.
+    /// value after the swap. If one for zero, the price cannot be greater than this value after the swap.
     /// @param data any data to pass through to the callback
     function swap(
         address recipient,
@@ -104,7 +103,7 @@ interface IUniswapV3PairActions {
 
     /// @notice Increase the maximum number of price and liquidity observations that this pair will store
     /// @dev This method is no-op if the pair already has an observationCardinalityNext greater than or equal to
-    ///     the input observationCardinalityNext
+    /// the input observationCardinalityNext
     /// @param observationCardinalityNext the desired minimum number of observations for the pair to store
     function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external;
 }

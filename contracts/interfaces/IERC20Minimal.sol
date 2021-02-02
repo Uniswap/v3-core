@@ -17,7 +17,7 @@ interface IERC20Minimal {
     function approve(address spender, uint256 amount) external returns (bool);
 
     /// @notice Transfers from the sender, and deducts from the allowance of the sender.
-    ///     The allowance of `msg.sender` must be greater than or equal to the amount.
+    /// The allowance of `msg.sender` must be greater than or equal to the amount.
     function transferFrom(
         address sender,
         address recipient,

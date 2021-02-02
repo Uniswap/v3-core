@@ -3,10 +3,10 @@ pragma solidity >=0.5.0;
 
 /// @title Pair state that can change
 /// @notice These methods compose the pair's state, and can change with any frequency including multiple times
-///     per transaction
+/// per transaction
 interface IUniswapV3PairState {
     /// @notice The 0th storage slot in the pair stores many values, and is exposed as a single method to save gas
-    ///     when accessed externally.
+    /// when accessed externally.
     /// @return sqrtPriceX96 the current price of the pair as a sqrt(token1/token0) Q64.96 value
     function slot0()
         external
@@ -22,12 +22,12 @@ interface IUniswapV3PairState {
         );
 
     /// @notice The fee growth as a Q128.128 fees of token0 collected per unit of liquidity for the entire life of the
-    ///     pair
+    /// pair
     /// @dev This value can overflow the uint256
     function feeGrowthGlobal0X128() external view returns (uint256);
 
     /// @notice The fee growth as a Q128.128 fees of token1 collected per unit of liquidity for the entire life of the
-    ///     pair
+    /// pair
     /// @dev This value can overflow the uint256
     function feeGrowthGlobal1X128() external view returns (uint256);
 
@@ -53,12 +53,12 @@ interface IUniswapV3PairState {
 
     /// @notice Returns 256 packed tick initialized boolean values
     /// @param wordPosition the index of the word in the bitmap to fetch. The initialized booleans are packed into words
-    ///     based on the tick and the pair's tick spacing
+    /// based on the tick and the pair's tick spacing
     function tickBitmap(int16 wordPosition) external view returns (uint256);
 
     /// @notice Returns 8 packed tick seconds outside values
     /// @param wordPosition the index of the word in the map to fetch. The seconds outside 32 bit values are packed into
-    ///     words based on the tick and the pair's tick spacing
+    /// words based on the tick and the pair's tick spacing
     function secondsOutside(int24 wordPosition) external view returns (uint256);
 
     /// @notice Returns the information about a position by the position's key
@@ -78,7 +78,7 @@ interface IUniswapV3PairState {
     /// @notice Returns data about a specific observation index
     /// @param index the element of the observations array to fetch
     /// @dev You most likely want to use #scry instead of this method to get an observation as of some amount of time
-    ///      ago rather than at a specific index in the array
+    /// ago rather than at a specific index in the array
     /// @return blockTimestamp the timestamp of the observation
     function observations(uint256 index)
         external
