@@ -127,10 +127,7 @@ library Tick {
     /// @notice Clears tick data
     /// @param self The mapping containing all initialized tick information for initialized ticks
     /// @param tick The tick that will be cleared
-    function clear(
-        mapping(int24 => Tick.Info) storage self,
-        int24 tick
-    ) internal {
+    function clear(mapping(int24 => Tick.Info) storage self, int24 tick) internal {
         delete self[tick];
     }
 
