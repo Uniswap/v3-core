@@ -4,8 +4,9 @@ pragma solidity >=0.5.0;
 /// @title Oracle
 /// @notice Provides price and liquidity data useful for a wide variety of system designs
 /// @dev Instances of stored oracle data, "observations", are collected in the oracle array
-///     Every pair is initialized with an oracle array length of 1. Anyone can pay the ~20k gas to increase the
-///     length of the oracle array. The new slot will be added after the full length of observations is populated.
+///     Every pair is initialized with an oracle array length of 1. Anyone can pay the SSTOREs to increase the
+///     maximum length of the oracle array. New slots will be added when the array is fully populated.
+///     Observations are overwritten when the full length of the oracle array is populated.
 ///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to scry()
 library Oracle {
     struct Observation {
@@ -19,12 +20,12 @@ library Oracle {
         bool initialized;
     }
 
-    /// @notice Writes over (transforms) a previous observation with a new observation, given the passage of time and current values
+    /// @notice Transforms a previous observation into a new observation, given the passage of time and the current tick and liquidity values
     /// @dev blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp, safe for 0 or 1 overflows
-    /// @param last The last populated element in the oracle array
-    /// @param blockTimestamp The timestamp of the observation, expressed in UNIX, truncated to uint32
+    /// @param last The specified observation
+    /// @param blockTimestamp The timestamp of the observation, truncated to uint32
     /// @param tick The active tick at the time of the observation
-    /// @param liquidity The total pair liquidity at the time of the call
+    /// @param liquidity The total in-range liquidity at the time of the call
     /// @return Observation The newly populated observation
     function transform(
         Observation memory last,
@@ -44,7 +45,7 @@ library Oracle {
 
     /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array
     /// @param self The stored oracle array
-    /// @param time The time of the oracle initialization, expressed in UNIX, via block.timestamp truncated to uint32
+    /// @param time The time of the oracle initialization, via block.timestamp truncated to uint32
     /// @return cardinality The number of populated elements in the oracle array
     /// @return cardinalityNext The new length of the oracle array, independent of population
     function initialize(Observation[65535] storage self, uint32 time)
@@ -56,17 +57,17 @@ library Oracle {
     }
 
     /// @notice Writes an oracle observation to the array
-    /// @dev Writable at most once per block indices cycle, and must be tracked externally. if the index
-    ///     is at the end of the allowable array length (according to cardinality), and the next cardinality
-    ///     is greater than the current one, cardinality may be increased. this restriction is created to preserve ordering.
+    /// @dev Writable at most once per block. Index represents the most recently written element, and must be tracked externally.    
+    ///     If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
+    ///     is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
     /// @param self The stored oracle array
-    /// @param index The location of a given observation within the oracle array
-    /// @param blockTimestamp The timestamp of the observation, expressed in UNIX, truncated to uint32
+    /// @param index The location of the most recently updated observation
+    /// @param blockTimestamp The timestamp of the observation, truncated to uint32
     /// @param tick The active tick at the time of the observation
-    /// @param liquidity The total pair liquidity at the time of the call
+    /// @param liquidity The total in-range liquidity at the time of the call
     /// @param cardinality The number of populated elements in the oracle array
     /// @param cardinalityNext The new length of the oracle array, independent of population
-    /// @return indexUpdated The first new element to be populated in the oracle array
+    /// @return indexUpdated The new index of the most recently written element in the oracle array
     /// @return cardinalityUpdated The new cardinality of the oracle array
     function write(
         Observation[65535] storage self,
@@ -94,13 +95,10 @@ library Oracle {
     }
 
     /// @notice Prepares the oracle array to store up to `next` observations
-    /// @dev Cardinality cannot be changed unless the index is currently the last element of the array in order to avoid reordering.
-    ///     the cardinality is either immediately changed if the above is true, or changed on the next write when the write
-    ///     fills the last index in current cardinality.
     /// @param self The stored oracle array
-    /// @param current The current cardinality of the oracle array
-    /// @param next The new cardinality which will be populated in the oracle array
-    /// @return next The new cardinality which will be populated in the oracle array
+    /// @param current The current next cardinality of the oracle array
+    /// @param next The proposed next cardinality which will be populated in the oracle array
+    /// @return next The next cardinality which will be populated in the oracle array
     function grow(
         Observation[65535] storage self,
         uint16 current,
@@ -119,8 +117,8 @@ library Oracle {
     /// @dev safe for 0 or 1 overflows, a and b _must_ be chronologically before or equal to time
     /// @param time A timestamp truncated to 32 bits
     /// @param a A comparison timestamp from which to determine the relative position of `time`
-    /// @param b A comparison timestamp from which to determine the relative position of `time`
-    /// @return bool A true or false statement used to contextualize `time`
+    /// @param b From which to determine the relative position of `time`
+    /// @return bool Whether `a` is chronologically <= `b`
     function lte(
         uint32 time,
         uint32 a,
@@ -135,12 +133,13 @@ library Oracle {
         return aAdjusted <= bAdjusted;
     }
 
-    /// @notice Fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied. Used when a counterfactual observation is not possible
-    /// @dev The answer must be contained in the array, note that even though we're not modifying self it must be passed by ref to save gas
+    /// @notice Fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    /// @dev The answer must be contained in the array, used when the target is located within the stored observation 
+    ///     boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
     /// @param self The stored oracle array
-    /// @param time The time of the call
-    /// @param target The length of the oracle array, independent of population
-    /// @param index The location of a given observation within the oracle array
+    /// @param time The time of the observation, through block.timestamp truncated to uint32
+    /// @param target The timestamp at which the reserved observation should be for
+    /// @param index The location of the most recently written observation within the oracle array
     /// @param cardinality The number of populated elements in the oracle array
     /// @return beforeOrAt The observation recorded before, or at, the target
     /// @return atOrAfter The observation recorded at, or after, the target
@@ -181,8 +180,8 @@ library Oracle {
     /// @dev There _must_ be at least 1 initialized observation.
     ///      Used by scry() to contextualize a potential counterfactual observation as it would have occurred if a block were mined at the time of the desired observation
     /// @param self The stored oracle array
-    /// @param time The time of the observation, expressed in UNIX, through block.timestamp truncated to uint32
-    /// @param target The length of the oracle array, independent of population
+    /// @param time The time of the observation, through block.timestamp truncated to uint32
+    /// @param target The timestamp at which the reserved observation should be for
     /// @param tick The active tick at the time of the returned or simulated observation
     /// @param index The location of a given observation within the oracle array
     /// @param liquidity The total pair liquidity at the time of the call
@@ -227,14 +226,14 @@ library Oracle {
     /// @dev Called from the pair contract. Contingent on having an observation at or before the desired observation. 0 may be passed as `secondsAgo' to return the present pair data.
     ///      if called with a timestamp falling between two consecutive observations, returns a counterfactual observation as it would appear if a block were mined at the time of the call
     /// @param self The stored oracle array
-    /// @param time The time of the desired observation, expressed in UNIX, through block.timestamp truncated to uint32
+    /// @param time The time of the desired observation, through block.timestamp truncated to uint32
     /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
-    /// @param tick The active tick at the time of the returned or simulated observation
+    /// @param tick The current tick
     /// @param index The location of a given observation within the oracle array
-    /// @param liquidity The total pair liquidity at the time of the call
+    /// @param liquidity The current in-range pair liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pair was first initialized
-    /// @return liquidityCumulative The liquidity * time elapsed since the pair was first initialized
+    /// @return liquidityCumulative The liquidity * time elapsed since the pair was first initialized, as of `secondsAgo`
     function scry(
         Observation[65535] storage self,
         uint32 time,
