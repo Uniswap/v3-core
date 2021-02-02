@@ -23,9 +23,9 @@ library Oracle {
     /// @notice Transforms a previous observation into a new observation, given the passage of time and the current tick and liquidity values
     /// @dev blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp, safe for 0 or 1 overflows
     /// @param last The specified observation to be transformed
-    /// @param blockTimestamp The timestamp of the observation, truncated to uint32
-    /// @param tick The active tick at the time of the observation
-    /// @param liquidity The total in-range liquidity at the time of the call
+    /// @param blockTimestamp The timestamp of the new observation
+    /// @param tick The active tick at the time of the new observation
+    /// @param liquidity The total in-range liquidity at the time of the new observation
     /// @return Observation The newly populated observation
     function transform(
         Observation memory last,
@@ -62,9 +62,9 @@ library Oracle {
     ///     is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
     /// @param self The stored oracle array
     /// @param index The location of the most recently updated observation
-    /// @param blockTimestamp The timestamp of the observation, truncated to uint32
-    /// @param tick The active tick at the time of the observation
-    /// @param liquidity The total in-range liquidity at the time of the call
+    /// @param blockTimestamp The timestamp of the new observation
+    /// @param tick The active tick at the time of the new observation
+    /// @param liquidity The total in-range liquidity at the time of the new observation
     /// @param cardinality The number of populated elements in the oracle array
     /// @param cardinalityNext The new length of the oracle array, independent of population
     /// @return indexUpdated The new index of the most recently written element in the oracle array
@@ -137,7 +137,7 @@ library Oracle {
     /// @dev The answer must be contained in the array, used when the target is located within the stored observation
     ///     boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
     /// @param self The stored oracle array
-    /// @param time The time of the observation, through block.timestamp truncated to uint32
+    /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
     /// @param index The location of the most recently written observation within the oracle array
     /// @param cardinality The number of populated elements in the oracle array
@@ -180,7 +180,7 @@ library Oracle {
     /// @dev There _must_ be at least 1 initialized observation.
     ///      Used by scry() to contextualize a potential counterfactual observation as it would have occurred if a block were mined at the time of the desired observation
     /// @param self The stored oracle array
-    /// @param time The time of the observation, through block.timestamp truncated to uint32
+    /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
     /// @param tick The active tick at the time of the returned or simulated observation
     /// @param index The location of a given observation within the oracle array
@@ -226,13 +226,13 @@ library Oracle {
     /// @dev Called from the pair contract. Contingent on having an observation at or before the desired observation. 0 may be passed as `secondsAgo' to return the present pair data.
     ///      if called with a timestamp falling between two consecutive observations, returns a counterfactual observation as it would appear if a block were mined at the time of the call
     /// @param self The stored oracle array
-    /// @param time The time of the desired observation, through block.timestamp truncated to uint32
+    /// @param time The current block.timestamp
     /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
     /// @param tick The current tick
     /// @param index The location of a given observation within the oracle array
     /// @param liquidity The current in-range pair liquidity
     /// @param cardinality The number of populated elements in the oracle array
-    /// @return tickCumulative The tick * time elapsed since the pair was first initialized
+    /// @return tickCumulative The tick * time elapsed since the pair was first initialized, as of `secondsAgo`
     /// @return liquidityCumulative The liquidity * time elapsed since the pair was first initialized, as of `secondsAgo`
     function scry(
         Observation[65535] storage self,
