@@ -9,16 +9,8 @@ contract TickTest {
 
     mapping(int24 => Tick.Info) public ticks;
 
-    function tickSpacingToParameters(int24 tickSpacing)
-        external
-        pure
-        returns (
-            int24 minTick,
-            int24 maxTick,
-            uint128 maxLiquidityPerTick
-        )
-    {
-        return Tick.tickSpacingToParameters(tickSpacing);
+    function tickSpacingToMaxLiquidityPerTick(int24 tickSpacing) external pure returns (uint128) {
+        return Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing);
     }
 
     function setTick(int24 tick, Tick.Info memory info) external {

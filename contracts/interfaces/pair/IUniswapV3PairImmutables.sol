@@ -19,12 +19,6 @@ interface IUniswapV3PairImmutables {
     /// @notice Ticks can only be used at multiples of this value, minimum of 1 and always positive
     function tickSpacing() external view returns (int24);
 
-    /// @notice The smallest tick, i.e. smallest price, that is allowed to be used by a position
-    function minTick() external view returns (int24);
-
-    /// @notice The largest tick, i.e. largest price, that is allowed to be used by a position
-    function maxTick() external view returns (int24);
-
     /// @notice The maximum amount of position liquidity that can use any tick in the range
     function maxLiquidityPerTick() external view returns (uint128);
 }

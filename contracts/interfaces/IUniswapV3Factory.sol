@@ -48,9 +48,9 @@ interface IUniswapV3Factory {
     /// @param tokenA one of the two tokens in the desired pair
     /// @param tokenB the other of the two tokens in the desired pair
     /// @param fee the desired fee for the pair
-    /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order
-    /// @dev tickSpacing is looked up from the fee
-    /// @dev The call will revert if the pair already exists, the fee is invalid, or the token arguments are invalid
+    /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order, tickSpacing is looked up
+    /// from the fee, and the call will revert if the pair already exists or the fee is invalid or the token arguments
+    /// are invalid.
     function createPair(
         address tokenA,
         address tokenB,
@@ -63,5 +63,7 @@ interface IUniswapV3Factory {
 
     /// @notice Enables a fee amount with the given tickSpacing
     /// @dev Fee amounts may never be removed once enabled
+    /// @param fee the fee amount to enable, in pips (i.e. 1e-6)
+    /// @param tickSpacing the spacing between ticks to be enforced for all pairs created with the given fee amount
     function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
 }

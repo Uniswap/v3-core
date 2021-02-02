@@ -52,11 +52,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     // int24 to avoid casting even though it's always positive
     int24 public immutable override tickSpacing;
 
-    // the minimum and maximum tick for the pair
-    // always a multiple of tickSpacing
-    int24 public immutable override minTick;
-    int24 public immutable override maxTick;
-
     // the maximum amount of liquidity that can use any individual tick
     uint128 public immutable override maxLiquidityPerTick;
 
@@ -115,13 +110,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         (factory, token0, token1, fee, _tickSpacing) = IUniswapV3PairDeployer(msg.sender).parameters();
         tickSpacing = _tickSpacing;
 
-        (minTick, maxTick, maxLiquidityPerTick) = Tick.tickSpacingToParameters(_tickSpacing);
+        maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
     }
 
-    function checkTicks(int24 tickLower, int24 tickUpper) private view {
+    function checkTicks(int24 tickLower, int24 tickUpper) private pure {
         require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= minTick, 'TLM');
-        require(tickUpper <= maxTick, 'TUM');
+        require(tickLower >= SqrtTickMath.MIN_TICK, 'TLM');
+        require(tickUpper <= SqrtTickMath.MAX_TICK, 'TUM');
     }
 
     // returns the block timestamp % 2**32
@@ -181,8 +176,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         require(slot0.sqrtPriceX96 == 0, 'AI');
 
         int24 tick = SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96);
-        require(tick >= minTick, 'MIN');
-        require(tick < maxTick, 'MAX');
 
         (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(_blockTimestamp());
 
@@ -255,7 +248,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     params.liquidityDelta
                 );
 
-                // downcasting is safe because of gross liquidity checks
                 liquidity = liquidityBefore.addDelta(params.liquidityDelta);
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
@@ -496,7 +488,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         Slot0 memory _slot0 = slot0;
 
         require(_slot0.unlocked, 'LOK');
-        require(zeroForOne ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 : sqrtPriceLimitX96 > _slot0.sqrtPriceX96, 'SPL');
+        require(
+            zeroForOne
+                ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 && sqrtPriceLimitX96 > SqrtTickMath.MIN_SQRT_RATIO
+                : sqrtPriceLimitX96 > _slot0.sqrtPriceX96 && sqrtPriceLimitX96 < SqrtTickMath.MAX_SQRT_RATIO,
+            'SPL'
+        );
 
         slot0.unlocked = false;
 
@@ -527,9 +524,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 zeroForOne
             );
 
+            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
+            if (step.tickNext < SqrtTickMath.MIN_TICK) {
+                step.tickNext = SqrtTickMath.MIN_TICK;
+            } else if (step.tickNext > SqrtTickMath.MAX_TICK) {
+                step.tickNext = SqrtTickMath.MAX_TICK;
+            }
+
             // get the price for the next tick
             step.sqrtPriceNextX96 = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
+            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
                 (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)
@@ -554,8 +559,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
-                require(zeroForOne ? step.tickNext > minTick : step.tickNext < maxTick, 'TN');
-
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     int128 liquidityDelta =
@@ -574,10 +577,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
-            } else {
-                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), but haven't moved
-                if (state.sqrtPriceX96 != step.sqrtPriceStartX96)
-                    state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
+            } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
+                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
+                state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
             }
         }
 
@@ -599,8 +601,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
-        zeroForOne ? feeGrowthGlobal0X128 = state.feeGrowthGlobalX128 : feeGrowthGlobal1X128 = state
-            .feeGrowthGlobalX128;
+        if (zeroForOne) feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
+        else feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =

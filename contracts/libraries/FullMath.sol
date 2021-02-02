@@ -11,7 +11,7 @@ library FullMath {
     /// @param y The multiplier
     /// @return l The least significant portion of an emulated 512 bit width integer
     /// @return h The most significant portion of an emulated 512 bit width integer
-    function fullMul(uint256 x, uint256 y) private pure returns (uint256 l, uint256 h) {
+    function fullMul(uint256 x, uint256 y) internal pure returns (uint256 l, uint256 h) {
         uint256 mm = mulmod(x, y, type(uint256).max);
         l = x * y;
         h = mm - l;
