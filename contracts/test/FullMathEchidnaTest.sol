@@ -27,4 +27,16 @@ contract FullMathEchidnaTest {
             assert(ceiled == floored);
         }
     }
+
+    function checkMulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 d
+    ) external pure {
+        require(d > 0);
+        uint256 z = FullMath.mulDiv(x, y, d);
+
+        assert(x - FullMath.mulDiv(z, d, y) < d);
+        assert(y - FullMath.mulDiv(z, d, x) < d);
+    }
 }
