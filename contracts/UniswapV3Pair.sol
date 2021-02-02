@@ -248,7 +248,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     params.liquidityDelta
                 );
 
-                // downcasting is safe because of gross liquidity checks
                 liquidity = liquidityBefore.addDelta(params.liquidityDelta);
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
@@ -525,6 +524,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 zeroForOne
             );
 
+            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
             if (step.tickNext < SqrtTickMath.MIN_TICK) {
                 step.tickNext = SqrtTickMath.MIN_TICK;
             } else if (step.tickNext > SqrtTickMath.MAX_TICK) {
@@ -534,6 +534,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             // get the price for the next tick
             step.sqrtPriceNextX96 = SqrtTickMath.getSqrtRatioAtTick(step.tickNext);
 
+            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
                 (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)
@@ -576,10 +577,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
-            } else {
-                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), but haven't moved
-                if (state.sqrtPriceX96 != step.sqrtPriceStartX96)
-                    state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
+            } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
+                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
+                state.tick = SqrtTickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
             }
         }
 
@@ -601,8 +601,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
-        zeroForOne ? feeGrowthGlobal0X128 = state.feeGrowthGlobalX128 : feeGrowthGlobal1X128 = state
-            .feeGrowthGlobalX128;
+        if (zeroForOne) feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
+        else feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
