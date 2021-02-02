@@ -25,6 +25,7 @@ jobs:
           - BitMathEchidnaTest
           - LowGasSafeMathEchidnaTest
           - UnsafeMathEchidnaTest
+          - FullMathEchidnaTest
 
     steps:
       - uses: actions/checkout@v2
