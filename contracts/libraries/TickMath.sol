@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-// sqrt(1.0001) ticks
+/// @title Math library for computing prices from ticks
+/// @notice Computes prices from ticks of size sqrt(1.0001) as fixed point Q128.128 numbers
+/// @dev All formulas rely on sqrt price, so this library computes sqrt(1.0001)^tick s.t. we can get sqrt(price)
+///     for ticks of size 1 bips
 library TickMath {
     uint24 private constant MAX_TICK = 887272;
 
-    // Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > max tick.
+    /// @notice Calculate sqrt(1.0001)^tick * 2^128.  Throw in case |tick| > max tick
+    /// @param tick the input tick for the above formula
+    /// @return ratio fixed point Q128.128 number representing the ratio of the two assets (token1/token0) at that tick
     function getRatioAtTick(int24 tick) internal pure returns (uint256 ratio) {
         uint256 absTick = tick < 0 ? uint24(-tick) : uint24(tick);
         require(absTick <= MAX_TICK, 'T');
@@ -34,9 +39,11 @@ library TickMath {
         if (tick > 0) ratio = type(uint256).max / ratio;
     }
 
-    // Calculate the highest tick value such that getRatioAtTick(tick) <= ratio.
-    // Throw in case ratio < 18447437462383981825, as 18447437462383981825 is the
-    // lowest value getRatioAtTick may ever return.
+    /// @notice Calculate the greatest tick value such that getRatioAtTick(tick) <= ratio.
+    ///     Throw in case ratio < 18447437462383981825, as 18447437462383981825 is the lowest value getRatioAtTick may
+    ///     ever return.
+    /// @param ratio the ratio for which to compute the tick
+    /// @return tick the greatest tick for which the ratio is less than or equal to the input ratio
     function getTickAtRatio(uint256 ratio) internal pure returns (int24 tick) {
         // second inequality must be < because the price can never reach the price at the max tick
         require(
