@@ -1439,7 +1439,7 @@ describe('UniswapV3Pair', () => {
       await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
     })
 
-    it.only('cannot reenter from swap callback', async () => {
+    it('cannot reenter from swap callback', async () => {
       const reentrant = (await (
         await ethers.getContractFactory('TestUniswapV3ReentrantCallee')
       ).deploy()) as TestUniswapV3ReentrantCallee
