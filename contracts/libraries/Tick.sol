@@ -6,6 +6,8 @@ import './SafeCast.sol';
 import './LiquidityMath.sol';
 import './LowGasSafeMath.sol';
 
+/// @title Tick
+/// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
     // info stored for each initialized individual tick
     struct Info {
@@ -19,6 +21,13 @@ library Tick {
         uint256 feeGrowthOutside1X128;
     }
 
+    /// @notice 
+    /// @dev Executed within the pair constructor
+    /// @param tickSpacing The amount of required tick separation, realized in multiples of `tickSpacing`
+    ///     e.g., a tickSpacing of 3 requires ticks to be initialized every 3rd tick i.e., ..., -6, -3, 0, 3, 6, ...
+    /// @return minTick The minimum tick of the pair
+    /// @return maxTick The maximum tick of the pair
+    /// @return maxLiquidityPerTick The maximum liquidity allocation for a single tick
     function tickSpacingToParameters(int24 tickSpacing)
         internal
         pure
@@ -34,6 +43,15 @@ library Tick {
         maxLiquidityPerTick = type(uint128).max / numTicks;
     }
 
+    /// @notice Retrieves fee growth data for fee rewards calculations\
+    /// @param self The mapping containing all tick information for initialized ticks
+    /// @param tickLower The lower tick boundary of the position
+    /// @param tickUpper The upper tick boundary of the position
+    /// @param tickCurrent The 
+    /// @param feeGrowthGlobal0X128
+    /// @param feeGrowthGlobal1X128
+    /// @return feeGrowthInside0X128
+    /// @return feeGrowthInside1X128
     function getFeeGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         int24 tickLower,
