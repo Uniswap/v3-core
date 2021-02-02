@@ -14,7 +14,7 @@ const FILENAMES_DOCS_GENERATE = ['contracts/UniswapV3Pair.sol', 'contracts/Unisw
 
 const output = Object.keys(buildOutput.output.contracts).reduce((results, fileName) => {
   const contractsInFile = Object.keys(buildOutput.output.contracts[fileName])
-  if (FILENAMES_DOCS_GENERATE.indexOf(fileName) === -1 || fileName.startsWith('interfaces/')) return results
+  if (FILENAMES_DOCS_GENERATE.indexOf(fileName) === -1 && !fileName.startsWith('contracts/interfaces/')) return results
 
   return {
     ...results,
