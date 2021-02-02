@@ -24,6 +24,7 @@ jobs:
           - OracleEchidnaTest
           - BitMathEchidnaTest
           - LowGasSafeMathEchidnaTest
+          - UnsafeMathEchidnaTest
 
     steps:
       - uses: actions/checkout@v2

@@ -28,12 +28,4 @@ library LowGasSafeMath {
     function sub(int256 x, int256 y) internal pure returns (int256 z) {
         require((z = x - y) <= x == (y >= 0));
     }
-
-    /// @notice Returns ceil(x / y)
-    /// @dev TODO: This method is not safe. It panics on division by zero. In many cases that it is called, we do not
-    ///     want to waste gas on a require for the denominator.
-    function divRoundingUp(uint256 x, uint256 d) internal pure returns (uint256 z) {
-        // addition is safe because (type(uint256).max / 1) + (type(uint256).max % 1 > 0 ? 1 : 0) == type(uint256).max
-        z = (x / d) + (x % d > 0 ? 1 : 0);
-    }
 }
