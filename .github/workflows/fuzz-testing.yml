@@ -18,7 +18,6 @@ jobs:
           - TickMathEchidnaTest
           - SqrtPriceMathEchidnaTest
           - SwapMathEchidnaTest
-          - TickMathEchidnaTest
           - TickEchidnaTest
           - TickOverflowSafetyEchidnaTest
           - OracleEchidnaTest

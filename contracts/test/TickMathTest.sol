@@ -8,7 +8,7 @@ contract TickMathTest {
         return TickMath.getSqrtRatioAtTick(tick);
     }
 
-    function getGasCostOfGetSqrtRatioAtTick(int24 tick) external pure returns (uint256) {
+    function getGasCostOfGetSqrtRatioAtTick(int24 tick) external view returns (uint256) {
         uint256 gasBefore = gasleft();
         TickMath.getSqrtRatioAtTick(tick);
         return gasBefore - gasleft();
@@ -18,9 +18,9 @@ contract TickMathTest {
         return TickMath.getTickAtSqrtRatio(sqrtPriceX96);
     }
 
-    function getGasCostOfGetTickAtSqrtRatio(int24 tick) external pure returns (uint256) {
+    function getGasCostOfGetTickAtSqrtRatio(uint160 sqrtPriceX96) external view returns (uint256) {
         uint256 gasBefore = gasleft();
-        TickMath.getTickAtSqrtRatio(tick);
+        TickMath.getTickAtSqrtRatio(sqrtPriceX96);
         return gasBefore - gasleft();
     }
 
