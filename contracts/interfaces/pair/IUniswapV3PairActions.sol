@@ -38,10 +38,9 @@ interface IUniswapV3PairActions {
     ) external;
 
     /// @notice Collect fees owed to a position
-    /// @dev Does not recompute fees, which must be done either via mint, burn or poke
-    /// @dev Must be called by the position owner
-    /// @dev amounts requested can be 0 to not withdraw fees for that token, or greater than the fees owed to withdraw
-    /// all fees owed
+    /// @dev Does not recompute fees, which must be done either via mint, burn or poke. Must be called by the position
+    /// owner. Amounts requested can be 0 to not withdraw fees for that token, or greater than the fees owed to
+    /// withdraw all fees owed
     /// @param recipient the address which should receive the fees collected
     /// @param tickLower the lower tick of the position for which to collect fees
     /// @param tickUpper the upper tick of the position for which to collect fees
