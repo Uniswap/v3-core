@@ -1212,7 +1212,7 @@ describe('UniswapV3Pair', () => {
       const { feeAmount, amountIn, amountOut, sqrtQ } = await swapMath.computeSwapStep(
         p0,
         p0.sub(1),
-        liquidity.add(1),
+        liquidity,
         3,
         FeeAmount.MEDIUM
       )
@@ -1228,8 +1228,10 @@ describe('UniswapV3Pair', () => {
       .withArgs(wallet.address, pair.address, 3)
       .to.not.emit(token1, 'Transfer')
 
-    expect((await pair.slot0()).tick, 'pair is at the next tick').to.eq(-24082)
-    expect((await pair.slot0()).sqrtPriceX96, 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
+    const { tick, sqrtPriceX96 } = await pair.slot0()
+
+    expect(tick, 'pair is at the next tick').to.eq(-24082)
+    expect(sqrtPriceX96, 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
     expect(await pair.liquidity(), 'pair has run tick transition and liquidity changed').to.eq(liquidity.mul(2))
   })
 
