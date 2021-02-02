@@ -17,13 +17,13 @@ describe('SqrtPriceMath', () => {
     it('fails if price is zero', async () => {
       await expect(
         sqrtPriceMath.getNextSqrtPriceFromInput(0, 0, expandTo18Decimals(1).div(10), false)
-      ).to.be.revertedWith('P')
+      ).to.be.revertedWith('')
     })
 
     it('fails if liquidity is zero', async () => {
       await expect(
         sqrtPriceMath.getNextSqrtPriceFromInput(1, 0, expandTo18Decimals(1).div(10), true)
-      ).to.be.revertedWith('L')
+      ).to.be.revertedWith('')
     })
 
     it('fails if input amount overflows the price', async () => {
@@ -116,22 +116,20 @@ describe('SqrtPriceMath', () => {
     it('fails if price is zero', async () => {
       await expect(
         sqrtPriceMath.getNextSqrtPriceFromOutput(0, 0, expandTo18Decimals(1).div(10), false)
-      ).to.be.revertedWith('P')
+      ).to.be.revertedWith('')
     })
 
     it('fails if liquidity is zero', async () => {
       await expect(
         sqrtPriceMath.getNextSqrtPriceFromOutput(1, 0, expandTo18Decimals(1).div(10), true)
-      ).to.be.revertedWith('L')
+      ).to.be.revertedWith('')
     })
 
     it('fails if output amount is exactly the virtual reserves of token0', async () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
       const amountOut = 4
-      await expect(sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, false)).to.be.revertedWith(
-        'OUT'
-      )
+      await expect(sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, false)).to.be.revertedWith('')
     })
 
     it('fails if output amount is greater than virtual reserves of token0', async () => {
