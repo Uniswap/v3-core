@@ -14,7 +14,7 @@ library SqrtTickMath {
     int24 internal constant MAX_TICK = -MIN_TICK;
 
     /// @notice Gets the sqrt(price) associated with a given tick as a fixed point Q64.96 number
-    /// @param the tick for which to compute the sqrt price
+    /// @param tick the tick for which to compute the sqrt price
     /// @return the sqrt price for ticks of size 1.0001
     function getSqrtRatioAtTick(int24 tick) internal pure returns (uint160) {
         return uint160(LowGasSafeMath.divRoundingUp(TickMath.getRatioAtTick(tick), 1 << 32));
