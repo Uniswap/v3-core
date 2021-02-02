@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '../libraries/SqrtTickMath.sol';
+import '../libraries/TickMath.sol';
 
 import '../interfaces/callback/IUniswapV3SwapCallback.sol';
 
@@ -11,7 +11,7 @@ contract TestUniswapV3ReentrantCallee is IUniswapV3SwapCallback {
     string private constant expectedReason = 'LOK';
 
     function swapToReenter(address pair) external {
-        IUniswapV3Pair(pair).swap(address(0), false, 1, SqrtTickMath.MAX_SQRT_RATIO - 1, new bytes(0));
+        IUniswapV3Pair(pair).swap(address(0), false, 1, TickMath.MAX_SQRT_RATIO - 1, new bytes(0));
     }
 
     function uniswapV3SwapCallback(
