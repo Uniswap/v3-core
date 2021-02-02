@@ -1384,4 +1384,49 @@ describe('UniswapV3Pair', () => {
       })
     })
   })
+
+  describe('#setFeeProtocol', () => {
+    it('can only be called by factory owner', async () => {
+      await expect(pair.connect(other).setFeeProtocol(5)).to.be.revertedWith('')
+    })
+    it('fails if fee is lt 4 or gt 10', async () => {
+      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
+    })
+    it('succeeds for fee of 4', async () => {
+      await pair.setFeeProtocol(4)
+    })
+    it('succeeds for fee of 10', async () => {
+      await pair.setFeeProtocol(10)
+    })
+    it('sets protocol fee', async () => {
+      await pair.setFeeProtocol(7)
+      expect((await pair.slot0()).feeProtocol).to.eq(7)
+    })
+    it('can change protocol fee', async () => {
+      await pair.setFeeProtocol(7)
+      await pair.setFeeProtocol(5)
+      expect((await pair.slot0()).feeProtocol).to.eq(5)
+    })
+    it('can turn off protocol fee', async () => {
+      await pair.setFeeProtocol(4)
+      await pair.setFeeProtocol(0)
+      expect((await pair.slot0()).feeProtocol).to.eq(0)
+    })
+    it('emits an event when turned on', async () => {
+      await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(0, 7)
+    })
+    it('emits an event when turned off', async () => {
+      await pair.setFeeProtocol(7)
+      await expect(pair.setFeeProtocol(0)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 0)
+    })
+    it('emits an event when changed', async () => {
+      await pair.setFeeProtocol(7)
+      await expect(pair.setFeeProtocol(5)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 5)
+    })
+    it('emits an event when unchanged', async () => {
+      await pair.setFeeProtocol(7)
+      await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 7)
+    })
+  })
 })
