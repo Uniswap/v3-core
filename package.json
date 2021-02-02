@@ -1,7 +1,10 @@
 {
   "name": "@uniswap/v3-core",
-  "description": "🎛 Core smart contracts of Uniswap V3",
+  "description": "🗿 Core smart contracts of Uniswap V3",
   "private": true,
+  "publishConfig": {
+    "access": "restricted"
+  },
   "version": "1.0.0-beta.0",
   "homepage": "https://uniswap.org",
   "keywords": [
@@ -15,7 +18,8 @@
   },
   "files": [
     "contracts/interfaces",
-    "artifacts/contracts"
+    "artifacts/contracts",
+    "artifacts/docs"
   ],
   "engines": {
     "node": ">=10"
@@ -47,6 +51,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "prepublishOnly": "yarn test"
+    "generate:docs": "ts-node scripts/extract-docs.ts",
+    "postcompile": "yarn generate:docs"
   }
 }

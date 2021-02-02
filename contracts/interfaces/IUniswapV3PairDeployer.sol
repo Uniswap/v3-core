@@ -6,7 +6,7 @@ pragma solidity >=0.5.0;
 /// @dev This is used to remove all constructor arguments from the pair enabling pair addresses to be computed cheaply
 /// without storing the entire init code of the pair.
 interface IUniswapV3PairDeployer {
-    /// @notice Get the parameters to be used in constructing the pair. This may be set only transiently during
+    /// @notice Get the parameters to be used in constructing the pair. This is set only transiently during
     /// pair creation.
     /// @dev Called by the pair constructor to fetch the parameters of the pair
     function parameters()
