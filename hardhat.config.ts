@@ -15,6 +15,11 @@ export default {
         enabled: true,
         runs: 50,
       },
+      outputSelection: {
+        '*': {
+          '*': ['abi', 'userdoc', 'devdoc', 'evm.bytecode'],
+        },
+      },
       metadata: {
         // do not include the metadata hash, since this is machine dependent
         // and we want all generated code to be deterministic
