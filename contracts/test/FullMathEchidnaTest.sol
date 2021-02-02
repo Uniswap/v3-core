@@ -35,6 +35,10 @@ contract FullMathEchidnaTest {
     ) external pure {
         require(d > 0);
         uint256 z = FullMath.mulDiv(x, y, d);
+        if (x == 0 || y == 0) {
+            assert(z == 0);
+            return;
+        }
 
         // recompute x and y via mulDiv of the result of floor(x*y/d), should always be less than original inputs by < d
         uint256 x2 = FullMath.mulDiv(z, d, y);
