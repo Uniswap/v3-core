@@ -44,7 +44,7 @@ interface IUniswapV3PairState {
     function protocolFees() external view returns (uint128 token0, uint128 token1);
 
     /// @notice The currently in range liquidity available to the pair
-    /// @dev This value has no relationship to the total liquidity across all ticks.
+    /// @dev This value has no relationship to the total liquidity across all ticks
     function liquidity() external view returns (uint128);
 
     /// @notice Look up information about a specific tick in the pair
