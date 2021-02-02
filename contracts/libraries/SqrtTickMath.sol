@@ -13,6 +13,12 @@ library SqrtTickMath {
     int24 internal constant MIN_TICK = -887272;
     int24 internal constant MAX_TICK = -MIN_TICK;
 
+    // getSqrtRatioAtTick(MIN_TICK)
+    uint160 internal constant MIN_SQRT_RATIO = 4295128739;
+
+    // getSqrtRatioAtTick(MAX_TICK)
+    uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
+
     /// @notice Gets the sqrt(price) associated with a given tick as a fixed point Q64.96 number
     /// @param tick the tick for which to compute the sqrt price
     /// @return the sqrt price for ticks of size 1.0001

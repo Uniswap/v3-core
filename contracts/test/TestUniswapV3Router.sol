@@ -2,6 +2,7 @@
 pragma solidity =0.7.6;
 
 import '../libraries/SafeCast.sol';
+import '../libraries/SqrtTickMath.sol';
 
 import '../interfaces/IERC20Minimal.sol';
 import '../interfaces/callback/IUniswapV3SwapCallback.sol';
@@ -23,7 +24,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             recipient,
             false,
             -amount0Out.toInt256(),
-            type(uint160).max,
+            SqrtTickMath.MAX_SQRT_RATIO - 1,
             abi.encode(pairs, msg.sender)
         );
     }
@@ -37,7 +38,13 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
     ) external {
         address[] memory pairs = new address[](1);
         pairs[0] = pairInput;
-        IUniswapV3Pair(pairOutput).swap(recipient, true, -amount1Out.toInt256(), 0, abi.encode(pairs, msg.sender));
+        IUniswapV3Pair(pairOutput).swap(
+            recipient,
+            true,
+            -amount1Out.toInt256(),
+            SqrtTickMath.MIN_SQRT_RATIO + 1,
+            abi.encode(pairs, msg.sender)
+        );
     }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
@@ -62,7 +69,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
                 msg.sender,
                 zeroForOne,
                 -amountToBePaid,
-                zeroForOne ? 0 : type(uint160).max,
+                zeroForOne ? SqrtTickMath.MIN_SQRT_RATIO + 1 : SqrtTickMath.MAX_SQRT_RATIO - 1,
                 abi.encode(new address[](0), payer)
             );
         } else {
