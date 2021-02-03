@@ -8,6 +8,8 @@ import { pairFixture } from './shared/fixtures'
 
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 
+Decimal.config({ toExpNeg: -500, toExpPos: 500 })
+
 import {
   createPairFunctions,
   encodePriceSqrt,
@@ -16,6 +18,7 @@ import {
   getMaxLiquidityPerTick,
   getMaxTick,
   getMinTick,
+  MaxUint128,
   TICK_SPACINGS,
 } from './shared/utilities'
 
@@ -102,7 +105,8 @@ function swapCaseToDescription(testCase: SwapTestCase): string {
 type PairFunctions = ReturnType<typeof createPairFunctions>
 
 // can't use address zero because the ERC20 token does not allow it
-const RECIPIENT_ADDRESS = constants.AddressZero.slice(0, -1) + '1'
+const SWAP_RECIPIENT_ADDRESS = constants.AddressZero.slice(0, -1) + '1'
+const BURN_RECIPIENT_ADDRESS = constants.AddressZero.slice(0, -1) + '2'
 
 async function executeSwap(
   pair: MockTimeUniswapV3Pair,
@@ -113,22 +117,22 @@ async function executeSwap(
   if ('exactOut' in testCase) {
     if (testCase.exactOut) {
       if (testCase.zeroForOne) {
-        swap = await pairFunctions.swap0ForExact1(testCase.amount1, RECIPIENT_ADDRESS)
+        swap = await pairFunctions.swap0ForExact1(testCase.amount1, SWAP_RECIPIENT_ADDRESS)
       } else {
-        swap = await pairFunctions.swap1ForExact0(testCase.amount0, RECIPIENT_ADDRESS)
+        swap = await pairFunctions.swap1ForExact0(testCase.amount0, SWAP_RECIPIENT_ADDRESS)
       }
     } else {
       if (testCase.zeroForOne) {
-        swap = await pairFunctions.swapExact0For1(testCase.amount0, RECIPIENT_ADDRESS)
+        swap = await pairFunctions.swapExact0For1(testCase.amount0, SWAP_RECIPIENT_ADDRESS)
       } else {
-        swap = await pairFunctions.swapExact1For0(testCase.amount1, RECIPIENT_ADDRESS)
+        swap = await pairFunctions.swapExact1For0(testCase.amount1, SWAP_RECIPIENT_ADDRESS)
       }
     }
   } else {
     if (testCase.zeroForOne) {
-      swap = await pairFunctions.swapToLowerPrice(testCase.sqrtPriceLimit, RECIPIENT_ADDRESS)
+      swap = await pairFunctions.swapToLowerPrice(testCase.sqrtPriceLimit, SWAP_RECIPIENT_ADDRESS)
     } else {
-      swap = await pairFunctions.swapToHigherPrice(testCase.sqrtPriceLimit, RECIPIENT_ADDRESS)
+      swap = await pairFunctions.swapToHigherPrice(testCase.sqrtPriceLimit, SWAP_RECIPIENT_ADDRESS)
     }
   }
   return swap
@@ -419,7 +423,7 @@ describe('UniswapV3Pair swap tests', () => {
         await pair.initialize(pairCase.startingPrice)
         // mint all positions
         for (const position of pairCase.positions) {
-          await pairFunctions.mint(constants.AddressZero, position.tickLower, position.tickUpper, position.liquidity)
+          await pairFunctions.mint(wallet.address, position.tickLower, position.tickUpper, position.liquidity)
         }
 
         const [pairBalance0, pairBalance1] = await Promise.all([
@@ -444,6 +448,13 @@ describe('UniswapV3Pair swap tests', () => {
         ;({ token0, token1, pair, pairFunctions, pairBalance0, pairBalance1, swapTarget } = await loadFixture(
           pairCaseFixture
         ))
+      })
+
+      afterEach('check can burn positions', async () => {
+        for (const { liquidity, tickUpper, tickLower } of pairCase.positions) {
+          await pair.burn(BURN_RECIPIENT_ADDRESS, tickLower, tickUpper, liquidity)
+          await pair.collect(BURN_RECIPIENT_ADDRESS, tickLower, tickUpper, MaxUint128, MaxUint128)
+        }
       })
 
       for (const testCase of pairCase.swapTests ?? DEFAULT_PAIR_SWAP_TESTS) {
@@ -483,14 +494,14 @@ describe('UniswapV3Pair swap tests', () => {
           else if (pairBalance0Delta.lt(0))
             await expect(tx)
               .to.emit(token0, 'Transfer')
-              .withArgs(pair.address, RECIPIENT_ADDRESS, pairBalance0Delta.mul(-1))
+              .withArgs(pair.address, SWAP_RECIPIENT_ADDRESS, pairBalance0Delta.mul(-1))
           else await expect(tx).to.emit(token0, 'Transfer').withArgs(wallet.address, pair.address, pairBalance0Delta)
 
           if (pairBalance1Delta.eq(0)) await expect(tx).to.not.emit(token1, 'Transfer')
           else if (pairBalance1Delta.lt(0))
             await expect(tx)
               .to.emit(token1, 'Transfer')
-              .withArgs(pair.address, RECIPIENT_ADDRESS, pairBalance1Delta.mul(-1))
+              .withArgs(pair.address, SWAP_RECIPIENT_ADDRESS, pairBalance1Delta.mul(-1))
           else await expect(tx).to.emit(token1, 'Transfer').withArgs(wallet.address, pair.address, pairBalance1Delta)
 
           // check that the swap event was emitted too
@@ -498,7 +509,7 @@ describe('UniswapV3Pair swap tests', () => {
             .to.emit(pair, 'Swap')
             .withArgs(
               swapTarget.address,
-              RECIPIENT_ADDRESS,
+              SWAP_RECIPIENT_ADDRESS,
               pairBalance0Delta,
               pairBalance1Delta,
               slot0After.sqrtPriceX96,

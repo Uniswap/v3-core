@@ -3,7 +3,7 @@ name: Fuzz Testing
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
 
 jobs:
@@ -18,13 +18,13 @@ jobs:
           - TickMathEchidnaTest
           - SqrtPriceMathEchidnaTest
           - SwapMathEchidnaTest
-          - SqrtTickMathEchidnaTest
           - TickEchidnaTest
           - TickOverflowSafetyEchidnaTest
           - OracleEchidnaTest
           - BitMathEchidnaTest
           - LowGasSafeMathEchidnaTest
           - UnsafeMathEchidnaTest
+          - FullMathEchidnaTest
 
     steps:
       - uses: actions/checkout@v2

@@ -5,11 +5,11 @@ import '../libraries/Tick.sol';
 
 contract TickEchidnaTest {
     function checkTickSpacingToParametersInvariants(int24 tickSpacing) external pure {
-        require(tickSpacing <= SqrtTickMath.MAX_TICK);
+        require(tickSpacing <= TickMath.MAX_TICK);
         require(tickSpacing > 0);
 
-        int24 minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
-        int24 maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
+        int24 minTick = (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
+        int24 maxTick = (TickMath.MAX_TICK / tickSpacing) * tickSpacing;
 
         uint128 maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing);
 
