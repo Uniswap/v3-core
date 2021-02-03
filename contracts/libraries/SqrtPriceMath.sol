@@ -8,9 +8,11 @@ import './UnsafeMath.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
+import './FixedPoint128.sol';
 
 library SqrtPriceMath {
     using LowGasSafeMath for uint256;
+    using LowGasSafeMath for int256;
     using SafeCast for uint256;
 
     // calculate liquidity * sqrt(P) / (liquidity +- x * sqrt(P))
@@ -159,5 +161,21 @@ library SqrtPriceMath {
             liquidity < 0
                 ? -getAmount1Delta(sqrtPX96, sqrtQX96, uint128(-liquidity), false).toInt256()
                 : getAmount1Delta(sqrtPX96, sqrtQX96, uint128(liquidity), true).toInt256();
+    }
+
+    function getQDelta(
+        uint256 feeGrowthGlobalX128,
+        uint256 sqrtPriceX96, // must be reciprocal for q0
+        int128 liquidityDelta,
+        int256 balanceDelta
+    ) internal pure returns (int256 q0Delta) {
+        uint256 qDeltaUnsigned = FullMath.mulDiv(
+            feeGrowthGlobalX128.add(sqrtPriceX96),
+            liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
+            FixedPoint128.Q128
+        );
+        int256 qDeltaSigned = liquidityDelta < 0 ? -qDeltaUnsigned.toInt256() : qDeltaUnsigned.toInt256();
+
+        return qDeltaSigned.sub(balanceDelta);
     }
 }

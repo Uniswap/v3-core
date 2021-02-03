@@ -1149,6 +1149,38 @@ describe('UniswapV3Pair', () => {
         expect(amount0).to.be.eq('1000000000000002')
         expect(amount1).to.be.eq('2000000000000002')
       })
+
+      it.only('0 for 1 works with mint', async () => {
+        await pair.setFeeProtocol(6)
+
+        await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+
+        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+          other.address,
+          constants.MaxUint256,
+          constants.MaxUint256
+        )
+        expect(amount0).to.be.eq('100000000000001')
+        expect(amount1).to.be.eq(0)
+      })
+
+      it.only('0 for 1 works with mint', async () => {
+        await pair.setFeeProtocol(6)
+
+        await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+
+        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+
+        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+          other.address,
+          constants.MaxUint256,
+          constants.MaxUint256
+        )
+        expect(amount0).to.be.eq(0)
+        expect(amount1).to.be.eq('100000000000001')
+      })
     })
 
     it('fees collected by lp after two swaps should be double one swap', async () => {

@@ -260,6 +260,22 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     params.liquidityDelta
                 );
             }
+
+            // update protocol fee offsets if necessary
+            if (_slot0.feeProtocol > 0) {
+                q0 = int256(q0).add(SqrtPriceMath.getQDelta(
+                    feeGrowthGlobal0X128,
+                    (1 << 224) / _slot0.sqrtPriceX96,
+                    params.liquidityDelta,
+                    amount0
+                )).toInt128();
+                q1 = int256(q1).add(SqrtPriceMath.getQDelta(
+                    feeGrowthGlobal1X128,
+                    uint256(_slot0.sqrtPriceX96) << 32,
+                    params.liquidityDelta,
+                    amount1
+                )).toInt128();
+            }
         }
     }
 
@@ -580,38 +596,19 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                             (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
                         );
 
-                    uint256 q0DeltaUnsigned =
-                        FullMath.mulDiv(
-                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128).add(
-                                (1 << 224) / state.sqrtPriceX96
-                            ),
-                            liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
-                            FixedPoint128.Q128
-                        );
-                    uint256 q1DeltaUnsigned =
-                        FullMath.mulDiv(
-                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128).add(
-                                uint256(state.sqrtPriceX96) << 32
-                            ),
-                            liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
-                            FixedPoint128.Q128
-                        );
-
-                    if (zeroForOne) {
-                        state.q0Delta = state.q0Delta.sub(
-                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
-                        );
-                        state.q1Delta = state.q1Delta.sub(
-                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
-                        );
-                    } else {
-                        state.q0Delta = state.q0Delta.add(
-                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
-                        );
-                        state.q1Delta = state.q1Delta.add(
-                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
-                        );
-                    }
+                    // update offsets
+                    state.q0Delta = state.q0Delta.add(SqrtPriceMath.getQDelta(
+                        zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128,
+                        (1 << 224) / state.sqrtPriceX96,
+                        zeroForOne ? -liquidityDelta : liquidityDelta,
+                        0
+                    ));
+                    state.q1Delta = state.q1Delta.add(SqrtPriceMath.getQDelta(
+                        zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128,
+                        uint256(state.sqrtPriceX96) << 32,
+                        zeroForOne ? -liquidityDelta : liquidityDelta,
+                        0
+                    ));
 
                     secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
