@@ -2,13 +2,13 @@ import { ethers } from 'hardhat'
 import { BigNumber } from 'ethers'
 import { TickTest } from '../typechain/TickTest'
 import { expect } from './shared/expect'
-import { FeeAmount, getMaxLiquidityPerTick, getMaxTick, getMinTick, TICK_SPACINGS } from './shared/utilities'
+import { FeeAmount, getMaxLiquidityPerTick, TICK_SPACINGS } from './shared/utilities'
 
 const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
 
 const { constants } = ethers
 
-describe('TickTest', () => {
+describe('Tick', () => {
   let tickTest: TickTest
 
   beforeEach('deploy TickTest', async () => {

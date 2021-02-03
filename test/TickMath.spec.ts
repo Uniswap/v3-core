@@ -119,7 +119,21 @@ describe('TickMath', () => {
       expect(await tickMath.getTickAtSqrtRatio(MAX_SQRT_RATIO.sub(1))).to.eq(MAX_TICK - 1)
     })
 
-    for (const ratio of [MIN_SQRT_RATIO, MAX_SQRT_RATIO.sub(1)]) {
+    for (const ratio of [
+      MIN_SQRT_RATIO,
+      encodePriceSqrt(BigNumber.from(10).pow(12), 1),
+      encodePriceSqrt(BigNumber.from(10).pow(6), 1),
+      encodePriceSqrt(1, 64),
+      encodePriceSqrt(1, 8),
+      encodePriceSqrt(1, 2),
+      encodePriceSqrt(1, 1),
+      encodePriceSqrt(2, 1),
+      encodePriceSqrt(8, 1),
+      encodePriceSqrt(64, 1),
+      encodePriceSqrt(1, BigNumber.from(10).pow(6)),
+      encodePriceSqrt(1, BigNumber.from(10).pow(12)),
+      MAX_SQRT_RATIO.sub(1),
+    ]) {
       describe(`ratio ${ratio}`, () => {
         it('result', async () => {
           expect((await tickMath.getTickAtSqrtRatio(ratio)).toString()).to.matchSnapshot()
