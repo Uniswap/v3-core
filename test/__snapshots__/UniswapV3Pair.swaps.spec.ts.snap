@@ -1,5 +1,37 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`UniswapV3Pair swap tests close to max price swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "1",
+  "amount0Delta": "1000",
+  "amount1Before": "26087635650665564424699143612505016738",
+  "amount1Delta": "-26083549850867114346332688477747755628",
+  "executionPrice": "2.6084e+34",
+  "feeGrowthGlobal0X128Delta": "2381976568446569244235",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "4.1734e+30",
+  "pairPriceBefore": "1.7014e+38",
+  "tickAfter": 705098,
+  "tickBefore": 880340,
+}
+`;
+
+exports[`UniswapV3Pair swap tests close to max price swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "1",
+  "amount0Delta": "0",
+  "amount1Before": "26087635650665564424699143612505016738",
+  "amount1Delta": "1000",
+  "executionPrice": "-Infinity",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "510423550381407695195",
+  "pairPriceAfter": "1.7014e+38",
+  "pairPriceBefore": "1.7014e+38",
+  "tickAfter": 880340,
+  "tickBefore": 880340,
+}
+`;
+
 exports[`UniswapV3Pair swap tests close to max price swap exactly 1.0000 token0 for token1 1`] = `
 Object {
   "amount0Before": "1",
@@ -32,31 +64,15 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests close to max price swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests close to max price swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "1",
-  "amount0Delta": "1000",
+  "amount0Delta": "2",
   "amount1Before": "26087635650665564424699143612505016738",
-  "amount1Delta": "-26083549850867114346332688477747755628",
-  "executionPrice": "2.6084e+34",
-  "feeGrowthGlobal0X128Delta": "2381976568446569244235",
+  "amount1Delta": "-1000",
+  "executionPrice": "500.00",
+  "feeGrowthGlobal0X128Delta": "170141183460469231731",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "4.1734e+30",
-  "pairPriceBefore": "1.7014e+38",
-  "tickAfter": 705098,
-  "tickBefore": 880340,
-}
-`;
-
-exports[`UniswapV3Pair swap tests close to max price swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "1",
-  "amount0Delta": "0",
-  "amount1Before": "26087635650665564424699143612505016738",
-  "amount1Delta": "1000",
-  "executionPrice": "-Infinity",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "510423550381407695195",
   "pairPriceAfter": "1.7014e+38",
   "pairPriceBefore": "1.7014e+38",
   "tickAfter": 880340,
@@ -71,22 +87,6 @@ Object {
   "amount1Before": "26087635650665564424699143612505016738",
   "amount1Delta": "-1000000000000000000",
   "executionPrice": "5.0000e+17",
-  "feeGrowthGlobal0X128Delta": "170141183460469231731",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "1.7014e+38",
-  "pairPriceBefore": "1.7014e+38",
-  "tickAfter": 880340,
-  "tickBefore": 880340,
-}
-`;
-
-exports[`UniswapV3Pair swap tests close to max price swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "1",
-  "amount0Delta": "2",
-  "amount1Before": "26087635650665564424699143612505016738",
-  "amount1Delta": "-1000",
-  "executionPrice": "500.00",
   "feeGrowthGlobal0X128Delta": "170141183460469231731",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.7014e+38",
@@ -128,7 +128,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests close to max price swap token1 for exactly 1.0000 token0 1`] = `
+exports[`UniswapV3Pair swap tests close to max price swap token1 for exactly 0.0000000000000010000 token0 1`] = `
 Object {
   "amount0Before": "1",
   "amount0Delta": "0",
@@ -144,7 +144,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests close to max price swap token1 for exactly 1.0000e-15 token0 1`] = `
+exports[`UniswapV3Pair swap tests close to max price swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "1",
   "amount0Delta": "0",
@@ -180,6 +180,38 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests close to min price swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "26037782196502120275425782622539039026",
+  "amount0Delta": "1000",
+  "amount1Before": "1",
+  "amount1Delta": "0",
+  "executionPrice": "0.0000",
+  "feeGrowthGlobal0X128Delta": "170141183460469231731687",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000059000",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
+  "tickAfter": -880303,
+  "tickBefore": -880303,
+}
+`;
+
+exports[`UniswapV3Pair swap tests close to min price swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "26037782196502120275425782622539039026",
+  "amount0Delta": "-26033697540846965126433148994127431276",
+  "amount1Before": "1",
+  "amount1Delta": "1000",
+  "executionPrice": "0.000000000000000000000000000000000038412",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "2381976568446569244235",
+  "pairPriceAfter": "0.00000000000000000000000000000023974",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
+  "tickAfter": -705093,
+  "tickBefore": -880303,
+}
+`;
+
 exports[`UniswapV3Pair swap tests close to min price swap exactly 1.0000 token0 for token1 1`] = `
 Object {
   "amount0Before": "26037782196502120275425782622539039026",
@@ -189,8 +221,8 @@ Object {
   "executionPrice": "0.0000",
   "feeGrowthGlobal0X128Delta": "170141183460469231731687303715884105728",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "5.9000e-39",
-  "pairPriceBefore": "5.9000e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000059000",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
   "tickAfter": -880303,
   "tickBefore": -880303,
 }
@@ -202,44 +234,28 @@ Object {
   "amount0Delta": "-26037782196502120271413746514214063808",
   "amount1Before": "1",
   "amount1Delta": "1000000000000000000",
-  "executionPrice": "3.8406e-20",
+  "executionPrice": "0.000000000000000000038406",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "510423550381413820277666488039994629",
   "pairPriceAfter": "0.24850",
-  "pairPriceBefore": "5.9000e-39",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
   "tickAfter": -13924,
   "tickBefore": -880303,
 }
 `;
 
-exports[`UniswapV3Pair swap tests close to min price swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests close to min price swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "26037782196502120275425782622539039026",
-  "amount0Delta": "1000",
+  "amount0Delta": "10790901831095468191587263901270792610",
   "amount1Before": "1",
   "amount1Delta": "0",
   "executionPrice": "0.0000",
-  "feeGrowthGlobal0X128Delta": "170141183460469231731687",
+  "feeGrowthGlobal0X128Delta": "5507930424444982259736347157352787128931407551935325049",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "5.9000e-39",
-  "pairPriceBefore": "5.9000e-39",
-  "tickAfter": -880303,
-  "tickBefore": -880303,
-}
-`;
-
-exports[`UniswapV3Pair swap tests close to min price swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "26037782196502120275425782622539039026",
-  "amount0Delta": "-26033697540846965126433148994127431276",
-  "amount1Before": "1",
-  "amount1Delta": "1000",
-  "executionPrice": "3.8412e-35",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "2381976568446569244235",
-  "pairPriceAfter": "2.3974e-31",
-  "pairPriceBefore": "5.9000e-39",
-  "tickAfter": -705093,
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
+  "tickAfter": -887272,
   "tickBefore": -880303,
 }
 `;
@@ -253,24 +269,8 @@ Object {
   "executionPrice": "0.0000",
   "feeGrowthGlobal0X128Delta": "5507930424444982259736347157352787128931407551935325049",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
-  "pairPriceBefore": "5.9000e-39",
-  "tickAfter": -887272,
-  "tickBefore": -880303,
-}
-`;
-
-exports[`UniswapV3Pair swap tests close to min price swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "26037782196502120275425782622539039026",
-  "amount0Delta": "10790901831095468191587263901270792610",
-  "amount1Before": "1",
-  "amount1Delta": "0",
-  "executionPrice": "0.0000",
-  "feeGrowthGlobal0X128Delta": "5507930424444982259736347157352787128931407551935325049",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
-  "pairPriceBefore": "5.9000e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
   "tickAfter": -887272,
   "tickBefore": -880303,
 }
@@ -280,7 +280,7 @@ exports[`UniswapV3Pair swap tests close to min price swap token0 for token1 to p
 Object {
   "pairBalance0": "26037782196502120275425782622539039026",
   "pairBalance1": "1",
-  "pairPriceBefore": "5.9000e-39",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
   "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -880303,
 }
@@ -290,8 +290,24 @@ exports[`UniswapV3Pair swap tests close to min price swap token0 for token1 to p
 Object {
   "pairBalance0": "26037782196502120275425782622539039026",
   "pairBalance1": "1",
-  "pairPriceBefore": "5.9000e-39",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
   "swapError": "VM Exception while processing transaction: revert SPL",
+  "tickBefore": -880303,
+}
+`;
+
+exports[`UniswapV3Pair swap tests close to min price swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "26037782196502120275425782622539039026",
+  "amount0Delta": "-1000",
+  "amount1Before": "1",
+  "amount1Delta": "2",
+  "executionPrice": "0.0020000",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "170141183460469231731",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000059000",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
+  "tickAfter": -880303,
   "tickBefore": -880303,
 }
 `;
@@ -302,27 +318,11 @@ Object {
   "amount0Delta": "-1000000000000000000",
   "amount1Before": "1",
   "amount1Delta": "2",
-  "executionPrice": "2.0000e-18",
+  "executionPrice": "0.0000000000000000020000",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "170141183460469231731",
-  "pairPriceAfter": "5.9000e-39",
-  "pairPriceBefore": "5.9000e-39",
-  "tickAfter": -880303,
-  "tickBefore": -880303,
-}
-`;
-
-exports[`UniswapV3Pair swap tests close to min price swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "26037782196502120275425782622539039026",
-  "amount0Delta": "-1000",
-  "amount1Before": "1",
-  "amount1Delta": "2",
-  "executionPrice": "0.0020000",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "170141183460469231731",
-  "pairPriceAfter": "5.9000e-39",
-  "pairPriceBefore": "5.9000e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000059000",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
   "tickAfter": -880303,
   "tickBefore": -880303,
 }
@@ -334,11 +334,11 @@ Object {
   "amount0Delta": "-26037782196502120272263504962370659661",
   "amount1Before": "1",
   "amount1Delta": "1268717215714495283",
-  "executionPrice": "4.8726e-20",
+  "executionPrice": "0.000000000000000000048726",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "647583145675012958539816297734564973",
   "pairPriceAfter": "0.40000",
-  "pairPriceBefore": "5.9000e-39",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
   "tickAfter": -9164,
   "tickBefore": -880303,
 }
@@ -350,13 +350,45 @@ Object {
   "amount0Delta": "-26037782196502120274160871558471687260",
   "amount1Before": "1",
   "amount1Delta": "3171793039286238112",
-  "executionPrice": "1.2182e-19",
+  "executionPrice": "0.00000000000000000012182",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "1618957864187523634078592530170978294",
   "pairPriceAfter": "2.5000",
-  "pairPriceBefore": "5.9000e-39",
+  "pairPriceBefore": "0.0000000000000000000000000000000000000059000",
   "tickAfter": 9163,
   "tickBefore": -880303,
+}
+`;
+
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "1000",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "-990",
+  "executionPrice": "0.99000",
+  "feeGrowthGlobal0X128Delta": "1531270651144223085585",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -1,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "-990",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "1000",
+  "executionPrice": "1.0101",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "1531270651144223085585",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
 }
 `;
 
@@ -392,34 +424,18 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "1000",
+  "amount0Delta": "1011",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "-990",
-  "executionPrice": "0.99000",
-  "feeGrowthGlobal0X128Delta": "1531270651144223085585",
+  "amount1Delta": "-1000",
+  "executionPrice": "0.98912",
+  "feeGrowthGlobal0X128Delta": "1701411834604692317316",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -1,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "-990",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "1000",
-  "executionPrice": "1.0101",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "1531270651144223085585",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -436,22 +452,6 @@ Object {
   "pairPriceAfter": "0.25000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -13864,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "1011",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.98912",
-  "feeGrowthGlobal0X128Delta": "1701411834604692317316",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -1,
   "tickBefore": 0,
 }
 `;
@@ -482,6 +482,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "-1000",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "1011",
+  "executionPrice": "1.0110",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "1701411834604692317316",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
@@ -494,22 +510,6 @@ Object {
   "pairPriceAfter": "4.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 13863,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests high fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "-1000",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "1011",
-  "executionPrice": "1.0110",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "1701411834604692317316",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -536,6 +536,38 @@ Object {
   "pairPriceAfter": "2.5000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 9163,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "1000",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "-998",
+  "executionPrice": "0.99800",
+  "feeGrowthGlobal0X128Delta": "170141183460469231731",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -1,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "-998",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "1000",
+  "executionPrice": "1.0020",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "170141183460469231731",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -572,34 +604,18 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "1000",
+  "amount0Delta": "1002",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "-998",
+  "amount1Delta": "-1000",
   "executionPrice": "0.99800",
   "feeGrowthGlobal0X128Delta": "170141183460469231731",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -1,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "-998",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "1000",
-  "executionPrice": "1.0020",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "170141183460469231731",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -616,22 +632,6 @@ Object {
   "pairPriceAfter": "0.25000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -13864,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "1002",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.99800",
-  "feeGrowthGlobal0X128Delta": "170141183460469231731",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -1,
   "tickBefore": 0,
 }
 `;
@@ -662,6 +662,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "-1000",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "1002",
+  "executionPrice": "1.0020",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "170141183460469231731",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
@@ -674,22 +690,6 @@ Object {
   "pairPriceAfter": "4.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 13863,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests low fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "-1000",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "1002",
-  "executionPrice": "1.0020",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "170141183460469231731",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -720,6 +720,38 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "1199580111974806",
+  "amount0Delta": "1000",
+  "amount1Before": "1199580111974806",
+  "amount1Delta": "-998",
+  "executionPrice": "0.99800",
+  "feeGrowthGlobal0X128Delta": "170141183460469231731",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -1,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "1199580111974806",
+  "amount0Delta": "-998",
+  "amount1Before": "1199580111974806",
+  "amount1Delta": "1000",
+  "executionPrice": "1.0020",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "170141183460469231731",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap exactly 1.0000 token0 for token1 1`] = `
 Object {
   "amount0Before": "1199580111974806",
@@ -729,7 +761,7 @@ Object {
   "executionPrice": "0.99880",
   "feeGrowthGlobal0X128Delta": "122605845095370084232329312661793",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
   "pairPriceBefore": "1.0000",
   "tickAfter": -887272,
   "tickBefore": 0,
@@ -752,34 +784,18 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "1199580111974806",
-  "amount0Delta": "1000",
+  "amount0Delta": "1002",
   "amount1Before": "1199580111974806",
-  "amount1Delta": "-998",
+  "amount1Delta": "-1000",
   "executionPrice": "0.99800",
   "feeGrowthGlobal0X128Delta": "170141183460469231731",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -1,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "-998",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "1000",
-  "executionPrice": "1.0020",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "170141183460469231731",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -793,25 +809,9 @@ Object {
   "executionPrice": "0.99880",
   "feeGrowthGlobal0X128Delta": "122605845095370084232329312661793",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
   "pairPriceBefore": "1.0000",
   "tickAfter": -887272,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "1002",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.99800",
-  "feeGrowthGlobal0X128Delta": "170141183460469231731",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -1,
   "tickBefore": 0,
 }
 `;
@@ -842,6 +842,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "1199580111974806",
+  "amount0Delta": "-1000",
+  "amount1Before": "1199580111974806",
+  "amount1Delta": "1002",
+  "executionPrice": "1.0020",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "170141183460469231731",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "1199580111974806",
@@ -854,22 +870,6 @@ Object {
   "pairPriceAfter": "3.4026e+38",
   "pairPriceBefore": "1.0000",
   "tickAfter": 887271,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests low fee, large liquidity around current price (stable swap) swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "-1000",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "1002",
-  "executionPrice": "1.0020",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "170141183460469231731",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -896,6 +896,38 @@ Object {
   "pairPriceAfter": "2.5000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 9163,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "11505743598341114571255423385623647",
+  "amount0Delta": "1000",
+  "amount1Before": "11505743598341114571255423385506404",
+  "amount1Delta": "0",
+  "executionPrice": "0.0000",
+  "feeGrowthGlobal0X128Delta": "29575000",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -1,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "11505743598341114571255423385623647",
+  "amount0Delta": "0",
+  "amount1Before": "11505743598341114571255423385506404",
+  "amount1Delta": "1000",
+  "executionPrice": "-Infinity",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "29575000",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -932,34 +964,18 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "11505743598341114571255423385623647",
-  "amount0Delta": "1000",
+  "amount0Delta": "145660",
   "amount1Before": "11505743598341114571255423385506404",
-  "amount1Delta": "0",
-  "executionPrice": "0.0000",
-  "feeGrowthGlobal0X128Delta": "29575000",
+  "amount1Delta": "-1000",
+  "executionPrice": "0.0068653",
+  "feeGrowthGlobal0X128Delta": "12924275",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -1,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "11505743598341114571255423385623647",
-  "amount0Delta": "0",
-  "amount1Before": "11505743598341114571255423385506404",
-  "amount1Delta": "1000",
-  "executionPrice": "-Infinity",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "29575000",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -972,22 +988,6 @@ Object {
   "amount1Delta": "-1000000000000000000",
   "executionPrice": "0.99700",
   "feeGrowthGlobal0X128Delta": "88991975927793784300",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -1,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "11505743598341114571255423385623647",
-  "amount0Delta": "145660",
-  "amount1Before": "11505743598341114571255423385506404",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.0068653",
-  "feeGrowthGlobal0X128Delta": "12924275",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
@@ -1022,6 +1022,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "11505743598341114571255423385623647",
+  "amount0Delta": "-1000",
+  "amount1Before": "11505743598341114571255423385506404",
+  "amount1Delta": "145660",
+  "executionPrice": "145.66",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "12924275",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "11505743598341114571255423385623647",
@@ -1031,22 +1047,6 @@ Object {
   "executionPrice": "1.0030",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "88991975927793784300",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests max full range liquidity at 1:1 price with default fee swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "11505743598341114571255423385623647",
-  "amount0Delta": "-1000",
-  "amount1Before": "11505743598341114571255423385506404",
-  "amount1Delta": "145660",
-  "executionPrice": "145.66",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "12924275",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 0,
@@ -1076,6 +1076,38 @@ Object {
   "pairPriceAfter": "2.5000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 9163,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "1982081649422850916",
+  "amount0Delta": "1000",
+  "amount1Before": "1994009290088178439",
+  "amount1Delta": "-991",
+  "executionPrice": "0.99100",
+  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "0.99402",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -61,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "1982081649422850916",
+  "amount0Delta": "-979",
+  "amount1Before": "1994009290088178439",
+  "amount1Delta": "1000",
+  "executionPrice": "1.0215",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "510423550381407695195",
+  "pairPriceAfter": "1.0182",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 180,
   "tickBefore": 0,
 }
 `;
@@ -1112,34 +1144,18 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "1982081649422850916",
-  "amount0Delta": "1000",
+  "amount0Delta": "1011",
   "amount1Before": "1994009290088178439",
-  "amount1Delta": "-991",
-  "executionPrice": "0.99100",
-  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "amount1Delta": "-1000",
+  "executionPrice": "0.98912",
+  "feeGrowthGlobal0X128Delta": "680564733841876926926",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "0.99402",
   "pairPriceBefore": "1.0000",
   "tickAfter": -61,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "1982081649422850916",
-  "amount0Delta": "-979",
-  "amount1Before": "1994009290088178439",
-  "amount1Delta": "1000",
-  "executionPrice": "1.0215",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "510423550381407695195",
-  "pairPriceAfter": "1.0182",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 180,
   "tickBefore": 0,
 }
 `;
@@ -1156,22 +1172,6 @@ Object {
   "pairPriceAfter": "0.24701",
   "pairPriceBefore": "1.0000",
   "tickAfter": -13984,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "1982081649422850916",
-  "amount0Delta": "1011",
-  "amount1Before": "1994009290088178439",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.98912",
-  "feeGrowthGlobal0X128Delta": "680564733841876926926",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "0.99402",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -61,
   "tickBefore": 0,
 }
 `;
@@ -1202,6 +1202,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "1982081649422850916",
+  "amount0Delta": "-1000",
+  "amount1Before": "1994009290088178439",
+  "amount1Delta": "1023",
+  "executionPrice": "1.0230",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "680564733841876926926",
+  "pairPriceAfter": "1.0182",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 180,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "1982081649422850916",
@@ -1214,22 +1230,6 @@ Object {
   "pairPriceAfter": "4.1473",
   "pairPriceBefore": "1.0000",
   "tickAfter": 14225,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "1982081649422850916",
-  "amount0Delta": "-1000",
-  "amount1Before": "1994009290088178439",
-  "amount1Delta": "1023",
-  "executionPrice": "1.0230",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "680564733841876926926",
-  "pairPriceAfter": "1.0182",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 180,
   "tickBefore": 0,
 }
 `;
@@ -1256,6 +1256,38 @@ Object {
   "pairPriceAfter": "2.5000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 9163,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "1000",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "-996",
+  "executionPrice": "0.99600",
+  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -1,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "-996",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "1000",
+  "executionPrice": "1.0040",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "510423550381407695195",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -1292,34 +1324,18 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "1000",
+  "amount0Delta": "1005",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "-996",
-  "executionPrice": "0.99600",
-  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "amount1Delta": "-1000",
+  "executionPrice": "0.99502",
+  "feeGrowthGlobal0X128Delta": "680564733841876926926",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -1,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "-996",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "1000",
-  "executionPrice": "1.0040",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "510423550381407695195",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -1336,22 +1352,6 @@ Object {
   "pairPriceAfter": "0.25000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -13864,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "1005",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.99502",
-  "feeGrowthGlobal0X128Delta": "680564733841876926926",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -1,
   "tickBefore": 0,
 }
 `;
@@ -1382,6 +1382,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "2000000000000000000",
+  "amount0Delta": "-1000",
+  "amount1Before": "2000000000000000000",
+  "amount1Delta": "1005",
+  "executionPrice": "1.0050",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "680564733841876926926",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
@@ -1394,22 +1410,6 @@ Object {
   "pairPriceAfter": "4.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 13863,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, 2e18 max range liquidity swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "2000000000000000000",
-  "amount0Delta": "-1000",
-  "amount1Before": "2000000000000000000",
-  "amount1Delta": "1005",
-  "executionPrice": "1.0050",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "680564733841876926926",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -1436,6 +1436,38 @@ Object {
   "pairPriceAfter": "2.5000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 9163,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "3982081649422850916",
+  "amount0Delta": "1000",
+  "amount1Before": "3994009290088178439",
+  "amount1Delta": "-996",
+  "executionPrice": "0.99600",
+  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -1,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "3982081649422850916",
+  "amount0Delta": "-996",
+  "amount1Before": "3994009290088178439",
+  "amount1Delta": "1000",
+  "executionPrice": "1.0040",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "510423550381407695195",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -1472,34 +1504,18 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "3982081649422850916",
-  "amount0Delta": "1000",
+  "amount0Delta": "1005",
   "amount1Before": "3994009290088178439",
-  "amount1Delta": "-996",
-  "executionPrice": "0.99600",
-  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "amount1Delta": "-1000",
+  "executionPrice": "0.99502",
+  "feeGrowthGlobal0X128Delta": "680564733841876926926",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -1,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "3982081649422850916",
-  "amount0Delta": "-996",
-  "amount1Before": "3994009290088178439",
-  "amount1Delta": "1000",
-  "executionPrice": "1.0040",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "510423550381407695195",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -1516,22 +1532,6 @@ Object {
   "pairPriceAfter": "0.56026",
   "pairPriceBefore": "1.0000",
   "tickAfter": -5794,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "3982081649422850916",
-  "amount0Delta": "1005",
-  "amount1Before": "3994009290088178439",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.99502",
-  "feeGrowthGlobal0X128Delta": "680564733841876926926",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -1,
   "tickBefore": 0,
 }
 `;
@@ -1562,6 +1562,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "3982081649422850916",
+  "amount0Delta": "-1000",
+  "amount1Before": "3994009290088178439",
+  "amount1Delta": "1005",
+  "executionPrice": "1.0050",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "680564733841876926926",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "3982081649422850916",
@@ -1574,22 +1590,6 @@ Object {
   "pairPriceAfter": "1.7992",
   "pairPriceBefore": "1.0000",
   "tickAfter": 5873,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:1 price, additional liquidity around current price swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "3982081649422850916",
-  "amount0Delta": "-1000",
-  "amount1Before": "3994009290088178439",
-  "amount1Delta": "1005",
-  "executionPrice": "1.0050",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "680564733841876926926",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -1617,6 +1617,38 @@ Object {
   "pairPriceBefore": "1.0000",
   "tickAfter": 9163,
   "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "6324555320336758664",
+  "amount0Delta": "1000",
+  "amount1Before": "632455532033675867",
+  "amount1Delta": "-99",
+  "executionPrice": "0.099000",
+  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "0.10000",
+  "pairPriceBefore": "0.10000",
+  "tickAfter": -23028,
+  "tickBefore": -23028,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "6324555320336758664",
+  "amount0Delta": "-9969",
+  "amount1Before": "632455532033675867",
+  "amount1Delta": "1000",
+  "executionPrice": "0.10031",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "510423550381407695195",
+  "pairPriceAfter": "0.10000",
+  "pairPriceBefore": "0.10000",
+  "tickAfter": -23028,
+  "tickBefore": -23028,
 }
 `;
 
@@ -1652,31 +1684,15 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "6324555320336758664",
-  "amount0Delta": "1000",
+  "amount0Delta": "10032",
   "amount1Before": "632455532033675867",
-  "amount1Delta": "-99",
-  "executionPrice": "0.099000",
-  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "amount1Delta": "-1000",
+  "executionPrice": "0.099681",
+  "feeGrowthGlobal0X128Delta": "5274376687274546183682",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "0.10000",
-  "pairPriceBefore": "0.10000",
-  "tickAfter": -23028,
-  "tickBefore": -23028,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "6324555320336758664",
-  "amount0Delta": "-9969",
-  "amount1Before": "632455532033675867",
-  "amount1Delta": "1000",
-  "executionPrice": "0.10031",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "510423550381407695195",
   "pairPriceAfter": "0.10000",
   "pairPriceBefore": "0.10000",
   "tickAfter": -23028,
@@ -1690,28 +1706,12 @@ Object {
   "amount0Delta": "36907032419362389223785084665766560335",
   "amount1Before": "632455532033675867",
   "amount1Delta": "-632455532033675838",
-  "executionPrice": "1.7136e-20",
+  "executionPrice": "0.000000000000000000017136",
   "feeGrowthGlobal0X128Delta": "18838218521532665615644565874197034349094564536667752274",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
   "pairPriceBefore": "0.10000",
   "tickAfter": -887272,
-  "tickBefore": -23028,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "6324555320336758664",
-  "amount0Delta": "10032",
-  "amount1Before": "632455532033675867",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.099681",
-  "feeGrowthGlobal0X128Delta": "5274376687274546183682",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "0.10000",
-  "pairPriceBefore": "0.10000",
-  "tickAfter": -23028,
   "tickBefore": -23028,
 }
 `;
@@ -1736,6 +1736,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "6324555320336758664",
+  "amount0Delta": "-1000",
+  "amount1Before": "632455532033675867",
+  "amount1Delta": "102",
+  "executionPrice": "0.10200",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "170141183460469231731",
+  "pairPriceAfter": "0.10000",
+  "pairPriceBefore": "0.10000",
+  "tickAfter": -23028,
+  "tickBefore": -23028,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "6324555320336758664",
@@ -1748,22 +1764,6 @@ Object {
   "pairPriceAfter": "0.14109",
   "pairPriceBefore": "0.10000",
   "tickAfter": -19585,
-  "tickBefore": -23028,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 1:10 price, 2e18 max range liquidity swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "6324555320336758664",
-  "amount0Delta": "-1000",
-  "amount1Before": "632455532033675867",
-  "amount1Delta": "102",
-  "executionPrice": "0.10200",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "170141183460469231731",
-  "pairPriceAfter": "0.10000",
-  "pairPriceBefore": "0.10000",
-  "tickAfter": -23028,
   "tickBefore": -23028,
 }
 `;
@@ -1800,6 +1800,38 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "632455532033675867",
+  "amount0Delta": "1000",
+  "amount1Before": "6324555320336758664",
+  "amount1Delta": "-9969",
+  "executionPrice": "9.9690",
+  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "10.000",
+  "pairPriceBefore": "10.000",
+  "tickAfter": 23027,
+  "tickBefore": 23027,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "632455532033675867",
+  "amount0Delta": "-99",
+  "amount1Before": "6324555320336758664",
+  "amount1Delta": "1000",
+  "executionPrice": "10.101",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "510423550381407695195",
+  "pairPriceAfter": "10.000",
+  "pairPriceBefore": "10.000",
+  "tickAfter": 23027,
+  "tickBefore": 23027,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap exactly 1.0000 token0 for token1 1`] = `
 Object {
   "amount0Before": "632455532033675867",
@@ -1832,31 +1864,15 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "632455532033675867",
-  "amount0Delta": "1000",
+  "amount0Delta": "102",
   "amount1Before": "6324555320336758664",
-  "amount1Delta": "-9969",
-  "executionPrice": "9.9690",
-  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "amount1Delta": "-1000",
+  "executionPrice": "9.8039",
+  "feeGrowthGlobal0X128Delta": "170141183460469231731",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "10.000",
-  "pairPriceBefore": "10.000",
-  "tickAfter": 23027,
-  "tickBefore": 23027,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "632455532033675867",
-  "amount0Delta": "-99",
-  "amount1Before": "6324555320336758664",
-  "amount1Delta": "1000",
-  "executionPrice": "10.101",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "510423550381407695195",
   "pairPriceAfter": "10.000",
   "pairPriceBefore": "10.000",
   "tickAfter": 23027,
@@ -1876,22 +1892,6 @@ Object {
   "pairPriceAfter": "7.0877",
   "pairPriceBefore": "10.000",
   "tickAfter": 19584,
-  "tickBefore": 23027,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "632455532033675867",
-  "amount0Delta": "102",
-  "amount1Before": "6324555320336758664",
-  "amount1Delta": "-1000",
-  "executionPrice": "9.8039",
-  "feeGrowthGlobal0X128Delta": "170141183460469231731",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "10.000",
-  "pairPriceBefore": "10.000",
-  "tickAfter": 23027,
   "tickBefore": 23027,
 }
 `;
@@ -1928,6 +1928,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "632455532033675867",
+  "amount0Delta": "-1000",
+  "amount1Before": "6324555320336758664",
+  "amount1Delta": "10032",
+  "executionPrice": "10.032",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "5274376687274546183682",
+  "pairPriceAfter": "10.000",
+  "pairPriceBefore": "10.000",
+  "tickAfter": 23027,
+  "tickBefore": 23027,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "632455532033675867",
@@ -1940,22 +1956,6 @@ Object {
   "pairPriceAfter": "3.4026e+38",
   "pairPriceBefore": "10.000",
   "tickAfter": 887271,
-  "tickBefore": 23027,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, 10:1 price, 2e18 max range liquidity swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "632455532033675867",
-  "amount0Delta": "-1000",
-  "amount1Before": "6324555320336758664",
-  "amount1Delta": "10032",
-  "executionPrice": "10.032",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "5274376687274546183682",
-  "pairPriceAfter": "10.000",
-  "pairPriceBefore": "10.000",
-  "tickAfter": 23027,
   "tickBefore": 23027,
 }
 `;
@@ -1980,6 +1980,38 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "1995041008271423675",
+  "amount0Delta": "0",
+  "amount1Before": "0",
+  "amount1Delta": "0",
+  "executionPrice": "NaN",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -887272,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "1995041008271423675",
+  "amount0Delta": "-996",
+  "amount1Before": "0",
+  "amount1Delta": "1000",
+  "executionPrice": "1.0040",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "510423550381407695195",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap exactly 1.0000 token0 for token1 1`] = `
 Object {
   "amount0Before": "1995041008271423675",
@@ -1989,7 +2021,7 @@ Object {
   "executionPrice": "NaN",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
   "pairPriceBefore": "1.0000",
   "tickAfter": -887272,
   "tickBefore": 0,
@@ -2012,7 +2044,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "1995041008271423675",
   "amount0Delta": "0",
@@ -2021,25 +2053,9 @@ Object {
   "executionPrice": "NaN",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
   "pairPriceBefore": "1.0000",
   "tickAfter": -887272,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "1995041008271423675",
-  "amount0Delta": "-996",
-  "amount1Before": "0",
-  "amount1Delta": "1000",
-  "executionPrice": "1.0040",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "510423550381407695195",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -2053,23 +2069,7 @@ Object {
   "executionPrice": "NaN",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -887272,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "1995041008271423675",
-  "amount0Delta": "0",
-  "amount1Before": "0",
-  "amount1Delta": "0",
-  "executionPrice": "NaN",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "2.9390e-39",
+  "pairPriceAfter": "0.0000000000000000000000000000000000000029390",
   "pairPriceBefore": "1.0000",
   "tickAfter": -887272,
   "tickBefore": 0,
@@ -2102,6 +2102,22 @@ Object {
 }
 `;
 
+exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token1 for exactly 0.0000000000000010000 token0 1`] = `
+Object {
+  "amount0Before": "1995041008271423675",
+  "amount0Delta": "-1000",
+  "amount1Before": "0",
+  "amount1Delta": "1005",
+  "executionPrice": "1.0050",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "680564733841876926926",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 0,
+  "tickBefore": 0,
+}
+`;
+
 exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "1995041008271423675",
@@ -2114,22 +2130,6 @@ Object {
   "pairPriceAfter": "4.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 13863,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, token0 liquidity only swap token1 for exactly 1.0000e-15 token0 1`] = `
-Object {
-  "amount0Before": "1995041008271423675",
-  "amount0Delta": "-1000",
-  "amount1Before": "0",
-  "amount1Delta": "1005",
-  "executionPrice": "1.0050",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "680564733841876926926",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 0,
   "tickBefore": 0,
 }
 `;
@@ -2156,6 +2156,38 @@ Object {
   "pairPriceAfter": "2.5000",
   "pairPriceBefore": "1.0000",
   "tickAfter": 9163,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap exactly 0.0000000000000010000 token0 for token1 1`] = `
+Object {
+  "amount0Before": "0",
+  "amount0Delta": "1000",
+  "amount1Before": "1995041008271423675",
+  "amount1Delta": "-996",
+  "executionPrice": "0.99600",
+  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "1.0000",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": -1,
+  "tickBefore": 0,
+}
+`;
+
+exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap exactly 0.0000000000000010000 token1 for token0 1`] = `
+Object {
+  "amount0Before": "0",
+  "amount0Delta": "0",
+  "amount1Before": "1995041008271423675",
+  "amount1Delta": "0",
+  "executionPrice": "NaN",
+  "feeGrowthGlobal0X128Delta": "0",
+  "feeGrowthGlobal1X128Delta": "0",
+  "pairPriceAfter": "3.4026e+38",
+  "pairPriceBefore": "1.0000",
+  "tickAfter": 887271,
   "tickBefore": 0,
 }
 `;
@@ -2192,34 +2224,18 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap exactly 1.0000e-15 token0 for token1 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "0",
-  "amount0Delta": "1000",
+  "amount0Delta": "1005",
   "amount1Before": "1995041008271423675",
-  "amount1Delta": "-996",
-  "executionPrice": "0.99600",
-  "feeGrowthGlobal0X128Delta": "510423550381407695195",
+  "amount1Delta": "-1000",
+  "executionPrice": "0.99502",
+  "feeGrowthGlobal0X128Delta": "680564733841876926926",
   "feeGrowthGlobal1X128Delta": "0",
   "pairPriceAfter": "1.0000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -1,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap exactly 1.0000e-15 token1 for token0 1`] = `
-Object {
-  "amount0Before": "0",
-  "amount0Delta": "0",
-  "amount1Before": "1995041008271423675",
-  "amount1Delta": "0",
-  "executionPrice": "NaN",
-  "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "3.4026e+38",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": 887271,
   "tickBefore": 0,
 }
 `;
@@ -2236,22 +2252,6 @@ Object {
   "pairPriceAfter": "0.25000",
   "pairPriceBefore": "1.0000",
   "tickAfter": -13864,
-  "tickBefore": 0,
-}
-`;
-
-exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap token0 for exactly 1.0000e-15 token1 1`] = `
-Object {
-  "amount0Before": "0",
-  "amount0Delta": "1005",
-  "amount1Before": "1995041008271423675",
-  "amount1Delta": "-1000",
-  "executionPrice": "0.99502",
-  "feeGrowthGlobal0X128Delta": "680564733841876926926",
-  "feeGrowthGlobal1X128Delta": "0",
-  "pairPriceAfter": "1.0000",
-  "pairPriceBefore": "1.0000",
-  "tickAfter": -1,
   "tickBefore": 0,
 }
 `;
@@ -2282,7 +2282,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap token1 for exactly 1.0000 token0 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap token1 for exactly 0.0000000000000010000 token0 1`] = `
 Object {
   "amount0Before": "0",
   "amount0Delta": "0",
@@ -2298,7 +2298,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap token1 for exactly 1.0000e-15 token0 1`] = `
+exports[`UniswapV3Pair swap tests medium fee, token1 liquidity only swap token1 for exactly 1.0000 token0 1`] = `
 Object {
   "amount0Before": "0",
   "amount0Delta": "0",
