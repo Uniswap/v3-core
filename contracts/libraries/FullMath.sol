@@ -10,7 +10,7 @@ library FullMath {
     /// @param y The multiplier
     /// @return l The least significant 256 bits of the 512 bit result
     /// @return h The most significant 256 bits of the 512 bit result
-    /// @dev Credit to https://medium.com/wicketh/mathemagic-full-multiply-27650fec525d
+    /// @dev Credit to Remco Bloemen https://xn--2-umb.com/17/full-mul/index.html
     function fullMul(uint256 x, uint256 y) internal pure returns (uint256 l, uint256 h) {
         assembly {
             let mm := mulmod(x, y, not(0))
