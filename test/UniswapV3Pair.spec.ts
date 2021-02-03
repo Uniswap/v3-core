@@ -447,44 +447,6 @@ describe('UniswapV3Pair', () => {
         })
       })
 
-      it('1 liquidity mint accumulates protocol fees', async () => {
-        await pair.setFeeProtocol(6)
-
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
-        await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
-        await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
-
-        let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-        expect(token0ProtocolFees).to.eq(0)
-        expect(token1ProtocolFees).to.eq(0)
-
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
-        ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-        expect(token0ProtocolFees).to.eq('49999999999999')
-        expect(token1ProtocolFees).to.eq('4999999999999')
-      })
-
-      it('1 liquidity mint before protocol fee is turned on protects fees', async () => {
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
-        await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
-        await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
-
-        let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-        expect(token0ProtocolFees).to.eq(0)
-        expect(token1ProtocolFees).to.eq(0)
-
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
-        ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-        expect(token0ProtocolFees).to.eq(0)
-        expect(token1ProtocolFees).to.eq(0)
-
-        await pair.setFeeProtocol(6)
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
-        ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-        expect(token0ProtocolFees).to.eq(0)
-        expect(token1ProtocolFees).to.eq(0)
-      })
-
       it('poke is not allowed on uninitialized position', async () => {
         await mint(other.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
@@ -1031,11 +993,11 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.be.eq('500000000000000')
+      expect(token0Fees).to.be.eq('499999999999999')
       expect(token1Fees).to.be.eq(0)
     })
 
-    describe('#collect', () => {
+    describe('#collectProtocol', () => {
       it('returns 0 if no fees', async () => {
         await pair.setFeeProtocol(6)
         const { amount0, amount1 } = await pair.callStatic.collectProtocol(wallet.address, MaxUint128, MaxUint128)
@@ -1060,7 +1022,7 @@ describe('UniswapV3Pair', () => {
           .withArgs(pair.address, other.address, '99999999999999')
       })
 
-      describe.only('offsets', () => {
+      describe('offsets', () => {
         it('0 for 1 works', async () => {
           await pair.setFeeProtocol(6)
           await swapExact0For1(expandTo18Decimals(1), wallet.address)
@@ -1282,7 +1244,7 @@ describe('UniswapV3Pair', () => {
       expect(token1Fees).to.eq(0)
     })
 
-    it('fees collected after two swaps with fee turned on in middle are fees from both swaps (confiscatory)', async () => {
+    it('fees collected after two swaps with fee turned on in middle are fees from both swaps', async () => {
       await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: true,
@@ -1297,7 +1259,7 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('1000000000000000')
+      expect(token0Fees).to.eq('1099999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1310,7 +1272,7 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('500000000000000')
+      expect(token0Fees).to.eq('499999999999999')
       expect(token1Fees).to.eq(0)
 
       // collect the fees
@@ -1325,18 +1287,10 @@ describe('UniswapV3Pair', () => {
       expect(token0FeesNext).to.eq(0)
       expect(token1FeesNext).to.eq(0)
 
-      // the fee to fees do not account for uncollected fees yet
-      let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-      expect(token0ProtocolFees).to.eq('99999999999999')
-      expect(token1ProtocolFees).to.eq(0)
-
       await pair.poke(wallet.address, minTick, maxTick) // poke to update fees
       await expect(pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '500000000000000')
-      ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-      expect(token0ProtocolFees).to.eq('199999999999998')
-      expect(token1ProtocolFees).to.eq(0)
+        .withArgs(pair.address, wallet.address, '499999999999999')
     })
   })
 
@@ -1584,47 +1538,56 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#setFeeProtocol', () => {
-    it('can only be called by factory owner', async () => {
-      await expect(pair.connect(other).setFeeProtocol(5)).to.be.revertedWith('')
+    it('fails if not initialized', async () => {
+      await expect(pair.connect(other).setFeeProtocol(5)).to.be.revertedWith('LOK')
     })
-    it('fails if fee is lt 4 or gt 10', async () => {
-      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
-    })
-    it('succeeds for fee of 4', async () => {
-      await pair.setFeeProtocol(4)
-    })
-    it('succeeds for fee of 10', async () => {
-      await pair.setFeeProtocol(10)
-    })
-    it('sets protocol fee', async () => {
-      await pair.setFeeProtocol(7)
-      expect((await pair.slot0()).feeProtocol).to.eq(7)
-    })
-    it('can change protocol fee', async () => {
-      await pair.setFeeProtocol(7)
-      await pair.setFeeProtocol(5)
-      expect((await pair.slot0()).feeProtocol).to.eq(5)
-    })
-    it('can turn off protocol fee', async () => {
-      await pair.setFeeProtocol(4)
-      await pair.setFeeProtocol(0)
-      expect((await pair.slot0()).feeProtocol).to.eq(0)
-    })
-    it('emits an event when turned on', async () => {
-      await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(0, 7)
-    })
-    it('emits an event when turned off', async () => {
-      await pair.setFeeProtocol(7)
-      await expect(pair.setFeeProtocol(0)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 0)
-    })
-    it('emits an event when changed', async () => {
-      await pair.setFeeProtocol(7)
-      await expect(pair.setFeeProtocol(5)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 5)
-    })
-    it('emits an event when unchanged', async () => {
-      await pair.setFeeProtocol(7)
-      await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 7)
+    describe('after initialization', () => {
+      beforeEach('initialize the pair', async () => {
+        await pair.initialize(encodePriceSqrt(1, 1))
+      })
+
+      it('can only be called by factory owner', async () => {
+        await expect(pair.connect(other).setFeeProtocol(5)).to.be.revertedWith('')
+      })
+      it('fails if fee is lt 4 or gt 10', async () => {
+        await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
+        await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
+      })
+      it('succeeds for fee of 4', async () => {
+        await pair.setFeeProtocol(4)
+      })
+      it('succeeds for fee of 10', async () => {
+        await pair.setFeeProtocol(10)
+      })
+      it('sets protocol fee', async () => {
+        await pair.setFeeProtocol(7)
+        expect((await pair.slot0()).feeProtocol).to.eq(7)
+      })
+      it.skip('can change protocol fee', async () => {
+        await pair.setFeeProtocol(7)
+        await pair.setFeeProtocol(5)
+        expect((await pair.slot0()).feeProtocol).to.eq(5)
+      })
+      it('can turn off protocol fee', async () => {
+        await pair.setFeeProtocol(4)
+        await pair.setFeeProtocol(0)
+        expect((await pair.slot0()).feeProtocol).to.eq(0)
+      })
+      it('emits an event when turned on', async () => {
+        await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(0, 7)
+      })
+      it('emits an event when turned off', async () => {
+        await pair.setFeeProtocol(7)
+        await expect(pair.setFeeProtocol(0)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 0)
+      })
+      it.skip('emits an event when changed', async () => {
+        await pair.setFeeProtocol(7)
+        await expect(pair.setFeeProtocol(5)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 5)
+      })
+      it.skip('emits an event when unchanged', async () => {
+        await pair.setFeeProtocol(7)
+        await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 7)
+      })
     })
   })
 
