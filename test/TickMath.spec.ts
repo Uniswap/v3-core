@@ -8,6 +8,9 @@ import { encodePriceSqrt } from './shared/utilities'
 const MIN_TICK = -887272
 const MAX_TICK = 887272
 
+const MIN_SQRT_RATIO = BigNumber.from('4295128739')
+const MAX_SQRT_RATIO = BigNumber.from('1461446703485210103287273052203988822378723970342')
+
 describe('TickMath', () => {
   let tickMath: TickMathTest
 
