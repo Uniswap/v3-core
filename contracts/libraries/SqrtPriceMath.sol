@@ -95,7 +95,7 @@ library SqrtPriceMath {
     /// @param liquidity the amount of usable liquidity
     /// @param amountIn how much of token0 or token1 is being swapped in
     /// @param zeroForOne whether the amount in is token0 or token1
-    /// @return the price after adding the input amount to token0 or token1
+    /// @return sqrtQX96 the price after adding the input amount to token0 or token1
     /// @dev Throws if price or liquidity are 0 or the next price is out of bounds
     function getNextSqrtPriceFromInput(
         uint160 sqrtPX96,
@@ -118,7 +118,7 @@ library SqrtPriceMath {
     /// @param liquidity the amount of usable liquidity
     /// @param amountOut how much of token0 or token1 is being swapped out
     /// @param zeroForOne whether the amount out is token0 or token1
-    /// @return the price after removing the output amount of token0 or token1
+    /// @return sqrtQX96 the price after removing the output amount of token0 or token1
     /// @dev Throws if price or liquidity are 0 or the next price is out of bounds
     function getNextSqrtPriceFromOutput(
         uint160 sqrtPX96,
@@ -137,17 +137,17 @@ library SqrtPriceMath {
     }
 
     /// @notice Get the delta of amount0 between two prices
-    /// @param sqrtPX96 the starting price
-    /// @param sqrtQX96 the ending price
+    /// @param sqrtPX96 the starting sqrt price
+    /// @param sqrtQX96 the ending sqrt price
     /// @param liquidity the amount of usable liquidity
     /// @param roundUp whether to round the amount up or down
-    /// @return the difference in virtual reserves of token0 between the two prices
+    /// @return amount0 the difference in virtual reserves of token0 between the two prices
     /// @dev Throws if the starting price is less than the ending price. To get the price in the other direction, swap
     /// the argument order.
     /// Calculates liquidity / sqrt(Q) - liquidity / sqrt(P), i.e. liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
     function getAmount0Delta(
-        uint160 sqrtPX96, // square root of current price
-        uint160 sqrtQX96, // square root of target price
+        uint160 sqrtPX96,
+        uint160 sqrtQX96,
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount0) {
@@ -164,17 +164,17 @@ library SqrtPriceMath {
     }
 
     /// @notice Get the delta of amount1 between two prices
-    /// @param sqrtPX96 the starting price
-    /// @param sqrtQX96 the ending price
+    /// @param sqrtPX96 the starting sqrt price
+    /// @param sqrtQX96 the ending sqrt price
     /// @param liquidity the amount of usable liquidity
     /// @param roundUp whether to round the amount up or down
-    /// @return the difference in virtual reserves of token1 between the two prices
+    /// @return amount1 the difference in virtual reserves of token1 between the two prices
     /// @dev Throws if the starting price is greater than the ending price. To get the price in the other direction,
     /// swap the argument order.
     /// Calculates liquidity * (sqrt(Q) - sqrt(P))
     function getAmount1Delta(
-        uint160 sqrtPX96, // square root of current price
-        uint160 sqrtQX96, // square root of target price
+        uint160 sqrtPX96,
+        uint160 sqrtQX96,
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount1) {
@@ -188,10 +188,10 @@ library SqrtPriceMath {
     }
 
     /// @notice Helper that gets signed token0 delta from a liquidity delta
-    /// @param sqrtPX96 the current price
-    /// @param sqrtQX96 the target price
+    /// @param sqrtPX96 the current sqrt price
+    /// @param sqrtQX96 the target sqrt price
     /// @param liquidity the change in liquidity
-    /// @return the difference in virtual reserves of token0 between two prices due to a given liquidity delta
+    /// @return amount0 the difference in virtual reserves of token0 between two prices due to a given liquidity delta
     function getAmount0Delta(
         uint160 sqrtPX96,
         uint160 sqrtQX96,
@@ -204,15 +204,15 @@ library SqrtPriceMath {
     }
 
     /// @notice Helper that gets signed token1 delta from a liquidity delta
-    /// @param sqrtPX96 the current price
-    /// @param sqrtQX96 the target price
+    /// @param sqrtPX96 the current sqrt price
+    /// @param sqrtQX96 the target sqrt price
     /// @param liquidity the change in liquidity
-    /// @return the difference in virtual reserves of token1 between two prices due to a given liquidity delta
+    /// @return amount1 the difference in virtual reserves of token1 between two prices due to a given liquidity delta
     function getAmount1Delta(
         uint160 sqrtPX96,
         uint160 sqrtQX96,
         int128 liquidity
-    ) internal pure returns (int256 amount0) {
+    ) internal pure returns (int256 amount1) {
         return
             liquidity < 0
                 ? -getAmount1Delta(sqrtPX96, sqrtQX96, uint128(-liquidity), false).toInt256()
