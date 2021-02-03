@@ -33,7 +33,7 @@ library Tick {
         return type(uint128).max / numTicks;
     }
 
-    /// @notice Retrieves fee growth data for fee rewards calculations\
+    /// @notice Retrieves fee growth data
     /// @param self The mapping containing all tick information for initialized ticks
     /// @param tickLower The lower tick boundary of the position
     /// @param tickUpper The upper tick boundary of the position
@@ -88,7 +88,7 @@ library Tick {
     /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
     /// @param upper A bool representing whether or not the call represents the upper, or lower tick
     /// @param maxLiquidity The maximum liquidity allocation for a single tick
-    /// @return flipped TODO
+    /// @return flipped Whether the tick was flipped from initialized to uninitialized, or vice versa
     function update(
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
