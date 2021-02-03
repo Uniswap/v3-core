@@ -263,16 +263,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // update protocol fee offsets if necessary
             if (_slot0.feeProtocol > 0) {
+                bool inRange = _slot0.tick >= params.tickLower && _slot0.tick < params.tickUpper;
                 q0 = int256(q0).add(SqrtPriceMath.getQDelta(
                     feeGrowthGlobal0X128,
                     (1 << 224) / _slot0.sqrtPriceX96,
-                    params.liquidityDelta,
+                    inRange ? params.liquidityDelta : 0,
                     amount0
                 )).toInt128();
                 q1 = int256(q1).add(SqrtPriceMath.getQDelta(
                     feeGrowthGlobal1X128,
                     uint256(_slot0.sqrtPriceX96) << 32,
-                    params.liquidityDelta,
+                    inRange ? params.liquidityDelta : 0,
                     amount1
                 )).toInt128();
             }
@@ -702,8 +703,23 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 paid0 = balance0After - balance0Before;
         uint256 paid1 = balance1After - balance1Before;
 
-        if (paid0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
-        if (paid1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
+        // uint8 feeProtocol = slot0.feeProtocol;
+        if (paid0 > 0) {
+            uint256 delta = FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
+            if (slot0.feeProtocol == 0) {
+                feeGrowthGlobal0X128 += delta;
+            } else {
+                feeGrowthGlobal0X128 += delta - delta / slot0.feeProtocol;
+            }
+        }
+        if (paid1 > 0) {
+            uint256 delta = FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
+            if (slot0.feeProtocol == 0) {
+                feeGrowthGlobal1X128 += delta;
+            } else {
+                feeGrowthGlobal1X128 += delta - delta / slot0.feeProtocol;
+            }
+        }
 
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
     }
