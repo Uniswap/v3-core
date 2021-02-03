@@ -1060,206 +1060,208 @@ describe('UniswapV3Pair', () => {
           .withArgs(pair.address, other.address, '99999999999999')
       })
 
-      it.only('0 for 1 works', async () => {
-        await pair.setFeeProtocol(6)
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('100000000000000')
-        expect(amount1).to.be.eq(0)
-      })
+      describe.only('offsets', () => {
+        it('0 for 1 works', async () => {
+          await pair.setFeeProtocol(6)
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000000')
+          expect(amount1).to.be.eq(0)
+        })
 
-      it.only('1 for 0 works', async () => {
-        await pair.setFeeProtocol(6)
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq(0)
-        expect(amount1).to.be.eq('100000000000000')
-      })
+        it('1 for 0 works', async () => {
+          await pair.setFeeProtocol(6)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq(0)
+          expect(amount1).to.be.eq('100000000000000')
+        })
 
-      it.only('0 for 1 and 1 for 0 works', async () => {
-        await pair.setFeeProtocol(6)
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('100000000000001') // + 1 wei
-        expect(amount1).to.be.eq('100000000000000')
-      })
+        it('0 for 1 and 1 for 0 works', async () => {
+          await pair.setFeeProtocol(6)
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000001') // + 1 wei
+          expect(amount1).to.be.eq('100000000000000')
+        })
 
-      it.only('0 for 1 works with liquidityDeltas', async () => {
-        await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+        it('0 for 1 works with liquidityDeltas', async () => {
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
 
-        await pair.setFeeProtocol(6)
+          await pair.setFeeProtocol(6)
 
-        await swapExact0For1(expandTo18Decimals(10), wallet.address)
-        expect((await pair.slot0()).tick).to.be.lt(-tickSpacing)
+          await swapExact0For1(expandTo18Decimals(10), wallet.address)
+          expect((await pair.slot0()).tick).to.be.lt(-tickSpacing)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('1000000000000001')
-        expect(amount1).to.be.eq(0)
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('1000000000000001')
+          expect(amount1).to.be.eq(0)
+        })
 
-      it.only('1 for 0 works with liquidityDeltas', async () => {
-        await mint(wallet.address, 0, tickSpacing, expandTo18Decimals(1))
+        it('1 for 0 works with liquidityDeltas', async () => {
+          await mint(wallet.address, 0, tickSpacing, expandTo18Decimals(1))
 
-        await pair.setFeeProtocol(6)
+          await pair.setFeeProtocol(6)
 
-        await swapExact1For0(expandTo18Decimals(10), wallet.address)
-        expect((await pair.slot0()).tick).to.be.gte(tickSpacing)
+          await swapExact1For0(expandTo18Decimals(10), wallet.address)
+          expect((await pair.slot0()).tick).to.be.gte(tickSpacing)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq(0)
-        expect(amount1).to.be.eq('1000000000000001') // + 1 wei
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq(0)
+          expect(amount1).to.be.eq('1000000000000001') // + 1 wei
+        })
 
-      it.only('0 for 1 and 1 for 0 works with liquidityDeltas', async () => {
-        await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+        it('0 for 1 and 1 for 0 works with liquidityDeltas', async () => {
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
 
-        await pair.setFeeProtocol(6)
+          await pair.setFeeProtocol(6)
 
-        await swapExact0For1(expandTo18Decimals(10), wallet.address)
-        expect((await pair.slot0()).tick).to.be.lt(-tickSpacing)
-        await swapExact1For0(expandTo18Decimals(20), wallet.address)
-        expect((await pair.slot0()).tick).to.be.gte(tickSpacing)
+          await swapExact0For1(expandTo18Decimals(10), wallet.address)
+          expect((await pair.slot0()).tick).to.be.lt(-tickSpacing)
+          await swapExact1For0(expandTo18Decimals(20), wallet.address)
+          expect((await pair.slot0()).tick).to.be.gte(tickSpacing)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('1000000000000002')
-        expect(amount1).to.be.eq('2000000000000002')
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('1000000000000002')
+          expect(amount1).to.be.eq('2000000000000002')
+        })
 
-      it.only('0 for 1 works with in-range mint', async () => {
-        await pair.setFeeProtocol(6)
+        it('0 for 1 works with in-range mint', async () => {
+          await pair.setFeeProtocol(6)
 
-        await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
 
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('100000000000001')
-        expect(amount1).to.be.eq(0)
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000001')
+          expect(amount1).to.be.eq(0)
+        })
 
-      it.only('0 for 1 works with in-range mint', async () => {
-        await pair.setFeeProtocol(6)
+        it('0 for 1 works with in-range mint', async () => {
+          await pair.setFeeProtocol(6)
 
-        await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
 
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq(0)
-        expect(amount1).to.be.eq('100000000000001')
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq(0)
+          expect(amount1).to.be.eq('100000000000001')
+        })
 
-      it.only('0 for 1 and 1 for 0 works with in-range mint', async () => {
-        await pair.setFeeProtocol(6)
+        it('0 for 1 and 1 for 0 works with in-range mint', async () => {
+          await pair.setFeeProtocol(6)
 
-        await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
 
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('100000000000002')
-        expect(amount1).to.be.eq('100000000000001')
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000002')
+          expect(amount1).to.be.eq('100000000000001')
+        })
 
-      it.only('0 for 1 works with out-of-range mint', async () => {
-        await pair.setFeeProtocol(6)
+        it('0 for 1 works with out-of-range mint', async () => {
+          await pair.setFeeProtocol(6)
 
-        await mint(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
 
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('100000000000000')
-        expect(amount1).to.be.eq(0)
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000000')
+          expect(amount1).to.be.eq(0)
+        })
 
-      it.only('1 for 0 works with out-of-range mint', async () => {
-        await pair.setFeeProtocol(6)
+        it('1 for 0 works with out-of-range mint', async () => {
+          await pair.setFeeProtocol(6)
 
-        await mint(wallet.address, -tickSpacing * 2, -tickSpacing, expandTo18Decimals(1))
+          await mint(wallet.address, -tickSpacing * 2, -tickSpacing, expandTo18Decimals(1))
 
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq(0)
-        expect(amount1).to.be.eq('100000000000000')
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq(0)
+          expect(amount1).to.be.eq('100000000000000')
+        })
 
-      it.only('0 for 1 and 1 for 0 works with out-of-range mint', async () => {
-        await pair.setFeeProtocol(6)
+        it('0 for 1 and 1 for 0 works with out-of-range mint', async () => {
+          await pair.setFeeProtocol(6)
 
-        await mint(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
 
-        await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('100000000000001')
-        expect(amount1).to.be.eq('100000000000000')
-      })
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000001')
+          expect(amount1).to.be.eq('100000000000000')
+        })
 
-      it.only('flash works', async () => {
-        await pair.setFeeProtocol(6)
+        it('flash works', async () => {
+          await pair.setFeeProtocol(6)
 
-        await flash(expandTo18Decimals(1), expandTo18Decimals(1), other.address)
+          await flash(expandTo18Decimals(1), expandTo18Decimals(1), other.address)
 
-        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
-          other.address,
-          constants.MaxUint256,
-          constants.MaxUint256
-        )
-        expect(amount0).to.be.eq('100000000000000')
-        expect(amount1).to.be.eq('100000000000000')
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000000')
+          expect(amount1).to.be.eq('100000000000000')
+        })
       })
     })
 

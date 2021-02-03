@@ -598,18 +598,20 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                         );
 
                     // update offsets
-                    state.q0Delta = state.q0Delta.add(SqrtPriceMath.getQDelta(
-                        zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128,
-                        (1 << 224) / state.sqrtPriceX96,
-                        zeroForOne ? -liquidityDelta : liquidityDelta,
-                        0
-                    ));
-                    state.q1Delta = state.q1Delta.add(SqrtPriceMath.getQDelta(
-                        zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128,
-                        uint256(state.sqrtPriceX96) << 32,
-                        zeroForOne ? -liquidityDelta : liquidityDelta,
-                        0
-                    ));
+                    if (cache.slot0Start.feeProtocol > 0) {
+                        state.q0Delta = state.q0Delta.add(SqrtPriceMath.getQDelta(
+                            zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128,
+                            (1 << 224) / state.sqrtPriceX96,
+                            zeroForOne ? -liquidityDelta : liquidityDelta,
+                            0
+                        ));
+                        state.q1Delta = state.q1Delta.add(SqrtPriceMath.getQDelta(
+                            zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128,
+                            uint256(state.sqrtPriceX96) << 32,
+                            zeroForOne ? -liquidityDelta : liquidityDelta,
+                            0
+                        ));
+                    }
 
                     secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
