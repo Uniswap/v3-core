@@ -779,8 +779,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             q0 = 0;
             q1 = 0;
         }
-        emit SetFeeProtocol(feeProtocolOld, feeProtocol);
         slot0.feeProtocol = feeProtocol;
+        emit SetFeeProtocol(feeProtocolOld, feeProtocol);
     }
 
     /// @inheritdoc IUniswapV3PairOwnerActions
