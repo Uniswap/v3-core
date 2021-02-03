@@ -233,11 +233,12 @@ library SqrtPriceMath {
         int128 liquidityDelta,
         int256 balanceDelta
     ) internal pure returns (int256 q0Delta) {
-        uint256 qDeltaUnsigned = FullMath.mulDiv(
-            feeGrowthGlobalX128.add(sqrtPriceX128),
-            liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
-            FixedPoint128.Q128
-        );
+        uint256 qDeltaUnsigned =
+            FullMath.mulDiv(
+                feeGrowthGlobalX128.add(sqrtPriceX128),
+                liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
+                FixedPoint128.Q128
+            );
         int256 qDeltaSigned = liquidityDelta < 0 ? -qDeltaUnsigned.toInt256() : qDeltaUnsigned.toInt256();
 
         return qDeltaSigned.sub(balanceDelta);
