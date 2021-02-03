@@ -597,12 +597,21 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                             FixedPoint128.Q128
                         );
 
-                    state.q0Delta = state.q0Delta.add(
-                        (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
-                    );
-                    state.q1Delta = state.q1Delta.add(
-                        (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
-                    );
+                    if (zeroForOne) {
+                        state.q0Delta = state.q0Delta.sub(
+                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
+                        );
+                        state.q1Delta = state.q1Delta.sub(
+                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
+                        );
+                    } else {
+                        state.q0Delta = state.q0Delta.add(
+                            (liquidityDelta < 0 ? -q0DeltaUnsigned.toInt256() : q0DeltaUnsigned.toInt256())
+                        );
+                        state.q1Delta = state.q1Delta.add(
+                            (liquidityDelta < 0 ? -q1DeltaUnsigned.toInt256() : q1DeltaUnsigned.toInt256())
+                        );
+                    }
 
                     secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
