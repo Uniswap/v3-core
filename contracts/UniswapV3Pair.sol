@@ -772,18 +772,22 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // initializes offets, rounding down
             // TODO maybe the qs can start off as negative? if so, the below will error out
-            offsets.offset0 = SqrtPriceMath.getQDelta(
+            offsets.offset0 = SqrtPriceMath
+                .getQDelta(
                 feeGrowthGlobal0X128,
                 (1 << 224) / slot0.sqrtPriceX96,
                 uint256(liquidity).toInt256().toInt128(),
                 balance0().toInt256()
-            ).toInt128();
-            offsets.offset1 = SqrtPriceMath.getQDelta(
+            )
+                .toInt128();
+            offsets.offset1 = SqrtPriceMath
+                .getQDelta(
                 feeGrowthGlobal1X128,
                 uint256(slot0.sqrtPriceX96) << 32,
                 uint256(liquidity).toInt256().toInt128(),
                 balance1().toInt256()
-            ).toInt128();
+            )
+                .toInt128();
         } else {
             // TODO is this right/necessary?
             offsets.offset0 = 0;
