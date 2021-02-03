@@ -4,12 +4,15 @@ import { TickMathTest } from '../typechain/TickMathTest'
 import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 import { encodePriceSqrt } from './shared/utilities'
+import Decimal from 'decimal.js'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
 
 const MIN_SQRT_RATIO = BigNumber.from('4295128739')
 const MAX_SQRT_RATIO = BigNumber.from('1461446703485210103287273052203988822378723970342')
+
+Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
 describe('TickMath', () => {
   let tickMath: TickMathTest
@@ -70,6 +73,12 @@ describe('TickMath', () => {
     ]) {
       for (const tick of [-absTick, absTick]) {
         describe(`tick ${tick}`, () => {
+          it('is at most off by 1/100th of a bips', async () => {
+            const jsResult = new Decimal(1.0001).pow(tick).sqrt().mul(new Decimal(2).pow(96))
+            const result = await tickMath.getSqrtRatioAtTick(tick)
+            const absDiff = new Decimal(result.toString()).sub(jsResult).abs()
+            expect(absDiff.div(jsResult).toNumber()).to.be.lt(0.000001)
+          })
           it('result', async () => {
             expect((await tickMath.getSqrtRatioAtTick(tick)).toString()).to.matchSnapshot()
           })
@@ -135,6 +144,19 @@ describe('TickMath', () => {
       MAX_SQRT_RATIO.sub(1),
     ]) {
       describe(`ratio ${ratio}`, () => {
+        it('is at most off by 1', async () => {
+          const jsResult = new Decimal(ratio.toString()).div(new Decimal(2).pow(96)).pow(2).log(1.0001).floor()
+          const result = await tickMath.getTickAtSqrtRatio(ratio)
+          const absDiff = new Decimal(result.toString()).sub(jsResult).abs()
+          expect(absDiff.toNumber()).to.be.lte(1)
+        })
+        it('ratio is between the tick and tick+1', async () => {
+          const tick = await tickMath.getTickAtSqrtRatio(ratio)
+          const ratioOfTick = await tickMath.getSqrtRatioAtTick(tick)
+          const ratioOfTickPlusOne = await tickMath.getSqrtRatioAtTick(tick + 1)
+          expect(ratio).to.be.gte(ratioOfTick)
+          expect(ratio).to.be.lt(ratioOfTickPlusOne)
+        })
         it('result', async () => {
           expect(await tickMath.getTickAtSqrtRatio(ratio)).to.matchSnapshot()
         })
