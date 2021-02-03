@@ -136,7 +136,7 @@ describe('TickMath', () => {
     ]) {
       describe(`ratio ${ratio}`, () => {
         it('result', async () => {
-          expect((await tickMath.getTickAtSqrtRatio(ratio)).toString()).to.matchSnapshot()
+          expect(await tickMath.getTickAtSqrtRatio(ratio)).to.matchSnapshot()
         })
         it('gas', async () => {
           await snapshotGasCost(tickMath.getGasCostOfGetTickAtSqrtRatio(ratio))
