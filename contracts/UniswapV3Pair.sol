@@ -42,17 +42,19 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using Position for Position.Info;
     using Oracle for Oracle.Observation[65535];
 
+    /// @inheritdoc IUniswapV3PairImmutables
     address public immutable override factory;
+    /// @inheritdoc IUniswapV3PairImmutables
     address public immutable override token0;
+    /// @inheritdoc IUniswapV3PairImmutables
     address public immutable override token1;
+    /// @inheritdoc IUniswapV3PairImmutables
     uint24 public immutable override fee;
 
-    // how far apart initialized ticks must be
-    // e.g. a tickSpacing of 3 means ticks can be initialized every 3rd tick, i.e. ..., -6, -3, 0, 3, 6, ...
-    // int24 to avoid casting even though it's always positive
+    /// @inheritdoc IUniswapV3PairImmutables
     int24 public immutable override tickSpacing;
 
-    // the maximum amount of liquidity that can use any individual tick
+    /// @inheritdoc IUniswapV3PairImmutables
     uint128 public immutable override maxLiquidityPerTick;
 
     struct Slot0 {
@@ -71,10 +73,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         // whether the pair is locked
         bool unlocked;
     }
+    /// @inheritdoc IUniswapV3PairState
     Slot0 public override slot0;
 
-    // fee growth per unit of liquidity
+    /// @inheritdoc IUniswapV3PairState
     uint256 public override feeGrowthGlobal0X128;
+    /// @inheritdoc IUniswapV3PairState
     uint256 public override feeGrowthGlobal1X128;
     int128 public q0;
     int128 public q1;
@@ -84,17 +88,24 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint128 token0;
         uint128 token1;
     }
+    /// @inheritdoc IUniswapV3PairState
     ProtocolFees public override protocolFees;
 
-    // the current liquidity
+    /// @inheritdoc IUniswapV3PairState
     uint128 public override liquidity;
 
+    /// @inheritdoc IUniswapV3PairState
     mapping(int24 => Tick.Info) public override ticks;
+    /// @inheritdoc IUniswapV3PairState
     mapping(int16 => uint256) public override tickBitmap;
+    /// @inheritdoc IUniswapV3PairState
     mapping(int24 => uint256) public override secondsOutside;
+    /// @inheritdoc IUniswapV3PairState
     mapping(bytes32 => Position.Info) public override positions;
+    /// @inheritdoc IUniswapV3PairState
     Oracle.Observation[65535] public override observations;
 
+    /// @dev Mutually exclusive reentrancy protection into the pair to/from a method
     modifier lock() {
         require(slot0.unlocked, 'LOK');
         slot0.unlocked = false;
@@ -102,6 +113,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         slot0.unlocked = true;
     }
 
+    /// @dev Prevents calling a function from anyone except the address returned by IUniswapV3Factory#owner()
     modifier onlyFactoryOwner() {
         require(msg.sender == IUniswapV3Factory(factory).owner());
         _;
@@ -115,36 +127,41 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
     }
 
+    /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) private pure {
         require(tickLower < tickUpper, 'TLU');
         require(tickLower >= TickMath.MIN_TICK, 'TLM');
         require(tickUpper <= TickMath.MAX_TICK, 'TUM');
     }
 
-    // returns the block timestamp % 2**32
-    // overridden for tests
+    /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
     }
 
+    /// @dev Get the balance of token0
     function balance0() private view returns (uint256) {
         return balanceOfToken(token0);
     }
 
+    /// @dev Get the balance of token1
     function balance1() private view returns (uint256) {
         return balanceOfToken(token1);
     }
 
+    /// @dev Get the balance of the token address. Saves bytecode.
     function balanceOfToken(address token) private view returns (uint256) {
         return IERC20Minimal(token).balanceOf(address(this));
     }
 
+    /// @inheritdoc IUniswapV3PairDerivedState
     function secondsInside(int24 tickLower, int24 tickUpper) external view override noDelegateCall returns (uint32) {
         checkTicks(tickLower, tickUpper);
         require(ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0, 'X');
         return secondsOutside.secondsInside(tickLower, tickUpper, slot0.tick, tickSpacing, _blockTimestamp());
     }
 
+    /// @inheritdoc IUniswapV3PairDerivedState
     function scry(uint32 secondsAgo)
         external
         view
@@ -163,7 +180,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             );
     }
 
-    // increases the next observation cardinality, callable by anyone after initialize.
+    /// @inheritdoc IUniswapV3PairActions
     function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external override noDelegateCall {
         uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
         uint16 observationCardinalityNextNew =
@@ -173,7 +190,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
     }
 
-    // not locked because it initializes unlocked
+    /// @inheritdoc IUniswapV3PairActions
+    /// @dev not locked because it initializes unlocked
     function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, 'AI');
 
@@ -204,7 +222,10 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int128 liquidityDelta;
     }
 
-    // effect some changes to a position
+    /// @dev Effect some changes to a position
+    /// @param params the position details and the change to the position's liquidity to effect
+    /// @return amount0 the amount of token0 owed to the pair, negative if the pair should pay the recipient
+    /// @return amount1 the amount of token1 owed to the pair, negative if the pair should pay the recipient
     function _modifyPosition(ModifyPositionParams memory params)
         private
         noDelegateCall
@@ -280,7 +301,11 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         }
     }
 
-    // gets and updates and gets a position with the given liquidity delta
+    /// @dev Gets and updates a position with the given liquidity delta
+    /// @param owner the owner of the position
+    /// @param tickLower the lower tick of the position's tick range
+    /// @param tickUpper the upper tick of the position's tick range
+    /// @param tick the current tick, passed to avoid sloads
     function _updatePosition(
         address owner,
         int24 tickLower,
@@ -352,7 +377,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         }
     }
 
-    // noDelegateCall is applied indirectly via _modifyPosition
+    /// @inheritdoc IUniswapV3PairActions
+    /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function poke(
         address owner,
         int24 tickLower,
@@ -364,7 +390,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Poke(msg.sender, owner, tickLower, tickUpper);
     }
 
-    // noDelegateCall is applied indirectly via _modifyPosition
+    /// @inheritdoc IUniswapV3PairActions
+    /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function mint(
         address recipient,
         int24 tickLower,
@@ -399,6 +426,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
 
+    /// @inheritdoc IUniswapV3PairActions
     function collect(
         address recipient,
         int24 tickLower,
@@ -424,7 +452,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
     }
 
-    // noDelegateCall is applied indirectly via _modifyPosition
+    /// @inheritdoc IUniswapV3PairActions
+    /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function burn(
         address recipient,
         int24 tickLower,
@@ -495,8 +524,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 feeAmount;
     }
 
-    // positive (negative) numbers specify exact input (output) amounts
-    // manually locked for the sake of gas efficiency
+    /// @inheritdoc IUniswapV3PairActions
     function swap(
         address recipient,
         bool zeroForOne,
@@ -676,6 +704,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         slot0.unlocked = true;
     }
 
+    /// @inheritdoc IUniswapV3PairActions
     function flash(
         address recipient,
         uint256 amount0,
@@ -726,6 +755,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
     }
 
+    /// @inheritdoc IUniswapV3PairOwnerActions
     function setFeeProtocol(uint8 feeProtocol) external override lock onlyFactoryOwner {
         uint8 feeProtocolOld = slot0.feeProtocol;
         if (feeProtocol > 0) {
@@ -753,6 +783,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         slot0.feeProtocol = feeProtocol;
     }
 
+    /// @inheritdoc IUniswapV3PairOwnerActions
     function collectProtocol(
         address recipient,
         uint256 amount0Requested,

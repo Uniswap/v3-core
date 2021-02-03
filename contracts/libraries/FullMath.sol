@@ -30,8 +30,11 @@ library FullMath {
         uint256 y,
         uint256 d
     ) internal pure returns (uint256) {
-        // todo: this will panic if d == 0, rather than revert
-        if (x == 0 || (x * y) / x == y) return ((x * y) / d);
+        uint256 z = x * y;
+        if (x == 0 || z / x == y) {
+            // todo: this will panic if d == 0, rather than revert
+            return (z / d);
+        }
 
         (uint256 l, uint256 h) = fullMul(x, y);
         // this reverts if the result overflows OR d == 0
