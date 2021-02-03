@@ -80,16 +80,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     uint256 public override feeGrowthGlobal0X128;
     /// @inheritdoc IUniswapV3PairState
     uint256 public override feeGrowthGlobal1X128;
-    int128 public q0;
-    int128 public q1;
 
-    // accumulated protocol fees in token0/token1 units
-    struct ProtocolFees {
-        uint128 token0;
-        uint128 token1;
+    // token0/token1 offsets for calculating protocol fees
+    struct Offsets {
+        int128 offset0;
+        int128 offset1;
     }
     /// @inheritdoc IUniswapV3PairState
-    ProtocolFees public override protocolFees;
+    Offsets public override offsets;
 
     /// @inheritdoc IUniswapV3PairState
     uint128 public override liquidity;
@@ -238,6 +236,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, _slot0.tick);
 
         if (params.liquidityDelta != 0) {
+            bool inRange;
+
             if (_slot0.tick < params.tickLower) {
                 // current tick is below the passed range; liquidity can only become in range by crossing from left to
                 // right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
@@ -248,6 +248,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 );
             } else if (_slot0.tick < params.tickUpper) {
                 // current tick is inside the passed range
+                inRange = true;
                 uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
 
                 // write an oracle entry
@@ -284,14 +285,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // update protocol fee offsets if necessary
             if (_slot0.feeProtocol > 0) {
-                bool inRange = _slot0.tick >= params.tickLower && _slot0.tick < params.tickUpper;
-                q0 = int256(q0).add(SqrtPriceMath.getQDelta(
+                offsets.offset0 = int256(offsets.offset0).add(SqrtPriceMath.getQDelta(
                     feeGrowthGlobal0X128,
                     (1 << 224) / _slot0.sqrtPriceX96,
                     inRange ? params.liquidityDelta : 0,
                     amount0
                 )).toInt128();
-                q1 = int256(q1).add(SqrtPriceMath.getQDelta(
+                offsets.offset1 = int256(offsets.offset1).add(SqrtPriceMath.getQDelta(
                     feeGrowthGlobal1X128,
                     uint256(_slot0.sqrtPriceX96) << 32,
                     inRange ? params.liquidityDelta : 0,
@@ -356,13 +356,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
-        (uint256 protocolFees0New, uint256 protocolFees1New) =
-            position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
-        if (protocolFees0New > 0 || protocolFees1New > 0) {
-            ProtocolFees memory _protocolFees = protocolFees;
-            protocolFees.token0 = FeeMath.addCapped(_protocolFees.token0, protocolFees0New);
-            protocolFees.token1 = FeeMath.addCapped(_protocolFees.token1, protocolFees1New);
-        }
+        position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128);
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
@@ -503,8 +497,10 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 feeGrowthGlobalX128;
         // the current liquidity in range
         uint128 liquidity;
-        int256 q0Delta;
-        int256 q1Delta;
+        // the net delta to apply to offset0 at the end of the swap
+        int256 offset0Delta;
+        // the net delta to apply to offset1 at the end of the swap
+        int256 offset1Delta;
     }
 
     struct StepComputations {
@@ -559,8 +555,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 tick: cache.slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
                 liquidity: cache.liquidityStart,
-                q0Delta: 0,
-                q1Delta: 0
+                offset0Delta: 0,
+                offset1Delta: 0
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -627,13 +623,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
                     // update offsets
                     if (cache.slot0Start.feeProtocol > 0) {
-                        state.q0Delta = state.q0Delta.add(SqrtPriceMath.getQDelta(
+                        state.offset0Delta = state.offset0Delta.add(SqrtPriceMath.getQDelta(
                             zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128,
                             (1 << 224) / state.sqrtPriceX96,
                             zeroForOne ? -liquidityDelta : liquidityDelta,
                             0
                         ));
-                        state.q1Delta = state.q1Delta.add(SqrtPriceMath.getQDelta(
+                        state.offset1Delta = state.offset1Delta.add(SqrtPriceMath.getQDelta(
                             zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128,
                             uint256(state.sqrtPriceX96) << 32,
                             zeroForOne ? -liquidityDelta : liquidityDelta,
@@ -683,8 +679,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
                 : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);
 
-        if (state.q0Delta != 0) q0 = int256(q0).add(state.q0Delta).toInt128();
-        if (state.q1Delta != 0) q1 = int256(q1).add(state.q1Delta).toInt128();
+        if (state.offset0Delta != 0) offsets.offset0 = int256(offsets.offset0).add(state.offset0Delta).toInt128();
+        if (state.offset1Delta != 0) offsets.offset1 = int256(offsets.offset1).add(state.offset1Delta).toInt128();
 
         (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
 
@@ -734,7 +730,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 paid0 = balance0After - balance0Before;
         uint256 paid1 = balance1After - balance1Before;
 
-        // uint8 feeProtocol = slot0.feeProtocol;
+        // TODO gas optimize this
         if (paid0 > 0) {
             uint256 delta = FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
             if (slot0.feeProtocol == 0) {
@@ -764,20 +760,22 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // initializes offets, rounding down
             // TODO maybe the qs can start off as negative? if so, the below will error out
-            q0 = FullMath
-                .mulDiv(feeGrowthGlobal0X128.add((1 << 224) / slot0.sqrtPriceX96), liquidity, FixedPoint128.Q128)
-                .sub(balance0())
-                .toInt256()
-                .toInt128();
-            q1 = FullMath
-                .mulDiv(feeGrowthGlobal1X128.add(uint256(slot0.sqrtPriceX96) << 32), liquidity, FixedPoint128.Q128)
-                .sub(balance1())
-                .toInt256()
-                .toInt128();
+            offsets.offset0 = SqrtPriceMath.getQDelta(
+                feeGrowthGlobal0X128,
+                (1 << 224) / slot0.sqrtPriceX96,
+                uint256(liquidity).toInt256().toInt128(),
+                balance0().toInt256()
+            ).toInt128();
+            offsets.offset1 = SqrtPriceMath.getQDelta(
+                feeGrowthGlobal1X128,
+                uint256(slot0.sqrtPriceX96) << 32,
+                uint256(liquidity).toInt256().toInt128(),
+                balance1().toInt256()
+            ).toInt128();
         } else {
             // TODO is this right/necessary?
-            q0 = 0;
-            q1 = 0;
+            offsets.offset0 = 0;
+            offsets.offset1 = 0;
         }
         slot0.feeProtocol = feeProtocol;
         emit SetFeeProtocol(feeProtocolOld, feeProtocol);
@@ -791,7 +789,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
         require(slot0.feeProtocol > 0); // TODO this might not be necessary?
 
-        int256 termA0 = balance0().toInt256().add(q0);
+        int256 termA0 = balance0().toInt256().add(offsets.offset0);
         if (termA0 > 0) {
             uint256 termB0 =
                 FullMath.mulDivRoundingUp(
@@ -804,7 +802,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             }
         }
 
-        int256 termA1 = balance1().toInt256().add(q1);
+        int256 termA1 = balance1().toInt256().add(offsets.offset1);
         if (termA1 > 0) {
             uint256 termB1 =
                 FullMath.mulDivRoundingUp(

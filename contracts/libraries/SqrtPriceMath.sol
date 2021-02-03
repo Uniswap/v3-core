@@ -221,14 +221,20 @@ library SqrtPriceMath {
                 : getAmount1Delta(sqrtPX96, sqrtQX96, uint128(liquidity), true).toInt256();
     }
 
+    /// @notice Helper that gets signed offset delta for calculating protocol fees
+    /// @param feeGrowthGlobalX128 the current global fee growth
+    /// @param sqrtPriceX128 the current sqrt price
+    /// @param liquidityDelta the change in liquidity
+    /// @param balanceDelta the change in balance
+    /// @return q0Delta the change to apply to the offset
     function getQDelta(
         uint256 feeGrowthGlobalX128,
-        uint256 sqrtPriceX96, // must be reciprocal for q0
+        uint256 sqrtPriceX128, // must be reciprocal for q0
         int128 liquidityDelta,
         int256 balanceDelta
     ) internal pure returns (int256 q0Delta) {
         uint256 qDeltaUnsigned = FullMath.mulDiv(
-            feeGrowthGlobalX128.add(sqrtPriceX96),
+            feeGrowthGlobalX128.add(sqrtPriceX128),
             liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta),
             FixedPoint128.Q128
         );
