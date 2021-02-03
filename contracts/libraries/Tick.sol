@@ -6,6 +6,8 @@ import './SafeCast.sol';
 import './LiquidityMath.sol';
 import './LowGasSafeMath.sol';
 
+/// @title Tick
+/// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
     // info stored for each initialized individual tick
     struct Info {
@@ -19,6 +21,11 @@ library Tick {
         uint256 feeGrowthOutside1X128;
     }
 
+    /// @notice Derives max liquidity per tick from given tick spacing
+    /// @dev Executed within the pair constructor
+    /// @param tickSpacing The amount of required tick separation, realized in multiples of `tickSpacing`
+    ///     e.g., a tickSpacing of 3 requires ticks to be initialized every 3rd tick i.e., ..., -6, -3, 0, 3, 6, ...
+    /// @return The max liquidity per tick
     function tickSpacingToMaxLiquidityPerTick(int24 tickSpacing) internal pure returns (uint128) {
         int24 minTick = (SqrtTickMath.MIN_TICK / tickSpacing) * tickSpacing;
         int24 maxTick = (SqrtTickMath.MAX_TICK / tickSpacing) * tickSpacing;
@@ -26,6 +33,15 @@ library Tick {
         return type(uint128).max / numTicks;
     }
 
+    /// @notice Retrieves fee growth data
+    /// @param self The mapping containing all tick information for initialized ticks
+    /// @param tickLower The lower tick boundary of the position
+    /// @param tickUpper The upper tick boundary of the position
+    /// @param tickCurrent The current tick
+    /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
+    /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
+    /// @return feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
+    /// @return feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
     function getFeeGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         int24 tickLower,
@@ -63,7 +79,16 @@ library Tick {
         feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128;
     }
 
-    // updates a tick and returns true iff the tick was flipped from initialized to uninitialized or vice versa
+    /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
+    /// @param self The mapping containing all tick information for initialized ticks
+    /// @param tick The tick that will be updated
+    /// @param tickCurrent The current tick
+    /// @param liquidityDelta The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
+    /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
+    /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
+    /// @param upper A bool representing whether or not the call represents the upper, or lower tick
+    /// @param maxLiquidity The maximum liquidity allocation for a single tick
+    /// @return flipped Whether the tick was flipped from initialized to uninitialized, or vice versa
     function update(
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
@@ -99,10 +124,19 @@ library Tick {
             : SafeCast.toInt128(LowGasSafeMath.add(info.liquidityDelta, liquidityDelta));
     }
 
+    /// @notice Clears tick data
+    /// @param self The mapping containing all initialized tick information for initialized ticks
+    /// @param tick The tick that will be cleared
     function clear(mapping(int24 => Tick.Info) storage self, int24 tick) internal {
         delete self[tick];
     }
 
+    /// @notice Transitions to next tick as needed by price movement
+    /// @param self The mapping containing all tick information for initialized ticks
+    /// @param tick The destination tick of the transition
+    /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
+    /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
+    /// @return liquidityDelta The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
     function cross(
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
