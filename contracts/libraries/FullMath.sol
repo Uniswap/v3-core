@@ -46,9 +46,6 @@ library FullMath {
         if (mm > l) h -= 1;
         l -= mm;
 
-        // early return for gas optimization
-        if (h == 0) return l / d;
-
         // begin division
         uint256 pow2 = d & -d;
         d /= pow2;
