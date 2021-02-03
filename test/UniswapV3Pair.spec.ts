@@ -1060,7 +1060,7 @@ describe('UniswapV3Pair', () => {
           .withArgs(pair.address, other.address, '99999999999999')
       })
 
-      it.only('offset0 works', async () => {
+      it('0 for 1 works', async () => {
         await pair.setFeeProtocol(6)
         await swapExact0For1(expandTo18Decimals(1), wallet.address)
         const { amount0, amount1 } = await pair.callStatic.collectProtocol(
@@ -1072,7 +1072,7 @@ describe('UniswapV3Pair', () => {
         expect(amount1).to.be.eq(0)
       })
 
-      it.only('offset1 works', async () => {
+      it('1 for 0 works', async () => {
         await pair.setFeeProtocol(6)
         await swapExact1For0(expandTo18Decimals(1), wallet.address)
         const { amount0, amount1 } = await pair.callStatic.collectProtocol(
@@ -1084,7 +1084,20 @@ describe('UniswapV3Pair', () => {
         expect(amount1).to.be.eq('100000000000000')
       })
 
-      it.only('offset0 works with liquidityDeltas', async () => {
+      it('0 for 1 and 1 for 0 works', async () => {
+        await pair.setFeeProtocol(6)
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+        const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+          other.address,
+          constants.MaxUint256,
+          constants.MaxUint256
+        )
+        expect(amount0).to.be.eq('100000000000001') // + 1 wei
+        expect(amount1).to.be.eq('100000000000000')
+      })
+
+      it.only('0 for 1 works with liquidityDeltas', async () => {
         await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
 
         await pair.setFeeProtocol(6)
@@ -1101,7 +1114,7 @@ describe('UniswapV3Pair', () => {
         expect(amount1).to.be.eq(0)
       })
 
-      it.only('offset1 works with liquidityDeltas', async () => {
+      it('1 for 0 works with liquidityDeltas', async () => {
         await mint(wallet.address, 0, tickSpacing, expandTo18Decimals(1))
 
         await pair.setFeeProtocol(6)
@@ -1115,7 +1128,7 @@ describe('UniswapV3Pair', () => {
           constants.MaxUint256
         )
         expect(amount0).to.be.eq(0)
-        expect(amount1).to.be.eq('1000000000000000')
+        expect(amount1).to.be.eq('1000000000000001') // + 1 wei
       })
     })
 
