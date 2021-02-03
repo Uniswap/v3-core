@@ -9,11 +9,11 @@ interface IUniswapV3PairState {
     /// when accessed externally.
     /// @return sqrtPriceX96 the current price of the pair as a sqrt(token1/token0) Q64.96 value
     /// @return tick the current tick of the pair, i.e. according to the last tick transition that was run.
-    ///     This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96)
+    /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96)
     /// @return observationIndex the index of the last oracle observation that was written
     /// @return observationCardinality the current maximum number of observations stored in the pair
     /// @return observationCardinalityNext the next maximum number of observations, to be updated when the observation
-    ///     index is the last element of the observation array
+    /// index is the last element of the observation array
     /// @return feeProtocol the fees collected by the protocol for the pair
     /// @return unlocked whether the pair is currently locked to reentrancy
     function slot0()
@@ -50,13 +50,13 @@ interface IUniswapV3PairState {
     /// @notice Look up information about a specific tick in the pair
     /// @param tick the tick to look up
     /// @return liquidityGross the total amount of position liquidity that uses the pair either as tick lower or
-    ///     tick upper
+    /// tick upper
     /// @return liquidityDelta how much liquidity changes when the pair price crosses the tick
     /// @return feeGrowthOutside0X128 the fee growth on the other side of the tick from the current tick in token0
     /// @return feeGrowthOutside1X128 the fee growth on the other side of the tick from the current tick in token1
     /// @dev feeGrowthOutsideX128 values can only be used if the tick is initialized,
-    ///     i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
-    ///     compute snapshots.
+    /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
+    /// compute snapshots.
     function ticks(int24 tick)
         external
         view
@@ -101,9 +101,9 @@ interface IUniswapV3PairState {
     /// ago rather than at a specific index in the array
     /// @return blockTimestamp the timestamp of the observation
     /// @return tickCumulative the current tick multiplied by seconds elapsed for the life of the pair as of the
-    ///     observation
+    /// observation
     /// @return liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pair as of
-    ///     the observation
+    /// the observation
     /// @return initialized whether the observation has been initialized and the values are safe to use
     function observations(uint256 index)
         external
