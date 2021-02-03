@@ -15,8 +15,8 @@ interface IUniswapV3PairEvents {
     /// @param owner the owner of the position
     /// @param tickLower the lower tick of the position
     /// @param tickUpper the upper tick of the position
-    /// @dev this event is relevant to the state of the position's fees, also affects how much protocol fee is due
-    ///     to be collected after SetFeeProtocol is called
+    /// @dev This event is relevant to the state of the position's fees, also affects how much protocol fee is due
+    /// to be collected after SetFeeProtocol is called
     event Poke(address sender, address indexed owner, int24 indexed tickLower, int24 indexed tickUpper);
 
     /// @notice Emitted when liquidity is minted for a given position
@@ -108,7 +108,7 @@ interface IUniswapV3PairEvents {
     /// @param observationCardinalityNextOld the previous value of the next observation cardinality
     /// @param observationCardinalityNextNew the updated value of the next observation cardinality
     /// @dev observationCardinalityNext is not the observation cardinality until an observation is written at the index
-    ///     just before a mint/swap/burn
+    /// just before a mint/swap/burn
     event IncreaseObservationCardinalityNext(
         uint16 observationCardinalityNextOld,
         uint16 observationCardinalityNextNew

@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import './FeeMath.sol';
 import './FullMath.sol';
 import './LowGasSafeMath.sol';
+import './UnsafeMath.sol';
 
 import './SafeCast.sol';
 import './FixedPoint96.sol';
@@ -39,9 +40,9 @@ library SqrtPriceMath {
         }
 
         uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
-        require(denominator1 != 0, 'OUT');
+        require(denominator1 != 0);
 
-        return LowGasSafeMath.divRoundingUp(numerator1, denominator1).toUint160();
+        return UnsafeMath.divRoundingUp(numerator1, denominator1).toUint160();
     }
 
     // calculate sqrt(P) +- y / liquidity
@@ -62,7 +63,7 @@ library SqrtPriceMath {
                 )
                 : (
                     amount <= type(uint160).max
-                        ? LowGasSafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                        ? UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
                         : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
                 );
 
@@ -75,8 +76,8 @@ library SqrtPriceMath {
         uint256 amountIn,
         bool zeroForOne
     ) internal pure returns (uint160 sqrtQX96) {
-        require(sqrtPX96 > 0, 'P');
-        require(liquidity > 0, 'L');
+        require(sqrtPX96 > 0);
+        require(liquidity > 0);
 
         // round to make sure that we don't pass the target price
         return
@@ -91,8 +92,8 @@ library SqrtPriceMath {
         uint256 amountOut,
         bool zeroForOne
     ) internal pure returns (uint160 sqrtQX96) {
-        require(sqrtPX96 > 0, 'P');
-        require(liquidity > 0, 'L');
+        require(sqrtPX96 > 0);
+        require(liquidity > 0);
 
         // round to make sure that we pass the target price
         return
@@ -109,14 +110,15 @@ library SqrtPriceMath {
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount0) {
-        assert(sqrtPX96 >= sqrtQX96);
+        // TODO: this require should never be hit
+        require(sqrtPX96 >= sqrtQX96);
 
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtPX96 - sqrtQX96;
 
         return
             roundUp
-                ? LowGasSafeMath.divRoundingUp(FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
+                ? UnsafeMath.divRoundingUp(FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
                 : FullMath.mulDiv(numerator1, numerator2, sqrtPX96) / sqrtQX96;
     }
 
@@ -127,7 +129,8 @@ library SqrtPriceMath {
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount1) {
-        assert(sqrtQX96 >= sqrtPX96);
+        // TODO: this require should never be hit
+        require(sqrtQX96 >= sqrtPX96);
 
         return
             roundUp

@@ -24,6 +24,7 @@ import {
   MaxUint128,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
+import { TestUniswapV3ReentrantCallee } from '../typechain/TestUniswapV3ReentrantCallee'
 import { SqrtTickMathTest } from '../typechain/SqrtTickMathTest'
 import { SwapMathTest } from '../typechain/SwapMathTest'
 
@@ -102,8 +103,6 @@ describe('UniswapV3Pair', () => {
     expect(await pair.factory()).to.eq(factory.address)
     expect(await pair.token0()).to.eq(token0.address)
     expect(await pair.token1()).to.eq(token1.address)
-    expect(await pair.minTick()).to.eq(minTick)
-    expect(await pair.maxTick()).to.eq(maxTick)
     expect(await pair.maxLiquidityPerTick()).to.eq(getMaxLiquidityPerTick(tickSpacing))
   })
 
@@ -117,17 +116,6 @@ describe('UniswapV3Pair', () => {
     })
     it('fails if starting price is too high', async () => {
       await expect(pair.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('R')
-    })
-    it('fails if starting price is too low or high', async () => {
-      const minTick = await pair.minTick()
-      const maxTick = await pair.maxTick()
-
-      const sqrtTickMath = (await (await ethers.getContractFactory('SqrtTickMathTest')).deploy()) as SqrtTickMathTest
-      const badMinPrice = (await sqrtTickMath.getSqrtRatioAtTick(minTick)).sub(1)
-      const badMaxPrice = await sqrtTickMath.getSqrtRatioAtTick(maxTick)
-
-      await expect(pair.initialize(badMinPrice)).to.be.revertedWith('MIN')
-      await expect(pair.initialize(badMaxPrice)).to.be.revertedWith('MAX')
     })
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
@@ -198,10 +186,10 @@ describe('UniswapV3Pair', () => {
           await expect(mint(wallet.address, 1, 0, 1)).to.be.revertedWith('TLU')
         })
         it('fails if tickLower less than min tick', async () => {
-          await expect(mint(wallet.address, minTick - 1, 0, 1)).to.be.revertedWith('TLM')
+          await expect(mint(wallet.address, -887273, 0, 1)).to.be.revertedWith('TLM')
         })
         it('fails if tickUpper greater than max tick', async () => {
-          await expect(mint(wallet.address, 0, maxTick + 1, 1)).to.be.revertedWith('TUM')
+          await expect(mint(wallet.address, 0, 887273, 1)).to.be.revertedWith('TUM')
         })
         it('fails if amount exceeds the max', async () => {
           const maxLiquidityGross = await pair.maxLiquidityPerTick()
@@ -620,7 +608,8 @@ describe('UniswapV3Pair', () => {
   const initializeLiquidityAmount = expandTo18Decimals(2)
   async function initializeAtZeroTick(pair: MockTimeUniswapV3Pair): Promise<void> {
     await pair.initialize(encodePriceSqrt(1, 1))
-    const [min, max] = await Promise.all([pair.minTick(), pair.maxTick()])
+    const tickSpacing = await pair.tickSpacing()
+    const [min, max] = [getMinTick(tickSpacing), getMaxTick(tickSpacing)]
     await mint(wallet.address, min, max, initializeLiquidityAmount)
   }
 
@@ -830,19 +819,14 @@ describe('UniswapV3Pair', () => {
 
           // ensure virtual supply has increased appropriately
           const kAfter = await pair.liquidity()
-          expect(kAfter).to.be.gt(kBefore)
           expect(kAfter).to.be.eq(expandTo18Decimals(3))
 
           // swap toward the left (just enough for the tick transition function to trigger)
-          // TODO if the input amount is 1 here, the tick transition fires incorrectly!
-          // should throw an error or something once the TODOs in pair are fixed
-          await swapExact0For1(2, wallet.address)
-          const tick = (await pair.slot0()).tick
+          await swapExact0For1(1, wallet.address)
+          const { tick } = await pair.slot0()
           expect(tick).to.be.eq(-1)
 
           const kAfterSwap = await pair.liquidity()
-          expect(kAfterSwap).to.be.lt(kAfter)
-          // TODO not sure this is right
           expect(kAfterSwap).to.be.eq(expandTo18Decimals(2))
         })
         it('updates correctly when entering range', async () => {
@@ -860,15 +844,11 @@ describe('UniswapV3Pair', () => {
           expect(kAfter).to.be.eq(kBefore)
 
           // swap toward the left (just enough for the tick transition function to trigger)
-          // TODO if the input amount is 1 here, the tick transition fires incorrectly!
-          // should throw an error or something once the TODOs in pair are fixed
-          await swapExact0For1(2, wallet.address)
-          const tick = (await pair.slot0()).tick
+          await swapExact0For1(1, wallet.address)
+          const { tick } = await pair.slot0()
           expect(tick).to.be.eq(-1)
 
           const kAfterSwap = await pair.liquidity()
-          expect(kAfterSwap).to.be.gt(kAfter)
-          // TODO not sure this is right
           expect(kAfterSwap).to.be.eq(expandTo18Decimals(3))
         })
       })
@@ -1215,25 +1195,9 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#tickSpacing', () => {
-    it('default tickSpacing is correct', async () => {
-      expect(await pair.minTick()).to.eq(minTick)
-      expect(await pair.maxTick()).to.eq(maxTick)
-    })
-
     describe('tickSpacing = 12', () => {
       beforeEach('deploy pair', async () => {
         pair = await createPair(FeeAmount.MEDIUM, 12)
-      })
-      it('min and max tick are multiples of 12', async () => {
-        expect(await pair.minTick()).to.eq(-887268)
-        expect(await pair.maxTick()).to.eq(887268)
-      })
-      it('initialize sets min and max ticks', async () => {
-        await pair.initialize(encodePriceSqrt(1, 1))
-        const { liquidityGross: minTickLiquidityGross } = await pair.ticks(-887268)
-        const { liquidityGross: maxLiquidityPerTick } = await pair.ticks(887268)
-        expect(minTickLiquidityGross).to.eq(0)
-        expect(maxLiquidityPerTick).to.eq(0)
       })
       describe('post initialize', () => {
         beforeEach('initialize pair', async () => {
@@ -1298,7 +1262,7 @@ describe('UniswapV3Pair', () => {
       const { feeAmount, amountIn, amountOut, sqrtQ } = await swapMath.computeSwapStep(
         p0,
         p0.sub(1),
-        liquidity.add(1),
+        liquidity,
         3,
         FeeAmount.MEDIUM
       )
@@ -1314,8 +1278,10 @@ describe('UniswapV3Pair', () => {
       .withArgs(wallet.address, pair.address, 3)
       .to.not.emit(token1, 'Transfer')
 
-    expect((await pair.slot0()).tick, 'pair is at the next tick').to.eq(-24082)
-    expect((await pair.slot0()).sqrtPriceX96, 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
+    const { tick, sqrtPriceX96 } = await pair.slot0()
+
+    expect(tick, 'pair is at the next tick').to.eq(-24082)
+    expect(sqrtPriceX96, 'pair price is still on the p0 boundary').to.eq(p0.sub(1))
     expect(await pair.liquidity(), 'pair has run tick transition and liquidity changed').to.eq(liquidity.mul(2))
   })
 
@@ -1468,6 +1434,67 @@ describe('UniswapV3Pair', () => {
         expect(observationIndex).to.eq(0)
         expect(observationCardinalityNext).to.eq(5)
       })
+    })
+  })
+
+  describe('#setFeeProtocol', () => {
+    it('can only be called by factory owner', async () => {
+      await expect(pair.connect(other).setFeeProtocol(5)).to.be.revertedWith('')
+    })
+    it('fails if fee is lt 4 or gt 10', async () => {
+      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
+    })
+    it('succeeds for fee of 4', async () => {
+      await pair.setFeeProtocol(4)
+    })
+    it('succeeds for fee of 10', async () => {
+      await pair.setFeeProtocol(10)
+    })
+    it('sets protocol fee', async () => {
+      await pair.setFeeProtocol(7)
+      expect((await pair.slot0()).feeProtocol).to.eq(7)
+    })
+    it('can change protocol fee', async () => {
+      await pair.setFeeProtocol(7)
+      await pair.setFeeProtocol(5)
+      expect((await pair.slot0()).feeProtocol).to.eq(5)
+    })
+    it('can turn off protocol fee', async () => {
+      await pair.setFeeProtocol(4)
+      await pair.setFeeProtocol(0)
+      expect((await pair.slot0()).feeProtocol).to.eq(0)
+    })
+    it('emits an event when turned on', async () => {
+      await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(0, 7)
+    })
+    it('emits an event when turned off', async () => {
+      await pair.setFeeProtocol(7)
+      await expect(pair.setFeeProtocol(0)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 0)
+    })
+    it('emits an event when changed', async () => {
+      await pair.setFeeProtocol(7)
+      await expect(pair.setFeeProtocol(5)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 5)
+    })
+    it('emits an event when unchanged', async () => {
+      await pair.setFeeProtocol(7)
+      await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 7)
+    })
+  })
+
+  describe('#lock', () => {
+    beforeEach('initialize the pair', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+    })
+
+    it('cannot reenter from swap callback', async () => {
+      const reentrant = (await (
+        await ethers.getContractFactory('TestUniswapV3ReentrantCallee')
+      ).deploy()) as TestUniswapV3ReentrantCallee
+
+      // the tests happen in solidity
+      await expect(reentrant.swapToReenter(pair.address)).to.be.revertedWith('Unable to reenter')
     })
   })
 })

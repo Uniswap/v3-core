@@ -4,6 +4,7 @@ pragma solidity =0.7.6;
 import '../interfaces/IERC20Minimal.sol';
 
 import '../libraries/SafeCast.sol';
+import '../libraries/SqrtTickMath.sol';
 
 import '../interfaces/callback/IUniswapV3MintCallback.sol';
 import '../interfaces/callback/IUniswapV3SwapCallback.sol';
@@ -17,33 +18,37 @@ contract TestUniswapV3Callee is IUniswapV3MintCallback, IUniswapV3SwapCallback, 
     function swapExact0For1(
         address pair,
         uint256 amount0In,
-        address recipient
+        address recipient,
+        uint160 sqrtPriceLimitX96
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, true, amount0In.toInt256(), 0, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(recipient, true, amount0In.toInt256(), sqrtPriceLimitX96, abi.encode(msg.sender));
     }
 
     function swap0ForExact1(
         address pair,
         uint256 amount1Out,
-        address recipient
+        address recipient,
+        uint160 sqrtPriceLimitX96
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, true, -amount1Out.toInt256(), 0, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(recipient, true, -amount1Out.toInt256(), sqrtPriceLimitX96, abi.encode(msg.sender));
     }
 
     function swapExact1For0(
         address pair,
         uint256 amount1In,
-        address recipient
+        address recipient,
+        uint160 sqrtPriceLimitX96
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, false, amount1In.toInt256(), type(uint160).max, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(recipient, false, amount1In.toInt256(), sqrtPriceLimitX96, abi.encode(msg.sender));
     }
 
     function swap1ForExact0(
         address pair,
         uint256 amount0Out,
-        address recipient
+        address recipient,
+        uint160 sqrtPriceLimitX96
     ) external {
-        IUniswapV3Pair(pair).swap(recipient, false, -amount0Out.toInt256(), type(uint160).max, abi.encode(msg.sender));
+        IUniswapV3Pair(pair).swap(recipient, false, -amount0Out.toInt256(), sqrtPriceLimitX96, abi.encode(msg.sender));
     }
 
     function swapToLowerSqrtPrice(

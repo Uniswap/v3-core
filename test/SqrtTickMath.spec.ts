@@ -51,6 +51,17 @@ describe('SqrtTickMath', () => {
     })
   })
 
+  describe('#MIN_SQRT_RATIO', async () => {
+    it('equals #getSqrtRatioAtTick(MIN_TICK)', async () => {
+      expect(await sqrtTickMath.getSqrtRatioAtTick(MIN_TICK)).to.eq(await sqrtTickMath.MIN_SQRT_RATIO())
+    })
+  })
+  describe('#MAX_SQRT_RATIO', async () => {
+    it('equals #getSqrtRatioAtTick(MAX_TICK)', async () => {
+      expect(await sqrtTickMath.getSqrtRatioAtTick(MAX_TICK)).to.eq(await sqrtTickMath.MAX_SQRT_RATIO())
+    })
+  })
+
   describe('#getTickAtSqrtRatio', () => {
     it('throws for too low', async () => {
       await expect(sqrtTickMath.getTickAtSqrtRatio(BigNumber.from('4295128738').sub(1))).to.be.revertedWith('R')

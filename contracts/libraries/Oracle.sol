@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
+/// @title Oracle
+/// @notice Provides price and liquidity data useful for a wide variety of system designs
+/// @dev Instances of stored oracle data, "observations", are collected in the oracle array
+///     Every pair is initialized with an oracle array length of 1. Anyone can pay the SSTOREs to increase the
+///     maximum length of the oracle array. New slots will be added when the array is fully populated.
+///     Observations are overwritten when the full length of the oracle array is populated.
+///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to scry()
 library Oracle {
     struct Observation {
         // the block timestamp of the observation
@@ -13,9 +20,13 @@ library Oracle {
         bool initialized;
     }
 
-    // transforms an oracle observation into a subsequent observation, given the passage of time and current values
-    // blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp
-    // safe for 0 or 1 overflows
+    /// @notice Transforms a previous observation into a new observation, given the passage of time and the current tick and liquidity values
+    /// @dev blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp, safe for 0 or 1 overflows
+    /// @param last The specified observation to be transformed
+    /// @param blockTimestamp The timestamp of the new observation
+    /// @param tick The active tick at the time of the new observation
+    /// @param liquidity The total in-range liquidity at the time of the new observation
+    /// @return Observation The newly populated observation
     function transform(
         Observation memory last,
         uint32 blockTimestamp,
@@ -32,7 +43,11 @@ library Oracle {
             });
     }
 
-    // initialize the oracle array by writing the first slot. called once for the lifecycle of the observations array.
+    /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array
+    /// @param self The stored oracle array
+    /// @param time The time of the oracle initialization, via block.timestamp truncated to uint32
+    /// @return cardinality The number of populated elements in the oracle array
+    /// @return cardinalityNext The new length of the oracle array, independent of population
     function initialize(Observation[65535] storage self, uint32 time)
         internal
         returns (uint16 cardinality, uint16 cardinalityNext)
@@ -41,9 +56,19 @@ library Oracle {
         return (1, 1);
     }
 
-    // writes an oracle observation to the array, at most once per block. indices cycle, and must be tracked externally
-    // if the index is at the end of the allowable array length (according to cardinality), and the next cardinality
-    // is greater than the current one, we can increase cardinality. this restriction is to preserve ordering
+    /// @notice Writes an oracle observation to the array
+    /// @dev Writable at most once per block. Index represents the most recently written element, and must be tracked externally.
+    ///     If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
+    ///     is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
+    /// @param self The stored oracle array
+    /// @param index The location of the most recently updated observation
+    /// @param blockTimestamp The timestamp of the new observation
+    /// @param tick The active tick at the time of the new observation
+    /// @param liquidity The total in-range liquidity at the time of the new observation
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @param cardinalityNext The new length of the oracle array, independent of population
+    /// @return indexUpdated The new index of the most recently written element in the oracle array
+    /// @return cardinalityUpdated The new cardinality of the oracle array
     function write(
         Observation[65535] storage self,
         uint16 index,
@@ -69,7 +94,11 @@ library Oracle {
         self[indexUpdated] = transform(last, blockTimestamp, tick, liquidity);
     }
 
-    // prepares the observations array to store up to next observations
+    /// @notice Prepares the oracle array to store up to `next` observations
+    /// @param self The stored oracle array
+    /// @param current The current next cardinality of the oracle array
+    /// @param next The proposed next cardinality which will be populated in the oracle array
+    /// @return next The next cardinality which will be populated in the oracle array
     function grow(
         Observation[65535] storage self,
         uint16 current,
@@ -84,9 +113,12 @@ library Oracle {
         return next;
     }
 
-    // comparator for 32-bit timestamps
-    // safe for 0 or 1 overflows
-    // a and b _must_ be chronologically before or equal to time
+    /// @notice comparator for 32-bit timestamps
+    /// @dev safe for 0 or 1 overflows, a and b _must_ be chronologically before or equal to time
+    /// @param time A timestamp truncated to 32 bits
+    /// @param a A comparison timestamp from which to determine the relative position of `time`
+    /// @param b From which to determine the relative position of `time`
+    /// @return bool Whether `a` is chronologically <= `b`
     function lte(
         uint32 time,
         uint32 a,
@@ -101,8 +133,16 @@ library Oracle {
         return aAdjusted <= bAdjusted;
     }
 
-    // fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
-    // the answer _must_ be contained in the array
+    /// @notice Fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    /// @dev The answer must be contained in the array, used when the target is located within the stored observation
+    ///     boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
+    /// @param self The stored oracle array
+    /// @param time The current block.timestamp
+    /// @param target The timestamp at which the reserved observation should be for
+    /// @param index The location of the most recently written observation within the oracle array
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return beforeOrAt The observation recorded before, or at, the target
+    /// @return atOrAfter The observation recorded at, or after, the target
     function binarySearch(
         Observation[65535] storage self,
         uint32 time,
@@ -136,8 +176,18 @@ library Oracle {
         }
     }
 
-    // fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
-    // there _must_ be at least 1 initialized observation
+    /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    /// @dev There _must_ be at least 1 initialized observation.
+    ///      Used by scry() to contextualize a potential counterfactual observation as it would have occurred if a block were mined at the time of the desired observation
+    /// @param self The stored oracle array
+    /// @param time The current block.timestamp
+    /// @param target The timestamp at which the reserved observation should be for
+    /// @param tick The active tick at the time of the returned or simulated observation
+    /// @param index The location of a given observation within the oracle array
+    /// @param liquidity The total pair liquidity at the time of the call
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
+    /// @return atOrAfter The observation which occurred at, or after, the given timestamp
     function getSurroundingObservations(
         Observation[65535] storage self,
         uint32 time,
@@ -172,8 +222,18 @@ library Oracle {
         return binarySearch(self, time, target, index, cardinality);
     }
 
-    // constructs a counterfactual observation as of a particular time in the past (or now) as long as we have
-    // an observation at or before then
+    /// @notice Constructs a observation of a particular time, now or in the past.
+    /// @dev Called from the pair contract. Contingent on having an observation at or before the desired observation. 0 may be passed as `secondsAgo' to return the present pair data.
+    ///      if called with a timestamp falling between two consecutive observations, returns a counterfactual observation as it would appear if a block were mined at the time of the call
+    /// @param self The stored oracle array
+    /// @param time The current block.timestamp
+    /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
+    /// @param tick The current tick
+    /// @param index The location of a given observation within the oracle array
+    /// @param liquidity The current in-range pair liquidity
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return tickCumulative The tick * time elapsed since the pair was first initialized, as of `secondsAgo`
+    /// @return liquidityCumulative The liquidity * time elapsed since the pair was first initialized, as of `secondsAgo`
     function scry(
         Observation[65535] storage self,
         uint32 time,
