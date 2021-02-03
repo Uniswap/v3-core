@@ -4,10 +4,10 @@ pragma solidity >=0.5.0;
 /// @title Oracle
 /// @notice Provides price and liquidity data useful for a wide variety of system designs
 /// @dev Instances of stored oracle data, "observations", are collected in the oracle array
-///     Every pair is initialized with an oracle array length of 1. Anyone can pay the SSTOREs to increase the
-///     maximum length of the oracle array. New slots will be added when the array is fully populated.
-///     Observations are overwritten when the full length of the oracle array is populated.
-///     The most recent observation is available, independent of the length of the oracle array, by passing 0 to scry()
+/// Every pair is initialized with an oracle array length of 1. Anyone can pay the SSTOREs to increase the
+/// maximum length of the oracle array. New slots will be added when the array is fully populated.
+/// Observations are overwritten when the full length of the oracle array is populated.
+/// The most recent observation is available, independent of the length of the oracle array, by passing 0 to scry()
 library Oracle {
     struct Observation {
         // the block timestamp of the observation
@@ -58,8 +58,8 @@ library Oracle {
 
     /// @notice Writes an oracle observation to the array
     /// @dev Writable at most once per block. Index represents the most recently written element, and must be tracked externally.
-    ///     If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
-    ///     is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
+    /// If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
+    /// is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
     /// @param self The stored oracle array
     /// @param index The location of the most recently updated observation
     /// @param blockTimestamp The timestamp of the new observation
@@ -135,7 +135,7 @@ library Oracle {
 
     /// @notice Fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
     /// @dev The answer must be contained in the array, used when the target is located within the stored observation
-    ///     boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
+    /// boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
@@ -178,7 +178,8 @@ library Oracle {
 
     /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
     /// @dev There _must_ be at least 1 initialized observation.
-    ///      Used by scry() to contextualize a potential counterfactual observation as it would have occurred if a block were mined at the time of the desired observation
+    /// Used by scry() to contextualize a potential counterfactual observation as it would have occurred if a block
+    /// were mined at the time of the desired observation
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
@@ -223,8 +224,10 @@ library Oracle {
     }
 
     /// @notice Constructs a observation of a particular time, now or in the past.
-    /// @dev Called from the pair contract. Contingent on having an observation at or before the desired observation. 0 may be passed as `secondsAgo' to return the present pair data.
-    ///      if called with a timestamp falling between two consecutive observations, returns a counterfactual observation as it would appear if a block were mined at the time of the call
+    /// @dev Called from the pair contract. Contingent on having an observation at or before the desired observation.
+    /// 0 may be passed as `secondsAgo' to return the present pair data.
+    /// if called with a timestamp falling between two consecutive observations, returns a counterfactual observation
+    /// as it would appear if a block were mined at the time of the call
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation

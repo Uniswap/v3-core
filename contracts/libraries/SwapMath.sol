@@ -4,8 +4,20 @@ pragma solidity >=0.5.0;
 import './FullMath.sol';
 import './SqrtPriceMath.sol';
 
+/// @title Computes the result of swap within ticks
+/// @notice Contains methods for computing the result of a swap within a single tick price range, i.e. a single tick.
 library SwapMath {
-    // compute the state changes for the swap step
+    /// @notice Compute the result of swapping some amount in or amount out given the parameters of the swap
+    /// @param sqrtPX96 the current sqrt price of the pair
+    /// @param sqrtPTargetX96 the price that cannot be exceeded, from which the direction of the swap is inferred
+    /// @param liquidity the usable liquidity
+    /// @param amountRemaining how much input or output amount is remaining to be swapped in/out
+    /// @param feePips the fee taken from the input amount in expressed pips
+    /// @return sqrtQX96 the price after swapping the amount in/out, not to exceed the price target
+    /// @return amountIn the amount to be swapped in, of either token0 or token1, based on the direction of the swap
+    /// @return amountOut the amount to be swapped in, of either token0 or token1, based on the direction of the swap
+    /// @return feeAmount the amount of the input that should be taken as a fee
+    /// @dev The fee plus the amount in will never exceed the amount remaining if positive.
     function computeSwapStep(
         uint160 sqrtPX96,
         uint160 sqrtPTargetX96,
