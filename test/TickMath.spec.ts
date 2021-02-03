@@ -1,205 +1,169 @@
+import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
-import { BigNumber, BigNumberish } from 'ethers'
 import { TickMathTest } from '../typechain/TickMathTest'
 import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import { Decimal } from 'decimal.js'
+import { encodePriceSqrt } from './shared/utilities'
+import Decimal from 'decimal.js'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
 
-const Q128 = BigNumber.from(2).pow(128)
+const MIN_SQRT_RATIO = BigNumber.from('4295128739')
+const MAX_SQRT_RATIO = BigNumber.from('1461446703485210103287273052203988822378723970342')
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
-// handles if the result is an array (in the case of fixed point struct return values where it's an array of one uint224)
-export function bnify2(a: BigNumberish | [BigNumberish] | { 0: BigNumberish }): BigNumber {
-  if (Array.isArray(a)) {
-    return BigNumber.from(a[0])
-  } else {
-    return BigNumber.from(a)
-  }
-}
-
 describe('TickMath', () => {
-  let tickMathTest: TickMathTest
+  let tickMath: TickMathTest
 
   before('deploy TickMathTest', async () => {
-    const tickMathTestFactory = await ethers.getContractFactory('TickMathTest')
-    tickMathTest = (await tickMathTestFactory.deploy()) as TickMathTest
+    const factory = await ethers.getContractFactory('TickMathTest')
+    tickMath = (await factory.deploy()) as TickMathTest
   })
 
-  describe('#getRatioAtTick', () => {
-    // checks that an actual number is within allowedDiffBips of an expected number
-    async function checkApproximatelyEquals(
-      actualP: BigNumberish | Promise<BigNumberish> | Promise<{ 0: BigNumberish }>,
-      expectedP: BigNumberish | Promise<BigNumberish> | Promise<{ 0: BigNumberish }>,
-      allowedDiffPips: BigNumberish
-    ) {
-      const [actual, expected] = [bnify2(await actualP), bnify2(await expectedP)]
-      const absDiff = actual.sub(expected).abs()
-      expect(
-        absDiff.lte(expected.mul(allowedDiffPips).div(1000000)),
-        `${actual.toString()} differs from ${expected.toString()} by >${allowedDiffPips.toString()}pips. 
-      abs diff: ${absDiff.toString()}
-      diff pips: ${absDiff.mul(1000000).div(expected).toString()}`
-      ).to.be.true
-    }
+  describe('#getSqrtRatioAtTick', () => {
+    it('throws for too low', async () => {
+      await expect(tickMath.getSqrtRatioAtTick(MIN_TICK - 1)).to.be.revertedWith('T')
+    })
 
-    describe('matches js implementation', () => {
-      function exactTickRatioQ128x128(tick: number): BigNumberish {
-        return BigNumber.from(new Decimal(1.0001).sqrt().pow(tick).mul(new Decimal(2).pow(128)).round().toString())
-      }
+    it('throws for too low', async () => {
+      await expect(tickMath.getSqrtRatioAtTick(MAX_TICK + 1)).to.be.revertedWith('T')
+    })
 
-      const ALLOWED_PIPS_DIFF = 35
-      describe('small ticks', () => {
-        for (let tick = 0; tick < 20; tick++) {
-          it(`tick index: ${tick}`, async () => {
-            await checkApproximatelyEquals(
-              tickMathTest.getRatioAtTick(tick),
-              exactTickRatioQ128x128(tick),
-              ALLOWED_PIPS_DIFF
-            )
+    it('min tick', async () => {
+      expect(await tickMath.getSqrtRatioAtTick(MIN_TICK)).to.eq('4295128739')
+    })
+
+    it('min tick +1', async () => {
+      expect(await tickMath.getSqrtRatioAtTick(MIN_TICK + 1)).to.eq('4295343490')
+    })
+
+    it('max tick - 1', async () => {
+      expect(await tickMath.getSqrtRatioAtTick(MAX_TICK - 1)).to.eq('1461373636630004318706518188784493106690254656249')
+    })
+
+    it('min tick ratio is less than js implementation', async () => {
+      expect(await tickMath.getSqrtRatioAtTick(MIN_TICK)).to.be.lt(encodePriceSqrt(1, BigNumber.from(2).pow(127)))
+    })
+
+    it('max tick ratio is greater than js implementation', async () => {
+      expect(await tickMath.getSqrtRatioAtTick(MAX_TICK)).to.be.gt(encodePriceSqrt(BigNumber.from(2).pow(127), 1))
+    })
+
+    it('max tick', async () => {
+      expect(await tickMath.getSqrtRatioAtTick(MAX_TICK)).to.eq('1461446703485210103287273052203988822378723970342')
+    })
+
+    for (const absTick of [
+      50,
+      100,
+      250,
+      500,
+      1_000,
+      2_500,
+      3_000,
+      4_000,
+      5_000,
+      50_000,
+      150_000,
+      250_000,
+      500_000,
+      738_203,
+    ]) {
+      for (const tick of [-absTick, absTick]) {
+        describe(`tick ${tick}`, () => {
+          it('is at most off by 1/100th of a bips', async () => {
+            const jsResult = new Decimal(1.0001).pow(tick).sqrt().mul(new Decimal(2).pow(96))
+            const result = await tickMath.getSqrtRatioAtTick(tick)
+            const absDiff = new Decimal(result.toString()).sub(jsResult).abs()
+            expect(absDiff.div(jsResult).toNumber()).to.be.lt(0.000001)
           })
-          if (tick !== 0) {
-            it(`tick index: ${tick * -1}`, async () => {
-              await checkApproximatelyEquals(
-                tickMathTest.getRatioAtTick(tick * -1),
-                exactTickRatioQ128x128(tick * -1),
-                ALLOWED_PIPS_DIFF
-              )
-            })
-          }
-        }
-      })
-
-      describe('larger ticks', () => {
-        for (let tick of [50, 100, 250, 500, 1000, 2500, 3000, 4000, 5000, 50000, 150000, 250000, 500000]) {
-          it(`tick index: ${tick}`, async () => {
-            await checkApproximatelyEquals(
-              tickMathTest.getRatioAtTick(tick),
-              exactTickRatioQ128x128(tick),
-              ALLOWED_PIPS_DIFF
-            )
+          it('result', async () => {
+            expect((await tickMath.getSqrtRatioAtTick(tick)).toString()).to.matchSnapshot()
           })
-          it(`tick index: ${tick * -1}`, async () => {
-            await checkApproximatelyEquals(
-              tickMathTest.getRatioAtTick(tick * -1),
-              exactTickRatioQ128x128(tick * -1),
-              ALLOWED_PIPS_DIFF
-            )
+          it('gas', async () => {
+            await snapshotGasCost(tickMath.getGasCostOfGetSqrtRatioAtTick(tick))
           })
-        }
-      })
-    })
-
-    // these hand written tests make sure we are computing it roughly correctly
-    it('returns exactly 1 for tick 0', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(0), Q128, 0)
-    })
-    it('tick for ratio ~2/1', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(13863), '680543067898288706873709721891349895205', 1)
-    })
-    it('tick for ratio ~1/2', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-13863), '170146600118806920450031902982008185765', 1)
-    })
-    it('tick for ratio ~4/1', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(27726), '1361042805288882125766385852078264339843', 1)
-    })
-    it('tick for ratio ~1/4', async () => {
-      await checkApproximatelyEquals(tickMathTest.getRatioAtTick(-27726), '85076008474795366368843220463980381214', 1)
-    })
-
-    it('tick too small', async () => {
-      await expect(tickMathTest.getRatioAtTick(MIN_TICK - 1)).to.be.revertedWith('T')
-    })
-    it('tick too large', async () => {
-      await expect(tickMathTest.getRatioAtTick(MAX_TICK + 1)).to.be.revertedWith('T')
-    })
-
-    it('ratio at min tick boundary', async () => {
-      expect((await tickMathTest.getRatioAtTick(MIN_TICK)).toString()).to.eq('18447437462383981825')
-    })
-    it('ratio at max tick boundary', async () => {
-      expect((await tickMathTest.getRatioAtTick(MAX_TICK)).toString()).to.eq(
-        '6276865796315986613307619852238232712866172378830071145882'
-      )
-    })
-
-    describe('gas', () => {
-      const ticks = [MIN_TICK, -1000, -500, -50, 0, 50, 500, 1000, MAX_TICK]
-
-      for (let tick of ticks) {
-        it(`tick ${tick}`, async () => {
-          await snapshotGasCost(tickMathTest.getRatioAtTickGasUsed(tick))
         })
       }
+    }
+  })
+
+  describe('#MIN_SQRT_RATIO', async () => {
+    it('equals #getSqrtRatioAtTick(MIN_TICK)', async () => {
+      const min = await tickMath.getSqrtRatioAtTick(MIN_TICK)
+      expect(min).to.eq(await tickMath.MIN_SQRT_RATIO())
+      expect(min).to.eq(MIN_SQRT_RATIO)
     })
   })
 
-  describe('#getTickAtRatio', () => {
-    const ratioExactlyAtTickZero = BigNumber.from('340282366920938463463374607431768211456')
-    const ratioCloseToTickZero = ratioExactlyAtTickZero.add(1)
+  describe('#MAX_SQRT_RATIO', async () => {
+    it('equals #getSqrtRatioAtTick(MAX_TICK)', async () => {
+      const max = await tickMath.getSqrtRatioAtTick(MAX_TICK)
+      expect(max).to.eq(await tickMath.MAX_SQRT_RATIO())
+      expect(max).to.eq(MAX_SQRT_RATIO)
+    })
+  })
 
-    it('ratio too large', async () => {
-      await expect(
-        tickMathTest.getTickAtRatio(BigNumber.from('6276865796315986613307619852238232712866172378830071145882'))
-      ).to.be.revertedWith('R')
-    })
-    it('ratio too small', async () => {
-      await expect(tickMathTest.getTickAtRatio(BigNumber.from('18447437462383981825').sub(1))).to.be.revertedWith('R')
-    })
-
-    it('ratio at min tick boundary', async () => {
-      expect(await tickMathTest.getTickAtRatio(BigNumber.from('18447437462383981825'))).to.eq(MIN_TICK)
-    })
-    it('ratio at max tick - 1 boundary', async () => {
-      expect(
-        await tickMathTest.getTickAtRatio(
-          BigNumber.from('6276865796315986613307619852238232712866172378830071145882').sub(1)
-        )
-      ).to.eq(MAX_TICK - 1)
+  describe('#getTickAtSqrtRatio', () => {
+    it('throws for too low', async () => {
+      await expect(tickMath.getTickAtSqrtRatio(MIN_SQRT_RATIO.sub(1))).to.be.revertedWith('R')
     })
 
-    it('lowerBound = upperBound - 1', async () => {
-      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
+    it('throws for too high', async () => {
+      await expect(tickMath.getTickAtSqrtRatio(BigNumber.from(MAX_SQRT_RATIO))).to.be.revertedWith('R')
     })
 
-    it('lowerBound = upperBound - 4', async () => {
-      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
-      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
-      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
+    it('ratio of min tick', async () => {
+      expect(await tickMath.getTickAtSqrtRatio(MIN_SQRT_RATIO)).to.eq(MIN_TICK)
+    })
+    it('ratio of min tick + 1', async () => {
+      expect(await tickMath.getTickAtSqrtRatio('4295343490')).to.eq(MIN_TICK + 1)
+    })
+    it('ratio of max tick - 1', async () => {
+      expect(await tickMath.getTickAtSqrtRatio('1461373636630004318706518188784493106690254656249')).to.eq(MAX_TICK - 1)
+    })
+    it('ratio closest to max tick', async () => {
+      expect(await tickMath.getTickAtSqrtRatio(MAX_SQRT_RATIO.sub(1))).to.eq(MAX_TICK - 1)
     })
 
-    it('works for arbitrary prices', async () => {
-      // got this tick from the spec
-      const randomPriceAtTick365 = '12857036465196691992791697221653775109723'
-      expect(await tickMathTest.getTickAtRatio(randomPriceAtTick365)).to.eq(72641)
-    })
-
-    it('lowerBound and upper bound are both off', async () => {
-      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
-    })
-
-    it('lowerBound and upper bound off by 128', async () => {
-      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
-    })
-    it('price is at a tick below lower bound', async () => {
-      expect(await tickMathTest.getTickAtRatio(ratioCloseToTickZero)).to.eq(0)
-    })
-
-    it('accuracy', async () => {
-      expect(await tickMathTest.getTickAtRatio('5192296858534827628530496329220095')).to.eq(-221819)
-    })
-
-    it('gas cost price exactly at 0', async () => {
-      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed(ratioExactlyAtTickZero))
-    })
-    it('gas cost random price', async () => {
-      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed('12857036465196691992791697221653775109723'))
-    })
-    it('gas cost another random price', async () => {
-      await snapshotGasCost(tickMathTest.getTickAtRatioGasUsed('5192296858534827628530496329220095'))
-    })
+    for (const ratio of [
+      MIN_SQRT_RATIO,
+      encodePriceSqrt(BigNumber.from(10).pow(12), 1),
+      encodePriceSqrt(BigNumber.from(10).pow(6), 1),
+      encodePriceSqrt(1, 64),
+      encodePriceSqrt(1, 8),
+      encodePriceSqrt(1, 2),
+      encodePriceSqrt(1, 1),
+      encodePriceSqrt(2, 1),
+      encodePriceSqrt(8, 1),
+      encodePriceSqrt(64, 1),
+      encodePriceSqrt(1, BigNumber.from(10).pow(6)),
+      encodePriceSqrt(1, BigNumber.from(10).pow(12)),
+      MAX_SQRT_RATIO.sub(1),
+    ]) {
+      describe(`ratio ${ratio}`, () => {
+        it('is at most off by 1', async () => {
+          const jsResult = new Decimal(ratio.toString()).div(new Decimal(2).pow(96)).pow(2).log(1.0001).floor()
+          const result = await tickMath.getTickAtSqrtRatio(ratio)
+          const absDiff = new Decimal(result.toString()).sub(jsResult).abs()
+          expect(absDiff.toNumber()).to.be.lte(1)
+        })
+        it('ratio is between the tick and tick+1', async () => {
+          const tick = await tickMath.getTickAtSqrtRatio(ratio)
+          const ratioOfTick = await tickMath.getSqrtRatioAtTick(tick)
+          const ratioOfTickPlusOne = await tickMath.getSqrtRatioAtTick(tick + 1)
+          expect(ratio).to.be.gte(ratioOfTick)
+          expect(ratio).to.be.lt(ratioOfTickPlusOne)
+        })
+        it('result', async () => {
+          expect(await tickMath.getTickAtSqrtRatio(ratio)).to.matchSnapshot()
+        })
+        it('gas', async () => {
+          await snapshotGasCost(tickMath.getGasCostOfGetTickAtSqrtRatio(ratio))
+        })
+      })
+    }
   })
 })
