@@ -14,8 +14,11 @@ contract UniswapV3PairDeployer is IUniswapV3PairDeployer {
         int24 tickSpacing;
     }
 
+    /// @inheritdoc IUniswapV3PairDeployer
     Parameters public override parameters;
 
+    /// @dev Deploys a pair with the given parameters by transiently setting the parameters storage slot and then
+    /// clearing it after deploying the pair.
     function deploy(
         address factory,
         address token0,
