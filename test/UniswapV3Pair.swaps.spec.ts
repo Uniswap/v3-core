@@ -8,6 +8,8 @@ import { pairFixture } from './shared/fixtures'
 
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 
+Decimal.config({ toExpNeg: -500, toExpPos: 500 })
+
 import {
   createPairFunctions,
   encodePriceSqrt,
