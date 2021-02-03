@@ -1,0 +1,121 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TickMath #getSqrtRatioAtTick tick -50 gas 1`] = `829`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -50 result 1`] = `"79030349367926598376800521322"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -100 gas 1`] = `829`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -100 result 1`] = `"78833030112140176575862854579"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -250 gas 1`] = `871`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -250 result 1`] = `"78244023372248365697264290337"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -500 gas 1`] = `871`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -500 result 1`] = `"77272108795590369356373805297"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -1000 gas 1`] = `871`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -1000 result 1`] = `"75364347830767020784054125655"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -2500 gas 1`] = `857`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -2500 result 1`] = `"69919044979842180277688105136"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -3000 gas 1`] = `885`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -3000 result 1`] = `"68192822843687888778582228483"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -4000 gas 1`] = `871`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -4000 result 1`] = `"64867181785621769311890333195"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -5000 gas 1`] = `857`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -5000 result 1`] = `"61703726247759831737814779831"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -50000 gas 1`] = `871`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -50000 result 1`] = `"6504256538020985011912221507"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -150000 gas 1`] = `899`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -150000 result 1`] = `"43836292794701720435367485"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -250000 gas 1`] = `885`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -250000 result 1`] = `"295440463448801648376846"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -500000 gas 1`] = `885`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -500000 result 1`] = `"1101692437043807371"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -738203 gas 1`] = `911`;
+
+exports[`TickMath #getSqrtRatioAtTick tick -738203 result 1`] = `"7409801140451"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 50 gas 1`] = `869`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 50 result 1`] = `"79426470787362580746886972461"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 100 gas 1`] = `869`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 100 result 1`] = `"79625275426524748796330556128"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 250 gas 1`] = `911`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 250 result 1`] = `"80224679980005306637834519095"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 500 gas 1`] = `911`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 500 result 1`] = `"81233731461783161732293370115"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 1000 gas 1`] = `911`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 1000 result 1`] = `"83290069058676223003182343270"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 2500 gas 1`] = `897`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 2500 result 1`] = `"89776708723587163891445672585"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 3000 gas 1`] = `925`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 3000 result 1`] = `"92049301871182272007977902845"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 4000 gas 1`] = `911`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 4000 result 1`] = `"96768528593268422080558758223"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 5000 gas 1`] = `897`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 5000 result 1`] = `"101729702841318637793976746270"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 50000 gas 1`] = `911`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 50000 result 1`] = `"965075977353221155028623082916"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 150000 gas 1`] = `939`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 150000 result 1`] = `"143194173941309278083010301478497"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 250000 gas 1`] = `925`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 250000 result 1`] = `"21246587762933397357449903968194344"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 500000 gas 1`] = `925`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 500000 result 1`] = `"5697689776495288729098254600827762987878"`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 738203 gas 1`] = `951`;
+
+exports[`TickMath #getSqrtRatioAtTick tick 738203 result 1`] = `"847134979253254120489401328389043031315994541"`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 4295128739 gas 1`] = `2389`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 4295128739 result 1`] = `"-887272"`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 1461446703485210103287273052203988822378723970341 gas 1`] = `2449`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 1461446703485210103287273052203988822378723970341 result 1`] = `"887271"`;

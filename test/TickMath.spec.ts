@@ -2,6 +2,7 @@ import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import { TickMathTest } from '../typechain/TickMathTest'
 import { expect } from './shared/expect'
+import snapshotGasCost from './shared/snapshotGasCost'
 import { encodePriceSqrt } from './shared/utilities'
 
 const MIN_TICK = -887272
@@ -47,6 +48,34 @@ describe('TickMath', () => {
     it('max tick', async () => {
       expect(await tickMath.getSqrtRatioAtTick(MAX_TICK)).to.eq('1461446703485210103287273052203988822378723970342')
     })
+
+    for (const absTick of [
+      50,
+      100,
+      250,
+      500,
+      1_000,
+      2_500,
+      3_000,
+      4_000,
+      5_000,
+      50_000,
+      150_000,
+      250_000,
+      500_000,
+      738_203,
+    ]) {
+      for (const tick of [-absTick, absTick]) {
+        describe(`tick ${tick}`, () => {
+          it('result', async () => {
+            expect((await tickMath.getSqrtRatioAtTick(tick)).toString()).to.matchSnapshot()
+          })
+          it('gas', async () => {
+            await snapshotGasCost(tickMath.getGasCostOfGetSqrtRatioAtTick(tick))
+          })
+        })
+      }
+    }
   })
 
   describe('#MIN_SQRT_RATIO', async () => {
