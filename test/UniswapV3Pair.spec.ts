@@ -819,19 +819,14 @@ describe('UniswapV3Pair', () => {
 
           // ensure virtual supply has increased appropriately
           const kAfter = await pair.liquidity()
-          expect(kAfter).to.be.gt(kBefore)
           expect(kAfter).to.be.eq(expandTo18Decimals(3))
 
           // swap toward the left (just enough for the tick transition function to trigger)
-          // TODO if the input amount is 1 here, the tick transition fires incorrectly!
-          // should throw an error or something once the TODOs in pair are fixed
-          await swapExact0For1(2, wallet.address)
-          const tick = (await pair.slot0()).tick
+          await swapExact0For1(1, wallet.address)
+          const { tick } = await pair.slot0()
           expect(tick).to.be.eq(-1)
 
           const kAfterSwap = await pair.liquidity()
-          expect(kAfterSwap).to.be.lt(kAfter)
-          // TODO not sure this is right
           expect(kAfterSwap).to.be.eq(expandTo18Decimals(2))
         })
         it('updates correctly when entering range', async () => {
@@ -849,15 +844,11 @@ describe('UniswapV3Pair', () => {
           expect(kAfter).to.be.eq(kBefore)
 
           // swap toward the left (just enough for the tick transition function to trigger)
-          // TODO if the input amount is 1 here, the tick transition fires incorrectly!
-          // should throw an error or something once the TODOs in pair are fixed
-          await swapExact0For1(2, wallet.address)
-          const tick = (await pair.slot0()).tick
+          await swapExact0For1(1, wallet.address)
+          const { tick } = await pair.slot0()
           expect(tick).to.be.eq(-1)
 
           const kAfterSwap = await pair.liquidity()
-          expect(kAfterSwap).to.be.gt(kAfter)
-          // TODO not sure this is right
           expect(kAfterSwap).to.be.eq(expandTo18Decimals(3))
         })
       })
