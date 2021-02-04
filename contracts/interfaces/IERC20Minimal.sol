@@ -16,8 +16,8 @@ interface IERC20Minimal {
     function transfer(address recipient, uint256 amount) external returns (bool);
 
     /// @notice Returns the current allowance given to a spender by an owner
-    /// @param owner The owner of a token balance
-    /// @param spender The spender of a token balance
+    /// @param owner The account of the token owner
+    /// @param spender The account of the token spender
     /// @return The current allowance granted by `owner` to `spender`
     function allowance(address owner, address spender) external view returns (uint256);
 
@@ -27,10 +27,10 @@ interface IERC20Minimal {
     /// @return Returns true for a successful approval, false for unsuccessful
     function approve(address spender, uint256 amount) external returns (bool);
 
-    /// @notice Transfers `amount` tokens from sender to recipient using the allowance mechanism. amount is then deducted from the caller’s allowance.
-    /// @dev The allowance of `msg.sender` must be greater than or equal to the `amount`.
+    /// @notice Transfers `amount` tokens from sender to recipient using the allowance mechanism. amount is then deducted from the caller’s allowance
+    /// @dev The allowance of `msg.sender` must be greater than or equal to the `amount`
     /// @param sender The account from which the transfer will be initiated
-    /// @param recipient The account which will receive the balance of the transfer
+    /// @param recipient The recipient of the transfer
     /// @param amount The amount of the transfer
     /// @return Returns true for a successful transfer, false for unsuccessful
     function transferFrom(
