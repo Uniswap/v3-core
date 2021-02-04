@@ -285,20 +285,28 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // update protocol fee offsets if necessary
             if (_slot0.feeProtocol > 0) {
-                offsets.offset0 = int256(offsets.offset0).add(SqrtPriceMath.getOffsetDelta(
-                    feeGrowthGlobal0X128,
-                    _slot0.sqrtPriceX96,
-                    true,
-                    inRange ? params.liquidityDelta : 0,
-                    amount0
-                )).toInt128();
-                offsets.offset1 = int256(offsets.offset1).add(SqrtPriceMath.getOffsetDelta(
-                    feeGrowthGlobal1X128,
-                    _slot0.sqrtPriceX96,
-                    false,
-                    inRange ? params.liquidityDelta : 0,
-                    amount1
-                )).toInt128();
+                offsets.offset0 = int256(offsets.offset0)
+                    .add(
+                    SqrtPriceMath.getOffsetDelta(
+                        feeGrowthGlobal0X128,
+                        _slot0.sqrtPriceX96,
+                        true,
+                        inRange ? params.liquidityDelta : 0,
+                        amount0
+                    )
+                )
+                    .toInt128();
+                offsets.offset1 = int256(offsets.offset1)
+                    .add(
+                    SqrtPriceMath.getOffsetDelta(
+                        feeGrowthGlobal1X128,
+                        _slot0.sqrtPriceX96,
+                        false,
+                        inRange ? params.liquidityDelta : 0,
+                        amount1
+                    )
+                )
+                    .toInt128();
             }
         }
     }
@@ -775,7 +783,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             offsets.offset0 = SqrtPriceMath
                 .getOffsetDelta(
                 feeGrowthGlobal0X128,
-                slot0.sqrtPriceX96,
+                slot0
+                    .sqrtPriceX96,
                 true,
                 int256(liquidity).toInt128(),
                 balance0().toInt256()
@@ -784,7 +793,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             offsets.offset1 = SqrtPriceMath
                 .getOffsetDelta(
                 feeGrowthGlobal1X128,
-                slot0.sqrtPriceX96,
+                slot0
+                    .sqrtPriceX96,
                 false,
                 int256(liquidity).toInt128(),
                 balance1().toInt256()
