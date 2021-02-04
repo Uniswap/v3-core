@@ -595,13 +595,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                             (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
                             (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
                         );
+                    // if we're moving leftward, we interpret liquidityDelta as the opposite sign
+                    // safe because liquidityDelta cannot be type(int128).min
+                    if (zeroForOne) liquidityDelta = -liquidityDelta;
 
                     secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
-                    // update liquidity, subtract from right to left, add from left to right
-                    state.liquidity = zeroForOne
-                        ? state.liquidity.subDelta(liquidityDelta)
-                        : state.liquidity.addDelta(liquidityDelta);
+                    state.liquidity = state.liquidity.addDelta(liquidityDelta);
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
