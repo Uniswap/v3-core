@@ -16,7 +16,9 @@ describe('FullMath', () => {
     it('reverts if denominator is 0', async () => {
       await expect(fullMath.mulDiv(Q128, 5, 0)).to.be.revertedWith('')
     })
-
+    it('reverts if denominator is 0 and numerator overflows', async () => {
+      await expect(fullMath.mulDiv(Q128, Q128, 0)).to.be.revertedWith('')
+    })
     it('reverts if output overflows uint256', async () => {
       await expect(fullMath.mulDiv(Q128, Q128, 1)).to.be.revertedWith('')
     })
@@ -45,6 +47,9 @@ describe('FullMath', () => {
   describe('#mulDivRoundingUp', () => {
     it('reverts if denominator is 0', async () => {
       await expect(fullMath.mulDivRoundingUp(Q128, 5, 0)).to.be.revertedWith('')
+    })
+    it('reverts if denominator is 0 and numerator overflows', async () => {
+      await expect(fullMath.mulDivRoundingUp(Q128, Q128, 0)).to.be.revertedWith('')
     })
     it('reverts if output overflows uint256', async () => {
       await expect(fullMath.mulDivRoundingUp(Q128, Q128, 1)).to.be.revertedWith('')
