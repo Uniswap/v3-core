@@ -778,7 +778,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 int256(liquidity).toInt128(),
                 balance0().toInt256()
             )
-            .toInt128();
+                .toInt128();
             offsets.offset1 = SqrtPriceMath
                 .getOffsetDelta(
                 feeGrowthGlobal1X128,
@@ -804,22 +804,24 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
         require(slot0.feeProtocol > 0); // TODO this might not be necessary?
 
-        int256 t0 = SqrtPriceMath.getOffsetDelta(
-            feeGrowthGlobal0X128,
-            (1 << 255) / slot0.sqrtPriceX96,
-            int256(liquidity).toInt128(),
-            balance0().toInt256()
-        );
+        int256 t0 =
+            SqrtPriceMath.getOffsetDelta(
+                feeGrowthGlobal0X128,
+                (1 << 255) / slot0.sqrtPriceX96,
+                int256(liquidity).toInt128(),
+                balance0().toInt256()
+            );
         if (offsets.offset0 > t0) {
             amount0 = uint256(offsets.offset0 - t0);
             if (amount0Requested < amount0) amount0 = amount0Requested;
         }
-        int256 t1 = SqrtPriceMath.getOffsetDelta(
-            feeGrowthGlobal1X128,
-            uint256(slot0.sqrtPriceX96) << 63,
-            int256(liquidity).toInt128(),
-            balance1().toInt256()
-        );
+        int256 t1 =
+            SqrtPriceMath.getOffsetDelta(
+                feeGrowthGlobal1X128,
+                uint256(slot0.sqrtPriceX96) << 63,
+                int256(liquidity).toInt128(),
+                balance1().toInt256()
+            );
         if (offsets.offset1 > t1) {
             amount1 = uint256(offsets.offset1 - t1);
             if (amount1Requested < amount1) amount1 = amount1Requested;
