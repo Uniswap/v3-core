@@ -287,9 +287,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             if (_slot0.feeProtocol > 0) {
                 offsets.offset0 = int256(offsets.offset0)
                     .add(
-                    SqrtPriceMath.getQDelta(
+                    SqrtPriceMath.getOffsetDelta(
                         feeGrowthGlobal0X128,
-                        (1 << 224) / _slot0.sqrtPriceX96,
+                        (1 << 255) / _slot0.sqrtPriceX96,
                         inRange ? params.liquidityDelta : 0,
                         amount0
                     )
@@ -297,9 +297,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     .toInt128();
                 offsets.offset1 = int256(offsets.offset1)
                     .add(
-                    SqrtPriceMath.getQDelta(
+                    SqrtPriceMath.getOffsetDelta(
                         feeGrowthGlobal1X128,
-                        uint256(_slot0.sqrtPriceX96) << 32,
+                        uint256(_slot0.sqrtPriceX96) << 63,
                         inRange ? params.liquidityDelta : 0,
                         amount1
                     )
@@ -632,17 +632,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     // update offsets
                     if (cache.slot0Start.feeProtocol > 0) {
                         state.offset0Delta = state.offset0Delta.add(
-                            SqrtPriceMath.getQDelta(
+                            SqrtPriceMath.getOffsetDelta(
                                 zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128,
-                                (1 << 224) / state.sqrtPriceX96,
+                                (1 << 255) / state.sqrtPriceX96,
                                 zeroForOne ? -liquidityDelta : liquidityDelta,
                                 0
                             )
                         );
                         state.offset1Delta = state.offset1Delta.add(
-                            SqrtPriceMath.getQDelta(
+                            SqrtPriceMath.getOffsetDelta(
                                 zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128,
-                                uint256(state.sqrtPriceX96) << 32,
+                                uint256(state.sqrtPriceX96) << 63,
                                 zeroForOne ? -liquidityDelta : liquidityDelta,
                                 0
                             )
@@ -773,17 +773,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             // initializes offets, rounding down
             // TODO maybe the qs can start off as negative? if so, the below will error out
             offsets.offset0 = SqrtPriceMath
-                .getQDelta(
+                .getOffsetDelta(
                 feeGrowthGlobal0X128,
-                (1 << 224) / slot0.sqrtPriceX96,
+                (1 << 255) / slot0.sqrtPriceX96,
                 uint256(liquidity).toInt256().toInt128(),
                 balance0().toInt256()
             )
                 .toInt128();
             offsets.offset1 = SqrtPriceMath
-                .getQDelta(
+                .getOffsetDelta(
                 feeGrowthGlobal1X128,
-                uint256(slot0.sqrtPriceX96) << 32,
+                uint256(slot0.sqrtPriceX96) << 63,
                 uint256(liquidity).toInt256().toInt128(),
                 balance1().toInt256()
             )
@@ -809,9 +809,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         if (termA0 > 0) {
             uint256 termB0 =
                 FullMath.mulDivRoundingUp(
-                    feeGrowthGlobal0X128.add((1 << 224) / slot0.sqrtPriceX96),
+                    feeGrowthGlobal0X128,
                     liquidity,
                     FixedPoint128.Q128
+                ).add(
+                    FullMath.mulDivRoundingUp(
+                        (1 << 255) / slot0.sqrtPriceX96,
+                        liquidity,
+                        1 << 159
+                    )
                 );
             if (uint256(termA0) > termB0) {
                 amount0 = uint256(termA0) - termB0;
@@ -822,9 +828,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         if (termA1 > 0) {
             uint256 termB1 =
                 FullMath.mulDivRoundingUp(
-                    feeGrowthGlobal1X128.add(uint256(slot0.sqrtPriceX96) << 32),
+                    feeGrowthGlobal1X128,
                     liquidity,
                     FixedPoint128.Q128
+                ).add(
+                    FullMath.mulDivRoundingUp(
+                        uint256(slot0.sqrtPriceX96) << 96,
+                        liquidity,
+                        1 << 192
+                    )
                 );
             if (uint256(termA1) > termB1) {
                 amount1 = uint256(termA1) - termB1;

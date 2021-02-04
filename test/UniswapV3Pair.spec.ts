@@ -1005,23 +1005,6 @@ describe('UniswapV3Pair', () => {
         expect(amount1).to.be.eq(0)
       })
 
-      it('can collect fees', async () => {
-        await pair.setFeeProtocol(6)
-
-        await swapAndGetFeesOwed({
-          amount: expandTo18Decimals(1),
-          zeroForOne: true,
-          poke: true,
-        })
-        // collect fees to trigger collection of the protocol fee
-        await pair.poke(wallet.address, minTick, maxTick)
-        await pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128)
-
-        await expect(pair.collectProtocol(other.address, MaxUint128, MaxUint128))
-          .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, other.address, '99999999999999')
-      })
-
       describe('offsets', () => {
         it('0 for 1 works', async () => {
           await pair.setFeeProtocol(6)
@@ -1056,8 +1039,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000001') // + 1 wei
-          expect(amount1).to.be.eq('100000000000000')
+          expect(amount0).to.be.eq('100000000000001', 'amount0') // + 1 wei
+          expect(amount1).to.be.eq('100000000000000', 'amount1')
         })
 
         it('0 for 1 works with liquidityDeltas', async () => {
@@ -1073,7 +1056,7 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('1000000000000001')
+          expect(amount0).to.be.eq('1000000000000000')
           expect(amount1).to.be.eq(0)
         })
 
@@ -1091,7 +1074,7 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256
           )
           expect(amount0).to.be.eq(0)
-          expect(amount1).to.be.eq('1000000000000001') // + 1 wei
+          expect(amount1).to.be.eq('1000000000000000')
         })
 
         it('0 for 1 and 1 for 0 works with liquidityDeltas', async () => {
@@ -1109,8 +1092,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('1000000000000002')
-          expect(amount1).to.be.eq('2000000000000002')
+          expect(amount0).to.be.eq('1000000000000003', 'amount0') // + 3 wei
+          expect(amount1).to.be.eq('2000000000000001', 'amount1') // + 1 wei
         })
 
         it('0 for 1 works with in-range mint', async () => {
@@ -1125,7 +1108,7 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000001')
+          expect(amount0).to.be.eq('100000000000000')
           expect(amount1).to.be.eq(0)
         })
 
@@ -1142,7 +1125,7 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256
           )
           expect(amount0).to.be.eq(0)
-          expect(amount1).to.be.eq('100000000000001')
+          expect(amount1).to.be.eq('100000000000000')
         })
 
         it('0 for 1 and 1 for 0 works with in-range mint', async () => {
@@ -1158,8 +1141,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000002')
-          expect(amount1).to.be.eq('100000000000001')
+          expect(amount0).to.be.eq('100000000000001', 'amount0') // + 1 wei
+          expect(amount1).to.be.eq('100000000000000', 'amount1')
         })
 
         it('0 for 1 works with out-of-range mint', async () => {
@@ -1207,8 +1190,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000001')
-          expect(amount1).to.be.eq('100000000000000')
+          expect(amount0).to.be.eq('100000000000001', 'amount0') // + 1 wei
+          expect(amount1).to.be.eq('100000000000000', 'amount1')
         })
 
         it('flash works', async () => {
@@ -1221,8 +1204,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000000')
-          expect(amount1).to.be.eq('100000000000000')
+          expect(amount0).to.be.eq('100000000000000', 'amount0')
+          expect(amount1).to.be.eq('100000000000000', 'amount1')
         })
       })
     })
