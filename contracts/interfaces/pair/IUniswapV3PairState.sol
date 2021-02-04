@@ -8,14 +8,15 @@ interface IUniswapV3PairState {
     /// @notice The 0th storage slot in the pair stores many values, and is exposed as a single method to save gas
     /// when accessed externally.
     /// @return sqrtPriceX96 The current price of the pair as a sqrt(token1/token0) Q64.96 value
-    /// @return tick the current tick of the pair, i.e. according to the last tick transition that was run.
-    /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96)
-    /// @return observationIndex the index of the last oracle observation that was written
-    /// @return observationCardinality the current maximum number of observations stored in the pair
-    /// @return observationCardinalityNext the next maximum number of observations, to be updated when the observation
-    /// index is the last element of the observation array
-    /// @return feeProtocol the fees collected by the protocol for the pair
-    /// @return unlocked whether the pair is currently locked to reentrancy
+    /// tick The current tick of the pair, i.e. according to the last tick transition that was run.
+    /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96) if the price is on a tick
+    /// boundary.
+    /// observationIndex The index of the last oracle observation that was written,
+    /// observationCardinality The current maximum number of observations stored in the pair,
+    /// observationCardinalityNext The next maximum number of observations, to be updated when the observation,
+    /// index The last element of the observation array,
+    /// feeProtocol The fees collected by the protocol for the pair,
+    /// unlocked Whether the pair is currently locked to reentrancy
     function slot0()
         external
         view
@@ -48,11 +49,11 @@ interface IUniswapV3PairState {
     /// @notice Look up information about a specific tick in the pair
     /// @param tick The tick to look up
     /// @return liquidityGross the total amount of position liquidity that uses the pair either as tick lower or
-    /// tick upper
-    /// @return liquidityDelta how much liquidity changes when the pair price crosses the tick
-    /// @return feeGrowthOutside0X128 the fee growth on the other side of the tick from the current tick in token0
-    /// @return feeGrowthOutside1X128 the fee growth on the other side of the tick from the current tick in token1
-    /// @dev feeGrowthOutsideX128 values can only be used if the tick is initialized,
+    /// tick upper,
+    /// liquidityDelta how much liquidity changes when the pair price crosses the tick,
+    /// feeGrowthOutside0X128 the fee growth on the other side of the tick from the current tick in token0,
+    /// feeGrowthOutside1X128 the fee growth on the other side of the tick from the current tick in token1,
+    /// feeGrowthOutsideX128 values can only be used if the tick is initialized,
     /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
     /// compute snapshots.
     function ticks(int24 tick)
@@ -77,11 +78,11 @@ interface IUniswapV3PairState {
 
     /// @notice Returns the information about a position by the position's key
     /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
-    /// @return _liquidity The amount of liquidity in the position
-    /// @return feeGrowthInside0LastX128 fee growth of token0 inside the tick range as of the last mint/burn/poke
-    /// @return feeGrowthInside1LastX128 fee growth of token1 inside the tick range as of the last mint/burn/poke
-    /// @return feesOwed0 the computed amount of token0 owed to the position as of the last mint/burn/poke
-    /// @return feesOwed1 the computed amount of token1 owed to the position as of the last mint/burn/poke
+    /// @return _liquidity The amount of liquidity in the position,
+    /// feeGrowthInside0LastX128 fee growth of token0 inside the tick range as of the last mint/burn/poke,
+    /// feeGrowthInside1LastX128 fee growth of token1 inside the tick range as of the last mint/burn/poke,
+    /// feesOwed0 the computed amount of token0 owed to the position as of the last mint/burn/poke,
+    /// feesOwed1 the computed amount of token1 owed to the position as of the last mint/burn/poke
     function positions(bytes32 key)
         external
         view
@@ -97,12 +98,12 @@ interface IUniswapV3PairState {
     /// @param index The element of the observations array to fetch
     /// @dev You most likely want to use #scry() instead of this method to get an observation as of some amount of time
     /// ago, rather than at a specific index in the array.
-    /// @return blockTimestamp The timestamp of the observation
-    /// @return tickCumulative the current tick multiplied by seconds elapsed for the life of the pair as of the
-    /// observation
-    /// @return liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pair as of
-    /// the observation
-    /// @return initialized whether the observation has been initialized and the values are safe to use
+    /// @return blockTimestamp The timestamp of the observation,
+    /// tickCumulative the current tick multiplied by seconds elapsed for the life of the pair as of the
+    /// observation,
+    /// liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pair as of
+    /// the observation,
+    /// initialized whether the observation has been initialized and the values are safe to use
     function observations(uint256 index)
         external
         view
