@@ -105,11 +105,11 @@ library FullMath {
         return result;
     }
 
-    /// @notice Calculates ceil(x×y÷d) with full precision. Throws if result overflows a uint256 or d == 0
+    /// @notice Calculates ceil(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
     /// @param a The multiplicand
     /// @param b The multiplier
     /// @param denominator The divisor
-    /// @return result The result
+    /// @return result The 256-bit result
     function mulDivRoundingUp(
         uint256 a,
         uint256 b,
