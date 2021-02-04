@@ -2,8 +2,8 @@
 pragma solidity >=0.4.0;
 
 /// @title Contains 512-bit math functions
-/// @notice This library facilitates multiplication and division that can have overflow of an intermediate value without any loss of precision
-/// @dev Addresses "phantom overflow", i.e. allows multiplication and division where an intermediate value overflows 256 bits
+/// @notice Facilitates multiplication and division that can have overflow of an intermediate value without any loss of precision
+/// @dev Handles "phantom overflow", i.e. allows multiplication and division where an intermediate value overflows 256 bits
 library FullMath {
     /// @notice Calculates floor(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
     /// @param a The multiplicand
@@ -39,6 +39,7 @@ library FullMath {
         }
 
         // Make sure the result is less than 2**256.
+        // Also prevents denominator == 0
         require(denominator > prod1);
 
         ///////////////////////////////////////////////
@@ -47,7 +48,6 @@ library FullMath {
 
         // Make division exact by subtracting the remainder from [prod1 prod0]
         // Compute remainder using mulmod
-        // Note mulmod(_, _, 0) == 0
         uint256 remainder;
         assembly {
             remainder := mulmod(a, b, denominator)
@@ -60,7 +60,7 @@ library FullMath {
 
         // Factor powers of two out of denominator
         // Compute largest power of two divisor of denominator.
-        // Always >= 1 unless denominator is zero, then twos is zero.
+        // Always >= 1.
         uint256 twos = -denominator & denominator;
         // Divide denominator by power of two
         assembly {
@@ -84,7 +84,6 @@ library FullMath {
         // modulo 2**256 such that denominator * inv = 1 mod 2**256.
         // Compute the inverse by starting with a seed that is correct
         // correct for four bits. That is, denominator * inv = 1 mod 2**4
-        // If denominator is zero the inverse starts with 2
         uint256 inv = (3 * denominator) ^ 2;
         // Now use Newton-Raphson iteration to improve the precision.
         // Thanks to Hensel's lifting lemma, this also works in modular
@@ -95,7 +94,6 @@ library FullMath {
         inv *= 2 - denominator * inv; // inverse mod 2**64
         inv *= 2 - denominator * inv; // inverse mod 2**128
         inv *= 2 - denominator * inv; // inverse mod 2**256
-        // If denominator is zero, inv is now 128
 
         // Because the division is now exact we can divide by multiplying
         // with the modular inverse of denominator. This will give us the
@@ -103,7 +101,6 @@ library FullMath {
         // that the outcome is less than 2**256, this is the final result.
         // We don't need to compute the high bits of the result and prod1
         // is no longer required.
-        // If denominator is zero, prod0 is zero and the result is zero.
         result = prod0 * inv;
         return result;
     }
