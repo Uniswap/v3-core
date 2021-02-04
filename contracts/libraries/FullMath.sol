@@ -31,10 +31,8 @@ library FullMath {
 
         // Handle non-overflow cases, 256 by 256 division
         if (prod1 == 0) {
+            require(denominator > 0);
             assembly {
-                // If denominator is zero then by the precondition
-                // numerator is also zero and therefore prod is
-                // zero. We get div(_, 0), which evaluates to 0.
                 result := div(prod0, denominator)
             }
             return result;
@@ -135,10 +133,8 @@ library FullMath {
 
         // Handle non-overflow cases, 256 by 256 division
         if (prod1 == 0) {
+            require(denominator > 0);
             assembly {
-                // If denominator is zero then by the precondition
-                // numerator is also zero and therefore prod is
-                // zero. We get div(_, 0), which evaluates to 0.
                 result := div(prod0, denominator)
             }
             return result + (prod0 % denominator > 0 ? 1 : 0);
