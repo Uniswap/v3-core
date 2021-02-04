@@ -239,41 +239,24 @@ library SqrtPriceMath {
     ) internal pure returns (int256 offsetDelta) {
         if (liquidityDelta < 0) {
             uint256 liquidityDeltaUnsigned = uint128(-liquidityDelta);
-            uint256 sqrtPriceX159 = offset0
-                ? UnsafeMath.divRoundingUp(1 << 255, sqrtPriceX96)
-                : uint256(sqrtPriceX96) << 63;
+            uint256 sqrtPriceX159 =
+                offset0 ? UnsafeMath.divRoundingUp(1 << 255, sqrtPriceX96) : uint256(sqrtPriceX96) << 63;
 
             int256 term =
-                FullMath.mulDivRoundingUp(
-                    feeGrowthGlobalX128,
-                    liquidityDeltaUnsigned,
-                    FixedPoint128.Q128
-                ).add(
-                    FullMath.mulDivRoundingUp(
-                        sqrtPriceX159,
-                        liquidityDeltaUnsigned,
-                        1 << 159
-                    )
-                ).toInt256();
+                FullMath
+                    .mulDivRoundingUp(feeGrowthGlobalX128, liquidityDeltaUnsigned, FixedPoint128.Q128)
+                    .add(FullMath.mulDivRoundingUp(sqrtPriceX159, liquidityDeltaUnsigned, 1 << 159))
+                    .toInt256();
             return -term.add(balanceDelta);
         } else {
             uint256 liquidityDeltaUnsigned = uint128(liquidityDelta);
-            uint256 sqrtPriceX159 = offset0
-                ? (1 << 255) / sqrtPriceX96
-                : uint256(sqrtPriceX96) << 63;
+            uint256 sqrtPriceX159 = offset0 ? (1 << 255) / sqrtPriceX96 : uint256(sqrtPriceX96) << 63;
 
             int256 term =
-                FullMath.mulDiv(
-                    feeGrowthGlobalX128,
-                    liquidityDeltaUnsigned,
-                    FixedPoint128.Q128
-                ).add(
-                    FullMath.mulDiv(
-                        sqrtPriceX159,
-                        liquidityDeltaUnsigned,
-                        1 << 159
-                    )
-                ).toInt256();
+                FullMath
+                    .mulDiv(feeGrowthGlobalX128, liquidityDeltaUnsigned, FixedPoint128.Q128)
+                    .add(FullMath.mulDiv(sqrtPriceX159, liquidityDeltaUnsigned, 1 << 159))
+                    .toInt256();
             return term.sub(balanceDelta);
         }
     }
