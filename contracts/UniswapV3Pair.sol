@@ -768,10 +768,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     function setFeeProtocol(uint8 feeProtocol) external override lock onlyFactoryOwner {
         uint8 feeProtocolOld = slot0.feeProtocol;
         if (feeProtocol > 0) {
-            require(feeProtocolOld == 0); // TODO this might not be necessary, or might just involve some recomputing
             require(feeProtocol <= 10 && feeProtocol >= 4);
 
-            // initializes offsets
+            // set offsets
             offsets.offset0 = SqrtPriceMath
                 .getOffsetDelta(
                 feeGrowthGlobal0X128,
@@ -791,9 +790,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             )
                 .toInt128();
         } else {
-            // TODO is this right/necessary?
-            offsets.offset0 = 0;
-            offsets.offset1 = 0;
+            // clear offsets to save gas / state
+            delete offsets;
         }
         slot0.feeProtocol = feeProtocol;
         emit SetFeeProtocol(feeProtocolOld, feeProtocol);
