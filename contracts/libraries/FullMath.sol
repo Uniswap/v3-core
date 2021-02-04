@@ -18,7 +18,7 @@ library FullMath {
     ) internal pure returns (uint256 result) {
         // 512-bit multiply [prod1 prod0] = a * b
         // Compute the product mod 2**256 and mod 2**256 - 1
-        // then use the Chinese Remiander Theorem to reconstruct
+        // then use the Chinese Remainder Theorem to reconstruct
         // the 512 bit result. The result is stored in two 256
         // variables such that product = prod1 * 2**256 + prod0
         uint256 prod0; // Least significant 256 bits of the product
@@ -88,7 +88,7 @@ library FullMath {
         // correct for four bits. That is, denominator * inv = 1 mod 2**4
         // If denominator is zero the inverse starts with 2
         uint256 inv = (3 * denominator) ^ 2;
-        // Now use Newton-Raphson itteration to improve the precision.
+        // Now use Newton-Raphson iteration to improve the precision.
         // Thanks to Hensel's lifting lemma, this also works in modular
         // arithmetic, doubling the correct bits in each step.
         inv *= 2 - denominator * inv; // inverse mod 2**8
