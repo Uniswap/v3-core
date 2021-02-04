@@ -222,42 +222,54 @@ library SqrtPriceMath {
                 : getAmount1Delta(sqrtPX96, sqrtQX96, uint128(liquidity), true).toInt256();
     }
 
-    /// @notice Helper that gets signed offset delta for calculating protocol fees
-    /// @param feeGrowthGlobalX128 the current global fee growth
+    /// @notice Helper that gets signed offset deltas for calculating protocol fees
+    /// @param feeGrowthGlobal0X128 the current global fee growth in token0
+    /// @param feeGrowthGlobal1X128 the current global fee growth in token1
     /// @param sqrtPriceX96 the current sqrt price
-    /// @param offset0 a flag for whether we are computing offset0 (as compared to offset1)
     /// @param liquidityDelta the change in liquidity
-    /// @param balanceDelta the change in balance
-    /// @return offsetDelta the change to apply to the offset
-    /// @dev consistently rounds offsetDelta toward negative infinity (against the protocol)
-    function getOffsetDelta(
-        uint256 feeGrowthGlobalX128,
+    /// @param balance0Delta the change in balance0
+    /// @param balance1Delta the change in balance1
+    /// @return offset0Delta the change to apply to offset0
+    /// @return offset1Delta the change to apply to offset1
+    /// @dev consistently rounds offsetDeltas toward negative infinity (against the protocol)
+    function getOffsetDeltas(
+        uint256 feeGrowthGlobal0X128,
+        uint256 feeGrowthGlobal1X128,
         uint160 sqrtPriceX96,
-        bool offset0,
         int128 liquidityDelta,
-        int256 balanceDelta
-    ) internal pure returns (int256 offsetDelta) {
+        int256 balance0Delta,
+        int256 balance1Delta
+    ) internal pure returns (int256 offset0Delta, int256 offset1Delta) {
         if (liquidityDelta < 0) {
             uint256 liquidityDeltaUnsigned = uint128(-liquidityDelta);
-            uint256 sqrtPriceX159 =
-                offset0 ? UnsafeMath.divRoundingUp(1 << 255, sqrtPriceX96) : uint256(sqrtPriceX96) << 63;
-
-            int256 term =
+            int256 t0 =
                 FullMath
-                    .mulDivRoundingUp(feeGrowthGlobalX128, liquidityDeltaUnsigned, FixedPoint128.Q128)
-                    .add(FullMath.mulDivRoundingUp(sqrtPriceX159, liquidityDeltaUnsigned, 1 << 159))
+                    .mulDivRoundingUp(feeGrowthGlobal0X128, liquidityDeltaUnsigned, FixedPoint128.Q128)
+                    .add(FullMath.mulDivRoundingUp(
+                        UnsafeMath.divRoundingUp(1 << 255, sqrtPriceX96),
+                        liquidityDeltaUnsigned,
+                        1 << 159
+                    ))
                     .toInt256();
-            return -term.add(balanceDelta);
+            int256 t1 =
+                FullMath
+                    .mulDivRoundingUp(feeGrowthGlobal1X128, liquidityDeltaUnsigned, FixedPoint128.Q128)
+                    .add(FullMath.mulDivRoundingUp(uint256(sqrtPriceX96) << 96, liquidityDeltaUnsigned, 1 << 192))
+                    .toInt256();
+            return (-t0.add(balance0Delta), -t1.add(balance1Delta));
         } else {
             uint256 liquidityDeltaUnsigned = uint128(liquidityDelta);
-            uint256 sqrtPriceX159 = offset0 ? (1 << 255) / sqrtPriceX96 : uint256(sqrtPriceX96) << 63;
-
-            int256 term =
+            int256 t0 =
                 FullMath
-                    .mulDiv(feeGrowthGlobalX128, liquidityDeltaUnsigned, FixedPoint128.Q128)
-                    .add(FullMath.mulDiv(sqrtPriceX159, liquidityDeltaUnsigned, 1 << 159))
+                    .mulDiv(feeGrowthGlobal0X128, liquidityDeltaUnsigned, FixedPoint128.Q128)
+                    .add(FullMath.mulDiv((1 << 255) / sqrtPriceX96, liquidityDeltaUnsigned, 1 << 159))
                     .toInt256();
-            return term.sub(balanceDelta);
+            int256 t1 =
+                FullMath
+                    .mulDiv(feeGrowthGlobal1X128, liquidityDeltaUnsigned, FixedPoint128.Q128)
+                    .add(FullMath.mulDiv(uint256(sqrtPriceX96) << 96, liquidityDeltaUnsigned, 1 << 192))
+                    .toInt256();
+            return (t0.sub(balance0Delta), t1.sub(balance1Delta));
         }
     }
 }

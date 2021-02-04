@@ -13,14 +13,4 @@ contract LiquidityMathTest {
         LiquidityMath.addDelta(x, y);
         return gasBefore - gasleft();
     }
-
-    function subDelta(uint128 x, int128 y) external pure returns (uint128 z) {
-        return LiquidityMath.subDelta(x, y);
-    }
-
-    function getGasCostOfSubDelta(uint128 x, int128 y) external view returns (uint256) {
-        uint256 gasBefore = gasleft();
-        LiquidityMath.subDelta(x, y);
-        return gasBefore - gasleft();
-    }
 }

@@ -285,28 +285,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // update protocol fee offsets if necessary
             if (_slot0.feeProtocol > 0) {
-                offsets.offset0 = int256(offsets.offset0)
-                    .add(
-                    SqrtPriceMath.getOffsetDelta(
-                        feeGrowthGlobal0X128,
-                        _slot0.sqrtPriceX96,
-                        true,
-                        inRange ? params.liquidityDelta : 0,
-                        amount0
-                    )
-                )
-                    .toInt128();
-                offsets.offset1 = int256(offsets.offset1)
-                    .add(
-                    SqrtPriceMath.getOffsetDelta(
-                        feeGrowthGlobal1X128,
-                        _slot0.sqrtPriceX96,
-                        false,
-                        inRange ? params.liquidityDelta : 0,
-                        amount1
-                    )
-                )
-                    .toInt128();
+                (int256 offset0Delta, int256 offset1Delta) = SqrtPriceMath.getOffsetDeltas(
+                    feeGrowthGlobal0X128,
+                    feeGrowthGlobal1X128,
+                    _slot0.sqrtPriceX96,
+                    inRange ? params.liquidityDelta : 0,
+                    amount0,
+                    amount1
+                );
+
+                offsets.offset0 = int256(offsets.offset0).add(offset0Delta).toInt128();
+                offsets.offset1 = int256(offsets.offset1).add(offset1Delta).toInt128();
             }
         }
     }
@@ -637,33 +626,29 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                             (zeroForOne ? state.feeGrowthGlobalInputX128 : cache.feeGrowthGlobalOutputX128),
                             (zeroForOne ? cache.feeGrowthGlobalOutputX128 : state.feeGrowthGlobalInputX128)
                         );
+                    // if we're moving leftward, we interpret liquidityDelta as the opposite sign
+                    // safe because liquidityDelta cannot be type(int128).min
+                    if (zeroForOne) liquidityDelta = -liquidityDelta;
 
                     // update offsets
                     if (cache.slot0Start.feeProtocol > 0) {
-                        // the additions below are safe because offsets fit within int128
-                        // the ternaries below are safe because liquidityDelta can never be type(int128).min
-                        state.offset0Delta += SqrtPriceMath.getOffsetDelta(
+                        (int256 offset0Delta, int256 offset1Delta) = SqrtPriceMath.getOffsetDeltas(
                             zeroForOne ? state.feeGrowthGlobalInputX128 : cache.feeGrowthGlobalOutputX128,
-                            state.sqrtPriceX96,
-                            true,
-                            zeroForOne ? -liquidityDelta : liquidityDelta,
-                            0
-                        );
-                        state.offset1Delta += SqrtPriceMath.getOffsetDelta(
                             zeroForOne ? cache.feeGrowthGlobalOutputX128 : state.feeGrowthGlobalInputX128,
                             state.sqrtPriceX96,
-                            false,
-                            zeroForOne ? -liquidityDelta : liquidityDelta,
+                            liquidityDelta,
+                            0,
                             0
                         );
+
+                        // these additions are safe because offsets fit within int128
+                        state.offset0Delta += offset0Delta;
+                        state.offset1Delta += offset1Delta;
                     }
 
                     secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
-                    // update liquidity, subtract from right to left, add from left to right
-                    state.liquidity = zeroForOne
-                        ? state.liquidity.subDelta(liquidityDelta)
-                        : state.liquidity.addDelta(liquidityDelta);
+                    state.liquidity = state.liquidity.addDelta(liquidityDelta);
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
@@ -779,26 +764,17 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             require(feeProtocol <= 10 && feeProtocol >= 4);
 
             // set offsets
-            offsets.offset0 = SqrtPriceMath
-                .getOffsetDelta(
+            (int256 offset0Delta, int256 offset1Delta) = SqrtPriceMath
+                .getOffsetDeltas(
                 feeGrowthGlobal0X128,
-                slot0
-                    .sqrtPriceX96,
-                true,
-                int256(liquidity).toInt128(),
-                balance0().toInt256()
-            )
-                .toInt128();
-            offsets.offset1 = SqrtPriceMath
-                .getOffsetDelta(
                 feeGrowthGlobal1X128,
-                slot0
-                    .sqrtPriceX96,
-                false,
+                slot0.sqrtPriceX96,
                 int256(liquidity).toInt128(),
+                balance0().toInt256(),
                 balance1().toInt256()
-            )
-                .toInt128();
+            );
+            offsets.offset0 = offset0Delta.toInt128();
+            offsets.offset1 = offset1Delta.toInt128();
         } else {
             // clear offsets to save gas / state
             delete offsets;
@@ -815,28 +791,22 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
         require(slot0.feeProtocol > 0); // TODO this might not be necessary?
 
-        int256 t0 =
-            SqrtPriceMath.getOffsetDelta(
+        (int256 offset0Delta, int256 offset1Delta) =
+            SqrtPriceMath.getOffsetDeltas(
                 feeGrowthGlobal0X128,
-                slot0.sqrtPriceX96,
-                true,
-                int256(liquidity).toInt128(),
-                balance0().toInt256()
-            );
-        if (offsets.offset0 > t0) {
-            amount0 = uint256(offsets.offset0 - t0);
-            if (amount0Requested < amount0) amount0 = amount0Requested;
-        }
-        int256 t1 =
-            SqrtPriceMath.getOffsetDelta(
                 feeGrowthGlobal1X128,
                 slot0.sqrtPriceX96,
-                false,
                 int256(liquidity).toInt128(),
+                balance0().toInt256(),
                 balance1().toInt256()
             );
-        if (offsets.offset1 > t1) {
-            amount1 = uint256(offsets.offset1 - t1);
+
+        if (offsets.offset0 > offset0Delta) {
+            amount0 = uint256(offsets.offset0 - offset0Delta);
+            if (amount0Requested < amount0) amount0 = amount0Requested;
+        }
+        if (offsets.offset1 > offset1Delta) {
+            amount1 = uint256(offsets.offset1 - offset1Delta);
             if (amount1Requested < amount1) amount1 = amount1Requested;
         }
 
