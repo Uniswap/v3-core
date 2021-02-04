@@ -4,13 +4,6 @@ pragma solidity =0.7.6;
 import '../libraries/FullMath.sol';
 
 contract FullMathEchidnaTest {
-    // if the mul doesn't overflow in 256-bit space, h should be 0
-    function checkFullMulH(uint256 x, uint256 y) external pure {
-        require(x == 0 || ((x * y) / x == y));
-        (, uint256 h) = FullMath.fullMul(x, y);
-        assert(h == 0);
-    }
-
     function checkMulDivRounding(
         uint256 x,
         uint256 y,
