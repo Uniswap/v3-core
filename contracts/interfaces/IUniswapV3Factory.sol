@@ -5,16 +5,16 @@ pragma solidity >=0.5.0;
 /// @notice The Uniswap V3 Factory facilitates creation of Uniswap V3 pairs and control over the protocol fees
 interface IUniswapV3Factory {
     /// @notice Emitted when the owner of the factory is changed
-    /// @param oldOwner the owner before the owner was changed
-    /// @param newOwner the owner after the owner was changed
+    /// @param oldOwner The owner before the owner was changed
+    /// @param newOwner The owner after the owner was changed
     event OwnerChanged(address indexed oldOwner, address indexed newOwner);
 
     /// @notice Emitted when a pair is created
-    /// @param token0 the first token of the pair by address sort order
-    /// @param token1 the second token of the pair by address sort order
-    /// @param fee the fee in pips that is collected in every swap with the pair
-    /// @param tickSpacing the minimum number of ticks between initialized ticks
-    /// @param pair the address of the created pair
+    /// @param token0 The first token of the pair by address sort order
+    /// @param token1 The second token of the pair by address sort order
+    /// @param fee The fee in pips that is collected in every swap with the pair
+    /// @param tickSpacing The minimum number of ticks between initialized ticks
+    /// @param pair The address of the created pair
     event PairCreated(
         address indexed token0,
         address indexed token1,
@@ -24,8 +24,8 @@ interface IUniswapV3Factory {
     );
 
     /// @notice Emitted when a new fee amount is enabled for pair creation via the factory
-    /// @param fee the fee in pips that was enabled
-    /// @param tickSpacing the minimum number of ticks between initialized ticks for pairs created with the given fee
+    /// @param fee The fee in pips that was enabled
+    /// @param tickSpacing The minimum number of ticks between initialized ticks for pairs created with the given fee
     event FeeAmountEnabled(uint24 indexed fee, int24 indexed tickSpacing);
 
     /// @notice Returns the current owner of the factory
@@ -45,9 +45,9 @@ interface IUniswapV3Factory {
     ) external view returns (address pair);
 
     /// @notice Creates a pair for the given two tokens and with the fee
-    /// @param tokenA one of the two tokens in the desired pair
-    /// @param tokenB the other of the two tokens in the desired pair
-    /// @param fee the desired fee for the pair
+    /// @param tokenA One of the two tokens in the desired pair
+    /// @param tokenB The other of the two tokens in the desired pair
+    /// @param fee The desired fee for the pair
     /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order, tickSpacing is looked up
     /// from the fee, and the call will revert if the pair already exists or the fee is invalid or the token arguments
     /// are invalid.
@@ -58,12 +58,12 @@ interface IUniswapV3Factory {
     ) external returns (address pair);
 
     /// @notice Updates the owner of the factory. Must be called by the current owner
-    /// @param _owner the new owner of the factory
+    /// @param _owner The new owner of the factory
     function setOwner(address _owner) external;
 
     /// @notice Enables a fee amount with the given tickSpacing
     /// @dev Fee amounts may never be removed once enabled
-    /// @param fee the fee amount to enable, in pips (i.e. 1e-6)
-    /// @param tickSpacing the spacing between ticks to be enforced for all pairs created with the given fee amount
+    /// @param fee The fee amount to enable, in pips (i.e. 1e-6)
+    /// @param tickSpacing The spacing between ticks to be enforced for all pairs created with the given fee amount
     function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
 }
