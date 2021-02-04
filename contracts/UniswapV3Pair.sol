@@ -373,19 +373,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     /// @inheritdoc IUniswapV3PairActions
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
-    function poke(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper
-    ) external override lock {
-        _modifyPosition(
-            ModifyPositionParams({owner: owner, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: 0})
-        );
-        emit Poke(msg.sender, owner, tickLower, tickUpper);
-    }
-
-    /// @inheritdoc IUniswapV3PairActions
-    /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function mint(
         address recipient,
         int24 tickLower,
@@ -454,7 +441,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tickUpper,
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
-        require(amount > 0);
         (int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({

@@ -452,7 +452,9 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
-        await expect(pair.poke(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)).to.be.revertedWith('NP')
+        await expect(pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.revertedWith(
+          'NP'
+        )
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         let {
@@ -500,11 +502,6 @@ describe('UniswapV3Pair', () => {
       const { liquidityGross } = await pair.ticks(tick)
       expect(liquidityGross).to.not.eq(0)
     }
-
-    it('cannot be called with amount of 0', async () => {
-      await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
-      await expect(pair.burn(wallet.address, minTick, maxTick, 0)).to.be.revertedWith('')
-    })
 
     it('clears the position fee growth snapshot if no more liquidity', async () => {
       // some activity that would make the ticks non-zero
@@ -719,10 +716,10 @@ describe('UniswapV3Pair', () => {
       const token0BalanceBeforeWallet = await token0.balanceOf(wallet.address)
       const token1BalanceBeforeWallet = await token1.balanceOf(wallet.address)
 
-      await pair.poke(wallet.address, lowerTick, upperTick)
+      await pair.burn(wallet.address, lowerTick, upperTick, 0)
       await pair.collect(wallet.address, lowerTick, upperTick, MaxUint128, MaxUint128)
 
-      await pair.poke(wallet.address, lowerTick, upperTick)
+      await pair.burn(wallet.address, lowerTick, upperTick, 0)
       const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collect(
         wallet.address,
         lowerTick,
@@ -904,7 +901,7 @@ describe('UniswapV3Pair', () => {
     }) {
       await (zeroForOne ? swapExact0For1(amount, wallet.address) : swapExact1For0(amount, wallet.address))
 
-      if (poke) await pair.poke(wallet.address, minTick, maxTick)
+      if (poke) await pair.burn(wallet.address, minTick, maxTick, 0)
 
       const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collect(
         wallet.address,
@@ -1270,7 +1267,7 @@ describe('UniswapV3Pair', () => {
       expect(token0FeesNext).to.eq(0)
       expect(token1FeesNext).to.eq(0)
 
-      await pair.poke(wallet.address, minTick, maxTick) // poke to update fees
+      await pair.burn(wallet.address, minTick, maxTick, 0) // poke to update fees
       await expect(pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '499999999999999')
