@@ -285,26 +285,20 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // update protocol fee offsets if necessary
             if (_slot0.feeProtocol > 0) {
-                offsets.offset0 = int256(offsets.offset0)
-                    .add(
-                    SqrtPriceMath.getOffsetDelta(
-                        feeGrowthGlobal0X128,
-                        (1 << 255) / _slot0.sqrtPriceX96,
-                        inRange ? params.liquidityDelta : 0,
-                        amount0
-                    )
-                )
-                    .toInt128();
-                offsets.offset1 = int256(offsets.offset1)
-                    .add(
-                    SqrtPriceMath.getOffsetDelta(
-                        feeGrowthGlobal1X128,
-                        uint256(_slot0.sqrtPriceX96) << 63,
-                        inRange ? params.liquidityDelta : 0,
-                        amount1
-                    )
-                )
-                    .toInt128();
+                offsets.offset0 = SqrtPriceMath.getOffsetNext(
+                    offsets.offset0,
+                    feeGrowthGlobal0X128,
+                    (1 << 255) / _slot0.sqrtPriceX96,
+                    inRange ? params.liquidityDelta : 0,
+                    amount0
+                );
+                offsets.offset1 = SqrtPriceMath.getOffsetNext(
+                    offsets.offset1,
+                    feeGrowthGlobal1X128,
+                    uint256(_slot0.sqrtPriceX96) << 63,
+                    inRange ? params.liquidityDelta : 0,
+                    amount1
+                );
             }
         }
     }
@@ -489,6 +483,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint128 liquidityStart;
         // the timestamp of the current block
         uint32 blockTimestamp;
+        // the global fee growth of the output token
+        uint256 feeGrowthGlobalOutputX128;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
@@ -502,7 +498,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         // the tick associated with the current price
         int24 tick;
         // the global fee growth of the input token
-        uint256 feeGrowthGlobalX128;
+        uint256 feeGrowthGlobalInputX128;
         // the current liquidity in range
         uint128 liquidity;
         // the net delta to apply to offset0 at the end of the swap
@@ -551,7 +547,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         slot0.unlocked = false;
 
         SwapCache memory cache =
-            SwapCache({slot0Start: _slot0, liquidityStart: liquidity, blockTimestamp: _blockTimestamp()});
+            SwapCache({
+                slot0Start: _slot0,
+                liquidityStart: liquidity,
+                blockTimestamp: _blockTimestamp(),
+                feeGrowthGlobalOutputX128: zeroForOne ? feeGrowthGlobal1X128 : feeGrowthGlobal0X128
+            });
 
         bool exactInput = amountSpecified > 0;
 
@@ -561,7 +562,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 amountCalculated: 0,
                 sqrtPriceX96: cache.slot0Start.sqrtPriceX96,
                 tick: cache.slot0Start.tick,
-                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
+                feeGrowthGlobalInputX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
                 liquidity: cache.liquidityStart,
                 offset0Delta: 0,
                 offset1Delta: 0
@@ -612,9 +613,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             if (state.liquidity > 0) {
                 uint256 delta = FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
                 if (cache.slot0Start.feeProtocol == 0) {
-                    state.feeGrowthGlobalX128 += delta;
+                    state.feeGrowthGlobalInputX128 += delta;
                 } else {
-                    state.feeGrowthGlobalX128 += delta - delta / cache.slot0Start.feeProtocol;
+                    state.feeGrowthGlobalInputX128 += delta - delta / cache.slot0Start.feeProtocol;
                 }
             }
 
@@ -625,27 +626,25 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     int128 liquidityDelta =
                         ticks.cross(
                             step.tickNext,
-                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
-                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
+                            (zeroForOne ? state.feeGrowthGlobalInputX128 : cache.feeGrowthGlobalOutputX128),
+                            (zeroForOne ? cache.feeGrowthGlobalOutputX128 : state.feeGrowthGlobalInputX128)
                         );
 
                     // update offsets
                     if (cache.slot0Start.feeProtocol > 0) {
-                        state.offset0Delta = state.offset0Delta.add(
-                            SqrtPriceMath.getOffsetDelta(
-                                zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128,
-                                (1 << 255) / state.sqrtPriceX96,
-                                zeroForOne ? -liquidityDelta : liquidityDelta,
-                                0
-                            )
+                        // the additions below are safe because offsets fit within int128
+                        // the ternaries below are safe because liquidityDelta can never be type(int128).min
+                        state.offset0Delta += SqrtPriceMath.getOffsetDelta(
+                            zeroForOne ? state.feeGrowthGlobalInputX128 : cache.feeGrowthGlobalOutputX128,
+                            (1 << 255) / state.sqrtPriceX96,
+                            zeroForOne ? -liquidityDelta : liquidityDelta,
+                            0
                         );
-                        state.offset1Delta = state.offset1Delta.add(
-                            SqrtPriceMath.getOffsetDelta(
-                                zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128,
-                                uint256(state.sqrtPriceX96) << 63,
-                                zeroForOne ? -liquidityDelta : liquidityDelta,
-                                0
-                            )
+                        state.offset1Delta += SqrtPriceMath.getOffsetDelta(
+                            zeroForOne ? cache.feeGrowthGlobalOutputX128 : state.feeGrowthGlobalInputX128,
+                            uint256(state.sqrtPriceX96) << 63,
+                            zeroForOne ? -liquidityDelta : liquidityDelta,
+                            0
                         );
                     }
 
@@ -682,8 +681,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
-        if (zeroForOne) feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
-        else feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
+        if (zeroForOne) feeGrowthGlobal0X128 = state.feeGrowthGlobalInputX128;
+        else feeGrowthGlobal1X128 = state.feeGrowthGlobalInputX128;
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
@@ -742,7 +741,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 paid0 = balance0After - balance0Before;
         uint256 paid1 = balance1After - balance1Before;
 
-        // TODO gas optimize this
+        // TODO haven't gas-optimized slot0.feeProtocol SLOADs below because of stack too deep
         if (paid0 > 0) {
             uint256 delta = FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
             if (slot0.feeProtocol == 0) {
@@ -776,15 +775,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 .getOffsetDelta(
                 feeGrowthGlobal0X128,
                 (1 << 255) / slot0.sqrtPriceX96,
-                uint256(liquidity).toInt256().toInt128(),
+                int256(liquidity).toInt128(),
                 balance0().toInt256()
             )
-                .toInt128();
+            .toInt128();
             offsets.offset1 = SqrtPriceMath
                 .getOffsetDelta(
                 feeGrowthGlobal1X128,
                 uint256(slot0.sqrtPriceX96) << 63,
-                uint256(liquidity).toInt256().toInt128(),
+                int256(liquidity).toInt128(),
                 balance1().toInt256()
             )
                 .toInt128();
@@ -805,30 +804,26 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     ) external override lock onlyFactoryOwner returns (uint256 amount0, uint256 amount1) {
         require(slot0.feeProtocol > 0); // TODO this might not be necessary?
 
-        int256 termA0 = balance0().toInt256().add(offsets.offset0);
-        if (termA0 > 0) {
-            uint256 termB0 =
-                FullMath.mulDivRoundingUp(feeGrowthGlobal0X128, liquidity, FixedPoint128.Q128).add(
-                    FullMath.mulDivRoundingUp((1 << 255) / slot0.sqrtPriceX96, liquidity, 1 << 159)
-                );
-            if (uint256(termA0) > termB0) {
-                amount0 = uint256(termA0) - termB0;
-            }
+        int256 t0 = SqrtPriceMath.getOffsetDelta(
+            feeGrowthGlobal0X128,
+            (1 << 255) / slot0.sqrtPriceX96,
+            int256(liquidity).toInt128(),
+            balance0().toInt256()
+        );
+        if (offsets.offset0 > t0) {
+            amount0 = uint256(offsets.offset0 - t0);
+            if (amount0Requested < amount0) amount0 = amount0Requested;
         }
-
-        int256 termA1 = balance1().toInt256().add(offsets.offset1);
-        if (termA1 > 0) {
-            uint256 termB1 =
-                FullMath.mulDivRoundingUp(feeGrowthGlobal1X128, liquidity, FixedPoint128.Q128).add(
-                    FullMath.mulDivRoundingUp(uint256(slot0.sqrtPriceX96) << 96, liquidity, 1 << 192)
-                );
-            if (uint256(termA1) > termB1) {
-                amount1 = uint256(termA1) - termB1;
-            }
+        int256 t1 = SqrtPriceMath.getOffsetDelta(
+            feeGrowthGlobal1X128,
+            uint256(slot0.sqrtPriceX96) << 63,
+            int256(liquidity).toInt128(),
+            balance1().toInt256()
+        );
+        if (offsets.offset1 > t1) {
+            amount1 = uint256(offsets.offset1 - t1);
+            if (amount1Requested < amount1) amount1 = amount1Requested;
         }
-
-        amount0 = amount0Requested > amount0 ? amount0 : amount0Requested;
-        amount1 = amount1Requested > amount1 ? amount1 : amount1Requested;
 
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);

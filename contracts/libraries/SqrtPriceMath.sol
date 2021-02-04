@@ -16,6 +16,7 @@ library SqrtPriceMath {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     using SafeCast for uint256;
+    using SafeCast for int256;
 
     /// @notice Get the next sqrt price given a delta of token0
     /// @param sqrtPX96 the starting price, i.e. before accounting for the token0 delta
@@ -226,20 +227,40 @@ library SqrtPriceMath {
     /// @param sqrtPriceX159 the current sqrt price, must be the reciprocal if computing offset0
     /// @param liquidityDelta the change in liquidity
     /// @param balanceDelta the change in balance
-    /// @return q0Delta the change to apply to the offset
+    /// @return offsetDelta the change to apply to the offset
     function getOffsetDelta(
         uint256 feeGrowthGlobalX128,
-        uint256 sqrtPriceX159, // must be reciprocal for q0
+        uint256 sqrtPriceX159,
         int128 liquidityDelta,
         int256 balanceDelta
-    ) internal pure returns (int256 q0Delta) {
+    ) internal pure returns (int256 offsetDelta) {
         uint256 liquidityDeltaUnsigned = liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta);
-        uint256 qDeltaUnsigned =
-            FullMath.mulDiv(feeGrowthGlobalX128, liquidityDeltaUnsigned, FixedPoint128.Q128).add(
-                FullMath.mulDiv(sqrtPriceX159, liquidityDeltaUnsigned, 1 << 159)
-            );
-        int256 qDeltaSigned = liquidityDelta < 0 ? -qDeltaUnsigned.toInt256() : qDeltaUnsigned.toInt256();
 
-        return qDeltaSigned.sub(balanceDelta);
+        uint256 t0 = FullMath.mulDiv(feeGrowthGlobalX128, liquidityDeltaUnsigned, FixedPoint128.Q128);
+        uint256 t1 = FullMath.mulDiv(sqrtPriceX159, liquidityDeltaUnsigned, 1 << 159);
+
+        if (liquidityDelta < 0) {
+            return (-t0.add(t1).toInt256()).sub(balanceDelta);
+        } else {
+            return t0.add(t1).toInt256().sub(balanceDelta);
+        }
+    }
+
+    /// @notice Helper that gets computes the next offset value from the current
+    /// @param offset the current offset
+    /// @param feeGrowthGlobalX128 the current global fee growth
+    /// @param sqrtPriceX159 the current sqrt price, must be the reciprocal if computing offset0
+    /// @param liquidityDelta the change in liquidity
+    /// @param balanceDelta the change in balance
+    /// @return offsetNext the next offset
+    function getOffsetNext(
+        int128 offset,
+        uint256 feeGrowthGlobalX128,
+        uint256 sqrtPriceX159,
+        int128 liquidityDelta,
+        int256 balanceDelta
+    ) internal pure returns (int128 offsetNext) {
+        int256 offsetDelta = getOffsetDelta(feeGrowthGlobalX128, sqrtPriceX159, liquidityDelta, balanceDelta);
+        return int256(offset).add(offsetDelta).toInt128();
     }
 }
