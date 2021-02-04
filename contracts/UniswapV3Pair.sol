@@ -808,16 +808,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int256 termA0 = balance0().toInt256().add(offsets.offset0);
         if (termA0 > 0) {
             uint256 termB0 =
-                FullMath.mulDivRoundingUp(
-                    feeGrowthGlobal0X128,
-                    liquidity,
-                    FixedPoint128.Q128
-                ).add(
-                    FullMath.mulDivRoundingUp(
-                        (1 << 255) / slot0.sqrtPriceX96,
-                        liquidity,
-                        1 << 159
-                    )
+                FullMath.mulDivRoundingUp(feeGrowthGlobal0X128, liquidity, FixedPoint128.Q128).add(
+                    FullMath.mulDivRoundingUp((1 << 255) / slot0.sqrtPriceX96, liquidity, 1 << 159)
                 );
             if (uint256(termA0) > termB0) {
                 amount0 = uint256(termA0) - termB0;
@@ -827,16 +819,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int256 termA1 = balance1().toInt256().add(offsets.offset1);
         if (termA1 > 0) {
             uint256 termB1 =
-                FullMath.mulDivRoundingUp(
-                    feeGrowthGlobal1X128,
-                    liquidity,
-                    FixedPoint128.Q128
-                ).add(
-                    FullMath.mulDivRoundingUp(
-                        uint256(slot0.sqrtPriceX96) << 96,
-                        liquidity,
-                        1 << 192
-                    )
+                FullMath.mulDivRoundingUp(feeGrowthGlobal1X128, liquidity, FixedPoint128.Q128).add(
+                    FullMath.mulDivRoundingUp(uint256(slot0.sqrtPriceX96) << 96, liquidity, 1 << 192)
                 );
             if (uint256(termA1) > termB1) {
                 amount1 = uint256(termA1) - termB1;
