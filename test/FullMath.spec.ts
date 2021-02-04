@@ -11,7 +11,7 @@ const Q128 = BigNumber.from(2).pow(128)
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
-describe.only('FullMath', () => {
+describe('FullMath', () => {
   let fullMath: FullMathTest
   before('deploy FullMathTest', async () => {
     const factory = await ethers.getContractFactory('FullMathTest')
