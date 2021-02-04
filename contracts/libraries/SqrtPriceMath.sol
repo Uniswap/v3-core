@@ -245,11 +245,13 @@ library SqrtPriceMath {
             int256 t0 =
                 FullMath
                     .mulDivRoundingUp(feeGrowthGlobal0X128, liquidityDeltaUnsigned, FixedPoint128.Q128)
-                    .add(FullMath.mulDivRoundingUp(
+                    .add(
+                    FullMath.mulDivRoundingUp(
                         UnsafeMath.divRoundingUp(1 << 255, sqrtPriceX96),
                         liquidityDeltaUnsigned,
                         1 << 159
-                    ))
+                    )
+                )
                     .toInt256();
             int256 t1 =
                 FullMath

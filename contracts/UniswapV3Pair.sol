@@ -285,14 +285,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // update protocol fee offsets if necessary
             if (_slot0.feeProtocol > 0) {
-                (int256 offset0Delta, int256 offset1Delta) = SqrtPriceMath.getOffsetDeltas(
-                    feeGrowthGlobal0X128,
-                    feeGrowthGlobal1X128,
-                    _slot0.sqrtPriceX96,
-                    inRange ? params.liquidityDelta : 0,
-                    amount0,
-                    amount1
-                );
+                (int256 offset0Delta, int256 offset1Delta) =
+                    SqrtPriceMath.getOffsetDeltas(
+                        feeGrowthGlobal0X128,
+                        feeGrowthGlobal1X128,
+                        _slot0.sqrtPriceX96,
+                        inRange ? params.liquidityDelta : 0,
+                        amount0,
+                        amount1
+                    );
 
                 offsets.offset0 = int256(offsets.offset0).add(offset0Delta).toInt128();
                 offsets.offset1 = int256(offsets.offset1).add(offset1Delta).toInt128();
@@ -632,14 +633,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
                     // update offsets
                     if (cache.slot0Start.feeProtocol > 0) {
-                        (int256 offset0Delta, int256 offset1Delta) = SqrtPriceMath.getOffsetDeltas(
-                            zeroForOne ? state.feeGrowthGlobalInputX128 : cache.feeGrowthGlobalOutputX128,
-                            zeroForOne ? cache.feeGrowthGlobalOutputX128 : state.feeGrowthGlobalInputX128,
-                            state.sqrtPriceX96,
-                            liquidityDelta,
-                            0,
-                            0
-                        );
+                        (int256 offset0Delta, int256 offset1Delta) =
+                            SqrtPriceMath.getOffsetDeltas(
+                                zeroForOne ? state.feeGrowthGlobalInputX128 : cache.feeGrowthGlobalOutputX128,
+                                zeroForOne ? cache.feeGrowthGlobalOutputX128 : state.feeGrowthGlobalInputX128,
+                                state.sqrtPriceX96,
+                                liquidityDelta,
+                                0,
+                                0
+                            );
 
                         // these additions are safe because offsets fit within int128
                         state.offset0Delta += offset0Delta;
@@ -764,15 +766,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             require(feeProtocol <= 10 && feeProtocol >= 4);
 
             // set offsets
-            (int256 offset0Delta, int256 offset1Delta) = SqrtPriceMath
-                .getOffsetDeltas(
-                feeGrowthGlobal0X128,
-                feeGrowthGlobal1X128,
-                slot0.sqrtPriceX96,
-                int256(liquidity).toInt128(),
-                balance0().toInt256(),
-                balance1().toInt256()
-            );
+            (int256 offset0Delta, int256 offset1Delta) =
+                SqrtPriceMath.getOffsetDeltas(
+                    feeGrowthGlobal0X128,
+                    feeGrowthGlobal1X128,
+                    slot0.sqrtPriceX96,
+                    int256(liquidity).toInt128(),
+                    balance0().toInt256(),
+                    balance1().toInt256()
+                );
             offsets.offset0 = offset0Delta.toInt128();
             offsets.offset1 = offset1Delta.toInt128();
         } else {
