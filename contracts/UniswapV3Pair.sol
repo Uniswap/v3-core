@@ -695,8 +695,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     /// @inheritdoc IUniswapV3PairOwnerActions
     function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
         require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
-        emit SetFeeProtocol(slot0.feeProtocol, feeProtocol);
+        uint8 feeProtocolOld = slot0.feeProtocol;
         slot0.feeProtocol = feeProtocol;
+        emit SetFeeProtocol(feeProtocolOld, feeProtocol);
     }
 
     /// @inheritdoc IUniswapV3PairOwnerActions
