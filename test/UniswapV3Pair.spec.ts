@@ -1039,7 +1039,7 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000003', 'amount0') // + 1 wei
+          expect(amount0).to.be.eq('100000000000003', 'amount0')
           expect(amount1).to.be.eq('100000000000002', 'amount1')
         })
 
@@ -1056,8 +1056,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('1000000000000002')
-          expect(amount1).to.be.eq(1)
+          expect(amount0).to.be.eq('1000000000000000')
+          expect(amount1).to.be.eq(0)
         })
 
         it('1 for 0 works with liquidityDeltas', async () => {
@@ -1073,8 +1073,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq(1)
-          expect(amount1).to.be.eq('1000000000000002')
+          expect(amount0).to.be.eq(0)
+          expect(amount1).to.be.eq('1000000000000000')
         })
 
         it('0 for 1 and 1 for 0 works with liquidityDeltas', async () => {
@@ -1092,8 +1092,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('1000000000000005', 'amount0') // + 3 wei
-          expect(amount1).to.be.eq('2000000000000003', 'amount1') // + 1 wei
+          expect(amount0).to.be.eq('1000000000000001', 'amount0')
+          expect(amount1).to.be.eq('2000000000000000', 'amount1')
         })
 
         it('0 for 1 works with in-range mint', async () => {
@@ -1108,11 +1108,11 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000002')
-          expect(amount1).to.be.eq(1)
+          expect(amount0).to.be.eq('100000000000000')
+          expect(amount1).to.be.eq(0)
         })
 
-        it('0 for 1 works with in-range mint', async () => {
+        it('1 for 0 works with in-range mint', async () => {
           await pair.setFeeProtocol(6)
 
           await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
@@ -1124,8 +1124,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq(1)
-          expect(amount1).to.be.eq('100000000000002')
+          expect(amount0).to.be.eq(0)
+          expect(amount1).to.be.eq('100000000000000')
         })
 
         it('0 for 1 and 1 for 0 works with in-range mint', async () => {
@@ -1141,8 +1141,8 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000003', 'amount0') // + 1 wei
-          expect(amount1).to.be.eq('100000000000002', 'amount1')
+          expect(amount0).to.be.eq('100000000000001', 'amount0')
+          expect(amount1).to.be.eq('100000000000001', 'amount1')
         })
 
         it('0 for 1 works with out-of-range mint', async () => {
@@ -1190,7 +1190,7 @@ describe('UniswapV3Pair', () => {
             constants.MaxUint256,
             constants.MaxUint256
           )
-          expect(amount0).to.be.eq('100000000000003', 'amount0') // + 1 wei
+          expect(amount0).to.be.eq('100000000000003', 'amount0')
           expect(amount1).to.be.eq('100000000000002', 'amount1')
         })
 

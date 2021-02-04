@@ -224,43 +224,57 @@ library SqrtPriceMath {
 
     /// @notice Helper that gets signed offset delta for calculating protocol fees
     /// @param feeGrowthGlobalX128 the current global fee growth
-    /// @param sqrtPriceX159 the current sqrt price, must be the reciprocal if computing offset0
+    /// @param sqrtPriceX96 the current sqrt price
+    /// @param offset0 a flag for whether we are computing offset0 (as compared to offset1)
     /// @param liquidityDelta the change in liquidity
     /// @param balanceDelta the change in balance
     /// @return offsetDelta the change to apply to the offset
+    /// @dev consistently rounds offsetDelta toward negative infinity (against the protocol)
     function getOffsetDelta(
         uint256 feeGrowthGlobalX128,
-        uint256 sqrtPriceX159,
+        uint160 sqrtPriceX96,
+        bool offset0,
         int128 liquidityDelta,
         int256 balanceDelta
     ) internal pure returns (int256 offsetDelta) {
-        uint256 liquidityDeltaUnsigned = liquidityDelta < 0 ? uint128(-liquidityDelta) : uint256(liquidityDelta);
-
-        uint256 t0 = FullMath.mulDiv(feeGrowthGlobalX128, liquidityDeltaUnsigned, FixedPoint128.Q128);
-        uint256 t1 = FullMath.mulDiv(sqrtPriceX159, liquidityDeltaUnsigned, 1 << 159);
-
         if (liquidityDelta < 0) {
-            return (-t0.add(t1).toInt256()).sub(balanceDelta);
-        } else {
-            return t0.add(t1).toInt256().sub(balanceDelta);
-        }
-    }
+            uint256 liquidityDeltaUnsigned = uint128(-liquidityDelta);
+            uint256 sqrtPriceX159 = offset0
+                ? UnsafeMath.divRoundingUp(1 << 255, sqrtPriceX96)
+                : uint256(sqrtPriceX96) << 63;
 
-    /// @notice Helper that gets computes the next offset value from the current
-    /// @param offset the current offset
-    /// @param feeGrowthGlobalX128 the current global fee growth
-    /// @param sqrtPriceX159 the current sqrt price, must be the reciprocal if computing offset0
-    /// @param liquidityDelta the change in liquidity
-    /// @param balanceDelta the change in balance
-    /// @return offsetNext the next offset
-    function getOffsetNext(
-        int128 offset,
-        uint256 feeGrowthGlobalX128,
-        uint256 sqrtPriceX159,
-        int128 liquidityDelta,
-        int256 balanceDelta
-    ) internal pure returns (int128 offsetNext) {
-        int256 offsetDelta = getOffsetDelta(feeGrowthGlobalX128, sqrtPriceX159, liquidityDelta, balanceDelta);
-        return int256(offset).add(offsetDelta).toInt128();
+            int256 term =
+                FullMath.mulDivRoundingUp(
+                    feeGrowthGlobalX128,
+                    liquidityDeltaUnsigned,
+                    FixedPoint128.Q128
+                ).add(
+                    FullMath.mulDivRoundingUp(
+                        sqrtPriceX159,
+                        liquidityDeltaUnsigned,
+                        1 << 159
+                    )
+                ).toInt256();
+            return -term.add(balanceDelta);
+        } else {
+            uint256 liquidityDeltaUnsigned = uint128(liquidityDelta);
+            uint256 sqrtPriceX159 = offset0
+                ? (1 << 255) / sqrtPriceX96
+                : uint256(sqrtPriceX96) << 63;
+
+            int256 term =
+                FullMath.mulDiv(
+                    feeGrowthGlobalX128,
+                    liquidityDeltaUnsigned,
+                    FixedPoint128.Q128
+                ).add(
+                    FullMath.mulDiv(
+                        sqrtPriceX159,
+                        liquidityDeltaUnsigned,
+                        1 << 159
+                    )
+                ).toInt256();
+            return term.sub(balanceDelta);
+        }
     }
 }

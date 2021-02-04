@@ -285,20 +285,20 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
             // update protocol fee offsets if necessary
             if (_slot0.feeProtocol > 0) {
-                offsets.offset0 = SqrtPriceMath.getOffsetNext(
-                    offsets.offset0,
+                offsets.offset0 = int256(offsets.offset0).add(SqrtPriceMath.getOffsetDelta(
                     feeGrowthGlobal0X128,
-                    (1 << 255) / _slot0.sqrtPriceX96,
+                    _slot0.sqrtPriceX96,
+                    true,
                     inRange ? params.liquidityDelta : 0,
                     amount0
-                );
-                offsets.offset1 = SqrtPriceMath.getOffsetNext(
-                    offsets.offset1,
+                )).toInt128();
+                offsets.offset1 = int256(offsets.offset1).add(SqrtPriceMath.getOffsetDelta(
                     feeGrowthGlobal1X128,
-                    uint256(_slot0.sqrtPriceX96) << 63,
+                    _slot0.sqrtPriceX96,
+                    false,
                     inRange ? params.liquidityDelta : 0,
                     amount1
-                );
+                )).toInt128();
             }
         }
     }
@@ -636,13 +636,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                         // the ternaries below are safe because liquidityDelta can never be type(int128).min
                         state.offset0Delta += SqrtPriceMath.getOffsetDelta(
                             zeroForOne ? state.feeGrowthGlobalInputX128 : cache.feeGrowthGlobalOutputX128,
-                            (1 << 255) / state.sqrtPriceX96,
+                            state.sqrtPriceX96,
+                            true,
                             zeroForOne ? -liquidityDelta : liquidityDelta,
                             0
                         );
                         state.offset1Delta += SqrtPriceMath.getOffsetDelta(
                             zeroForOne ? cache.feeGrowthGlobalOutputX128 : state.feeGrowthGlobalInputX128,
-                            uint256(state.sqrtPriceX96) << 63,
+                            state.sqrtPriceX96,
+                            false,
                             zeroForOne ? -liquidityDelta : liquidityDelta,
                             0
                         );
@@ -769,12 +771,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             require(feeProtocolOld == 0); // TODO this might not be necessary, or might just involve some recomputing
             require(feeProtocol <= 10 && feeProtocol >= 4);
 
-            // initializes offets, rounding down
-            // TODO maybe the qs can start off as negative? if so, the below will error out
+            // initializes offsets
             offsets.offset0 = SqrtPriceMath
                 .getOffsetDelta(
                 feeGrowthGlobal0X128,
-                (1 << 255) / slot0.sqrtPriceX96,
+                slot0.sqrtPriceX96,
+                true,
                 int256(liquidity).toInt128(),
                 balance0().toInt256()
             )
@@ -782,7 +784,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             offsets.offset1 = SqrtPriceMath
                 .getOffsetDelta(
                 feeGrowthGlobal1X128,
-                uint256(slot0.sqrtPriceX96) << 63,
+                slot0.sqrtPriceX96,
+                false,
                 int256(liquidity).toInt128(),
                 balance1().toInt256()
             )
@@ -807,7 +810,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int256 t0 =
             SqrtPriceMath.getOffsetDelta(
                 feeGrowthGlobal0X128,
-                (1 << 255) / slot0.sqrtPriceX96,
+                slot0.sqrtPriceX96,
+                true,
                 int256(liquidity).toInt128(),
                 balance0().toInt256()
             );
@@ -818,7 +822,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int256 t1 =
             SqrtPriceMath.getOffsetDelta(
                 feeGrowthGlobal1X128,
-                uint256(slot0.sqrtPriceX96) << 63,
+                slot0.sqrtPriceX96,
+                false,
                 int256(liquidity).toInt128(),
                 balance1().toInt256()
             );
