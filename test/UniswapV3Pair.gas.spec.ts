@@ -23,7 +23,7 @@ import {
 
 const createFixtureLoader = waffle.createFixtureLoader
 
-describe.only('UniswapV3Pair gas tests', () => {
+describe('UniswapV3Pair gas tests', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
