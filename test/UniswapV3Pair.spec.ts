@@ -143,7 +143,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#increaseObservationCardinalityNext', () => {
     it('can only be called after initialize', async () => {
-      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('I')
+      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('LOK')
     })
     it('emits an event including both old and new', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
