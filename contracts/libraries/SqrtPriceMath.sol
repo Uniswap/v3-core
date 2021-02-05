@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import './FeeMath.sol';
 import './FullMath.sol';
 import './LowGasSafeMath.sol';
 import './UnsafeMath.sol';

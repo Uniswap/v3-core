@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import './FeeMath.sol';
 import './FullMath.sol';
 import './FixedPoint128.sol';
 import './LiquidityMath.sol';
@@ -59,18 +58,21 @@ library Position {
         }
 
         // calculate accumulated fees
-        uint256 feesOwed0 =
-            FullMath.mulDiv(feeGrowthInside0X128 - _self.feeGrowthInside0LastX128, _self.liquidity, FixedPoint128.Q128);
-        uint256 feesOwed1 =
-            FullMath.mulDiv(feeGrowthInside1X128 - _self.feeGrowthInside1LastX128, _self.liquidity, FixedPoint128.Q128);
+        uint128 feesOwed0 = uint128(
+            FullMath.mulDiv(feeGrowthInside0X128 - _self.feeGrowthInside0LastX128, _self.liquidity, FixedPoint128.Q128)
+        );
+        uint128 feesOwed1 = uint128(
+            FullMath.mulDiv(feeGrowthInside1X128 - _self.feeGrowthInside1LastX128, _self.liquidity, FixedPoint128.Q128)
+        );
 
         // update the position
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (feesOwed0 > 0 || feesOwed1 > 0) {
-            self.feesOwed0 = FeeMath.addCapped(_self.feesOwed0, feesOwed0);
-            self.feesOwed1 = FeeMath.addCapped(_self.feesOwed1, feesOwed1);
+            // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
+            self.feesOwed0 += feesOwed0;
+            self.feesOwed1 += feesOwed1;
         }
 
         // clear position data that is no longer needed

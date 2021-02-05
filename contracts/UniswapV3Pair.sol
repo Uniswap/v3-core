@@ -5,7 +5,6 @@ pragma abicoder v2;
 import './libraries/FullMath.sol';
 import './libraries/TransferHelper.sol';
 
-import './libraries/FeeMath.sol';
 import './libraries/LowGasSafeMath.sol';
 
 import './libraries/SafeCast.sol';
@@ -470,7 +469,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         // the global fee growth of the input token
         uint256 feeGrowthGlobalX128;
         // amount of input token paid as protocol fee
-        uint256 protocolFee;
+        uint128 protocolFee;
         // the current liquidity in range
         uint128 liquidity;
     }
@@ -575,7 +574,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             if (cache.slot0Start.feeProtocol > 0) {
                 uint256 delta = step.feeAmount / cache.slot0Start.feeProtocol;
                 step.feeAmount -= delta;
-                state.protocolFee += delta;
+                state.protocolFee += uint128(delta);
             }
 
             // update global fee tracker
@@ -628,12 +627,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;
 
         // update fee growth global and, if necessary, protocol fees
+        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
         if (zeroForOne) {
             feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
-            if (state.protocolFee > 0) protocolFees.token0 = FeeMath.addCapped(protocolFees.token0, state.protocolFee);
+            if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;
         } else {
             feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
-            if (state.protocolFee > 0) protocolFees.token1 = FeeMath.addCapped(protocolFees.token1, state.protocolFee);
+            if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;
         }
 
         // amountIn is always >0, amountOut is always <=0
