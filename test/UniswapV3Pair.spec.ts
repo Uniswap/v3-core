@@ -1476,6 +1476,10 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#setFeeProtocol', () => {
+    beforeEach(async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+    })
+
     it('can only be called by factory owner', async () => {
       await expect(pair.connect(other).setFeeProtocol(5)).to.be.revertedWith('')
     })

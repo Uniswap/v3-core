@@ -181,7 +181,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PairActions
-    function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external override noDelegateCall {
+    function increaseObservationCardinalityNext(uint16 observationCardinalityNext)
+        external
+        override
+        lock
+        noDelegateCall
+    {
         uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
         uint16 observationCardinalityNextNew =
             observations.grow(observationCardinalityNextOld, observationCardinalityNext);
@@ -695,7 +700,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PairOwnerActions
-    function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
+    function setFeeProtocol(uint8 feeProtocol) external override lock onlyFactoryOwner {
         require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
         uint8 feeProtocolOld = slot0.feeProtocol;
         slot0.feeProtocol = feeProtocol;
