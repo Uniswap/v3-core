@@ -103,7 +103,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     /// @inheritdoc IUniswapV3PairState
     Oracle.Observation[65535] public override observations;
 
-    /// @dev Mutually exclusive reentrancy protection into the pair to/from a method
+    /// @dev Mutually exclusive reentrancy protection into the pair to/from a method. This method also prevents entrance
+    /// to a function before the pair is initialized.
     modifier lock() {
         require(slot0.unlocked, 'LOK');
         slot0.unlocked = false;
