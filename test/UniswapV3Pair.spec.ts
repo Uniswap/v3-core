@@ -1379,6 +1379,25 @@ describe('UniswapV3Pair', () => {
           expect(amount1).to.be.eq('100000000000001', 'amount1')
         })
 
+        it('works after LP withdrawal', async () => {
+          await pair.setFeeProtocol(6)
+
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+
+          await pair.burn(wallet.address, minTick, maxTick, 0)
+          await expect(pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
+            .to.emit(token0, 'Transfer')
+            .withArgs(pair.address, wallet.address, '499999999999999')
+
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000002', 'amount0')
+          expect(amount1).to.be.eq(1, 'amount1')
+        })
+
         it('flash works', async () => {
           await pair.setFeeProtocol(6)
 

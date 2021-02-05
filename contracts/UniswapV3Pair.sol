@@ -423,10 +423,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         if (amount0 > 0) {
             position.feesOwed0 -= amount0;
+            if (slot0.feeProtocol > 0) offsets.offset0 += int256(amount0).toInt128(); // update offset
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
             position.feesOwed1 -= amount1;
+            if (slot0.feeProtocol > 0) offsets.offset1 += int256(amount1).toInt128(); // update offset
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
