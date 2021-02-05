@@ -46,6 +46,22 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             abi.encode(pairs, msg.sender)
         );
     }
+    // flash swaps for an exact amount of token1 in the output pair
+    function swapForExact1Endless(
+        address recipient,
+        address[] memory pairsList,
+        uint256 amount1Out
+    ) external {
+        address[] memory pairs = new address[](pairsList.length);
+        pairs = pairsList;
+        IUniswapV3Pair(pairs[pairsList.length]).swap(
+            recipient,
+            true,
+            -amount1Out.toInt256(),
+            TickMath.MIN_SQRT_RATIO + 1,
+            abi.encode(pairs, msg.sender)
+        );
+    }
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
 

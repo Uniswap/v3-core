@@ -28,18 +28,21 @@ const createFixtureLoader = waffle.createFixtureLoader
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
-describe('UniswapV3Pair', () => {
+describe.only('UniswapV3Pair', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let token0: TestERC20
   let token1: TestERC20
   let token2: TestERC20
+  let token3: TestERC20
   let factory: UniswapV3Factory
   let pair0: MockTimeUniswapV3Pair
   let pair1: MockTimeUniswapV3Pair
+  let pair2: MockTimeUniswapV3Pair
 
   let pair0Functions: PairFunctions
   let pair1Functions: PairFunctions
+  let pair2Functions: PairFunctions
 
   let minTick: number
   let maxTick: number
@@ -55,7 +58,7 @@ describe('UniswapV3Pair', () => {
   })
 
   beforeEach('deploy first fixture', async () => {
-    ;({ token0, token1, token2, factory, createPair, swapTargetCallee, swapTargetRouter } = await loadFixture(
+    ;({ token0, token1, token2, token3, factory, createPair, swapTargetCallee, swapTargetRouter } = await loadFixture(
       pairFixture
     ))
 
@@ -80,6 +83,7 @@ describe('UniswapV3Pair', () => {
     // default to the 30 bips pair
     ;[pair0, pair0Functions] = await createPairWrapped(feeAmount, tickSpacing, token0, token1)
     ;[pair1, pair1Functions] = await createPairWrapped(feeAmount, tickSpacing, token1, token2)
+    ;[pair2, pair2Functions] = await createPairWrapped(feeAmount, tickSpacing, token2, token3)
   })
 
   it('constructor initializes immutables', async () => {
@@ -89,9 +93,12 @@ describe('UniswapV3Pair', () => {
     expect(await pair1.factory()).to.eq(factory.address)
     expect(await pair1.token0()).to.eq(token1.address)
     expect(await pair1.token1()).to.eq(token2.address)
+    expect(await pair2.factory()).to.eq(factory.address)
+    expect(await pair2.token0()).to.eq(token2.address)
+    expect(await pair2.token1()).to.eq(token3.address)
   })
 
-  describe('multi-swaps', () => {
+  describe('single hop multi-swap', () => {
     let inputToken: TestERC20
     let outputToken: TestERC20
 
@@ -126,6 +133,47 @@ describe('UniswapV3Pair', () => {
         .withArgs(pair0.address, pair1.address, 102)
         .to.emit(inputToken, 'Transfer')
         .withArgs(wallet.address, pair0.address, 104)
+    })
+  })
+  describe('double hop multi-swaps', () => {
+    let inputToken: TestERC20
+    let outputToken: TestERC20
+
+    beforeEach('initialize both pairs', async () => {
+      inputToken = token0
+      outputToken = token3
+
+      await pair0.initialize(encodePriceSqrt(1, 1))
+      await pair1.initialize(encodePriceSqrt(1, 1))
+      await pair2.initialize(encodePriceSqrt(1, 1))
+
+      await pair0Functions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      await pair1Functions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      await pair2Functions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+    })
+
+    it('multi-swap', async () => {
+      const token0OfPairOutput = await pair1.token0()
+      const ForExact0 = outputToken.address === token0OfPairOutput
+
+      const { swapForExact0Multi, swapForExact1Endless } = createMultiPairFunctions({
+        inputToken: token0,
+        swapTarget: swapTargetRouter,
+        pairInput: pair0,
+        pairOutput: pair2,
+      })
+
+      const method = ForExact0 ? swapForExact0Multi : swapForExact1Endless
+
+      await expect(method(100, wallet.address))
+        .to.emit(outputToken, 'Transfer')
+        .withArgs(pair2.address, wallet.address, 100)
+        .to.emit(token2, 'Transfer')
+        .withArgs(pair1.address, pair2.address, 102)
+        .to.emit(inputToken, 'Transfer')
+        .withArgs(pair0.address, pair1.address, 104)
+        .to.emit(inputToken, 'Transfer')
+        .withArgs(wallet.address, pair0.address, 106)
     })
   })
 })

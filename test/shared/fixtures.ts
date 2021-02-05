@@ -23,6 +23,7 @@ interface TokensFixture {
   token0: TestERC20
   token1: TestERC20
   token2: TestERC20
+  token3: TestERC20
 }
 
 async function tokensFixture(): Promise<TokensFixture> {
@@ -30,12 +31,14 @@ async function tokensFixture(): Promise<TokensFixture> {
   const tokenA = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
   const tokenB = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
   const tokenC = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
+  const tokenD = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
 
-  const [token0, token1, token2] = [tokenA, tokenB, tokenC].sort((tokenA, tokenB) =>
+
+  const [token0, token1, token2, token3] = [tokenA, tokenB, tokenC, tokenD].sort((tokenA, tokenB) =>
     tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? -1 : 1
   )
 
-  return { token0, token1, token2 }
+  return { token0, token1, token2, token3 }
 }
 
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
@@ -56,7 +59,7 @@ export const TEST_PAIR_START_TIME = 1601906400
 
 export const pairFixture: Fixture<PairFixture> = async function (): Promise<PairFixture> {
   const { factory } = await factoryFixture()
-  const { token0, token1, token2 } = await tokensFixture()
+  const { token0, token1, token2, token3 } = await tokensFixture()
 
   const mockTimeUniswapV3PairDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PairDeployer')
   const mockTimeUniswapV3PairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
@@ -71,6 +74,7 @@ export const pairFixture: Fixture<PairFixture> = async function (): Promise<Pair
     token0,
     token1,
     token2,
+    token3,
     factory,
     swapTargetCallee,
     swapTargetRouter,
