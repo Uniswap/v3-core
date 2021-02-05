@@ -1142,6 +1142,61 @@ describe('UniswapV3Pair', () => {
           expect(amount1).to.be.eq('100000000000001', 'amount1')
         })
 
+        it('0 for 1 works with in-range burn', async () => {
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+
+          await pair.setFeeProtocol(6)
+
+          await pair.burn(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000002')
+          expect(amount1).to.be.eq(1)
+        })
+
+        it('1 for 0 works with in-range burn', async () => {
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+
+          await pair.setFeeProtocol(6)
+
+          await pair.burn(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq(1)
+          expect(amount1).to.be.eq('100000000000002')
+        })
+
+        it('0 for 1 and 1 for 0 works with in-range burn', async () => {
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+
+          await pair.setFeeProtocol(6)
+
+          await pair.burn(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000003', 'amount0')
+          expect(amount1).to.be.eq('100000000000002', 'amount1')
+        })
+
         it('0 for 1 works with out-of-range mint', async () => {
           await pair.setFeeProtocol(6)
 
