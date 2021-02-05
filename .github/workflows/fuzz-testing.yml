@@ -25,6 +25,7 @@ jobs:
           - LowGasSafeMathEchidnaTest
           - UnsafeMathEchidnaTest
           - FullMathEchidnaTest
+          - UniswapV3PairEchidnaTest
 
     steps:
       - uses: actions/checkout@v2
