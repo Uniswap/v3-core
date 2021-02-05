@@ -142,7 +142,7 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#increaseObservationCardinalityNext', () => {
-    it.skip('can only be called after initialize', async () => {
+    it('can only be called after initialize', async () => {
       await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('I')
     })
     it('emits an event including both old and new', async () => {
@@ -1461,6 +1461,10 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#setFeeProtocol', () => {
+    beforeEach(async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+    })
+
     it('can only be called by factory owner', async () => {
       await expect(pair.connect(other).setFeeProtocol(5)).to.be.revertedWith('')
     })

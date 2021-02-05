@@ -45,8 +45,6 @@ describe('UniswapV3Pair gas tests', () => {
 
         const pair = await fix.createPair(feeAmount, tickSpacing)
 
-        await pair.setFeeProtocol(feeProtocol)
-
         const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({
           swapTarget: fix.swapTargetCallee,
           token0: fix.token0,
@@ -55,6 +53,7 @@ describe('UniswapV3Pair gas tests', () => {
         })
 
         await pair.initialize(encodePriceSqrt(1, 1))
+        await pair.setFeeProtocol(feeProtocol)
         await pair.increaseObservationCardinalityNext(4)
         await pair.advanceTime(1)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))
@@ -267,7 +266,7 @@ describe('UniswapV3Pair gas tests', () => {
         it('best case', async () => {
           await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await pair.burn(wallet.address, minTick, maxTick, 0)
+          await pair.burn(wallet.address, tickLower, tickUpper, 0)
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
           await snapshotGasCost(pair.burn(wallet.address, tickLower, tickUpper, 0))
         })
@@ -280,7 +279,7 @@ describe('UniswapV3Pair gas tests', () => {
         it('close to worst case', async () => {
           await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await pair.burn(wallet.address, minTick, maxTick, 0) // poke to accumulate fees
+          await pair.burn(wallet.address, tickLower, tickUpper, 0) // poke to accumulate fees
           await snapshotGasCost(pair.collect(wallet.address, tickLower, tickUpper, MaxUint128, MaxUint128))
         })
       })
