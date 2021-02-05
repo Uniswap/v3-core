@@ -104,7 +104,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     Oracle.Observation[65535] public override observations;
 
     /// @dev Mutually exclusive reentrancy protection into the pair to/from a method. This method also prevents entrance
-    /// to a function before the pair is initialized.
+    /// to a function before the pair is initialized. The reentrancy guard is required throughout the contract because
+    /// we use balance checks to determine the payment status of interactions such as mint, swap and flash.
     modifier lock() {
         require(slot0.unlocked, 'LOK');
         slot0.unlocked = false;
@@ -138,12 +139,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    /// @dev Get the balance of token0
+    /// @dev Get the pair's balance of token0
     function balance0() private view returns (uint256) {
         return balanceOfToken(token0);
     }
 
-    /// @dev Get the balance of token1
+    /// @dev Get the pair's balance of token1
     function balance1() private view returns (uint256) {
         return balanceOfToken(token1);
     }
