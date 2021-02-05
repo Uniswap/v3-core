@@ -863,6 +863,61 @@ describe('UniswapV3Pair', () => {
     })
   })
 
+  describe('#collect', () => {
+    beforeEach(async () => {
+      pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
+      await pair.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, expandTo18Decimals(10))
+    })
+
+    it('token0 fees can be collected across fee growth global overflow boundary', async () => {
+      await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, minTick, maxTick, 0)
+      const { amount0, amount1 } = await pair.callStatic.collect(
+        wallet.address,
+        minTick,
+        maxTick,
+        MaxUint128,
+        MaxUint128
+      )
+      expect(amount0).to.be.eq('599999999999999')
+      expect(amount1).to.be.eq(0)
+    })
+
+    it('token1 fees can be collected across fee growth global overflow boundary', async () => {
+      await pair.setFeeGrowthGlobal1X128(constants.MaxUint256)
+      await swapExact1For0(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, minTick, maxTick, 0)
+      const { amount0, amount1 } = await pair.callStatic.collect(
+        wallet.address,
+        minTick,
+        maxTick,
+        MaxUint128,
+        MaxUint128
+      )
+      expect(amount0).to.be.eq(0)
+      expect(amount1).to.be.eq('599999999999999')
+    })
+
+    it('token0 and token1 fees can be collected across fee growth global overflow boundary', async () => {
+      await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
+      await pair.setFeeGrowthGlobal1X128(constants.MaxUint256)
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      await swapExact1For0(expandTo18Decimals(1), wallet.address)
+      await pair.burn(wallet.address, minTick, maxTick, 0)
+      const { amount0, amount1 } = await pair.callStatic.collect(
+        wallet.address,
+        minTick,
+        maxTick,
+        MaxUint128,
+        MaxUint128
+      )
+      expect(amount0).to.be.eq('599999999999999')
+      expect(amount1).to.be.eq('600000000000000')
+    })
+  })
+
   describe('#feeProtocol', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
@@ -1246,6 +1301,84 @@ describe('UniswapV3Pair', () => {
           expect(amount1).to.be.eq('100000000000002', 'amount1')
         })
 
+        it('0 for 1 works with out-of-range burn', async () => {
+          await mint(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
+
+          await pair.setFeeProtocol(6)
+
+          await pair.burn(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
+
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000002')
+          expect(amount1).to.be.eq(1)
+        })
+
+        it('1 for 0 works with out-of-range burn', async () => {
+          await mint(wallet.address, -tickSpacing * 2, -tickSpacing, expandTo18Decimals(1))
+
+          await pair.setFeeProtocol(6)
+
+          await pair.burn(wallet.address, -tickSpacing * 2, -tickSpacing, expandTo18Decimals(1))
+
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq(1)
+          expect(amount1).to.be.eq('100000000000002')
+        })
+
+        it('0 for 1 and 1 for 0 works with out-of-range burn', async () => {
+          await mint(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
+
+          await pair.setFeeProtocol(6)
+
+          await pair.burn(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
+
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000003', 'amount0')
+          expect(amount1).to.be.eq('100000000000002', 'amount1')
+        })
+
+        it('0 for 1 and 1 for 0 works with multiple mints and burns ', async () => {
+          await pair.setFeeProtocol(6)
+
+          await mint(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1))
+          await mint(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
+          await pair.burn(wallet.address, -tickSpacing, tickSpacing, expandTo18Decimals(1).div(2))
+
+          await swapExact0For1(expandTo18Decimals(1), wallet.address)
+
+          await pair.burn(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1).div(2))
+          await mint(wallet.address, tickSpacing, tickSpacing * 2, expandTo18Decimals(1))
+
+          await swapExact1For0(expandTo18Decimals(1), wallet.address)
+
+          const { amount0, amount1 } = await pair.callStatic.collectProtocol(
+            other.address,
+            constants.MaxUint256,
+            constants.MaxUint256
+          )
+          expect(amount0).to.be.eq('100000000000002', 'amount0')
+          expect(amount1).to.be.eq('100000000000001', 'amount1')
+        })
+
         it('flash works', async () => {
           await pair.setFeeProtocol(6)
 
@@ -1258,6 +1391,11 @@ describe('UniswapV3Pair', () => {
           )
           expect(amount0).to.be.eq('100000000000001', 'amount0')
           expect(amount1).to.be.eq('100000000000001', 'amount1')
+        })
+
+        it.skip('fails for maximum fee growth global', async () => {
+          await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
+          await pair.setFeeProtocol(6)
         })
       })
     })
