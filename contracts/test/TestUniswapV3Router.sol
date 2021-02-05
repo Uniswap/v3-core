@@ -3,6 +3,8 @@ pragma solidity =0.7.6;
 
 import '../libraries/SafeCast.sol';
 import '../libraries/TickMath.sol';
+import "hardhat/console.sol";
+
 
 import '../interfaces/IERC20Minimal.sol';
 import '../interfaces/callback/IUniswapV3SwapCallback.sol';
@@ -52,9 +54,13 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         address[] memory pairsList,
         uint256 amount1Out
     ) external {
+        console.log('start endless');
         address[] memory pairs = new address[](pairsList.length);
         pairs = pairsList;
-        IUniswapV3Pair(pairs[pairsList.length]).swap(
+        uint numRemainingSwaps = pairsList.length;
+        numRemainingSwaps--;
+        console.log('initiating first swap');
+        IUniswapV3Pair(pairs[numRemainingSwaps]).swap(
             recipient,
             true,
             -amount1Out.toInt256(),
@@ -70,32 +76,50 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         int256 amount1Delta,
         bytes calldata data
     ) public override {
+        console.log('inside swap callback');
         emit SwapCallback(amount0Delta, amount1Delta);
 
         (address[] memory pairs, address payer) = abi.decode(data, (address[], address));
 
-        if (pairs.length == 1) {
+        uint numRemainingSwaps = pairs.length;
+
+        //for(remainingSwaps = 0; remainingSwaps < pairs.length; remainingSwaps++) {}
+           
+
+        if (pairs.length >= 1) {
+            console.log('initiating second swap');
             // get the address and amount of the token that we need to pay
+            numRemainingSwaps--;
+
+            address[] memory remainingPairs = new address[](numRemainingSwaps);
+
+            remainingPairs = pairs; // cuts off last element?
+
+
             address tokenToBePaid =
                 amount0Delta > 0 ? IUniswapV3Pair(msg.sender).token0() : IUniswapV3Pair(msg.sender).token1();
-            int256 amountToBePaid = amount0Delta > 0 ? amount0Delta : amount1Delta;
+            int256 amountToBePaid = 
+                amount0Delta > 0 ? amount0Delta : amount1Delta;
+            bool zeroForOne = 
+                tokenToBePaid == IUniswapV3Pair(pairs[numRemainingSwaps]).token1();
 
-            bool zeroForOne = tokenToBePaid == IUniswapV3Pair(pairs[0]).token1();
-            IUniswapV3Pair(pairs[0]).swap(
+            IUniswapV3Pair(remainingPairs[numRemainingSwaps]).swap(
                 msg.sender,
                 zeroForOne,
                 -amountToBePaid,
                 zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
-                abi.encode(new address[](0), payer)
+                abi.encode(remainingPairs, payer)
             );
         } else {
             if (amount0Delta > 0) {
+                console.log('initiating final payback in token0');
                 IERC20Minimal(IUniswapV3Pair(msg.sender).token0()).transferFrom(
                     payer,
                     msg.sender,
                     uint256(amount0Delta)
                 );
             } else {
+                console.log('initiating final payback in token1');
                 IERC20Minimal(IUniswapV3Pair(msg.sender).token1()).transferFrom(
                     payer,
                     msg.sender,

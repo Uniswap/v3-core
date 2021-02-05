@@ -223,11 +223,13 @@ export function createMultiPairFunctions({
   inputToken,
   swapTarget,
   pairInput,
+  intermediaryPair,
   pairOutput,
 }: {
   inputToken: TestERC20
   swapTarget: TestUniswapV3Router
   pairInput: MockTimeUniswapV3Pair
+  intermediaryPair: MockTimeUniswapV3Pair
   pairOutput: MockTimeUniswapV3Pair
 }): MultiPairFunctions {
   async function swapForExact0Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
@@ -248,7 +250,7 @@ export function createMultiPairFunctions({
     const method = swapTarget.swapForExact1Endless
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
-    return method(toAddress, [pairInput.address, pairOutput.address], amountOut)
+    return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
   }
 
 

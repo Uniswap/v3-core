@@ -121,6 +121,7 @@ describe.only('UniswapV3Pair', () => {
         inputToken: token0,
         swapTarget: swapTargetRouter,
         pairInput: pair0,
+        intermediaryPair: pair1,
         pairOutput: pair1,
       })
 
@@ -160,6 +161,7 @@ describe.only('UniswapV3Pair', () => {
         inputToken: token0,
         swapTarget: swapTargetRouter,
         pairInput: pair0,
+        intermediaryPair: pair1,
         pairOutput: pair2,
       })
 
