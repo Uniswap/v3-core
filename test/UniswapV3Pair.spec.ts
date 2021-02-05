@@ -867,54 +867,95 @@ describe('UniswapV3Pair', () => {
     beforeEach(async () => {
       pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
       await pair.initialize(encodePriceSqrt(1, 1))
-      await mint(wallet.address, minTick, maxTick, expandTo18Decimals(10))
     })
 
-    it('token0 fees can be collected across fee growth global overflow boundary', async () => {
-      await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
-      await swapExact0For1(expandTo18Decimals(1), wallet.address)
-      await pair.burn(wallet.address, minTick, maxTick, 0)
-      const { amount0, amount1 } = await pair.callStatic.collect(
-        wallet.address,
-        minTick,
-        maxTick,
-        MaxUint128,
-        MaxUint128
-      )
-      expect(amount0).to.be.eq('599999999999999')
-      expect(amount1).to.be.eq(0)
+    describe('works across large increases', () => {
+      beforeEach(async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      })
+
+      // type(uint128).max * 2**128 / 1e18
+      // https://www.wolframalpha.com/input/?i=%282**128+-+1%29+*+2**128+%2F+1e18
+      const magicNumber = BigNumber.from('115792089237316195423570985008687907852929702298719625575994')
+
+      it('works just before the cap binds', async () => {
+        await pair.setFeeGrowthGlobal0X128(magicNumber)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+
+        expect(feesOwed0).to.be.eq(MaxUint128.sub(1))
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('works just after the cap binds', async () => {
+        await pair.setFeeGrowthGlobal0X128(magicNumber.add(1))
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+
+        expect(feesOwed0).to.be.eq(MaxUint128)
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('works well after the cap binds', async () => {
+        await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+
+        expect(feesOwed0).to.be.eq(MaxUint128)
+        expect(feesOwed1).to.be.eq(0)
+      })
     })
 
-    it('token1 fees can be collected across fee growth global overflow boundary', async () => {
-      await pair.setFeeGrowthGlobal1X128(constants.MaxUint256)
-      await swapExact1For0(expandTo18Decimals(1), wallet.address)
-      await pair.burn(wallet.address, minTick, maxTick, 0)
-      const { amount0, amount1 } = await pair.callStatic.collect(
-        wallet.address,
-        minTick,
-        maxTick,
-        MaxUint128,
-        MaxUint128
-      )
-      expect(amount0).to.be.eq(0)
-      expect(amount1).to.be.eq('599999999999999')
-    })
+    describe('works across overflow boundaries', () => {
+      beforeEach(async () => {
+        await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
+        await pair.setFeeGrowthGlobal1X128(constants.MaxUint256)
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(10))
+      })
 
-    it('token0 and token1 fees can be collected across fee growth global overflow boundary', async () => {
-      await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
-      await pair.setFeeGrowthGlobal1X128(constants.MaxUint256)
-      await swapExact0For1(expandTo18Decimals(1), wallet.address)
-      await swapExact1For0(expandTo18Decimals(1), wallet.address)
-      await pair.burn(wallet.address, minTick, maxTick, 0)
-      const { amount0, amount1 } = await pair.callStatic.collect(
-        wallet.address,
-        minTick,
-        maxTick,
-        MaxUint128,
-        MaxUint128
-      )
-      expect(amount0).to.be.eq('599999999999999')
-      expect(amount1).to.be.eq('600000000000000')
+      it('token0', async () => {
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+        const { amount0, amount1 } = await pair.callStatic.collect(
+          wallet.address,
+          minTick,
+          maxTick,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(amount0).to.be.eq('599999999999999')
+        expect(amount1).to.be.eq(0)
+      })
+      it('token1', async () => {
+        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+        const { amount0, amount1 } = await pair.callStatic.collect(
+          wallet.address,
+          minTick,
+          maxTick,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(amount0).to.be.eq(0)
+        expect(amount1).to.be.eq('599999999999999')
+      })
+      it('token0 and token1', async () => {
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+        const { amount0, amount1 } = await pair.callStatic.collect(
+          wallet.address,
+          minTick,
+          maxTick,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(amount0).to.be.eq('599999999999999')
+        expect(amount1).to.be.eq('600000000000000')
+      })
     })
   })
 
