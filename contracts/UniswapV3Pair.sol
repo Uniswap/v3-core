@@ -469,7 +469,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tick;
         // the global fee growth of the input token
         uint256 feeGrowthGlobalX128;
-        // amouunt of input token paid as protocol fee
+        // amount of input token paid as protocol fee
         uint256 protocolFee;
         // the current liquidity in range
         uint128 liquidity;

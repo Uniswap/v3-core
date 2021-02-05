@@ -3,7 +3,7 @@ import { Wallet } from 'ethers'
 import { MockTimeUniswapV3Pair } from '../typechain/MockTimeUniswapV3Pair'
 import { expect } from './shared/expect'
 
-import { pairFixture, TEST_PAIR_START_TIME } from './shared/fixtures'
+import { pairFixture } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 import {
@@ -34,7 +34,6 @@ describe('UniswapV3Pair gas tests', () => {
     describe(feeProtocol > 0 ? 'fee is on' : 'fee is off', () => {
       const startingPrice = encodePriceSqrt(100001, 100000)
       const startingTick = 0
-      const startingTime = TEST_PAIR_START_TIME + 3
       const feeAmount = FeeAmount.MEDIUM
       const tickSpacing = TICK_SPACINGS[feeAmount]
       const minTick = getMinTick(tickSpacing)
