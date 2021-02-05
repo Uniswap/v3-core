@@ -58,7 +58,7 @@ exports[`UniswapV3Pair gas tests fee is off #poke best case 1`] = `43267`;
 
 exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `101702`;
 
-exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block with no tick movement 1`] = `84422`;
+exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block with no tick movement 1`] = `84434`;
 
 exports[`UniswapV3Pair gas tests fee is off #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `103999`;
 
@@ -136,7 +136,7 @@ exports[`UniswapV3Pair gas tests fee is on #poke best case 1`] = `43384`;
 
 exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block moves tick, no initialized crossings 1`] = `101702`;
 
-exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block with no tick movement 1`] = `84422`;
+exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block with no tick movement 1`] = `84434`;
 
 exports[`UniswapV3Pair gas tests fee is on #swapExact0For1 first swap in block, large swap crossing a single initialized tick 1`] = `103999`;
 
