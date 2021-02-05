@@ -78,7 +78,7 @@ describe('UniswapV3Pair gas tests', () => {
 
       describe('#swapExact0For1', () => {
         it('first swap in block with no tick movement', async () => {
-          await snapshotGasCost(swapExact0For1(10, wallet.address))
+          await snapshotGasCost(swapExact0For1(2000, wallet.address))
           expect((await pair.slot0()).sqrtPriceX96).to.not.eq(startingPrice)
           expect((await pair.slot0()).tick).to.eq(startingTick)
         })
@@ -91,7 +91,7 @@ describe('UniswapV3Pair gas tests', () => {
         it('second swap in block with no tick movement', async () => {
           await swapExact0For1(expandTo18Decimals(1).div(10000), wallet.address)
           expect((await pair.slot0()).tick).to.eq(startingTick - 1)
-          await snapshotGasCost(swapExact0For1(1000, wallet.address))
+          await snapshotGasCost(swapExact0For1(2000, wallet.address))
           expect((await pair.slot0()).tick).to.eq(startingTick - 1)
         })
 
