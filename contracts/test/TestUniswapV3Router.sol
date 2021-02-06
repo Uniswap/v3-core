@@ -55,17 +55,17 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         uint256 amount1Out
     ) external {
         console.log('start endless');
-        address[] memory pairs = new address[](pairsList.length);
-        pairs = pairsList;
+        //address[] memory pairs = new address[](pairsList.length);
+        //pairs = pairsList;
         uint numRemainingSwaps = pairsList.length;
         numRemainingSwaps--;
         console.log('initiating first swap');
-        IUniswapV3Pair(pairs[numRemainingSwaps]).swap(
+        IUniswapV3Pair(pairsList[numRemainingSwaps]).swap( 
             recipient,
             true,
             -amount1Out.toInt256(),
             TickMath.MIN_SQRT_RATIO + 1,
-            abi.encode(pairs, msg.sender)
+            abi.encode(pairsList, msg.sender)
         );
     }
 
@@ -87,11 +87,10 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
            
            numRemainingSwaps--;
 
-        if (numRemainingSwaps >= 1) {
+        if (numRemainingSwaps > 1) {
             console.log('initiating next swap');
             // get the address and amount of the token that we need to pay
-            //numRemainingSwaps--;
-
+           
             address[] memory remainingPairs = new address[](numRemainingSwaps);
 
             remainingPairs = pairs; // cuts off last element?
@@ -109,7 +108,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
                 zeroForOne,
                 -amountToBePaid,
                 zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
-                abi.encode(remainingPairs = new address[](numRemainingSwaps), payer)
+                abi.encode(remainingPairs, payer)
             );
         } else {
             if (amount0Delta > 0) {
