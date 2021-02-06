@@ -85,11 +85,12 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
         //for(remainingSwaps = 0; remainingSwaps < pairs.length; remainingSwaps++) {}
            
+           numRemainingSwaps--;
 
-        if (pairs.length >= 1) {
-            console.log('initiating second swap');
+        if (numRemainingSwaps >= 1) {
+            console.log('initiating next swap');
             // get the address and amount of the token that we need to pay
-            numRemainingSwaps--;
+            //numRemainingSwaps--;
 
             address[] memory remainingPairs = new address[](numRemainingSwaps);
 
@@ -101,14 +102,14 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             int256 amountToBePaid = 
                 amount0Delta > 0 ? amount0Delta : amount1Delta;
             bool zeroForOne = 
-                tokenToBePaid == IUniswapV3Pair(pairs[numRemainingSwaps]).token1();
+                tokenToBePaid == IUniswapV3Pair(msg.sender).token1();
 
             IUniswapV3Pair(remainingPairs[numRemainingSwaps]).swap(
                 msg.sender,
                 zeroForOne,
                 -amountToBePaid,
                 zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
-                abi.encode(remainingPairs, payer)
+                abi.encode(remainingPairs = new address[](numRemainingSwaps), payer)
             );
         } else {
             if (amount0Delta > 0) {
