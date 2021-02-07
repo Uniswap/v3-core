@@ -37,12 +37,16 @@ describe.only('UniswapV3Pair', () => {
   let token3: TestERC20
   let factory: UniswapV3Factory
   let pair0: MockTimeUniswapV3Pair
+  let pair0Reversed: MockTimeUniswapV3Pair
   let pair1: MockTimeUniswapV3Pair
   let pair2: MockTimeUniswapV3Pair
+  let pair2Reversed: MockTimeUniswapV3Pair
 
   let pair0Functions: PairFunctions
+  let pair0ReversedFunctions: PairFunctions
   let pair1Functions: PairFunctions
   let pair2Functions: PairFunctions
+  let pair2ReversedFunctions: PairFunctions
 
   let minTick: number
   let maxTick: number
@@ -82,20 +86,30 @@ describe.only('UniswapV3Pair', () => {
 
     // default to the 30 bips pair
     ;[pair0, pair0Functions] = await createPairWrapped(feeAmount, tickSpacing, token0, token1)
+    ;[pair0Reversed, pair0ReversedFunctions] = await createPairWrapped(feeAmount, tickSpacing, token1, token0)
     ;[pair1, pair1Functions] = await createPairWrapped(feeAmount, tickSpacing, token1, token2)
     ;[pair2, pair2Functions] = await createPairWrapped(feeAmount, tickSpacing, token2, token3)
+    ;[pair2Reversed, pair2ReversedFunctions] = await createPairWrapped(feeAmount, tickSpacing, token3, token2)
   })
 
   it('constructor initializes immutables', async () => {
     expect(await pair0.factory()).to.eq(factory.address)
     expect(await pair0.token0()).to.eq(token0.address)
     expect(await pair0.token1()).to.eq(token1.address)
+    expect(await pair0Reversed.factory()).to.eq(factory.address)
+    expect(await pair0Reversed.token0()).to.eq(token1.address)
+    expect(await pair0Reversed.token1()).to.eq(token0.address)
+
     expect(await pair1.factory()).to.eq(factory.address)
     expect(await pair1.token0()).to.eq(token1.address)
     expect(await pair1.token1()).to.eq(token2.address)
+
     expect(await pair2.factory()).to.eq(factory.address)
     expect(await pair2.token0()).to.eq(token2.address)
     expect(await pair2.token1()).to.eq(token3.address)
+    expect(await pair2Reversed.factory()).to.eq(factory.address)
+    expect(await pair2Reversed.token0()).to.eq(token3.address)
+    expect(await pair2Reversed.token1()).to.eq(token2.address)
   })
 
   // describe('single hop multi-swap', () => {
@@ -145,12 +159,20 @@ describe.only('UniswapV3Pair', () => {
       outputToken = token3
 
       await pair0.initialize(encodePriceSqrt(1, 1))
+      await pair0Reversed.initialize(encodePriceSqrt(1, 1))
+
       await pair1.initialize(encodePriceSqrt(1, 1))
+
       await pair2.initialize(encodePriceSqrt(1, 1))
+      await pair2Reversed.initialize(encodePriceSqrt(1, 1))
 
       await pair0Functions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      await pair0ReversedFunctions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+
       await pair1Functions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+
       await pair2Functions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      await pair2ReversedFunctions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
     })
 
     it('Swap for exact 1', async () => {
@@ -203,6 +225,35 @@ describe.only('UniswapV3Pair', () => {
         .withArgs(pair0.address, pair1.address, 104)
         .to.emit(inputToken, 'Transfer')
         .withArgs(wallet.address, pair0.address, 106)
+    })
+    it('Swap 1 for exact 0', async () => {
+      
+      outputToken = token3
+      const token0OfPairOutput = await pair2.token0()
+      const ForExact0 = outputToken.address === token0OfPairOutput
+
+      const { swap1ForExact0Endless } = createMultiPairFunctions({
+        inputToken: token0,
+        swapTarget: swapTargetRouter,
+        pairInput: pair0Reversed,
+        intermediaryPair: pair1,
+        pairOutput: pair2Reversed,
+      })
+
+      const method = swap1ForExact0Endless
+
+        
+
+
+        await expect(method(100, wallet.address))
+        .to.emit(outputToken, 'Transfer')
+        .withArgs(pair2Reversed.address, wallet.address, 100)
+        .to.emit(token2, 'Transfer')
+        .withArgs(pair1.address, pair2Reversed.address, 102)
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair0Reversed.address, pair1.address, 104)
+        .to.emit(inputToken, 'Transfer')
+        .withArgs(wallet.address, pair0Reversed.address, 106)
     })
   })
 })
