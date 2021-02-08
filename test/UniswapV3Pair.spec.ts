@@ -22,6 +22,8 @@ import {
   getMaxLiquidityPerTick,
   FlashFunction,
   MaxUint128,
+  MAX_SQRT_RATIO,
+  MIN_SQRT_RATIO,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { TestUniswapV3ReentrantCallee } from '../typechain/TestUniswapV3ReentrantCallee'
@@ -113,9 +115,19 @@ describe('UniswapV3Pair', () => {
     })
     it('fails if starting price is too low', async () => {
       await expect(pair.initialize(1)).to.be.revertedWith('R')
+      await expect(pair.initialize(MIN_SQRT_RATIO.sub(1))).to.be.revertedWith('R')
     })
     it('fails if starting price is too high', async () => {
+      await expect(pair.initialize(MAX_SQRT_RATIO)).to.be.revertedWith('R')
       await expect(pair.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('R')
+    })
+    it('can be initialized at MIN_SQRT_RATIO', async () => {
+      await pair.initialize(MIN_SQRT_RATIO)
+      expect((await pair.slot0()).tick).to.eq(getMinTick(1))
+    })
+    it('can be initialized at MAX_SQRT_RATIO - 1', async () => {
+      await pair.initialize(MAX_SQRT_RATIO.sub(1))
+      expect((await pair.slot0()).tick).to.eq(getMaxTick(1) - 1)
     })
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
