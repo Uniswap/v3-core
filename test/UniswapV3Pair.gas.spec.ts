@@ -56,6 +56,9 @@ describe('UniswapV3Pair gas tests', () => {
         await pair.increaseObservationCardinalityNext(4)
         await pair.advanceTime(1)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))
+        // accumulate some protocol fees
+        await pair.burn(wallet.address, minTick, maxTick, expandTo18Decimals(2))
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))
 
         await swapExact0For1(expandTo18Decimals(1), wallet.address)
         await pair.advanceTime(1)

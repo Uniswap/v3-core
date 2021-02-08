@@ -442,6 +442,16 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         amount0 = uint256(-amount0Int);
         amount1 = uint256(-amount1Int);
 
+        uint8 feeProtocol = slot0.feeProtocol;
+        if (feeProtocol > 0) {
+            uint128 protocolFee0 = amount0 > 0 ? uint128(FullMath.mulDiv(amount0, fee, 1e6 * (feeProtocol % 16))) : 0;
+            uint128 protocolFee1 = amount1 > 0 ? uint128(FullMath.mulDiv(amount1, fee, 1e6 * (feeProtocol >> 4))) : 0;
+            protocolFees.token0 += protocolFee0;
+            protocolFees.token1 += protocolFee1;
+            amount0 -= protocolFee0;
+            amount1 -= protocolFee1;
+        }
+
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
 
@@ -449,8 +459,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     struct SwapCache {
-        // the protocol fee for the input token
-        uint8 feeProtocol;
         // liquidity at the beginning of the swap
         uint128 liquidityStart;
         // the timestamp of the current block
@@ -514,12 +522,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         slot0.unlocked = false;
 
-        SwapCache memory cache =
-            SwapCache({
-                liquidityStart: liquidity,
-                blockTimestamp: _blockTimestamp(),
-                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4)
-            });
+        SwapCache memory cache = SwapCache({liquidityStart: liquidity, blockTimestamp: _blockTimestamp()});
 
         bool exactInput = amountSpecified > 0;
 
@@ -573,13 +576,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             } else {
                 state.amountSpecifiedRemaining += step.amountOut.toInt256();
                 state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
-            }
-
-            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
-            if (cache.feeProtocol > 0) {
-                uint256 delta = step.feeAmount / cache.feeProtocol;
-                step.feeAmount -= delta;
-                state.protocolFee += uint128(delta);
             }
 
             // update global fee tracker
@@ -703,10 +699,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     /// @inheritdoc IUniswapV3PairOwnerActions
     function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock onlyFactoryOwner {
-        require(
-            (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10)) &&
-                (feeProtocol1 == 0 || (feeProtocol1 >= 4 && feeProtocol1 <= 10))
-        );
+        require(feeProtocol0 < 16 && feeProtocol1 < 16);
         uint8 feeProtocolOld = slot0.feeProtocol;
         slot0.feeProtocol = feeProtocol0 + (feeProtocol1 << 4);
         emit SetFeeProtocol(feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1);

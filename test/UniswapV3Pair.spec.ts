@@ -459,7 +459,7 @@ describe('UniswapV3Pair', () => {
         })
       })
 
-      it('protocol fees accumulate as expected during swap', async () => {
+      it('protocol fees do not accumulate during swaps', async () => {
         await pair.setFeeProtocol(6, 6)
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
@@ -467,8 +467,8 @@ describe('UniswapV3Pair', () => {
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
         let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-        expect(token0ProtocolFees).to.eq('50000000000000')
-        expect(token1ProtocolFees).to.eq('5000000000000')
+        expect(token0ProtocolFees).to.eq('0')
+        expect(token1ProtocolFees).to.eq('0')
       })
 
       it('positions are protected before protocol fee is turned on', async () => {
@@ -887,7 +887,7 @@ describe('UniswapV3Pair', () => {
         await swapExact1For0(expandTo18Decimals(2), other.address)
         await expect(pair.burn(wallet.address, 0, 120, expandTo18Decimals(1)))
           .to.emit(token1, 'Transfer')
-          .withArgs(pair.address, wallet.address, '6017734268818165')
+          .withArgs(pair.address, wallet.address, '6014725401683756')
       })
       it('selling 0 for 1 at tick 0 thru -1', async () => {
         await expect(mint(wallet.address, -120, 0, expandTo18Decimals(1)))
@@ -897,7 +897,7 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(2), other.address)
         await expect(pair.burn(wallet.address, -120, 0, expandTo18Decimals(1)))
           .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, wallet.address, '6017734268818165')
+          .withArgs(pair.address, wallet.address, '6014725401683756')
       })
     })
   })
@@ -1035,11 +1035,6 @@ describe('UniswapV3Pair', () => {
       expect((await pair.slot0()).feeProtocol).to.eq(102)
     })
 
-    it('cannot be changed out of bounds', async () => {
-      await expect(pair.setFeeProtocol(3, 3)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(11, 11)).to.be.revertedWith('')
-    })
-
     it('cannot be changed by addresses that are not owner', async () => {
       await expect(pair.connect(other).setFeeProtocol(6, 6)).to.be.revertedWith('')
     })
@@ -1135,7 +1130,7 @@ describe('UniswapV3Pair', () => {
       expect(token1Fees).to.eq('1799999999999997')
     })
 
-    it('position owner gets partial fees when protocol fee is on', async () => {
+    it('position owner gets all swap fees when protocol fee is on', async () => {
       await pair.setFeeProtocol(6, 6)
 
       const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
@@ -1144,7 +1139,7 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.be.eq('499999999999999')
+      expect(token0Fees).to.be.eq('599999999999999')
       expect(token1Fees).to.be.eq(0)
     })
 
@@ -1156,7 +1151,7 @@ describe('UniswapV3Pair', () => {
         expect(amount1).to.be.eq(0)
       })
 
-      it('can collect fees', async () => {
+      it('collects no fees before burns', async () => {
         await pair.setFeeProtocol(6, 6)
 
         await swapAndGetFeesOwed({
@@ -1166,31 +1161,58 @@ describe('UniswapV3Pair', () => {
         })
 
         await expect(pair.collectProtocol(other.address, MaxUint128, MaxUint128))
-          .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, other.address, '99999999999999')
+          .to.not.emit(token0, 'Transfer')
+          .to.not.emit(token1, 'Transfer')
       })
 
-      it('fees collected can differ between token0 and token1', async () => {
+      it('collects the correct portion of principal', async () => {
         await pair.setFeeProtocol(8, 5)
-
-        await swapAndGetFeesOwed({
-          amount: expandTo18Decimals(1),
-          zeroForOne: true,
-          poke: false,
-        })
-        await swapAndGetFeesOwed({
-          amount: expandTo18Decimals(1),
-          zeroForOne: false,
-          poke: false,
-        })
-
-        await expect(pair.collectProtocol(other.address, MaxUint128, MaxUint128))
+        await expect(pair.burn(wallet.address, minTick, maxTick, liquidityAmount))
           .to.emit(token0, 'Transfer')
-          // more token0 fees because it's 1/5th the swap fees
-          .withArgs(pair.address, other.address, '74999999999999')
+          .withArgs(pair.address, wallet.address, '999924999999999999946')
           .to.emit(token1, 'Transfer')
-          // less token1 fees because it's 1/8th the swap fees
-          .withArgs(pair.address, other.address, '119999999999999')
+          .withArgs(pair.address, wallet.address, '999879999999999999946')
+
+        const { amount0: protocolFee0, amount1: protocolFee1 } = await pair.callStatic.collectProtocol(
+          wallet.address,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(protocolFee0).to.eq('74999999999999998')
+        expect(protocolFee1).to.eq('119999999999999998')
+      })
+
+      it('can collect fees in only token1', async () => {
+        await pair.setFeeProtocol(0, 7)
+        await expect(pair.burn(wallet.address, minTick, maxTick, liquidityAmount))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, wallet.address, '999924999999999999946')
+          .to.emit(token1, 'Transfer')
+          .withArgs(pair.address, wallet.address, '999879999999999999946')
+
+        const { amount0: protocolFee0, amount1: protocolFee1 } = await pair.callStatic.collectProtocol(
+          wallet.address,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(protocolFee0).to.eq('74999999999999998')
+        expect(protocolFee1).to.eq('119999999999999998')
+      })
+      it('can collect fees in only token0', async () => {
+        await pair.setFeeProtocol(1, 0)
+        await expect(pair.burn(wallet.address, minTick, maxTick, liquidityAmount))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, wallet.address, '999924999999999999946')
+          .to.emit(token1, 'Transfer')
+          .withArgs(pair.address, wallet.address, '999879999999999999946')
+
+        const { amount0: protocolFee0, amount1: protocolFee1 } = await pair.callStatic.collectProtocol(
+          wallet.address,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(protocolFee0).to.eq('74999999999999998')
+        expect(protocolFee1).to.eq('119999999999999998')
       })
     })
 
@@ -1211,7 +1233,7 @@ describe('UniswapV3Pair', () => {
       expect(token1Fees).to.eq(0)
     })
 
-    it('fees collected after two swaps with fee turned on in middle are fees from last swap (not confiscatory)', async () => {
+    it('fees collected after two swaps with fee turned on in middle are fees from both swaps', async () => {
       await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: true,
@@ -1226,11 +1248,11 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('1099999999999999')
+      expect(token0Fees).to.eq('1199999999999999')
       expect(token1Fees).to.eq(0)
     })
 
-    it('fees collected by lp after two swaps with intermediate withdrawal', async () => {
+    it('fees collected by lp after two swaps with intermediate withdrawal are all swap fees', async () => {
       await pair.setFeeProtocol(6, 6)
 
       const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
@@ -1239,7 +1261,7 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('499999999999999')
+      expect(token0Fees).to.eq('599999999999999')
       expect(token1Fees).to.eq(0)
 
       // collect the fees
@@ -1255,15 +1277,15 @@ describe('UniswapV3Pair', () => {
       expect(token1FeesNext).to.eq(0)
 
       let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-      expect(token0ProtocolFees).to.eq('200000000000000')
+      expect(token0ProtocolFees).to.eq(0)
       expect(token1ProtocolFees).to.eq(0)
 
       await pair.burn(wallet.address, minTick, maxTick, 0) // poke to update fees
       await expect(pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '499999999999999')
+        .withArgs(pair.address, wallet.address, '599999999999999')
       ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-      expect(token0ProtocolFees).to.eq('200000000000000')
+      expect(token0ProtocolFees).to.eq(0)
       expect(token1ProtocolFees).to.eq(0)
     })
   })
@@ -1519,19 +1541,20 @@ describe('UniswapV3Pair', () => {
     it('can only be called by factory owner', async () => {
       await expect(pair.connect(other).setFeeProtocol(5, 5)).to.be.revertedWith('')
     })
-    it('fails if fee is lt 4 or gt 10', async () => {
-      await expect(pair.setFeeProtocol(3, 3)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(6, 3)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(3, 6)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(11, 11)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(6, 11)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(11, 6)).to.be.revertedWith('')
+    it('fails if fee is gt 15', async () => {
+      await expect(pair.setFeeProtocol(0, 16)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(16, 0)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(8, 16)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(15, 16)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(16, 15)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(255, 0)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(0, 255)).to.be.revertedWith('')
     })
-    it('succeeds for fee of 4', async () => {
-      await pair.setFeeProtocol(4, 4)
+    it('succeeds for fee of 1', async () => {
+      await pair.setFeeProtocol(1, 1)
     })
-    it('succeeds for fee of 10', async () => {
-      await pair.setFeeProtocol(10, 10)
+    it('succeeds for fee of 15', async () => {
+      await pair.setFeeProtocol(15, 15)
     })
     it('sets protocol fee', async () => {
       await pair.setFeeProtocol(7, 7)
