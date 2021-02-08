@@ -26,11 +26,6 @@ contract TestUniswapV3ReentrantCallee is IUniswapV3SwapCallback {
             require(keccak256(abi.encode(reason)) == keccak256(abi.encode(expectedReason)));
         }
 
-        // try to reenter poke
-        try IUniswapV3Pair(msg.sender).poke(address(0), 0, 0) {} catch Error(string memory reason) {
-            require(keccak256(abi.encode(reason)) == keccak256(abi.encode(expectedReason)));
-        }
-
         // try to reenter mint
         try IUniswapV3Pair(msg.sender).mint(address(0), 0, 0, 0, new bytes(0)) {} catch Error(string memory reason) {
             require(keccak256(abi.encode(reason)) == keccak256(abi.encode(expectedReason)));

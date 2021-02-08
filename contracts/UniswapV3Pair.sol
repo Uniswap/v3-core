@@ -5,7 +5,6 @@ pragma abicoder v2;
 import './libraries/FullMath.sol';
 import './libraries/TransferHelper.sol';
 
-import './libraries/FeeMath.sol';
 import './libraries/LowGasSafeMath.sol';
 
 import './libraries/SafeCast.sol';
@@ -344,13 +343,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
-        (uint256 protocolFees0New, uint256 protocolFees1New) =
-            position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128, slot0.feeProtocol);
-        if (protocolFees0New > 0 || protocolFees1New > 0) {
-            ProtocolFees memory _protocolFees = protocolFees;
-            protocolFees.token0 = FeeMath.addCapped(_protocolFees.token0, protocolFees0New);
-            protocolFees.token1 = FeeMath.addCapped(_protocolFees.token1, protocolFees1New);
-        }
+        position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128);
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
@@ -363,19 +356,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 secondsOutside.clear(tickUpper, tickSpacing);
             }
         }
-    }
-
-    /// @inheritdoc IUniswapV3PairActions
-    /// @dev noDelegateCall is applied indirectly via _modifyPosition
-    function poke(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper
-    ) external override lock {
-        _modifyPosition(
-            ModifyPositionParams({owner: owner, tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: 0})
-        );
-        emit Poke(msg.sender, owner, tickLower, tickUpper);
     }
 
     /// @inheritdoc IUniswapV3PairActions
@@ -448,7 +428,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tickUpper,
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
-        require(amount > 0);
         (int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({
@@ -489,6 +468,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         int24 tick;
         // the global fee growth of the input token
         uint256 feeGrowthGlobalX128;
+        // amount of input token paid as protocol fee
+        uint128 protocolFee;
         // the current liquidity in range
         uint128 liquidity;
     }
@@ -544,6 +525,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 sqrtPriceX96: cache.slot0Start.sqrtPriceX96,
                 tick: cache.slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
+                protocolFee: 0,
                 liquidity: cache.liquidityStart
             });
 
@@ -588,6 +570,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());
             }
 
+            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+            if (cache.slot0Start.feeProtocol > 0) {
+                uint256 delta = step.feeAmount / cache.slot0Start.feeProtocol;
+                step.feeAmount -= delta;
+                state.protocolFee += uint128(delta);
+            }
+
             // update global fee tracker
             if (state.liquidity > 0)
                 state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
@@ -618,12 +607,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             }
         }
 
-        // update liquidity if it changed
-        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;
+        // update price
+        slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
+        // update tick and write an oracle entry if the tick change
         if (state.tick != cache.slot0Start.tick) {
             slot0.tick = state.tick;
-            // write an oracle entry if the price moved at least one tick
             (slot0.observationIndex, slot0.observationCardinality) = observations.write(
                 cache.slot0Start.observationIndex,
                 cache.blockTimestamp,
@@ -634,10 +623,18 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             );
         }
 
-        slot0.sqrtPriceX96 = state.sqrtPriceX96;
+        // update liquidity if it changed
+        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;
 
-        if (zeroForOne) feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
-        else feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
+        // update fee growth global and, if necessary, protocol fees
+        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
+        if (zeroForOne) {
+            feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
+            if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;
+        } else {
+            feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
+            if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;
+        }
 
         // amountIn is always >0, amountOut is always <=0
         (int256 amountIn, int256 amountOut) =
@@ -713,16 +710,16 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint128 amount0Requested,
         uint128 amount1Requested
     ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
-        ProtocolFees memory _protocolFees = protocolFees;
-
-        amount0 = amount0Requested > _protocolFees.token0 ? _protocolFees.token0 : amount0Requested;
-        amount1 = amount1Requested > _protocolFees.token1 ? _protocolFees.token1 : amount1Requested;
+        amount0 = amount0Requested > protocolFees.token0 ? protocolFees.token0 : amount0Requested;
+        amount1 = amount1Requested > protocolFees.token1 ? protocolFees.token1 : amount1Requested;
 
         if (amount0 > 0) {
+            if (amount0 == protocolFees.token0) amount0--; // ensure that the slot is not cleared, for gas savings
             protocolFees.token0 -= amount0;
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
+            if (amount1 == protocolFees.token1) amount1--; // ensure that the slot is not cleared, for gas savings
             protocolFees.token1 -= amount1;
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
