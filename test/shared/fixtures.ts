@@ -33,7 +33,6 @@ async function tokensFixture(): Promise<TokensFixture> {
   const tokenC = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
   const tokenD = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
 
-
   const [token0, token1, token2, token3] = [tokenA, tokenB, tokenC, tokenD].sort((tokenA, tokenB) =>
     tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? -1 : 1
   )
