@@ -444,8 +444,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         uint8 feeProtocol = slot0.feeProtocol;
         if (feeProtocol > 0) {
-            uint128 protocolFee0 = amount0 > 0 ? uint128(FullMath.mulDiv(amount0, fee, 1e6 * (feeProtocol % 16))) : 0;
-            uint128 protocolFee1 = amount1 > 0 ? uint128(FullMath.mulDiv(amount1, fee, 1e6 * (feeProtocol >> 4))) : 0;
+            uint128 protocolFee0 =
+                amount0 > 0 && (feeProtocol % 16 > 0)
+                    ? uint128(FullMath.mulDiv(amount0, fee, 1e6 * (feeProtocol % 16)))
+                    : 0;
+            uint128 protocolFee1 =
+                amount1 > 0 && (feeProtocol >> 4 > 0)
+                    ? uint128(FullMath.mulDiv(amount1, fee, 1e6 * (feeProtocol >> 4)))
+                    : 0;
             protocolFees.token0 += protocolFee0;
             protocolFees.token1 += protocolFee1;
             amount0 -= protocolFee0;

@@ -1183,36 +1183,29 @@ describe('UniswapV3Pair', () => {
       })
 
       it('can collect fees in only token1', async () => {
-        await pair.setFeeProtocol(0, 7)
-        await expect(pair.burn(wallet.address, minTick, maxTick, liquidityAmount))
-          .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, wallet.address, '999924999999999999946')
-          .to.emit(token1, 'Transfer')
-          .withArgs(pair.address, wallet.address, '999879999999999999946')
-
-        const { amount0: protocolFee0, amount1: protocolFee1 } = await pair.callStatic.collectProtocol(
-          wallet.address,
-          MaxUint128,
-          MaxUint128
-        )
-        expect(protocolFee0).to.eq('74999999999999998')
-        expect(protocolFee1).to.eq('119999999999999998')
-      })
-      it('can collect fees in only token0', async () => {
         await pair.setFeeProtocol(1, 0)
-        await expect(pair.burn(wallet.address, minTick, maxTick, liquidityAmount))
-          .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, wallet.address, '999924999999999999946')
-          .to.emit(token1, 'Transfer')
-          .withArgs(pair.address, wallet.address, '999879999999999999946')
+        await pair.burn(wallet.address, minTick, maxTick, liquidityAmount)
 
         const { amount0: protocolFee0, amount1: protocolFee1 } = await pair.callStatic.collectProtocol(
           wallet.address,
           MaxUint128,
           MaxUint128
         )
-        expect(protocolFee0).to.eq('74999999999999998')
-        expect(protocolFee1).to.eq('119999999999999998')
+        expect(protocolFee0).to.eq('599999999999999998')
+        expect(protocolFee1).to.eq(0)
+      })
+
+      it('can collect fees in only token0', async () => {
+        await pair.setFeeProtocol(0, 2)
+        await pair.burn(wallet.address, minTick, maxTick, liquidityAmount)
+
+        const { amount0: protocolFee0, amount1: protocolFee1 } = await pair.callStatic.collectProtocol(
+          wallet.address,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(protocolFee0).to.eq(0)
+        expect(protocolFee1).to.eq('299999999999999998')
       })
     })
 
