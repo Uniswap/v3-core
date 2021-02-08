@@ -3,10 +3,8 @@ import { Wallet } from 'ethers'
 import { MockTimeUniswapV3Pair } from '../typechain/MockTimeUniswapV3Pair'
 import { expect } from './shared/expect'
 
-import { pairFixture, TEST_PAIR_START_TIME } from './shared/fixtures'
+import { pairFixture } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
-
-import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 
 import {
   expandTo18Decimals,
@@ -36,7 +34,6 @@ describe('UniswapV3Pair gas tests', () => {
     describe(feeProtocol > 0 ? 'fee is on' : 'fee is off', () => {
       const startingPrice = encodePriceSqrt(100001, 100000)
       const startingTick = 0
-      const startingTime = TEST_PAIR_START_TIME + 3
       const feeAmount = FeeAmount.MEDIUM
       const tickSpacing = TICK_SPACINGS[feeAmount]
       const minTick = getMinTick(tickSpacing)
@@ -268,9 +265,9 @@ describe('UniswapV3Pair gas tests', () => {
         it('best case', async () => {
           await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await pair.poke(wallet.address, tickLower, tickUpper)
+          await pair.burn(wallet.address, tickLower, tickUpper, 0)
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await snapshotGasCost(pair.poke(wallet.address, tickLower, tickUpper))
+          await snapshotGasCost(pair.burn(wallet.address, tickLower, tickUpper, 0))
         })
       })
 
@@ -281,7 +278,7 @@ describe('UniswapV3Pair gas tests', () => {
         it('close to worst case', async () => {
           await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await pair.poke(wallet.address, tickLower, tickUpper) // poke to accumulate fees
+          await pair.burn(wallet.address, tickLower, tickUpper, 0) // poke to accumulate fees
           await snapshotGasCost(pair.collect(wallet.address, tickLower, tickUpper, MaxUint128, MaxUint128))
         })
       })

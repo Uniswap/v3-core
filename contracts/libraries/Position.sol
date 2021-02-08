@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import './FeeMath.sol';
 import './FullMath.sol';
 import './FixedPoint128.sol';
 import './LiquidityMath.sol';
@@ -37,21 +36,17 @@ library Position {
         position = self[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
     }
 
-    /// @notice Credits accumulated fees to a user's position, and returns fees owed to to the protocol
+    /// @notice Credits accumulated fees to a user's position
     /// @param self The mapping containing all user positions
     /// @param liquidityDelta The change in pair liquidity as a result of the position update
     /// @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
     /// @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
-    /// @param feeProtocol The current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
-    /// @return protocolFees0 The fees due to the protocol, in token0
-    /// @return protocolFees1 The fees due to the protocol, in token1
     function update(
         Info storage self,
         int128 liquidityDelta,
         uint256 feeGrowthInside0X128,
-        uint256 feeGrowthInside1X128,
-        uint8 feeProtocol
-    ) internal returns (uint256 protocolFees0, uint256 protocolFees1) {
+        uint256 feeGrowthInside1X128
+    ) internal {
         Info memory _self = self;
 
         uint128 liquidityNext;
@@ -63,29 +58,31 @@ library Position {
         }
 
         // calculate accumulated fees
-        uint256 feesOwed0 =
-            FullMath.mulDiv(feeGrowthInside0X128 - _self.feeGrowthInside0LastX128, _self.liquidity, FixedPoint128.Q128);
-        uint256 feesOwed1 =
-            FullMath.mulDiv(feeGrowthInside1X128 - _self.feeGrowthInside1LastX128, _self.liquidity, FixedPoint128.Q128);
-
-        // collect protocol fee
-        if (feeProtocol > 0) {
-            uint256 fee0 = feesOwed0 / feeProtocol;
-            feesOwed0 -= fee0;
-            protocolFees0 = fee0;
-
-            uint256 fee1 = feesOwed1 / feeProtocol;
-            feesOwed1 -= fee1;
-            protocolFees1 = fee1;
-        }
+        uint128 feesOwed0 =
+            uint128(
+                FullMath.mulDiv(
+                    feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
+                    _self.liquidity,
+                    FixedPoint128.Q128
+                )
+            );
+        uint128 feesOwed1 =
+            uint128(
+                FullMath.mulDiv(
+                    feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
+                    _self.liquidity,
+                    FixedPoint128.Q128
+                )
+            );
 
         // update the position
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (feesOwed0 > 0 || feesOwed1 > 0) {
-            self.feesOwed0 = FeeMath.addCapped(_self.feesOwed0, feesOwed0);
-            self.feesOwed1 = FeeMath.addCapped(_self.feesOwed1, feesOwed1);
+            // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
+            self.feesOwed0 += feesOwed0;
+            self.feesOwed1 += feesOwed1;
         }
 
         // clear position data that is no longer needed

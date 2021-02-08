@@ -9,17 +9,6 @@ interface IUniswapV3PairActions {
     /// @param sqrtPriceX96 the initial sqrt price of the pair as a Q64.96
     function initialize(uint160 sqrtPriceX96) external;
 
-    /// @notice Updates a position to accumulate any protocol fees and recompute the fees owed to the position
-    /// @dev Can be called by any address to accumulate protocol fees for any position
-    /// @param owner The owner of the position that should be 'poked'
-    /// @param tickLower The lower tick of the position to poke
-    /// @param tickUpper The upper tick of the position to poke
-    function poke(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper
-    ) external;
-
     /// @notice Adds liquidity for the given recipient/tickLower/tickUpper position
     /// @dev The caller of this method receives a callback in the form of IUniswapV3MintCallback#uniswapV3MintCallback
     /// in which they must pay any token0 or token1 owed for the liquidity. The amount of token0/token1 due depends
@@ -57,6 +46,7 @@ interface IUniswapV3PairActions {
     ) external returns (uint128 amount0, uint128 amount1);
 
     /// @notice Burn liquidity from the sender and send any tokens owed for the liquidity to a recipient
+    /// @dev Can be used to trigger a recalculation of fees owed to a position by calling with an amount of 0
     /// @dev Fees must be collected separately via a call to #collect
     /// @param recipient The address which should receive the tokens
     /// @param tickLower The lower tick of the position for which to burn liquidity

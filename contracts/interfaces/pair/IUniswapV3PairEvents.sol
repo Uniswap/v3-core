@@ -10,15 +10,6 @@ interface IUniswapV3PairEvents {
     /// @dev Mint/Burn/Swap cannot be emitted by the pair before Initialize
     event Initialize(uint160 sqrtPriceX96, int24 tick);
 
-    /// @notice Emitted when a position is poked to accumulate fees
-    /// @param sender The address that poked the position
-    /// @param owner The owner of the position
-    /// @param tickLower The lower tick of the position
-    /// @param tickUpper The upper tick of the position
-    /// @dev This event is relevant to the state of the position's fees, also affects how much protocol fee is due
-    /// to be collected after SetFeeProtocol is called
-    event Poke(address sender, address indexed owner, int24 indexed tickLower, int24 indexed tickUpper);
-
     /// @notice Emitted when liquidity is minted for a given position
     /// @param sender The address that minted the liquidity
     /// @param owner The owner of the position and recipient of any minted liquidity

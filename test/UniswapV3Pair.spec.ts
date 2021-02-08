@@ -447,7 +447,7 @@ describe('UniswapV3Pair', () => {
         })
       })
 
-      it('1 liquidity mint accumulates protocol fees', async () => {
+      it('protocol fees accumulate as expected during swap', async () => {
         await pair.setFeeProtocol(6)
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
@@ -455,16 +455,11 @@ describe('UniswapV3Pair', () => {
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
         let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-        expect(token0ProtocolFees).to.eq(0)
-        expect(token1ProtocolFees).to.eq(0)
-
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
-        ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-        expect(token0ProtocolFees).to.eq('49999999999999')
-        expect(token1ProtocolFees).to.eq('4999999999999')
+        expect(token0ProtocolFees).to.eq('50000000000000')
+        expect(token1ProtocolFees).to.eq('5000000000000')
       })
 
-      it('1 liquidity mint before protocol fee is turned on protects fees', async () => {
+      it('positions are protected before protocol fee is turned on', async () => {
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
@@ -473,13 +468,7 @@ describe('UniswapV3Pair', () => {
         expect(token0ProtocolFees).to.eq(0)
         expect(token1ProtocolFees).to.eq(0)
 
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
-        ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-        expect(token0ProtocolFees).to.eq(0)
-        expect(token1ProtocolFees).to.eq(0)
-
         await pair.setFeeProtocol(6)
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
         expect(token0ProtocolFees).to.eq(0)
         expect(token1ProtocolFees).to.eq(0)
@@ -490,7 +479,9 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
-        await expect(pair.poke(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)).to.be.revertedWith('NP')
+        await expect(pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.revertedWith(
+          'NP'
+        )
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         let {
@@ -538,11 +529,6 @@ describe('UniswapV3Pair', () => {
       const { liquidityGross } = await pair.ticks(tick)
       expect(liquidityGross).to.not.eq(0)
     }
-
-    it('cannot be called with amount of 0', async () => {
-      await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
-      await expect(pair.burn(wallet.address, minTick, maxTick, 0)).to.be.revertedWith('')
-    })
 
     it('clears the position fee growth snapshot if no more liquidity', async () => {
       // some activity that would make the ticks non-zero
@@ -757,10 +743,10 @@ describe('UniswapV3Pair', () => {
       const token0BalanceBeforeWallet = await token0.balanceOf(wallet.address)
       const token1BalanceBeforeWallet = await token1.balanceOf(wallet.address)
 
-      await pair.poke(wallet.address, lowerTick, upperTick)
+      await pair.burn(wallet.address, lowerTick, upperTick, 0)
       await pair.collect(wallet.address, lowerTick, upperTick, MaxUint128, MaxUint128)
 
-      await pair.poke(wallet.address, lowerTick, upperTick)
+      await pair.burn(wallet.address, lowerTick, upperTick, 0)
       const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collect(
         wallet.address,
         lowerTick,
@@ -921,7 +907,7 @@ describe('UniswapV3Pair', () => {
 
       it('works just before the cap binds', async () => {
         await pair.setFeeGrowthGlobal0X128(magicNumber)
-        await pair.poke(wallet.address, minTick, maxTick)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
 
         const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
 
@@ -931,7 +917,7 @@ describe('UniswapV3Pair', () => {
 
       it('works just after the cap binds', async () => {
         await pair.setFeeGrowthGlobal0X128(magicNumber.add(1))
-        await pair.poke(wallet.address, minTick, maxTick)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
 
         const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
 
@@ -941,7 +927,7 @@ describe('UniswapV3Pair', () => {
 
       it('works well after the cap binds', async () => {
         await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
-        await pair.poke(wallet.address, minTick, maxTick)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
 
         const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
 
@@ -959,7 +945,7 @@ describe('UniswapV3Pair', () => {
 
       it('token0', async () => {
         await swapExact0For1(expandTo18Decimals(1), wallet.address)
-        await pair.poke(wallet.address, minTick, maxTick)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
         const { amount0, amount1 } = await pair.callStatic.collect(
           wallet.address,
           minTick,
@@ -972,7 +958,7 @@ describe('UniswapV3Pair', () => {
       })
       it('token1', async () => {
         await swapExact1For0(expandTo18Decimals(1), wallet.address)
-        await pair.poke(wallet.address, minTick, maxTick)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
         const { amount0, amount1 } = await pair.callStatic.collect(
           wallet.address,
           minTick,
@@ -986,7 +972,7 @@ describe('UniswapV3Pair', () => {
       it('token0 and token1', async () => {
         await swapExact0For1(expandTo18Decimals(1), wallet.address)
         await swapExact1For0(expandTo18Decimals(1), wallet.address)
-        await pair.poke(wallet.address, minTick, maxTick)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
         const { amount0, amount1 } = await pair.callStatic.collect(
           wallet.address,
           minTick,
@@ -1038,7 +1024,7 @@ describe('UniswapV3Pair', () => {
     }) {
       await (zeroForOne ? swapExact0For1(amount, wallet.address) : swapExact1For0(amount, wallet.address))
 
-      if (poke) await pair.poke(wallet.address, minTick, maxTick)
+      if (poke) await pair.burn(wallet.address, minTick, maxTick, 0)
 
       const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collect(
         wallet.address,
@@ -1127,7 +1113,7 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.be.eq('500000000000000')
+      expect(token0Fees).to.be.eq('499999999999999')
       expect(token1Fees).to.be.eq(0)
     })
 
@@ -1148,7 +1134,7 @@ describe('UniswapV3Pair', () => {
           poke: true,
         })
         // collect fees to trigger collection of the protocol fee
-        await pair.poke(wallet.address, minTick, maxTick)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
         await pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128)
 
         await expect(pair.collectProtocol(other.address, MaxUint128, MaxUint128))
@@ -1174,7 +1160,7 @@ describe('UniswapV3Pair', () => {
       expect(token1Fees).to.eq(0)
     })
 
-    it('fees collected after two swaps with fee turned on in middle are fees from both swaps (confiscatory)', async () => {
+    it('fees collected after two swaps with fee turned on in middle are fees from last swap (not confiscatory)', async () => {
       await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: true,
@@ -1189,7 +1175,7 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('1000000000000000')
+      expect(token0Fees).to.eq('1099999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1202,7 +1188,7 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('500000000000000')
+      expect(token0Fees).to.eq('499999999999999')
       expect(token1Fees).to.eq(0)
 
       // collect the fees
@@ -1217,17 +1203,16 @@ describe('UniswapV3Pair', () => {
       expect(token0FeesNext).to.eq(0)
       expect(token1FeesNext).to.eq(0)
 
-      // the fee to fees do not account for uncollected fees yet
       let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-      expect(token0ProtocolFees).to.eq('99999999999999')
+      expect(token0ProtocolFees).to.eq('200000000000000')
       expect(token1ProtocolFees).to.eq(0)
 
-      await pair.poke(wallet.address, minTick, maxTick) // poke to update fees
+      await pair.burn(wallet.address, minTick, maxTick, 0) // poke to update fees
       await expect(pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '500000000000000')
+        .withArgs(pair.address, wallet.address, '499999999999999')
       ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-      expect(token0ProtocolFees).to.eq('199999999999998')
+      expect(token0ProtocolFees).to.eq('200000000000000')
       expect(token1ProtocolFees).to.eq(0)
     })
   })
