@@ -258,11 +258,10 @@ export function createMultiPairFunctions({
     return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
   }
 
-
   return {
     swap0ForExact1Multi,
     swap1ForExact0Multi,
     swap0ForExact0Multi,
-    swap1ForExact1Multi
+    swap1ForExact1Multi,
   }
 }

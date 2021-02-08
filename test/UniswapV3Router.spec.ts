@@ -136,9 +136,7 @@ describe('Test Router Multi-hop', () => {
       await pair2ReversedFunctions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
     })
 
-
     it('Swap 0 for exact 1', async () => {
-      
       outputToken = token3
 
       const { swap0ForExact1Multi } = createMultiPairFunctions({
@@ -149,9 +147,9 @@ describe('Test Router Multi-hop', () => {
         pairOutput: pair2,
       })
 
-      const method =  swap0ForExact1Multi
+      const method = swap0ForExact1Multi
 
-        await expect(method(100, wallet.address))
+      await expect(method(100, wallet.address))
         .to.emit(outputToken, 'Transfer')
         .withArgs(pair2.address, wallet.address, 100)
         .to.emit(token2, 'Transfer')
@@ -162,7 +160,6 @@ describe('Test Router Multi-hop', () => {
         .withArgs(wallet.address, pair0.address, 106)
     })
     it('Swap 1 for exact 0', async () => {
-      
       outputToken = token3
 
       const { swap1ForExact0Multi } = createMultiPairFunctions({
@@ -175,7 +172,7 @@ describe('Test Router Multi-hop', () => {
 
       const method = swap1ForExact0Multi
 
-        await expect(method(100, wallet.address))
+      await expect(method(100, wallet.address))
         .to.emit(outputToken, 'Transfer')
         .withArgs(pair2Reversed.address, wallet.address, 100)
         .to.emit(token2, 'Transfer')
@@ -186,7 +183,6 @@ describe('Test Router Multi-hop', () => {
         .withArgs(wallet.address, pair0Reversed.address, 106)
     })
     it('Swap 0 for exact 0', async () => {
-      
       outputToken = token3
 
       const { swap0ForExact0Multi } = createMultiPairFunctions({
@@ -199,7 +195,7 @@ describe('Test Router Multi-hop', () => {
 
       const method = swap0ForExact0Multi
 
-        await expect(method(100, wallet.address))
+      await expect(method(100, wallet.address))
         .to.emit(outputToken, 'Transfer')
         .withArgs(pair2Reversed.address, wallet.address, 100)
         .to.emit(token2, 'Transfer')
@@ -210,7 +206,6 @@ describe('Test Router Multi-hop', () => {
         .withArgs(wallet.address, pair0.address, 106)
     })
     it('Swap 1 for exact 1', async () => {
-      
       outputToken = token3
 
       const { swap1ForExact1Multi } = createMultiPairFunctions({
@@ -223,7 +218,7 @@ describe('Test Router Multi-hop', () => {
 
       const method = swap1ForExact1Multi
 
-        await expect(method(100, wallet.address))
+      await expect(method(100, wallet.address))
         .to.emit(outputToken, 'Transfer')
         .withArgs(pair2.address, wallet.address, 100)
         .to.emit(token2, 'Transfer')
