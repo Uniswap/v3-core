@@ -27,7 +27,7 @@ const createFixtureLoader = waffle.createFixtureLoader
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
-describe.only('UniswapV3Pair', () => {
+describe('Test Router Multi-hop', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let token0: TestERC20
