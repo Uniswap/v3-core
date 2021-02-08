@@ -1152,13 +1152,33 @@ describe('UniswapV3Pair', () => {
           zeroForOne: true,
           poke: true,
         })
-        // collect fees to trigger collection of the protocol fee
-        await pair.burn(wallet.address, minTick, maxTick, 0)
-        await pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128)
 
         await expect(pair.collectProtocol(other.address, MaxUint128, MaxUint128))
           .to.emit(token0, 'Transfer')
           .withArgs(pair.address, other.address, '99999999999999')
+      })
+
+      it('fees collected can differ between token0 and token1', async () => {
+        await pair.setFeeProtocol(8, 5)
+
+        await swapAndGetFeesOwed({
+          amount: expandTo18Decimals(1),
+          zeroForOne: true,
+          poke: false,
+        })
+        await swapAndGetFeesOwed({
+          amount: expandTo18Decimals(1),
+          zeroForOne: false,
+          poke: false,
+        })
+
+        await expect(pair.collectProtocol(other.address, MaxUint128, MaxUint128))
+          .to.emit(token0, 'Transfer')
+          // more token0 fees because it's 1/5th the swap fees
+          .withArgs(pair.address, other.address, '74999999999999')
+          .to.emit(token1, 'Transfer')
+          // less token1 fees because it's 1/8th the swap fees
+          .withArgs(pair.address, other.address, '119999999999999')
       })
     })
 
@@ -1480,7 +1500,7 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#setFeeProtocol', () => {
-    beforeEach(async () => {
+    beforeEach('initialize the pair', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
     })
 
@@ -1519,16 +1539,16 @@ describe('UniswapV3Pair', () => {
       await expect(pair.setFeeProtocol(7, 7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(0, 0, 7, 7)
     })
     it('emits an event when turned off', async () => {
-      await pair.setFeeProtocol(7, 7)
-      await expect(pair.setFeeProtocol(0, 0)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 7, 0, 0)
+      await pair.setFeeProtocol(7, 5)
+      await expect(pair.setFeeProtocol(0, 0)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 5, 0, 0)
     })
     it('emits an event when changed', async () => {
       await pair.setFeeProtocol(4, 10)
       await expect(pair.setFeeProtocol(6, 8)).to.be.emit(pair, 'SetFeeProtocol').withArgs(4, 10, 6, 8)
     })
     it('emits an event when unchanged', async () => {
-      await pair.setFeeProtocol(7, 7)
-      await expect(pair.setFeeProtocol(7, 7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 7, 7, 7)
+      await pair.setFeeProtocol(5, 9)
+      await expect(pair.setFeeProtocol(5, 9)).to.be.emit(pair, 'SetFeeProtocol').withArgs(5, 9, 5, 9)
     })
   })
 
