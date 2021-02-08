@@ -214,15 +214,10 @@ export function createPairFunctions({
 }
 
 export interface MultiPairFunctions {
-  swapForExact0Multi: SwapFunction
-  swapForExact1Multi: SwapFunction
-  swapForExact1Endless: SwapFunction
-  swapForExact0Endless: SwapFunction
-  swap0ForExact1Endless: SwapFunction
-  swap1ForExact0Endless: SwapFunction
-  swap0ForExact0Endless: SwapFunction
-  swap1ForExact1Endless: SwapFunction
-  swapExact0For1Endless: SwapFunction
+  swap0ForExact1Multi: SwapFunction
+  swap1ForExact0Multi: SwapFunction
+  swap0ForExact0Multi: SwapFunction
+  swap1ForExact1Multi: SwapFunction
 }
 
 export function createMultiPairFunctions({
@@ -238,75 +233,36 @@ export function createMultiPairFunctions({
   intermediaryPair: MockTimeUniswapV3Pair
   pairOutput: MockTimeUniswapV3Pair
 }): MultiPairFunctions {
-  async function swapForExact0Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swapForExact0Multi
-    await inputToken.approve(swapTarget.address, constants.MaxUint256)
-    const toAddress = typeof to === 'string' ? to : to.address
-    return method(toAddress, pairInput.address, pairOutput.address, amountOut)
-  }
-
-  async function swapForExact1Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swapForExact1Multi
-    await inputToken.approve(swapTarget.address, constants.MaxUint256)
-    const toAddress = typeof to === 'string' ? to : to.address
-    return method(toAddress, pairInput.address, pairOutput.address, amountOut)
-  }
-
-  async function swapForExact1Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swapForExact1Endless
+  async function swap1ForExact0Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swap1ForExact0Multi
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
     return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
   }
-  async function swapForExact0Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swapForExact0Endless
+  async function swap0ForExact1Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swap0ForExact1Multi
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
     return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
   }
-  async function swap1ForExact0Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swap1ForExact0Endless
+  async function swap0ForExact0Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swap0ForExact0Multi
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
     return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
   }
-  async function swap0ForExact1Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swap0ForExact1Endless
+  async function swap1ForExact1Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swap1ForExact1Multi
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
     return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
   }
-  async function swap0ForExact0Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swap0ForExact0Endless
-    await inputToken.approve(swapTarget.address, constants.MaxUint256)
-    const toAddress = typeof to === 'string' ? to : to.address
-    return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
-  }
-  async function swap1ForExact1Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swap1ForExact1Endless
-    await inputToken.approve(swapTarget.address, constants.MaxUint256)
-    const toAddress = typeof to === 'string' ? to : to.address
-    return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
-  }
-  async function swapExact0For1Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
-    const method = swapTarget.swapExact0For1Endless
-    await inputToken.approve(swapTarget.address, constants.MaxUint256)
-    const toAddress = typeof to === 'string' ? to : to.address
-    return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
-  }
-
-
 
 
   return {
-    swapForExact0Multi,
-    swapForExact1Multi,
-    swapForExact1Endless,
-    swapForExact0Endless,
-    swap0ForExact1Endless,
-    swap1ForExact0Endless,
-    swap0ForExact0Endless,
-    swap1ForExact1Endless,
-    swapExact0For1Endless
+    swap0ForExact1Multi,
+    swap1ForExact0Multi,
+    swap0ForExact0Multi,
+    swap1ForExact1Multi
   }
 }
