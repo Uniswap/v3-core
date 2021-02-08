@@ -194,15 +194,15 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
         address[] memory pairs,
         uint256 amount0In
     ) external {
-        console.log('start endless 0 for exact 1');
+        console.log('start endless Exact 0 for 1');
         bool originZeroForOne = true;
         uint numRemainingSwaps = pairs.length;
         numRemainingSwaps--;
         console.log('initiating first swap');
-        IUniswapV3Pair(pairs[numRemainingSwaps]).swap( 
+        IUniswapV3Pair(pairs[0]).swap( 
             recipient,
             true,
-            -amount1Out.toInt256(),
+            amount0In.toInt256(),
             TickMath.MIN_SQRT_RATIO + 1,
             abi.encode(numRemainingSwaps, originZeroForOne, pairs, msg.sender)
         );
@@ -229,14 +229,16 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
                 amount0Delta > 0 ? IUniswapV3Pair(msg.sender).token0() : IUniswapV3Pair(msg.sender).token1();
             int256 amountToBePaid = 
                 amount0Delta > 0 ? amount0Delta : amount1Delta;
+            bool exactIn = 
+                amountToBePaid < 0 ? true : false;
             bool zeroForOne = 
                 tokenToBePaid == IUniswapV3Pair(pairs[numRemainingSwaps]).token1();
 
 
-            IUniswapV3Pair(pairs[numRemainingSwaps]).swap(
+            IUniswapV3Pair(pairs[exactIn ? (pairs.length) - numRemainingSwaps - 1 : numRemainingSwaps]).swap(
                 msg.sender,
                 zeroForOne,
-                -amountToBePaid,
+                exactIn ? amountToBePaid : -amountToBePaid,
                 zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
                 abi.encode(numRemainingSwaps, originZeroForOne, pairs, payer)
             );
