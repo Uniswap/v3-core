@@ -12,7 +12,7 @@ interface IUniswapV3Factory {
     /// @notice Emitted when a pair is created
     /// @param token0 The first token of the pair by address sort order
     /// @param token1 The second token of the pair by address sort order
-    /// @param fee The fee in pips that is collected in every swap with the pair
+    /// @param fee The fee collected upon every swap in the pair, denominated in pips
     /// @param tickSpacing The minimum number of ticks between initialized ticks
     /// @param pair The address of the created pair
     event PairCreated(
