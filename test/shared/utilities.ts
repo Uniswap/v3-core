@@ -220,6 +220,9 @@ export interface MultiPairFunctions {
   swapForExact0Endless: SwapFunction
   swap0ForExact1Endless: SwapFunction
   swap1ForExact0Endless: SwapFunction
+  swap0ForExact0Endless: SwapFunction
+  swap1ForExact1Endless: SwapFunction
+  swapExact0For1Endless: SwapFunction
 }
 
 export function createMultiPairFunctions({
@@ -273,6 +276,24 @@ export function createMultiPairFunctions({
     const toAddress = typeof to === 'string' ? to : to.address
     return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
   }
+  async function swap0ForExact0Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swap0ForExact0Endless
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+    const toAddress = typeof to === 'string' ? to : to.address
+    return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
+  }
+  async function swap1ForExact1Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swap1ForExact1Endless
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+    const toAddress = typeof to === 'string' ? to : to.address
+    return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
+  }
+  async function swapExact0For1Endless(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
+    const method = swapTarget.swapExact0For1Endless
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+    const toAddress = typeof to === 'string' ? to : to.address
+    return method(toAddress, [pairInput.address, intermediaryPair.address, pairOutput.address], amountOut)
+  }
 
 
 
@@ -283,6 +304,9 @@ export function createMultiPairFunctions({
     swapForExact1Endless,
     swapForExact0Endless,
     swap0ForExact1Endless,
-    swap1ForExact0Endless
+    swap1ForExact0Endless,
+    swap0ForExact0Endless,
+    swap1ForExact1Endless,
+    swapExact0For1Endless
   }
 }

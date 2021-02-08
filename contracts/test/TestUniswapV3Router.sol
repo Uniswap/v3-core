@@ -68,8 +68,9 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
 
 
-    // flash swaps for an exact amount of token0 in the final pair in the pair array
+    // flash swaps a variable input for an exact amount of token0 in the final pair in the pair array
     // accepts an arbitrary number of pairs to swap through
+    // clearly useless
     function swapForExact0Endless(
         address recipient,
         address[] memory pairs,
@@ -87,7 +88,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             abi.encode(numRemainingSwaps, pairs, msg.sender)
         );
     }    
-    // flash swaps for an exact amount of token1 in the final pair in the pair array
+    // flash swaps a variable input for an exact amount of token1 in the final pair in the pair array
     // accepts an arbitrary number of pairs to swap through
     function swapForExact1Endless(
         address recipient,
@@ -106,6 +107,26 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             abi.encode(numRemainingSwaps, pairs, msg.sender)
         );
     }
+
+    // swaps 0 for exact 1 arbitrary length multihop
+        function swap0ForExact1Endless(
+        address recipient,
+        address[] memory pairs,
+        uint256 amount1Out
+    ) external {
+        console.log('start endless 0 for exact 1');
+        bool originZeroForOne = true;
+        uint numRemainingSwaps = pairs.length;
+        numRemainingSwaps--;
+        console.log('initiating first swap');
+        IUniswapV3Pair(pairs[numRemainingSwaps]).swap( 
+            recipient,
+            true,
+            -amount1Out.toInt256(),
+            TickMath.MIN_SQRT_RATIO + 1,
+            abi.encode(numRemainingSwaps, originZeroForOne, pairs, msg.sender)
+        );
+    }    
     
   function swap1ForExact0Endless(
         address recipient,
@@ -125,11 +146,53 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             abi.encode(numRemainingSwaps, originZeroForOne, pairs, msg.sender)
         );
     }   
-    // swaps 0 for exact 1 arbitrary length multihop
-        function swap0ForExact1Endless(
+
+    // swaps 0 for exact 0 arbitrary length multihop
+        function swap0ForExact0Endless(
+        address recipient,
+        address[] memory pairs,
+        uint256 amount0Out
+    ) external {
+        console.log('start endless 0 for exact 0');
+        bool originZeroForOne = true;
+        uint numRemainingSwaps = pairs.length;
+        numRemainingSwaps--;
+        console.log('initiating first swap');
+        IUniswapV3Pair(pairs[numRemainingSwaps]).swap( 
+            recipient,
+            false,
+            -amount0Out.toInt256(),
+            TickMath.MAX_SQRT_RATIO - 1,
+            abi.encode(numRemainingSwaps, originZeroForOne, pairs, msg.sender)
+        );
+    }    
+    // swaps 1 for exact 1 arbitrary length multihop
+        function swap1ForExact1Endless(
         address recipient,
         address[] memory pairs,
         uint256 amount1Out
+    ) external {
+        console.log('start endless 1 for exact 1');
+        bool originZeroForOne = false;
+        uint numRemainingSwaps = pairs.length;
+        numRemainingSwaps--;
+        console.log('initiating first swap');
+        IUniswapV3Pair(pairs[numRemainingSwaps]).swap( 
+            recipient,
+            true,
+            -amount1Out.toInt256(),
+            TickMath.MIN_SQRT_RATIO + 1,
+            abi.encode(numRemainingSwaps, originZeroForOne, pairs, msg.sender)
+        );
+    }    
+
+    // -- Exact input swaps -- //
+
+    // swaps 0 for exact 1 arbitrary length multihop
+        function swapExact0For1Endless(
+        address recipient,
+        address[] memory pairs,
+        uint256 amount0In
     ) external {
         console.log('start endless 0 for exact 1');
         bool originZeroForOne = true;
@@ -143,7 +206,8 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
             TickMath.MIN_SQRT_RATIO + 1,
             abi.encode(numRemainingSwaps, originZeroForOne, pairs, msg.sender)
         );
-    }
+    }       
+ 
 
     event SwapCallback(int256 amount0Delta, int256 amount1Delta);
 
@@ -157,7 +221,7 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
         (uint numRemainingSwaps, bool originZeroForOne, address[] memory pairs, address payer) = abi.decode(data, (uint, bool, address[], address));
 
-        if (numRemainingSwaps >= 1) {
+        if (numRemainingSwaps > 0) {
             console.log('initiating next swap');
             numRemainingSwaps--;
             // get the address and amount of the token that we need to pay

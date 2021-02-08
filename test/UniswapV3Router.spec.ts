@@ -175,11 +175,37 @@ describe.only('UniswapV3Pair', () => {
       await pair2ReversedFunctions.mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
     })
 
-    it('Swap for exact 1', async () => {
+    // it('Swap for exact 1', async () => {
+    //   const token0OfPairOutput = await pair2.token0()
+    //   const ForExact0 = outputToken.address === token0OfPairOutput
+
+    //   const { swapForExact0Endless, swapForExact1Endless } = createMultiPairFunctions({
+    //     inputToken: token0,
+    //     swapTarget: swapTargetRouter,
+    //     pairInput: pair0,
+    //     intermediaryPair: pair1,
+    //     pairOutput: pair2,
+    //   })
+
+    //   const method = ForExact0 ? swapForExact0Endless : swapForExact1Endless
+
+    //   await expect(method(100, wallet.address))
+    //     .to.emit(outputToken, 'Transfer')
+    //     .withArgs(pair2.address, wallet.address, 100)
+    //     .to.emit(token2, 'Transfer')
+    //     .withArgs(pair1.address, pair2.address, 102)
+    //     .to.emit(token1, 'Transfer')
+    //     .withArgs(pair0.address, pair1.address, 104)
+    //     .to.emit(inputToken, 'Transfer')
+    //     .withArgs(wallet.address, pair0.address, 106)
+
+    // })
+    it('Swap 0 for exact 1', async () => {
+      outputToken = token3
       const token0OfPairOutput = await pair2.token0()
       const ForExact0 = outputToken.address === token0OfPairOutput
 
-      const { swapForExact0Endless, swapForExact1Endless } = createMultiPairFunctions({
+      const { swap0ForExact1Endless } = createMultiPairFunctions({
         inputToken: token0,
         swapTarget: swapTargetRouter,
         pairInput: pair0,
@@ -187,34 +213,7 @@ describe.only('UniswapV3Pair', () => {
         pairOutput: pair2,
       })
 
-      const method = ForExact0 ? swapForExact0Endless : swapForExact1Endless
-
-      await expect(method(100, wallet.address))
-        .to.emit(outputToken, 'Transfer')
-        .withArgs(pair2.address, wallet.address, 100)
-        .to.emit(token2, 'Transfer')
-        .withArgs(pair1.address, pair2.address, 102)
-        .to.emit(token1, 'Transfer')
-        .withArgs(pair0.address, pair1.address, 104)
-        .to.emit(inputToken, 'Transfer')
-        .withArgs(wallet.address, pair0.address, 106)
-
-    })
-    it('Swap for exact 0', async () => {
-      outputToken = token2
-      const token0OfPairOutput = await pair2.token0()
-      const ForExact0 = outputToken.address === token0OfPairOutput
-
-      const { swapForExact0Endless, swapForExact1Endless } = createMultiPairFunctions({
-        inputToken: token1,
-        swapTarget: swapTargetRouter,
-        pairInput: pair0,
-        intermediaryPair: pair1,
-        pairOutput: pair2,
-      })
-
-      const method = ForExact0 ? swapForExact0Endless : swapForExact1Endless
-
+      const method =  swap0ForExact1Endless
 
         await expect(method(100, wallet.address))
         .to.emit(outputToken, 'Transfer')
@@ -229,8 +228,8 @@ describe.only('UniswapV3Pair', () => {
     it('Swap 1 for exact 0', async () => {
       
       outputToken = token3
-      const token0OfPairOutput = await pair2.token0()
-      const ForExact0 = outputToken.address === token0OfPairOutput
+      //const token0OfPairOutput = await pair2.token0()
+      //const ForExact0 = outputToken.address === token0OfPairOutput
 
       const { swap1ForExact0Endless } = createMultiPairFunctions({
         inputToken: token0,
@@ -254,6 +253,87 @@ describe.only('UniswapV3Pair', () => {
         .withArgs(pair0Reversed.address, pair1.address, 104)
         .to.emit(inputToken, 'Transfer')
         .withArgs(wallet.address, pair0Reversed.address, 106)
+    })
+    it('Swap 0 for exact 0', async () => {
+      
+      outputToken = token3
+      //const token0OfPairOutput = await pair2.token0()
+      //const ForExact0 = outputToken.address === token0OfPairOutput
+
+      const { swap0ForExact0Endless } = createMultiPairFunctions({
+        inputToken: token0,
+        swapTarget: swapTargetRouter,
+        pairInput: pair0,
+        intermediaryPair: pair1,
+        pairOutput: pair2Reversed,
+      })
+
+      const method = swap0ForExact0Endless
+
+        
+
+
+        await expect(method(100, wallet.address))
+        .to.emit(outputToken, 'Transfer')
+        .withArgs(pair2Reversed.address, wallet.address, 100)
+        .to.emit(token2, 'Transfer')
+        .withArgs(pair1.address, pair2Reversed.address, 102)
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair0.address, pair1.address, 104)
+        .to.emit(inputToken, 'Transfer')
+        .withArgs(wallet.address, pair0.address, 106)
+    })
+    it('Swap 1 for exact 1', async () => {
+      
+      outputToken = token3
+      //const token0OfPairOutput = await pair2.token0()
+      //const ForExact0 = outputToken.address === token0OfPairOutput
+
+      const { swap1ForExact1Endless } = createMultiPairFunctions({
+        inputToken: token0,
+        swapTarget: swapTargetRouter,
+        pairInput: pair0Reversed,
+        intermediaryPair: pair1,
+        pairOutput: pair2,
+      })
+
+      const method = swap1ForExact1Endless
+
+        await expect(method(100, wallet.address))
+        .to.emit(outputToken, 'Transfer')
+        .withArgs(pair2.address, wallet.address, 100)
+        .to.emit(token2, 'Transfer')
+        .withArgs(pair1.address, pair2.address, 102)
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair0Reversed.address, pair1.address, 104)
+        .to.emit(inputToken, 'Transfer')
+        .withArgs(wallet.address, pair0Reversed.address, 106)
+    })
+
+    it('Swap exact 0 for 1', async () => {
+      outputToken = token3
+      // const token0OfPairOutput = await pair2.token0()
+      // const ForExact0 = outputToken.address === token0OfPairOutput
+
+      const { swapExact0For1Endless } = createMultiPairFunctions({
+        inputToken: token0,
+        swapTarget: swapTargetRouter,
+        pairInput: pair0,
+        intermediaryPair: pair1,
+        pairOutput: pair2,
+      })
+
+      const method =  swapExact0For1Endless
+
+        await expect(method(100, wallet.address))
+        .to.emit(outputToken, 'Transfer')
+        .withArgs(pair2.address, wallet.address, 100)
+        .to.emit(token2, 'Transfer')
+        .withArgs(pair1.address, pair2.address, 102)
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair0.address, pair1.address, 104)
+        .to.emit(inputToken, 'Transfer')
+        .withArgs(wallet.address, pair0.address, 106)
     })
   })
 })
