@@ -448,8 +448,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     struct SwapCache {
-        // the value of slot0 at the beginning of the swap
-        Slot0 slot0Start;
         // liquidity at the beginning of the swap
         uint128 liquidityStart;
         // the timestamp of the current block
@@ -501,20 +499,19 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     ) external override noDelegateCall {
         require(amountSpecified != 0, 'AS');
 
-        Slot0 memory _slot0 = slot0;
+        Slot0 memory slot0Start = slot0;
 
-        require(_slot0.unlocked, 'LOK');
+        require(slot0Start.unlocked, 'LOK');
         require(
             zeroForOne
-                ? sqrtPriceLimitX96 < _slot0.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
-                : sqrtPriceLimitX96 > _slot0.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
+                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
+                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
             'SPL'
         );
 
         slot0.unlocked = false;
 
-        SwapCache memory cache =
-            SwapCache({slot0Start: _slot0, liquidityStart: liquidity, blockTimestamp: _blockTimestamp()});
+        SwapCache memory cache = SwapCache({liquidityStart: liquidity, blockTimestamp: _blockTimestamp()});
 
         bool exactInput = amountSpecified > 0;
 
@@ -522,8 +519,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             SwapState({
                 amountSpecifiedRemaining: amountSpecified,
                 amountCalculated: 0,
-                sqrtPriceX96: cache.slot0Start.sqrtPriceX96,
-                tick: cache.slot0Start.tick,
+                sqrtPriceX96: slot0Start.sqrtPriceX96,
+                tick: slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
                 protocolFee: 0,
                 liquidity: cache.liquidityStart
@@ -571,8 +568,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             }
 
             // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
-            if (cache.slot0Start.feeProtocol > 0) {
-                uint256 delta = step.feeAmount / cache.slot0Start.feeProtocol;
+            if (slot0Start.feeProtocol > 0) {
+                uint256 delta = step.feeAmount / slot0Start.feeProtocol;
                 step.feeAmount -= delta;
                 state.protocolFee += uint128(delta);
             }
@@ -611,15 +608,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
         // update tick and write an oracle entry if the tick change
-        if (state.tick != cache.slot0Start.tick) {
+        if (state.tick != slot0Start.tick) {
             slot0.tick = state.tick;
             (slot0.observationIndex, slot0.observationCardinality) = observations.write(
-                cache.slot0Start.observationIndex,
+                slot0Start.observationIndex,
                 cache.blockTimestamp,
-                cache.slot0Start.tick,
+                slot0Start.tick,
                 cache.liquidityStart,
-                cache.slot0Start.observationCardinality,
-                cache.slot0Start.observationCardinalityNext
+                slot0Start.observationCardinality,
+                slot0Start.observationCardinalityNext
             );
         }
 
