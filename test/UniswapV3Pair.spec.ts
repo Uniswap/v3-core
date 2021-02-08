@@ -896,6 +896,25 @@ describe('UniswapV3Pair', () => {
       await pair.initialize(encodePriceSqrt(1, 1))
     })
 
+    it('works with multiple LPs', async () => {
+      await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(2))
+
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+
+      // poke positions
+      await pair.burn(wallet.address, minTick, maxTick, 0)
+      await pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
+
+      const { feesOwed0: feesOwed0Position0 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+      const { feesOwed0: feesOwed0Position1 } = await pair.positions(
+        getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)
+      )
+
+      expect(feesOwed0Position0).to.be.eq('200000000000000')
+      expect(feesOwed0Position1).to.be.eq('400000000000000')
+    })
+
     describe('works across large increases', () => {
       beforeEach(async () => {
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
