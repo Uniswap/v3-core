@@ -103,7 +103,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     /// @inheritdoc IUniswapV3PairState
     Oracle.Observation[65535] public override observations;
 
-    /// @dev Mutually exclusive reentrancy protection into the pair to/from a method
+    /// @dev Mutually exclusive reentrancy protection into the pair to/from a method. This method also prevents entrance
+    /// to a function before the pair is initialized. The reentrancy guard is required throughout the contract because
+    /// we use balance checks to determine the payment status of interactions such as mint, swap and flash.
     modifier lock() {
         require(slot0.unlocked, 'LOK');
         slot0.unlocked = false;
@@ -137,12 +139,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    /// @dev Get the balance of token0
+    /// @dev Get the pair's balance of token0
     function balance0() private view returns (uint256) {
         return balanceOfToken(token0);
     }
 
-    /// @dev Get the balance of token1
+    /// @dev Get the pair's balance of token1
     function balance1() private view returns (uint256) {
         return balanceOfToken(token1);
     }
@@ -179,7 +181,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PairActions
-    function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external override noDelegateCall {
+    function increaseObservationCardinalityNext(uint16 observationCardinalityNext)
+        external
+        override
+        lock
+        noDelegateCall
+    {
         uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
         uint16 observationCardinalityNextNew =
             observations.grow(observationCardinalityNextOld, observationCardinalityNext);
@@ -693,7 +700,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PairOwnerActions
-    function setFeeProtocol(uint8 feeProtocol) external override onlyFactoryOwner {
+    function setFeeProtocol(uint8 feeProtocol) external override lock onlyFactoryOwner {
         require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
         uint8 feeProtocolOld = slot0.feeProtocol;
         slot0.feeProtocol = feeProtocol;

@@ -47,8 +47,6 @@ describe('UniswapV3Pair gas tests', () => {
 
         const pair = await fix.createPair(feeAmount, tickSpacing)
 
-        await pair.setFeeProtocol(feeProtocol)
-
         const { swapExact0For1, swapToHigherPrice, mint } = await createPairFunctions({
           swapTarget: fix.swapTargetCallee,
           token0: fix.token0,
@@ -57,6 +55,7 @@ describe('UniswapV3Pair gas tests', () => {
         })
 
         await pair.initialize(encodePriceSqrt(1, 1))
+        await pair.setFeeProtocol(feeProtocol)
         await pair.increaseObservationCardinalityNext(4)
         await pair.advanceTime(1)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))
@@ -82,7 +81,7 @@ describe('UniswapV3Pair gas tests', () => {
 
       describe('#swapExact0For1', () => {
         it('first swap in block with no tick movement', async () => {
-          await snapshotGasCost(swapExact0For1(10, wallet.address))
+          await snapshotGasCost(swapExact0For1(2000, wallet.address))
           expect((await pair.slot0()).sqrtPriceX96).to.not.eq(startingPrice)
           expect((await pair.slot0()).tick).to.eq(startingTick)
         })
@@ -95,7 +94,7 @@ describe('UniswapV3Pair gas tests', () => {
         it('second swap in block with no tick movement', async () => {
           await swapExact0For1(expandTo18Decimals(1).div(10000), wallet.address)
           expect((await pair.slot0()).tick).to.eq(startingTick - 1)
-          await snapshotGasCost(swapExact0For1(1000, wallet.address))
+          await snapshotGasCost(swapExact0For1(2000, wallet.address))
           expect((await pair.slot0()).tick).to.eq(startingTick - 1)
         })
 
