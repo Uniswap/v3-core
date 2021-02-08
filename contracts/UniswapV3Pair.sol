@@ -502,13 +502,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     ) external override noDelegateCall {
         require(amountSpecified != 0, 'AS');
 
-        Slot0 memory _slot0Start = slot0;
+        Slot0 memory slot0Start = slot0;
 
-        require(_slot0Start.unlocked, 'LOK');
+        require(slot0Start.unlocked, 'LOK');
         require(
             zeroForOne
-                ? sqrtPriceLimitX96 < _slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
-                : sqrtPriceLimitX96 > _slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
+                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
+                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
             'SPL'
         );
 
@@ -518,7 +518,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             SwapCache({
                 liquidityStart: liquidity,
                 blockTimestamp: _blockTimestamp(),
-                feeProtocol: zeroForOne ? (_slot0Start.feeProtocol % 16) : (_slot0Start.feeProtocol >> 4)
+                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4)
             });
 
         bool exactInput = amountSpecified > 0;
@@ -527,8 +527,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             SwapState({
                 amountSpecifiedRemaining: amountSpecified,
                 amountCalculated: 0,
-                sqrtPriceX96: _slot0Start.sqrtPriceX96,
-                tick: _slot0Start.tick,
+                sqrtPriceX96: slot0Start.sqrtPriceX96,
+                tick: slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
                 protocolFee: 0,
                 liquidity: cache.liquidityStart
@@ -616,15 +616,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         slot0.sqrtPriceX96 = state.sqrtPriceX96;
 
         // update tick and write an oracle entry if the tick change
-        if (state.tick != _slot0Start.tick) {
+        if (state.tick != slot0Start.tick) {
             slot0.tick = state.tick;
             (slot0.observationIndex, slot0.observationCardinality) = observations.write(
-                _slot0Start.observationIndex,
+                slot0Start.observationIndex,
                 cache.blockTimestamp,
-                _slot0Start.tick,
+                slot0Start.tick,
                 cache.liquidityStart,
-                _slot0Start.observationCardinality,
-                _slot0Start.observationCardinalityNext
+                slot0Start.observationCardinality,
+                slot0Start.observationCardinalityNext
             );
         }
 
