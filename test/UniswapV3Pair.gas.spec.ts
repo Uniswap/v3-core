@@ -52,7 +52,7 @@ describe('UniswapV3Pair gas tests', () => {
         })
 
         await pair.initialize(encodePriceSqrt(1, 1))
-        await pair.setFeeProtocol(feeProtocol)
+        await pair.setFeeProtocol(feeProtocol, feeProtocol)
         await pair.increaseObservationCardinalityNext(4)
         await pair.advanceTime(1)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(2))

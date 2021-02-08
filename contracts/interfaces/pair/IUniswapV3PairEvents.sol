@@ -106,9 +106,11 @@ interface IUniswapV3PairEvents {
     );
 
     /// @notice Emitted when the protocol fee is changed by the pair
-    /// @param feeProtocolOld The previous value of the feeProtocol state variable
-    /// @param feeProtocolNew The updated value of the feeProtocol state variable
-    event SetFeeProtocol(uint8 feeProtocolOld, uint8 feeProtocolNew);
+    /// @param feeProtocol0Old The previous value of the token0 protocol fee
+    /// @param feeProtocol1Old The previous value of the token1 protocol fee
+    /// @param feeProtocol0New The updated value of the token0 protocol fee
+    /// @param feeProtocol1New The updated value of the token1 protocol fee
+    event SetFeeProtocol(uint8 feeProtocol0Old, uint8 feeProtocol1Old, uint8 feeProtocol0New, uint8 feeProtocol1New);
 
     /// @notice Emitted when the collected protocol fees are withdrawn by the factory owner
     /// @param sender Address that collects the protocol fees

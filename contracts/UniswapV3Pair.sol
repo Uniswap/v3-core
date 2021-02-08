@@ -67,7 +67,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint16 observationCardinality;
         // the next maximum number of observations to store, triggered in observations.write
         uint16 observationCardinalityNext;
-        // the current protocol fee as a percentage of total fees, represented as an integer denominator (1/x)%
+        // the current protocol fee as a percentage of the swap fee taken on withdrawal
+        // represented as an integer denominator (1/x)%
         uint8 feeProtocol;
         // whether the pair is locked
         bool unlocked;
@@ -448,6 +449,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     struct SwapCache {
+        // the protocol fee for the input token
+        uint8 feeProtocol;
         // liquidity at the beginning of the swap
         uint128 liquidityStart;
         // the timestamp of the current block
@@ -511,7 +514,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         slot0.unlocked = false;
 
-        SwapCache memory cache = SwapCache({liquidityStart: liquidity, blockTimestamp: _blockTimestamp()});
+        SwapCache memory cache =
+            SwapCache({
+                liquidityStart: liquidity,
+                blockTimestamp: _blockTimestamp(),
+                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4)
+            });
 
         bool exactInput = amountSpecified > 0;
 
@@ -568,8 +576,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             }
 
             // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
-            if (slot0Start.feeProtocol > 0) {
-                uint256 delta = step.feeAmount / slot0Start.feeProtocol;
+            if (cache.feeProtocol > 0) {
+                uint256 delta = step.feeAmount / cache.feeProtocol;
                 step.feeAmount -= delta;
                 state.protocolFee += uint128(delta);
             }
@@ -694,11 +702,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PairOwnerActions
-    function setFeeProtocol(uint8 feeProtocol) external override lock onlyFactoryOwner {
-        require(feeProtocol == 0 || (feeProtocol <= 10 && feeProtocol >= 4));
+    function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock onlyFactoryOwner {
+        require(
+            (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10)) &&
+                (feeProtocol1 == 0 || (feeProtocol1 >= 4 && feeProtocol1 <= 10))
+        );
         uint8 feeProtocolOld = slot0.feeProtocol;
-        slot0.feeProtocol = feeProtocol;
-        emit SetFeeProtocol(feeProtocolOld, feeProtocol);
+        slot0.feeProtocol = feeProtocol0 + (feeProtocol1 << 4);
+        emit SetFeeProtocol(feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1);
     }
 
     /// @inheritdoc IUniswapV3PairOwnerActions
