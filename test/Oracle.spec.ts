@@ -405,18 +405,18 @@ describe('Oracle', () => {
       it('gas for observe since most recent', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
         await oracle.advanceTime(2)
-        await snapshotGasCost(oracle.getGasCostOfScry(1))
+        await snapshotGasCost(oracle.getGasCostOfObserve(1))
       })
 
       it('gas for single observation at current time', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await snapshotGasCost(oracle.getGasCostOfScry(0))
+        await snapshotGasCost(oracle.getGasCostOfObserve(0))
       })
 
       it('gas for single observation at current time counterfactually computed', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
         await oracle.advanceTime(5)
-        await snapshotGasCost(oracle.getGasCostOfScry(0))
+        await snapshotGasCost(oracle.getGasCostOfObserve(0))
       })
     })
 
@@ -490,20 +490,20 @@ describe('Oracle', () => {
         })
 
         it('gas latest equal', async () => {
-          await snapshotGasCost(oracle.getGasCostOfScry(0))
+          await snapshotGasCost(oracle.getGasCostOfObserve(0))
         })
         it('gas latest transform', async () => {
           await oracle.advanceTime(5)
-          await snapshotGasCost(oracle.getGasCostOfScry(0))
+          await snapshotGasCost(oracle.getGasCostOfObserve(0))
         })
         it('gas oldest', async () => {
-          await snapshotGasCost(oracle.getGasCostOfScry(14))
+          await snapshotGasCost(oracle.getGasCostOfObserve(14))
         })
         it('gas between oldest and oldest + 1', async () => {
-          await snapshotGasCost(oracle.getGasCostOfScry(13))
+          await snapshotGasCost(oracle.getGasCostOfObserve(13))
         })
         it('gas middle', async () => {
-          await snapshotGasCost(oracle.getGasCostOfScry(5))
+          await snapshotGasCost(oracle.getGasCostOfObserve(5))
         })
       })
     }
@@ -560,7 +560,7 @@ describe('Oracle', () => {
       expect(await oracle.index()).to.eq(165)
     })
 
-    async function checkScry(
+    async function checkObserve(
       secondsAgo: number,
       expected?: { tickCumulative: BigNumberish; liquidityCumulative: BigNumberish }
     ) {
@@ -580,21 +580,21 @@ describe('Oracle', () => {
     }
 
     it('can observe into the ordered portion with exact seconds ago', async () => {
-      await checkScry(100 * 13, {
+      await checkObserve(100 * 13, {
         liquidityCumulative: '27970560813',
         tickCumulative: '-27970560813',
       })
     })
 
     it('can observe into the ordered portion with unexact seconds ago', async () => {
-      await checkScry(100 * 13 + 5, {
+      await checkObserve(100 * 13 + 5, {
         liquidityCumulative: '27970232823',
         tickCumulative: '-27970232823',
       })
     })
 
     it('can observe at exactly the latest observation', async () => {
-      await checkScry(0, {
+      await checkObserve(0, {
         liquidityCumulative: '28055903863',
         tickCumulative: '-28055903863',
       })
@@ -602,7 +602,7 @@ describe('Oracle', () => {
 
     it('can observe at exactly the latest observation after some time passes', async () => {
       await oracle.advanceTime(5)
-      await checkScry(5, {
+      await checkObserve(5, {
         liquidityCumulative: '28055903863',
         tickCumulative: '-28055903863',
       })
@@ -610,28 +610,28 @@ describe('Oracle', () => {
 
     it('can observe after the latest observation counterfactual', async () => {
       await oracle.advanceTime(5)
-      await checkScry(3, {
+      await checkObserve(3, {
         liquidityCumulative: '28056035261',
         tickCumulative: '-28056035261',
       })
     })
 
     it('can observe into the unordered portion of array at exact seconds ago of observation', async () => {
-      await checkScry(200 * 13, {
+      await checkObserve(200 * 13, {
         liquidityCumulative: '27885347763',
         tickCumulative: '-27885347763',
       })
     })
 
     it('can observe into the unordered portion of array at seconds ago between observations', async () => {
-      await checkScry(200 * 13 + 5, {
+      await checkObserve(200 * 13 + 5, {
         liquidityCumulative: '27885020273',
         tickCumulative: '-27885020273',
       })
     })
 
     it('can observe the oldest observation 13*65534 seconds ago', async () => {
-      await checkScry(13 * 65534, {
+      await checkObserve(13 * 65534, {
         liquidityCumulative: '175890',
         tickCumulative: '-175890',
       })
@@ -639,35 +639,35 @@ describe('Oracle', () => {
 
     it('can observe the oldest observation 13*65534 + 5 seconds ago if time has elapsed', async () => {
       await oracle.advanceTime(5)
-      await checkScry(13 * 65534 + 5, {
+      await checkObserve(13 * 65534 + 5, {
         liquidityCumulative: '175890',
         tickCumulative: '-175890',
       })
     })
 
     it('gas cost of observe(0)', async () => {
-      await snapshotGasCost(oracle.getGasCostOfScry(0))
+      await snapshotGasCost(oracle.getGasCostOfObserve(0))
     })
     it('gas cost of observe(200 * 13)', async () => {
-      await snapshotGasCost(oracle.getGasCostOfScry(200 + 13))
+      await snapshotGasCost(oracle.getGasCostOfObserve(200 + 13))
     })
     it('gas cost of observe(200 * 13 + 5)', async () => {
-      await snapshotGasCost(oracle.getGasCostOfScry(200 + 13 + 5))
+      await snapshotGasCost(oracle.getGasCostOfObserve(200 + 13 + 5))
     })
     it('gas cost of observe(0) after 5 seconds', async () => {
       await oracle.advanceTime(5)
-      await snapshotGasCost(oracle.getGasCostOfScry(0))
+      await snapshotGasCost(oracle.getGasCostOfObserve(0))
     })
     it('gas cost of observe(5) after 5 seconds', async () => {
       await oracle.advanceTime(5)
-      await snapshotGasCost(oracle.getGasCostOfScry(5))
+      await snapshotGasCost(oracle.getGasCostOfObserve(5))
     })
     it('gas cost of observe(oldest)', async () => {
-      await snapshotGasCost(oracle.getGasCostOfScry(65534 * 13))
+      await snapshotGasCost(oracle.getGasCostOfObserve(65534 * 13))
     })
     it('gas cost of observe(oldest) after 5 seconds', async () => {
       await oracle.advanceTime(5)
-      await snapshotGasCost(oracle.getGasCostOfScry(65534 * 13 + 5))
+      await snapshotGasCost(oracle.getGasCostOfObserve(65534 * 13 + 5))
     })
   })
 })

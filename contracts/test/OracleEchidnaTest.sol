@@ -77,7 +77,7 @@ contract OracleEchidnaTest {
         return oracle.cardinality() <= oracle.cardinalityNext();
     }
 
-    function echidna_canAlwaysScry0IfInitialized() external view returns (bool) {
+    function echidna_canAlwaysObserve0IfInitialized() external view returns (bool) {
         if (!initialized) {
             return true;
         }
