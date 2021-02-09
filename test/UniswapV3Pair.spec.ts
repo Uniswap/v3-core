@@ -498,12 +498,14 @@ describe('UniswapV3Pair', () => {
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         let {
           liquidity,
+          lastAddedTo,
           feeGrowthInside0LastX128,
           feeGrowthInside1LastX128,
           feesOwed1,
           feesOwed0,
         } = await pair.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing))
         expect(liquidity).to.eq(1)
+        expect(lastAddedTo).to.eq(TEST_PAIR_START_TIME)
         expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
         expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
         expect(feesOwed0).to.eq(0)
@@ -512,12 +514,14 @@ describe('UniswapV3Pair', () => {
         await pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         ;({
           liquidity,
+          lastAddedTo,
           feeGrowthInside0LastX128,
           feeGrowthInside1LastX128,
           feesOwed1,
           feesOwed0,
         } = await pair.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)))
         expect(liquidity).to.eq(0)
+        expect(lastAddedTo).to.eq(0)
         expect(feeGrowthInside0LastX128).to.eq(0)
         expect(feeGrowthInside1LastX128).to.eq(0)
         expect(feesOwed0).to.eq(0)
@@ -552,12 +556,14 @@ describe('UniswapV3Pair', () => {
       await pair.connect(other).burn(wallet.address, minTick, maxTick, expandTo18Decimals(1))
       const {
         liquidity,
+        lastAddedTo,
         feesOwed0,
         feesOwed1,
         feeGrowthInside0LastX128,
         feeGrowthInside1LastX128,
       } = await pair.positions(getPositionKey(other.address, minTick, maxTick))
       expect(liquidity).to.eq(0)
+      expect(lastAddedTo).to.eq(0)
       expect(feesOwed0).to.not.eq(0)
       expect(feesOwed1).to.not.eq(0)
       expect(feeGrowthInside0LastX128).to.eq(0)
@@ -908,6 +914,62 @@ describe('UniswapV3Pair', () => {
     beforeEach(async () => {
       pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
       await pair.initialize(encodePriceSqrt(1, 1))
+    })
+
+    describe('increase threshold', () => {
+      it('prevents small additions', async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+        await expect(mint(wallet.address, minTick, maxTick, 1)).to.be.revertedWith('SM')
+        await expect(mint(wallet.address, minTick, maxTick, expandTo18Decimals(1).div(100).sub(1))).to.be.revertedWith(
+          'SM'
+        )
+      })
+
+      it('works', async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1).div(100))
+      })
+    })
+
+    describe('penalty', () => {
+      beforeEach(async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+      })
+
+      it('works after no time', async () => {
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
+        expect(token0ProtocolFees).to.eq('600000000000002')
+        expect(token1ProtocolFees).to.eq(0)
+      })
+
+      it('works after half time', async () => {
+        await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal / 2)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
+        expect(token0ProtocolFees).to.eq('300000000000001')
+        expect(token1ProtocolFees).to.eq(0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+        expect(feesOwed0).to.be.eq('300000000000001')
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('works after full time', async () => {
+        await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
+        expect(token0ProtocolFees).to.eq(0)
+        expect(token1ProtocolFees).to.eq(0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+        expect(feesOwed0).to.be.eq('600000000000002')
+        expect(feesOwed1).to.be.eq(0)
+      })
     })
 
     it('works with multiple LPs', async () => {

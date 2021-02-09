@@ -9,8 +9,11 @@ import './LiquidityMath.sol';
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
 /// @dev Positions store additional state for tracking fees owed to the position
 library Position {
-    // the time after a mint during which fees earned are penalized with linear decay if exercised
+    // the minimum time after a mint at which fees earned are no longer penalized with linear decay if exercised
     uint256 private constant feePenaltyThreshold = 1 minutes;
+    // the minimum percentage which mints must increase a position's liquidity by
+    // represented as a numerator (x/100)%
+    uint256 private constant minimumLiquidityIncrease = 101;
 
     // info stored for each user's position
     struct Info {
@@ -88,7 +91,6 @@ library Position {
         if (feesOwed0 > 0 || feesOwed1 > 0) {
             // overflow is safe
             uint32 elapsed = time - self.lastAddedTo;
-            // note: this condition triggers falsely for new positions within threshold seconds of every 2**32 seconds
             if (elapsed < feePenaltyThreshold) {
                 // implement the fee penalty (rounding in favor of the protocol)
                 uint128 feesOwed0New = uint128((uint256(feesOwed0) * elapsed) / feePenaltyThreshold);
@@ -103,8 +105,12 @@ library Position {
             self.feesOwed0 += feesOwed0;
             self.feesOwed1 += feesOwed1;
         }
-        // important that this happens after the fee block, which uses self.lastAddedTo
-        if (liquidityDelta > 0) self.lastAddedTo = time;
+        if (liquidityDelta > 0) {
+            // ensure that enough new liquidity is being added
+            require(uint256(liquidityNext) * 100 / minimumLiquidityIncrease >= _self.liquidity, 'SM');
+            // important that this happens after the fee block, which uses self.lastAddedTo
+            self.lastAddedTo = time;
+        }
 
         // clear position data that is no longer needed
         if (liquidityNext == 0) {
