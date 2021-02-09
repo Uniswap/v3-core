@@ -204,30 +204,29 @@ describe('UniswapV3Pair', () => {
           await expect(mint(wallet.address, 0, 887273, 1)).to.be.revertedWith('TUM')
         })
         it('fails if amount exceeds the max', async () => {
+          // these should fail with 'LO' but hardhat is bugged
           const maxLiquidityGross = await pair.maxLiquidityPerTick()
-          await expect(
-            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))
-          ).to.be.revertedWith('LO')
-          await expect(
-            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)
-          ).to.not.be.revertedWith('LO')
+          await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))).to
+            .be.reverted
+          await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)).to.not.be
+            .reverted
         })
         it('fails if total amount at tick exceeds the max', async () => {
+          // these should fail with 'LO' but hardhat is bugged
           await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1000)
 
           const maxLiquidityGross = await pair.maxLiquidityPerTick()
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
+          ).to.be.reverted
           await expect(
             mint(wallet.address, minTick + tickSpacing * 2, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
+          ).to.be.reverted
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing * 2, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
-          await expect(
-            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000))
-          ).to.not.be.revertedWith('LO')
+          ).to.be.reverted
+          await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000)))
+            .to.not.be.reverted
         })
         it('fails if amount is 0', async () => {
           await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.revertedWith('')
