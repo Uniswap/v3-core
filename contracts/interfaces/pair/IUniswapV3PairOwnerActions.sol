@@ -8,13 +8,15 @@ interface IUniswapV3PairOwnerActions {
     /// @dev The value passed in is the denominator of the split between the liquidity provider and the protocol for
     /// fees collected by the pair. E.g. a value of 6 means the protocol will collect 1/6th of all fees collected
     /// by the pair.
-    /// @param feeProtocol new protocol fee for the pair
+    /// @param feeProtocol The new protocol fee for the pair
     function setFeeProtocol(uint8 feeProtocol) external;
 
     /// @notice Collect the protocol fee accrued to the pair
     /// @param recipient The address to which collected protocol fees should be sent
     /// @param amount0Requested The maximum amount of token0 to send, can be 0 to collect fees in only token1
     /// @param amount1Requested The maximum amount of token1 to send, can be 0 to collect fees in only token0
+    /// @return amount0 The protocol fee collected in token0
+    /// @return amount0 The protocol fee collected in token1
     function collectProtocol(
         address recipient,
         uint128 amount0Requested,
