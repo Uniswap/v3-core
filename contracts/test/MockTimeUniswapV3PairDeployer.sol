@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
-pragma abicoder v2;
+
+import '../interfaces/IUniswapV3PairDeployer.sol';
 
 import './MockTimeUniswapV3Pair.sol';
-import '../interfaces/IUniswapV3PairDeployer.sol';
 
 contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
     struct Parameters {

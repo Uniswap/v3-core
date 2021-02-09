@@ -1,39 +1,38 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
-pragma abicoder v2;
 
-import './libraries/FullMath.sol';
-import './libraries/TransferHelper.sol';
+import './interfaces/IUniswapV3Pair.sol';
+
+import './NoDelegateCall.sol';
 
 import './libraries/LowGasSafeMath.sol';
-
 import './libraries/SafeCast.sol';
-import './libraries/LiquidityMath.sol';
-import './libraries/SqrtPriceMath.sol';
-import './libraries/SwapMath.sol';
-import './libraries/TickMath.sol';
-import './libraries/TickBitmap.sol';
-import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
+import './libraries/TickBitmap.sol';
 import './libraries/SecondsOutside.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
 
-import './interfaces/IERC20Minimal.sol';
-import './interfaces/IUniswapV3Pair.sol';
+import './libraries/FullMath.sol';
+import './libraries/FixedPoint128.sol';
+import './libraries/TransferHelper.sol';
+import './libraries/TickMath.sol';
+import './libraries/LiquidityMath.sol';
+import './libraries/SqrtPriceMath.sol';
+import './libraries/SwapMath.sol';
+
 import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
+import './interfaces/IERC20Minimal.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
-import './NoDelegateCall.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
-    using LiquidityMath for uint128;
     using Tick for mapping(int24 => Tick.Info);
     using TickBitmap for mapping(int16 => uint256);
     using SecondsOutside for mapping(int24 => uint256);
@@ -276,7 +275,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     params.liquidityDelta
                 );
 
-                liquidity = liquidityBefore.addDelta(params.liquidityDelta);
+                liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta);
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -602,7 +601,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
                     secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
-                    state.liquidity = state.liquidity.addDelta(liquidityDelta);
+                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityDelta);
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;

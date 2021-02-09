@@ -3,9 +3,10 @@ pragma solidity =0.7.6;
 
 import './interfaces/IUniswapV3Factory.sol';
 
-import './UniswapV3Pair.sol';
 import './UniswapV3PairDeployer.sol';
 import './NoDelegateCall.sol';
+
+import './UniswapV3Pair.sol';
 
 /// @title Canonical Uniswap V3 pair factory
 /// @notice Deploys Uniswap V3 pairs and manages ownership and control over pair protocol fees
