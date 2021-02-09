@@ -8,14 +8,15 @@ interface IUniswapV3PairState {
     /// @notice The 0th storage slot in the pair stores many values, and is exposed as a single method to save gas
     /// when accessed externally.
     /// @return sqrtPriceX96 The current price of the pair as a sqrt(token1/token0) Q64.96 value
-    /// @return tick The current tick of the pair according to the last tick transition.
+    /// tick The current tick of the pair, i.e. according to the last tick transition that was run.
     /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96) if the price is on a tick
     /// boundary.
-    /// @return observationIndex The index of the last oracle observation that was written
-    /// @return observationCardinality The current maximum number of observations stored in the pair
-    /// @return observationCardinalityNext The next maximum number of observations
-    /// @return feeProtocol The fees collected by the protocol for the pair
-    /// @return unlocked Whether the pair is currently locked to reentrancy
+    /// observationIndex The index of the last oracle observation that was written,
+    /// observationCardinality The current maximum number of observations stored in the pair,
+    /// observationCardinalityNext The next maximum number of observations, to be updated when the observation,
+    /// index The last element of the observation array,
+    /// feeProtocol The fees collected by the protocol for the pair,
+    /// unlocked Whether the pair is currently locked to reentrancy
     function slot0()
         external
         view

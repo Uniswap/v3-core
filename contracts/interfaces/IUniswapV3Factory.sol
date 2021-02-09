@@ -30,17 +30,17 @@ interface IUniswapV3Factory {
 
     /// @notice Returns the current owner of the factory
     /// @dev Can be changed by the current owner via setOwner
-    /// @return The address of the factory owner
+    /// Return The address of the factory owner
     function owner() external view returns (address);
 
     /// @notice Returns the tick spacing for a given fee amount, if enabled, or 0 if not enabled
     /// @dev A fee amount can never bee removed, so this value should be hard coded or cached in the calling context
-    /// @return The tick spacing
+    /// Return The tick spacing
     function feeAmountTickSpacing(uint24 fee) external view returns (int24);
 
     /// @notice Returns the pair address for a given pair of tokens and a fee, or address 0 if it does not exist
     /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order
-    /// @return pair The pair address
+    /// Return pair The pair address
     function getPair(
         address tokenA,
         address tokenB,
@@ -54,7 +54,7 @@ interface IUniswapV3Factory {
     /// @dev tokenA and tokenB may be passed in either order: token0/token1 or token1/token0. tickSpacing is retrieved
     /// from the fee. The call will revert if the pair already exists, the fee is invalid, or the token arguments
     /// are invalid.
-    /// @return pair The address of the newly created pair
+    /// Returns pair The address of the newly created pair
     function createPair(
         address tokenA,
         address tokenB,

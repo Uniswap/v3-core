@@ -35,8 +35,8 @@ interface IUniswapV3PairActions {
     /// @param tickUpper The upper tick of the position for which to collect fees
     /// @param amount0Requested How much token0 should be withdrawn from the fees owed
     /// @param amount1Requested How much token1 should be withdrawn from the fees owed
-    /// @return amount0 The amount of fees collected in token0
-    /// @return amount1 The amount of fees collected in token1
+    /// Returns amount0 The amount of fees collected in token0
+    /// Returns amount1 The amount of fees collected in token1
     function collect(
         address recipient,
         int24 tickLower,
@@ -52,8 +52,8 @@ interface IUniswapV3PairActions {
     /// @param tickLower The lower tick of the position for which to burn liquidity
     /// @param tickUpper The upper tick of the position for which to burn liquidity
     /// @param amount How much liquidity to burn
-    /// @return amount0 The amount of token0 sent to the recipient
-    /// @return amount1 The amount of token1 sent to the recipient
+    /// Returns amount0 The amount of token0 sent to the recipient
+    /// Returns amount1 The amount of token1 sent to the recipient
     function burn(
         address recipient,
         int24 tickLower,
