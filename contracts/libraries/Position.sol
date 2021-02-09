@@ -91,8 +91,8 @@ library Position {
             // note: this condition triggers falsely for new positions within threshold seconds of every 2**32 seconds
             if (elapsed < feePenaltyThreshold) {
                 // implement the fee penalty (rounding in favor of the protocol)
-                uint128 feesOwed0New = uint128(uint256(feesOwed0) * elapsed / feePenaltyThreshold);
-                uint128 feesOwed1New = uint128(uint256(feesOwed1) * elapsed / feePenaltyThreshold);
+                uint128 feesOwed0New = uint128((uint256(feesOwed0) * elapsed) / feePenaltyThreshold);
+                uint128 feesOwed1New = uint128((uint256(feesOwed1) * elapsed) / feePenaltyThreshold);
                 protocolFees0 = feesOwed0 - feesOwed0New;
                 protocolFees1 = feesOwed1 - feesOwed1New;
                 feesOwed0 = feesOwed0New;
