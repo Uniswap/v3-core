@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.7.0;
 
-/// @title Optimized revert-safe math operations
-/// @notice Contains methods for doing revert safe math operations for minimal gas cost
+/// @title Optimized overflow and underflow safe math operations
+/// @notice Contains methods for doing math operations that revert on overflow or underflow for minimal gas cost
 library LowGasSafeMath {
     /// @notice Returns x + y, reverts if overflows uint256
     function add(uint256 x, uint256 y) internal pure returns (uint256 z) {

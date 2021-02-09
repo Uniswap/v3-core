@@ -15,6 +15,9 @@ export const getMaxLiquidityPerTick = (tickSpacing: number) =>
     .sub(1)
     .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
 
+export const MIN_SQRT_RATIO = BigNumber.from('4295128739')
+export const MAX_SQRT_RATIO = BigNumber.from('1461446703485210103287273052203988822378723970342')
+
 export enum FeeAmount {
   LOW = 600,
   MEDIUM = 3000,
