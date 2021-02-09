@@ -88,6 +88,7 @@ interface IUniswapV3PairState {
         view
         returns (
             uint128 _liquidity,
+            uint32 lastAddedTo,
             uint256 feeGrowthInside0LastX128,
             uint256 feeGrowthInside1LastX128,
             uint128 feesOwed0,

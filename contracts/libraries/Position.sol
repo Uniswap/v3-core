@@ -9,10 +9,15 @@ import './LiquidityMath.sol';
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
 /// @dev Positions store additional state for tracking fees owed to the position
 library Position {
+    // the time after a mint during which fees earned are penalized with linear decay if exercised
+    uint256 private constant feePenaltyThreshold = 1 minutes;
+
     // info stored for each user's position
     struct Info {
         // the amount of liquidity owned by this position
         uint128 liquidity;
+        // the most recent time that liquidity was added to this position
+        uint32 lastAddedTo;
         // fee growth per unit of liquidity as of the last update to liquidity or fees owed
         uint256 feeGrowthInside0LastX128;
         uint256 feeGrowthInside1LastX128;
@@ -44,9 +49,10 @@ library Position {
     function update(
         Info storage self,
         int128 liquidityDelta,
+        uint32 time,
         uint256 feeGrowthInside0X128,
         uint256 feeGrowthInside1X128
-    ) internal {
+    ) internal returns (uint128 protocolFees0, uint128 protocolFees1) {
         Info memory _self = self;
 
         uint128 liquidityNext;
@@ -80,13 +86,29 @@ library Position {
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (feesOwed0 > 0 || feesOwed1 > 0) {
+            // overflow is safe
+            uint32 elapsed = time - self.lastAddedTo;
+            // note: this condition triggers falsely for new positions within threshold seconds of every 2**32 seconds
+            if (elapsed < feePenaltyThreshold) {
+                // implement the fee penalty (rounding in favor of the protocol)
+                uint128 feesOwed0New = uint128(uint256(feesOwed0) * elapsed / feePenaltyThreshold);
+                uint128 feesOwed1New = uint128(uint256(feesOwed1) * elapsed / feePenaltyThreshold);
+                protocolFees0 = feesOwed0 - feesOwed0New;
+                protocolFees1 = feesOwed1 - feesOwed1New;
+                feesOwed0 = feesOwed0New;
+                feesOwed1 = feesOwed1New;
+            }
+
             // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
             self.feesOwed0 += feesOwed0;
             self.feesOwed1 += feesOwed1;
         }
+        // important that this happens after the fee block, which uses self.lastAddedTo
+        if (liquidityDelta > 0) self.lastAddedTo = time;
 
         // clear position data that is no longer needed
         if (liquidityNext == 0) {
+            delete self.lastAddedTo;
             delete self.feeGrowthInside0LastX128;
             delete self.feeGrowthInside1LastX128;
         }
