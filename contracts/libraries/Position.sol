@@ -107,7 +107,7 @@ library Position {
         }
         if (liquidityDelta > 0) {
             // ensure that enough new liquidity is being added
-            require(uint256(liquidityNext) * 100 / minimumLiquidityIncrease >= _self.liquidity, 'SM');
+            require((uint256(liquidityNext) * 100) / minimumLiquidityIncrease >= _self.liquidity, 'SM');
             // important that this happens after the fee block, which uses self.lastAddedTo
             self.lastAddedTo = time;
         }
