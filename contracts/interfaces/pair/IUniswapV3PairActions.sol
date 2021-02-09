@@ -28,7 +28,7 @@ interface IUniswapV3PairActions {
 
     /// @notice Collects fees owed to a position
     /// @dev Does not recompute fees, which must be done either via mint, burn or poke. Must be called by the position
-    /// owner. To withdraw no fees for a token, amount0Requested or amount1Request may be set to zero. To withdraw all fees owed, caller may 
+    /// owner. To withdraw no fees for a token, amount0Requested or amount1Request may be set to zero. To withdraw all fees owed, caller may
     /// pass any value greater than the fees owed.
     /// @param recipient The address which should receive the fees collected
     /// @param tickLower The lower tick of the position for which to collect fees

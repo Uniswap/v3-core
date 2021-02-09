@@ -6,8 +6,6 @@ pragma solidity >=0.5.0;
 /// spent outside the tick.
 /// @dev The mapping uses int24 for keys since ticks are represented as int24 and there are 8 (2^3) values per word.
 library SecondsOutside {
-
-
     /// @notice Computes the position of the least significant bit of the 32 bit seconds outside value for a given tick
     /// @param tick the tick for which to compute the position
     /// @param tickSpacing the spacing between usable ticks
