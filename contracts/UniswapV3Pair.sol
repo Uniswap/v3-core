@@ -452,6 +452,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 amount1 > 0 && (feeProtocol >> 4 > 0)
                     ? uint128(FullMath.mulDiv(amount1, fee, 1e6 * (feeProtocol >> 4)))
                     : 0;
+            // overflow is acceptable, protocol fees must be withdrawn before type(uint128).max fees are collected
             protocolFees.token0 += protocolFee0;
             protocolFees.token1 += protocolFee1;
             amount0 -= protocolFee0;
