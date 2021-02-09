@@ -26,5 +26,5 @@ interface IUniswapV3PairDerivedState {
     /// @dev The time weighted average tick represents the geometric time weighted average price of the pair, in
     /// log base sqrt(1.0001) of token1 / token0. The TickMath library allows you to compute sqrt(1.0001)^tick
     /// as a fixed point Q128.128 in a uint256 container.
-    function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
+    function observe(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
 }
