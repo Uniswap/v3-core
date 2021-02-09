@@ -12,7 +12,7 @@ interface IUniswapV3PairDerivedState {
     /// burned. Thus the external contract must control the lifecycle of the position.
     /// @param tickLower The lower tick of the range for which to get the seconds inside
     /// @param tickUpper The upper tick of the range for which to get the seconds inside
-    /// Returns A relative timestamp for how long the pair spent in the tick range
+    /// @return A relative timestamp for how long the pair spent in the tick range
     function secondsInside(int24 tickLower, int24 tickUpper) external view returns (uint32);
 
     /// @notice Returns the cumulative tick and liquidity as of a timestamp `secondsAgo` from the current block timestamp
@@ -23,8 +23,8 @@ interface IUniswapV3PairDerivedState {
     /// log base sqrt(1.0001) of token1 / token0. The TickMath library allows you to compute sqrt(1.0001)^tick
     /// as a fixed point Q128.128 in a uint256 container.
     /// @param secondsAgo From how long ago the cumulative tick and liquidity should be returned
-    /// Returns tickCumulative Cumulative tick value as of `secondsAgo` from the current block timestamp
-    /// Returns liquidityCumulative Cumulative liquidity-in-range value as of `secondsAgo` from the current block
+    /// @return tickCumulative Cumulative tick value as of `secondsAgo` from the current block timestamp
+    /// @return liquidityCumulative Cumulative liquidity-in-range value as of `secondsAgo` from the current block
     /// timestamp
     function scry(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
 }
