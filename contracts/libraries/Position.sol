@@ -49,6 +49,8 @@ library Position {
     /// @param liquidityDelta The change in pair liquidity as a result of the position update
     /// @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
     /// @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
+    /// Returns protocolFees0 new protocol fees in token0 that were collected
+    /// Returns protocolFees1 new protocol fees in token1 that were collected
     function update(
         Info storage self,
         int128 liquidityDelta,

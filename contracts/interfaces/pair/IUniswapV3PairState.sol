@@ -79,6 +79,7 @@ interface IUniswapV3PairState {
     /// @notice Returns the information about a position by the position's key
     /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
     /// @return _liquidity The amount of liquidity in the position,
+    /// Returns lastAddedTo the minimum time after a mint when fees earned are no longer penalized if exercised
     /// feeGrowthInside0LastX128 fee growth of token0 inside the tick range as of the last mint/burn/poke,
     /// feeGrowthInside1LastX128 fee growth of token1 inside the tick range as of the last mint/burn/poke,
     /// feesOwed0 the computed amount of token0 owed to the position as of the last mint/burn/poke,
