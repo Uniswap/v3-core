@@ -79,10 +79,10 @@ interface IUniswapV3PairState {
     /// @notice Returns the information about a position by the position's key
     /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
     /// @return _liquidity The amount of liquidity in the position,
-    /// feeGrowthInside0LastX128 fee growth of token0 inside the tick range as of the last mint/burn/poke,
-    /// feeGrowthInside1LastX128 fee growth of token1 inside the tick range as of the last mint/burn/poke,
-    /// feesOwed0 the computed amount of token0 owed to the position as of the last mint/burn/poke,
-    /// feesOwed1 the computed amount of token1 owed to the position as of the last mint/burn/poke
+    /// Returns feeGrowthInside0LastX128 fee growth of token0 inside the tick range as of the last mint/burn/poke,
+    /// Returns feeGrowthInside1LastX128 fee growth of token1 inside the tick range as of the last mint/burn/poke,
+    /// Returns feesOwed0 the computed amount of token0 owed to the position as of the last mint/burn/poke,
+    /// Returns feesOwed1 the computed amount of token1 owed to the position as of the last mint/burn/poke
     function positions(bytes32 key)
         external
         view
@@ -99,11 +99,11 @@ interface IUniswapV3PairState {
     /// @dev You most likely want to use #scry() instead of this method to get an observation as of some amount of time
     /// ago, rather than at a specific index in the array.
     /// @return blockTimestamp The timestamp of the observation,
-    /// tickCumulative the current tick multiplied by seconds elapsed for the life of the pair as of the
+    /// Returns tickCumulative the current tick multiplied by seconds elapsed for the life of the pair as of the
     /// observation,
-    /// liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pair as of
+    /// Returns liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pair as of
     /// the observation,
-    /// initialized whether the observation has been initialized and the values are safe to use
+    /// Returns initialized whether the observation has been initialized and the values are safe to use
     function observations(uint256 index)
         external
         view
