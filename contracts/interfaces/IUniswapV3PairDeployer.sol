@@ -9,6 +9,11 @@ interface IUniswapV3PairDeployer {
     /// @notice Get the parameters to be used in constructing the pair. This is set only transiently during
     /// pair creation.
     /// @dev Called by the pair constructor to fetch the parameters of the pair
+    /// Returns factory The factory address
+    /// Returns token0 The first token of the pair by address sort order
+    /// Returns token1 The second token of the pair by address sort order
+    /// Returns fee The fee collected upon every swap in the pair, denominated in hundredths of a bip
+    /// Returns tickSpacing The minimum number of ticks between initialized ticks
     function parameters()
         external
         view
