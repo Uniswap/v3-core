@@ -96,7 +96,7 @@ interface IUniswapV3PairState {
 
     /// @notice Returns data about a specific observation index
     /// @param index The element of the observations array to fetch
-    /// @dev You most likely want to use #scry() instead of this method to get an observation as of some amount of time
+    /// @dev You most likely want to use #observe() instead of this method to get an observation as of some amount of time
     /// ago, rather than at a specific index in the array.
     /// @return blockTimestamp The timestamp of the observation,
     /// Returns tickCumulative the current tick multiplied by seconds elapsed for the life of the pair as of the
