@@ -161,7 +161,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PairDerivedState
-    function scry(uint32 secondsAgo)
+    function observe(uint32 secondsAgo)
         external
         view
         override
@@ -169,7 +169,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
         return
-            observations.scry(
+            observations.observe(
                 _blockTimestamp(),
                 secondsAgo,
                 slot0.tick,
@@ -700,8 +700,18 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 paid0 = balance0After - balance0Before;
         uint256 paid1 = balance1After - balance1Before;
 
-        if (paid0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
-        if (paid1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
+        if (paid0 > 0) {
+            uint8 feeProtocol0 = slot0.feeProtocol % 16;
+            uint256 fees0 = feeProtocol0 == 0 ? 0 : paid0 / feeProtocol0;
+            if (uint128(fees0) > 0) protocolFees.token0 += uint128(fees0);
+            feeGrowthGlobal0X128 += FullMath.mulDiv(paid0 - fees0, FixedPoint128.Q128, _liquidity);
+        }
+        if (paid1 > 0) {
+            uint8 feeProtocol1 = slot0.feeProtocol >> 4;
+            uint256 fees1 = feeProtocol1 == 0 ? 0 : paid1 / feeProtocol1;
+            if (uint128(fees1) > 0) protocolFees.token1 += uint128(fees1);
+            feeGrowthGlobal1X128 += FullMath.mulDiv(paid1 - fees1, FixedPoint128.Q128, _liquidity);
+        }
 
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
     }
