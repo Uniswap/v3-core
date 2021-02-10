@@ -11,7 +11,7 @@ interface IUniswapV3PairActions {
 
     /// @notice Adds liquidity for the given recipient/tickLower/tickUpper position
     /// @dev The caller of this method receives a callback in the form of IUniswapV3MintCallback#uniswapV3MintCallback
-    /// in which they must pay any token0 or token1 owed to the liquidity. The amount of token0/token1 due depends
+    /// in which they must pay any token0 or token1 owed for the liquidity. The amount of token0/token1 due depends
     /// on tickLower, tickUpper, the amount of liquidity, and the current price.
     /// @param recipient The address for which the liquidity will be created
     /// @param tickLower The lower tick of the position in which to add liquidity

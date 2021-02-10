@@ -16,7 +16,7 @@ interface IUniswapV3PairImmutables {
     /// @return The token contract address
     function token1() external view returns (address);
 
-    /// @notice The pair's fee in pips, i.e. 1e-6
+    /// @notice The pair's fee in hundredths of a bip, i.e. 1e-6
     /// @return The fee
     function fee() external view returns (uint24);
 

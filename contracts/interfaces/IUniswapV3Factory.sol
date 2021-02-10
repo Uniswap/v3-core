@@ -12,7 +12,7 @@ interface IUniswapV3Factory {
     /// @notice Emitted when a pair is created
     /// @param token0 The first token of the pair by address sort order
     /// @param token1 The second token of the pair by address sort order
-    /// @param fee The fee collected upon every swap in the pair, denominated in pips
+    /// @param fee The fee collected upon every swap in the pair, denominated in hundredths of a bip
     /// @param tickSpacing The minimum number of ticks between initialized ticks
     /// @param pair The address of the created pair
     event PairCreated(
@@ -24,7 +24,7 @@ interface IUniswapV3Factory {
     );
 
     /// @notice Emitted when a new fee amount is enabled for pair creation via the factory
-    /// @param fee The enabled fee, denominated in pips
+    /// @param fee The enabled fee, denominated in hundredths of a bip
     /// @param tickSpacing The minimum number of ticks between initialized ticks for pairs created with the given fee
     event FeeAmountEnabled(uint24 indexed fee, int24 indexed tickSpacing);
 
@@ -40,7 +40,7 @@ interface IUniswapV3Factory {
 
     /// @notice Returns the pair address for a given pair of tokens and a fee, or address 0 if it does not exist
     /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order
-    /// Return pair The pair address
+    /// @return pair The pair address
     function getPair(
         address tokenA,
         address tokenB,
@@ -68,7 +68,7 @@ interface IUniswapV3Factory {
 
     /// @notice Enables a fee amount with the given tickSpacing
     /// @dev Fee amounts may never be removed once enabled
-    /// @param fee The fee amount to enable, in pips (i.e. 1e-6)
+    /// @param fee The fee amount to enable, denominated in hundredths of a bip (i.e. 1e-6)
     /// @param tickSpacing The spacing between ticks to be enforced for all pairs created with the given fee amount
     function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
 }
