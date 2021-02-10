@@ -5,7 +5,7 @@ import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
 import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
 import { TestERC20 } from '../../typechain/TestERC20'
 
-export const safeAdvanceTimeForFeeWithdrawal = 60
+export const safeAdvanceTimeForFeeWithdrawal = 1
 
 export const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
 
