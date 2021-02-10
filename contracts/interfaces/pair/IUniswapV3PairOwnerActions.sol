@@ -13,6 +13,8 @@ interface IUniswapV3PairOwnerActions {
     /// @param recipient The address to which collected protocol fees should be sent
     /// @param amount0Requested The maximum amount of token0 to send, can be 0 to collect fees in only token1
     /// @param amount1Requested The maximum amount of token1 to send, can be 0 to collect fees in only token0
+    /// @return amount0 The protocol fee collected in token0
+    /// @return amount1 The protocol fee collected in token1
     function collectProtocol(
         address recipient,
         uint128 amount0Requested,

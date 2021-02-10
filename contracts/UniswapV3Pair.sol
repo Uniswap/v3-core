@@ -161,7 +161,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PairDerivedState
-    function scry(uint32 secondsAgo)
+    function observe(uint32 secondsAgo)
         external
         view
         override
@@ -169,7 +169,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
         return
-            observations.scry(
+            observations.observe(
                 _blockTimestamp(),
                 secondsAgo,
                 slot0.tick,

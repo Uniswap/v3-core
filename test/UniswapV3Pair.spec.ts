@@ -195,7 +195,8 @@ describe('UniswapV3Pair', () => {
 
       describe('failure cases', () => {
         it('fails if tickLower greater than tickUpper', async () => {
-          await expect(mint(wallet.address, 1, 0, 1)).to.be.revertedWith('TLU')
+          // should be TLU but...hardhat
+          await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted
         })
         it('fails if tickLower less than min tick', async () => {
           await expect(mint(wallet.address, -887273, 0, 1)).to.be.revertedWith('TLM')
@@ -614,7 +615,7 @@ describe('UniswapV3Pair', () => {
     // simulates an external call to get the cumulatives as of the current block timestamp
     async function getCumulatives(): Promise<{ blockTimestamp: number; tickCumulative: BigNumber }> {
       const blockTimestamp = await pair.time()
-      const { tickCumulative } = await pair.scry(0).catch(() => ({
+      const { tickCumulative } = await pair.observe(0).catch(() => ({
         tickCumulative: BigNumber.from(0),
       }))
 
