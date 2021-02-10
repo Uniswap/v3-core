@@ -17,7 +17,7 @@ import {
   MintFunction,
   getMaxTick,
   MaxUint128,
-  safeAdvanceTimeForFeeWithdrawal,
+  SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL,
 } from './shared/utilities'
 
 const createFixtureLoader = waffle.createFixtureLoader
@@ -266,7 +266,7 @@ describe('UniswapV3Pair gas tests', () => {
         it('best case', async () => {
           await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+          await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
           await pair.burn(wallet.address, tickLower, tickUpper, 0)
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
           await snapshotGasCost(pair.burn(wallet.address, tickLower, tickUpper, 0))
@@ -280,7 +280,7 @@ describe('UniswapV3Pair gas tests', () => {
         it('close to worst case', async () => {
           await mint(wallet.address, tickLower, tickUpper, expandTo18Decimals(1))
           await swapExact0For1(expandTo18Decimals(1).div(100), wallet.address)
-          await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+          await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
           await pair.burn(wallet.address, tickLower, tickUpper, 0) // poke to accumulate fees
           await snapshotGasCost(pair.collect(wallet.address, tickLower, tickUpper, MaxUint128, MaxUint128))
         })

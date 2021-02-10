@@ -14,7 +14,7 @@ library Position {
         // the amount of liquidity owned by this position
         uint128 liquidity;
         // the most recent time that liquidity was added to this position
-        uint32 lastAddedTo;
+        uint32 lastMintTime;
         // fee growth per unit of liquidity as of the last update to liquidity or fees owed
         uint256 feeGrowthInside0LastX128;
         uint256 feeGrowthInside1LastX128;
@@ -43,8 +43,8 @@ library Position {
     /// @param liquidityDelta The change in pair liquidity as a result of the position update
     /// @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
     /// @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
-    /// Returns protocolFees0 new protocol fees in token0 that were collected
-    /// Returns protocolFees1 new protocol fees in token1 that were collected
+    /// @return protocolFees0 new protocol fees in token0 that were collected
+    /// @return protocolFees1 new protocol fees in token1 that were collected
     function update(
         Info storage self,
         int128 liquidityDelta,
@@ -81,11 +81,10 @@ library Position {
             );
 
         // update the position
-        if (liquidityDelta != 0) self.liquidity = liquidityNext;
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (feesOwed0 > 0 || feesOwed1 > 0) {
-            if (time == self.lastAddedTo) {
+            if (time == self.lastMintTime) {
                 // if the position was minted to within the same block, it forfeits fees to the protocol
                 protocolFees0 = feesOwed0;
                 protocolFees1 = feesOwed1;
@@ -97,12 +96,13 @@ library Position {
             self.feesOwed0 += feesOwed0;
             self.feesOwed1 += feesOwed1;
         }
-        // important that this happens after the preceding block, which uses self.lastAddedTo
-        if (liquidityDelta > 0) self.lastAddedTo = time;
+        if (liquidityDelta != 0) self.liquidity = liquidityNext;
+        // important that this happens after the feesOwed{0,1} block, as it uses self.lastMintTime
+        if (liquidityDelta > 0) self.lastMintTime = time;
 
         // clear position data that is no longer needed
         if (liquidityNext == 0) {
-            delete self.lastAddedTo;
+            delete self.lastMintTime;
             delete self.feeGrowthInside0LastX128;
             delete self.feeGrowthInside1LastX128;
         }

@@ -24,7 +24,7 @@ import {
   MaxUint128,
   MAX_SQRT_RATIO,
   MIN_SQRT_RATIO,
-  safeAdvanceTimeForFeeWithdrawal,
+  SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { TestUniswapV3ReentrantCallee } from '../typechain/TestUniswapV3ReentrantCallee'
@@ -498,14 +498,14 @@ describe('UniswapV3Pair', () => {
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         let {
           liquidity,
-          lastAddedTo,
+          lastMintTime,
           feeGrowthInside0LastX128,
           feeGrowthInside1LastX128,
           feesOwed1,
           feesOwed0,
         } = await pair.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing))
         expect(liquidity).to.eq(1)
-        expect(lastAddedTo).to.eq(TEST_PAIR_START_TIME)
+        expect(lastMintTime).to.eq(TEST_PAIR_START_TIME)
         expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
         expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
         expect(feesOwed0).to.eq(0)
@@ -514,14 +514,14 @@ describe('UniswapV3Pair', () => {
         await pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         ;({
           liquidity,
-          lastAddedTo,
+          lastMintTime,
           feeGrowthInside0LastX128,
           feeGrowthInside1LastX128,
           feesOwed1,
           feesOwed0,
         } = await pair.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)))
         expect(liquidity).to.eq(0)
-        expect(lastAddedTo).to.eq(0)
+        expect(lastMintTime).to.eq(0)
         expect(feeGrowthInside0LastX128).to.eq(0)
         expect(feeGrowthInside1LastX128).to.eq(0)
         expect(feesOwed0).to.eq(0)
@@ -552,18 +552,18 @@ describe('UniswapV3Pair', () => {
       await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
       await swapExact1For0(expandTo18Decimals(1), wallet.address)
-      await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+      await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
       await pair.connect(other).burn(wallet.address, minTick, maxTick, expandTo18Decimals(1))
       const {
         liquidity,
-        lastAddedTo,
+        lastMintTime,
         feesOwed0,
         feesOwed1,
         feeGrowthInside0LastX128,
         feeGrowthInside1LastX128,
       } = await pair.positions(getPositionKey(other.address, minTick, maxTick))
       expect(liquidity).to.eq(0)
-      expect(lastAddedTo).to.eq(0)
+      expect(lastMintTime).to.eq(0)
       expect(feesOwed0).to.not.eq(0)
       expect(feesOwed1).to.not.eq(0)
       expect(feeGrowthInside0LastX128).to.eq(0)
@@ -762,7 +762,7 @@ describe('UniswapV3Pair', () => {
       const token0BalanceBeforeWallet = await token0.balanceOf(wallet.address)
       const token1BalanceBeforeWallet = await token1.balanceOf(wallet.address)
 
-      await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+      await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
       await pair.burn(wallet.address, lowerTick, upperTick, 0)
       await pair.collect(wallet.address, lowerTick, upperTick, MaxUint128, MaxUint128)
 
@@ -931,7 +931,7 @@ describe('UniswapV3Pair', () => {
       })
 
       it('works after full time', async () => {
-        await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
         await pair.burn(wallet.address, minTick, maxTick, 0)
 
         let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
@@ -951,7 +951,7 @@ describe('UniswapV3Pair', () => {
       await swapExact0For1(expandTo18Decimals(1), wallet.address)
 
       // poke positions
-      await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+      await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
       await pair.burn(wallet.address, minTick, maxTick, 0)
       await pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
 
@@ -967,7 +967,7 @@ describe('UniswapV3Pair', () => {
     describe('works across large increases', () => {
       beforeEach(async () => {
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
-        await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
       })
 
       // type(uint128).max * 2**128 / 1e18
@@ -1010,7 +1010,7 @@ describe('UniswapV3Pair', () => {
         await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
         await pair.setFeeGrowthGlobal1X128(constants.MaxUint256)
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(10))
-        await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
       })
 
       it('token0', async () => {
@@ -1063,7 +1063,7 @@ describe('UniswapV3Pair', () => {
       pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
       await pair.initialize(encodePriceSqrt(1, 1))
       await mint(wallet.address, minTick, maxTick, liquidityAmount)
-      await pair.advanceTime(safeAdvanceTimeForFeeWithdrawal)
+      await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
     })
 
     it('is initially set to 0', async () => {
