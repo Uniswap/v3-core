@@ -152,9 +152,8 @@ library SqrtPriceMath {
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount0) {
-        (uint160 sqrtRatioLowerX96, uint160 sqrtRatioUpperX96) = sqrtRatioAX96 <= sqrtRatioBX96
-            ? (sqrtRatioAX96, sqrtRatioBX96)
-            : (sqrtRatioBX96, sqrtRatioAX96);
+        (uint160 sqrtRatioLowerX96, uint160 sqrtRatioUpperX96) =
+            sqrtRatioAX96 <= sqrtRatioBX96 ? (sqrtRatioAX96, sqrtRatioBX96) : (sqrtRatioBX96, sqrtRatioAX96);
 
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtRatioUpperX96 - sqrtRatioLowerX96;
@@ -181,9 +180,8 @@ library SqrtPriceMath {
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount1) {
-        (uint160 sqrtRatioLowerX96, uint160 sqrtRatioUpperX96) = sqrtRatioAX96 <= sqrtRatioBX96
-            ? (sqrtRatioAX96, sqrtRatioBX96)
-            : (sqrtRatioBX96, sqrtRatioAX96);
+        (uint160 sqrtRatioLowerX96, uint160 sqrtRatioUpperX96) =
+            sqrtRatioAX96 <= sqrtRatioBX96 ? (sqrtRatioAX96, sqrtRatioBX96) : (sqrtRatioBX96, sqrtRatioAX96);
 
         return
             roundUp
