@@ -69,8 +69,8 @@ contract OracleEchidnaTest {
     }
 
     function echidna_AlwaysInitialized() external view returns (bool) {
-        (, , uint40 liquidityCumulative) = oracle.observations(0);
-        return oracle.cardinality() == 0 || liquidityCumulative != 0;
+        Oracle.Observation memory observation = Oracle.toObservation(oracle.observations(0));
+        return oracle.cardinality() == 0 || observation.liquidityCumulative != 0;
     }
 
     function echidna_cardinalityAlwaysLteNext() external view returns (bool) {
@@ -89,17 +89,17 @@ contract OracleEchidnaTest {
         uint16 cardinality = oracle.cardinality();
         require(index < cardinality && index != (oracle.index() + 1) % cardinality);
 
-        (uint32 blockTimestamp0, int56 tickCumulative0, uint40 liquidityCumulative0) =
-            oracle.observations(index == 0 ? cardinality - 1 : index - 1);
-        (uint32 blockTimestamp1, int56 tickCumulative1, uint40 liquidityCumulative1) = oracle.observations(index);
+        Oracle.Observation memory obs0 =
+            Oracle.toObservation(oracle.observations(index == 0 ? cardinality - 1 : index - 1));
+        Oracle.Observation memory obs1 = Oracle.toObservation(oracle.observations(index));
 
-        require(liquidityCumulative0 > 0);
-        require(liquidityCumulative1 > 0);
+        require(obs0.liquidityCumulative > 0);
+        require(obs1.liquidityCumulative > 0);
 
-        uint32 timeElapsed = blockTimestamp1 - blockTimestamp0;
+        uint32 timeElapsed = obs1.blockTimestamp - obs0.blockTimestamp;
         assert(timeElapsed > 0);
-        assert((tickCumulative1 - tickCumulative0) % timeElapsed == 0);
-        assert((liquidityCumulative1 - liquidityCumulative0) % timeElapsed == 0);
+        assert((obs1.tickCumulative - obs0.tickCumulative) % timeElapsed == 0);
+        assert((obs1.liquidityCumulative - obs0.liquidityCumulative) % timeElapsed == 0);
     }
 
     function checkTimeWeightedAveragesAlwaysFitsType(uint32 secondsAgo) external view {

@@ -38,7 +38,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using SecondsOutside for mapping(int24 => uint256);
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
-    using Oracle for Oracle.Observation[65535];
+    using Oracle for uint128[65535];
 
     /// @inheritdoc IUniswapV3PairImmutables
     address public immutable override factory;
@@ -100,7 +100,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     /// @inheritdoc IUniswapV3PairState
     mapping(bytes32 => Position.Info) public override positions;
     /// @inheritdoc IUniswapV3PairState
-    Oracle.Observation[65535] public override observations;
+    uint128[65535] public override observations;
 
     /// @dev Mutually exclusive reentrancy protection into the pair to/from a method. This method also prevents entrance
     /// to a function before the pair is initialized. The reentrancy guard is required throughout the contract because

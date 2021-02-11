@@ -4,21 +4,21 @@ import { expect } from './expect'
 // helper function because we cannot do a simple deep equals with the
 // observation result object returned from ethers because it extends array
 export default function checkObservationEquals(
-  {
-    tickCumulative,
-    blockTimestamp,
-    liquidityCumulative,
-  }: {
-    tickCumulative: BigNumber
-    liquidityCumulative: number
-    blockTimestamp: number
-  },
+  actual: BigNumber,
   expected: {
     tickCumulative: BigNumberish
     liquidityCumulative: number
     blockTimestamp: number
   }
 ) {
+  const blockTimestamp = actual.shr(96).toNumber()
+  const liquidityCumulative = actual.mod(BigNumber.from(2).pow(40)).toNumber()
+
+  let tickCumulative = actual.shr(40).mod(BigNumber.from(2).pow(56))
+  if (tickCumulative.gte(BigNumber.from(2).pow(55))) {
+    tickCumulative = tickCumulative.sub(BigNumber.from(2).pow(56))
+  }
+
   expect(
     {
       blockTimestamp,
