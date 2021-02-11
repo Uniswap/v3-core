@@ -221,10 +221,6 @@ describe('SqrtPriceMath', () => {
   })
 
   describe('#getAmount0Delta', () => {
-    it('reverts if prices have the wrong relation', async () => {
-      await expect(sqrtPriceMath.getAmount0Delta(encodePriceSqrt(1, 1), encodePriceSqrt(1, 1).sub(1), 0, true)).to.be
-        .reverted
-    })
     it('returns 0 if liquidity is 0', async () => {
       const amount0 = await sqrtPriceMath.getAmount0Delta(encodePriceSqrt(1, 1), encodePriceSqrt(2, 1), 0, true)
 
@@ -295,10 +291,6 @@ describe('SqrtPriceMath', () => {
   })
 
   describe('#getAmount1Delta', () => {
-    it('reverts if prices have the wrong relation', async () => {
-      await expect(sqrtPriceMath.getAmount1Delta(encodePriceSqrt(1, 1), encodePriceSqrt(1, 1).sub(1), 0, true)).to.be
-        .reverted
-    })
     it('returns 0 if liquidity is 0', async () => {
       const amount1 = await sqrtPriceMath.getAmount1Delta(encodePriceSqrt(1, 1), encodePriceSqrt(2, 1), 0, true)
 

@@ -138,21 +138,24 @@ library SqrtPriceMath {
                 : getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
     }
 
-    /// @notice Gets the delta of amount0 between two prices
+    /// @notice Gets the amount0 delta between two prices
     /// @dev Calculates liquidity / sqrt(lower) - liquidity / sqrt(upper),
     /// i.e. liquidity * (sqrt(upper) - sqrt(lower)) / (sqrt(upper) * sqrt(lower))
-    /// @param sqrtRatioLowerX96 The lower sqrt price
-    /// @param sqrtRatioUpperX96 The upper sqrt price
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
     /// @param liquidity The amount of usable liquidity
     /// @param roundUp Whether to round the amount up or down
-    /// @return amount0 The difference in virtual reserves of token0 between the two prices
+    /// @return amount0 Amount of token0 required to cover a position of size liquidity between the two passed prices
     function getAmount0Delta(
-        uint160 sqrtRatioLowerX96,
-        uint160 sqrtRatioUpperX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount0) {
-        assert(sqrtRatioLowerX96 <= sqrtRatioUpperX96);
+        (uint160 sqrtRatioLowerX96, uint160 sqrtRatioUpperX96) = sqrtRatioAX96 <= sqrtRatioBX96
+            ? (sqrtRatioAX96, sqrtRatioBX96)
+            : (sqrtRatioBX96, sqrtRatioAX96);
+
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtRatioUpperX96 - sqrtRatioLowerX96;
 
@@ -165,55 +168,58 @@ library SqrtPriceMath {
                 : FullMath.mulDiv(numerator1, numerator2, sqrtRatioUpperX96) / sqrtRatioLowerX96;
     }
 
-    /// @notice Gets the delta of amount1 between two prices
-    /// @dev Calculates liquidity * (sqrt(Q) - sqrt(P))
-    /// @param sqrtRatioLowerX96 The lower sqrt price
-    /// @param sqrtRatioUpperX96 The upper sqrt price
+    /// @notice Gets the amount1 delta between two prices
+    /// @dev Calculates liquidity * (sqrt(upper) - sqrt(lower))
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
     /// @param liquidity The amount of usable liquidity
     /// @param roundUp Whether to round the amount up, or down
-    /// @return amount1 The difference in virtual reserves of token1 between the two prices
+    /// @return amount1 Amount of token1 required to cover a position of size liquidity between the two passed prices
     function getAmount1Delta(
-        uint160 sqrtRatioLowerX96,
-        uint160 sqrtRatioUpperX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount1) {
-        assert(sqrtRatioLowerX96 <= sqrtRatioUpperX96);
+        (uint160 sqrtRatioLowerX96, uint160 sqrtRatioUpperX96) = sqrtRatioAX96 <= sqrtRatioBX96
+            ? (sqrtRatioAX96, sqrtRatioBX96)
+            : (sqrtRatioBX96, sqrtRatioAX96);
+
         return
             roundUp
                 ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioUpperX96 - sqrtRatioLowerX96, FixedPoint96.Q96)
                 : FullMath.mulDiv(liquidity, sqrtRatioUpperX96 - sqrtRatioLowerX96, FixedPoint96.Q96);
     }
 
-    /// @notice Helper that gets signed token0 delta from a liquidity delta
-    /// @param sqrtRatioLowerX96 The lower sqrt price
-    /// @param sqrtRatioUpperX96 The upper sqrt price
+    /// @notice Helper that gets signed token0 delta
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
     /// @param liquidity The change in liquidity
-    /// @return amount0 The difference in virtual reserves of token0 between two prices due to a given liquidity delta
+    /// @return amount0 Amount of token0 corresponding to the passed liquidityDelta between the two prices
     function getAmount0Delta(
-        uint160 sqrtRatioLowerX96,
-        uint160 sqrtRatioUpperX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
         int128 liquidity
     ) internal pure returns (int256 amount0) {
         return
             liquidity < 0
-                ? -getAmount0Delta(sqrtRatioLowerX96, sqrtRatioUpperX96, uint128(-liquidity), false).toInt256()
-                : getAmount0Delta(sqrtRatioLowerX96, sqrtRatioUpperX96, uint128(liquidity), true).toInt256();
+                ? -getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(-liquidity), false).toInt256()
+                : getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(liquidity), true).toInt256();
     }
 
-    /// @notice Helper that gets signed token1 delta from a liquidity delta
-    /// @param sqrtRatioLowerX96 The lower sqrt price
-    /// @param sqrtRatioUpperX96 The upper sqrt price
+    /// @notice Helper that gets signed token1 delta
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
     /// @param liquidity The change in liquidity
-    /// @return amount1 The difference in virtual reserves of token1 between two prices due to a given liquidity delta
+    /// @return amount1 Amount of token1 corresponding to the passed liquidityDelta between the two prices
     function getAmount1Delta(
-        uint160 sqrtRatioLowerX96,
-        uint160 sqrtRatioUpperX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
         int128 liquidity
     ) internal pure returns (int256 amount1) {
         return
             liquidity < 0
-                ? -getAmount1Delta(sqrtRatioLowerX96, sqrtRatioUpperX96, uint128(-liquidity), false).toInt256()
-                : getAmount1Delta(sqrtRatioLowerX96, sqrtRatioUpperX96, uint128(liquidity), true).toInt256();
+                ? -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(-liquidity), false).toInt256()
+                : getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(liquidity), true).toInt256();
     }
 }
