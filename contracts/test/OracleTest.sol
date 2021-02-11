@@ -5,9 +5,9 @@ pragma abicoder v2;
 import '../libraries/Oracle.sol';
 
 contract OracleTest {
-    using Oracle for Oracle.Observation[65535];
+    using Oracle for uint128[65535];
 
-    Oracle.Observation[65535] public observations;
+    uint128[65535] public observations;
 
     uint32 public time;
     int24 public tick;
