@@ -117,7 +117,7 @@ library Oracle {
         if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the tick is still not considered initialized
-        for (uint16 i = current; i < next; i++) self[i].liquidityCumulative = 1;
+        for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1;
         return next;
     }
 
