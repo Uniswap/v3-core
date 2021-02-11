@@ -187,20 +187,17 @@ contract SqrtPriceMathEchidnaTest {
     }
 
     function getOutOfRangeMintInvariants(
-        uint160 sqrtP,
-        uint160 sqrtQ,
+        uint160 sqrtLower,
+        uint160 sqrtUpper,
         int128 liquidity
     ) external pure {
-        require(sqrtP > 0 && sqrtQ > 0 && sqrtP != sqrtQ);
+        require(sqrtLower < sqrtUpper && sqrtLower > 0);
         require(liquidity > 0);
 
-        if (sqrtP > sqrtQ) {
-            int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity);
-            assert(amount0 > 0);
-        } else {
-            int256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity);
-            assert(amount1 > 0);
-        }
+        int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtLower, sqrtUpper, liquidity);
+        int256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtLower, sqrtUpper, liquidity);
+        assert(amount0 > 0);
+        assert(amount1 > 0);
     }
 
     function getInRangeMintInvariants(
@@ -213,7 +210,7 @@ contract SqrtPriceMathEchidnaTest {
         require(sqrtLower <= sqrtCurrent && sqrtCurrent <= sqrtUpper);
         require(liquidity > 0);
 
-        int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtUpper, sqrtCurrent, liquidity);
+        int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtCurrent, sqrtUpper, liquidity);
         int256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtLower, sqrtCurrent, liquidity);
 
         assert(amount0 > 0 || amount1 > 0);
