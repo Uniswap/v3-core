@@ -15,7 +15,9 @@ export default function checkObservationEquals(
   const liquidityCumulative = actual.mod(BigNumber.from(2).pow(40)).toNumber()
 
   let tickCumulative = actual.shr(40).mod(BigNumber.from(2).pow(56))
-  if (tickCumulative.gt(BigNumber.from(2).pow(55))) tickCumulative = BigNumber.from(2).pow(55).sub(tickCumulative)
+  if (tickCumulative.gte(BigNumber.from(2).pow(55))) {
+    tickCumulative = tickCumulative.sub(BigNumber.from(2).pow(56))
+  }
 
   expect(
     {
