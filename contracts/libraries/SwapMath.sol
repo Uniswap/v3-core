@@ -68,12 +68,16 @@ library SwapMath {
 
         // get the input/output amounts
         if (zeroForOne) {
-            amountIn = max && exactIn ? amountIn : SqrtPriceMath.getAmount0Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, true);
+            amountIn = max && exactIn
+                ? amountIn
+                : SqrtPriceMath.getAmount0Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, true);
             amountOut = max && !exactIn
                 ? amountOut
                 : SqrtPriceMath.getAmount1Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, false);
         } else {
-            amountIn = max && exactIn ? amountIn : SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, true);
+            amountIn = max && exactIn
+                ? amountIn
+                : SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, true);
             amountOut = max && !exactIn
                 ? amountOut
                 : SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, false);

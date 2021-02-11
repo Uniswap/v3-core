@@ -159,7 +159,8 @@ library SqrtPriceMath {
         return
             roundUp
                 ? UnsafeMath.divRoundingUp(
-                    FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioUpperX96), sqrtRatioLowerX96
+                    FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioUpperX96),
+                    sqrtRatioLowerX96
                 )
                 : FullMath.mulDiv(numerator1, numerator2, sqrtRatioUpperX96) / sqrtRatioLowerX96;
     }
