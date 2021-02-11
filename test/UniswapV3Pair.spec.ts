@@ -918,6 +918,21 @@ describe('UniswapV3Pair', () => {
       await pair.initialize(encodePriceSqrt(1, 1))
     })
 
+    describe.only('increase threshold', () => {
+      it('prevents small additions', async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+        await expect(mint(wallet.address, minTick, maxTick, 1)).to.be.revertedWith('SM')
+        await expect(mint(wallet.address, minTick, maxTick, expandTo18Decimals(1).div(100).sub(1))).to.be.revertedWith(
+          'SM'
+        )
+      })
+
+      it('works', async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1).div(100))
+      })
+    })
+
     describe('penalty', () => {
       beforeEach(async () => {
         await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))

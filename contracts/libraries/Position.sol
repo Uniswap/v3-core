@@ -96,9 +96,15 @@ library Position {
             self.feesOwed0 += feesOwed0;
             self.feesOwed1 += feesOwed1;
         }
-        if (liquidityDelta != 0) self.liquidity = liquidityNext;
-        // important that this happens after the feesOwed{0,1} block, as it uses self.lastMintTime
-        if (liquidityDelta > 0) self.lastMintTime = time;
+        if (liquidityDelta != 0) {
+            self.liquidity = liquidityNext;
+            if (liquidityDelta > 0) {
+                // ensure that liquidity is being increased by at least 1%
+                require(uint256(liquidityNext) * 100 >= uint256(_self.liquidity) * 101, 'SM');
+                // important that this happens after the feesOwed{0,1} block, as it uses self.lastMintTime
+                self.lastMintTime = time;
+            }
+        }
 
         // clear position data that is no longer needed
         if (liquidityNext == 0) {
