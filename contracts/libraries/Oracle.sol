@@ -244,7 +244,7 @@ library Oracle {
     /// @param liquidity The current in-range pair liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pair was first initialized, as of `secondsAgo`
-    /// @return liquidityCumulative The (log base 2 of liquidity + 128) * time elapsed since the pair was first initialized, as of `secondsAgo`
+    /// @return liquidityCumulative The (log base 2 of (liquidity + 1)) * time elapsed since the pair was first initialized, as of `secondsAgo`
     function observe(
         Observation[65535] storage self,
         uint32 time,
