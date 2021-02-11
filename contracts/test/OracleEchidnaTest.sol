@@ -87,7 +87,7 @@ contract OracleEchidnaTest {
 
     function checkTwoAdjacentObservationsModTimeElapsedAlways0(uint16 index) external view {
         uint16 cardinality = oracle.cardinality();
-        require(index < cardinality && cardinality > 1);
+        require(index < cardinality && index != (oracle.index() + 1) % cardinality);
 
         (uint32 blockTimestamp0, int56 tickCumulative0, uint160 liquidityCumulative0, bool initialized0) =
             oracle.observations(index == 0 ? cardinality - 1 : index - 1);
