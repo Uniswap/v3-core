@@ -381,8 +381,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 amount0 = uint256(amount0Int);
         uint256 amount1 = uint256(amount1Int);
 
-        // todo: we need some test coverage to prove amount0Int/amount1Int are always positive and amount0 > 0 || amount1 > 0 is always true
-
         uint256 balance0Before;
         uint256 balance1Before;
         if (amount0 > 0) balance0Before = balance0();
