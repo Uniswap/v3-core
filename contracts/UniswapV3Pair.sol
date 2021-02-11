@@ -246,8 +246,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 // current tick is below the passed range; liquidity can only become in range by crossing from left to
                 // right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
                 amount0 = SqrtPriceMath.getAmount0Delta(
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
                     TickMath.getSqrtRatioAtTick(params.tickLower),
+                    TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 );
             } else if (_slot0.tick < params.tickUpper) {
@@ -265,8 +265,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 );
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
                     _slot0.sqrtPriceX96,
+                    TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 );
                 amount1 = SqrtPriceMath.getAmount1Delta(

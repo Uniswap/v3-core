@@ -33,7 +33,7 @@ contract SqrtPriceMathEchidnaTest {
 
         if (zeroForOne) {
             assert(sqrtQ <= sqrtP);
-            assert(amountIn >= SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true));
+            assert(amountIn >= SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, true));
         } else {
             assert(sqrtQ >= sqrtP);
             assert(amountIn >= SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true));
@@ -53,7 +53,7 @@ contract SqrtPriceMathEchidnaTest {
             assert(amountOut <= SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, true));
         } else {
             assert(sqrtQ >= sqrtP);
-            assert(amountOut <= SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, true));
+            assert(amountOut <= SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true));
         }
     }
 
@@ -106,8 +106,8 @@ contract SqrtPriceMathEchidnaTest {
     ) external pure {
         require(sqrtP >= sqrtQ);
         require(sqrtP > 0 && sqrtQ > 0);
-        uint256 amount0Down = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, false);
-        uint256 amount0Up = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true);
+        uint256 amount0Down = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, false);
+        uint256 amount0Up = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, true);
         assert(amount0Down <= amount0Up);
         // diff is 0 or 1
         assert(amount0Up - amount0Down < 2);
@@ -133,7 +133,7 @@ contract SqrtPriceMathEchidnaTest {
             roundUp
                 ? FullMath.mulDivRoundingUp(numerator1, numerator2, denominator)
                 : FullMath.mulDiv(numerator1, numerator2, denominator);
-        uint256 fullResult = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, roundUp);
+        uint256 fullResult = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, roundUp);
 
         assert(safeResult == fullResult);
     }
@@ -160,7 +160,7 @@ contract SqrtPriceMathEchidnaTest {
         require(sqrtP >= sqrtQ);
         require(sqrtP > 0 && sqrtQ > 0);
 
-        int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity);
+        int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity);
         if (liquidity < 0) assert(amount0 <= 0);
         if (liquidity > 0) {
             if (sqrtP == sqrtQ) assert(amount0 == 0);

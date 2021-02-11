@@ -222,11 +222,11 @@ describe('SqrtPriceMath', () => {
 
   describe('#getAmount0Delta', () => {
     it('reverts if prices have the wrong relation', async () => {
-      await expect(sqrtPriceMath.getAmount0Delta(encodePriceSqrt(1, 1).sub(1), encodePriceSqrt(1, 1), 0, true)).to.be
+      await expect(sqrtPriceMath.getAmount0Delta(encodePriceSqrt(1, 1), encodePriceSqrt(1, 1).sub(1), 0, true)).to.be
         .reverted
     })
     it('returns 0 if liquidity is 0', async () => {
-      const amount0 = await sqrtPriceMath.getAmount0Delta(encodePriceSqrt(2, 1), encodePriceSqrt(1, 1), 0, true)
+      const amount0 = await sqrtPriceMath.getAmount0Delta(encodePriceSqrt(1, 1), encodePriceSqrt(2, 1), 0, true)
 
       expect(amount0).to.eq(0)
     })
@@ -238,16 +238,16 @@ describe('SqrtPriceMath', () => {
 
     it('returns 0.1 amount1 for price of 1 to 1.21', async () => {
       const amount0 = await sqrtPriceMath.getAmount0Delta(
-        encodePriceSqrt(121, 100),
         encodePriceSqrt(1, 1),
+        encodePriceSqrt(121, 100),
         expandTo18Decimals(1),
         true
       )
       expect(amount0).to.eq('90909090909090910')
 
       const amount0RoundedDown = await sqrtPriceMath.getAmount0Delta(
-        encodePriceSqrt(121, 100),
         encodePriceSqrt(1, 1),
+        encodePriceSqrt(121, 100),
         expandTo18Decimals(1),
         false
       )
@@ -257,14 +257,14 @@ describe('SqrtPriceMath', () => {
 
     it('works for prices that overflow', async () => {
       const amount0Up = await sqrtPriceMath.getAmount0Delta(
-        encodePriceSqrt(BigNumber.from(2).pow(96), 1),
         encodePriceSqrt(BigNumber.from(2).pow(90), 1),
+        encodePriceSqrt(BigNumber.from(2).pow(96), 1),
         expandTo18Decimals(1),
         true
       )
       const amount0Down = await sqrtPriceMath.getAmount0Delta(
-        encodePriceSqrt(BigNumber.from(2).pow(96), 1),
         encodePriceSqrt(BigNumber.from(2).pow(90), 1),
+        encodePriceSqrt(BigNumber.from(2).pow(96), 1),
         expandTo18Decimals(1),
         false
       )
@@ -274,8 +274,8 @@ describe('SqrtPriceMath', () => {
     it(`gas cost for amount0 where roundUp = true`, async () => {
       await snapshotGasCost(
         sqrtPriceMath.getGasCostOfGetAmount0Delta(
-          encodePriceSqrt(1, 1),
           encodePriceSqrt(100, 121),
+          encodePriceSqrt(1, 1),
           expandTo18Decimals(1),
           true
         )
@@ -285,8 +285,8 @@ describe('SqrtPriceMath', () => {
     it(`gas cost for amount0 where roundUp = true`, async () => {
       await snapshotGasCost(
         sqrtPriceMath.getGasCostOfGetAmount0Delta(
-          encodePriceSqrt(1, 1),
           encodePriceSqrt(100, 121),
+          encodePriceSqrt(1, 1),
           expandTo18Decimals(1),
           false
         )
@@ -332,8 +332,8 @@ describe('SqrtPriceMath', () => {
     it(`gas cost for amount0 where roundUp = true`, async () => {
       await snapshotGasCost(
         sqrtPriceMath.getGasCostOfGetAmount0Delta(
-          encodePriceSqrt(1, 1),
           encodePriceSqrt(100, 121),
+          encodePriceSqrt(1, 1),
           expandTo18Decimals(1),
           true
         )
@@ -343,8 +343,8 @@ describe('SqrtPriceMath', () => {
     it(`gas cost for amount0 where roundUp = false`, async () => {
       await snapshotGasCost(
         sqrtPriceMath.getGasCostOfGetAmount0Delta(
-          encodePriceSqrt(1, 1),
           encodePriceSqrt(100, 121),
+          encodePriceSqrt(1, 1),
           expandTo18Decimals(1),
           false
         )
@@ -363,7 +363,7 @@ describe('SqrtPriceMath', () => {
       const sqrtQ = await sqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne)
       expect(sqrtQ).to.eq('1025574284609383582644711336373707553698163132913')
 
-      const amount0Delta = await sqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true)
+      const amount0Delta = await sqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, true)
       expect(amount0Delta).to.eq('406')
     })
   })
