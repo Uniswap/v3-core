@@ -93,9 +93,9 @@ describe('Oracle', () => {
       await oracle.grow(5)
       for (let i = 1; i < 5; i++) {
         checkObservationEquals(await oracle.observations(i), {
-          liquidityCumulative: 0,
+          liquidityCumulative: 2,
           tickCumulative: 0,
-          blockTimestamp: 1,
+          blockTimestamp: 0,
         })
       }
     })

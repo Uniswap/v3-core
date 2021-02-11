@@ -11,9 +11,12 @@ export default function checkObservationEquals(
     blockTimestamp: number
   }
 ) {
-  const blockTimestamp = actual.shr(96)
-  const tickCumulative = actual.shr(40).mod(BigNumber.from(2).pow(56))
-  const liquidityCumulative = actual.mod(BigNumber.from(2).pow(40))
+  const blockTimestamp = actual.shr(96).toNumber()
+  const liquidityCumulative = actual.mod(BigNumber.from(2).pow(40)).toNumber()
+
+  let tickCumulative = actual.shr(40).mod(BigNumber.from(2).pow(56))
+  if (tickCumulative.gt(BigNumber.from(2).pow(55))) tickCumulative = BigNumber.from(2).pow(55).sub(tickCumulative)
+
   expect(
     {
       blockTimestamp,
