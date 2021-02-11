@@ -185,4 +185,19 @@ contract SqrtPriceMathEchidnaTest {
         }
         if (liquidity == 0) assert(amount1 == 0);
     }
+
+    function getMintInvariants(
+        uint160 sqrtP,
+        uint160 sqrtQ,
+        int128 liquidity
+    ) external pure {
+        require(sqrtP >= sqrtQ);
+        require(sqrtP > 0 && sqrtQ > 0);
+        require(liquidity > 0);
+
+        int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity);
+        int256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity);
+
+        assert(amount0 > 0 || amount1 > 0);
+    }
 }
