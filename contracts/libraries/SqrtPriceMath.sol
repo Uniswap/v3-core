@@ -153,7 +153,7 @@ library SqrtPriceMath {
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount0) {
-        // TODO: this require should never be hit
+        // this require should never be hit
         require(sqrtPX96 >= sqrtQX96);
 
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
@@ -180,7 +180,7 @@ library SqrtPriceMath {
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount1) {
-        // TODO: this require should never be hit
+        // this require should never be hit
         require(sqrtQX96 >= sqrtPX96);
 
         return

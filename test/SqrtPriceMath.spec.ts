@@ -135,7 +135,8 @@ describe('SqrtPriceMath', () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
       const amountOut = 262144
-      // todo: this edge case should probably be handled a little better given 0 is not a real price
+      // this edge case could be handled a little better, given 0 is not a real price, but this never binds in swap
+      // because TickMath.getTickAtSqrtRatio would not accept the price
       expect(await sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, true)).to.eq(0)
     })
 
