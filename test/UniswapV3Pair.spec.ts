@@ -480,7 +480,7 @@ describe('UniswapV3Pair', () => {
         expect(token1ProtocolFees).to.eq(0)
       })
 
-      it('poke is not allowed on uninitialized position', async () => {
+      it.skip('poke is not allowed on uninitialized position', async () => {
         await mint(other.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)

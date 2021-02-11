@@ -214,7 +214,7 @@ describe('Oracle', () => {
       })
     })
 
-    it('accumulates log base 2 (liquidity) + 1', async () => {
+    it('accumulates log base 2 (liquidity + 1)', async () => {
       await oracle.grow(4)
 
       await oracle.update({ advanceTimeBy: 3, tick: 3, liquidity: 2 })
