@@ -98,18 +98,21 @@ interface IUniswapV3PairState {
     /// @param index The element of the observations array to fetch
     /// @dev You most likely want to use #observe() instead of this method to get an observation as of some amount of time
     /// ago, rather than at a specific index in the array.
-    /// @return blockTimestamp The timestamp of the observation,
+    /// @return blockTimestamp0 The timestamp of the observation
     /// Returns tickCumulative the current tick multiplied by seconds elapsed for the life of the pair as of the
     /// observation,
     /// Returns liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pair as of
     /// the observation,
     /// Returns initialized whether the observation has been initialized and the values are safe to use
-    function observations(uint256 index)
-        external
-        view
-        returns (
-            uint32 blockTimestamp,
-            int56 tickCumulative,
-            uint40 liquidityCumulative
-        );
+    //    function observations(uint256 index)
+    //        external
+    //        view
+    //        returns (
+    //            uint32 blockTimestamp0,
+    //            int56 tickCumulative0,
+    //            uint40 liquidityCumulative0,
+    //            uint32 blockTimestamp1,
+    //            int56 tickCumulative1,
+    //            uint40 liquidityCumulative1
+    //        );
 }

@@ -27,4 +27,13 @@ interface IUniswapV3PairDerivedState {
     /// @return liquidityCumulative Cumulative liquidity-in-range value as of `secondsAgo` from the current block
     /// timestamp
     function observe(uint32 secondsAgo) external view returns (int56 tickCumulative, uint40 liquidityCumulative);
+
+    function observations(uint256 index)
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            int56 tickCumulative,
+            uint40 liquidityCumulative
+        );
 }

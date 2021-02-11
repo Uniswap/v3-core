@@ -21,6 +21,16 @@ library Oracle {
         uint40 liquidityCumulative;
     }
 
+    // Two observations packed in a single storage slot
+    struct PackedObservation {
+        uint32 blockTimestamp0;
+        int56 tickCumulative0;
+        uint40 liquidityCumulative0;
+        uint32 blockTimestamp1;
+        int56 tickCumulative1;
+        uint40 liquidityCumulative1;
+    }
+
     // @dev Return the most significant bit of liquidity in the range of 1-127 so as to only use 7 bits
     function liquidityBit(uint128 liquidity) private pure returns (uint8 msb) {
         if ((msb = BitMath.mostSignificantBit(uint256(liquidity) + 1)) > 127) {
@@ -56,12 +66,60 @@ library Oracle {
     /// @param time The time of the oracle initialization, via block.timestamp truncated to uint32
     /// @return cardinality The number of populated elements in the oracle array
     /// @return cardinalityNext The new length of the oracle array, independent of population
-    function initialize(Observation[65535] storage self, uint32 time)
+    function initialize(PackedObservation[32768] storage self, uint32 time)
         internal
         returns (uint16 cardinality, uint16 cardinalityNext)
     {
-        self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 1});
+        self[0] = PackedObservation({
+            blockTimestamp0: time,
+            tickCumulative0: 0,
+            liquidityCumulative0: 1,
+            blockTimestamp1: 0,
+            tickCumulative1: 0,
+            liquidityCumulative1: 0
+        });
         return (1, 1);
+    }
+
+    function get(PackedObservation[32768] storage self, uint16 index) internal view returns (Observation memory) {
+        PackedObservation memory packed = self[index / 2];
+        return
+            index % 2 == 0
+                ? Observation({
+                    blockTimestamp: packed.blockTimestamp0,
+                    tickCumulative: packed.tickCumulative0,
+                    liquidityCumulative: packed.liquidityCumulative0
+                })
+                : Observation({
+                    blockTimestamp: packed.blockTimestamp1,
+                    tickCumulative: packed.tickCumulative1,
+                    liquidityCumulative: packed.liquidityCumulative1
+                });
+    }
+
+    function put(
+        PackedObservation[32768] storage self,
+        uint16 index,
+        Observation memory value
+    ) private {
+        PackedObservation memory packed = self[index / 2];
+        self[index / 2] = index % 2 == 0
+            ? PackedObservation({
+                blockTimestamp0: value.blockTimestamp,
+                tickCumulative0: value.tickCumulative,
+                liquidityCumulative0: value.liquidityCumulative,
+                blockTimestamp1: packed.blockTimestamp1,
+                tickCumulative1: packed.tickCumulative1,
+                liquidityCumulative1: packed.liquidityCumulative1
+            })
+            : PackedObservation({
+                blockTimestamp0: packed.blockTimestamp0,
+                tickCumulative0: packed.tickCumulative0,
+                liquidityCumulative0: packed.liquidityCumulative0,
+                blockTimestamp1: value.blockTimestamp,
+                tickCumulative1: value.tickCumulative,
+                liquidityCumulative1: value.liquidityCumulative
+            });
     }
 
     /// @notice Writes an oracle observation to the array
@@ -78,7 +136,7 @@ library Oracle {
     /// @return indexUpdated The new index of the most recently written element in the oracle array
     /// @return cardinalityUpdated The new cardinality of the oracle array
     function write(
-        Observation[65535] storage self,
+        PackedObservation[32768] storage self,
         uint16 index,
         uint32 blockTimestamp,
         int24 tick,
@@ -86,7 +144,7 @@ library Oracle {
         uint16 cardinality,
         uint16 cardinalityNext
     ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
-        Observation memory last = self[index];
+        Observation memory last = get(self, index);
 
         // early return if we've already written an observation this block
         if (last.blockTimestamp == blockTimestamp) return (index, cardinality);
@@ -99,7 +157,7 @@ library Oracle {
         }
 
         indexUpdated = (index + 1) % cardinalityUpdated;
-        self[indexUpdated] = transform(last, blockTimestamp, tick, liquidityBit(liquidity));
+        put(self, indexUpdated, transform(last, blockTimestamp, tick, liquidityBit(liquidity)));
     }
 
     /// @notice Prepares the oracle array to store up to `next` observations
@@ -108,7 +166,7 @@ library Oracle {
     /// @param next The proposed next cardinality which will be populated in the oracle array
     /// @return next The next cardinality which will be populated in the oracle array
     function grow(
-        Observation[65535] storage self,
+        PackedObservation[32768] storage self,
         uint16 current,
         uint16 next
     ) internal returns (uint16) {
@@ -117,7 +175,7 @@ library Oracle {
         if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
         // this data will not be used because the tick is still not considered initialized
-        for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1;
+        for (uint16 i = (current % 2 == 0 ? current : current + 1); i < next; i += 2) self[i].blockTimestamp0 = 1;
         return next;
     }
 
@@ -152,7 +210,7 @@ library Oracle {
     /// @return beforeOrAt The observation recorded before, or at, the target
     /// @return atOrAfter The observation recorded at, or after, the target
     function binarySearch(
-        Observation[65535] storage self,
+        PackedObservation[32768] storage self,
         uint32 time,
         uint32 target,
         uint16 index,
@@ -164,7 +222,7 @@ library Oracle {
         while (true) {
             i = (l + r) / 2;
 
-            beforeOrAt = self[i % cardinality];
+            beforeOrAt = get(self, uint16(i % cardinality));
 
             // we've landed on an uninitialized tick, keep searching higher (more recently)
             if (beforeOrAt.liquidityCumulative == 0) {
@@ -172,7 +230,7 @@ library Oracle {
                 continue;
             }
 
-            atOrAfter = self[(i + 1) % cardinality];
+            atOrAfter = get(self, uint16((i + 1) % cardinality));
 
             bool targetAtOrAfter = lte(time, beforeOrAt.blockTimestamp, target);
 
@@ -198,7 +256,7 @@ library Oracle {
     /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
     /// @return atOrAfter The observation which occurred at, or after, the given timestamp
     function getSurroundingObservations(
-        Observation[65535] storage self,
+        PackedObservation[32768] storage self,
         uint32 time,
         uint32 target,
         int24 tick,
@@ -207,7 +265,7 @@ library Oracle {
         uint16 cardinality
     ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
         // optimistically set before to the newest observation
-        beforeOrAt = self[index];
+        beforeOrAt = get(self, index);
 
         // if the target is chronologically at or after the newest observation, we can early return
         if (lte(time, beforeOrAt.blockTimestamp, target)) {
@@ -221,8 +279,8 @@ library Oracle {
         }
 
         // now, set before to the oldest observation
-        beforeOrAt = self[(index + 1) % cardinality];
-        if (beforeOrAt.liquidityCumulative == 0) beforeOrAt = self[0];
+        beforeOrAt = get(self, (index + 1) % cardinality);
+        if (beforeOrAt.liquidityCumulative == 0) beforeOrAt = get(self, 0);
 
         // ensure that the target is chronologically at or after the oldest observation
         require(lte(time, beforeOrAt.blockTimestamp, target), 'OLD');
@@ -246,7 +304,7 @@ library Oracle {
     /// @return tickCumulative The tick * time elapsed since the pair was first initialized, as of `secondsAgo`
     /// @return liquidityCumulative The (log base 2 of (liquidity + 1)) * time elapsed since the pair was first initialized, as of `secondsAgo`
     function observe(
-        Observation[65535] storage self,
+        PackedObservation[32768] storage self,
         uint32 time,
         uint32 secondsAgo,
         int24 tick,
@@ -257,7 +315,7 @@ library Oracle {
         require(cardinality > 0, 'I');
 
         if (secondsAgo == 0) {
-            Observation memory last = self[index];
+            Observation memory last = get(self, index);
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidityBit(liquidity));
             return (last.tickCumulative, last.liquidityCumulative >> 1);
         }

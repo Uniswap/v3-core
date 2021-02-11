@@ -38,7 +38,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using SecondsOutside for mapping(int24 => uint256);
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
-    using Oracle for Oracle.Observation[65535];
+    using Oracle for Oracle.PackedObservation[32768];
 
     /// @inheritdoc IUniswapV3PairImmutables
     address public immutable override factory;
@@ -99,8 +99,22 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     mapping(int24 => uint256) public override secondsOutside;
     /// @inheritdoc IUniswapV3PairState
     mapping(bytes32 => Position.Info) public override positions;
-    /// @inheritdoc IUniswapV3PairState
-    Oracle.Observation[65535] public override observations;
+    Oracle.PackedObservation[32768] private _observations;
+
+    /// @inheritdoc IUniswapV3PairDerivedState
+    function observations(uint256 index)
+        external
+        view
+        override
+        returns (
+            uint32 blockTimestamp,
+            int56 tickCumulative,
+            uint40 liquidityCumulative
+        )
+    {
+        Oracle.Observation memory o = _observations.get(uint16(index));
+        return (o.blockTimestamp, o.tickCumulative, o.liquidityCumulative);
+    }
 
     /// @dev Mutually exclusive reentrancy protection into the pair to/from a method. This method also prevents entrance
     /// to a function before the pair is initialized. The reentrancy guard is required throughout the contract because
@@ -169,7 +183,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         returns (int56 tickCumulative, uint40 liquidityCumulative)
     {
         return
-            observations.observe(
+            _observations.observe(
                 _blockTimestamp(),
                 secondsAgo,
                 slot0.tick,
@@ -188,7 +202,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     {
         uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
         uint16 observationCardinalityNextNew =
-            observations.grow(observationCardinalityNextOld, observationCardinalityNext);
+            _observations.grow(observationCardinalityNextOld, observationCardinalityNext);
         slot0.observationCardinalityNext = observationCardinalityNextNew;
         if (observationCardinalityNextOld != observationCardinalityNextNew)
             emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
@@ -201,7 +215,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
-        (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(_blockTimestamp());
+        (uint16 cardinality, uint16 cardinalityNext) = _observations.initialize(_blockTimestamp());
 
         slot0 = Slot0({
             sqrtPriceX96: sqrtPriceX96,
@@ -255,7 +269,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
 
                 // write an oracle entry
-                (slot0.observationIndex, slot0.observationCardinality) = observations.write(
+                (slot0.observationIndex, slot0.observationCardinality) = _observations.write(
                     _slot0.observationIndex,
                     _blockTimestamp(),
                     _slot0.tick,
@@ -617,7 +631,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         // update tick and write an oracle entry if the tick change
         if (state.tick != slot0Start.tick) {
             slot0.tick = state.tick;
-            (slot0.observationIndex, slot0.observationCardinality) = observations.write(
+            (slot0.observationIndex, slot0.observationCardinality) = _observations.write(
                 slot0Start.observationIndex,
                 cache.blockTimestamp,
                 slot0Start.tick,

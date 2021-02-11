@@ -5,9 +5,9 @@ pragma abicoder v2;
 import '../libraries/Oracle.sol';
 
 contract OracleTest {
-    using Oracle for Oracle.Observation[65535];
+    using Oracle for Oracle.PackedObservation[32768];
 
-    Oracle.Observation[65535] public observations;
+    Oracle.PackedObservation[32768] public _observations;
 
     uint32 public time;
     int24 public tick;
@@ -27,7 +27,7 @@ contract OracleTest {
         time = params.time;
         tick = params.tick;
         liquidity = params.liquidity;
-        (cardinality, cardinalityNext) = observations.initialize(params.time);
+        (cardinality, cardinalityNext) = _observations.initialize(params.time);
     }
 
     function advanceTime(uint32 by) public {
@@ -43,7 +43,7 @@ contract OracleTest {
     // write an observation, then change tick and liquidity
     function update(UpdateParams calldata params) external {
         advanceTime(params.advanceTimeBy);
-        (index, cardinality) = observations.write(index, time, tick, liquidity, cardinality, cardinalityNext);
+        (index, cardinality) = _observations.write(index, time, tick, liquidity, cardinality, cardinalityNext);
         tick = params.tick;
         liquidity = params.liquidity;
     }
@@ -59,7 +59,7 @@ contract OracleTest {
 
         for (uint256 i = 0; i < params.length; i++) {
             _time += params[i].advanceTimeBy;
-            (_index, _cardinality) = observations.write(
+            (_index, _cardinality) = _observations.write(
                 _index,
                 _time,
                 _tick,
@@ -79,18 +79,31 @@ contract OracleTest {
         time = _time;
     }
 
+    function observations(uint256 i)
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            int56 tickCumulative,
+            uint40 liquidityCumulative
+        )
+    {
+        Oracle.Observation memory o = _observations.get(uint16(i));
+        return (o.blockTimestamp, o.tickCumulative, o.liquidityCumulative);
+    }
+
     function grow(uint16 _cardinalityNext) external {
-        cardinalityNext = observations.grow(cardinalityNext, _cardinalityNext);
+        cardinalityNext = _observations.grow(cardinalityNext, _cardinalityNext);
     }
 
     function getGasCostOfObserve(uint32 secondsAgo) external view returns (uint256) {
         (uint32 _time, int24 _tick, uint128 _liquidity, uint16 _index) = (time, tick, liquidity, index);
         uint256 gasBefore = gasleft();
-        observations.observe(_time, secondsAgo, _tick, _index, _liquidity, cardinality);
+        _observations.observe(_time, secondsAgo, _tick, _index, _liquidity, cardinality);
         return gasBefore - gasleft();
     }
 
     function observe(uint32 secondsAgo) external view returns (int56 tickCumulative, uint40 liquidityCumulative) {
-        return observations.observe(time, secondsAgo, tick, index, liquidity, cardinality);
+        return _observations.observe(time, secondsAgo, tick, index, liquidity, cardinality);
     }
 }
