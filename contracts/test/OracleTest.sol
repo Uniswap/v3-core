@@ -90,7 +90,7 @@ contract OracleTest {
         return gasBefore - gasleft();
     }
 
-    function observe(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+    function observe(uint32 secondsAgo) external view returns (int56 tickCumulative, uint40 liquidityCumulative) {
         return observations.observe(time, secondsAgo, tick, index, liquidity, cardinality);
     }
 }

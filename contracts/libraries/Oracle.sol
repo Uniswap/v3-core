@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
+import './BitMath.sol';
+
 /// @title Oracle
 /// @notice Provides price and liquidity data useful for a wide variety of system designs
 /// @dev Instances of stored oracle data, "observations", are collected in the oracle array
@@ -14,10 +16,16 @@ library Oracle {
         uint32 blockTimestamp;
         // the tick accumulator, i.e. tick * time elapsed since the pair was first initialized
         int56 tickCumulative;
-        // the liquidity accumulator, i.e. liquidity * time elapsed since the pair was first initialized
-        uint160 liquidityCumulative;
-        // whether or not the observation is initialized
-        bool initialized;
+        // the liquidity accumulator, i.e. log base 2 of liquidity * time elapsed since the pair was first initialized
+        // the most significant 39 bits are the value, the least significant bit is whether the observation is initialized
+        uint40 liquidityCumulative;
+    }
+
+    // @dev Return the most significant bit of liquidity in the range of 1-127 so as to only use 7 bits
+    function liquidityBit(uint128 liquidity) private pure returns (uint8 msb) {
+        if ((msb = BitMath.mostSignificantBit(uint256(liquidity) + 1)) > 127) {
+            msb = 127;
+        }
     }
 
     /// @notice Transforms a previous observation into a new observation, given the passage of time and the current tick and liquidity values
@@ -25,21 +33,21 @@ library Oracle {
     /// @param last The specified observation to be transformed
     /// @param blockTimestamp The timestamp of the new observation
     /// @param tick The active tick at the time of the new observation
-    /// @param liquidity The total in-range liquidity at the time of the new observation
+    /// @param liquidityMostSignificantBit The result of #liquidityBit of the total in-range liquidity at the time of the new observation
     /// @return Observation The newly populated observation
     function transform(
         Observation memory last,
         uint32 blockTimestamp,
         int24 tick,
-        uint128 liquidity
+        uint8 liquidityMostSignificantBit
     ) private pure returns (Observation memory) {
         uint32 delta = blockTimestamp - last.blockTimestamp;
         return
             Observation({
                 blockTimestamp: blockTimestamp,
                 tickCumulative: last.tickCumulative + int56(tick) * delta,
-                liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * delta,
-                initialized: true
+                liquidityCumulative: 1 +
+                    (((last.liquidityCumulative >> 1) + (uint40(liquidityMostSignificantBit) * delta)) << 1)
             });
     }
 
@@ -52,7 +60,7 @@ library Oracle {
         internal
         returns (uint16 cardinality, uint16 cardinalityNext)
     {
-        self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 0, initialized: true});
+        self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 1});
         return (1, 1);
     }
 
@@ -91,7 +99,7 @@ library Oracle {
         }
 
         indexUpdated = (index + 1) % cardinalityUpdated;
-        self[indexUpdated] = transform(last, blockTimestamp, tick, liquidity);
+        self[indexUpdated] = transform(last, blockTimestamp, tick, liquidityBit(liquidity));
     }
 
     /// @notice Prepares the oracle array to store up to `next` observations
@@ -108,8 +116,8 @@ library Oracle {
         // no-op if the passed next value isn't greater than the current next value
         if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
-        // this data will not be used because the initialized boolean is still false
-        for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1;
+        // this data will not be used because the tick is still not considered initialized
+        for (uint16 i = current; i < next; i++) self[i].liquidityCumulative = 1;
         return next;
     }
 
@@ -159,7 +167,7 @@ library Oracle {
             beforeOrAt = self[i % cardinality];
 
             // we've landed on an uninitialized tick, keep searching higher (more recently)
-            if (!beforeOrAt.initialized) {
+            if (beforeOrAt.liquidityCumulative == 0) {
                 l = i + 1;
                 continue;
             }
@@ -208,13 +216,13 @@ library Oracle {
                 return (beforeOrAt, atOrAfter);
             } else {
                 // otherwise, we need to transform
-                return (beforeOrAt, transform(beforeOrAt, target, tick, liquidity));
+                return (beforeOrAt, transform(beforeOrAt, target, tick, liquidityBit(liquidity)));
             }
         }
 
         // now, set before to the oldest observation
         beforeOrAt = self[(index + 1) % cardinality];
-        if (!beforeOrAt.initialized) beforeOrAt = self[0];
+        if (beforeOrAt.liquidityCumulative == 0) beforeOrAt = self[0];
 
         // ensure that the target is chronologically at or after the oldest observation
         require(lte(time, beforeOrAt.blockTimestamp, target), 'OLD');
@@ -236,7 +244,7 @@ library Oracle {
     /// @param liquidity The current in-range pair liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pair was first initialized, as of `secondsAgo`
-    /// @return liquidityCumulative The liquidity * time elapsed since the pair was first initialized, as of `secondsAgo`
+    /// @return liquidityCumulative The (log base 2 of liquidity + 128) * time elapsed since the pair was first initialized, as of `secondsAgo`
     function observe(
         Observation[65535] storage self,
         uint32 time,
@@ -245,13 +253,13 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+    ) internal view returns (int56 tickCumulative, uint40 liquidityCumulative) {
         require(cardinality > 0, 'I');
 
         if (secondsAgo == 0) {
             Observation memory last = self[index];
-            if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
-            return (last.tickCumulative, last.liquidityCumulative);
+            if (last.blockTimestamp != time) last = transform(last, time, tick, liquidityBit(liquidity));
+            return (last.tickCumulative, last.liquidityCumulative >> 1);
         }
 
         uint32 target = time - secondsAgo;
@@ -270,11 +278,11 @@ library Oracle {
             // we're in the middle
             uint32 delta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
             int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
-            uint128 liquidityDerived =
-                uint128((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / delta);
-            at = transform(beforeOrAt, target, tickDerived, liquidityDerived);
+            uint8 liquidityBitDerived =
+                uint8(((atOrAfter.liquidityCumulative >> 1) - (beforeOrAt.liquidityCumulative >> 1)) / delta);
+            at = transform(beforeOrAt, target, tickDerived, liquidityBitDerived);
         }
 
-        return (at.tickCumulative, at.liquidityCumulative);
+        return (at.tickCumulative, at.liquidityCumulative >> 1);
     }
 }

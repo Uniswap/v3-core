@@ -166,7 +166,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         view
         override
         noDelegateCall
-        returns (int56 tickCumulative, uint160 liquidityCumulative)
+        returns (int56 tickCumulative, uint40 liquidityCumulative)
     {
         return
             observations.observe(

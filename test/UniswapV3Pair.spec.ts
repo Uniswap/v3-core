@@ -141,8 +141,7 @@ describe('UniswapV3Pair', () => {
     it('initializes the first observations slot', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
       checkObservationEquals(await pair.observations(0), {
-        liquidityCumulative: 0,
-        initialized: true,
+        liquidityCumulative: 1,
         blockTimestamp: TEST_PAIR_START_TIME,
         tickCumulative: 0,
       })
@@ -337,16 +336,14 @@ describe('UniswapV3Pair', () => {
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
               blockTimestamp: TEST_PAIR_START_TIME,
-              initialized: true,
-              liquidityCumulative: 0,
+              liquidityCumulative: 1,
             })
             await pair.advanceTime(1)
             await mint(wallet.address, -240, 0, 100)
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
               blockTimestamp: TEST_PAIR_START_TIME,
-              initialized: true,
-              liquidityCumulative: 0,
+              liquidityCumulative: 1,
             })
           })
         })
@@ -395,16 +392,15 @@ describe('UniswapV3Pair', () => {
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
               blockTimestamp: TEST_PAIR_START_TIME,
-              initialized: true,
-              liquidityCumulative: 0,
+              liquidityCumulative: 1,
             })
             await pair.advanceTime(1)
-            await mint(wallet.address, minTick, maxTick, 100)
+            // should not affect the liquidity of the previous observation
+            await mint(wallet.address, minTick, maxTick, expandTo18Decimals(5))
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: -23028,
               blockTimestamp: TEST_PAIR_START_TIME + 1,
-              initialized: true,
-              liquidityCumulative: 3161,
+              liquidityCumulative: 23,
             })
           })
         })
@@ -444,16 +440,14 @@ describe('UniswapV3Pair', () => {
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
               blockTimestamp: TEST_PAIR_START_TIME,
-              initialized: true,
-              liquidityCumulative: 0,
+              liquidityCumulative: 1,
             })
             await pair.advanceTime(1)
             await mint(wallet.address, -46080, -23040, 100)
             checkObservationEquals(await pair.observations(0), {
               tickCumulative: 0,
               blockTimestamp: TEST_PAIR_START_TIME,
-              initialized: true,
-              liquidityCumulative: 0,
+              liquidityCumulative: 1,
             })
           })
         })
@@ -1561,10 +1555,9 @@ describe('UniswapV3Pair', () => {
         expect(observationCardinality).to.eq(1)
         expect(observationIndex).to.eq(0)
         expect(observationCardinalityNext).to.eq(1)
-        const { liquidityCumulative, tickCumulative, initialized, blockTimestamp } = await pair.observations(0)
-        expect(liquidityCumulative).to.eq(0)
+        const { liquidityCumulative, tickCumulative, blockTimestamp } = await pair.observations(0)
+        expect(liquidityCumulative).to.eq(1)
         expect(tickCumulative).to.eq(0)
-        expect(initialized).to.eq(true)
         expect(blockTimestamp).to.eq(TEST_PAIR_START_TIME)
       })
       it('increases observation cardinality next', async () => {

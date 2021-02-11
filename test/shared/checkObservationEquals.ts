@@ -7,32 +7,27 @@ export default function checkObservationEquals(
   {
     tickCumulative,
     blockTimestamp,
-    initialized,
     liquidityCumulative,
   }: {
     tickCumulative: BigNumber
-    liquidityCumulative: BigNumber
-    initialized: boolean
+    liquidityCumulative: number
     blockTimestamp: number
   },
   expected: {
     tickCumulative: BigNumberish
-    liquidityCumulative: BigNumberish
-    initialized: boolean
+    liquidityCumulative: number
     blockTimestamp: number
   }
 ) {
   expect(
     {
-      initialized,
       blockTimestamp,
+      liquidityCumulative,
       tickCumulative: tickCumulative.toString(),
-      liquidityCumulative: liquidityCumulative.toString(),
     },
     `observation is equivalent`
   ).to.deep.eq({
     ...expected,
     tickCumulative: expected.tickCumulative.toString(),
-    liquidityCumulative: expected.liquidityCumulative.toString(),
   })
 }

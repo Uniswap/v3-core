@@ -110,7 +110,6 @@ interface IUniswapV3PairState {
         returns (
             uint32 blockTimestamp,
             int56 tickCumulative,
-            uint160 liquidityCumulative,
-            bool initialized
+            uint40 liquidityCumulative
         );
 }
