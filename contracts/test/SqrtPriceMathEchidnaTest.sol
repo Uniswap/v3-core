@@ -153,7 +153,7 @@ contract SqrtPriceMathEchidnaTest {
         assert(amount1Down == SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, false));
 
         uint256 amount1Up = SqrtPriceMath.getAmount1Delta(sqrtP, sqrtQ, liquidity, true);
-        assert(amount1Up == SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, false));
+        assert(amount1Up == SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, true));
 
         assert(amount1Down <= amount1Up);
         // diff is 0 or 1
@@ -198,12 +198,17 @@ contract SqrtPriceMathEchidnaTest {
         int128 liquidity
     ) external pure {
         require(sqrtA > 0 && sqrtB > 0);
-        require(liquidity > 0);
 
         int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtA, sqrtB, liquidity);
         int256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtA, sqrtB, liquidity);
-        assert(amount0 > 0);
-        assert(amount1 > 0);
+
+        if (sqrtA == sqrtB) {
+            assert(amount0 == 0);
+            assert(amount1 == 0);
+        } else {
+            assert(amount0 > 0);
+            assert(amount1 > 0);
+        }
     }
 
     function getInRangeMintInvariants(
