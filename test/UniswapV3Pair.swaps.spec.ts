@@ -18,7 +18,9 @@ import {
   getMaxLiquidityPerTick,
   getMaxTick,
   getMinTick,
+  MAX_SQRT_RATIO,
   MaxUint128,
+  MIN_SQRT_RATIO,
   TICK_SPACINGS,
 } from './shared/utilities'
 
@@ -397,6 +399,32 @@ const TEST_PAIRS: PairTestCase[] = [
         tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         liquidity: getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+      },
+    ],
+  },
+  {
+    description: 'initialized at the max ratio',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: MAX_SQRT_RATIO.sub(1),
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        liquidity: expandTo18Decimals(2),
+      },
+    ],
+  },
+  {
+    description: 'initialized at the min ratio',
+    feeAmount: FeeAmount.MEDIUM,
+    tickSpacing: TICK_SPACINGS[FeeAmount.MEDIUM],
+    startingPrice: MIN_SQRT_RATIO,
+    positions: [
+      {
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        liquidity: expandTo18Decimals(2),
       },
     ],
   },

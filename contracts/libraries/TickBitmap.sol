@@ -7,19 +7,19 @@ import './BitMath.sol';
 /// @notice Stores a packed mapping of tick index to its initialized state
 /// @dev The mapping uses int16 for keys since ticks are represented as int24 and there are 256 (2^8) values per word.
 library TickBitmap {
-    /// @dev Computes the position in the mapping where the initialized bit for a tick lives.
-    /// @param tick the tick for which to compute the position
-    /// @return wordPos the key in the mapping containing the word in which the bit is stored
-    /// @return bitPos the bit position in the word where the flag is stored
+    /// @notice Computes the position in the mapping where the initialized bit for a tick lives
+    /// @param tick The tick for which to compute the position
+    /// @return wordPos The key in the mapping containing the word in which the bit is stored
+    /// @return bitPos The bit position in the word where the flag is stored
     function position(int24 tick) private pure returns (int16 wordPos, uint8 bitPos) {
         wordPos = int16(tick >> 8);
         bitPos = uint8(tick % 256);
     }
 
-    /// @dev Flips the initialized state for a given tick from false to true or vice versa
-    /// @param self the mapping in which to flip the tick
-    /// @param tick the tick to flip
-    /// @param tickSpacing the spacing between usable ticks
+    /// @notice Flips the initialized state for a given tick from false to true, or vice versa
+    /// @param self The mapping in which to flip the tick
+    /// @param tick The tick to flip
+    /// @param tickSpacing The spacing between usable ticks
     function flipTick(
         mapping(int16 => uint256) storage self,
         int24 tick,
@@ -31,14 +31,14 @@ library TickBitmap {
         self[wordPos] ^= mask;
     }
 
-    /// @dev Returns the next initialized tick contained in the same word (or adjacent word) as the tick that is either
+    /// @notice Returns the next initialized tick contained in the same word (or adjacent word) as the tick that is either
     /// to the left (less than or equal to) or right (greater than) of the given tick
-    /// @param self the mapping in which to compute the next initialized tick
-    /// @param tick the starting tick
-    /// @param tickSpacing the spacing between usable ticks
-    /// @param lte whether to search for the next initialized tick to the left (less than or equal to the starting tick)
-    /// @return next the next initialized or uninitialized tick up to 256 ticks away from the current tick
-    /// @return initialized whether the next tick is initialized, as the function only searches within up to 256 ticks
+    /// @param self The mapping in which to compute the next initialized tick
+    /// @param tick The starting tick
+    /// @param tickSpacing The spacing between usable ticks
+    /// @param lte Whether to search for the next initialized tick to the left (less than or equal to the starting tick)
+    /// @return next The next initialized or uninitialized tick up to 256 ticks away from the current tick
+    /// @return initialized Whether the next tick is initialized, as the function only searches within up to 256 ticks
     function nextInitializedTickWithinOneWord(
         mapping(int16 => uint256) storage self,
         int24 tick,

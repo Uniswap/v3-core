@@ -40,13 +40,13 @@ describe('NoDelegateCall', () => {
     await proxy.canBeDelegateCalled()
   })
   it('proxy cannot call the method with the modifier', async () => {
-    await expect(proxy.cannotBeDelegateCalled()).to.be.revertedWith('')
+    await expect(proxy.cannotBeDelegateCalled()).to.be.reverted
   })
 
   it('can call the method that calls into a private method with the modifier', async () => {
     await base.callsIntoNoDelegateCallFunction()
   })
   it('proxy cannot call the method that calls a private method with the modifier', async () => {
-    await expect(proxy.callsIntoNoDelegateCallFunction()).to.be.revertedWith('')
+    await expect(proxy.callsIntoNoDelegateCallFunction()).to.be.reverted
   })
 })

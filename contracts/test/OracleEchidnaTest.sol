@@ -55,8 +55,8 @@ contract OracleEchidnaTest {
 
         uint32 timeElapsed = secondsAgo0 - secondsAgo1;
 
-        (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.scry(secondsAgo0);
-        (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.scry(secondsAgo1);
+        (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.observe(secondsAgo0);
+        (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.observe(secondsAgo1);
         int56 timeWeightedTick = (tickCumulative1 - tickCumulative0) / timeElapsed;
         uint160 timeWeightedLiquidity = (liquidityCumulative1 - liquidityCumulative0) / timeElapsed;
         assert(timeWeightedLiquidity <= type(uint128).max);
@@ -77,19 +77,37 @@ contract OracleEchidnaTest {
         return oracle.cardinality() <= oracle.cardinalityNext();
     }
 
-    function echidna_canAlwaysScry0IfInitialized() external view returns (bool) {
+    function echidna_canAlwaysObserve0IfInitialized() external view returns (bool) {
         if (!initialized) {
             return true;
         }
-        (bool success, ) = address(oracle).staticcall(abi.encodeWithSelector(OracleTest.scry.selector, 0));
+        (bool success, ) = address(oracle).staticcall(abi.encodeWithSelector(OracleTest.observe.selector, 0));
         return success;
+    }
+
+    function checkTwoAdjacentObservationsModTimeElapsedAlways0(uint16 index) external view {
+        uint16 cardinality = oracle.cardinality();
+        require(index < cardinality && index != (oracle.index() + 1) % cardinality);
+
+        (uint32 blockTimestamp0, int56 tickCumulative0, uint160 liquidityCumulative0, bool initialized0) =
+            oracle.observations(index == 0 ? cardinality - 1 : index - 1);
+        (uint32 blockTimestamp1, int56 tickCumulative1, uint160 liquidityCumulative1, bool initialized1) =
+            oracle.observations(index);
+
+        require(initialized0);
+        require(initialized1);
+
+        uint32 timeElapsed = blockTimestamp1 - blockTimestamp0;
+        assert(timeElapsed > 0);
+        assert((tickCumulative1 - tickCumulative0) % timeElapsed == 0);
+        assert((liquidityCumulative1 - liquidityCumulative0) % timeElapsed == 0);
     }
 
     function checkTimeWeightedAveragesAlwaysFitsType(uint32 secondsAgo) external view {
         require(initialized);
         require(secondsAgo > 0);
-        (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.scry(secondsAgo);
-        (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.scry(0);
+        (int56 tickCumulative0, uint160 liquidityCumulative0) = oracle.observe(secondsAgo);
+        (int56 tickCumulative1, uint160 liquidityCumulative1) = oracle.observe(0);
 
         // compute the time weighted tick, rounding consistently
         int56 numerator = tickCumulative1 - tickCumulative0;

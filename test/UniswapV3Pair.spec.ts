@@ -22,6 +22,8 @@ import {
   getMaxLiquidityPerTick,
   FlashFunction,
   MaxUint128,
+  MAX_SQRT_RATIO,
+  MIN_SQRT_RATIO,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { TestUniswapV3ReentrantCallee } from '../typechain/TestUniswapV3ReentrantCallee'
@@ -113,9 +115,19 @@ describe('UniswapV3Pair', () => {
     })
     it('fails if starting price is too low', async () => {
       await expect(pair.initialize(1)).to.be.revertedWith('R')
+      await expect(pair.initialize(MIN_SQRT_RATIO.sub(1))).to.be.revertedWith('R')
     })
     it('fails if starting price is too high', async () => {
+      await expect(pair.initialize(MAX_SQRT_RATIO)).to.be.revertedWith('R')
       await expect(pair.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('R')
+    })
+    it('can be initialized at MIN_SQRT_RATIO', async () => {
+      await pair.initialize(MIN_SQRT_RATIO)
+      expect((await pair.slot0()).tick).to.eq(getMinTick(1))
+    })
+    it('can be initialized at MAX_SQRT_RATIO - 1', async () => {
+      await pair.initialize(MAX_SQRT_RATIO.sub(1))
+      expect((await pair.slot0()).tick).to.eq(getMaxTick(1) - 1)
     })
     it('sets initial variables', async () => {
       const price = encodePriceSqrt(1, 2)
@@ -143,7 +155,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#increaseObservationCardinalityNext', () => {
     it('can only be called after initialize', async () => {
-      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('I')
+      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('LOK')
     })
     it('emits an event including both old and new', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
@@ -183,7 +195,8 @@ describe('UniswapV3Pair', () => {
 
       describe('failure cases', () => {
         it('fails if tickLower greater than tickUpper', async () => {
-          await expect(mint(wallet.address, 1, 0, 1)).to.be.revertedWith('TLU')
+          // should be TLU but...hardhat
+          await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted
         })
         it('fails if tickLower less than min tick', async () => {
           await expect(mint(wallet.address, -887273, 0, 1)).to.be.revertedWith('TLM')
@@ -192,33 +205,32 @@ describe('UniswapV3Pair', () => {
           await expect(mint(wallet.address, 0, 887273, 1)).to.be.revertedWith('TUM')
         })
         it('fails if amount exceeds the max', async () => {
+          // these should fail with 'LO' but hardhat is bugged
           const maxLiquidityGross = await pair.maxLiquidityPerTick()
-          await expect(
-            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))
-          ).to.be.revertedWith('LO')
-          await expect(
-            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)
-          ).to.not.be.revertedWith('LO')
+          await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))).to
+            .be.reverted
+          await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)).to.not.be
+            .reverted
         })
         it('fails if total amount at tick exceeds the max', async () => {
+          // these should fail with 'LO' but hardhat is bugged
           await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1000)
 
           const maxLiquidityGross = await pair.maxLiquidityPerTick()
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
+          ).to.be.reverted
           await expect(
             mint(wallet.address, minTick + tickSpacing * 2, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
+          ).to.be.reverted
           await expect(
             mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing * 2, maxLiquidityGross.sub(1000).add(1))
-          ).to.be.revertedWith('LO')
-          await expect(
-            mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000))
-          ).to.not.be.revertedWith('LO')
+          ).to.be.reverted
+          await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000)))
+            .to.not.be.reverted
         })
         it('fails if amount is 0', async () => {
-          await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.revertedWith('')
+          await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.reverted
         })
       })
 
@@ -447,24 +459,19 @@ describe('UniswapV3Pair', () => {
         })
       })
 
-      it('1 liquidity mint accumulates protocol fees', async () => {
-        await pair.setFeeProtocol(6)
+      it('protocol fees accumulate as expected during swap', async () => {
+        await pair.setFeeProtocol(6, 6)
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
         let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-        expect(token0ProtocolFees).to.eq(0)
-        expect(token1ProtocolFees).to.eq(0)
-
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
-        ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-        expect(token0ProtocolFees).to.eq('49999999999999')
-        expect(token1ProtocolFees).to.eq('4999999999999')
+        expect(token0ProtocolFees).to.eq('50000000000000')
+        expect(token1ProtocolFees).to.eq('5000000000000')
       })
 
-      it('1 liquidity mint before protocol fee is turned on protects fees', async () => {
+      it('positions are protected before protocol fee is turned on', async () => {
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(1))
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
@@ -473,13 +480,7 @@ describe('UniswapV3Pair', () => {
         expect(token0ProtocolFees).to.eq(0)
         expect(token1ProtocolFees).to.eq(0)
 
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
-        ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-        expect(token0ProtocolFees).to.eq(0)
-        expect(token1ProtocolFees).to.eq(0)
-
-        await pair.setFeeProtocol(6)
-        await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
+        await pair.setFeeProtocol(6, 6)
         ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
         expect(token0ProtocolFees).to.eq(0)
         expect(token1ProtocolFees).to.eq(0)
@@ -490,7 +491,9 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
-        await expect(pair.poke(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)).to.be.revertedWith('NP')
+        await expect(pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.revertedWith(
+          'NP'
+        )
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         let {
@@ -538,11 +541,6 @@ describe('UniswapV3Pair', () => {
       const { liquidityGross } = await pair.ticks(tick)
       expect(liquidityGross).to.not.eq(0)
     }
-
-    it('cannot be called with amount of 0', async () => {
-      await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
-      await expect(pair.burn(wallet.address, minTick, maxTick, 0)).to.be.revertedWith('')
-    })
 
     it('clears the position fee growth snapshot if no more liquidity', async () => {
       // some activity that would make the ticks non-zero
@@ -617,7 +615,7 @@ describe('UniswapV3Pair', () => {
     // simulates an external call to get the cumulatives as of the current block timestamp
     async function getCumulatives(): Promise<{ blockTimestamp: number; tickCumulative: BigNumber }> {
       const blockTimestamp = await pair.time()
-      const { tickCumulative } = await pair.scry(0).catch(() => ({
+      const { tickCumulative } = await pair.observe(0).catch(() => ({
         tickCumulative: BigNumber.from(0),
       }))
 
@@ -734,7 +732,8 @@ describe('UniswapV3Pair', () => {
       const lowerTick = -tickSpacing
       const upperTick = tickSpacing
       await mint(wallet.address, lowerTick, upperTick, expandTo18Decimals(1000))
-      await expect(pair.burn(wallet.address, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.revertedWith('LS')
+      // should be 'LS', hardhat is bugged
+      await expect(pair.burn(wallet.address, lowerTick, upperTick, expandTo18Decimals(1001))).to.be.reverted
     })
 
     it('collect fees within the current price after swap', async () => {
@@ -757,10 +756,10 @@ describe('UniswapV3Pair', () => {
       const token0BalanceBeforeWallet = await token0.balanceOf(wallet.address)
       const token1BalanceBeforeWallet = await token1.balanceOf(wallet.address)
 
-      await pair.poke(wallet.address, lowerTick, upperTick)
+      await pair.burn(wallet.address, lowerTick, upperTick, 0)
       await pair.collect(wallet.address, lowerTick, upperTick, MaxUint128, MaxUint128)
 
-      await pair.poke(wallet.address, lowerTick, upperTick)
+      await pair.burn(wallet.address, lowerTick, upperTick, 0)
       const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collect(
         wallet.address,
         lowerTick,
@@ -880,7 +879,7 @@ describe('UniswapV3Pair', () => {
     })
 
     describe('fee is on', () => {
-      beforeEach(() => pair.setFeeProtocol(6))
+      beforeEach(() => pair.setFeeProtocol(6, 6))
       it('selling 1 for 0 at tick 0 thru 1', async () => {
         await expect(mint(wallet.address, 0, 120, expandTo18Decimals(1)))
           .to.emit(token0, 'Transfer')
@@ -904,6 +903,121 @@ describe('UniswapV3Pair', () => {
     })
   })
 
+  describe('#collect', () => {
+    beforeEach(async () => {
+      pair = await createPair(FeeAmount.LOW, TICK_SPACINGS[FeeAmount.LOW])
+      await pair.initialize(encodePriceSqrt(1, 1))
+    })
+
+    it('works with multiple LPs', async () => {
+      await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, expandTo18Decimals(2))
+
+      await swapExact0For1(expandTo18Decimals(1), wallet.address)
+
+      // poke positions
+      await pair.burn(wallet.address, minTick, maxTick, 0)
+      await pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
+
+      const { feesOwed0: feesOwed0Position0 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+      const { feesOwed0: feesOwed0Position1 } = await pair.positions(
+        getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)
+      )
+
+      expect(feesOwed0Position0).to.be.eq('200000000000000')
+      expect(feesOwed0Position1).to.be.eq('400000000000000')
+    })
+
+    describe('works across large increases', () => {
+      beforeEach(async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+      })
+
+      // type(uint128).max * 2**128 / 1e18
+      // https://www.wolframalpha.com/input/?i=%282**128+-+1%29+*+2**128+%2F+1e18
+      const magicNumber = BigNumber.from('115792089237316195423570985008687907852929702298719625575994')
+
+      it('works just before the cap binds', async () => {
+        await pair.setFeeGrowthGlobal0X128(magicNumber)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+
+        expect(feesOwed0).to.be.eq(MaxUint128.sub(1))
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('works just after the cap binds', async () => {
+        await pair.setFeeGrowthGlobal0X128(magicNumber.add(1))
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+
+        expect(feesOwed0).to.be.eq(MaxUint128)
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('works well after the cap binds', async () => {
+        await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+
+        expect(feesOwed0).to.be.eq(MaxUint128)
+        expect(feesOwed1).to.be.eq(0)
+      })
+    })
+
+    describe('works across overflow boundaries', () => {
+      beforeEach(async () => {
+        await pair.setFeeGrowthGlobal0X128(constants.MaxUint256)
+        await pair.setFeeGrowthGlobal1X128(constants.MaxUint256)
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(10))
+      })
+
+      it('token0', async () => {
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+        const { amount0, amount1 } = await pair.callStatic.collect(
+          wallet.address,
+          minTick,
+          maxTick,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(amount0).to.be.eq('599999999999999')
+        expect(amount1).to.be.eq(0)
+      })
+      it('token1', async () => {
+        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+        const { amount0, amount1 } = await pair.callStatic.collect(
+          wallet.address,
+          minTick,
+          maxTick,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(amount0).to.be.eq(0)
+        expect(amount1).to.be.eq('599999999999999')
+      })
+      it('token0 and token1', async () => {
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+        await swapExact1For0(expandTo18Decimals(1), wallet.address)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+        const { amount0, amount1 } = await pair.callStatic.collect(
+          wallet.address,
+          minTick,
+          maxTick,
+          MaxUint128,
+          MaxUint128
+        )
+        expect(amount0).to.be.eq('599999999999999')
+        expect(amount1).to.be.eq('600000000000000')
+      })
+    })
+  })
+
   describe('#feeProtocol', () => {
     const liquidityAmount = expandTo18Decimals(1000)
 
@@ -918,17 +1032,17 @@ describe('UniswapV3Pair', () => {
     })
 
     it('can be changed by the owner', async () => {
-      await pair.setFeeProtocol(6)
-      expect((await pair.slot0()).feeProtocol).to.eq(6)
+      await pair.setFeeProtocol(6, 6)
+      expect((await pair.slot0()).feeProtocol).to.eq(102)
     })
 
     it('cannot be changed out of bounds', async () => {
-      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(3, 3)).to.be.reverted
+      await expect(pair.setFeeProtocol(11, 11)).to.be.reverted
     })
 
     it('cannot be changed by addresses that are not owner', async () => {
-      await expect(pair.connect(other).setFeeProtocol(6)).to.be.revertedWith('')
+      await expect(pair.connect(other).setFeeProtocol(6, 6)).to.be.reverted
     })
 
     async function swapAndGetFeesOwed({
@@ -942,7 +1056,7 @@ describe('UniswapV3Pair', () => {
     }) {
       await (zeroForOne ? swapExact0For1(amount, wallet.address) : swapExact1For0(amount, wallet.address))
 
-      if (poke) await pair.poke(wallet.address, minTick, maxTick)
+      if (poke) await pair.burn(wallet.address, minTick, maxTick, 0)
 
       const { amount0: fees0, amount1: fees1 } = await pair.callStatic.collect(
         wallet.address,
@@ -1023,7 +1137,7 @@ describe('UniswapV3Pair', () => {
     })
 
     it('position owner gets partial fees when protocol fee is on', async () => {
-      await pair.setFeeProtocol(6)
+      await pair.setFeeProtocol(6, 6)
 
       const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
@@ -1031,33 +1145,53 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.be.eq('500000000000000')
+      expect(token0Fees).to.be.eq('499999999999999')
       expect(token1Fees).to.be.eq(0)
     })
 
-    describe('#collect', () => {
+    describe('#collectProtocol', () => {
       it('returns 0 if no fees', async () => {
-        await pair.setFeeProtocol(6)
+        await pair.setFeeProtocol(6, 6)
         const { amount0, amount1 } = await pair.callStatic.collectProtocol(wallet.address, MaxUint128, MaxUint128)
         expect(amount0).to.be.eq(0)
         expect(amount1).to.be.eq(0)
       })
 
       it('can collect fees', async () => {
-        await pair.setFeeProtocol(6)
+        await pair.setFeeProtocol(6, 6)
 
         await swapAndGetFeesOwed({
           amount: expandTo18Decimals(1),
           zeroForOne: true,
           poke: true,
         })
-        // collect fees to trigger collection of the protocol fee
-        await pair.poke(wallet.address, minTick, maxTick)
-        await pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128)
 
         await expect(pair.collectProtocol(other.address, MaxUint128, MaxUint128))
           .to.emit(token0, 'Transfer')
           .withArgs(pair.address, other.address, '99999999999999')
+      })
+
+      it('fees collected can differ between token0 and token1', async () => {
+        await pair.setFeeProtocol(8, 5)
+
+        await swapAndGetFeesOwed({
+          amount: expandTo18Decimals(1),
+          zeroForOne: true,
+          poke: false,
+        })
+        await swapAndGetFeesOwed({
+          amount: expandTo18Decimals(1),
+          zeroForOne: false,
+          poke: false,
+        })
+
+        await expect(pair.collectProtocol(other.address, MaxUint128, MaxUint128))
+          .to.emit(token0, 'Transfer')
+          // more token0 fees because it's 1/5th the swap fees
+          .withArgs(pair.address, other.address, '74999999999999')
+          .to.emit(token1, 'Transfer')
+          // less token1 fees because it's 1/8th the swap fees
+          .withArgs(pair.address, other.address, '119999999999999')
       })
     })
 
@@ -1078,14 +1212,14 @@ describe('UniswapV3Pair', () => {
       expect(token1Fees).to.eq(0)
     })
 
-    it('fees collected after two swaps with fee turned on in middle are fees from both swaps (confiscatory)', async () => {
+    it('fees collected after two swaps with fee turned on in middle are fees from last swap (not confiscatory)', async () => {
       await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: true,
         poke: false,
       })
 
-      await pair.setFeeProtocol(6)
+      await pair.setFeeProtocol(6, 6)
 
       const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
@@ -1093,12 +1227,12 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('1000000000000000')
+      expect(token0Fees).to.eq('1099999999999999')
       expect(token1Fees).to.eq(0)
     })
 
     it('fees collected by lp after two swaps with intermediate withdrawal', async () => {
-      await pair.setFeeProtocol(6)
+      await pair.setFeeProtocol(6, 6)
 
       const { token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
@@ -1106,7 +1240,7 @@ describe('UniswapV3Pair', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('500000000000000')
+      expect(token0Fees).to.eq('499999999999999')
       expect(token1Fees).to.eq(0)
 
       // collect the fees
@@ -1121,17 +1255,16 @@ describe('UniswapV3Pair', () => {
       expect(token0FeesNext).to.eq(0)
       expect(token1FeesNext).to.eq(0)
 
-      // the fee to fees do not account for uncollected fees yet
       let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
-      expect(token0ProtocolFees).to.eq('99999999999999')
+      expect(token0ProtocolFees).to.eq('200000000000000')
       expect(token1ProtocolFees).to.eq(0)
 
-      await pair.poke(wallet.address, minTick, maxTick) // poke to update fees
+      await pair.burn(wallet.address, minTick, maxTick, 0) // poke to update fees
       await expect(pair.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
-        .withArgs(pair.address, wallet.address, '500000000000000')
+        .withArgs(pair.address, wallet.address, '499999999999999')
       ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees())
-      expect(token0ProtocolFees).to.eq('199999999999998')
+      expect(token0ProtocolFees).to.eq('200000000000000')
       expect(token1ProtocolFees).to.eq(0)
     })
   })
@@ -1146,8 +1279,8 @@ describe('UniswapV3Pair', () => {
           await pair.initialize(encodePriceSqrt(1, 1))
         })
         it('mint can only be called for multiples of 12', async () => {
-          await expect(mint(wallet.address, -6, 0, 1)).to.be.revertedWith('')
-          await expect(mint(wallet.address, 0, 6, 1)).to.be.revertedWith('')
+          await expect(mint(wallet.address, -6, 0, 1)).to.be.reverted
+          await expect(mint(wallet.address, 0, 6, 1)).to.be.reverted
         })
         it('mint can be called with multiples of 12', async () => {
           await mint(wallet.address, 12, 24, 1)
@@ -1247,106 +1380,179 @@ describe('UniswapV3Pair', () => {
         ;[balance0, balance1] = await Promise.all([token0.balanceOf(pair.address), token1.balanceOf(pair.address)])
       })
 
-      it('emits an event', async () => {
-        await expect(flash(1001, 2001, other.address))
-          .to.emit(pair, 'Flash')
-          .withArgs(swapTarget.address, other.address, 1001, 2001, 4, 7)
+      describe('fee off', () => {
+        it('emits an event', async () => {
+          await expect(flash(1001, 2001, other.address))
+            .to.emit(pair, 'Flash')
+            .withArgs(swapTarget.address, other.address, 1001, 2001, 4, 7)
+        })
+
+        it('transfers the amount0 to the recipient', async () => {
+          await expect(flash(100, 200, other.address))
+            .to.emit(token0, 'Transfer')
+            .withArgs(pair.address, other.address, 100)
+        })
+        it('transfers the amount1 to the recipient', async () => {
+          await expect(flash(100, 200, other.address))
+            .to.emit(token1, 'Transfer')
+            .withArgs(pair.address, other.address, 200)
+        })
+        it('can flash only token0', async () => {
+          await expect(flash(101, 0, other.address))
+            .to.emit(token0, 'Transfer')
+            .withArgs(pair.address, other.address, 101)
+            .to.not.emit(token1, 'Transfer')
+        })
+        it('can flash only token1', async () => {
+          await expect(flash(0, 102, other.address))
+            .to.emit(token1, 'Transfer')
+            .withArgs(pair.address, other.address, 102)
+            .to.not.emit(token0, 'Transfer')
+        })
+        it('can flash entire token balance', async () => {
+          await expect(flash(balance0, balance1, other.address))
+            .to.emit(token0, 'Transfer')
+            .withArgs(pair.address, other.address, balance0)
+            .to.emit(token1, 'Transfer')
+            .withArgs(pair.address, other.address, balance1)
+        })
+        it('no-op if both amounts are 0', async () => {
+          await expect(flash(0, 0, other.address)).to.not.emit(token0, 'Transfer').to.not.emit(token1, 'Transfer')
+        })
+        it('fails if flash amount is greater than token balance', async () => {
+          await expect(flash(balance0.add(1), balance1, other.address)).to.be.reverted
+          await expect(flash(balance0, balance1.add(1), other.address)).to.be.reverted
+        })
+        it('calls the flash callback on the sender with correct fee amounts', async () => {
+          await expect(flash(1001, 2002, other.address)).to.emit(swapTarget, 'FlashCallback').withArgs(4, 7)
+        })
+        it('increases the fee growth by the expected amount', async () => {
+          await flash(1001, 2002, other.address)
+          expect(await pair.feeGrowthGlobal0X128()).to.eq(
+            BigNumber.from(4).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+          expect(await pair.feeGrowthGlobal1X128()).to.eq(
+            BigNumber.from(7).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+        })
+        it('fails if original balance not returned in either token', async () => {
+          await expect(flash(1000, 0, other.address, 999, 0)).to.be.revertedWith('F0')
+          await expect(flash(0, 1000, other.address, 0, 999)).to.be.revertedWith('F1')
+        })
+        it('fails if underpays either token', async () => {
+          await expect(flash(1000, 0, other.address, 1002, 0)).to.be.revertedWith('F0')
+          await expect(flash(0, 1000, other.address, 0, 1002)).to.be.revertedWith('F1')
+        })
+        it('allows donating token0', async () => {
+          await expect(flash(0, 0, constants.AddressZero, 567, 0))
+            .to.emit(token0, 'Transfer')
+            .withArgs(wallet.address, pair.address, 567)
+            .to.not.emit(token1, 'Transfer')
+          expect(await pair.feeGrowthGlobal0X128()).to.eq(
+            BigNumber.from(567).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+        })
+        it('allows donating token1', async () => {
+          await expect(flash(0, 0, constants.AddressZero, 0, 678))
+            .to.emit(token1, 'Transfer')
+            .withArgs(wallet.address, pair.address, 678)
+            .to.not.emit(token0, 'Transfer')
+          expect(await pair.feeGrowthGlobal1X128()).to.eq(
+            BigNumber.from(678).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+        })
+        it('allows donating token0 and token1 together', async () => {
+          await expect(flash(0, 0, constants.AddressZero, 789, 1234))
+            .to.emit(token0, 'Transfer')
+            .withArgs(wallet.address, pair.address, 789)
+            .to.emit(token1, 'Transfer')
+            .withArgs(wallet.address, pair.address, 1234)
+
+          expect(await pair.feeGrowthGlobal0X128()).to.eq(
+            BigNumber.from(789).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+          expect(await pair.feeGrowthGlobal1X128()).to.eq(
+            BigNumber.from(1234).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+        })
       })
 
-      it('transfers the amount0 to the recipient', async () => {
-        await expect(flash(100, 200, other.address))
-          .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, other.address, 100)
-      })
-      it('transfers the amount1 to the recipient', async () => {
-        await expect(flash(100, 200, other.address))
-          .to.emit(token1, 'Transfer')
-          .withArgs(pair.address, other.address, 200)
-      })
-      it('can flash only token0', async () => {
-        await expect(flash(101, 0, other.address))
-          .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, other.address, 101)
-          .to.not.emit(token1, 'Transfer')
-      })
-      it('can flash only token1', async () => {
-        await expect(flash(0, 102, other.address))
-          .to.emit(token1, 'Transfer')
-          .withArgs(pair.address, other.address, 102)
-          .to.not.emit(token0, 'Transfer')
-      })
-      it('can flash entire token balance', async () => {
-        await expect(flash(balance0, balance1, other.address))
-          .to.emit(token0, 'Transfer')
-          .withArgs(pair.address, other.address, balance0)
-          .to.emit(token1, 'Transfer')
-          .withArgs(pair.address, other.address, balance1)
-      })
-      it('no-op if both amounts are 0', async () => {
-        await expect(flash(0, 0, other.address)).to.not.emit(token0, 'Transfer').to.not.emit(token1, 'Transfer')
-      })
-      it('fails if flash amount is greater than token balance', async () => {
-        await expect(flash(balance0.add(1), balance1, other.address)).to.be.revertedWith('')
-        await expect(flash(balance0, balance1.add(1), other.address)).to.be.revertedWith('')
-      })
-      it('calls the flash callback on the sender with correct fee amounts', async () => {
-        await expect(flash(1001, 2002, other.address)).to.emit(swapTarget, 'FlashCallback').withArgs(4, 7)
-      })
-      it('increases the fee growth by the expected amount', async () => {
-        await flash(1001, 2002, other.address)
-        expect(await pair.feeGrowthGlobal0X128()).to.eq(
-          BigNumber.from(4).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
-        )
-        expect(await pair.feeGrowthGlobal1X128()).to.eq(
-          BigNumber.from(7).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
-        )
-      })
-      it('fails if original balance not returned in either token', async () => {
-        await expect(flash(1000, 0, other.address, 999, 0)).to.be.revertedWith('F0')
-        await expect(flash(0, 1000, other.address, 0, 999)).to.be.revertedWith('F1')
-      })
-      it('fails if underpays either token', async () => {
-        await expect(flash(1000, 0, other.address, 1002, 0)).to.be.revertedWith('F0')
-        await expect(flash(0, 1000, other.address, 0, 1002)).to.be.revertedWith('F1')
-      })
-      it('allows donating token0', async () => {
-        await expect(flash(0, 0, constants.AddressZero, 567, 0))
-          .to.emit(token0, 'Transfer')
-          .withArgs(wallet.address, pair.address, 567)
-          .to.not.emit(token1, 'Transfer')
-        expect(await pair.feeGrowthGlobal0X128()).to.eq(
-          BigNumber.from(567).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
-        )
-      })
-      it('allows donating token1', async () => {
-        await expect(flash(0, 0, constants.AddressZero, 0, 678))
-          .to.emit(token1, 'Transfer')
-          .withArgs(wallet.address, pair.address, 678)
-          .to.not.emit(token0, 'Transfer')
-        expect(await pair.feeGrowthGlobal1X128()).to.eq(
-          BigNumber.from(678).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
-        )
-      })
-      it('allows donating token0 and token1 together', async () => {
-        await expect(flash(0, 0, constants.AddressZero, 789, 1234))
-          .to.emit(token0, 'Transfer')
-          .withArgs(wallet.address, pair.address, 789)
-          .to.emit(token1, 'Transfer')
-          .withArgs(wallet.address, pair.address, 1234)
+      describe('fee on', () => {
+        beforeEach('turn protocol fee on', async () => {
+          await pair.setFeeProtocol(6, 6)
+        })
 
-        expect(await pair.feeGrowthGlobal0X128()).to.eq(
-          BigNumber.from(789).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
-        )
-        expect(await pair.feeGrowthGlobal1X128()).to.eq(
-          BigNumber.from(1234).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
-        )
+        it('emits an event', async () => {
+          await expect(flash(1001, 2001, other.address))
+            .to.emit(pair, 'Flash')
+            .withArgs(swapTarget.address, other.address, 1001, 2001, 4, 7)
+        })
+
+        it('increases the fee growth by the expected amount', async () => {
+          await flash(2002, 4004, other.address)
+
+          const { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
+          expect(token0ProtocolFees).to.eq(1)
+          expect(token1ProtocolFees).to.eq(2)
+
+          expect(await pair.feeGrowthGlobal0X128()).to.eq(
+            BigNumber.from(6).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+          expect(await pair.feeGrowthGlobal1X128()).to.eq(
+            BigNumber.from(11).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+        })
+        it('allows donating token0', async () => {
+          await expect(flash(0, 0, constants.AddressZero, 567, 0))
+            .to.emit(token0, 'Transfer')
+            .withArgs(wallet.address, pair.address, 567)
+            .to.not.emit(token1, 'Transfer')
+
+          const { token0: token0ProtocolFees } = await pair.protocolFees()
+          expect(token0ProtocolFees).to.eq(94)
+
+          expect(await pair.feeGrowthGlobal0X128()).to.eq(
+            BigNumber.from(473).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+        })
+        it('allows donating token1', async () => {
+          await expect(flash(0, 0, constants.AddressZero, 0, 678))
+            .to.emit(token1, 'Transfer')
+            .withArgs(wallet.address, pair.address, 678)
+            .to.not.emit(token0, 'Transfer')
+
+          const { token1: token1ProtocolFees } = await pair.protocolFees()
+          expect(token1ProtocolFees).to.eq(113)
+
+          expect(await pair.feeGrowthGlobal1X128()).to.eq(
+            BigNumber.from(565).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+        })
+        it('allows donating token0 and token1 together', async () => {
+          await expect(flash(0, 0, constants.AddressZero, 789, 1234))
+            .to.emit(token0, 'Transfer')
+            .withArgs(wallet.address, pair.address, 789)
+            .to.emit(token1, 'Transfer')
+            .withArgs(wallet.address, pair.address, 1234)
+
+          const { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
+          expect(token0ProtocolFees).to.eq(131)
+          expect(token1ProtocolFees).to.eq(205)
+
+          expect(await pair.feeGrowthGlobal0X128()).to.eq(
+            BigNumber.from(658).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+          expect(await pair.feeGrowthGlobal1X128()).to.eq(
+            BigNumber.from(1029).mul(BigNumber.from(2).pow(128)).div(expandTo18Decimals(2))
+          )
+        })
       })
     })
   })
 
   describe('#increaseObservationCardinalityNext', () => {
     it('cannot be called before initialization', async () => {
-      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('')
+      await expect(pair.increaseObservationCardinalityNext(2)).to.be.reverted
     })
     describe('after initialization', () => {
       beforeEach('initialize the pair', () => pair.initialize(encodePriceSqrt(1, 1)))
@@ -1380,47 +1586,55 @@ describe('UniswapV3Pair', () => {
   })
 
   describe('#setFeeProtocol', () => {
+    beforeEach('initialize the pair', async () => {
+      await pair.initialize(encodePriceSqrt(1, 1))
+    })
+
     it('can only be called by factory owner', async () => {
-      await expect(pair.connect(other).setFeeProtocol(5)).to.be.revertedWith('')
+      await expect(pair.connect(other).setFeeProtocol(5, 5)).to.be.reverted
     })
     it('fails if fee is lt 4 or gt 10', async () => {
-      await expect(pair.setFeeProtocol(3)).to.be.revertedWith('')
-      await expect(pair.setFeeProtocol(11)).to.be.revertedWith('')
+      await expect(pair.setFeeProtocol(3, 3)).to.be.reverted
+      await expect(pair.setFeeProtocol(6, 3)).to.be.reverted
+      await expect(pair.setFeeProtocol(3, 6)).to.be.reverted
+      await expect(pair.setFeeProtocol(11, 11)).to.be.reverted
+      await expect(pair.setFeeProtocol(6, 11)).to.be.reverted
+      await expect(pair.setFeeProtocol(11, 6)).to.be.reverted
     })
     it('succeeds for fee of 4', async () => {
-      await pair.setFeeProtocol(4)
+      await pair.setFeeProtocol(4, 4)
     })
     it('succeeds for fee of 10', async () => {
-      await pair.setFeeProtocol(10)
+      await pair.setFeeProtocol(10, 10)
     })
     it('sets protocol fee', async () => {
-      await pair.setFeeProtocol(7)
-      expect((await pair.slot0()).feeProtocol).to.eq(7)
+      await pair.setFeeProtocol(7, 7)
+      expect((await pair.slot0()).feeProtocol).to.eq(119)
     })
     it('can change protocol fee', async () => {
-      await pair.setFeeProtocol(7)
-      await pair.setFeeProtocol(5)
-      expect((await pair.slot0()).feeProtocol).to.eq(5)
+      await pair.setFeeProtocol(7, 7)
+      await pair.setFeeProtocol(5, 8)
+      expect((await pair.slot0()).feeProtocol).to.eq(133)
     })
     it('can turn off protocol fee', async () => {
-      await pair.setFeeProtocol(4)
-      await pair.setFeeProtocol(0)
+      await pair.setFeeProtocol(4, 4)
+      await pair.setFeeProtocol(0, 0)
       expect((await pair.slot0()).feeProtocol).to.eq(0)
     })
     it('emits an event when turned on', async () => {
-      await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(0, 7)
+      await expect(pair.setFeeProtocol(7, 7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(0, 0, 7, 7)
     })
     it('emits an event when turned off', async () => {
-      await pair.setFeeProtocol(7)
-      await expect(pair.setFeeProtocol(0)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 0)
+      await pair.setFeeProtocol(7, 5)
+      await expect(pair.setFeeProtocol(0, 0)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 5, 0, 0)
     })
     it('emits an event when changed', async () => {
-      await pair.setFeeProtocol(7)
-      await expect(pair.setFeeProtocol(5)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 5)
+      await pair.setFeeProtocol(4, 10)
+      await expect(pair.setFeeProtocol(6, 8)).to.be.emit(pair, 'SetFeeProtocol').withArgs(4, 10, 6, 8)
     })
     it('emits an event when unchanged', async () => {
-      await pair.setFeeProtocol(7)
-      await expect(pair.setFeeProtocol(7)).to.be.emit(pair, 'SetFeeProtocol').withArgs(7, 7)
+      await pair.setFeeProtocol(5, 9)
+      await expect(pair.setFeeProtocol(5, 9)).to.be.emit(pair, 'SetFeeProtocol').withArgs(5, 9, 5, 9)
     })
   })
 

@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import './TickMath.sol';
-import './SafeCast.sol';
-import './LiquidityMath.sol';
 import './LowGasSafeMath.sol';
+import './SafeCast.sol';
+
+import './TickMath.sol';
+import './LiquidityMath.sol';
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
+    using LowGasSafeMath for int256;
+    using SafeCast for int256;
+
     // info stored for each initialized individual tick
     struct Info {
         // the total position liquidity that references this tick
@@ -120,8 +124,8 @@ library Tick {
 
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
         info.liquidityDelta = upper
-            ? SafeCast.toInt128(LowGasSafeMath.sub(info.liquidityDelta, liquidityDelta))
-            : SafeCast.toInt128(LowGasSafeMath.add(info.liquidityDelta, liquidityDelta));
+            ? int256(info.liquidityDelta).sub(liquidityDelta).toInt128()
+            : int256(info.liquidityDelta).add(liquidityDelta).toInt128();
     }
 
     /// @notice Clears tick data

@@ -3,14 +3,11 @@ import { ethers } from 'hardhat'
 import { TickMathTest } from '../typechain/TickMathTest'
 import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import { encodePriceSqrt } from './shared/utilities'
+import { encodePriceSqrt, MIN_SQRT_RATIO, MAX_SQRT_RATIO } from './shared/utilities'
 import Decimal from 'decimal.js'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
-
-const MIN_SQRT_RATIO = BigNumber.from('4295128739')
-const MAX_SQRT_RATIO = BigNumber.from('1461446703485210103287273052203988822378723970342')
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
