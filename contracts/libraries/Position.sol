@@ -64,22 +64,20 @@ library Position {
         uint128 feesOwed0;
         uint128 feesOwed1;
         if (self.lastMintTime != time) {
-            feesOwed0 =
-                uint128(
-                    FullMath.mulDiv(
-                        feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
-                        _self.liquidity,
-                        FixedPoint128.Q128
-                    )
-                );
-            feesOwed1 =
-                uint128(
-                    FullMath.mulDiv(
-                        feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
-                        _self.liquidity,
-                        FixedPoint128.Q128
-                    )
-                );
+            feesOwed0 = uint128(
+                FullMath.mulDiv(
+                    feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
+                    _self.liquidity,
+                    FixedPoint128.Q128
+                )
+            );
+            feesOwed1 = uint128(
+                FullMath.mulDiv(
+                    feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
+                    _self.liquidity,
+                    FixedPoint128.Q128
+                )
+            );
             // update fee growth inside for the position
             self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
             self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
