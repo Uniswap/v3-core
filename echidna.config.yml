@@ -4,6 +4,7 @@ format: 'text'
 checkAsserts: true
 #coverage controls coverage guided testing
 coverage: false
+codeSize: 100000
 # #psender is the sender for property transactions; by default intentionally
 # #the same as contract deployer
 # psender: "0x00a329c0648769a73afac7f9381e08fb43dbea70"
