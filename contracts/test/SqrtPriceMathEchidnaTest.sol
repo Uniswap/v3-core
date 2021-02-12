@@ -198,6 +198,7 @@ contract SqrtPriceMathEchidnaTest {
         int128 liquidity
     ) external pure {
         require(sqrtA > 0 && sqrtB > 0);
+        require(liquidity > 0);
 
         int256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtA, sqrtB, liquidity);
         int256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtA, sqrtB, liquidity);
