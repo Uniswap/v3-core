@@ -110,7 +110,7 @@ contract SqrtPriceMathEchidnaTest {
         assert(amount0Down == SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, false));
 
         uint256 amount0Up = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, true);
-        assert(amount0Up == SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, false));
+        assert(amount0Up == SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true));
 
         assert(amount0Down <= amount0Up);
         // diff is 0 or 1
