@@ -1,39 +1,38 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
-pragma abicoder v2;
 
-import './libraries/FullMath.sol';
-import './libraries/TransferHelper.sol';
+import './interfaces/IUniswapV3Pair.sol';
+
+import './NoDelegateCall.sol';
 
 import './libraries/LowGasSafeMath.sol';
-
 import './libraries/SafeCast.sol';
-import './libraries/LiquidityMath.sol';
-import './libraries/SqrtPriceMath.sol';
-import './libraries/SwapMath.sol';
-import './libraries/TickMath.sol';
-import './libraries/TickBitmap.sol';
-import './libraries/FixedPoint128.sol';
 import './libraries/Tick.sol';
+import './libraries/TickBitmap.sol';
 import './libraries/SecondsOutside.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
 
-import './interfaces/IERC20Minimal.sol';
-import './interfaces/IUniswapV3Pair.sol';
+import './libraries/FullMath.sol';
+import './libraries/FixedPoint128.sol';
+import './libraries/TransferHelper.sol';
+import './libraries/TickMath.sol';
+import './libraries/LiquidityMath.sol';
+import './libraries/SqrtPriceMath.sol';
+import './libraries/SwapMath.sol';
+
 import './interfaces/IUniswapV3PairDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
+import './interfaces/IERC20Minimal.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
-import './NoDelegateCall.sol';
 
 contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
-    using LiquidityMath for uint128;
     using Tick for mapping(int24 => Tick.Info);
     using TickBitmap for mapping(int16 => uint256);
     using SecondsOutside for mapping(int24 => uint256);
@@ -162,7 +161,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PairDerivedState
-    function scry(uint32 secondsAgo)
+    function observe(uint32 secondsAgo)
         external
         view
         override
@@ -170,7 +169,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         returns (int56 tickCumulative, uint160 liquidityCumulative)
     {
         return
-            observations.scry(
+            observations.observe(
                 _blockTimestamp(),
                 secondsAgo,
                 slot0.tick,
@@ -247,8 +246,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 // current tick is below the passed range; liquidity can only become in range by crossing from left to
                 // right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
                 amount0 = SqrtPriceMath.getAmount0Delta(
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
                     TickMath.getSqrtRatioAtTick(params.tickLower),
+                    TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 );
             } else if (_slot0.tick < params.tickUpper) {
@@ -266,8 +265,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                 );
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
                     _slot0.sqrtPriceX96,
+                    TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 );
                 amount1 = SqrtPriceMath.getAmount1Delta(
@@ -276,7 +275,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
                     params.liquidityDelta
                 );
 
-                liquidity = liquidityBefore.addDelta(params.liquidityDelta);
+                liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta);
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
@@ -381,8 +380,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
         uint256 amount0 = uint256(amount0Int);
         uint256 amount1 = uint256(amount1Int);
-
-        // todo: we need some test coverage to prove amount0Int/amount1Int are always positive and amount0 > 0 || amount1 > 0 is always true
 
         uint256 balance0Before;
         uint256 balance1Before;
@@ -605,7 +602,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
                     secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
-                    state.liquidity = state.liquidity.addDelta(liquidityDelta);
+                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityDelta);
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
@@ -698,8 +695,18 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 paid0 = balance0After - balance0Before;
         uint256 paid1 = balance1After - balance1Before;
 
-        if (paid0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
-        if (paid1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
+        if (paid0 > 0) {
+            uint8 feeProtocol0 = slot0.feeProtocol % 16;
+            uint256 fees0 = feeProtocol0 == 0 ? 0 : paid0 / feeProtocol0;
+            if (uint128(fees0) > 0) protocolFees.token0 += uint128(fees0);
+            feeGrowthGlobal0X128 += FullMath.mulDiv(paid0 - fees0, FixedPoint128.Q128, _liquidity);
+        }
+        if (paid1 > 0) {
+            uint8 feeProtocol1 = slot0.feeProtocol >> 4;
+            uint256 fees1 = feeProtocol1 == 0 ? 0 : paid1 / feeProtocol1;
+            if (uint128(fees1) > 0) protocolFees.token1 += uint128(fees1);
+            feeGrowthGlobal1X128 += FullMath.mulDiv(paid1 - fees1, FixedPoint128.Q128, _liquidity);
+        }
 
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
     }

@@ -20,19 +20,19 @@ describe('FullMath', () => {
 
   describe('#mulDiv', () => {
     it('reverts if denominator is 0', async () => {
-      await expect(fullMath.mulDiv(Q128, 5, 0)).to.be.revertedWith('')
+      await expect(fullMath.mulDiv(Q128, 5, 0)).to.be.reverted
     })
     it('reverts if denominator is 0 and numerator overflows', async () => {
-      await expect(fullMath.mulDiv(Q128, Q128, 0)).to.be.revertedWith('')
+      await expect(fullMath.mulDiv(Q128, Q128, 0)).to.be.reverted
     })
     it('reverts if output overflows uint256', async () => {
-      await expect(fullMath.mulDiv(Q128, Q128, 1)).to.be.revertedWith('')
+      await expect(fullMath.mulDiv(Q128, Q128, 1)).to.be.reverted
     })
     it('reverts if output overflows uint256', async () => {
-      await expect(fullMath.mulDiv(Q128, Q128, 1)).to.be.revertedWith('')
+      await expect(fullMath.mulDiv(Q128, Q128, 1)).to.be.reverted
     })
     it('reverts on overflow with all max inputs', async () => {
-      await expect(fullMath.mulDiv(MaxUint256, MaxUint256, MaxUint256.sub(1))).to.be.revertedWith('')
+      await expect(fullMath.mulDiv(MaxUint256, MaxUint256, MaxUint256.sub(1))).to.be.reverted
     })
 
     it('all max inputs', async () => {
@@ -63,16 +63,16 @@ describe('FullMath', () => {
 
   describe('#mulDivRoundingUp', () => {
     it('reverts if denominator is 0', async () => {
-      await expect(fullMath.mulDivRoundingUp(Q128, 5, 0)).to.be.revertedWith('')
+      await expect(fullMath.mulDivRoundingUp(Q128, 5, 0)).to.be.reverted
     })
     it('reverts if denominator is 0 and numerator overflows', async () => {
-      await expect(fullMath.mulDivRoundingUp(Q128, Q128, 0)).to.be.revertedWith('')
+      await expect(fullMath.mulDivRoundingUp(Q128, Q128, 0)).to.be.reverted
     })
     it('reverts if output overflows uint256', async () => {
-      await expect(fullMath.mulDivRoundingUp(Q128, Q128, 1)).to.be.revertedWith('')
+      await expect(fullMath.mulDivRoundingUp(Q128, Q128, 1)).to.be.reverted
     })
     it('reverts on overflow with all max inputs', async () => {
-      await expect(fullMath.mulDivRoundingUp(MaxUint256, MaxUint256, MaxUint256.sub(1))).to.be.revertedWith('')
+      await expect(fullMath.mulDivRoundingUp(MaxUint256, MaxUint256, MaxUint256.sub(1))).to.be.reverted
     })
 
     it('all max inputs', async () => {
@@ -136,8 +136,8 @@ describe('FullMath', () => {
     await Promise.all(
       tests.map(async ({ input: { x, y, d }, floored, ceiled }) => {
         if (d.eq(0)) {
-          await expect(floored).to.be.revertedWith('')
-          await expect(ceiled).to.be.revertedWith('')
+          await expect(floored).to.be.reverted
+          await expect(ceiled).to.be.reverted
           return
         }
 
@@ -145,8 +145,8 @@ describe('FullMath', () => {
           await expect(floored).to.eq(0)
           await expect(ceiled).to.eq(0)
         } else if (x.mul(y).div(d).gt(MaxUint256)) {
-          await expect(floored).to.be.revertedWith('')
-          await expect(ceiled).to.be.revertedWith('')
+          await expect(floored).to.be.reverted
+          await expect(ceiled).to.be.reverted
         } else {
           expect(await floored).to.eq(x.mul(y).div(d))
           expect(await ceiled).to.eq(

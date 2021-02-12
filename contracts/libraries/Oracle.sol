@@ -7,7 +7,7 @@ pragma solidity >=0.5.0;
 /// Every pair is initialized with an oracle array length of 1. Anyone can pay the SSTOREs to increase the
 /// maximum length of the oracle array. New slots will be added when the array is fully populated.
 /// Observations are overwritten when the full length of the oracle array is populated.
-/// The most recent observation is available, independent of the length of the oracle array, by passing 0 to scry()
+/// The most recent observation is available, independent of the length of the oracle array, by passing 0 to observe()
 library Oracle {
     struct Observation {
         // the block timestamp of the observation
@@ -178,7 +178,7 @@ library Oracle {
 
     /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
     /// @dev There _must_ be at least 1 initialized observation.
-    /// Used by scry() to contextualize a potential counterfactual observation as it would have occurred if a block
+    /// Used by observe() to contextualize a potential counterfactual observation as it would have occurred if a block
     /// were mined at the time of the desired observation
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
@@ -237,7 +237,7 @@ library Oracle {
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pair was first initialized, as of `secondsAgo`
     /// @return liquidityCumulative The liquidity * time elapsed since the pair was first initialized, as of `secondsAgo`
-    function scry(
+    function observe(
         Observation[65535] storage self,
         uint32 time,
         uint32 secondsAgo,

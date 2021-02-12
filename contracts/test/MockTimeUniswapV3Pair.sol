@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
-pragma abicoder v2;
 
 import '../UniswapV3Pair.sol';
-import '../UniswapV3PairDeployer.sol';
-
-import '../libraries/Oracle.sol';
 
 // used for testing time dependent behavior
 contract MockTimeUniswapV3Pair is UniswapV3Pair {

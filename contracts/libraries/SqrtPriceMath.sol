@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import './FullMath.sol';
 import './LowGasSafeMath.sol';
-import './UnsafeMath.sol';
-
 import './SafeCast.sol';
+
+import './FullMath.sol';
+import './UnsafeMath.sol';
 import './FixedPoint96.sol';
 
 /// @title Functions based on Q64.96 sqrt price and liquidity
@@ -14,17 +14,17 @@ library SqrtPriceMath {
     using LowGasSafeMath for uint256;
     using SafeCast for uint256;
 
-    /// @notice Get the next sqrt price given a delta of token0
-    /// @param sqrtPX96 the starting price, i.e. before accounting for the token0 delta
-    /// @param liquidity the amount of usable liquidity
-    /// @param amount how much of token0 to add or remove from virtual reserves
-    /// @param add whether to add or remove the amount of token0
-    /// @return the price after adding or removing amount, depending on add
+    /// @notice Gets the next sqrt price given a delta of token0
     /// @dev Always rounds up, because in the exact output case (increasing price) we need to move the price at least
     /// far enough to get the desired output amount, and in the exact input case (decreasing price) we need to move the
     /// price less in order to not send too much output.
-    /// The most precise formula for this is liquidity * sqrtPX96 / (liquidity +- amount * sqrtPX96)
-    /// If this is impossible because of overflow, we calculate liquidity / (liquidity / sqrtPX96 +- amount)
+    /// The most precise formula for this is liquidity * sqrtPX96 / (liquidity +- amount * sqrtPX96),
+    /// if this is impossible because of overflow, we calculate liquidity / (liquidity / sqrtPX96 +- amount).
+    /// @param sqrtPX96 The starting price, i.e. before accounting for the token0 delta
+    /// @param liquidity The amount of usable liquidity
+    /// @param amount How much of token0 to add or remove from virtual reserves
+    /// @param add Whether to add or remove the amount of token0
+    /// @return The price after adding or removing amount, depending on add
     function getNextSqrtPriceFromAmount0RoundingUp(
         uint160 sqrtPX96,
         uint128 liquidity,
@@ -35,36 +35,39 @@ library SqrtPriceMath {
         if (amount == 0) return sqrtPX96;
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
-        uint256 product = amount * sqrtPX96;
-        if (product / amount == sqrtPX96) {
-            if (add) {
+        if (add) {
+            uint256 product;
+            if ((product = amount * sqrtPX96) / amount == sqrtPX96) {
                 uint256 denominator = numerator1 + product;
                 if (denominator >= numerator1)
                     // always fits in 160 bits
                     return uint160(FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator));
-            } else {
-                uint256 denominator = numerator1 - product;
-                if (denominator <= numerator1 && denominator != 0)
-                    return FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
             }
+
+            uint256 denominator1 = (numerator1 / sqrtPX96).add(amount);
+            require(denominator1 != 0);
+
+            return UnsafeMath.divRoundingUp(numerator1, denominator1).toUint160();
+        } else {
+            uint256 product;
+            // if the product overflows, we know the denominator underflows
+            // in addition, we must check that the denominator does not underflow
+            require((product = amount * sqrtPX96) / amount == sqrtPX96 && numerator1 > product);
+            uint256 denominator = numerator1 - product;
+            return FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator).toUint160();
         }
-
-        uint256 denominator1 = add ? (numerator1 / sqrtPX96).add(amount) : (numerator1 / sqrtPX96).sub(amount);
-        require(denominator1 != 0);
-
-        return UnsafeMath.divRoundingUp(numerator1, denominator1).toUint160();
     }
 
-    /// @notice Get the next sqrt price given a delta of token1
-    /// @param sqrtPX96 the starting price, i.e. before accounting for the token1 delta
-    /// @param liquidity the amount of usable liquidity
-    /// @param amount how much of token1 to add or remove from virtual reserves
-    /// @param add whether to add or remove the amount of token1
-    /// @return the price after adding or removing amount, depending on add
+    /// @notice Gets the next sqrt price given a delta of token1
     /// @dev Always rounds down, because in the exact output case (decreasing price) we need to move the price at least
     /// far enough to get the desired output amount, and in the exact input case (increasing price) we need to move the
     /// price less in order to not send too much output.
     /// The formula we compute is lossless: sqrtPX96 +- amount / liquidity
+    /// @param sqrtPX96 The starting price, i.e., before accounting for the token1 delta
+    /// @param liquidity The amount of usable liquidity
+    /// @param amount How much of token1 to add, or remove, from virtual reserves
+    /// @param add Whether to add, or remove, the amount of token1
+    /// @return The price after adding or removing `amount`
     function getNextSqrtPriceFromAmount1RoundingDown(
         uint160 sqrtPX96,
         uint128 liquidity,
@@ -89,13 +92,13 @@ library SqrtPriceMath {
         return (add ? uint256(sqrtPX96).add(quotient) : uint256(sqrtPX96).sub(quotient)).toUint160();
     }
 
-    /// @notice Get the next sqrt price given an input amount of token0 or token1
-    /// @param sqrtPX96 the starting price, i.e. before accounting for the input amount
-    /// @param liquidity the amount of usable liquidity
-    /// @param amountIn how much of token0 or token1 is being swapped in
-    /// @param zeroForOne whether the amount in is token0 or token1
-    /// @return sqrtQX96 the price after adding the input amount to token0 or token1
-    /// @dev Throws if price or liquidity are 0 or the next price is out of bounds
+    /// @notice Gets the next sqrt price given an input amount of token0 or token1
+    /// @dev Throws if price or liquidity are 0, or if the next price is out of bounds
+    /// @param sqrtPX96 The starting price, i.e., before accounting for the input amount
+    /// @param liquidity The amount of usable liquidity
+    /// @param amountIn How much of token0, or token1, is being swapped in
+    /// @param zeroForOne Whether the amount in is token0 or token1
+    /// @return sqrtQX96 The price after adding the input amount to token0 or token1
     function getNextSqrtPriceFromInput(
         uint160 sqrtPX96,
         uint128 liquidity,
@@ -112,13 +115,13 @@ library SqrtPriceMath {
                 : getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountIn, true);
     }
 
-    /// @notice Get the next sqrt price given an output amount of token0 or token1
-    /// @param sqrtPX96 the starting price, i.e. before accounting for the output amount
-    /// @param liquidity the amount of usable liquidity
-    /// @param amountOut how much of token0 or token1 is being swapped out
-    /// @param zeroForOne whether the amount out is token0 or token1
-    /// @return sqrtQX96 the price after removing the output amount of token0 or token1
+    /// @notice Gets the next sqrt price given an output amount of token0 or token1
     /// @dev Throws if price or liquidity are 0 or the next price is out of bounds
+    /// @param sqrtPX96 The starting price before accounting for the output amount
+    /// @param liquidity The amount of usable liquidity
+    /// @param amountOut How much of token0, or token1, is being swapped out
+    /// @param zeroForOne Whether the amount out is token0 or token1
+    /// @return sqrtQX96 The price after removing the output amount of token0 or token1
     function getNextSqrtPriceFromOutput(
         uint160 sqrtPX96,
         uint128 liquidity,
@@ -135,86 +138,92 @@ library SqrtPriceMath {
                 : getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
     }
 
-    /// @notice Get the delta of amount0 between two prices
-    /// @param sqrtPX96 the starting sqrt price
-    /// @param sqrtQX96 the ending sqrt price
-    /// @param liquidity the amount of usable liquidity
-    /// @param roundUp whether to round the amount up or down
-    /// @return amount0 the difference in virtual reserves of token0 between the two prices
-    /// @dev Throws if the starting price is less than the ending price. To get the price in the other direction, swap
-    /// the argument order.
-    /// Calculates liquidity / sqrt(Q) - liquidity / sqrt(P), i.e. liquidity * (sqrt(P) - sqrt(Q)) / (sqrt(P) * sqrt(Q))
+    /// @notice Gets the amount0 delta between two prices
+    /// @dev Calculates liquidity / sqrt(lower) - liquidity / sqrt(upper),
+    /// i.e. liquidity * (sqrt(upper) - sqrt(lower)) / (sqrt(upper) * sqrt(lower))
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
+    /// @param liquidity The amount of usable liquidity
+    /// @param roundUp Whether to round the amount up or down
+    /// @return amount0 Amount of token0 required to cover a position of size liquidity between the two passed prices
     function getAmount0Delta(
-        uint160 sqrtPX96,
-        uint160 sqrtQX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount0) {
-        // TODO: this require should never be hit
-        require(sqrtPX96 >= sqrtQX96);
+        if (sqrtRatioAX96 > sqrtRatioBX96) {
+            uint160 sqrtRatioHigherX96 = sqrtRatioAX96;
+            sqrtRatioAX96 = sqrtRatioBX96;
+            sqrtRatioBX96 = sqrtRatioHigherX96;
+        }
 
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-        uint256 numerator2 = sqrtPX96 - sqrtQX96;
+        uint256 numerator2 = sqrtRatioBX96 - sqrtRatioAX96;
 
         return
             roundUp
-                ? UnsafeMath.divRoundingUp(FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtPX96), sqrtQX96)
-                : FullMath.mulDiv(numerator1, numerator2, sqrtPX96) / sqrtQX96;
+                ? UnsafeMath.divRoundingUp(
+                    FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96),
+                    sqrtRatioAX96
+                )
+                : FullMath.mulDiv(numerator1, numerator2, sqrtRatioBX96) / sqrtRatioAX96;
     }
 
-    /// @notice Get the delta of amount1 between two prices
-    /// @param sqrtPX96 the starting sqrt price
-    /// @param sqrtQX96 the ending sqrt price
-    /// @param liquidity the amount of usable liquidity
-    /// @param roundUp whether to round the amount up or down
-    /// @return amount1 the difference in virtual reserves of token1 between the two prices
-    /// @dev Throws if the starting price is greater than the ending price. To get the price in the other direction,
-    /// swap the argument order.
-    /// Calculates liquidity * (sqrt(Q) - sqrt(P))
+    /// @notice Gets the amount1 delta between two prices
+    /// @dev Calculates liquidity * (sqrt(upper) - sqrt(lower))
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
+    /// @param liquidity The amount of usable liquidity
+    /// @param roundUp Whether to round the amount up, or down
+    /// @return amount1 Amount of token1 required to cover a position of size liquidity between the two passed prices
     function getAmount1Delta(
-        uint160 sqrtPX96,
-        uint160 sqrtQX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount1) {
-        // TODO: this require should never be hit
-        require(sqrtQX96 >= sqrtPX96);
+        if (sqrtRatioAX96 > sqrtRatioBX96) {
+            uint160 sqrtRatioHigherX96 = sqrtRatioAX96;
+            sqrtRatioAX96 = sqrtRatioBX96;
+            sqrtRatioBX96 = sqrtRatioHigherX96;
+        }
 
         return
             roundUp
-                ? FullMath.mulDivRoundingUp(liquidity, sqrtQX96 - sqrtPX96, FixedPoint96.Q96)
-                : FullMath.mulDiv(liquidity, sqrtQX96 - sqrtPX96, FixedPoint96.Q96);
+                ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96)
+                : FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
     }
 
-    /// @notice Helper that gets signed token0 delta from a liquidity delta
-    /// @param sqrtPX96 the current sqrt price
-    /// @param sqrtQX96 the target sqrt price
-    /// @param liquidity the change in liquidity
-    /// @return amount0 the difference in virtual reserves of token0 between two prices due to a given liquidity delta
+    /// @notice Helper that gets signed token0 delta
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
+    /// @param liquidity The change in liquidity
+    /// @return amount0 Amount of token0 corresponding to the passed liquidityDelta between the two prices
     function getAmount0Delta(
-        uint160 sqrtPX96,
-        uint160 sqrtQX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
         int128 liquidity
     ) internal pure returns (int256 amount0) {
         return
             liquidity < 0
-                ? -getAmount0Delta(sqrtPX96, sqrtQX96, uint128(-liquidity), false).toInt256()
-                : getAmount0Delta(sqrtPX96, sqrtQX96, uint128(liquidity), true).toInt256();
+                ? -getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(-liquidity), false).toInt256()
+                : getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(liquidity), true).toInt256();
     }
 
-    /// @notice Helper that gets signed token1 delta from a liquidity delta
-    /// @param sqrtPX96 the current sqrt price
-    /// @param sqrtQX96 the target sqrt price
-    /// @param liquidity the change in liquidity
-    /// @return amount1 the difference in virtual reserves of token1 between two prices due to a given liquidity delta
+    /// @notice Helper that gets signed token1 delta
+    /// @param sqrtRatioAX96 A sqrt price
+    /// @param sqrtRatioBX96 Another sqrt price
+    /// @param liquidity The change in liquidity
+    /// @return amount1 Amount of token1 corresponding to the passed liquidityDelta between the two prices
     function getAmount1Delta(
-        uint160 sqrtPX96,
-        uint160 sqrtQX96,
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
         int128 liquidity
     ) internal pure returns (int256 amount1) {
         return
             liquidity < 0
-                ? -getAmount1Delta(sqrtPX96, sqrtQX96, uint128(-liquidity), false).toInt256()
-                : getAmount1Delta(sqrtPX96, sqrtQX96, uint128(liquidity), true).toInt256();
+                ? -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(-liquidity), false).toInt256()
+                : getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(liquidity), true).toInt256();
     }
 }
