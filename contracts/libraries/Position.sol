@@ -43,13 +43,15 @@ library Position {
     /// @param liquidityDelta The change in pair liquidity as a result of the position update
     /// @param feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
     /// @param feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
+    /// @return protocolFees0 new protocol fees in token0 that were collected
+    /// @return protocolFees1 new protocol fees in token1 that were collected
     function update(
         Info storage self,
         int128 liquidityDelta,
         uint32 time,
         uint256 feeGrowthInside0X128,
         uint256 feeGrowthInside1X128
-    ) internal {
+    ) internal returns (uint128 protocolFees0, uint128 protocolFees1) {
         Info memory _self = self;
 
         uint128 liquidityNext;
@@ -60,38 +62,45 @@ library Position {
             liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
         }
 
-        // during the first call per block, calculate accumulated fees
-        uint128 feesOwed0;
-        uint128 feesOwed1;
+        // calculate accumulated fees
+        uint128 feesOwed0 = uint128(
+            FullMath.mulDiv(
+                feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
+                _self.liquidity,
+                FixedPoint128.Q128
+            )
+        );
+        uint128 feesOwed1 = uint128(
+            FullMath.mulDiv(
+                feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
+                _self.liquidity,
+                FixedPoint128.Q128
+            )
+        );
+
+        // if this is the first call of the block, increment stored fees and update fee growth inside checkpoints
         if (self.lastMintTime != time) {
-            feesOwed0 = uint128(
-                FullMath.mulDiv(
-                    feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
-                    _self.liquidity,
-                    FixedPoint128.Q128
-                )
-            );
-            feesOwed1 = uint128(
-                FullMath.mulDiv(
-                    feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
-                    _self.liquidity,
-                    FixedPoint128.Q128
-                )
-            );
-            // update fee growth inside for the position
+            if (feesOwed0 > 0 || feesOwed1 > 0) {
+                // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
+                self.feesOwed0 += feesOwed0;
+                self.feesOwed1 += feesOwed1;
+            }
             self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
             self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         }
 
-        // update the position
+        // update the rest of the position
         if (liquidityDelta != 0) {
             self.liquidity = liquidityNext;
-            if (liquidityDelta > 0) self.lastMintTime = time;
-        }
-        if (feesOwed0 > 0 || feesOwed1 > 0) {
-            // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
-            self.feesOwed0 += feesOwed0;
-            self.feesOwed1 += feesOwed1;
+            if (liquidityDelta > 0) {
+                self.lastMintTime = time;
+            } else if (self.lastMintTime == time) {
+                // if a burn is taking place, and a mint happened earlier in the block, forfeit all fees earned since
+                protocolFees0 = feesOwed0;
+                protocolFees1 = feesOwed1;
+                self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+                self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+            }
         }
 
         // clear position data that is no longer needed

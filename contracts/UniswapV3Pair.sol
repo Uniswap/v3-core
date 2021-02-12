@@ -343,7 +343,13 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
-        position.update(liquidityDelta, blockTimestamp, feeGrowthInside0X128, feeGrowthInside1X128);
+        (uint128 protocolFees0, uint128 protocolFees1) =
+            position.update(liquidityDelta, blockTimestamp, feeGrowthInside0X128, feeGrowthInside1X128);
+
+        // update protocol fees if necessary
+        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
+        if (protocolFees0 > 0) protocolFees.token0 += protocolFees0;
+        if (protocolFees1 > 0) protocolFees.token1 += protocolFees1;
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
