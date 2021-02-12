@@ -112,6 +112,18 @@ interface IUniswapV3PairEvents {
     /// @param feeProtocol1New The updated value of the token1 protocol fee
     event SetFeeProtocol(uint8 feeProtocol0Old, uint8 feeProtocol1Old, uint8 feeProtocol0New, uint8 feeProtocol1New);
 
+    /// @notice Emitted when the protocol burn fee is changed by the pair
+    /// @param feeProtocol0BurnOld The previous value of the token0 protocol burn fee
+    /// @param feeProtocol1BurnOld The previous value of the token1 protocol burn fee
+    /// @param feeProtocol0BurnNew The updated value of the token0 protocol burn fee
+    /// @param feeProtocol1BurnNew The updated value of the token1 protocol burn fee
+    event SetFeeProtocolBurn(
+        uint8 feeProtocol0BurnOld,
+        uint8 feeProtocol1BurnOld,
+        uint8 feeProtocol0BurnNew,
+        uint8 feeProtocol1BurnNew
+    );
+
     /// @notice Emitted when the collected protocol fees are withdrawn by the factory owner
     /// @param sender The address that collects the protocol fees
     /// @param recipient The address that receives the collected protocol fees

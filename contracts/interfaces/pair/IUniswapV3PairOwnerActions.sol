@@ -9,6 +9,11 @@ interface IUniswapV3PairOwnerActions {
     /// @param feeProtocol1 new protocol fee for token1 of the pair
     function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external;
 
+    /// @notice Set the denominator of the protocol's % of swap fee collected on burn
+    /// @param feeProtocolBurn0 new protocol burn fee for token0 of the pair
+    /// @param feeProtocolBurn1 new protocol burn fee for token1 of the pair
+    function setFeeProtocolBurn(uint8 feeProtocolBurn0, uint8 feeProtocolBurn1) external;
+
     /// @notice Collect the protocol fee accrued to the pair
     /// @param recipient The address to which collected protocol fees should be sent
     /// @param amount0Requested The maximum amount of token0 to send, can be 0 to collect fees in only token1

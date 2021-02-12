@@ -445,6 +445,23 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
         if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
 
+        uint8 _feeProtocolBurn = feeProtocolBurn;
+        if (_feeProtocolBurn > 0) {
+            uint128 protocolFee0 =
+                amount0 > 0 && (_feeProtocolBurn % 16 > 0)
+                    ? uint128(FullMath.mulDiv(amount0, fee, 1e6 * (_feeProtocolBurn % 16)))
+                    : 0;
+            uint128 protocolFee1 =
+                amount1 > 0 && (_feeProtocolBurn >> 4 > 0)
+                    ? uint128(FullMath.mulDiv(amount1, fee, 1e6 * (_feeProtocolBurn >> 4)))
+                    : 0;
+            // overflow is acceptable, protocol fees must be withdrawn before type(uint128).max fees are collected
+            protocolFees.token0 += protocolFee0;
+            protocolFees.token1 += protocolFee1;
+            amount0 -= protocolFee0;
+            amount1 -= protocolFee1;
+        }
+
         emit Burn(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
 
@@ -720,6 +737,19 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint8 feeProtocolOld = slot0.feeProtocol;
         slot0.feeProtocol = feeProtocol0 + (feeProtocol1 << 4);
         emit SetFeeProtocol(feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1);
+    }
+
+    /// @inheritdoc IUniswapV3PairOwnerActions
+    function setFeeProtocolBurn(uint8 feeProtocolBurn0, uint8 feeProtocolBurn1)
+        external
+        override
+        lock
+        onlyFactoryOwner
+    {
+        require(feeProtocolBurn0 < 16 && feeProtocolBurn1 < 16);
+        uint8 feeProtocolBurnOld = feeProtocolBurn;
+        feeProtocolBurn = feeProtocolBurn0 + (feeProtocolBurn1 << 4);
+        emit SetFeeProtocolBurn(feeProtocolBurnOld % 16, feeProtocolBurnOld >> 4, feeProtocolBurn0, feeProtocolBurn1);
     }
 
     /// @inheritdoc IUniswapV3PairOwnerActions
