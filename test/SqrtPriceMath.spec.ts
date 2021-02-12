@@ -131,13 +131,11 @@ describe('SqrtPriceMath', () => {
       await expect(sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, false)).to.be.reverted
     })
 
-    it('succeeds if output amount is exactly the virtual reserves of token1', async () => {
+    it('fails if output amount is exactly the virtual reserves of token1', async () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
       const amountOut = 262144
-      // this edge case could be handled a little better, given 0 is not a real price, but this never binds in swap
-      // because TickMath.getTickAtSqrtRatio would not accept the price
-      expect(await sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, true)).to.eq(0)
+      await expect(sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, true)).to.be.reverted
     })
 
     it('fails if output amount is greater than virtual reserves of token1', async () => {
