@@ -492,8 +492,9 @@ describe('UniswapV3Pair', () => {
         await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address)
         await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address)
 
-        // should be an 'NP' error, hardhat is bugged
-        await expect(pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.reverted
+        await expect(pair.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.revertedWith(
+          'NP'
+        )
 
         await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         let {
@@ -924,14 +925,14 @@ describe('UniswapV3Pair', () => {
       })
 
       it('binds', async () => {
-        await pair.burn(wallet.address, minTick, maxTick, 0)
-        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+        await pair.burn(wallet.address, minTick, maxTick, 1)
 
-        expect(feesOwed0).to.be.eq(0)
-        expect(feesOwed1).to.be.eq(0)
+        let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
+        expect(token0ProtocolFees).to.eq('600000000000002')
+        expect(token1ProtocolFees).to.eq(0)
       })
 
-      it('does not bind after a block', async () => {
+      it('does not bind after timeout', async () => {
         await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
         await pair.burn(wallet.address, minTick, maxTick, 0)
 
