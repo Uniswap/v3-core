@@ -132,11 +132,13 @@ library SqrtPriceMath {
         require(liquidity > 0);
 
         // round to make sure that we pass the target price
-        sqrtQX96 = zeroForOne
-            ? getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, false)
-            : getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
-        // ensure that we haven't reached an invalid price
-        require(sqrtQX96 > 0);
+        if (zeroForOne) {
+            sqrtQX96 = getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, false);
+            // ensure that we haven't reached an invalid price
+            require(sqrtQX96 > 0);
+        } else {
+            return getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
+        }
     }
 
     /// @notice Gets the amount0 delta between two prices

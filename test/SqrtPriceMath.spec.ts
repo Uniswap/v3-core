@@ -131,6 +131,13 @@ describe('SqrtPriceMath', () => {
       await expect(sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, false)).to.be.reverted
     })
 
+    it('fails if output amount is greater than virtual reserves of token1', async () => {
+      const price = '20282409603651670423947251286016'
+      const liquidity = 1024
+      const amountOut = 262145
+      await expect(sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, true)).to.be.reverted
+    })
+
     it('fails if output amount is exactly the virtual reserves of token1', async () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
@@ -138,11 +145,12 @@ describe('SqrtPriceMath', () => {
       await expect(sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, true)).to.be.reverted
     })
 
-    it('fails if output amount is greater than virtual reserves of token1', async () => {
+    it('succeeds if output amount is just less than the virtual reserves of token1', async () => {
       const price = '20282409603651670423947251286016'
       const liquidity = 1024
-      const amountOut = 262145
-      await expect(sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, true)).to.be.reverted
+      const amountOut = 262143
+      const sqrtQ = await sqrtPriceMath.getNextSqrtPriceFromOutput(price, liquidity, amountOut, true)
+      expect(sqrtQ).to.eq('77371252455336267181195264')
     })
 
     it('puzzling echidna test', async () => {
