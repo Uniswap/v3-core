@@ -152,19 +152,22 @@ library SqrtPriceMath {
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount0) {
-        (uint160 sqrtRatioLowerX96, uint160 sqrtRatioUpperX96) =
-            sqrtRatioAX96 <= sqrtRatioBX96 ? (sqrtRatioAX96, sqrtRatioBX96) : (sqrtRatioBX96, sqrtRatioAX96);
+        if (sqrtRatioAX96 > sqrtRatioBX96) {
+            uint160 sqrtRatioHigherX96 = sqrtRatioAX96;
+            sqrtRatioAX96 = sqrtRatioBX96;
+            sqrtRatioBX96 = sqrtRatioHigherX96;
+        }
 
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
-        uint256 numerator2 = sqrtRatioUpperX96 - sqrtRatioLowerX96;
+        uint256 numerator2 = sqrtRatioBX96 - sqrtRatioAX96;
 
         return
             roundUp
                 ? UnsafeMath.divRoundingUp(
-                    FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioUpperX96),
-                    sqrtRatioLowerX96
+                    FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96),
+                    sqrtRatioAX96
                 )
-                : FullMath.mulDiv(numerator1, numerator2, sqrtRatioUpperX96) / sqrtRatioLowerX96;
+                : FullMath.mulDiv(numerator1, numerator2, sqrtRatioBX96) / sqrtRatioAX96;
     }
 
     /// @notice Gets the amount1 delta between two prices
@@ -180,13 +183,16 @@ library SqrtPriceMath {
         uint128 liquidity,
         bool roundUp
     ) internal pure returns (uint256 amount1) {
-        (uint160 sqrtRatioLowerX96, uint160 sqrtRatioUpperX96) =
-            sqrtRatioAX96 <= sqrtRatioBX96 ? (sqrtRatioAX96, sqrtRatioBX96) : (sqrtRatioBX96, sqrtRatioAX96);
+        if (sqrtRatioAX96 > sqrtRatioBX96) {
+            uint160 sqrtRatioHigherX96 = sqrtRatioAX96;
+            sqrtRatioAX96 = sqrtRatioBX96;
+            sqrtRatioBX96 = sqrtRatioHigherX96;
+        }
 
         return
             roundUp
-                ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioUpperX96 - sqrtRatioLowerX96, FixedPoint96.Q96)
-                : FullMath.mulDiv(liquidity, sqrtRatioUpperX96 - sqrtRatioLowerX96, FixedPoint96.Q96);
+                ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96)
+                : FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
     }
 
     /// @notice Helper that gets signed token0 delta
