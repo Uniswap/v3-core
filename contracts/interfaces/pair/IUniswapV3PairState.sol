@@ -15,7 +15,7 @@ interface IUniswapV3PairState {
     /// observationCardinality The current maximum number of observations stored in the pair,
     /// observationCardinalityNext The next maximum number of observations, to be updated when the observation,
     /// index The last element of the observation array,
-    /// feeProtocol The fees collected by the protocol for the pair,
+    /// feeProtocol The packed fees collected by the protocol for the pair
     /// unlocked Whether the pair is currently locked to reentrancy
     function slot0()
         external
@@ -45,6 +45,10 @@ interface IUniswapV3PairState {
     /// @notice The currently in range liquidity available to the pair
     /// @dev This value has no relationship to the total liquidity across all ticks
     function liquidity() external view returns (uint128);
+
+    /// @notice The fee taken by the protocol from the principal received as a result of a burn, as the denominator of
+    /// a fraction of the swap fee, packed into a single uint8.
+    function feeProtocolBurn() external view returns (uint8);
 
     /// @notice Look up information about a specific tick in the pair
     /// @param tick The tick to look up

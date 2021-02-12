@@ -92,6 +92,9 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     uint128 public override liquidity;
 
     /// @inheritdoc IUniswapV3PairState
+    uint8 public override feeProtocolBurn;
+
+    /// @inheritdoc IUniswapV3PairState
     mapping(int24 => Tick.Info) public override ticks;
     /// @inheritdoc IUniswapV3PairState
     mapping(int16 => uint256) public override tickBitmap;
