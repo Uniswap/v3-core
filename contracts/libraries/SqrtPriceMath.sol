@@ -76,20 +76,27 @@ library SqrtPriceMath {
     ) internal pure returns (uint160) {
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
-        uint256 quotient =
-            add
-                ? (
+        if (add) {
+            uint256 quotient =
+                (
                     amount <= type(uint160).max
                         ? (amount << FixedPoint96.RESOLUTION) / liquidity
                         : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
-                )
-                : (
+                );
+
+            return uint256(sqrtPX96).add(quotient).toUint160();
+        } else {
+            uint256 quotient =
+                (
                     amount <= type(uint160).max
                         ? UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
                         : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
                 );
 
-        return (add ? uint256(sqrtPX96).add(quotient) : uint256(sqrtPX96).sub(quotient)).toUint160();
+            require(sqrtPX96 > quotient);
+            // always fits 160 bits
+            return uint160(sqrtPX96 - quotient);
+        }
     }
 
     /// @notice Gets the next sqrt price given an input amount of token0 or token1
@@ -132,13 +139,10 @@ library SqrtPriceMath {
         require(liquidity > 0);
 
         // round to make sure that we pass the target price
-        if (zeroForOne) {
-            sqrtQX96 = getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, false);
-            // ensure that we haven't reached an invalid price
-            require(sqrtQX96 > 0);
-        } else {
-            return getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
-        }
+        return
+            zeroForOne
+                ? getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, false)
+                : getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
     }
 
     /// @notice Gets the amount0 delta between two prices
