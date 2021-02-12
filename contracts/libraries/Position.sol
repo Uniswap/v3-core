@@ -63,20 +63,22 @@ library Position {
         }
 
         // calculate accumulated fees
-        uint128 feesOwed0 = uint128(
-            FullMath.mulDiv(
-                feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
-                _self.liquidity,
-                FixedPoint128.Q128
-            )
-        );
-        uint128 feesOwed1 = uint128(
-            FullMath.mulDiv(
-                feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
-                _self.liquidity,
-                FixedPoint128.Q128
-            )
-        );
+        uint128 feesOwed0 =
+            uint128(
+                FullMath.mulDiv(
+                    feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
+                    _self.liquidity,
+                    FixedPoint128.Q128
+                )
+            );
+        uint128 feesOwed1 =
+            uint128(
+                FullMath.mulDiv(
+                    feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
+                    _self.liquidity,
+                    FixedPoint128.Q128
+                )
+            );
 
         // if this is the first call of the block, increment stored fees and update fee growth inside checkpoints
         if (self.lastMintTime != time) {
