@@ -366,7 +366,6 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     /// @inheritdoc IUniswapV3PairActions
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
-    /// @dev Must increase position liquidity by >=1%. If not possible, a requisite amount must be burned then re-minted
     function mint(
         address recipient,
         int24 tickLower,

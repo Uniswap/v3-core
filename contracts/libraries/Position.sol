@@ -81,29 +81,24 @@ library Position {
             );
 
         // update the position
-        self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-        self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        if (feesOwed0 > 0 || feesOwed1 > 0) {
-            if (time == self.lastMintTime) {
+        if (liquidityDelta != 0) {
+            self.liquidity = liquidityNext;
+            if (liquidityDelta > 0) {
+                self.lastMintTime = time;
+            } else if (time == self.lastMintTime) {
                 // if the position was minted to within the same block, it forfeits fees to the protocol
                 protocolFees0 = feesOwed0;
                 protocolFees1 = feesOwed1;
                 feesOwed0 = 0;
                 feesOwed1 = 0;
             }
-
+        }
+        self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+        self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+        if (feesOwed0 > 0 || feesOwed1 > 0) {
             // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
             self.feesOwed0 += feesOwed0;
             self.feesOwed1 += feesOwed1;
-        }
-        if (liquidityDelta != 0) {
-            self.liquidity = liquidityNext;
-            if (liquidityDelta > 0) {
-                // ensure that liquidity is being increased by at least 1%
-                require(uint256(liquidityNext) * 100 >= uint256(_self.liquidity) * 101, 'SM');
-                // important that this happens after the feesOwed{0,1} block, as it uses self.lastMintTime
-                self.lastMintTime = time;
-            }
         }
 
         // clear position data that is no longer needed
