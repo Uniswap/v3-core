@@ -155,7 +155,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#increaseObservationCardinalityNext', () => {
     it('can only be called after initialize', async () => {
-      await expect(pair.increaseObservationCardinalityNext(2)).to.be.revertedWith('LOK')
+      await expect(pair.increaseObservationCardinalityNext(2)).to.be.reverted
     })
     it('emits an event including both old and new', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
@@ -185,7 +185,7 @@ describe('UniswapV3Pair', () => {
 
   describe('#mint', () => {
     it('fails if not initialized', async () => {
-      await expect(mint(wallet.address, -tickSpacing, tickSpacing, 1)).to.be.revertedWith('LOK')
+      await expect(mint(wallet.address, -tickSpacing, tickSpacing, 1)).to.be.reverted
     })
     describe('after initialization', () => {
       beforeEach('initialize the pair at price of 10:1', async () => {
@@ -1362,9 +1362,9 @@ describe('UniswapV3Pair', () => {
 
   describe('#flash', () => {
     it('fails if not initialized', async () => {
-      await expect(flash(100, 200, other.address)).to.be.revertedWith('LOK')
-      await expect(flash(100, 0, other.address)).to.be.revertedWith('LOK')
-      await expect(flash(0, 200, other.address)).to.be.revertedWith('LOK')
+      await expect(flash(100, 200, other.address)).to.be.reverted
+      await expect(flash(100, 0, other.address)).to.be.reverted
+      await expect(flash(0, 200, other.address)).to.be.reverted
     })
     it('fails if no liquidity', async () => {
       await pair.initialize(encodePriceSqrt(1, 1))
