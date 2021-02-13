@@ -54,15 +54,17 @@ library Position {
     ) internal returns (uint128 protocolFees0, uint128 protocolFees1) {
         Info memory _self = self;
 
-        uint128 liquidityNext;
-        if (liquidityDelta == 0) {
-            require(_self.liquidity > 0, 'NP'); // disallow pokes for 0 liquidity positions
-            liquidityNext = _self.liquidity;
-        } else {
-            liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
+        // early return for new positions
+        if (_self.liquidity == 0) {
+            require(liquidityDelta > 0, 'NP'); // disallow pokes for 0 liquidity positions
+            self.liquidity = uint128(liquidityDelta);
+            self.lastMintTime = time;
+            self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+            self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+            return (0, 0);
         }
 
-        // calculate accumulated fees
+        // calculate accumulated fees since the last checkpoint
         uint128 feesOwed0 =
             uint128(
                 FullMath.mulDiv(
@@ -80,8 +82,8 @@ library Position {
                 )
             );
 
-        // if this is the first call of the block, increment stored fees and update fee growth inside checkpoints
         if (self.lastMintTime != time) {
+            // no mint has occurred in this block, so increment stored fees and update fee growth inside checkpoints
             if (feesOwed0 > 0 || feesOwed1 > 0) {
                 // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
                 self.feesOwed0 += feesOwed0;
@@ -89,20 +91,20 @@ library Position {
             }
             self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
             self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+        } else if (liquidityDelta < 0) {
+            // a mint has occurred in this block, and now a burn is happening, so forfeit all fees earned since the mint
+            protocolFees0 = feesOwed0;
+            protocolFees1 = feesOwed1;
+            self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+            self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         }
+
+        uint128 liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
 
         // update the rest of the position
         if (liquidityDelta != 0) {
             self.liquidity = liquidityNext;
-            if (liquidityDelta > 0) {
-                self.lastMintTime = time;
-            } else if (self.lastMintTime == time) {
-                // if a burn is taking place, and a mint happened earlier in the block, forfeit all fees earned since
-                protocolFees0 = feesOwed0;
-                protocolFees1 = feesOwed1;
-                self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-                self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-            }
+            if (liquidityDelta > 0) self.lastMintTime = time;
         }
 
         // clear position data that is no longer needed
