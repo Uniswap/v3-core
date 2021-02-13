@@ -871,6 +871,7 @@ describe('UniswapV3Pair', () => {
         .withArgs(wallet.address, pair.address, '5981737760509663')
       // somebody takes the limit order
       await swapExact1For0(expandTo18Decimals(2), other.address)
+      await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
       await expect(pair.burn(wallet.address, 0, 120, expandTo18Decimals(1)))
         .to.emit(token1, 'Transfer')
         .withArgs(pair.address, wallet.address, '6017734268818165')
@@ -886,6 +887,7 @@ describe('UniswapV3Pair', () => {
         .withArgs(wallet.address, pair.address, '5981737760509663')
       // somebody takes the limit order
       await swapExact0For1(expandTo18Decimals(2), other.address)
+      await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
       await expect(pair.burn(wallet.address, -120, 0, expandTo18Decimals(1)))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '6017734268818165')
@@ -904,6 +906,7 @@ describe('UniswapV3Pair', () => {
           .withArgs(wallet.address, pair.address, '5981737760509663')
         // somebody takes the limit order
         await swapExact1For0(expandTo18Decimals(2), other.address)
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
         await expect(pair.burn(wallet.address, 0, 120, expandTo18Decimals(1)))
           .to.emit(token1, 'Transfer')
           .withArgs(pair.address, wallet.address, '6017734268818165')
@@ -920,6 +923,7 @@ describe('UniswapV3Pair', () => {
           .withArgs(wallet.address, pair.address, '5981737760509663')
         // somebody takes the limit order
         await swapExact0For1(expandTo18Decimals(2), other.address)
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
         await expect(pair.burn(wallet.address, -120, 0, expandTo18Decimals(1)))
           .to.emit(token0, 'Transfer')
           .withArgs(pair.address, wallet.address, '6017734268818165')
