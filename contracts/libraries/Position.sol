@@ -82,6 +82,8 @@ library Position {
                 )
             );
 
+        uint128 liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
+
         if (self.lastMintTime != time) {
             // no mint has occurred in this block, so increment stored fees and update fee growth inside checkpoints
             if (feesOwed0 > 0 || feesOwed1 > 0) {
@@ -91,15 +93,20 @@ library Position {
             }
             self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
             self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        } else if (liquidityDelta < 0) {
-            // a mint has occurred in this block, and now a burn is happening, so forfeit all fees earned since the mint
-            protocolFees0 = feesOwed0;
-            protocolFees1 = feesOwed1;
-            self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-            self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+        } else {
+            // at least one mint has already occurred in this block
+            if (liquidityDelta < 0) {
+                // a burn is happening, forfeit all fees earned since the first mint
+                protocolFees0 = feesOwed0;
+                protocolFees1 = feesOwed1;
+                self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+                self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+            } else {
+                // otherwise, scale fee growth checkpoints
+                self.feeGrowthInside0LastX128 = feeGrowthInside0X128 - (FixedPoint128.Q128 * feesOwed0 / liquidityNext);
+                self.feeGrowthInside1LastX128 = feeGrowthInside1X128 - (FixedPoint128.Q128 * feesOwed1 / liquidityNext);
+            }
         }
-
-        uint128 liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
 
         // update the rest of the position
         if (liquidityDelta != 0) {

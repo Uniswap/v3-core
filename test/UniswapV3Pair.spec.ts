@@ -939,6 +939,72 @@ describe('UniswapV3Pair', () => {
         expect(feesOwed0).to.be.eq('600000000000002')
         expect(feesOwed1).to.be.eq(0)
       })
+
+      it('additional mint in same block does not collect fees', async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+
+        let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
+        expect(token0ProtocolFees).to.eq(0)
+        expect(token1ProtocolFees).to.eq(0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+        expect(feesOwed0).to.be.eq(0)
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('additional poke in same block does not collect fees', async () => {
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pair.protocolFees()
+        expect(token0ProtocolFees).to.eq(0)
+        expect(token1ProtocolFees).to.eq(0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+        expect(feesOwed0).to.be.eq(0)
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('additional mint is not punished after burn timeout', async () => {
+        await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+        expect(feesOwed0).to.be.eq('600000000000001')
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('additional poke is not punished after burn timeout', async () => {
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
+        await pair.burn(wallet.address, minTick, maxTick, 0)
+
+        const { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, maxTick))
+        expect(feesOwed0).to.be.eq('600000000000001')
+        expect(feesOwed1).to.be.eq(0)
+      })
+
+      it('works with other positions', async () => {
+        await mint(wallet.address, minTick, 0, expandTo18Decimals(1))
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+        await mint(wallet.address, minTick, 0, expandTo18Decimals(1))
+
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
+        await pair.burn(wallet.address, minTick, 0, 0)
+
+        let { feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, 0))
+        expect(feesOwed0).to.be.eq('299999999999999')
+        expect(feesOwed1).to.be.eq(0)
+
+        await swapExact0For1(expandTo18Decimals(1), wallet.address)
+        await pair.advanceTime(SAFE_ADVANCE_TIME_FOR_FEE_WITHDRAWAL)
+        await pair.burn(wallet.address, minTick, 0, 0)
+        ;({ feesOwed0, feesOwed1 } = await pair.positions(getPositionKey(wallet.address, minTick, 0)))
+        expect(feesOwed0).to.be.eq('699999999999999')
+        expect(feesOwed1).to.be.eq(0)
+      })
     })
 
     it('works with multiple LPs', async () => {
