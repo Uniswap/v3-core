@@ -866,6 +866,11 @@ describe('UniswapV3Pair', () => {
       await expect(pair.burn(wallet.address, 0, 120, expandTo18Decimals(1)))
         .to.emit(token1, 'Transfer')
         .withArgs(pair.address, wallet.address, '6017734268818165')
+      await expect(pair.collect(wallet.address, 0, 120, MaxUint128, MaxUint128))
+        .to.emit(token1, 'Transfer')
+        .withArgs(pair.address, wallet.address, '18107525382602') // roughly 0.3% despite other liquidity
+        .to.not.emit(token0, 'Transfer')
+      expect((await pair.slot0()).tick).to.be.gte(120)
     })
     it('selling 0 for 1 at tick 0 thru -1', async () => {
       await expect(mint(wallet.address, -120, 0, expandTo18Decimals(1)))
@@ -876,6 +881,11 @@ describe('UniswapV3Pair', () => {
       await expect(pair.burn(wallet.address, -120, 0, expandTo18Decimals(1)))
         .to.emit(token0, 'Transfer')
         .withArgs(pair.address, wallet.address, '6017734268818165')
+        .to.not.emit(token1, 'Transfer')
+      await expect(pair.collect(wallet.address, -120, 0, MaxUint128, MaxUint128))
+        .to.emit(token0, 'Transfer')
+        .withArgs(pair.address, wallet.address, '18107525382602') // roughly 0.3% despite other liquidity
+      expect((await pair.slot0()).tick).to.be.lt(-120)
     })
 
     describe('fee is on', () => {
@@ -889,6 +899,12 @@ describe('UniswapV3Pair', () => {
         await expect(pair.burn(wallet.address, 0, 120, expandTo18Decimals(1)))
           .to.emit(token1, 'Transfer')
           .withArgs(pair.address, wallet.address, '6017734268818165')
+          .to.not.emit(token0, 'Transfer')
+        await expect(pair.collect(wallet.address, 0, 120, MaxUint128, MaxUint128))
+          .to.emit(token1, 'Transfer')
+          .withArgs(pair.address, wallet.address, '15089604485501') // roughly 0.25% despite other liquidity
+          .to.not.emit(token0, 'Transfer')
+        expect((await pair.slot0()).tick).to.be.gte(120)
       })
       it('selling 0 for 1 at tick 0 thru -1', async () => {
         await expect(mint(wallet.address, -120, 0, expandTo18Decimals(1)))
@@ -899,6 +915,11 @@ describe('UniswapV3Pair', () => {
         await expect(pair.burn(wallet.address, -120, 0, expandTo18Decimals(1)))
           .to.emit(token0, 'Transfer')
           .withArgs(pair.address, wallet.address, '6017734268818165')
+          .to.not.emit(token1, 'Transfer')
+        await expect(pair.collect(wallet.address, -120, 0, MaxUint128, MaxUint128))
+          .to.emit(token0, 'Transfer')
+          .withArgs(pair.address, wallet.address, '15089604485501') // roughly 0.25% despite other liquidity
+        expect((await pair.slot0()).tick).to.be.lt(-120)
       })
     })
   })
