@@ -103,8 +103,12 @@ library Position {
                 self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
             } else {
                 // otherwise, scale fee growth checkpoints
-                self.feeGrowthInside0LastX128 = feeGrowthInside0X128 - (FixedPoint128.Q128 * feesOwed0 / liquidityNext);
-                self.feeGrowthInside1LastX128 = feeGrowthInside1X128 - (FixedPoint128.Q128 * feesOwed1 / liquidityNext);
+                self.feeGrowthInside0LastX128 =
+                    feeGrowthInside0X128 -
+                    ((FixedPoint128.Q128 * feesOwed0) / liquidityNext);
+                self.feeGrowthInside1LastX128 =
+                    feeGrowthInside1X128 -
+                    ((FixedPoint128.Q128 * feesOwed1) / liquidityNext);
             }
         }
 
