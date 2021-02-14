@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-/// @title Pair state that is not stored
-/// @notice Contains view functions to provide information about the pair that is computed rather than stored on the
+/// @title Pool state that is not stored
+/// @notice Contains view functions to provide information about the pool that is computed rather than stored on the
 /// blockchain. The functions here may have variable gas costs.
-interface IUniswapV3PairDerivedState {
-    /// @notice Returns a relative timestamp value representing how long, in seconds, the pair has spent between
+interface IUniswapV3PoolDerivedState {
+    /// @notice Returns a relative timestamp value representing how long, in seconds, the pool has spent between
     /// tickLower and tickUpper
     /// @dev This timestamp is strictly relative. To get a useful elapsed time (i.e., duration) value, the value returned
     /// by this method should be checkpointed externally after a position is minted, and again before a position is
     /// burned. Thus the external contract must control the lifecycle of the position.
     /// @param tickLower The lower tick of the range for which to get the seconds inside
     /// @param tickUpper The upper tick of the range for which to get the seconds inside
-    /// @return A relative timestamp for how long the pair spent in the tick range
+    /// @return A relative timestamp for how long the pool spent in the tick range
     function secondsInside(int24 tickLower, int24 tickUpper) external view returns (uint32);
 
     /// @notice Returns the cumulative tick and liquidity as of a timestamp `secondsAgo` from the current block timestamp
     /// @dev To get a time weighted average tick or liquidity-in-range, you must call this twice, once with the start
     /// of the period and again with the end of the period. E.g., to get the last hour time-weighted average tick,
     /// you must call it with secondsAgo = 3600, and secondsAgo = 0.
-    /// @dev The time weighted average tick represents the geometric time weighted average price of the pair, in
+    /// @dev The time weighted average tick represents the geometric time weighted average price of the pool, in
     /// log base sqrt(1.0001) of token1 / token0. The TickMath library allows you to compute sqrt(1.0001)^tick
     /// as a fixed point Q128.128 in a uint256 container.
     /// @param secondsAgo From how long ago the cumulative tick and liquidity should be returned

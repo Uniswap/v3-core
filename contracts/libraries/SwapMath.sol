@@ -9,7 +9,7 @@ import './SqrtPriceMath.sol';
 library SwapMath {
     /// @notice Computes the result of swapping some amount in, or amount out, given the parameters of the swap
     /// @dev The fee, plus the amount in, will never exceed the amount remaining if the swap's `amountSpecified` is positive
-    /// @param sqrtRatioCurrentX96 The current sqrt price of the pair
+    /// @param sqrtRatioCurrentX96 The current sqrt price of the pool
     /// @param sqrtRatioTargetX96 The price that cannot be exceeded, from which the direction of the swap is inferred
     /// @param liquidity The usable liquidity
     /// @param amountRemaining How much input or output amount is remaining to be swapped in/out

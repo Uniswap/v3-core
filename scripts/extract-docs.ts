@@ -10,7 +10,7 @@ if (contents.length !== 1) throw new Error('unexpected contents')
 
 const buildOutput = JSON.parse(readFileSync(resolve(buildInfoFolder, contents[0]), { encoding: 'utf8' }))
 
-const FILENAMES_DOCS_GENERATE = ['contracts/UniswapV3Pair.sol', 'contracts/UniswapV3Factory.sol']
+const FILENAMES_DOCS_GENERATE = ['contracts/UniswapV3Pool.sol', 'contracts/UniswapV3Factory.sol']
 
 const output = Object.keys(buildOutput.output.contracts).reduce((results, fileName) => {
   const contractsInFile = Object.keys(buildOutput.output.contracts[fileName])
