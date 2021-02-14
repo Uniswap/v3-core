@@ -115,14 +115,14 @@ library Position {
         // update the rest of the position
         if (liquidityDelta != 0) {
             self.liquidity = liquidityNext;
-            if (liquidityDelta > 0) self.lastMintTime = time;
-        }
-
-        // clear position data that is no longer needed
-        if (liquidityNext == 0) {
-            delete self.lastMintTime;
-            delete self.feeGrowthInside0LastX128;
-            delete self.feeGrowthInside1LastX128;
+            if (liquidityDelta > 0) {
+                self.lastMintTime = time;
+            } else if (liquidityNext == 0) {
+                // clear position data that is no longer needed
+                delete self.lastMintTime;
+                delete self.feeGrowthInside0LastX128;
+                delete self.feeGrowthInside1LastX128;
+            }
         }
     }
 }
