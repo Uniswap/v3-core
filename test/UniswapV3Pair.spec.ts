@@ -530,11 +530,11 @@ describe('UniswapV3Pair', () => {
     beforeEach('initialize at zero tick', () => initializeAtZeroTick(pair))
 
     async function checkTickIsClear(tick: number) {
-      const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, liquidityDelta } = await pair.ticks(tick)
+      const { liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128, liquidityNet } = await pair.ticks(tick)
       expect(liquidityGross).to.eq(0)
       expect(feeGrowthOutside0X128).to.eq(0)
       expect(feeGrowthOutside1X128).to.eq(0)
-      expect(liquidityDelta).to.eq(0)
+      expect(liquidityNet).to.eq(0)
     }
 
     async function checkTickIsNotClear(tick: number) {

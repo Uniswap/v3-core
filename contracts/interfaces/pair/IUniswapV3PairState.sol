@@ -50,7 +50,7 @@ interface IUniswapV3PairState {
     /// @param tick The tick to look up
     /// @return liquidityGross the total amount of position liquidity that uses the pair either as tick lower or
     /// tick upper,
-    /// liquidityDelta how much liquidity changes when the pair price crosses the tick,
+    /// liquidityNet how much liquidity changes when the pair price crosses the tick,
     /// feeGrowthOutside0X128 the fee growth on the other side of the tick from the current tick in token0,
     /// feeGrowthOutside1X128 the fee growth on the other side of the tick from the current tick in token1,
     /// feeGrowthOutsideX128 values can only be used if the tick is initialized,
@@ -61,7 +61,7 @@ interface IUniswapV3PairState {
         view
         returns (
             uint128 liquidityGross,
-            int128 liquidityDelta,
+            int128 liquidityNet,
             uint256 feeGrowthOutside0X128,
             uint256 feeGrowthOutside1X128
         );

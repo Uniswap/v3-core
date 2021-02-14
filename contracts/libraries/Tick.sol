@@ -17,8 +17,8 @@ library Tick {
     struct Info {
         // the total position liquidity that references this tick
         uint128 liquidityGross;
-        // amount of liquidity added (subtracted) when tick is crossed from left to right (right to left),
-        int128 liquidityDelta;
+        // amount of net liquidity added (subtracted) when tick is crossed from left to right (right to left),
+        int128 liquidityNet;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint256 feeGrowthOutside0X128;
@@ -87,7 +87,7 @@ library Tick {
     /// @param self The mapping containing all tick information for initialized ticks
     /// @param tick The tick that will be updated
     /// @param tickCurrent The current tick
-    /// @param liquidityDelta The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
+    /// @param liquidityDelta A new amount of liquidity to be added (subtracted) when tick is crossed from left to right (right to left)
     /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
     /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
     /// @param upper A bool representing whether or not the call represents the upper, or lower tick
@@ -123,9 +123,9 @@ library Tick {
         info.liquidityGross = liquidityGrossAfter;
 
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-        info.liquidityDelta = upper
-            ? int256(info.liquidityDelta).sub(liquidityDelta).toInt128()
-            : int256(info.liquidityDelta).add(liquidityDelta).toInt128();
+        info.liquidityNet = upper
+            ? int256(info.liquidityNet).sub(liquidityDelta).toInt128()
+            : int256(info.liquidityNet).add(liquidityDelta).toInt128();
     }
 
     /// @notice Clears tick data
@@ -140,16 +140,16 @@ library Tick {
     /// @param tick The destination tick of the transition
     /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
     /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
-    /// @return liquidityDelta The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
+    /// @return liquidityNet The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
     function cross(
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128
-    ) internal returns (int128 liquidityDelta) {
+    ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
         info.feeGrowthOutside0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128;
         info.feeGrowthOutside1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128;
-        liquidityDelta = info.liquidityDelta;
+        liquidityNet = info.liquidityNet;
     }
 }
