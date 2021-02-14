@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-/// @title Pair state that can change
-/// @notice These methods compose the pair's state, and can change with any frequency including multiple times
+/// @title Pool state that can change
+/// @notice These methods compose the pool's state, and can change with any frequency including multiple times
 /// per transaction
-interface IUniswapV3PairState {
-    /// @notice The 0th storage slot in the pair stores many values, and is exposed as a single method to save gas
+interface IUniswapV3PoolState {
+    /// @notice The 0th storage slot in the pool stores many values, and is exposed as a single method to save gas
     /// when accessed externally.
-    /// @return sqrtPriceX96 The current price of the pair as a sqrt(token1/token0) Q64.96 value
-    /// tick The current tick of the pair, i.e. according to the last tick transition that was run.
+    /// @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
+    /// tick The current tick of the pool, i.e. according to the last tick transition that was run.
     /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96) if the price is on a tick
     /// boundary.
     /// observationIndex The index of the last oracle observation that was written,
-    /// observationCardinality The current maximum number of observations stored in the pair,
+    /// observationCardinality The current maximum number of observations stored in the pool,
     /// observationCardinalityNext The next maximum number of observations, to be updated when the observation,
     /// index The last element of the observation array,
-    /// feeProtocol The fees collected by the protocol for the pair,
-    /// unlocked Whether the pair is currently locked to reentrancy
+    /// feeProtocol The fees collected by the protocol for the pool,
+    /// unlocked Whether the pool is currently locked to reentrancy
     function slot0()
         external
         view
@@ -30,11 +30,11 @@ interface IUniswapV3PairState {
             bool unlocked
         );
 
-    /// @notice The fee growth as a Q128.128 fees of token0 collected per unit of liquidity for the entire life of the pair
+    /// @notice The fee growth as a Q128.128 fees of token0 collected per unit of liquidity for the entire life of the pool
     /// @dev This value can overflow the uint256
     function feeGrowthGlobal0X128() external view returns (uint256);
 
-    /// @notice The fee growth as a Q128.128 fees of token1 collected per unit of liquidity for the entire life of the pair
+    /// @notice The fee growth as a Q128.128 fees of token1 collected per unit of liquidity for the entire life of the pool
     /// @dev This value can overflow the uint256
     function feeGrowthGlobal1X128() external view returns (uint256);
 
@@ -42,15 +42,15 @@ interface IUniswapV3PairState {
     /// @dev Protocol fees will never exceed uint128 max in either token
     function protocolFees() external view returns (uint128 token0, uint128 token1);
 
-    /// @notice The currently in range liquidity available to the pair
+    /// @notice The currently in range liquidity available to the pool
     /// @dev This value has no relationship to the total liquidity across all ticks
     function liquidity() external view returns (uint128);
 
-    /// @notice Look up information about a specific tick in the pair
+    /// @notice Look up information about a specific tick in the pool
     /// @param tick The tick to look up
-    /// @return liquidityGross the total amount of position liquidity that uses the pair either as tick lower or
+    /// @return liquidityGross the total amount of position liquidity that uses the pool either as tick lower or
     /// tick upper,
-    /// liquidityNet how much liquidity changes when the pair price crosses the tick,
+    /// liquidityNet how much liquidity changes when the pool price crosses the tick,
     /// feeGrowthOutside0X128 the fee growth on the other side of the tick from the current tick in token0,
     /// feeGrowthOutside1X128 the fee growth on the other side of the tick from the current tick in token1,
     /// feeGrowthOutsideX128 values can only be used if the tick is initialized,
@@ -68,12 +68,12 @@ interface IUniswapV3PairState {
 
     /// @notice Returns 256 packed tick initialized boolean values
     /// @param wordPosition the index of the word in the bitmap to fetch. The initialized booleans are packed into words
-    /// based on the tick and the pair's tick spacing
+    /// based on the tick and the pool's tick spacing
     function tickBitmap(int16 wordPosition) external view returns (uint256);
 
     /// @notice Returns 8 packed tick seconds outside values
     /// @param wordPosition The index of the word in the map to fetch. The seconds outside 32 bit values are packed into
-    /// words based on the tick and the pair's tick spacing
+    /// words based on the tick and the pool's tick spacing
     function secondsOutside(int24 wordPosition) external view returns (uint256);
 
     /// @notice Returns the information about a position by the position's key
@@ -99,9 +99,9 @@ interface IUniswapV3PairState {
     /// @dev You most likely want to use #observe() instead of this method to get an observation as of some amount of time
     /// ago, rather than at a specific index in the array.
     /// @return blockTimestamp The timestamp of the observation,
-    /// Returns tickCumulative the current tick multiplied by seconds elapsed for the life of the pair as of the
+    /// Returns tickCumulative the current tick multiplied by seconds elapsed for the life of the pool as of the
     /// observation,
-    /// Returns liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pair as of
+    /// Returns liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pool as of
     /// the observation,
     /// Returns initialized whether the observation has been initialized and the values are safe to use
     function observations(uint256 index)

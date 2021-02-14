@@ -2,7 +2,7 @@ import bn from 'bignumber.js'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
-import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
+import { MockTimeUniswapV3Pool } from '../../typechain/MockTimeUniswapV3Pool'
 import { TestERC20 } from '../../typechain/TestERC20'
 
 export const MaxUint128 = BigNumber.from(2).pow(128).sub(1)
@@ -89,7 +89,7 @@ export type MintFunction = (
   tickUpper: BigNumberish,
   liquidity: BigNumberish
 ) => Promise<ContractTransaction>
-export interface PairFunctions {
+export interface PoolFunctions {
   swapToLowerPrice: SwapFunction
   swapToHigherPrice: SwapFunction
   swapExact0For1: SwapFunction
@@ -99,17 +99,17 @@ export interface PairFunctions {
   flash: FlashFunction
   mint: MintFunction
 }
-export function createPairFunctions({
+export function createPoolFunctions({
   swapTarget,
   token0,
   token1,
-  pair,
+  pool,
 }: {
   swapTarget: TestUniswapV3Callee
   token0: TestERC20
   token1: TestERC20
-  pair: MockTimeUniswapV3Pair
-}): PairFunctions {
+  pool: MockTimeUniswapV3Pool
+}): PoolFunctions {
   async function swapToSqrtPrice(
     inputToken: Contract,
     targetPrice: BigNumberish,
@@ -121,7 +121,7 @@ export function createPairFunctions({
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return method(pair.address, targetPrice, toAddress)
+    return method(pool.address, targetPrice, toAddress)
   }
 
   async function swap(
@@ -152,7 +152,7 @@ export function createPairFunctions({
 
     const toAddress = typeof to === 'string' ? to : to.address
 
-    return method(pair.address, exactInput ? amountIn : amountOut, toAddress, sqrtPriceLimitX96)
+    return method(pool.address, exactInput ? amountIn : amountOut, toAddress, sqrtPriceLimitX96)
   }
 
   const swapToLowerPrice: SwapFunction = (sqrtPriceX96, to) => {
@@ -182,11 +182,11 @@ export function createPairFunctions({
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
     await token0.approve(swapTarget.address, constants.MaxUint256)
     await token1.approve(swapTarget.address, constants.MaxUint256)
-    return swapTarget.mint(pair.address, recipient, tickLower, tickUpper, liquidity)
+    return swapTarget.mint(pool.address, recipient, tickLower, tickUpper, liquidity)
   }
 
   const flash: FlashFunction = async (amount0, amount1, to, pay0?: BigNumberish, pay1?: BigNumberish) => {
-    const fee = await pair.fee()
+    const fee = await pool.fee()
     if (typeof pay0 === 'undefined') {
       pay0 = BigNumber.from(amount0)
         .mul(fee)
@@ -201,7 +201,7 @@ export function createPairFunctions({
         .div(1e6)
         .add(amount1)
     }
-    return swapTarget.flash(pair.address, typeof to === 'string' ? to : to.address, amount0, amount1, pay0, pay1)
+    return swapTarget.flash(pool.address, typeof to === 'string' ? to : to.address, amount0, amount1, pay0, pay1)
   }
 
   return {
@@ -216,34 +216,34 @@ export function createPairFunctions({
   }
 }
 
-export interface MultiPairFunctions {
+export interface MultiPoolFunctions {
   swapForExact0Multi: SwapFunction
   swapForExact1Multi: SwapFunction
 }
 
-export function createMultiPairFunctions({
+export function createMultiPoolFunctions({
   inputToken,
   swapTarget,
-  pairInput,
-  pairOutput,
+  poolInput,
+  poolOutput,
 }: {
   inputToken: TestERC20
   swapTarget: TestUniswapV3Router
-  pairInput: MockTimeUniswapV3Pair
-  pairOutput: MockTimeUniswapV3Pair
-}): MultiPairFunctions {
+  poolInput: MockTimeUniswapV3Pool
+  poolOutput: MockTimeUniswapV3Pool
+}): MultiPoolFunctions {
   async function swapForExact0Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
     const method = swapTarget.swapForExact0Multi
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
-    return method(toAddress, pairInput.address, pairOutput.address, amountOut)
+    return method(toAddress, poolInput.address, poolOutput.address, amountOut)
   }
 
   async function swapForExact1Multi(amountOut: BigNumberish, to: Wallet | string): Promise<ContractTransaction> {
     const method = swapTarget.swapForExact1Multi
     await inputToken.approve(swapTarget.address, constants.MaxUint256)
     const toAddress = typeof to === 'string' ? to : to.address
-    return method(toAddress, pairInput.address, pairOutput.address, amountOut)
+    return method(toAddress, poolInput.address, poolOutput.address, amountOut)
   }
 
   return {

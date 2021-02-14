@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import './interfaces/IUniswapV3Pair.sol';
+import './interfaces/IUniswapV3Pool.sol';
 
 import './NoDelegateCall.sol';
 
@@ -21,14 +21,14 @@ import './libraries/LiquidityMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 
-import './interfaces/IUniswapV3PairDeployer.sol';
+import './interfaces/IUniswapV3PoolDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
 import './interfaces/IERC20Minimal.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
 
-contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
+contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     using SafeCast for uint256;
@@ -40,19 +40,19 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
     using Position for Position.Info;
     using Oracle for Oracle.Observation[65535];
 
-    /// @inheritdoc IUniswapV3PairImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     address public immutable override factory;
-    /// @inheritdoc IUniswapV3PairImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     address public immutable override token0;
-    /// @inheritdoc IUniswapV3PairImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     address public immutable override token1;
-    /// @inheritdoc IUniswapV3PairImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     uint24 public immutable override fee;
 
-    /// @inheritdoc IUniswapV3PairImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     int24 public immutable override tickSpacing;
 
-    /// @inheritdoc IUniswapV3PairImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     uint128 public immutable override maxLiquidityPerTick;
 
     struct Slot0 {
@@ -69,15 +69,15 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         // the current protocol fee as a percentage of the swap fee taken on withdrawal
         // represented as an integer denominator (1/x)%
         uint8 feeProtocol;
-        // whether the pair is locked
+        // whether the pool is locked
         bool unlocked;
     }
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     Slot0 public override slot0;
 
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     uint256 public override feeGrowthGlobal0X128;
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     uint256 public override feeGrowthGlobal1X128;
 
     // accumulated protocol fees in token0/token1 units
@@ -85,25 +85,25 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint128 token0;
         uint128 token1;
     }
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     ProtocolFees public override protocolFees;
 
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     uint128 public override liquidity;
 
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     mapping(int24 => Tick.Info) public override ticks;
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     mapping(int16 => uint256) public override tickBitmap;
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     mapping(int24 => uint256) public override secondsOutside;
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     mapping(bytes32 => Position.Info) public override positions;
-    /// @inheritdoc IUniswapV3PairState
+    /// @inheritdoc IUniswapV3PoolState
     Oracle.Observation[65535] public override observations;
 
-    /// @dev Mutually exclusive reentrancy protection into the pair to/from a method. This method also prevents entrance
-    /// to a function before the pair is initialized. The reentrancy guard is required throughout the contract because
+    /// @dev Mutually exclusive reentrancy protection into the pool to/from a method. This method also prevents entrance
+    /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
     /// we use balance checks to determine the payment status of interactions such as mint, swap and flash.
     modifier lock() {
         require(slot0.unlocked, 'LOK');
@@ -120,7 +120,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     constructor() {
         int24 _tickSpacing;
-        (factory, token0, token1, fee, _tickSpacing) = IUniswapV3PairDeployer(msg.sender).parameters();
+        (factory, token0, token1, fee, _tickSpacing) = IUniswapV3PoolDeployer(msg.sender).parameters();
         tickSpacing = _tickSpacing;
 
         maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
@@ -138,12 +138,12 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         return uint32(block.timestamp); // truncation is desired
     }
 
-    /// @dev Get the pair's balance of token0
+    /// @dev Get the pool's balance of token0
     function balance0() private view returns (uint256) {
         return balanceOfToken(token0);
     }
 
-    /// @dev Get the pair's balance of token1
+    /// @dev Get the pool's balance of token1
     function balance1() private view returns (uint256) {
         return balanceOfToken(token1);
     }
@@ -153,14 +153,14 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         return IERC20Minimal(token).balanceOf(address(this));
     }
 
-    /// @inheritdoc IUniswapV3PairDerivedState
+    /// @inheritdoc IUniswapV3PoolDerivedState
     function secondsInside(int24 tickLower, int24 tickUpper) external view override noDelegateCall returns (uint32) {
         checkTicks(tickLower, tickUpper);
         require(ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0, 'X');
         return secondsOutside.secondsInside(tickLower, tickUpper, slot0.tick, tickSpacing, _blockTimestamp());
     }
 
-    /// @inheritdoc IUniswapV3PairDerivedState
+    /// @inheritdoc IUniswapV3PoolDerivedState
     function observe(uint32 secondsAgo)
         external
         view
@@ -179,7 +179,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             );
     }
 
-    /// @inheritdoc IUniswapV3PairActions
+    /// @inheritdoc IUniswapV3PoolActions
     function increaseObservationCardinalityNext(uint16 observationCardinalityNext)
         external
         override
@@ -194,7 +194,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
             emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
     }
 
-    /// @inheritdoc IUniswapV3PairActions
+    /// @inheritdoc IUniswapV3PoolActions
     /// @dev not locked because it initializes unlocked
     function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, 'AI');
@@ -228,8 +228,8 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
 
     /// @dev Effect some changes to a position
     /// @param params the position details and the change to the position's liquidity to effect
-    /// @return amount0 the amount of token0 owed to the pair, negative if the pair should pay the recipient
-    /// @return amount1 the amount of token1 owed to the pair, negative if the pair should pay the recipient
+    /// @return amount0 the amount of token0 owed to the pool, negative if the pool should pay the recipient
+    /// @return amount1 the amount of token1 owed to the pool, negative if the pool should pay the recipient
     function _modifyPosition(ModifyPositionParams memory params)
         private
         noDelegateCall
@@ -358,7 +358,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         }
     }
 
-    /// @inheritdoc IUniswapV3PairActions
+    /// @inheritdoc IUniswapV3PoolActions
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function mint(
         address recipient,
@@ -392,7 +392,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
 
-    /// @inheritdoc IUniswapV3PairActions
+    /// @inheritdoc IUniswapV3PoolActions
     function collect(
         address recipient,
         int24 tickLower,
@@ -418,7 +418,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
     }
 
-    /// @inheritdoc IUniswapV3PairActions
+    /// @inheritdoc IUniswapV3PoolActions
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function burn(
         address recipient,
@@ -489,7 +489,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         uint256 feeAmount;
     }
 
-    /// @inheritdoc IUniswapV3PairActions
+    /// @inheritdoc IUniswapV3PoolActions
     function swap(
         address recipient,
         bool zeroForOne,
@@ -662,7 +662,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         slot0.unlocked = true;
     }
 
-    /// @inheritdoc IUniswapV3PairActions
+    /// @inheritdoc IUniswapV3PoolActions
     function flash(
         address recipient,
         uint256 amount0,
@@ -708,7 +708,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
     }
 
-    /// @inheritdoc IUniswapV3PairOwnerActions
+    /// @inheritdoc IUniswapV3PoolOwnerActions
     function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock onlyFactoryOwner {
         require(
             (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10)) &&
@@ -719,7 +719,7 @@ contract UniswapV3Pair is IUniswapV3Pair, NoDelegateCall {
         emit SetFeeProtocol(feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1);
     }
 
-    /// @inheritdoc IUniswapV3PairOwnerActions
+    /// @inheritdoc IUniswapV3PoolOwnerActions
     function collectProtocol(
         address recipient,
         uint128 amount0Requested,
