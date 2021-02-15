@@ -1,45 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 not sandwiched swap 1`] = `
-Object {
-  "amount0Delta": "10000000000000000000",
-  "amount1Delta": "-9066108938801491315",
-  "executionPrice": "0.9521611701178268126",
-  "priceAfter": "0.90933891061198508684",
-}
-`;
-
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 sandwiched with swap to execution price then mint max liquidity/burn max liquidity 1`] = `
-Object {
-  "arbBalanceDelta0": "10282992786157700571",
-  "arbBalanceDelta1": "-9423796373363811978",
-  "backrun": Object {
-    "delta0": "-4899392636265306368",
-    "delta1": "4711898186681905989",
-    "executionPrice": "0.98067888889032728659",
-  },
-  "burn": Object {
-    "amount0": "9969999999999767613",
-    "amount1": "32947366860921461117795432628949",
-  },
-  "collect": Object {
-    "amount0": "30000000000145473",
-    "amount1": "0",
-  },
-  "finalPrice": "0.9559996326864639192",
-  "frontrun": Object {
-    "delta0": "4616399850107518883",
-    "delta1": "-4400036731353528884",
-    "executionPrice": "0.97628460696069838045",
-  },
-  "mint": Object {
-    "amount0": "0",
-    "amount1": "32947366860930573052713468063822",
-  },
-  "sandwichedPrice": "0.95456455612156028061",
-}
-`;
-
 exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 not sandwiched swap 1`] = `
 Object {
   "amount0Delta": "10000000000000000000",
