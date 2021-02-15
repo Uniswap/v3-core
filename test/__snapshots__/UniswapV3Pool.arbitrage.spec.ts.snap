@@ -4,8 +4,8 @@ exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e
 Object {
   "amount0Delta": "10000000000000000000",
   "amount1Delta": "-9066108938801491315",
-  "executionPrice": "0.9521611701178268126",
-  "priceAfter": "0.90933891061198508684",
+  "executionPrice": "0.9066108938801491315",
+  "priceAfter": "0.826897254352991804",
 }
 `;
 
@@ -16,7 +16,7 @@ Object {
   "backrun": Object {
     "delta0": "-4899392636265306368",
     "delta1": "4711898186681905989",
-    "executionPrice": "0.98067888889032728659",
+    "executionPrice": "0.96173108311516689156",
   },
   "burn": Object {
     "amount0": "9969999999999767613",
@@ -26,16 +26,16 @@ Object {
     "amount0": "25000000000121227",
     "amount1": "0",
   },
-  "finalPrice": "0.9559996326864639192",
+  "finalPrice": "0.91393529769665393276",
   "frontrun": Object {
     "delta0": "4616399850107518883",
     "delta1": "-4400036731353528884",
-    "executionPrice": "0.97628460696069838045",
+    "executionPrice": "0.95313163378840531662",
   },
   "mint": Object {
     "amount0": "0",
     "amount1": "32947366860930573052713468063822",
   },
-  "sandwichedPrice": "0.95456455612156028061",
+  "sandwichedPrice": "0.9111934918035514066",
 }
 `;

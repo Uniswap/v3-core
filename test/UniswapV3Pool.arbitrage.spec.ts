@@ -32,8 +32,8 @@ const createFixtureLoader = waffle.createFixtureLoader
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
-function priceToString(price: BigNumber): string {
-  return new Decimal(price.toString()).div(new Decimal(2).pow(96)).toString()
+function formatPrice(price: BigNumber): string {
+  return new Decimal(price.toString()).pow(2).div(new Decimal(2).pow(192)).toString()
 }
 
 describe.only('UniswapV3Pool arbitrage tests', () => {
@@ -162,10 +162,10 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
           await swapExact0For1(inputAmount, wallet.address)
 
           expect({
-            executionPrice: priceToString(executionPrice),
+            executionPrice: formatPrice(executionPrice),
             amount0Delta: amount0Delta.toString(),
             amount1Delta: amount1Delta.toString(),
-            priceAfter: priceToString((await pool.slot0()).sqrtPriceX96),
+            priceAfter: formatPrice((await pool.slot0()).sqrtPriceX96),
           }).to.matchSnapshot()
         })
 
@@ -253,16 +253,16 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
           arbBalance1 = arbBalance1.sub(backrunDelta1)
 
           expect({
-            sandwichedPrice: priceToString(executionPriceAfterFrontrun),
+            sandwichedPrice: formatPrice(executionPriceAfterFrontrun),
             arbBalanceDelta0: arbBalance0.toString(),
             arbBalanceDelta1: arbBalance1.toString(),
             backrun: {
-              executionPrice: priceToString(backrunExecutionPrice),
+              executionPrice: formatPrice(backrunExecutionPrice),
               delta0: backrunDelta0.toString(),
               delta1: backrunDelta1.toString(),
             },
             frontrun: {
-              executionPrice: priceToString(frontrunExecutionPrice),
+              executionPrice: formatPrice(frontrunExecutionPrice),
               delta0: frontrunDelta0.toString(),
               delta1: frontrunDelta1.toString(),
             },
@@ -278,7 +278,7 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
               amount0: amount0Mint.toString(),
               amount1: amount1Mint.toString(),
             },
-            finalPrice: priceToString((await pool.slot0()).sqrtPriceX96),
+            finalPrice: formatPrice((await pool.slot0()).sqrtPriceX96),
           }).to.matchSnapshot()
         })
       })
