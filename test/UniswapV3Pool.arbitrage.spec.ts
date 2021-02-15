@@ -195,7 +195,7 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
             amount0Delta: frontrunDelta0,
             amount1Delta: frontrunDelta1,
             executionPrice: frontrunExecutionPrice,
-          } = await simulateSwap(true, MaxUint256.div(2), priceSwapStart)
+          } = await simulateSwap(zeroForOne, MaxUint256.div(2), priceSwapStart)
           arbBalance0 = arbBalance0.sub(frontrunDelta0)
           arbBalance1 = arbBalance1.sub(frontrunDelta1)
           await swapToLowerPrice(priceSwapStart, arbitrageur.address)
@@ -252,15 +252,19 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
 
           const trueValueAfterSandwich = trueValueToken1(arbBalance0, arbBalance1)
 
-          // swap to the marginal price = true price
+          // backrun the swap to true price, i.e. swap to the marginal price = true price
           const {
             amount0Delta: backrunDelta0,
             amount1Delta: backrunDelta1,
             executionPrice: backrunExecutionPrice,
           } = await simulateSwap(
-            false,
+            !zeroForOne,
             MaxUint256.div(2),
             applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
+          )
+          await swapToHigherPrice(
+            applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount),
+            wallet.address
           )
           arbBalance0 = arbBalance0.sub(backrunDelta0)
           arbBalance1 = arbBalance1.sub(backrunDelta1)
@@ -312,9 +316,13 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
             amount1Delta: backrunDelta1,
             executionPrice: backrunExecutionPrice,
           } = await simulateSwap(
-            false,
+            !zeroForOne,
             MaxUint256.div(2),
             applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
+          )
+          await swapToHigherPrice(
+            applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount),
+            wallet.address
           )
           arbBalance0 = arbBalance0.sub(backrunDelta0)
           arbBalance1 = arbBalance1.sub(backrunDelta1)

@@ -9,7 +9,7 @@ Object {
     "delta1": "7.9363",
     "executionPrice": "0.90155",
   },
-  "finalPrice": "0.82690",
+  "finalPrice": "0.97706",
   "trueValue": Object {
     "final": "0.69056",
   },
@@ -42,7 +42,7 @@ Object {
     "amount0": "0.025000",
     "amount1": "0.0000",
   },
-  "finalPrice": "0.91394",
+  "finalPrice": "0.97706",
   "frontrun": Object {
     "delta0": "4.6164",
     "delta1": "-4.4000",
