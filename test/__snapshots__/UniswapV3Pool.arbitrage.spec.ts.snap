@@ -11,12 +11,12 @@ Object {
 
 exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 sandwiched with swap to execution price then mint max liquidity/burn max liquidity 1`] = `
 Object {
-  "arbBalanceDelta0": "-0.060614",
-  "arbBalanceDelta1": "0.0000",
+  "arbBalanceDelta0": "8.8140",
+  "arbBalanceDelta1": "-7.9680",
   "backrun": Object {
-    "delta0": "5.4392",
-    "delta1": "-4.7119",
-    "executionPrice": "0.86628",
+    "delta0": "-3.4354",
+    "delta1": "3.2562",
+    "executionPrice": "0.94781",
   },
   "burn": Object {
     "amount0": "9.9700",
@@ -37,5 +37,6 @@ Object {
     "amount1": "3.2947e+13",
   },
   "sandwichedPrice": "0.91119",
+  "trueValue": "0.66970",
 }
 `;

@@ -153,6 +153,15 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
       describe('exact input of 10e18 token0', async () => {
         const zeroForOne = true
         const inputAmount = expandTo18Decimals(10)
+        const assumedTruePriceAfterSwap = encodePriceSqrt(98, 100)
+
+        function trueValueToken1(arbBalance0: BigNumber, arbBalance1: BigNumber) {
+          return assumedTruePriceAfterSwap
+            .mul(assumedTruePriceAfterSwap)
+            .mul(arbBalance0)
+            .div(BigNumber.from(2).pow(192))
+            .add(arbBalance1)
+        }
 
         it('not sandwiched swap', async () => {
           const { executionPrice, amount1Delta, amount0Delta } = await simulateSwap(zeroForOne, inputAmount)
@@ -242,7 +251,7 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
             amount0Delta: backrunDelta0,
             amount1Delta: backrunDelta1,
             executionPrice: backrunExecutionPrice,
-          } = arbBalance1.lt(0) ? await simulateSwap(true, arbBalance1) : await simulateSwap(false, arbBalance0)
+          } = await simulateSwap(false, MaxUint256.div(2), increaseRatio(assumedTruePriceAfterSwap, -feeAmount))
           arbBalance0 = arbBalance0.sub(backrunDelta0)
           arbBalance1 = arbBalance1.sub(backrunDelta1)
 
@@ -250,6 +259,7 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
             sandwichedPrice: formatPrice(executionPriceAfterFrontrun),
             arbBalanceDelta0: formatTokenAmount(arbBalance0),
             arbBalanceDelta1: formatTokenAmount(arbBalance1),
+            trueValue: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
             backrun: {
               executionPrice: formatPrice(backrunExecutionPrice),
               delta0: formatTokenAmount(backrunDelta0),
