@@ -1,5 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pool arbitrage tests fee is off sandwiched swap 1`] = `"0.99356321250990014601"`;
+exports[`UniswapV3Pool arbitrage tests fee is off sandwiched swap 1`] = `
+Object {
+  "expectedPrice": "0.9521611701178268126",
+  "frontrunDelta0": "4616399850107518883",
+  "frontrunDelta1": "-4400036731353528884",
+  "sandwichedPrice": "0.95456455612156028061",
+}
+`;
 
-exports[`UniswapV3Pool arbitrage tests fee is on sandwiched swap 1`] = `"0.99356321250990014601"`;
+exports[`UniswapV3Pool arbitrage tests fee is on sandwiched swap 1`] = `
+Object {
+  "expectedPrice": "0.9521611701178268126",
+  "frontrunDelta0": "4616399850107518883",
+  "frontrunDelta1": "-4400036731353528884",
+  "sandwichedPrice": "0.95456455612156028061",
+}
+`;

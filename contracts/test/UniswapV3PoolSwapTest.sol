@@ -15,7 +15,14 @@ contract UniswapV3PoolSwapTest is IUniswapV3SwapCallback {
         bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96
-    ) external returns (int256 amount0Delta, int256 amount1Delta) {
+    )
+        external
+        returns (
+            int256 amount0Delta,
+            int256 amount1Delta,
+            uint160 nextSqrtRatio
+        )
+    {
         IUniswapV3Pool(pool).swap(address(0), zeroForOne, amountSpecified, sqrtPriceLimitX96, abi.encode(msg.sender));
 
         amount0Delta = _amount0Delta;
@@ -23,6 +30,8 @@ contract UniswapV3PoolSwapTest is IUniswapV3SwapCallback {
 
         delete _amount0Delta;
         delete _amount1Delta;
+
+        (nextSqrtRatio, , , , , , ) = IUniswapV3Pool(pool).slot0();
     }
 
     function uniswapV3SwapCallback(
