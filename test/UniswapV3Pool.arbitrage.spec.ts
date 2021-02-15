@@ -211,18 +211,17 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
           await swapExact0For1(inputAmount, wallet.address)
 
           // burn the arb's liquidity
-          const burnReceipt = await (
-            await pool.burn(
-              wallet.address,
-              tickAfterFirstTickAboveMarginPrice,
-              firstTickAboveMarginalPrice,
-              getMaxLiquidityPerTick(tickSpacing)
-            )
-          ).wait()
-          // add the burn returns
-          const { amount0: amount0Burn, amount1: amount1Burn } = pool.interface.decodeEventLog(
-            pool.interface.events['Burn(address,address,int24,int24,uint128,uint256,uint256)'],
-            burnReceipt.events?.[2].data!
+          const { amount0: amount0Burn, amount1: amount1Burn } = await pool.callStatic.burn(
+            wallet.address,
+            tickAfterFirstTickAboveMarginPrice,
+            firstTickAboveMarginalPrice,
+            getMaxLiquidityPerTick(tickSpacing)
+          )
+          await pool.burn(
+            wallet.address,
+            tickAfterFirstTickAboveMarginPrice,
+            firstTickAboveMarginalPrice,
+            getMaxLiquidityPerTick(tickSpacing)
           )
           arbBalance0 = arbBalance0.add(amount0Burn)
           arbBalance1 = arbBalance1.add(amount1Burn)
