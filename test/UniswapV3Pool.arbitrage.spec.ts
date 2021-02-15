@@ -7,7 +7,7 @@ import { UniswapV3PoolSwapTest } from '../typechain/UniswapV3PoolSwapTest'
 import { expect } from './shared/expect'
 
 import { poolFixture } from './shared/fixtures'
-import { formatPrice } from './shared/format'
+import { formatPrice, formatTokenAmount } from './shared/format'
 
 import {
   createPoolFunctions,
@@ -160,8 +160,8 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
 
           expect({
             executionPrice: formatPrice(executionPrice),
-            amount0Delta: amount0Delta.toString(),
-            amount1Delta: amount1Delta.toString(),
+            amount0Delta: formatTokenAmount(amount0Delta),
+            amount1Delta: formatTokenAmount(amount1Delta),
             priceAfter: formatPrice((await pool.slot0()).sqrtPriceX96),
           }).to.matchSnapshot()
         })
@@ -238,42 +238,40 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
           arbBalance0 = arbBalance0.add(amount0Collect)
           arbBalance1 = arbBalance1.add(amount1Collect)
 
-          // swap to be net neutral
+          // swap to have only one of the two tokens
           const {
             amount0Delta: backrunDelta0,
             amount1Delta: backrunDelta1,
             executionPrice: backrunExecutionPrice,
-          } = arbBalance1.lt(0)
-            ? await simulateSwap(false, arbBalance1.mul(-1))
-            : await simulateSwap(true, arbBalance0.mul(-1))
+          } = arbBalance1.lt(0) ? await simulateSwap(true, arbBalance1) : await simulateSwap(false, arbBalance0)
           arbBalance0 = arbBalance0.sub(backrunDelta0)
           arbBalance1 = arbBalance1.sub(backrunDelta1)
 
           expect({
             sandwichedPrice: formatPrice(executionPriceAfterFrontrun),
-            arbBalanceDelta0: arbBalance0.toString(),
-            arbBalanceDelta1: arbBalance1.toString(),
+            arbBalanceDelta0: formatTokenAmount(arbBalance0),
+            arbBalanceDelta1: formatTokenAmount(arbBalance1),
             backrun: {
               executionPrice: formatPrice(backrunExecutionPrice),
-              delta0: backrunDelta0.toString(),
-              delta1: backrunDelta1.toString(),
+              delta0: formatTokenAmount(backrunDelta0),
+              delta1: formatTokenAmount(backrunDelta1),
             },
             frontrun: {
               executionPrice: formatPrice(frontrunExecutionPrice),
-              delta0: frontrunDelta0.toString(),
-              delta1: frontrunDelta1.toString(),
+              delta0: formatTokenAmount(frontrunDelta0),
+              delta1: formatTokenAmount(frontrunDelta1),
             },
             collect: {
-              amount0: amount0Collect.toString(),
-              amount1: amount1Collect.toString(),
+              amount0: formatTokenAmount(amount0Collect),
+              amount1: formatTokenAmount(amount1Collect),
             },
             burn: {
-              amount0: amount0Burn.toString(),
-              amount1: amount1Burn.toString(),
+              amount0: formatTokenAmount(amount0Burn),
+              amount1: formatTokenAmount(amount1Burn),
             },
             mint: {
-              amount0: amount0Mint.toString(),
-              amount1: amount1Mint.toString(),
+              amount0: formatTokenAmount(amount0Mint),
+              amount1: formatTokenAmount(amount1Mint),
             },
             finalPrice: formatPrice((await pool.slot0()).sqrtPriceX96),
           }).to.matchSnapshot()
