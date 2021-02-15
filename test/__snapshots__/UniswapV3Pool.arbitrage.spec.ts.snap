@@ -37,6 +37,10 @@ Object {
     "amount1": "3.2947e+13",
   },
   "sandwichedPrice": "0.91119",
-  "trueValue": "0.66970",
+  "trueValue": Object {
+    "afterFrontrun": "-0.12404",
+    "afterSandwich": "0.55913",
+    "final": "0.66970",
+  },
 }
 `;

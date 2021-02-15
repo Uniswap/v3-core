@@ -135,12 +135,12 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
         return { executionPrice, nextSqrtRatio, amount0Delta, amount1Delta }
       }
 
-      function increaseRatio(sqrtRatio: BigNumber, byPips: number): BigNumber {
+      function applySqrtRatioBipsHundredthsDelta(sqrtRatio: BigNumber, bipsHundredths: number): BigNumber {
         return BigNumber.from(
           new Decimal(
             sqrtRatio
               .mul(sqrtRatio)
-              .mul(1e6 + byPips)
+              .mul(1e6 + bipsHundredths)
               .div(1e6)
               .toString()
           )
@@ -179,8 +179,10 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
           const { executionPrice } = await simulateSwap(zeroForOne, inputAmount)
 
           const firstTickAboveMarginalPrice =
-            Math.ceil((await tickMath.getTickAtSqrtRatio(increaseRatio(executionPrice, feeAmount))) / tickSpacing) *
-            tickSpacing
+            Math.ceil(
+              (await tickMath.getTickAtSqrtRatio(applySqrtRatioBipsHundredthsDelta(executionPrice, feeAmount))) /
+                tickSpacing
+            ) * tickSpacing
           const tickAfterFirstTickAboveMarginPrice = firstTickAboveMarginalPrice - tickSpacing
 
           const priceSwapStart = await tickMath.getSqrtRatioAtTick(firstTickAboveMarginalPrice)
@@ -197,6 +199,8 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
           arbBalance0 = arbBalance0.sub(frontrunDelta0)
           arbBalance1 = arbBalance1.sub(frontrunDelta1)
           await swapToLowerPrice(priceSwapStart, arbitrageur.address)
+
+          const trueValueAfterFrontRun = trueValueToken1(arbBalance0, arbBalance1)
 
           // deposit max liquidity at the tick
           const mintReceipt = await (
@@ -246,12 +250,18 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
           arbBalance0 = arbBalance0.add(amount0Collect)
           arbBalance1 = arbBalance1.add(amount1Collect)
 
-          // swap to have only one of the two tokens
+          const trueValueAfterSandwich = trueValueToken1(arbBalance0, arbBalance1)
+
+          // swap to the marginal price = true price
           const {
             amount0Delta: backrunDelta0,
             amount1Delta: backrunDelta1,
             executionPrice: backrunExecutionPrice,
-          } = await simulateSwap(false, MaxUint256.div(2), increaseRatio(assumedTruePriceAfterSwap, -feeAmount))
+          } = await simulateSwap(
+            false,
+            MaxUint256.div(2),
+            applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
+          )
           arbBalance0 = arbBalance0.sub(backrunDelta0)
           arbBalance1 = arbBalance1.sub(backrunDelta1)
 
@@ -259,7 +269,11 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
             sandwichedPrice: formatPrice(executionPriceAfterFrontrun),
             arbBalanceDelta0: formatTokenAmount(arbBalance0),
             arbBalanceDelta1: formatTokenAmount(arbBalance1),
-            trueValue: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
+            trueValue: {
+              final: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
+              afterFrontrun: formatTokenAmount(trueValueAfterFrontRun),
+              afterSandwich: formatTokenAmount(trueValueAfterSandwich),
+            },
             backrun: {
               executionPrice: formatPrice(backrunExecutionPrice),
               delta0: formatTokenAmount(backrunDelta0),
