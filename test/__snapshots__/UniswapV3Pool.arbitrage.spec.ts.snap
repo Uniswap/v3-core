@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UniswapV3Pool arbitrage tests fee is off sandwiched swap 1`] = `"0.99356321250990014601"`;
+
+exports[`UniswapV3Pool arbitrage tests fee is on sandwiched swap 1`] = `"0.99356321250990014601"`;
