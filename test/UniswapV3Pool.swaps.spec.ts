@@ -3,13 +3,11 @@ import { BigNumber, BigNumberish, ContractTransaction } from 'ethers'
 import { ethers, waffle } from 'hardhat'
 import { MockTimeUniswapV3Pool } from '../typechain/MockTimeUniswapV3Pool'
 import { TestERC20 } from '../typechain/TestERC20'
-import { expect } from './shared/expect'
-import { poolFixture } from './shared/fixtures'
 
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
-
-Decimal.config({ toExpNeg: -500, toExpPos: 500 })
-
+import { expect } from './shared/expect'
+import { poolFixture } from './shared/fixtures'
+import { formatPrice, formatTokenAmount } from './shared/format'
 import {
   createPoolFunctions,
   encodePriceSqrt,
@@ -23,6 +21,8 @@ import {
   MIN_SQRT_RATIO,
   TICK_SPACINGS,
 } from './shared/utilities'
+
+Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
 const createFixtureLoader = waffle.createFixtureLoader
 const { constants } = ethers
@@ -70,14 +70,6 @@ type SwapTestCase =
   | Swap1ForExact0TestCase
   | SwapToHigherPrice
   | SwapToLowerPrice
-
-function formatTokenAmount(num: BigNumberish): string {
-  return new Decimal(num.toString()).dividedBy(new Decimal(10).pow(18)).toPrecision(5)
-}
-
-function formatPrice(price: BigNumberish): string {
-  return new Decimal(price.toString()).dividedBy(new Decimal(2).pow(96)).pow(2).toPrecision(5)
-}
 
 function swapCaseToDescription(testCase: SwapTestCase): string {
   const priceClause = testCase?.sqrtPriceLimit ? ` to price ${formatPrice(testCase.sqrtPriceLimit)}` : ''

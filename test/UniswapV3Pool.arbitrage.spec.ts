@@ -7,6 +7,7 @@ import { UniswapV3PoolSwapTest } from '../typechain/UniswapV3PoolSwapTest'
 import { expect } from './shared/expect'
 
 import { poolFixture } from './shared/fixtures'
+import { formatPrice } from './shared/format'
 
 import {
   createPoolFunctions,
@@ -31,10 +32,6 @@ const {
 const createFixtureLoader = waffle.createFixtureLoader
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
-
-function formatPrice(price: BigNumber): string {
-  return new Decimal(price.toString()).pow(2).div(new Decimal(2).pow(192)).toString()
-}
 
 describe.only('UniswapV3Pool arbitrage tests', () => {
   const [wallet, arbitrageur] = waffle.provider.getWallets()
