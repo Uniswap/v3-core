@@ -1,5 +1,21 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "8.8029",
+  "arbBalanceDelta1": "-7.9363",
+  "backrun": Object {
+    "delta0": "-8.8029",
+    "delta1": "7.9363",
+    "executionPrice": "0.90155",
+  },
+  "finalPrice": "0.82690",
+  "trueValue": Object {
+    "final": "0.69056",
+  },
+}
+`;
+
 exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 not sandwiched swap 1`] = `
 Object {
   "amount0Delta": "10.000",

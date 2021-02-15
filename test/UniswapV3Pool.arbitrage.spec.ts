@@ -299,6 +299,40 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
             finalPrice: formatPrice((await pool.slot0()).sqrtPriceX96),
           }).to.matchSnapshot()
         })
+
+        it('backrun to true price after swap only', async () => {
+          let arbBalance0 = BigNumber.from(0)
+          let arbBalance1 = BigNumber.from(0)
+
+          await swapExact0For1(inputAmount, wallet.address)
+
+          // swap to the marginal price = true price
+          const {
+            amount0Delta: backrunDelta0,
+            amount1Delta: backrunDelta1,
+            executionPrice: backrunExecutionPrice,
+          } = await simulateSwap(
+            false,
+            MaxUint256.div(2),
+            applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
+          )
+          arbBalance0 = arbBalance0.sub(backrunDelta0)
+          arbBalance1 = arbBalance1.sub(backrunDelta1)
+
+          expect({
+            arbBalanceDelta0: formatTokenAmount(arbBalance0),
+            arbBalanceDelta1: formatTokenAmount(arbBalance1),
+            trueValue: {
+              final: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
+            },
+            backrun: {
+              executionPrice: formatPrice(backrunExecutionPrice),
+              delta0: formatTokenAmount(backrunDelta0),
+              delta1: formatTokenAmount(backrunDelta1),
+            },
+            finalPrice: formatPrice((await pool.slot0()).sqrtPriceX96),
+          }).to.matchSnapshot()
+        })
       })
     })
   }
