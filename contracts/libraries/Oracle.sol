@@ -236,7 +236,7 @@ library Oracle {
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pool was first initialized, as of `secondsAgo`
     /// @return liquidityCumulative The liquidity * time elapsed since the pool was first initialized, as of `secondsAgo`
-    function _observe(
+    function observeSingle(
         Observation[65535] storage self,
         uint32 time,
         uint32 secondsAgo,
@@ -300,7 +300,7 @@ library Oracle {
         liquidityCumulatives = new uint160[](secondsAgos.length);
         for (uint256 i = 0; i < secondsAgos.length; i++) {
             (int56 tickCumulative, uint160 liquidityCumulative) =
-                _observe(self, time, secondsAgos[i], tick, index, liquidity, cardinality);
+                observeSingle(self, time, secondsAgos[i], tick, index, liquidity, cardinality);
             tickCumulatives[i] = tickCumulative;
             liquidityCumulatives[i] = liquidityCumulative;
         }

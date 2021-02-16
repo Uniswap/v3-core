@@ -603,10 +603,10 @@ describe('Oracle', () => {
       secondsAgo: number,
       expected?: { tickCumulative: BigNumberish; liquidityCumulative: BigNumberish }
     ) {
-      const { tickCumulative, liquidityCumulative } = await oracle.observe(secondsAgo)
+      const { tickCumulatives, liquidityCumulatives } = await oracle.observe([secondsAgo])
       const check = {
-        tickCumulative: tickCumulative.toString(),
-        liquidityCumulative: liquidityCumulative.toString(),
+        tickCumulative: tickCumulatives[0].toString(),
+        liquidityCumulative: liquidityCumulatives[0].toString(),
       }
       if (typeof expected === 'undefined') {
         expect(check).to.matchSnapshot()
@@ -685,28 +685,28 @@ describe('Oracle', () => {
     })
 
     it('gas cost of observe(0)', async () => {
-      await snapshotGasCost(oracle.getGasCostOfObserve(0))
+      await snapshotGasCost(oracle.getGasCostOfObserve([0]))
     })
     it('gas cost of observe(200 * 13)', async () => {
-      await snapshotGasCost(oracle.getGasCostOfObserve(200 + 13))
+      await snapshotGasCost(oracle.getGasCostOfObserve([200 + 13]))
     })
     it('gas cost of observe(200 * 13 + 5)', async () => {
-      await snapshotGasCost(oracle.getGasCostOfObserve(200 + 13 + 5))
+      await snapshotGasCost(oracle.getGasCostOfObserve([200 + 13 + 5]))
     })
     it('gas cost of observe(0) after 5 seconds', async () => {
       await oracle.advanceTime(5)
-      await snapshotGasCost(oracle.getGasCostOfObserve(0))
+      await snapshotGasCost(oracle.getGasCostOfObserve([0]))
     })
     it('gas cost of observe(5) after 5 seconds', async () => {
       await oracle.advanceTime(5)
-      await snapshotGasCost(oracle.getGasCostOfObserve(5))
+      await snapshotGasCost(oracle.getGasCostOfObserve([5]))
     })
     it('gas cost of observe(oldest)', async () => {
-      await snapshotGasCost(oracle.getGasCostOfObserve(65534 * 13))
+      await snapshotGasCost(oracle.getGasCostOfObserve([65534 * 13]))
     })
     it('gas cost of observe(oldest) after 5 seconds', async () => {
       await oracle.advanceTime(5)
-      await snapshotGasCost(oracle.getGasCostOfObserve(65534 * 13 + 5))
+      await snapshotGasCost(oracle.getGasCostOfObserve([65534 * 13 + 5]))
     })
   })
 })
