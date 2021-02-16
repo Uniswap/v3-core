@@ -33,6 +33,21 @@ const createFixtureLoader = waffle.createFixtureLoader
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
+function applySqrtRatioBipsHundredthsDelta(sqrtRatio: BigNumber, bipsHundredths: number): BigNumber {
+  return BigNumber.from(
+    new Decimal(
+      sqrtRatio
+        .mul(sqrtRatio)
+        .mul(1e6 + bipsHundredths)
+        .div(1e6)
+        .toString()
+    )
+      .sqrt()
+      .floor()
+      .toString()
+  )
+}
+
 describe('UniswapV3Pool arbitrage tests', () => {
   const [wallet, arbitrageur] = waffle.provider.getWallets()
 
@@ -43,7 +58,7 @@ describe('UniswapV3Pool arbitrage tests', () => {
   })
 
   for (const feeProtocol of [0, 6]) {
-    describe(`swap protocol fee = ${feeProtocol};`, () => {
+    describe(`protocol fee = ${feeProtocol};`, () => {
       const startingPrice = encodePriceSqrt(1, 1)
       const startingTick = 0
       const feeAmount = FeeAmount.MEDIUM
@@ -133,21 +148,6 @@ describe('UniswapV3Pool arbitrage tests', () => {
           : encodePriceSqrt(amount1Delta.mul(-1), amount0Delta)
 
         return { executionPrice, nextSqrtRatio, amount0Delta, amount1Delta }
-      }
-
-      function applySqrtRatioBipsHundredthsDelta(sqrtRatio: BigNumber, bipsHundredths: number): BigNumber {
-        return BigNumber.from(
-          new Decimal(
-            sqrtRatio
-              .mul(sqrtRatio)
-              .mul(1e6 + bipsHundredths)
-              .div(1e6)
-              .toString()
-          )
-            .sqrt()
-            .floor()
-            .toString()
-        )
       }
 
       for (const { zeroForOne, assumedTruePriceAfterSwap, inputAmount, description } of [
@@ -324,7 +324,6 @@ describe('UniswapV3Pool arbitrage tests', () => {
               : await swapExact1For0(inputAmount, wallet.address)
 
             // swap to the marginal price = true price
-
             const priceToSwapTo = zeroForOne
               ? applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
               : applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, feeAmount)

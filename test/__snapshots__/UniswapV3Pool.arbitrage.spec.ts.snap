@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
 Object {
   "arbBalanceDelta0": "8.8029",
   "arbBalanceDelta1": "-7.9363",
@@ -16,7 +16,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 not sandwiched 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 not sandwiched 1`] = `
 Object {
   "amount0Delta": "10.000",
   "amount1Delta": "-9.0661",
@@ -25,7 +25,16 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 provide liquidity below assumed true price 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-9.0661",
+  "executionPrice": "0.90661",
+  "priceAfter": "0.97706",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
 Object {
   "arbBalanceDelta0": "8.8190",
   "arbBalanceDelta1": "-7.9680",
@@ -61,7 +70,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 backrun to true price after swap only 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 backrun to true price after swap only 1`] = `
 Object {
   "arbBalanceDelta0": "10.317",
   "arbBalanceDelta1": "-9.4423",
@@ -77,7 +86,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 not sandwiched 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 not sandwiched 1`] = `
 Object {
   "amount0Delta": "10.000",
   "amount1Delta": "-9.0661",
@@ -86,7 +95,16 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 provide liquidity below assumed true price 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-9.0661",
+  "executionPrice": "0.90661",
+  "priceAfter": "1.0070",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
 Object {
   "arbBalanceDelta0": "10.333",
   "arbBalanceDelta1": "-9.4741",
@@ -122,7 +140,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
 Object {
   "arbBalanceDelta0": "8.8029",
   "arbBalanceDelta1": "-7.9363",
@@ -138,7 +156,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 not sandwiched 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 not sandwiched 1`] = `
 Object {
   "amount0Delta": "10.000",
   "amount1Delta": "-9.0661",
@@ -147,7 +165,16 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 provide liquidity below assumed true price 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-9.0661",
+  "executionPrice": "0.90661",
+  "priceAfter": "0.97706",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
 Object {
   "arbBalanceDelta0": "8.8140",
   "arbBalanceDelta1": "-7.9680",
@@ -183,7 +210,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 backrun to true price after swap only 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 backrun to true price after swap only 1`] = `
 Object {
   "arbBalanceDelta0": "10.317",
   "arbBalanceDelta1": "-9.4423",
@@ -199,7 +226,7 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 not sandwiched 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 not sandwiched 1`] = `
 Object {
   "amount0Delta": "10.000",
   "amount1Delta": "-9.0661",
@@ -208,7 +235,16 @@ Object {
 }
 `;
 
-exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 provide liquidity below assumed true price 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-9.0661",
+  "executionPrice": "0.90661",
+  "priceAfter": "1.0070",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
 Object {
   "arbBalanceDelta0": "10.328",
   "arbBalanceDelta1": "-9.4741",
