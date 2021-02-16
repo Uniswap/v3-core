@@ -615,6 +615,16 @@ describe('Oracle', () => {
 
       await snapshotGasCost(oracleGasTest.getGasCostOverhead([0, 3, 8, 13, 15, 18]))
     })
+    it('gas cost overhead of 18 observations', async () => {
+      await oracleGasTest.initialize({ liquidity: 5, time: 0, tick: 5 })
+      await oracleGasTest.grow(4)
+      await oracleGasTest.update({ advanceTimeBy: 13, tick: 6, liquidity: BigNumber.from(2).pow(12) })
+      await oracleGasTest.advanceTime(5)
+
+      await snapshotGasCost(
+        oracleGasTest.getGasCostOverhead([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18])
+      )
+    })
   })
 
   describe.skip('full oracle', function () {

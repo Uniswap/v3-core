@@ -42,11 +42,13 @@ exports[`Oracle #observeMultiple before initialization gas for single observatio
 
 exports[`Oracle #observeMultiple before initialization gas for single observation at current time counterfactually computed 1`] = `3420`;
 
-exports[`Oracle #observeMultiple gas cost overhead of 1 observation 1`] = `3132`;
+exports[`Oracle #observeMultiple gas cost overhead of 1 observation 1`] = `3107`;
 
-exports[`Oracle #observeMultiple gas cost overhead of 2 observations 1`] = `-239`;
+exports[`Oracle #observeMultiple gas cost overhead of 2 observations 1`] = `-289`;
 
-exports[`Oracle #observeMultiple gas cost overhead of 6 observations 1`] = `-13629`;
+exports[`Oracle #observeMultiple gas cost overhead of 6 observations 1`] = `-13779`;
+
+exports[`Oracle #observeMultiple gas cost overhead of 18 observations 1`] = `-56638`;
 
 exports[`Oracle #observeMultiple initialized with 5 observations with starting time of 5 gas between oldest and oldest + 1 1`] = `11291`;
 

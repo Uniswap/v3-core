@@ -36,7 +36,7 @@ contract OracleGasTest {
         }
         uint256 gasBefore1 = gasleft();
         for (uint256 i = 0; i < secondsAgos.length; i++) {
-            oracle.observe(secondsAgos[i]);
+            (int56 tickCumulative, uint160 liquidityCumulative) = oracle.observe(secondsAgos[i]);
         }
         uint256 gasIterative = gasBefore1 - gasleft();
         uint256 gasMultiple = gasBefore0 - gasBefore1;
