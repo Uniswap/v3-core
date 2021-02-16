@@ -443,16 +443,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         amount0 = uint256(-amount0Int);
         amount1 = uint256(-amount1Int);
 
-        uint8 feeProtocol = _slot0.feeProtocol;
-        if (feeProtocol > 0) {
-            uint8 feeProtocol0 = (feeProtocol % 16);
-            uint8 feeProtocol1 = (feeProtocol >> 4);
+        if (_slot0.feeProtocol > 0) {
+            uint8 feeProtocol0 = (_slot0.feeProtocol % 16);
+            uint8 feeProtocol1 = (_slot0.feeProtocol >> 4);
             uint128 protocolFee0 =
                 amount0 > 0 && feeProtocol0 > 0 ? uint128(FullMath.mulDiv(amount0, fee, 1e6 * feeProtocol0)) : 0;
             uint128 protocolFee1 =
-                amount1 > 0 && (feeProtocol >> 4 > 0)
-                    ? uint128(FullMath.mulDiv(amount1, fee, 1e6 * (feeProtocol >> 4)))
-                    : 0;
+                amount1 > 0 && feeProtocol1 > 0 ? uint128(FullMath.mulDiv(amount1, fee, 1e6 * feeProtocol1)) : 0;
             // overflow is acceptable, protocol fees must be withdrawn before type(uint128).max fees are collected
             protocolFees.token0 += protocolFee0;
             protocolFees.token1 += protocolFee1;
