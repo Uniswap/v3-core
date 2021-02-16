@@ -224,6 +224,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper;
         // any change in liquidity
         int128 liquidityDelta;
+        // the value of slot0 at the time that the position is modified
+        Slot0 slot0;
     }
 
     /// @dev Effect some changes to a position
@@ -237,12 +239,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     {
         checkTicks(params.tickLower, params.tickUpper);
 
-        Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
-
-        _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, _slot0.tick);
+        _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, params.slot0.tick);
 
         if (params.liquidityDelta != 0) {
-            if (_slot0.tick < params.tickLower) {
+            if (params.slot0.tick < params.tickLower) {
                 // current tick is below the passed range; liquidity can only become in range by crossing from left to
                 // right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
                 amount0 = SqrtPriceMath.getAmount0Delta(
@@ -250,28 +250,28 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 );
-            } else if (_slot0.tick < params.tickUpper) {
+            } else if (params.slot0.tick < params.tickUpper) {
                 // current tick is inside the passed range
                 uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
 
                 // write an oracle entry
                 (slot0.observationIndex, slot0.observationCardinality) = observations.write(
-                    _slot0.observationIndex,
+                    params.slot0.observationIndex,
                     _blockTimestamp(),
-                    _slot0.tick,
+                    params.slot0.tick,
                     liquidityBefore,
-                    _slot0.observationCardinality,
-                    _slot0.observationCardinalityNext
+                    params.slot0.observationCardinality,
+                    params.slot0.observationCardinalityNext
                 );
 
                 amount0 = SqrtPriceMath.getAmount0Delta(
-                    _slot0.sqrtPriceX96,
+                    params.slot0.sqrtPriceX96,
                     TickMath.getSqrtRatioAtTick(params.tickUpper),
                     params.liquidityDelta
                 );
                 amount1 = SqrtPriceMath.getAmount1Delta(
                     TickMath.getSqrtRatioAtTick(params.tickLower),
-                    _slot0.sqrtPriceX96,
+                    params.slot0.sqrtPriceX96,
                     params.liquidityDelta
                 );
 
@@ -374,7 +374,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     owner: recipient,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    liquidityDelta: int256(amount).toInt128()
+                    liquidityDelta: int256(amount).toInt128(),
+                    slot0: slot0
                 })
             );
 
@@ -426,25 +427,28 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper,
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
+        Slot0 memory _slot0 = slot0;
+
         (int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({
                     owner: msg.sender,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    liquidityDelta: -int256(amount).toInt128()
+                    liquidityDelta: -int256(amount).toInt128(),
+                    slot0: _slot0
                 })
             );
 
         amount0 = uint256(-amount0Int);
         amount1 = uint256(-amount1Int);
 
-        uint8 feeProtocol = slot0.feeProtocol;
+        uint8 feeProtocol = _slot0.feeProtocol;
         if (feeProtocol > 0) {
+            uint8 feeProtocol0 = (feeProtocol % 16);
+            uint8 feeProtocol1 = (feeProtocol >> 4);
             uint128 protocolFee0 =
-                amount0 > 0 && (feeProtocol % 16 > 0)
-                    ? uint128(FullMath.mulDiv(amount0, fee, 1e6 * (feeProtocol % 16)))
-                    : 0;
+                amount0 > 0 && feeProtocol0 > 0 ? uint128(FullMath.mulDiv(amount0, fee, 1e6 * feeProtocol0)) : 0;
             uint128 protocolFee1 =
                 amount1 > 0 && (feeProtocol >> 4 > 0)
                     ? uint128(FullMath.mulDiv(amount1, fee, 1e6 * (feeProtocol >> 4)))
