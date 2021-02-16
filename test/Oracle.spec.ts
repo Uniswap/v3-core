@@ -1,6 +1,7 @@
-import { BigNumberish } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { ethers, waffle } from 'hardhat'
 import { OracleTest } from '../typechain/OracleTest'
+import { OracleGasTest } from '../typechain/OracleGasTest'
 import checkObservationEquals from './shared/checkObservationEquals'
 import { expect } from './shared/expect'
 import { TEST_POOL_START_TIME } from './shared/fixtures'
@@ -550,6 +551,71 @@ describe('Oracle', () => {
       }
     })
   }
+
+  describe('#observeMultiple', () => {
+    const observeMultipleFixture = async () => {
+      const oracle = await oracleFixture()
+      const oracleGasTestFactory = await ethers.getContractFactory('OracleGasTest')
+      const oracleGasTest = (await oracleGasTestFactory.deploy()) as OracleGasTest
+      return { oracle, oracleGasTest }
+    }
+
+    let oracle: OracleTest
+    let oracleGasTest: OracleGasTest
+    beforeEach('deploy test oracle', async () => {
+      ;({ oracle, oracleGasTest } = await loadFixture(observeMultipleFixture))
+    })
+
+    it('allows you to fetch multiple observations', async () => {
+      await oracle.initialize({ time: 5, tick: 2, liquidity: BigNumber.from(2).pow(15) })
+      await oracle.grow(4)
+      await oracle.update({ advanceTimeBy: 13, tick: 6, liquidity: BigNumber.from(2).pow(12) })
+      await oracle.advanceTime(5)
+
+      const { tickCumulatives, liquidityCumulatives } = await oracle.observeMultiple([0, 3, 8, 13, 15, 18])
+      expect(tickCumulatives).to.have.lengthOf(6)
+      expect(tickCumulatives[0]).to.eq(56)
+      expect(tickCumulatives[1]).to.eq(38)
+      expect(tickCumulatives[2]).to.eq(20)
+      expect(tickCumulatives[3]).to.eq(10)
+      expect(tickCumulatives[4]).to.eq(6)
+      expect(tickCumulatives[5]).to.eq(0)
+      expect(liquidityCumulatives).to.have.lengthOf(6)
+      expect(liquidityCumulatives[0]).to.eq(BigNumber.from(2).pow(15).mul(13).add(BigNumber.from(2).pow(12).mul(5)))
+      expect(liquidityCumulatives[1]).to.eq(BigNumber.from(2).pow(15).mul(13).add(BigNumber.from(2).pow(12).mul(2)))
+      expect(liquidityCumulatives[2]).to.eq(BigNumber.from(2).pow(15).mul(10))
+      expect(liquidityCumulatives[3]).to.eq(BigNumber.from(2).pow(15).mul(5))
+      expect(liquidityCumulatives[4]).to.eq(BigNumber.from(2).pow(15).mul(3))
+      expect(liquidityCumulatives[5]).to.eq(0)
+    })
+
+    it('gas cost overhead of 1 observation', async () => {
+      await oracleGasTest.initialize({ liquidity: 5, time: 0, tick: 5 })
+      await oracleGasTest.grow(4)
+      await oracleGasTest.update({ advanceTimeBy: 13, tick: 6, liquidity: BigNumber.from(2).pow(12) })
+      await oracleGasTest.advanceTime(5)
+
+      await snapshotGasCost(oracleGasTest.getGasCostOverhead([3]))
+    })
+
+    it('gas cost overhead of 2 observations', async () => {
+      await oracleGasTest.initialize({ liquidity: 5, time: 0, tick: 5 })
+      await oracleGasTest.grow(4)
+      await oracleGasTest.update({ advanceTimeBy: 13, tick: 6, liquidity: BigNumber.from(2).pow(12) })
+      await oracleGasTest.advanceTime(5)
+
+      await snapshotGasCost(oracleGasTest.getGasCostOverhead([0, 15]))
+    })
+
+    it('gas cost overhead of 6 observations', async () => {
+      await oracleGasTest.initialize({ liquidity: 5, time: 0, tick: 5 })
+      await oracleGasTest.grow(4)
+      await oracleGasTest.update({ advanceTimeBy: 13, tick: 6, liquidity: BigNumber.from(2).pow(12) })
+      await oracleGasTest.advanceTime(5)
+
+      await snapshotGasCost(oracleGasTest.getGasCostOverhead([0, 3, 8, 13, 15, 18]))
+    })
+  })
 
   describe.skip('full oracle', function () {
     this.timeout(1_200_000)
