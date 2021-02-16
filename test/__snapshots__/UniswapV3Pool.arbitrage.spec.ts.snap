@@ -1,0 +1,245 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "8.8029",
+  "arbBalanceDelta1": "-7.9363",
+  "backrun": Object {
+    "delta0": "-8.8029",
+    "delta1": "7.9363",
+    "executionPrice": "0.90155",
+  },
+  "finalPrice": "0.97706",
+  "profit": Object {
+    "final": "0.69056",
+  },
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 not sandwiched 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-9.0661",
+  "executionPrice": "0.90661",
+  "priceAfter": "0.82690",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+Object {
+  "arbBalanceDelta0": "8.8190",
+  "arbBalanceDelta1": "-7.9680",
+  "backrun": Object {
+    "delta0": "-3.4354",
+    "delta1": "3.2562",
+    "executionPrice": "0.94781",
+  },
+  "burn": Object {
+    "amount0": "9.9700",
+    "amount1": "3.2947e+13",
+  },
+  "collect": Object {
+    "amount0": "0.030000",
+    "amount1": "0.0000",
+  },
+  "finalPrice": "0.97706",
+  "frontrun": Object {
+    "delta0": "4.6164",
+    "delta1": "-4.4000",
+    "executionPrice": "0.95313",
+  },
+  "mint": Object {
+    "amount0": "0.0000",
+    "amount1": "3.2947e+13",
+  },
+  "profit": Object {
+    "afterFrontrun": "-0.12404",
+    "afterSandwich": "0.56403",
+    "final": "0.67460",
+  },
+  "sandwichedPrice": "0.91119",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "10.317",
+  "arbBalanceDelta1": "-9.4423",
+  "backrun": Object {
+    "delta0": "-10.317",
+    "delta1": "9.4423",
+    "executionPrice": "0.91525",
+  },
+  "finalPrice": "1.0070",
+  "profit": Object {
+    "final": "0.97752",
+  },
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 not sandwiched 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-9.0661",
+  "executionPrice": "0.90661",
+  "priceAfter": "0.82690",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 0; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+Object {
+  "arbBalanceDelta0": "10.333",
+  "arbBalanceDelta1": "-9.4741",
+  "backrun": Object {
+    "delta0": "-4.9492",
+    "delta1": "4.7622",
+    "executionPrice": "0.96221",
+  },
+  "burn": Object {
+    "amount0": "9.9700",
+    "amount1": "3.2947e+13",
+  },
+  "collect": Object {
+    "amount0": "0.030000",
+    "amount1": "0.0000",
+  },
+  "finalPrice": "1.0070",
+  "frontrun": Object {
+    "delta0": "4.6164",
+    "delta1": "-4.4000",
+    "executionPrice": "0.95313",
+  },
+  "mint": Object {
+    "amount0": "0.0000",
+    "amount1": "3.2947e+13",
+  },
+  "profit": Object {
+    "afterFrontrun": "-0.26253",
+    "afterSandwich": "0.72554",
+    "final": "0.96205",
+  },
+  "sandwichedPrice": "0.91119",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "8.8029",
+  "arbBalanceDelta1": "-7.9363",
+  "backrun": Object {
+    "delta0": "-8.8029",
+    "delta1": "7.9363",
+    "executionPrice": "0.90155",
+  },
+  "finalPrice": "0.97706",
+  "profit": Object {
+    "final": "0.69056",
+  },
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 not sandwiched 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-9.0661",
+  "executionPrice": "0.90661",
+  "priceAfter": "0.82690",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+Object {
+  "arbBalanceDelta0": "8.8140",
+  "arbBalanceDelta1": "-7.9680",
+  "backrun": Object {
+    "delta0": "-3.4354",
+    "delta1": "3.2562",
+    "executionPrice": "0.94781",
+  },
+  "burn": Object {
+    "amount0": "9.9700",
+    "amount1": "3.2947e+13",
+  },
+  "collect": Object {
+    "amount0": "0.025000",
+    "amount1": "0.0000",
+  },
+  "finalPrice": "0.97706",
+  "frontrun": Object {
+    "delta0": "4.6164",
+    "delta1": "-4.4000",
+    "executionPrice": "0.95313",
+  },
+  "mint": Object {
+    "amount0": "0.0000",
+    "amount1": "3.2947e+13",
+  },
+  "profit": Object {
+    "afterFrontrun": "-0.12404",
+    "afterSandwich": "0.55913",
+    "final": "0.66970",
+  },
+  "sandwichedPrice": "0.91119",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "10.317",
+  "arbBalanceDelta1": "-9.4423",
+  "backrun": Object {
+    "delta0": "-10.317",
+    "delta1": "9.4423",
+    "executionPrice": "0.91525",
+  },
+  "finalPrice": "1.0070",
+  "profit": Object {
+    "final": "0.97752",
+  },
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 not sandwiched 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-9.0661",
+  "executionPrice": "0.90661",
+  "priceAfter": "0.82690",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests swap protocol fee = 6; exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+Object {
+  "arbBalanceDelta0": "10.328",
+  "arbBalanceDelta1": "-9.4741",
+  "backrun": Object {
+    "delta0": "-4.9492",
+    "delta1": "4.7622",
+    "executionPrice": "0.96221",
+  },
+  "burn": Object {
+    "amount0": "9.9700",
+    "amount1": "3.2947e+13",
+  },
+  "collect": Object {
+    "amount0": "0.025000",
+    "amount1": "0.0000",
+  },
+  "finalPrice": "1.0070",
+  "frontrun": Object {
+    "delta0": "4.6164",
+    "delta1": "-4.4000",
+    "executionPrice": "0.95313",
+  },
+  "mint": Object {
+    "amount0": "0.0000",
+    "amount1": "3.2947e+13",
+  },
+  "profit": Object {
+    "afterFrontrun": "-0.26253",
+    "afterSandwich": "0.72049",
+    "final": "0.95700",
+  },
+  "sandwichedPrice": "0.91119",
+}
+`;
