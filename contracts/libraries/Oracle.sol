@@ -277,4 +277,33 @@ library Oracle {
 
         return (at.tickCumulative, at.liquidityCumulative);
     }
+
+    /// @notice Same as observe, but for multiple values of the `secondsAgo` parameter
+    /// @param self The stored oracle array
+    /// @param time The current block.timestamp
+    /// @param secondsAgos Each amount of time to look back, in seconds, at which point to return an observation
+    /// @param tick The current tick
+    /// @param index The location of a given observation within the oracle array
+    /// @param liquidity The current in-range pool liquidity
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return tickCumulatives The tick * time elapsed since the pool was first initialized, as of each `secondsAgo`
+    /// @return liquidityCumulative The liquidity * time elapsed since the pool was first initialized, as of each `secondsAgo`
+    function observeMultiple(
+        Observation[65535] storage self,
+        uint32 time,
+        uint32[] memory secondsAgos,
+        int24 tick,
+        uint16 index,
+        uint128 liquidity,
+        uint16 cardinality
+    ) internal view returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) {
+        tickCumulatives = new int56[](secondsAgos.length);
+        liquidityCumulatives = new uint160[](secondsAgos.length);
+        for (uint256 i = 0; i < secondsAgos.length; i++) {
+            (int56 tickCumulative, uint160 liquidityCumulative) =
+                observe(self, time, secondsAgos[i], tick, index, liquidity, cardinality);
+            tickCumulatives[i] = tickCumulative;
+            liquidityCumulatives[i] = liquidityCumulative;
+        }
+    }
 }

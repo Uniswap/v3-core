@@ -27,4 +27,15 @@ interface IUniswapV3PoolDerivedState {
     /// @return liquidityCumulative Cumulative liquidity-in-range value as of `secondsAgo` from the current block
     /// timestamp
     function observe(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative);
+
+    /// @notice Returns the cumulative tick and liquidity as of multiple timestamp values, `secondsAgo`, from the current
+    /// block timestamp
+    /// @param secondsAgos From how long ago each cumulative tick and liquidity should be returned
+    /// @return tickCumulatives Cumulative tick values as of each `secondsAgos` from the current block timestamp
+    /// @return liquidityCumulatives Cumulative liquidity-in-range value as of each `secondsAgos` from the current block
+    /// timestamp
+    function observeMultiple(uint32[] calldata secondsAgos)
+        external
+        view
+        returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives);
 }
