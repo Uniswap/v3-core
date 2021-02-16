@@ -33,7 +33,7 @@ const createFixtureLoader = waffle.createFixtureLoader
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
-describe.only('UniswapV3Pool arbitrage tests', () => {
+describe('UniswapV3Pool arbitrage tests', () => {
   const [wallet, arbitrageur] = waffle.provider.getWallets()
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
@@ -157,9 +157,15 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
           inputAmount: expandTo18Decimals(10),
           assumedTruePriceAfterSwap: encodePriceSqrt(98, 100),
         },
+        {
+          description: 'exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01',
+          zeroForOne: true,
+          inputAmount: expandTo18Decimals(10),
+          assumedTruePriceAfterSwap: encodePriceSqrt(101, 100),
+        },
       ]) {
         describe(description, () => {
-          function trueValueToken1(arbBalance0: BigNumber, arbBalance1: BigNumber) {
+          function valueToken1(arbBalance0: BigNumber, arbBalance1: BigNumber) {
             return assumedTruePriceAfterSwap
               .mul(assumedTruePriceAfterSwap)
               .mul(arbBalance0)
@@ -214,7 +220,7 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
               ? await swapToLowerPrice(priceSwapStart, arbitrageur.address)
               : await swapToHigherPrice(priceSwapStart, arbitrageur.address)
 
-            const trueValueAfterFrontRun = trueValueToken1(arbBalance0, arbBalance1)
+            const profitToken1AfterFrontRun = valueToken1(arbBalance0, arbBalance1)
 
             const tickLower = zeroForOne ? tickAfterFirstTickAboveMarginPrice : firstTickAboveMarginalPrice
             const tickUpper = zeroForOne ? firstTickAboveMarginalPrice : tickAfterFirstTickAboveMarginPrice
@@ -259,7 +265,7 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
             arbBalance0 = arbBalance0.add(amount0Collect)
             arbBalance1 = arbBalance1.add(amount1Collect)
 
-            const trueValueAfterSandwich = trueValueToken1(arbBalance0, arbBalance1)
+            const profitToken1AfterSandwich = valueToken1(arbBalance0, arbBalance1)
 
             // backrun the swap to true price, i.e. swap to the marginal price = true price
             const priceToSwapTo = zeroForOne
@@ -278,10 +284,10 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
               sandwichedPrice: formatPrice(executionPriceAfterFrontrun),
               arbBalanceDelta0: formatTokenAmount(arbBalance0),
               arbBalanceDelta1: formatTokenAmount(arbBalance1),
-              trueValue: {
-                final: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
-                afterFrontrun: formatTokenAmount(trueValueAfterFrontRun),
-                afterSandwich: formatTokenAmount(trueValueAfterSandwich),
+              profit: {
+                final: formatTokenAmount(valueToken1(arbBalance0, arbBalance1)),
+                afterFrontrun: formatTokenAmount(profitToken1AfterFrontRun),
+                afterSandwich: formatTokenAmount(profitToken1AfterSandwich),
               },
               backrun: {
                 executionPrice: formatPrice(backrunExecutionPrice),
@@ -336,8 +342,8 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
             expect({
               arbBalanceDelta0: formatTokenAmount(arbBalance0),
               arbBalanceDelta1: formatTokenAmount(arbBalance1),
-              trueValue: {
-                final: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
+              profit: {
+                final: formatTokenAmount(valueToken1(arbBalance0, arbBalance1)),
               },
               backrun: {
                 executionPrice: formatPrice(backrunExecutionPrice),
