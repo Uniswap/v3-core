@@ -259,7 +259,7 @@ describe('Oracle', () => {
     })
   })
 
-  describe('#observeMultiple', () => {
+  describe('#observe', () => {
     describe('before initialization', async () => {
       let oracle: OracleTest
       beforeEach('deploy test oracle', async () => {
@@ -270,7 +270,7 @@ describe('Oracle', () => {
         const {
           tickCumulatives: [tickCumulative],
           liquidityCumulatives: [liquidityCumulative],
-        } = await oracle.observeMultiple([secondsAgo])
+        } = await oracle.observe([secondsAgo])
         return { liquidityCumulative, tickCumulative }
       }
 
@@ -416,7 +416,7 @@ describe('Oracle', () => {
         await oracle.update({ advanceTimeBy: 13, tick: 6, liquidity: BigNumber.from(2).pow(12) })
         await oracle.advanceTime(5)
 
-        const { tickCumulatives, liquidityCumulatives } = await oracle.observeMultiple([0, 3, 8, 13, 15, 18])
+        const { tickCumulatives, liquidityCumulatives } = await oracle.observe([0, 3, 8, 13, 15, 18])
         expect(tickCumulatives).to.have.lengthOf(6)
         expect(tickCumulatives[0]).to.eq(56)
         expect(tickCumulatives[1]).to.eq(38)
@@ -436,18 +436,18 @@ describe('Oracle', () => {
       it('gas for observe since most recent', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
         await oracle.advanceTime(2)
-        await snapshotGasCost(oracle.getGasCostOfObserveMultiple([1]))
+        await snapshotGasCost(oracle.getGasCostOfObserve([1]))
       })
 
       it('gas for single observation at current time', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await snapshotGasCost(oracle.getGasCostOfObserveMultiple([0]))
+        await snapshotGasCost(oracle.getGasCostOfObserve([0]))
       })
 
       it('gas for single observation at current time counterfactually computed', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
         await oracle.advanceTime(5)
-        await snapshotGasCost(oracle.getGasCostOfObserveMultiple([0]))
+        await snapshotGasCost(oracle.getGasCostOfObserve([0]))
       })
     })
 
@@ -474,7 +474,7 @@ describe('Oracle', () => {
           const {
             tickCumulatives: [tickCumulative],
             liquidityCumulatives: [liquidityCumulative],
-          } = await oracle.observeMultiple([secondsAgo])
+          } = await oracle.observe([secondsAgo])
           return { liquidityCumulative, tickCumulative }
         }
 
@@ -529,20 +529,20 @@ describe('Oracle', () => {
         })
 
         it('gas latest equal', async () => {
-          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([0]))
+          await snapshotGasCost(oracle.getGasCostOfObserve([0]))
         })
         it('gas latest transform', async () => {
           await oracle.advanceTime(5)
-          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([0]))
+          await snapshotGasCost(oracle.getGasCostOfObserve([0]))
         })
         it('gas oldest', async () => {
-          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([14]))
+          await snapshotGasCost(oracle.getGasCostOfObserve([14]))
         })
         it('gas between oldest and oldest + 1', async () => {
-          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([13]))
+          await snapshotGasCost(oracle.getGasCostOfObserve([13]))
         })
         it('gas middle', async () => {
-          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([5]))
+          await snapshotGasCost(oracle.getGasCostOfObserve([5]))
         })
       })
     }

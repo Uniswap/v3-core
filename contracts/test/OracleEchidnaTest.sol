@@ -59,7 +59,7 @@ contract OracleEchidnaTest {
         secondsAgos[0] = secondsAgo0;
         secondsAgos[1] = secondsAgo1;
 
-        (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) = oracle.observeMultiple(secondsAgos);
+        (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) = oracle.observe(secondsAgos);
         int56 timeWeightedTick = (tickCumulatives[1] - tickCumulatives[0]) / timeElapsed;
         uint160 timeWeightedLiquidity = (liquidityCumulatives[1] - liquidityCumulatives[0]) / timeElapsed;
         assert(timeWeightedLiquidity <= type(uint128).max);
@@ -86,7 +86,7 @@ contract OracleEchidnaTest {
         }
         uint32[] memory arr = new uint32[](1);
         arr[0] = 0;
-        (bool success, ) = address(oracle).staticcall(abi.encodeWithSelector(OracleTest.observeMultiple.selector, arr));
+        (bool success, ) = address(oracle).staticcall(abi.encodeWithSelector(OracleTest.observe.selector, arr));
         return success;
     }
 
@@ -114,7 +114,7 @@ contract OracleEchidnaTest {
         uint32[] memory secondsAgos = new uint32[](2);
         secondsAgos[0] = secondsAgo;
         secondsAgos[1] = 0;
-        (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) = oracle.observeMultiple(secondsAgos);
+        (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) = oracle.observe(secondsAgos);
 
         // compute the time weighted tick, rounding consistently
         int56 numerator = tickCumulatives[1] - tickCumulatives[0];

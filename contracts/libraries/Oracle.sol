@@ -223,7 +223,6 @@ library Oracle {
         return binarySearch(self, time, target, index, cardinality);
     }
 
-    /// @notice Constructs a observation of a particular time, now or in the past.
     /// @dev Called from the pool contract. Contingent on having an observation at or before the desired observation.
     /// 0 may be passed as `secondsAgo' to return the present pool data.
     /// if called with a timestamp falling between two consecutive observations, returns a counterfactual observation
@@ -276,7 +275,7 @@ library Oracle {
         return (at.tickCumulative, at.liquidityCumulative);
     }
 
-    /// @notice Same as observe, but for multiple values of the `secondsAgo` parameter
+    /// @notice Returns the accumulator values as of each time seconds ago from the given time in the array of `secondsAgos`
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param secondsAgos Each amount of time to look back, in seconds, at which point to return an observation
@@ -286,7 +285,7 @@ library Oracle {
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulatives The tick * time elapsed since the pool was first initialized, as of each `secondsAgo`
     /// @return liquidityCumulatives The liquidity * time elapsed since the pool was first initialized, as of each `secondsAgo`
-    function observeMultiple(
+    function observe(
         Observation[65535] storage self,
         uint32 time,
         uint32[] memory secondsAgos,
