@@ -219,6 +219,7 @@ contract SqrtPriceMathEchidnaTest {
         uint160 sqrtUpper,
         int128 liquidity
     ) external pure {
+        require(sqrtLower > 0);
         require(sqrtLower < sqrtUpper);
         require(sqrtLower <= sqrtCurrent && sqrtCurrent <= sqrtUpper);
         require(liquidity > 0);

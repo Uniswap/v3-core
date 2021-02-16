@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '../interfaces/IUniswapV3PairDeployer.sol';
+import '../interfaces/IUniswapV3PoolDeployer.sol';
 
-import './MockTimeUniswapV3Pair.sol';
+import './MockTimeUniswapV3Pool.sol';
 
-contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
+contract MockTimeUniswapV3PoolDeployer is IUniswapV3PoolDeployer {
     struct Parameters {
         address factory;
         address token0;
@@ -16,7 +16,7 @@ contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
 
     Parameters public override parameters;
 
-    event PairDeployed(address pair);
+    event PoolDeployed(address pool);
 
     function deploy(
         address factory,
@@ -24,12 +24,12 @@ contract MockTimeUniswapV3PairDeployer is IUniswapV3PairDeployer {
         address token1,
         uint24 fee,
         int24 tickSpacing
-    ) external returns (address pair) {
+    ) external returns (address pool) {
         parameters = Parameters({factory: factory, token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
-        pair = address(
-            new MockTimeUniswapV3Pair{salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing))}()
+        pool = address(
+            new MockTimeUniswapV3Pool{salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing))}()
         );
-        emit PairDeployed(pair);
+        emit PoolDeployed(pool);
         delete parameters;
     }
 }

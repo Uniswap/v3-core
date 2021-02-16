@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-/// @title Permissioned pair actions
-/// @notice Contains pair methods that may only be called by the factory owner
-interface IUniswapV3PairOwnerActions {
+/// @title Permissioned pool actions
+/// @notice Contains pool methods that may only be called by the factory owner
+interface IUniswapV3PoolOwnerActions {
     /// @notice Set the denominator of the protocol's % share of the fees
-    /// @param feeProtocol0 new protocol fee for token0 of the pair
-    /// @param feeProtocol1 new protocol fee for token1 of the pair
+    /// @param feeProtocol0 new protocol fee for token0 of the pool
+    /// @param feeProtocol1 new protocol fee for token1 of the pool
     function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external;
 
-    /// @notice Collect the protocol fee accrued to the pair
+    /// @notice Collect the protocol fee accrued to the pool
     /// @param recipient The address to which collected protocol fees should be sent
     /// @param amount0Requested The maximum amount of token0 to send, can be 0 to collect fees in only token1
     /// @param amount1Requested The maximum amount of token1 to send, can be 0 to collect fees in only token0

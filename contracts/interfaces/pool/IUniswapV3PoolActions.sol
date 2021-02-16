@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-/// @title Permissionless pair actions
-/// @notice Contains pair methods that can be called by anyone
-interface IUniswapV3PairActions {
-    /// @notice Sets the initial price for the pair
+/// @title Permissionless pool actions
+/// @notice Contains pool methods that can be called by anyone
+interface IUniswapV3PoolActions {
+    /// @notice Sets the initial price for the pool
     /// @dev Price is represented as a sqrt(token1/token0) Q64.96 value
-    /// @param sqrtPriceX96 the initial sqrt price of the pair as a Q64.96
+    /// @param sqrtPriceX96 the initial sqrt price of the pool as a Q64.96
     function initialize(uint160 sqrtPriceX96) external;
 
     /// @notice Adds liquidity for the given recipient/tickLower/tickUpper position
@@ -92,9 +92,9 @@ interface IUniswapV3PairActions {
         bytes calldata data
     ) external;
 
-    /// @notice Increase the maximum number of price and liquidity observations that this pair will store
-    /// @dev This method is no-op if the pair already has an observationCardinalityNext greater than or equal to
+    /// @notice Increase the maximum number of price and liquidity observations that this pool will store
+    /// @dev This method is no-op if the pool already has an observationCardinalityNext greater than or equal to
     /// the input observationCardinalityNext.
-    /// @param observationCardinalityNext The desired minimum number of observations for the pair to store
+    /// @param observationCardinalityNext The desired minimum number of observations for the pool to store
     function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external;
 }

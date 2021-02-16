@@ -1,11 +1,11 @@
 import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
-import { MockTimeUniswapV3Pair } from '../../typechain/MockTimeUniswapV3Pair'
+import { MockTimeUniswapV3Pool } from '../../typechain/MockTimeUniswapV3Pool'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { UniswapV3Factory } from '../../typechain/UniswapV3Factory'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
-import { MockTimeUniswapV3PairDeployer } from '../../typechain/MockTimeUniswapV3PairDeployer'
+import { MockTimeUniswapV3PoolDeployer } from '../../typechain/MockTimeUniswapV3PoolDeployer'
 
 import { Fixture } from 'ethereum-waffle'
 
@@ -40,26 +40,26 @@ async function tokensFixture(): Promise<TokensFixture> {
 
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
-interface PairFixture extends TokensAndFactoryFixture {
+interface PoolFixture extends TokensAndFactoryFixture {
   swapTargetCallee: TestUniswapV3Callee
   swapTargetRouter: TestUniswapV3Router
-  createPair(
+  createPool(
     fee: number,
     tickSpacing: number,
     firstToken?: TestERC20,
     secondToken?: TestERC20
-  ): Promise<MockTimeUniswapV3Pair>
+  ): Promise<MockTimeUniswapV3Pool>
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
-export const TEST_PAIR_START_TIME = 1601906400
+export const TEST_POOL_START_TIME = 1601906400
 
-export const pairFixture: Fixture<PairFixture> = async function (): Promise<PairFixture> {
+export const poolFixture: Fixture<PoolFixture> = async function (): Promise<PoolFixture> {
   const { factory } = await factoryFixture()
   const { token0, token1, token2 } = await tokensFixture()
 
-  const mockTimeUniswapV3PairDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PairDeployer')
-  const mockTimeUniswapV3PairFactory = await ethers.getContractFactory('MockTimeUniswapV3Pair')
+  const MockTimeUniswapV3PoolDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PoolDeployer')
+  const MockTimeUniswapV3PoolFactory = await ethers.getContractFactory('MockTimeUniswapV3Pool')
 
   const calleeContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
   const routerContractFactory = await ethers.getContractFactory('TestUniswapV3Router')
@@ -74,9 +74,9 @@ export const pairFixture: Fixture<PairFixture> = async function (): Promise<Pair
     factory,
     swapTargetCallee,
     swapTargetRouter,
-    createPair: async (fee, tickSpacing, firstToken = token0, secondToken = token1) => {
-      const mockTimePairDeployer = (await mockTimeUniswapV3PairDeployerFactory.deploy()) as MockTimeUniswapV3PairDeployer
-      const tx = await mockTimePairDeployer.deploy(
+    createPool: async (fee, tickSpacing, firstToken = token0, secondToken = token1) => {
+      const mockTimePoolDeployer = (await MockTimeUniswapV3PoolDeployerFactory.deploy()) as MockTimeUniswapV3PoolDeployer
+      const tx = await mockTimePoolDeployer.deploy(
         factory.address,
         firstToken.address,
         secondToken.address,
@@ -85,8 +85,8 @@ export const pairFixture: Fixture<PairFixture> = async function (): Promise<Pair
       )
 
       const receipt = await tx.wait()
-      const pairAddress = receipt.events?.[0].args?.pair as string
-      return mockTimeUniswapV3PairFactory.attach(pairAddress) as MockTimeUniswapV3Pair
+      const poolAddress = receipt.events?.[0].args?.pool as string
+      return MockTimeUniswapV3PoolFactory.attach(poolAddress) as MockTimeUniswapV3Pool
     },
   }
 }

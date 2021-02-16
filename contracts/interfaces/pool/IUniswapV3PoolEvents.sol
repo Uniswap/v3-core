@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-/// @title Events emitted by a pair
-/// @notice Contains all events emitted by the pair
-interface IUniswapV3PairEvents {
-    /// @notice Emitted exactly once by a pair when #initialize is first called on the pair
-    /// @dev Mint/Burn/Swap cannot be emitted by the pair before Initialize
-    /// @param sqrtPriceX96 The initial sqrt price of the pair, as a Q64.96
-    /// @param tick The initial tick of the pair, i.e. log base 1.0001 of the starting price of the pair
+/// @title Events emitted by a pool
+/// @notice Contains all events emitted by the pool
+interface IUniswapV3PoolEvents {
+    /// @notice Emitted exactly once by a pool when #initialize is first called on the pool
+    /// @dev Mint/Burn/Swap cannot be emitted by the pool before Initialize
+    /// @param sqrtPriceX96 The initial sqrt price of the pool, as a Q64.96
+    /// @param tick The initial tick of the pool, i.e. log base 1.0001 of the starting price of the pool
     event Initialize(uint160 sqrtPriceX96, int24 tick);
 
     /// @notice Emitted when liquidity is minted for a given position
@@ -63,13 +63,13 @@ interface IUniswapV3PairEvents {
         uint256 amount1
     );
 
-    /// @notice Emitted by the pair for any swaps between token0 and token1
+    /// @notice Emitted by the pool for any swaps between token0 and token1
     /// @param sender The address that initiated the swap call, and that received the callback
     /// @param recipient The address that received the output of the swap
-    /// @param amount0 The delta of the token0 balance of the pair
-    /// @param amount1 The Delta of the token1 balance of the pair
-    /// @param sqrtPriceX96 The sqrt(price) of the pair after the swap, as a Q64.96
-    /// @param tick The log base 1.0001 of price of the pair after the swap
+    /// @param amount0 The delta of the token0 balance of the pool
+    /// @param amount1 The Delta of the token1 balance of the pool
+    /// @param sqrtPriceX96 The sqrt(price) of the pool after the swap, as a Q64.96
+    /// @param tick The log base 1.0001 of price of the pool after the swap
     event Swap(
         address indexed sender,
         address indexed recipient,
@@ -79,7 +79,7 @@ interface IUniswapV3PairEvents {
         int24 tick
     );
 
-    /// @notice Emitted by the pair for any flashes of token0/token1
+    /// @notice Emitted by the pool for any flashes of token0/token1
     /// @param sender The address that initiated the swap call, and that received the callback
     /// @param recipient The address that received the tokens from flash
     /// @param amount0 The amount of token0 that was flashed
@@ -95,7 +95,7 @@ interface IUniswapV3PairEvents {
         uint256 paid1
     );
 
-    /// @notice Emitted by the pair for increases to the number of observations that can be stored
+    /// @notice Emitted by the pool for increases to the number of observations that can be stored
     /// @dev observationCardinalityNext is not the observation cardinality until an observation is written at the index
     /// just before a mint/swap/burn.
     /// @param observationCardinalityNextOld The previous value of the next observation cardinality
@@ -105,7 +105,7 @@ interface IUniswapV3PairEvents {
         uint16 observationCardinalityNextNew
     );
 
-    /// @notice Emitted when the protocol fee is changed by the pair
+    /// @notice Emitted when the protocol fee is changed by the pool
     /// @param feeProtocol0Old The previous value of the token0 protocol fee
     /// @param feeProtocol1Old The previous value of the token1 protocol fee
     /// @param feeProtocol0New The updated value of the token0 protocol fee
