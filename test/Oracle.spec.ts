@@ -259,255 +259,297 @@ describe('Oracle', () => {
     })
   })
 
-  describe('#observe', () => {
-    describe('before initialization', async () => {
-      let oracle: OracleTest
-      beforeEach('deploy test oracle', async () => {
-        oracle = await loadFixture(oracleFixture)
-      })
-
-      it('fails before initialize', async () => {
-        await expect(oracle.observe(0)).to.be.revertedWith('I')
-      })
-
-      it('fails if an older observation does not exist', async () => {
-        await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
-        await expect(oracle.observe(1)).to.be.revertedWith('OLD')
-      })
-
-      it('does not fail across overflow boundary', async () => {
-        await oracle.initialize({ liquidity: 4, tick: 2, time: 2 ** 32 - 1 })
-        await oracle.advanceTime(2)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(1)
-        expect(tickCumulative).to.be.eq(2)
-        expect(liquidityCumulative).to.be.eq(4)
-      })
-
-      it('single observation at current time', async () => {
-        await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(0)
-        expect(tickCumulative).to.eq(0)
-        expect(liquidityCumulative).to.eq(0)
-      })
-
-      it('single observation in past but not earlier than secondsAgo', async () => {
-        await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
-        await oracle.advanceTime(3)
-        await expect(oracle.observe(4)).to.be.revertedWith('OLD')
-      })
-
-      it('single observation in past at exactly seconds ago', async () => {
-        await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
-        await oracle.advanceTime(3)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(3)
-        expect(tickCumulative).to.eq(0)
-        expect(liquidityCumulative).to.eq(0)
-      })
-
-      it('single observation in past counterfactual in past', async () => {
-        await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
-        await oracle.advanceTime(3)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(1)
-        expect(tickCumulative).to.eq(4)
-        expect(liquidityCumulative).to.eq(8)
-      })
-
-      it('single observation in past counterfactual now', async () => {
-        await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
-        await oracle.advanceTime(3)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(0)
-        expect(tickCumulative).to.eq(6)
-        expect(liquidityCumulative).to.eq(12)
-      })
-
-      it('two observations in chronological order 0 seconds ago exact', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
-        await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(0)
-        expect(tickCumulative).to.eq(-20)
-        expect(liquidityCumulative).to.eq(20)
-      })
-
-      it('two observations in chronological order 0 seconds ago counterfactual', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
-        await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-        await oracle.advanceTime(7)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(0)
-        expect(tickCumulative).to.eq(-13)
-        expect(liquidityCumulative).to.eq(34)
-      })
-
-      it('two observations in chronological order seconds ago is exactly on first observation', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
-        await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-        await oracle.advanceTime(7)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(11)
-        expect(tickCumulative).to.eq(0)
-        expect(liquidityCumulative).to.eq(0)
-      })
-
-      it('two observations in chronological order seconds ago is between first and second', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
-        await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-        await oracle.advanceTime(7)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(9)
-        expect(tickCumulative).to.eq(-10)
-        expect(liquidityCumulative).to.eq(10)
-      })
-
-      it('two observations in reverse order 0 seconds ago exact', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
-        await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-        await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(0)
-        expect(tickCumulative).to.eq(-17)
-        expect(liquidityCumulative).to.eq(26)
-      })
-
-      it('two observations in reverse order 0 seconds ago counterfactual', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
-        await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-        await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
-        await oracle.advanceTime(7)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(0)
-        expect(tickCumulative).to.eq(-52)
-        expect(liquidityCumulative).to.eq(54)
-      })
-
-      it('two observations in reverse order seconds ago is exactly on first observation', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
-        await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-        await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
-        await oracle.advanceTime(7)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(10)
-        expect(tickCumulative).to.eq(-20)
-        expect(liquidityCumulative).to.eq(20)
-      })
-
-      it('two observations in reverse order seconds ago is between first and second', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.grow(2)
-        await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
-        await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
-        await oracle.advanceTime(7)
-        const { tickCumulative, liquidityCumulative } = await oracle.observe(9)
-        expect(tickCumulative).to.eq(-19)
-        expect(liquidityCumulative).to.eq(22)
-      })
-
-      it('gas for observe since most recent', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.advanceTime(2)
-        await snapshotGasCost(oracle.getGasCostOfObserve(1))
-      })
-
-      it('gas for single observation at current time', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await snapshotGasCost(oracle.getGasCostOfObserve(0))
-      })
-
-      it('gas for single observation at current time counterfactually computed', async () => {
-        await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await oracle.advanceTime(5)
-        await snapshotGasCost(oracle.getGasCostOfObserve(0))
-      })
-    })
-
-    for (let startingTime of [5, 2 ** 32 - 5]) {
-      describe(`initialized with 5 observations with starting time of ${startingTime}`, () => {
-        const oracleFixture5Observations = async () => {
-          const oracle = await oracleFixture()
-          await oracle.initialize({ liquidity: 5, tick: -5, time: startingTime })
-          await oracle.grow(5)
-          await oracle.update({ advanceTimeBy: 3, tick: 1, liquidity: 2 })
-          await oracle.update({ advanceTimeBy: 2, tick: -6, liquidity: 4 })
-          await oracle.update({ advanceTimeBy: 4, tick: -2, liquidity: 4 })
-          await oracle.update({ advanceTimeBy: 1, tick: -2, liquidity: 9 })
-          await oracle.update({ advanceTimeBy: 3, tick: 4, liquidity: 2 })
-          await oracle.update({ advanceTimeBy: 6, tick: 6, liquidity: 7 })
-          return oracle
-        }
+  for (const useObserveMultiple of [false, true]) {
+    describe(useObserveMultiple ? '#observeMultiple' : '#observe', () => {
+      describe('before initialization', async () => {
         let oracle: OracleTest
-        beforeEach('set up observations', async () => {
-          oracle = await loadFixture(oracleFixture5Observations)
+        beforeEach('deploy test oracle', async () => {
+          oracle = await loadFixture(oracleFixture)
         })
 
-        it('index, cardinality, cardinality next', async () => {
-          expect(await oracle.index()).to.eq(1)
-          expect(await oracle.cardinality()).to.eq(5)
-          expect(await oracle.cardinalityNext()).to.eq(5)
-        })
-        it('latest observation same time as latest', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.observe(0)
-          expect(tickCumulative).to.eq(-21)
-          expect(liquidityCumulative).to.eq(78)
-        })
-        it('latest observation 5 seconds after latest', async () => {
-          await oracle.advanceTime(5)
-          const { tickCumulative, liquidityCumulative } = await oracle.observe(5)
-          expect(tickCumulative).to.eq(-21)
-          expect(liquidityCumulative).to.eq(78)
-        })
-        it('current observation 5 seconds after latest', async () => {
-          await oracle.advanceTime(5)
-          const { tickCumulative, liquidityCumulative } = await oracle.observe(0)
-          expect(tickCumulative).to.eq(9)
-          expect(liquidityCumulative).to.eq(113)
-        })
-        it('between latest observation and just before latest observation at same time as latest', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.observe(3)
-          expect(tickCumulative).to.eq(-33)
-          expect(liquidityCumulative).to.eq(72)
-        })
-        it('between latest observation and just before latest observation after the latest observation', async () => {
-          await oracle.advanceTime(5)
-          const { tickCumulative, liquidityCumulative } = await oracle.observe(8)
-          expect(tickCumulative).to.eq(-33)
-          expect(liquidityCumulative).to.eq(72)
-        })
-        it('older than oldest reverts', async () => {
-          await expect(oracle.observe(15)).to.be.revertedWith('OLD')
-          await oracle.advanceTime(5)
-          await expect(oracle.observe(20)).to.be.revertedWith('OLD')
-        })
-        it('oldest observation', async () => {
-          const { tickCumulative, liquidityCumulative } = await oracle.observe(14)
-          expect(tickCumulative).to.eq(-13)
-          expect(liquidityCumulative).to.eq(19)
-        })
-        it('oldest observation after some time', async () => {
-          await oracle.advanceTime(6)
-          const { tickCumulative, liquidityCumulative } = await oracle.observe(20)
-          expect(tickCumulative).to.eq(-13)
-          expect(liquidityCumulative).to.eq(19)
+        const observe = async (secondsAgo: number) => {
+          if (useObserveMultiple) {
+            const {
+              tickCumulatives: [tickCumulative],
+              liquidityCumulatives: [liquidityCumulative],
+            } = await oracle.observeMultiple([secondsAgo])
+            return { liquidityCumulative, tickCumulative }
+          } else {
+            return oracle.observe(secondsAgo)
+          }
+        }
+
+        const getGasCost = async (secondsAgo: number) => {
+          if (useObserveMultiple) {
+            return oracle.getGasCostOfObserveMultiple([secondsAgo])
+          } else {
+            return oracle.getGasCostOfObserve(secondsAgo)
+          }
+        }
+
+        it('fails before initialize', async () => {
+          await expect(observe(0)).to.be.revertedWith('I')
         })
 
-        it('gas latest equal', async () => {
-          await snapshotGasCost(oracle.getGasCostOfObserve(0))
+        it('fails if an older observation does not exist', async () => {
+          await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+          await expect(observe(1)).to.be.revertedWith('OLD')
         })
-        it('gas latest transform', async () => {
+
+        it('does not fail across overflow boundary', async () => {
+          await oracle.initialize({ liquidity: 4, tick: 2, time: 2 ** 32 - 1 })
+          await oracle.advanceTime(2)
+          const { tickCumulative, liquidityCumulative } = await observe(1)
+          expect(tickCumulative).to.be.eq(2)
+          expect(liquidityCumulative).to.be.eq(4)
+        })
+
+        it('single observation at current time', async () => {
+          await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+          const { tickCumulative, liquidityCumulative } = await observe(0)
+          expect(tickCumulative).to.eq(0)
+          expect(liquidityCumulative).to.eq(0)
+        })
+
+        it('single observation in past but not earlier than secondsAgo', async () => {
+          await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+          await oracle.advanceTime(3)
+          await expect(observe(4)).to.be.revertedWith('OLD')
+        })
+
+        it('single observation in past at exactly seconds ago', async () => {
+          await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+          await oracle.advanceTime(3)
+          const { tickCumulative, liquidityCumulative } = await observe(3)
+          expect(tickCumulative).to.eq(0)
+          expect(liquidityCumulative).to.eq(0)
+        })
+
+        it('single observation in past counterfactual in past', async () => {
+          await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+          await oracle.advanceTime(3)
+          const { tickCumulative, liquidityCumulative } = await observe(1)
+          expect(tickCumulative).to.eq(4)
+          expect(liquidityCumulative).to.eq(8)
+        })
+
+        it('single observation in past counterfactual now', async () => {
+          await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
+          await oracle.advanceTime(3)
+          const { tickCumulative, liquidityCumulative } = await observe(0)
+          expect(tickCumulative).to.eq(6)
+          expect(liquidityCumulative).to.eq(12)
+        })
+
+        it('two observations in chronological order 0 seconds ago exact', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.grow(2)
+          await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+          const { tickCumulative, liquidityCumulative } = await observe(0)
+          expect(tickCumulative).to.eq(-20)
+          expect(liquidityCumulative).to.eq(20)
+        })
+
+        it('two observations in chronological order 0 seconds ago counterfactual', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.grow(2)
+          await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+          await oracle.advanceTime(7)
+          const { tickCumulative, liquidityCumulative } = await observe(0)
+          expect(tickCumulative).to.eq(-13)
+          expect(liquidityCumulative).to.eq(34)
+        })
+
+        it('two observations in chronological order seconds ago is exactly on first observation', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.grow(2)
+          await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+          await oracle.advanceTime(7)
+          const { tickCumulative, liquidityCumulative } = await observe(11)
+          expect(tickCumulative).to.eq(0)
+          expect(liquidityCumulative).to.eq(0)
+        })
+
+        it('two observations in chronological order seconds ago is between first and second', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.grow(2)
+          await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+          await oracle.advanceTime(7)
+          const { tickCumulative, liquidityCumulative } = await observe(9)
+          expect(tickCumulative).to.eq(-10)
+          expect(liquidityCumulative).to.eq(10)
+        })
+
+        it('two observations in reverse order 0 seconds ago exact', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.grow(2)
+          await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+          await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
+          const { tickCumulative, liquidityCumulative } = await observe(0)
+          expect(tickCumulative).to.eq(-17)
+          expect(liquidityCumulative).to.eq(26)
+        })
+
+        it('two observations in reverse order 0 seconds ago counterfactual', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.grow(2)
+          await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+          await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
+          await oracle.advanceTime(7)
+          const { tickCumulative, liquidityCumulative } = await observe(0)
+          expect(tickCumulative).to.eq(-52)
+          expect(liquidityCumulative).to.eq(54)
+        })
+
+        it('two observations in reverse order seconds ago is exactly on first observation', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.grow(2)
+          await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+          await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
+          await oracle.advanceTime(7)
+          const { tickCumulative, liquidityCumulative } = await observe(10)
+          expect(tickCumulative).to.eq(-20)
+          expect(liquidityCumulative).to.eq(20)
+        })
+
+        it('two observations in reverse order seconds ago is between first and second', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.grow(2)
+          await oracle.update({ advanceTimeBy: 4, tick: 1, liquidity: 2 })
+          await oracle.update({ advanceTimeBy: 3, tick: -5, liquidity: 4 })
+          await oracle.advanceTime(7)
+          const { tickCumulative, liquidityCumulative } = await observe(9)
+          expect(tickCumulative).to.eq(-19)
+          expect(liquidityCumulative).to.eq(22)
+        })
+
+        it('gas for observe since most recent', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await oracle.advanceTime(2)
+          await snapshotGasCost(getGasCost(1))
+        })
+
+        it('gas for single observation at current time', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
+          await snapshotGasCost(getGasCost(0))
+        })
+
+        it('gas for single observation at current time counterfactually computed', async () => {
+          await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
           await oracle.advanceTime(5)
-          await snapshotGasCost(oracle.getGasCostOfObserve(0))
-        })
-        it('gas oldest', async () => {
-          await snapshotGasCost(oracle.getGasCostOfObserve(14))
-        })
-        it('gas between oldest and oldest + 1', async () => {
-          await snapshotGasCost(oracle.getGasCostOfObserve(13))
-        })
-        it('gas middle', async () => {
-          await snapshotGasCost(oracle.getGasCostOfObserve(5))
+          await snapshotGasCost(getGasCost(0))
         })
       })
-    }
-  })
+
+      for (const startingTime of [5, 2 ** 32 - 5]) {
+        describe(`initialized with 5 observations with starting time of ${startingTime}`, () => {
+          const oracleFixture5Observations = async () => {
+            const oracle = await oracleFixture()
+            await oracle.initialize({ liquidity: 5, tick: -5, time: startingTime })
+            await oracle.grow(5)
+            await oracle.update({ advanceTimeBy: 3, tick: 1, liquidity: 2 })
+            await oracle.update({ advanceTimeBy: 2, tick: -6, liquidity: 4 })
+            await oracle.update({ advanceTimeBy: 4, tick: -2, liquidity: 4 })
+            await oracle.update({ advanceTimeBy: 1, tick: -2, liquidity: 9 })
+            await oracle.update({ advanceTimeBy: 3, tick: 4, liquidity: 2 })
+            await oracle.update({ advanceTimeBy: 6, tick: 6, liquidity: 7 })
+            return oracle
+          }
+          let oracle: OracleTest
+          beforeEach('set up observations', async () => {
+            oracle = await loadFixture(oracleFixture5Observations)
+          })
+
+          const observe = async (secondsAgo: number) => {
+            if (useObserveMultiple) {
+              const {
+                tickCumulatives: [tickCumulative],
+                liquidityCumulatives: [liquidityCumulative],
+              } = await oracle.observeMultiple([secondsAgo])
+              return { liquidityCumulative, tickCumulative }
+            } else {
+              return oracle.observe(secondsAgo)
+            }
+          }
+
+          const getGasCost = async (secondsAgo: number) => {
+            if (useObserveMultiple) {
+              return oracle.getGasCostOfObserveMultiple([secondsAgo])
+            } else {
+              return oracle.getGasCostOfObserve(secondsAgo)
+            }
+          }
+
+          it('index, cardinality, cardinality next', async () => {
+            expect(await oracle.index()).to.eq(1)
+            expect(await oracle.cardinality()).to.eq(5)
+            expect(await oracle.cardinalityNext()).to.eq(5)
+          })
+          it('latest observation same time as latest', async () => {
+            const { tickCumulative, liquidityCumulative } = await observe(0)
+            expect(tickCumulative).to.eq(-21)
+            expect(liquidityCumulative).to.eq(78)
+          })
+          it('latest observation 5 seconds after latest', async () => {
+            await oracle.advanceTime(5)
+            const { tickCumulative, liquidityCumulative } = await observe(5)
+            expect(tickCumulative).to.eq(-21)
+            expect(liquidityCumulative).to.eq(78)
+          })
+          it('current observation 5 seconds after latest', async () => {
+            await oracle.advanceTime(5)
+            const { tickCumulative, liquidityCumulative } = await observe(0)
+            expect(tickCumulative).to.eq(9)
+            expect(liquidityCumulative).to.eq(113)
+          })
+          it('between latest observation and just before latest observation at same time as latest', async () => {
+            const { tickCumulative, liquidityCumulative } = await observe(3)
+            expect(tickCumulative).to.eq(-33)
+            expect(liquidityCumulative).to.eq(72)
+          })
+          it('between latest observation and just before latest observation after the latest observation', async () => {
+            await oracle.advanceTime(5)
+            const { tickCumulative, liquidityCumulative } = await observe(8)
+            expect(tickCumulative).to.eq(-33)
+            expect(liquidityCumulative).to.eq(72)
+          })
+          it('older than oldest reverts', async () => {
+            await expect(observe(15)).to.be.revertedWith('OLD')
+            await oracle.advanceTime(5)
+            await expect(observe(20)).to.be.revertedWith('OLD')
+          })
+          it('oldest observation', async () => {
+            const { tickCumulative, liquidityCumulative } = await observe(14)
+            expect(tickCumulative).to.eq(-13)
+            expect(liquidityCumulative).to.eq(19)
+          })
+          it('oldest observation after some time', async () => {
+            await oracle.advanceTime(6)
+            const { tickCumulative, liquidityCumulative } = await observe(20)
+            expect(tickCumulative).to.eq(-13)
+            expect(liquidityCumulative).to.eq(19)
+          })
+
+          it('gas latest equal', async () => {
+            await snapshotGasCost(getGasCost(0))
+          })
+          it('gas latest transform', async () => {
+            await oracle.advanceTime(5)
+            await snapshotGasCost(getGasCost(0))
+          })
+          it('gas oldest', async () => {
+            await snapshotGasCost(getGasCost(14))
+          })
+          it('gas between oldest and oldest + 1', async () => {
+            await snapshotGasCost(getGasCost(13))
+          })
+          it('gas middle', async () => {
+            await snapshotGasCost(getGasCost(5))
+          })
+        })
+      }
+    })
+  }
 
   describe.skip('full oracle', function () {
     this.timeout(1_200_000)

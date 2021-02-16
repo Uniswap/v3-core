@@ -287,7 +287,7 @@ library Oracle {
     /// @param liquidity The current in-range pool liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulatives The tick * time elapsed since the pool was first initialized, as of each `secondsAgo`
-    /// @return liquidityCumulative The liquidity * time elapsed since the pool was first initialized, as of each `secondsAgo`
+    /// @return liquidityCumulatives The liquidity * time elapsed since the pool was first initialized, as of each `secondsAgo`
     function observeMultiple(
         Observation[65535] storage self,
         uint32 time,
