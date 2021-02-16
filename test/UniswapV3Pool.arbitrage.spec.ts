@@ -150,198 +150,205 @@ describe.only('UniswapV3Pool arbitrage tests', () => {
         )
       }
 
-      describe('exact input of 10e18 token0', async () => {
-        const zeroForOne = true
-        const inputAmount = expandTo18Decimals(10)
-        const assumedTruePriceAfterSwap = encodePriceSqrt(98, 100)
+      for (const { zeroForOne, assumedTruePriceAfterSwap, inputAmount, description } of [
+        {
+          description: 'exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98',
+          zeroForOne: true,
+          inputAmount: expandTo18Decimals(10),
+          assumedTruePriceAfterSwap: encodePriceSqrt(98, 100),
+        },
+      ]) {
+        describe(description, () => {
+          function trueValueToken1(arbBalance0: BigNumber, arbBalance1: BigNumber) {
+            return assumedTruePriceAfterSwap
+              .mul(assumedTruePriceAfterSwap)
+              .mul(arbBalance0)
+              .div(BigNumber.from(2).pow(192))
+              .add(arbBalance1)
+          }
 
-        function trueValueToken1(arbBalance0: BigNumber, arbBalance1: BigNumber) {
-          return assumedTruePriceAfterSwap
-            .mul(assumedTruePriceAfterSwap)
-            .mul(arbBalance0)
-            .div(BigNumber.from(2).pow(192))
-            .add(arbBalance1)
-        }
+          it('not sandwiched', async () => {
+            const { executionPrice, amount1Delta, amount0Delta } = await simulateSwap(zeroForOne, inputAmount)
+            zeroForOne
+              ? await swapExact0For1(inputAmount, wallet.address)
+              : await swapExact1For0(inputAmount, wallet.address)
 
-        it('not sandwiched swap', async () => {
-          const { executionPrice, amount1Delta, amount0Delta } = await simulateSwap(zeroForOne, inputAmount)
-          await swapExact0For1(inputAmount, wallet.address)
+            expect({
+              executionPrice: formatPrice(executionPrice),
+              amount0Delta: formatTokenAmount(amount0Delta),
+              amount1Delta: formatTokenAmount(amount1Delta),
+              priceAfter: formatPrice((await pool.slot0()).sqrtPriceX96),
+            }).to.matchSnapshot()
+          })
 
-          expect({
-            executionPrice: formatPrice(executionPrice),
-            amount0Delta: formatTokenAmount(amount0Delta),
-            amount1Delta: formatTokenAmount(amount1Delta),
-            priceAfter: formatPrice((await pool.slot0()).sqrtPriceX96),
-          }).to.matchSnapshot()
-        })
+          it('sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity', async () => {
+            const { executionPrice } = await simulateSwap(zeroForOne, inputAmount)
 
-        it('sandwiched with swap to execution price then mint max liquidity/burn max liquidity', async () => {
-          const { executionPrice } = await simulateSwap(zeroForOne, inputAmount)
+            const firstTickAboveMarginalPrice = zeroForOne
+              ? Math.ceil(
+                  (await tickMath.getTickAtSqrtRatio(applySqrtRatioBipsHundredthsDelta(executionPrice, feeAmount))) /
+                    tickSpacing
+                ) * tickSpacing
+              : Math.floor(
+                  (await tickMath.getTickAtSqrtRatio(applySqrtRatioBipsHundredthsDelta(executionPrice, -feeAmount))) /
+                    tickSpacing
+                ) * tickSpacing
+            const tickAfterFirstTickAboveMarginPrice = zeroForOne
+              ? firstTickAboveMarginalPrice - tickSpacing
+              : firstTickAboveMarginalPrice + tickSpacing
 
-          const firstTickAboveMarginalPrice =
-            Math.ceil(
-              (await tickMath.getTickAtSqrtRatio(applySqrtRatioBipsHundredthsDelta(executionPrice, feeAmount))) /
-                tickSpacing
-            ) * tickSpacing
-          const tickAfterFirstTickAboveMarginPrice = firstTickAboveMarginalPrice - tickSpacing
+            const priceSwapStart = await tickMath.getSqrtRatioAtTick(firstTickAboveMarginalPrice)
 
-          const priceSwapStart = await tickMath.getSqrtRatioAtTick(firstTickAboveMarginalPrice)
+            let arbBalance0 = BigNumber.from(0)
+            let arbBalance1 = BigNumber.from(0)
 
-          let arbBalance0 = BigNumber.from(0)
-          let arbBalance1 = BigNumber.from(0)
+            // first frontrun to the first tick before the execution price
+            const {
+              amount0Delta: frontrunDelta0,
+              amount1Delta: frontrunDelta1,
+              executionPrice: frontrunExecutionPrice,
+            } = await simulateSwap(zeroForOne, MaxUint256.div(2), priceSwapStart)
+            arbBalance0 = arbBalance0.sub(frontrunDelta0)
+            arbBalance1 = arbBalance1.sub(frontrunDelta1)
+            zeroForOne
+              ? await swapToLowerPrice(priceSwapStart, arbitrageur.address)
+              : await swapToHigherPrice(priceSwapStart, arbitrageur.address)
 
-          // first frontrun to the first tick before the execution price
-          const {
-            amount0Delta: frontrunDelta0,
-            amount1Delta: frontrunDelta1,
-            executionPrice: frontrunExecutionPrice,
-          } = await simulateSwap(zeroForOne, MaxUint256.div(2), priceSwapStart)
-          arbBalance0 = arbBalance0.sub(frontrunDelta0)
-          arbBalance1 = arbBalance1.sub(frontrunDelta1)
-          await swapToLowerPrice(priceSwapStart, arbitrageur.address)
+            const trueValueAfterFrontRun = trueValueToken1(arbBalance0, arbBalance1)
 
-          const trueValueAfterFrontRun = trueValueToken1(arbBalance0, arbBalance1)
+            const tickLower = zeroForOne ? tickAfterFirstTickAboveMarginPrice : firstTickAboveMarginalPrice
+            const tickUpper = zeroForOne ? firstTickAboveMarginalPrice : tickAfterFirstTickAboveMarginPrice
 
-          // deposit max liquidity at the tick
-          const mintReceipt = await (
-            await mint(
+            // deposit max liquidity at the tick
+            const mintReceipt = await (
+              await mint(wallet.address, tickLower, tickUpper, getMaxLiquidityPerTick(tickSpacing))
+            ).wait()
+            // sub the mint costs
+            const { amount0: amount0Mint, amount1: amount1Mint } = pool.interface.decodeEventLog(
+              pool.interface.events['Mint(address,address,int24,int24,uint128,uint256,uint256)'],
+              mintReceipt.events?.[2].data!
+            )
+            arbBalance0 = arbBalance0.sub(amount0Mint)
+            arbBalance1 = arbBalance1.sub(amount1Mint)
+
+            // execute the user's swap
+            const { executionPrice: executionPriceAfterFrontrun } = await simulateSwap(zeroForOne, inputAmount)
+            zeroForOne
+              ? await swapExact0For1(inputAmount, wallet.address)
+              : await swapExact1For0(inputAmount, wallet.address)
+
+            // burn the arb's liquidity
+            const { amount0: amount0Burn, amount1: amount1Burn } = await pool.callStatic.burn(
               wallet.address,
-              tickAfterFirstTickAboveMarginPrice,
-              firstTickAboveMarginalPrice,
+              tickLower,
+              tickUpper,
               getMaxLiquidityPerTick(tickSpacing)
             )
-          ).wait()
-          // sub the mint costs
-          const { amount0: amount0Mint, amount1: amount1Mint } = pool.interface.decodeEventLog(
-            pool.interface.events['Mint(address,address,int24,int24,uint128,uint256,uint256)'],
-            mintReceipt.events?.[2].data!
-          )
-          arbBalance0 = arbBalance0.sub(amount0Mint)
-          arbBalance1 = arbBalance1.sub(amount1Mint)
+            await pool.burn(wallet.address, tickLower, tickUpper, getMaxLiquidityPerTick(tickSpacing))
+            arbBalance0 = arbBalance0.add(amount0Burn)
+            arbBalance1 = arbBalance1.add(amount1Burn)
 
-          // execute the user's swap
-          const { executionPrice: executionPriceAfterFrontrun } = await simulateSwap(zeroForOne, inputAmount)
-          await swapExact0For1(inputAmount, wallet.address)
+            // add the fees as well
+            const { amount0: amount0Collect, amount1: amount1Collect } = await pool.callStatic.collect(
+              arbitrageur.address,
+              tickLower,
+              tickUpper,
+              MaxUint128,
+              MaxUint128
+            )
+            arbBalance0 = arbBalance0.add(amount0Collect)
+            arbBalance1 = arbBalance1.add(amount1Collect)
 
-          // burn the arb's liquidity
-          const { amount0: amount0Burn, amount1: amount1Burn } = await pool.callStatic.burn(
-            wallet.address,
-            tickAfterFirstTickAboveMarginPrice,
-            firstTickAboveMarginalPrice,
-            getMaxLiquidityPerTick(tickSpacing)
-          )
-          await pool.burn(
-            wallet.address,
-            tickAfterFirstTickAboveMarginPrice,
-            firstTickAboveMarginalPrice,
-            getMaxLiquidityPerTick(tickSpacing)
-          )
-          arbBalance0 = arbBalance0.add(amount0Burn)
-          arbBalance1 = arbBalance1.add(amount1Burn)
+            const trueValueAfterSandwich = trueValueToken1(arbBalance0, arbBalance1)
 
-          // add the fees as well
-          const { amount0: amount0Collect, amount1: amount1Collect } = await pool.callStatic.collect(
-            arbitrageur.address,
-            tickAfterFirstTickAboveMarginPrice,
-            firstTickAboveMarginalPrice,
-            MaxUint128,
-            MaxUint128
-          )
-          arbBalance0 = arbBalance0.add(amount0Collect)
-          arbBalance1 = arbBalance1.add(amount1Collect)
+            // backrun the swap to true price, i.e. swap to the marginal price = true price
+            const priceToSwapTo = zeroForOne
+              ? applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
+              : applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, feeAmount)
+            const {
+              amount0Delta: backrunDelta0,
+              amount1Delta: backrunDelta1,
+              executionPrice: backrunExecutionPrice,
+            } = await simulateSwap(!zeroForOne, MaxUint256.div(2), priceToSwapTo)
+            await swapToHigherPrice(priceToSwapTo, wallet.address)
+            arbBalance0 = arbBalance0.sub(backrunDelta0)
+            arbBalance1 = arbBalance1.sub(backrunDelta1)
 
-          const trueValueAfterSandwich = trueValueToken1(arbBalance0, arbBalance1)
+            expect({
+              sandwichedPrice: formatPrice(executionPriceAfterFrontrun),
+              arbBalanceDelta0: formatTokenAmount(arbBalance0),
+              arbBalanceDelta1: formatTokenAmount(arbBalance1),
+              trueValue: {
+                final: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
+                afterFrontrun: formatTokenAmount(trueValueAfterFrontRun),
+                afterSandwich: formatTokenAmount(trueValueAfterSandwich),
+              },
+              backrun: {
+                executionPrice: formatPrice(backrunExecutionPrice),
+                delta0: formatTokenAmount(backrunDelta0),
+                delta1: formatTokenAmount(backrunDelta1),
+              },
+              frontrun: {
+                executionPrice: formatPrice(frontrunExecutionPrice),
+                delta0: formatTokenAmount(frontrunDelta0),
+                delta1: formatTokenAmount(frontrunDelta1),
+              },
+              collect: {
+                amount0: formatTokenAmount(amount0Collect),
+                amount1: formatTokenAmount(amount1Collect),
+              },
+              burn: {
+                amount0: formatTokenAmount(amount0Burn),
+                amount1: formatTokenAmount(amount1Burn),
+              },
+              mint: {
+                amount0: formatTokenAmount(amount0Mint),
+                amount1: formatTokenAmount(amount1Mint),
+              },
+              finalPrice: formatPrice((await pool.slot0()).sqrtPriceX96),
+            }).to.matchSnapshot()
+          })
 
-          // backrun the swap to true price, i.e. swap to the marginal price = true price
-          const {
-            amount0Delta: backrunDelta0,
-            amount1Delta: backrunDelta1,
-            executionPrice: backrunExecutionPrice,
-          } = await simulateSwap(
-            !zeroForOne,
-            MaxUint256.div(2),
-            applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
-          )
-          await swapToHigherPrice(
-            applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount),
-            wallet.address
-          )
-          arbBalance0 = arbBalance0.sub(backrunDelta0)
-          arbBalance1 = arbBalance1.sub(backrunDelta1)
+          it('backrun to true price after swap only', async () => {
+            let arbBalance0 = BigNumber.from(0)
+            let arbBalance1 = BigNumber.from(0)
 
-          expect({
-            sandwichedPrice: formatPrice(executionPriceAfterFrontrun),
-            arbBalanceDelta0: formatTokenAmount(arbBalance0),
-            arbBalanceDelta1: formatTokenAmount(arbBalance1),
-            trueValue: {
-              final: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
-              afterFrontrun: formatTokenAmount(trueValueAfterFrontRun),
-              afterSandwich: formatTokenAmount(trueValueAfterSandwich),
-            },
-            backrun: {
-              executionPrice: formatPrice(backrunExecutionPrice),
-              delta0: formatTokenAmount(backrunDelta0),
-              delta1: formatTokenAmount(backrunDelta1),
-            },
-            frontrun: {
-              executionPrice: formatPrice(frontrunExecutionPrice),
-              delta0: formatTokenAmount(frontrunDelta0),
-              delta1: formatTokenAmount(frontrunDelta1),
-            },
-            collect: {
-              amount0: formatTokenAmount(amount0Collect),
-              amount1: formatTokenAmount(amount1Collect),
-            },
-            burn: {
-              amount0: formatTokenAmount(amount0Burn),
-              amount1: formatTokenAmount(amount1Burn),
-            },
-            mint: {
-              amount0: formatTokenAmount(amount0Mint),
-              amount1: formatTokenAmount(amount1Mint),
-            },
-            finalPrice: formatPrice((await pool.slot0()).sqrtPriceX96),
-          }).to.matchSnapshot()
+            zeroForOne
+              ? await swapExact0For1(inputAmount, wallet.address)
+              : await swapExact1For0(inputAmount, wallet.address)
+
+            // swap to the marginal price = true price
+
+            const priceToSwapTo = zeroForOne
+              ? applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
+              : applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, feeAmount)
+            const {
+              amount0Delta: backrunDelta0,
+              amount1Delta: backrunDelta1,
+              executionPrice: backrunExecutionPrice,
+            } = await simulateSwap(!zeroForOne, MaxUint256.div(2), priceToSwapTo)
+            zeroForOne
+              ? await swapToHigherPrice(priceToSwapTo, wallet.address)
+              : await swapToLowerPrice(priceToSwapTo, wallet.address)
+            arbBalance0 = arbBalance0.sub(backrunDelta0)
+            arbBalance1 = arbBalance1.sub(backrunDelta1)
+
+            expect({
+              arbBalanceDelta0: formatTokenAmount(arbBalance0),
+              arbBalanceDelta1: formatTokenAmount(arbBalance1),
+              trueValue: {
+                final: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
+              },
+              backrun: {
+                executionPrice: formatPrice(backrunExecutionPrice),
+                delta0: formatTokenAmount(backrunDelta0),
+                delta1: formatTokenAmount(backrunDelta1),
+              },
+              finalPrice: formatPrice((await pool.slot0()).sqrtPriceX96),
+            }).to.matchSnapshot()
+          })
         })
-
-        it('backrun to true price after swap only', async () => {
-          let arbBalance0 = BigNumber.from(0)
-          let arbBalance1 = BigNumber.from(0)
-
-          await swapExact0For1(inputAmount, wallet.address)
-
-          // swap to the marginal price = true price
-          const {
-            amount0Delta: backrunDelta0,
-            amount1Delta: backrunDelta1,
-            executionPrice: backrunExecutionPrice,
-          } = await simulateSwap(
-            !zeroForOne,
-            MaxUint256.div(2),
-            applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount)
-          )
-          await swapToHigherPrice(
-            applySqrtRatioBipsHundredthsDelta(assumedTruePriceAfterSwap, -feeAmount),
-            wallet.address
-          )
-          arbBalance0 = arbBalance0.sub(backrunDelta0)
-          arbBalance1 = arbBalance1.sub(backrunDelta1)
-
-          expect({
-            arbBalanceDelta0: formatTokenAmount(arbBalance0),
-            arbBalanceDelta1: formatTokenAmount(arbBalance1),
-            trueValue: {
-              final: formatTokenAmount(trueValueToken1(arbBalance0, arbBalance1)),
-            },
-            backrun: {
-              executionPrice: formatPrice(backrunExecutionPrice),
-              delta0: formatTokenAmount(backrunDelta0),
-              delta1: formatTokenAmount(backrunDelta1),
-            },
-            finalPrice: formatPrice((await pool.slot0()).sqrtPriceX96),
-          }).to.matchSnapshot()
-        })
-      })
+      }
     })
   }
 })
