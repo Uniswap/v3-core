@@ -274,10 +274,6 @@ describe('Oracle', () => {
         return { liquidityCumulative, tickCumulative }
       }
 
-      const getGasCost = async (secondsAgo: number) => {
-        return oracle.getGasCostOfObserveMultiple([secondsAgo])
-      }
-
       it('fails before initialize', async () => {
         await expect(observeSingle(0)).to.be.revertedWith('I')
       })
@@ -440,18 +436,18 @@ describe('Oracle', () => {
       it('gas for observe since most recent', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
         await oracle.advanceTime(2)
-        await snapshotGasCost(getGasCost(1))
+        await snapshotGasCost(oracle.getGasCostOfObserveMultiple([1]))
       })
 
       it('gas for single observation at current time', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
-        await snapshotGasCost(getGasCost(0))
+        await snapshotGasCost(oracle.getGasCostOfObserveMultiple([0]))
       })
 
       it('gas for single observation at current time counterfactually computed', async () => {
         await oracle.initialize({ liquidity: 5, tick: -5, time: 5 })
         await oracle.advanceTime(5)
-        await snapshotGasCost(getGasCost(0))
+        await snapshotGasCost(oracle.getGasCostOfObserveMultiple([0]))
       })
     })
 
@@ -480,10 +476,6 @@ describe('Oracle', () => {
             liquidityCumulatives: [liquidityCumulative],
           } = await oracle.observeMultiple([secondsAgo])
           return { liquidityCumulative, tickCumulative }
-        }
-
-        const getGasCost = async (secondsAgo: number) => {
-          return oracle.getGasCostOfObserveMultiple([secondsAgo])
         }
 
         it('index, cardinality, cardinality next', async () => {
@@ -537,20 +529,20 @@ describe('Oracle', () => {
         })
 
         it('gas latest equal', async () => {
-          await snapshotGasCost(getGasCost(0))
+          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([0]))
         })
         it('gas latest transform', async () => {
           await oracle.advanceTime(5)
-          await snapshotGasCost(getGasCost(0))
+          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([0]))
         })
         it('gas oldest', async () => {
-          await snapshotGasCost(getGasCost(14))
+          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([14]))
         })
         it('gas between oldest and oldest + 1', async () => {
-          await snapshotGasCost(getGasCost(13))
+          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([13]))
         })
         it('gas middle', async () => {
-          await snapshotGasCost(getGasCost(5))
+          await snapshotGasCost(oracle.getGasCostOfObserveMultiple([5]))
         })
       })
     }

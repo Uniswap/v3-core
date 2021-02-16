@@ -245,9 +245,7 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
-        require(cardinality > 0, 'I');
-
+    ) private view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
@@ -297,6 +295,8 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality
     ) internal view returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) {
+        require(cardinality > 0, 'I');
+
         tickCumulatives = new int56[](secondsAgos.length);
         liquidityCumulatives = new uint160[](secondsAgos.length);
         for (uint256 i = 0; i < secondsAgos.length; i++) {
