@@ -616,13 +616,13 @@ describe('UniswapV3Pool', () => {
     // simulates an external call to get the cumulatives as of the current block timestamp
     async function getCumulatives(): Promise<{ blockTimestamp: number; tickCumulative: BigNumber }> {
       const blockTimestamp = await pool.time()
-      const { tickCumulative } = await pool.observe(0).catch(() => ({
-        tickCumulative: BigNumber.from(0),
+      const { tickCumulatives } = await pool.observeMultiple([0]).catch(() => ({
+        tickCumulatives: [BigNumber.from(0)],
       }))
 
       return {
         blockTimestamp: blockTimestamp.mod(2 ** 32).toNumber(),
-        tickCumulative: tickCumulative,
+        tickCumulative: tickCumulatives[0],
       }
     }
 

@@ -161,25 +161,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
-    function observe(uint32 secondsAgo)
-        external
-        view
-        override
-        noDelegateCall
-        returns (int56 tickCumulative, uint160 liquidityCumulative)
-    {
-        return
-            observations.observe(
-                _blockTimestamp(),
-                secondsAgo,
-                slot0.tick,
-                slot0.observationIndex,
-                liquidity,
-                slot0.observationCardinality
-            );
-    }
-
-    /// @inheritdoc IUniswapV3PoolDerivedState
     function observeMultiple(uint32[] calldata secondsAgos)
         external
         view

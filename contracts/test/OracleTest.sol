@@ -83,17 +83,6 @@ contract OracleTest {
         cardinalityNext = observations.grow(cardinalityNext, _cardinalityNext);
     }
 
-    function getGasCostOfObserve(uint32 secondsAgo) external view returns (uint256) {
-        (uint32 _time, int24 _tick, uint128 _liquidity, uint16 _index) = (time, tick, liquidity, index);
-        uint256 gasBefore = gasleft();
-        observations.observe(_time, secondsAgo, _tick, _index, _liquidity, cardinality);
-        return gasBefore - gasleft();
-    }
-
-    function observe(uint32 secondsAgo) external view returns (int56 tickCumulative, uint160 liquidityCumulative) {
-        return observations.observe(time, secondsAgo, tick, index, liquidity, cardinality);
-    }
-
     function observeMultiple(uint32[] calldata secondsAgos)
         external
         view
