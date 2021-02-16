@@ -299,10 +299,15 @@ library Oracle {
         tickCumulatives = new int56[](secondsAgos.length);
         liquidityCumulatives = new uint160[](secondsAgos.length);
         for (uint256 i = 0; i < secondsAgos.length; i++) {
-            (int56 tickCumulative, uint160 liquidityCumulative) =
-                observeSingle(self, time, secondsAgos[i], tick, index, liquidity, cardinality);
-            tickCumulatives[i] = tickCumulative;
-            liquidityCumulatives[i] = liquidityCumulative;
+            (tickCumulatives[i], liquidityCumulatives[i]) = observeSingle(
+                self,
+                time,
+                secondsAgos[i],
+                tick,
+                index,
+                liquidity,
+                cardinality
+            );
         }
     }
 }
