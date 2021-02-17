@@ -177,9 +177,8 @@ library Oracle {
     }
 
     /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
-    /// @dev There _must_ be at least 1 initialized observation.
-    /// Used by observe() to contextualize a potential counterfactual observation as it would have occurred if a block
-    /// were mined at the time of the desired observation
+    /// @dev Assumes there is at least 1 initialized observation.
+    /// Used by observeSingle() to compute the counterfactual accumulator values as of a given block timestamp.
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
@@ -223,12 +222,12 @@ library Oracle {
         return binarySearch(self, time, target, index, cardinality);
     }
 
-    /// @dev Called from the pool contract. Contingent on having an observation at or before the desired observation.
-    /// 0 may be passed as `secondsAgo' to return the present pool data.
-    /// if called with a timestamp falling between two consecutive observations, returns a counterfactual observation
-    /// as it would appear if a block were mined at the time of the call
+    /// @dev Reverts if an observation at or before the desired observation timestamp does not exist.
+    /// 0 may be passed as `secondsAgo' to return the current cumulative values.
+    /// If called with a timestamp falling between two observations, returns the counterfactual accumulator values
+    /// at exactly the timestamp between the two observations.
     /// @param self The stored oracle array
-    /// @param time The current block.timestamp
+    /// @param time The current block timestamp
     /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
     /// @param tick The current tick
     /// @param index The location of a given observation within the oracle array
