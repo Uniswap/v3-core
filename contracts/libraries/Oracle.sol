@@ -177,9 +177,8 @@ library Oracle {
     }
 
     /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
-    /// @dev There _must_ be at least 1 initialized observation.
-    /// Used by observe() to contextualize a potential counterfactual observation as it would have occurred if a block
-    /// were mined at the time of the desired observation
+    /// @dev Assumes there is at least 1 initialized observation.
+    /// Used by observeSingle() to compute the counterfactual accumulator values as of a given block timestamp.
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
@@ -223,13 +222,12 @@ library Oracle {
         return binarySearch(self, time, target, index, cardinality);
     }
 
-    /// @notice Constructs a observation of a particular time, now or in the past.
-    /// @dev Called from the pool contract. Contingent on having an observation at or before the desired observation.
-    /// 0 may be passed as `secondsAgo' to return the present pool data.
-    /// if called with a timestamp falling between two consecutive observations, returns a counterfactual observation
-    /// as it would appear if a block were mined at the time of the call
+    /// @dev Reverts if an observation at or before the desired observation timestamp does not exist.
+    /// 0 may be passed as `secondsAgo' to return the current cumulative values.
+    /// If called with a timestamp falling between two observations, returns the counterfactual accumulator values
+    /// at exactly the timestamp between the two observations.
     /// @param self The stored oracle array
-    /// @param time The current block.timestamp
+    /// @param time The current block timestamp
     /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
     /// @param tick The current tick
     /// @param index The location of a given observation within the oracle array
@@ -237,7 +235,7 @@ library Oracle {
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pool was first initialized, as of `secondsAgo`
     /// @return liquidityCumulative The liquidity * time elapsed since the pool was first initialized, as of `secondsAgo`
-    function observe(
+    function observeSingle(
         Observation[65535] storage self,
         uint32 time,
         uint32 secondsAgo,
@@ -245,9 +243,7 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) internal view returns (int56 tickCumulative, uint160 liquidityCumulative) {
-        require(cardinality > 0, 'I');
-
+    ) private view returns (int56 tickCumulative, uint160 liquidityCumulative) {
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
@@ -276,5 +272,41 @@ library Oracle {
         }
 
         return (at.tickCumulative, at.liquidityCumulative);
+    }
+
+    /// @notice Returns the accumulator values as of each time seconds ago from the given time in the array of `secondsAgos`
+    /// @param self The stored oracle array
+    /// @param time The current block.timestamp
+    /// @param secondsAgos Each amount of time to look back, in seconds, at which point to return an observation
+    /// @param tick The current tick
+    /// @param index The location of a given observation within the oracle array
+    /// @param liquidity The current in-range pool liquidity
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return tickCumulatives The tick * time elapsed since the pool was first initialized, as of each `secondsAgo`
+    /// @return liquidityCumulatives The liquidity * time elapsed since the pool was first initialized, as of each `secondsAgo`
+    function observe(
+        Observation[65535] storage self,
+        uint32 time,
+        uint32[] memory secondsAgos,
+        int24 tick,
+        uint16 index,
+        uint128 liquidity,
+        uint16 cardinality
+    ) internal view returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) {
+        require(cardinality > 0, 'I');
+
+        tickCumulatives = new int56[](secondsAgos.length);
+        liquidityCumulatives = new uint160[](secondsAgos.length);
+        for (uint256 i = 0; i < secondsAgos.length; i++) {
+            (tickCumulatives[i], liquidityCumulatives[i]) = observeSingle(
+                self,
+                time,
+                secondsAgos[i],
+                tick,
+                index,
+                liquidity,
+                cardinality
+            );
+        }
     }
 }

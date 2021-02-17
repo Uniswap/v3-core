@@ -161,17 +161,17 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
-    function observe(uint32 secondsAgo)
+    function observe(uint32[] calldata secondsAgos)
         external
         view
         override
         noDelegateCall
-        returns (int56 tickCumulative, uint160 liquidityCumulative)
+        returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives)
     {
         return
             observations.observe(
                 _blockTimestamp(),
-                secondsAgo,
+                secondsAgos,
                 slot0.tick,
                 slot0.observationIndex,
                 liquidity,
