@@ -66,7 +66,12 @@ describe('UniswapV3Pool arbitrage tests', () => {
       const minTick = getMinTick(tickSpacing)
       const maxTick = getMaxTick(tickSpacing)
 
-      for (const passiveLiquidity of [expandTo18Decimals(1), expandTo18Decimals(10), expandTo18Decimals(100)]) {
+      for (const passiveLiquidity of [
+        expandTo18Decimals(1).div(100),
+        expandTo18Decimals(1),
+        expandTo18Decimals(10),
+        expandTo18Decimals(100),
+      ]) {
         describe(`passive liquidity of ${formatTokenAmount(passiveLiquidity)}`, () => {
           const arbTestFixture = async ([wallet, arbitrageur]: Wallet[]) => {
             const fix = await poolFixture([wallet], waffle.provider)

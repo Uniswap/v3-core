@@ -1,5 +1,127 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "9.9699",
+  "arbBalanceDelta1": "-0.0099043",
+  "backrun": Object {
+    "delta0": "-9.9699",
+    "delta1": "0.0099043",
+    "executionPrice": "0.00099342",
+  },
+  "finalPrice": "0.97706",
+  "profit": Object {
+    "final": "9.7606",
+  },
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 not sandwiched 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-0.0099900",
+  "executionPrice": "0.00099900",
+  "priceAfter": "0.0000010040",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+Object {
+  "arbBalanceDelta0": "9.9990",
+  "arbBalanceDelta1": "-0.0099044",
+  "backrun": Object {
+    "delta0": "-0.30578",
+    "delta1": "0.0095969",
+    "executionPrice": "0.031385",
+  },
+  "burn": Object {
+    "amount0": "9.9700",
+    "amount1": "1.0910e+12",
+  },
+  "collect": Object {
+    "amount0": "0.030000",
+    "amount1": "0.0000",
+  },
+  "finalPrice": "0.97706",
+  "frontrun": Object {
+    "delta0": "0.30682",
+    "delta1": "-0.0096834",
+    "executionPrice": "0.031561",
+  },
+  "mint": Object {
+    "amount0": "0.0000",
+    "amount1": "1.0910e+12",
+  },
+  "profit": Object {
+    "afterFrontrun": "-0.29100",
+    "afterSandwich": "9.4990",
+    "final": "9.7891",
+  },
+  "sandwichedPrice": "0.00099910",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "9.9700",
+  "arbBalanceDelta1": "-0.010055",
+  "backrun": Object {
+    "delta0": "-9.9700",
+    "delta1": "0.010055",
+    "executionPrice": "0.0010085",
+  },
+  "finalPrice": "1.0070",
+  "profit": Object {
+    "final": "10.060",
+  },
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 not sandwiched 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-0.0099900",
+  "executionPrice": "0.00099900",
+  "priceAfter": "0.0000010040",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 0; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+Object {
+  "arbBalanceDelta0": "9.9991",
+  "arbBalanceDelta1": "-0.010055",
+  "backrun": Object {
+    "delta0": "-0.30593",
+    "delta1": "0.0097475",
+    "executionPrice": "0.031862",
+  },
+  "burn": Object {
+    "amount0": "9.9700",
+    "amount1": "1.0910e+12",
+  },
+  "collect": Object {
+    "amount0": "0.030000",
+    "amount1": "0.0000",
+  },
+  "finalPrice": "1.0070",
+  "frontrun": Object {
+    "delta0": "0.30682",
+    "delta1": "-0.0096834",
+    "executionPrice": "0.031561",
+  },
+  "mint": Object {
+    "amount0": "0.0000",
+    "amount1": "1.0910e+12",
+  },
+  "profit": Object {
+    "afterFrontrun": "-0.30020",
+    "afterSandwich": "9.7898",
+    "final": "10.089",
+  },
+  "sandwichedPrice": "0.00099910",
+}
+`;
+
 exports[`UniswapV3Pool arbitrage tests protocol fee = 0; passive liquidity of 1.0000 exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
 Object {
   "arbBalanceDelta0": "9.9583",
@@ -363,6 +485,128 @@ Object {
     "final": "0.96205",
   },
   "sandwichedPrice": "0.91119",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "9.9699",
+  "arbBalanceDelta1": "-0.0099043",
+  "backrun": Object {
+    "delta0": "-9.9699",
+    "delta1": "0.0099043",
+    "executionPrice": "0.00099342",
+  },
+  "finalPrice": "0.97706",
+  "profit": Object {
+    "final": "9.7606",
+  },
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 not sandwiched 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-0.0099900",
+  "executionPrice": "0.00099900",
+  "priceAfter": "0.0000010040",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 0.98 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+Object {
+  "arbBalanceDelta0": "9.9940",
+  "arbBalanceDelta1": "-0.0099044",
+  "backrun": Object {
+    "delta0": "-0.30578",
+    "delta1": "0.0095969",
+    "executionPrice": "0.031385",
+  },
+  "burn": Object {
+    "amount0": "9.9700",
+    "amount1": "1.0910e+12",
+  },
+  "collect": Object {
+    "amount0": "0.025000",
+    "amount1": "0.0000",
+  },
+  "finalPrice": "0.97706",
+  "frontrun": Object {
+    "delta0": "0.30682",
+    "delta1": "-0.0096834",
+    "executionPrice": "0.031561",
+  },
+  "mint": Object {
+    "amount0": "0.0000",
+    "amount1": "1.0910e+12",
+  },
+  "profit": Object {
+    "afterFrontrun": "-0.29100",
+    "afterSandwich": "9.4941",
+    "final": "9.7842",
+  },
+  "sandwichedPrice": "0.00099910",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 backrun to true price after swap only 1`] = `
+Object {
+  "arbBalanceDelta0": "9.9700",
+  "arbBalanceDelta1": "-0.010055",
+  "backrun": Object {
+    "delta0": "-9.9700",
+    "delta1": "0.010055",
+    "executionPrice": "0.0010085",
+  },
+  "finalPrice": "1.0070",
+  "profit": Object {
+    "final": "10.060",
+  },
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 not sandwiched 1`] = `
+Object {
+  "amount0Delta": "10.000",
+  "amount1Delta": "-0.0099900",
+  "executionPrice": "0.00099900",
+  "priceAfter": "0.0000010040",
+}
+`;
+
+exports[`UniswapV3Pool arbitrage tests protocol fee = 6; passive liquidity of 0.010000 exact input of 10e18 token0 with starting price of 1.0 and true price of 1.01 sandwiched with swap to execution price then mint max liquidity/target/burn max liquidity 1`] = `
+Object {
+  "arbBalanceDelta0": "9.9941",
+  "arbBalanceDelta1": "-0.010055",
+  "backrun": Object {
+    "delta0": "-0.30593",
+    "delta1": "0.0097475",
+    "executionPrice": "0.031862",
+  },
+  "burn": Object {
+    "amount0": "9.9700",
+    "amount1": "1.0910e+12",
+  },
+  "collect": Object {
+    "amount0": "0.025000",
+    "amount1": "0.0000",
+  },
+  "finalPrice": "1.0070",
+  "frontrun": Object {
+    "delta0": "0.30682",
+    "delta1": "-0.0096834",
+    "executionPrice": "0.031561",
+  },
+  "mint": Object {
+    "amount0": "0.0000",
+    "amount1": "1.0910e+12",
+  },
+  "profit": Object {
+    "afterFrontrun": "-0.30020",
+    "afterSandwich": "9.7848",
+    "final": "10.084",
+  },
+  "sandwichedPrice": "0.00099910",
 }
 `;
 
