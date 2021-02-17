@@ -1,37 +1,87 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Oracle #grow gas for growing by 1 slot when index != cardinality - 1 1`] = `49303`;
+exports[`Oracle #grow gas for growing by 1 slot when index != cardinality - 1 1`] = `49281`;
 
-exports[`Oracle #grow gas for growing by 1 slot when index == cardinality - 1 1`] = `49303`;
+exports[`Oracle #grow gas for growing by 1 slot when index == cardinality - 1 1`] = `49281`;
 
-exports[`Oracle #grow gas for growing by 10 slots when index != cardinality - 1 1`] = `237745`;
+exports[`Oracle #grow gas for growing by 10 slots when index != cardinality - 1 1`] = `237723`;
 
-exports[`Oracle #grow gas for growing by 10 slots when index == cardinality - 1 1`] = `237745`;
+exports[`Oracle #grow gas for growing by 10 slots when index == cardinality - 1 1`] = `237723`;
 
 exports[`Oracle #initialize gas 1`] = `70094`;
 
-exports[`Oracle #observe before initialization gas for observe since most recent 1`] = `3381`;
+exports[`Oracle #observe before initialization gas for observe since most recent 1`] = `4221`;
 
-exports[`Oracle #observe before initialization gas for single observation at current time 1`] = `2131`;
+exports[`Oracle #observe before initialization gas for single observation at current time 1`] = `2971`;
 
-exports[`Oracle #observe before initialization gas for single observation at current time counterfactually computed 1`] = `2565`;
+exports[`Oracle #observe before initialization gas for single observation at current time counterfactually computed 1`] = `3405`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas between oldest and oldest + 1 1`] = `10435`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 5 fetch many values 1`] = `
+Object {
+  "liquidityCumulatives": Array [
+    19,
+    31,
+    57,
+    70,
+    85,
+    113,
+    120,
+  ],
+  "tickCumulatives": Array [
+    -13,
+    -31,
+    -43,
+    -37,
+    -15,
+    9,
+    15,
+  ],
+}
+`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas latest equal 1`] = `2131`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas all of last 20 seconds 1`] = `147194`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas latest transform 1`] = `2565`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas between oldest and oldest + 1 1`] = `11275`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas middle 1`] = `10610`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas latest equal 1`] = `2971`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas oldest 1`] = `9771`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas latest transform 1`] = `3405`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas between oldest and oldest + 1 1`] = `10435`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas middle 1`] = `11450`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas latest equal 1`] = `2131`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 5 gas oldest 1`] = `10611`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas latest transform 1`] = `2565`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 fetch many values 1`] = `
+Object {
+  "liquidityCumulatives": Array [
+    19,
+    31,
+    57,
+    70,
+    85,
+    113,
+    120,
+  ],
+  "tickCumulatives": Array [
+    -13,
+    -31,
+    -43,
+    -37,
+    -15,
+    9,
+    15,
+  ],
+}
+`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas middle 1`] = `10610`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas all of last 20 seconds 1`] = `147194`;
 
-exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas oldest 1`] = `9771`;
+exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas between oldest and oldest + 1 1`] = `11275`;
+
+exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas latest equal 1`] = `2971`;
+
+exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas latest transform 1`] = `3405`;
+
+exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas middle 1`] = `11450`;
+
+exports[`Oracle #observe initialized with 5 observations with starting time of 4294967291 gas oldest 1`] = `10611`;
