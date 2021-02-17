@@ -410,7 +410,7 @@ describe('Oracle', () => {
         expect(liquidityCumulative).to.eq(22)
       })
 
-      it('allows you to fetch multiple observations', async () => {
+      it('can fetch multiple observations', async () => {
         await oracle.initialize({ time: 5, tick: 2, liquidity: BigNumber.from(2).pow(15) })
         await oracle.grow(4)
         await oracle.update({ advanceTimeBy: 13, tick: 6, liquidity: BigNumber.from(2).pow(12) })
@@ -526,6 +526,22 @@ describe('Oracle', () => {
           const { tickCumulative, liquidityCumulative } = await observeSingle(20)
           expect(tickCumulative).to.eq(-13)
           expect(liquidityCumulative).to.eq(19)
+        })
+
+        it('fetch many values', async () => {
+          await oracle.advanceTime(6)
+          const { tickCumulatives, liquidityCumulatives } = await oracle.observe([20, 17, 13, 10, 5, 1, 0])
+          expect({
+            tickCumulatives: tickCumulatives.map((tc) => tc.toNumber()),
+            liquidityCumulatives: liquidityCumulatives.map((lc) => lc.toNumber()),
+          }).to.matchSnapshot()
+        })
+
+        it('gas all of last 20 seconds', async () => {
+          await oracle.advanceTime(6)
+          await snapshotGasCost(
+            oracle.getGasCostOfObserve([20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
+          )
         })
 
         it('gas latest equal', async () => {
