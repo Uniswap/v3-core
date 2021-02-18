@@ -85,22 +85,6 @@ contract TickOverflowSafetyEchidnaTest {
             totalGrowth0 = 0;
             totalGrowth1 = 0;
         }
-
-        checkTicks(tickLower, tickUpper);
-    }
-
-    function checkTicks(int24 tickLower, int24 tickUpper) public view {
-        require(tickLower > MIN_TICK);
-        require(tickUpper < MAX_TICK);
-        require(tickLower < tickUpper);
-
-        // both ticks are used, check fee growth inside is not overflowing the total growth since gross liquidity was 0
-        if (ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0) {
-            (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
-                ticks.getFeeGrowthInside(tickLower, tickUpper, tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
-            assert(feeGrowthInside0X128 <= totalGrowth0);
-            assert(feeGrowthInside1X128 <= totalGrowth1);
-        }
     }
 
     function moveToTick(int24 target) external {
