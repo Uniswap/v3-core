@@ -4,7 +4,11 @@ import { SqrtPriceMathTest } from '../typechain/SqrtPriceMathTest'
 
 import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
-import { encodePriceSqrt, expandTo18Decimals } from './shared/utilities'
+import { encodePriceSqrt, expandTo18Decimals, MaxUint128 } from './shared/utilities'
+
+const {
+  constants: { MaxUint256 },
+} = ethers
 
 describe('SqrtPriceMath', () => {
   let sqrtPriceMath: SqrtPriceMathTest
@@ -44,6 +48,13 @@ describe('SqrtPriceMath', () => {
     it('returns input price if amount in is zero and zeroForOne = false', async () => {
       const price = encodePriceSqrt(1, 1)
       expect(await sqrtPriceMath.getNextSqrtPriceFromInput(price, expandTo18Decimals(1).div(10), 0, false)).to.eq(price)
+    })
+
+    it('returns the minimum price for max inputs', async () => {
+      const sqrtP = BigNumber.from(2).pow(160).sub(1)
+      const liquidity = MaxUint128
+      const maxAmountNoOverflow = MaxUint256.sub(liquidity.shl(96).div(sqrtP))
+      expect(await sqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, maxAmountNoOverflow, true)).to.eq('1')
     })
 
     it('input amount of 0.1 token1', async () => {

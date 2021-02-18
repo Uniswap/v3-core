@@ -44,10 +44,7 @@ library SqrtPriceMath {
                     return uint160(FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator));
             }
 
-            uint256 denominator1 = (numerator1 / sqrtPX96).add(amount);
-            require(denominator1 != 0);
-
-            return UnsafeMath.divRoundingUp(numerator1, denominator1).toUint160();
+            return uint160(UnsafeMath.divRoundingUp(numerator1, (numerator1 / sqrtPX96).add(amount)));
         } else {
             uint256 product;
             // if the product overflows, we know the denominator underflows
