@@ -365,9 +365,9 @@ Object {
   "amount0Before": "2000000000000000000",
   "amount0Delta": "1000",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "-990",
-  "executionPrice": "0.99000",
-  "feeGrowthGlobal0X128Delta": "1531270651144223085585",
+  "amount1Delta": "-989",
+  "executionPrice": "0.98900",
+  "feeGrowthGlobal0X128Delta": "1701411834604692317316",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "1.0000",
   "poolPriceBefore": "1.0000",
@@ -379,12 +379,12 @@ Object {
 exports[`UniswapV3Pool swap tests high fee, 1:1 price, 2e18 max range liquidity swap exactly 0.0000000000000010000 token1 for token0 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "-990",
+  "amount0Delta": "-989",
   "amount1Before": "2000000000000000000",
   "amount1Delta": "1000",
-  "executionPrice": "1.0101",
+  "executionPrice": "1.0111",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "1531270651144223085585",
+  "feeGrowthGlobal1X128Delta": "1701411834604692317316",
   "poolPriceAfter": "1.0000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 0,
@@ -397,13 +397,13 @@ Object {
   "amount0Before": "2000000000000000000",
   "amount0Delta": "1000000000000000000",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "-662654630558341691",
-  "executionPrice": "0.66265",
-  "feeGrowthGlobal0X128Delta": "1531270651144223085585185733442956951",
+  "amount1Delta": "-662207357859531772",
+  "executionPrice": "0.66221",
+  "feeGrowthGlobal0X128Delta": "1701411834604692317316873037158841057",
   "feeGrowthGlobal1X128Delta": "0",
-  "poolPriceAfter": "0.44712",
+  "poolPriceAfter": "0.44742",
   "poolPriceBefore": "1.0000",
-  "tickAfter": -8050,
+  "tickAfter": -8043,
   "tickBefore": 0,
 }
 `;
@@ -411,15 +411,15 @@ Object {
 exports[`UniswapV3Pool swap tests high fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000 token1 for token0 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "-662654630558341691",
+  "amount0Delta": "-662207357859531772",
   "amount1Before": "2000000000000000000",
   "amount1Delta": "1000000000000000000",
-  "executionPrice": "1.5091",
+  "executionPrice": "1.5101",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "1531270651144223085585185733442956951",
-  "poolPriceAfter": "2.2365",
+  "feeGrowthGlobal1X128Delta": "1701411834604692317316873037158841057",
+  "poolPriceAfter": "2.2350",
   "poolPriceBefore": "1.0000",
-  "tickAfter": 8049,
+  "tickAfter": 8042,
   "tickBefore": 0,
 }
 `;
@@ -427,11 +427,11 @@ Object {
 exports[`UniswapV3Pool swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "1011",
+  "amount0Delta": "1012",
   "amount1Before": "2000000000000000000",
   "amount1Delta": "-1000",
-  "executionPrice": "0.98912",
-  "feeGrowthGlobal0X128Delta": "1701411834604692317316",
+  "executionPrice": "0.98814",
+  "feeGrowthGlobal0X128Delta": "1871553018065161549048",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "1.0000",
   "poolPriceBefore": "1.0000",
@@ -443,11 +443,11 @@ Object {
 exports[`UniswapV3Pool swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "2018163471241170535",
+  "amount0Delta": "2020202020202020203",
   "amount1Before": "2000000000000000000",
   "amount1Delta": "-1000000000000000000",
-  "executionPrice": "0.49550",
-  "feeGrowthGlobal0X128Delta": "3090354492722952777645298089881656683",
+  "executionPrice": "0.49500",
+  "feeGrowthGlobal0X128Delta": "3437195625464025050172418213103875650",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "0.25000",
   "poolPriceBefore": "1.0000",
@@ -459,11 +459,11 @@ Object {
 exports[`UniswapV3Pool swap tests high fee, 1:1 price, 2e18 max range liquidity swap token0 for token1 to price 0.40000 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "1172833158595741002",
+  "amount0Delta": "1174017838553918518",
   "amount1Before": "2000000000000000000",
   "amount1Delta": "-735088935932648267",
-  "executionPrice": "0.62676",
-  "feeGrowthGlobal0X128Delta": "1795924994446436354047871727469285280",
+  "executionPrice": "0.62613",
+  "feeGrowthGlobal0X128Delta": "1997487844552658120479227965844634309",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "0.40000",
   "poolPriceBefore": "1.0000",
@@ -487,10 +487,10 @@ Object {
   "amount0Before": "2000000000000000000",
   "amount0Delta": "-1000",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "1011",
-  "executionPrice": "1.0110",
+  "amount1Delta": "1012",
+  "executionPrice": "1.0120",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "1701411834604692317316",
+  "feeGrowthGlobal1X128Delta": "1871553018065161549048",
   "poolPriceAfter": "1.0000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 0,
@@ -503,10 +503,10 @@ Object {
   "amount0Before": "2000000000000000000",
   "amount0Delta": "-1000000000000000000",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "2018163471241170535",
-  "executionPrice": "2.0182",
+  "amount1Delta": "2020202020202020203",
+  "executionPrice": "2.0202",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "3090354492722952777645298089881656683",
+  "feeGrowthGlobal1X128Delta": "3437195625464025050172418213103875650",
   "poolPriceAfter": "4.0000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 13863,
@@ -529,10 +529,10 @@ Object {
   "amount0Before": "2000000000000000000",
   "amount0Delta": "-735088935932648267",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "1172833158595741002",
-  "executionPrice": "1.5955",
+  "amount1Delta": "1174017838553918518",
+  "executionPrice": "1.5971",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "1795924994446436354047871727469285280",
+  "feeGrowthGlobal1X128Delta": "1997487844552658120479227965844634309",
   "poolPriceAfter": "2.5000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 9163,
@@ -889,13 +889,13 @@ Object {
   "amount0Before": "2000000000000000000",
   "amount0Delta": "1000000000000000000",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "-666399946655997863",
-  "executionPrice": "0.66640",
-  "feeGrowthGlobal0X128Delta": "102084710076281879321379303167993925",
+  "amount1Delta": "-666444407401233536",
+  "executionPrice": "0.66644",
+  "feeGrowthGlobal0X128Delta": "85070591730234956148210572796405514",
   "feeGrowthGlobal1X128Delta": "0",
-  "poolPriceAfter": "0.44462",
+  "poolPriceAfter": "0.44459",
   "poolPriceBefore": "1.0000",
-  "tickAfter": -8106,
+  "tickAfter": -8107,
   "tickBefore": 0,
 }
 `;
@@ -903,15 +903,15 @@ Object {
 exports[`UniswapV3Pool swap tests low fee, 1:1 price, 2e18 max range liquidity swap exactly 1.0000 token1 for token0 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "-666399946655997863",
+  "amount0Delta": "-666444407401233536",
   "amount1Before": "2000000000000000000",
   "amount1Delta": "1000000000000000000",
-  "executionPrice": "1.5006",
+  "executionPrice": "1.5005",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "102084710076281879321379303167993925",
-  "poolPriceAfter": "2.2491",
+  "feeGrowthGlobal1X128Delta": "85070591730234956148210572796405515",
+  "poolPriceAfter": "2.2493",
   "poolPriceBefore": "1.0000",
-  "tickAfter": 8105,
+  "tickAfter": 8106,
   "tickBefore": 0,
 }
 `;
@@ -935,11 +935,11 @@ Object {
 exports[`UniswapV3Pool swap tests low fee, 1:1 price, 2e18 max range liquidity swap token0 for exactly 1.0000 token1 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "2001200720432259367",
+  "amount0Delta": "2001000500250125077",
   "amount1Before": "2000000000000000000",
   "amount1Delta": "-1000000000000000000",
-  "executionPrice": "0.49970",
-  "feeGrowthGlobal0X128Delta": "204291995349773347907520066410118522",
+  "executionPrice": "0.49975",
+  "feeGrowthGlobal0X128Delta": "170226296608774038574344664756091446",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "0.25000",
   "poolPriceBefore": "1.0000",
@@ -951,11 +951,11 @@ Object {
 exports[`UniswapV3Pool swap tests low fee, 1:1 price, 2e18 max range liquidity swap token0 for token1 to price 0.40000 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "1162975445435640719",
+  "amount0Delta": "1162859089713235953",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "-735088935932648265",
-  "executionPrice": "0.63208",
-  "feeGrowthGlobal0X128Delta": "118722011173132030189178508189317099",
+  "amount1Delta": "-735088935932648266",
+  "executionPrice": "0.63214",
+  "feeGrowthGlobal0X128Delta": "98925110860787308007692432636113977",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "0.40000",
   "poolPriceBefore": "1.0000",
@@ -995,10 +995,10 @@ Object {
   "amount0Before": "2000000000000000000",
   "amount0Delta": "-1000000000000000000",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "2001200720432259373",
-  "executionPrice": "2.0012",
+  "amount1Delta": "2001000500250125079",
+  "executionPrice": "2.0010",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "204291995349773347907520066410118521",
+  "feeGrowthGlobal1X128Delta": "170226296608774378856711585694554910",
   "poolPriceAfter": "4.0000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 13863,
@@ -1019,12 +1019,12 @@ Object {
 exports[`UniswapV3Pool swap tests low fee, 1:1 price, 2e18 max range liquidity swap token1 for token0 to price 2.5000 1`] = `
 Object {
   "amount0Before": "2000000000000000000",
-  "amount0Delta": "-735088935932648265",
+  "amount0Delta": "-735088935932648266",
   "amount1Before": "2000000000000000000",
-  "amount1Delta": "1162975445435640720",
-  "executionPrice": "1.5821",
+  "amount1Delta": "1162859089713235954",
+  "executionPrice": "1.5819",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "118722011173132030189178508189317098",
+  "feeGrowthGlobal1X128Delta": "98925110860787308007692432636113978",
   "poolPriceAfter": "2.5000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 9163,
@@ -1034,9 +1034,9 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap exactly 0.0000000000000010000 token0 for token1 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
+  "amount0Before": "999700069986003",
   "amount0Delta": "1000",
-  "amount1Before": "1199580111974806",
+  "amount1Before": "999700069986003",
   "amount1Delta": "-998",
   "executionPrice": "0.99800",
   "feeGrowthGlobal0X128Delta": "170141183460469231731",
@@ -1050,9 +1050,9 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap exactly 0.0000000000000010000 token1 for token0 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
+  "amount0Before": "999700069986003",
   "amount0Delta": "-998",
-  "amount1Before": "1199580111974806",
+  "amount1Before": "999700069986003",
   "amount1Delta": "1000",
   "executionPrice": "1.0020",
   "feeGrowthGlobal0X128Delta": "0",
@@ -1066,12 +1066,12 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap exactly 1.0000 token0 for token1 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "1201020652394438",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "-1199580111974805",
-  "executionPrice": "0.99880",
-  "feeGrowthGlobal0X128Delta": "122605845095370084232329312661793",
+  "amount0Before": "999700069986003",
+  "amount0Delta": "1000700370186095",
+  "amount1Before": "999700069986003",
+  "amount1Delta": "-999700069986002",
+  "executionPrice": "0.99900",
+  "feeGrowthGlobal0X128Delta": "85130172636557991529041720559172",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "0.0000000000000000000000000000000000000029390",
   "poolPriceBefore": "1.0000",
@@ -1082,13 +1082,13 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap exactly 1.0000 token1 for token0 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "-1199580111974805",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "1201020652394438",
-  "executionPrice": "1.0012",
+  "amount0Before": "999700069986003",
+  "amount0Delta": "-999700069986002",
+  "amount1Before": "999700069986003",
+  "amount1Delta": "1000700370186095",
+  "executionPrice": "1.0010",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "122605845095370084232329312661793",
+  "feeGrowthGlobal1X128Delta": "85130172636557991529041720559172",
   "poolPriceAfter": "3.4026e+38",
   "poolPriceBefore": "1.0000",
   "tickAfter": 887271,
@@ -1098,9 +1098,9 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
+  "amount0Before": "999700069986003",
   "amount0Delta": "1002",
-  "amount1Before": "1199580111974806",
+  "amount1Before": "999700069986003",
   "amount1Delta": "-1000",
   "executionPrice": "0.99800",
   "feeGrowthGlobal0X128Delta": "170141183460469231731",
@@ -1114,12 +1114,12 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap token0 for exactly 1.0000 token1 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "1201020652394438",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "-1199580111974805",
-  "executionPrice": "0.99880",
-  "feeGrowthGlobal0X128Delta": "122605845095370084232329312661793",
+  "amount0Before": "999700069986003",
+  "amount0Delta": "1000700370186095",
+  "amount1Before": "999700069986003",
+  "amount1Delta": "-999700069986002",
+  "executionPrice": "0.99900",
+  "feeGrowthGlobal0X128Delta": "85130172636557991529041720559172",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "0.0000000000000000000000000000000000000029390",
   "poolPriceBefore": "1.0000",
@@ -1130,12 +1130,12 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap token0 for token1 to price 0.40000 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "1201020652394438",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "-1199580111974805",
-  "executionPrice": "0.99880",
-  "feeGrowthGlobal0X128Delta": "122605845095370084232329312661793",
+  "amount0Before": "999700069986003",
+  "amount0Delta": "1000700370186095",
+  "amount1Before": "999700069986003",
+  "amount1Delta": "-999700069986002",
+  "executionPrice": "0.99900",
+  "feeGrowthGlobal0X128Delta": "85130172636557991529041720559172",
   "feeGrowthGlobal1X128Delta": "0",
   "poolPriceAfter": "0.40000",
   "poolPriceBefore": "1.0000",
@@ -1146,8 +1146,8 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap token0 for token1 to price 2.5000 1`] = `
 Object {
-  "poolBalance0": "1199580111974806",
-  "poolBalance1": "1199580111974806",
+  "poolBalance0": "999700069986003",
+  "poolBalance1": "999700069986003",
   "poolPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
@@ -1156,9 +1156,9 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap token1 for exactly 0.0000000000000010000 token0 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
+  "amount0Before": "999700069986003",
   "amount0Delta": "-1000",
-  "amount1Before": "1199580111974806",
+  "amount1Before": "999700069986003",
   "amount1Delta": "1002",
   "executionPrice": "1.0020",
   "feeGrowthGlobal0X128Delta": "0",
@@ -1172,13 +1172,13 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap token1 for exactly 1.0000 token0 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "-1199580111974805",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "1201020652394438",
-  "executionPrice": "1.0012",
+  "amount0Before": "999700069986003",
+  "amount0Delta": "-999700069986002",
+  "amount1Before": "999700069986003",
+  "amount1Delta": "1000700370186095",
+  "executionPrice": "1.0010",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "122605845095370084232329312661793",
+  "feeGrowthGlobal1X128Delta": "85130172636557991529041720559172",
   "poolPriceAfter": "3.4026e+38",
   "poolPriceBefore": "1.0000",
   "tickAfter": 887271,
@@ -1188,8 +1188,8 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap token1 for token0 to price 0.40000 1`] = `
 Object {
-  "poolBalance0": "1199580111974806",
-  "poolBalance1": "1199580111974806",
+  "poolBalance0": "999700069986003",
+  "poolBalance1": "999700069986003",
   "poolPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
@@ -1198,13 +1198,13 @@ Object {
 
 exports[`UniswapV3Pool swap tests low fee, large liquidity around current price (stable swap) swap token1 for token0 to price 2.5000 1`] = `
 Object {
-  "amount0Before": "1199580111974806",
-  "amount0Delta": "-1199580111974805",
-  "amount1Before": "1199580111974806",
-  "amount1Delta": "1201020652394438",
-  "executionPrice": "1.0012",
+  "amount0Before": "999700069986003",
+  "amount0Delta": "-999700069986002",
+  "amount1Before": "999700069986003",
+  "amount1Delta": "1000700370186095",
+  "executionPrice": "1.0010",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "122605845095370084232329312661793",
+  "feeGrowthGlobal1X128Delta": "85130172636557991529041720559172",
   "poolPriceAfter": "2.5000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 9163,
@@ -1394,7 +1394,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap exactly 0.0000000000000010000 token0 for token1 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
+  "amount0Before": "1994009290088178439",
   "amount0Delta": "1000",
   "amount1Before": "1994009290088178439",
   "amount1Delta": "-991",
@@ -1410,23 +1410,23 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap exactly 0.0000000000000010000 token1 for token0 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
-  "amount0Delta": "-979",
+  "amount0Before": "1994009290088178439",
+  "amount0Delta": "-991",
   "amount1Before": "1994009290088178439",
   "amount1Delta": "1000",
-  "executionPrice": "1.0215",
+  "executionPrice": "1.0091",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "510423550381407695195",
-  "poolPriceAfter": "1.0182",
+  "poolPriceAfter": "1.0060",
   "poolPriceBefore": "1.0000",
-  "tickAfter": 180,
+  "tickAfter": 60,
   "tickBefore": 0,
 }
 `;
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap exactly 1.0000 token0 for token1 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
+  "amount0Before": "1994009290088178439",
   "amount0Delta": "1000000000000000000",
   "amount1Before": "1994009290088178439",
   "amount1Delta": "-662011820624678025",
@@ -1442,23 +1442,23 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap exactly 1.0000 token1 for token0 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
-  "amount0Delta": "-655417164586189725",
+  "amount0Before": "1994009290088178439",
+  "amount0Delta": "-662011820624678025",
   "amount1Before": "1994009290088178439",
   "amount1Delta": "1000000000000000000",
-  "executionPrice": "1.5257",
+  "executionPrice": "1.5105",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "510423550381407695195061911147652317",
-  "poolPriceAfter": "2.2727",
+  "poolPriceAfter": "2.2545",
   "poolPriceBefore": "1.0000",
-  "tickAfter": 8209,
+  "tickAfter": 8129,
   "tickBefore": 0,
 }
 `;
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
+  "amount0Before": "1994009290088178439",
   "amount0Delta": "1011",
   "amount1Before": "1994009290088178439",
   "amount1Delta": "-1000",
@@ -1474,7 +1474,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token0 for exactly 1.0000 token1 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
+  "amount0Before": "1994009290088178439",
   "amount0Delta": "2024171064311638316",
   "amount1Before": "1994009290088178439",
   "amount1Delta": "-1000000000000000000",
@@ -1490,7 +1490,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token0 for token1 to price 0.40000 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
+  "amount0Before": "1994009290088178439",
   "amount0Delta": "1159748196632793863",
   "amount1Before": "1994009290088178439",
   "amount1Delta": "-729098226020826705",
@@ -1506,7 +1506,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token0 for token1 to price 2.5000 1`] = `
 Object {
-  "poolBalance0": "1982081649422850916",
+  "poolBalance0": "1994009290088178439",
   "poolBalance1": "1994009290088178439",
   "poolPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
@@ -1516,39 +1516,39 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token1 for exactly 0.0000000000000010000 token0 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
+  "amount0Before": "1994009290088178439",
   "amount0Delta": "-1000",
   "amount1Before": "1994009290088178439",
-  "amount1Delta": "1023",
-  "executionPrice": "1.0230",
+  "amount1Delta": "1011",
+  "executionPrice": "1.0110",
   "feeGrowthGlobal0X128Delta": "0",
   "feeGrowthGlobal1X128Delta": "680564733841876926926",
-  "poolPriceAfter": "1.0182",
+  "poolPriceAfter": "1.0060",
   "poolPriceBefore": "1.0000",
-  "tickAfter": 180,
+  "tickAfter": 60,
   "tickBefore": 0,
 }
 `;
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token1 for exactly 1.0000 token0 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
+  "amount0Before": "1994009290088178439",
   "amount0Delta": "-1000000000000000000",
   "amount1Before": "1994009290088178439",
-  "amount1Delta": "2061084019890842502",
-  "executionPrice": "2.0611",
+  "amount1Delta": "2024171064311638316",
+  "executionPrice": "2.0242",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "1052025823067067832041406107723446946",
-  "poolPriceAfter": "4.1473",
+  "feeGrowthGlobal1X128Delta": "1033184581225259164735720748018047287",
+  "poolPriceAfter": "4.0484",
   "poolPriceBefore": "1.0000",
-  "tickAfter": 14225,
+  "tickAfter": 13983,
   "tickBefore": 0,
 }
 `;
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token1 for token0 to price 0.40000 1`] = `
 Object {
-  "poolBalance0": "1982081649422850916",
+  "poolBalance0": "1994009290088178439",
   "poolBalance1": "1994009290088178439",
   "poolPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
@@ -1558,13 +1558,13 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, 0 liquidity, all liquidity around current price swap token1 for token0 to price 2.5000 1`] = `
 Object {
-  "amount0Before": "1982081649422850916",
-  "amount0Delta": "-717170585355499182",
+  "amount0Before": "1994009290088178439",
+  "amount0Delta": "-729098226020826705",
   "amount1Before": "1994009290088178439",
-  "amount1Delta": "1147640245432759379",
-  "executionPrice": "1.6002",
+  "amount1Delta": "1159748196632793863",
+  "executionPrice": "1.5907",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "585782608634379296280420708203043197",
+  "feeGrowthGlobal1X128Delta": "591962792073745646583043420635066071",
   "poolPriceAfter": "2.5000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 9163,
@@ -1754,7 +1754,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap exactly 0.0000000000000010000 token0 for token1 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
+  "amount0Before": "3994009290088178439",
   "amount0Delta": "1000",
   "amount1Before": "3994009290088178439",
   "amount1Delta": "-996",
@@ -1770,7 +1770,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap exactly 0.0000000000000010000 token1 for token0 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
+  "amount0Before": "3994009290088178439",
   "amount0Delta": "-996",
   "amount1Before": "3994009290088178439",
   "amount1Delta": "1000",
@@ -1786,7 +1786,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap exactly 1.0000 token0 for token1 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
+  "amount0Before": "3994009290088178439",
   "amount0Delta": "1000000000000000000",
   "amount1Before": "3994009290088178439",
   "amount1Delta": "-795933705287758544",
@@ -1802,23 +1802,23 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap exactly 1.0000 token1 for token0 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
-  "amount0Delta": "-791704042342225227",
+  "amount0Before": "3994009290088178439",
+  "amount0Delta": "-795933705287758544",
   "amount1Before": "3994009290088178439",
   "amount1Delta": "1000000000000000000",
-  "executionPrice": "1.2631",
+  "executionPrice": "1.2564",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "259839974299863146991991059322075334",
-  "poolPriceAfter": "1.5719",
+  "feeGrowthGlobal1X128Delta": "256749882580179971840679703106063897",
+  "poolPriceAfter": "1.5644",
   "poolPriceBefore": "1.0000",
-  "tickAfter": 4523,
+  "tickAfter": 4475,
   "tickBefore": 0,
 }
 `;
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap token0 for exactly 0.0000000000000010000 token1 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
+  "amount0Before": "3994009290088178439",
   "amount0Delta": "1005",
   "amount1Before": "3994009290088178439",
   "amount1Delta": "-1000",
@@ -1834,7 +1834,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap token0 for exactly 1.0000 token1 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
+  "amount0Before": "3994009290088178439",
   "amount0Delta": "1342022152495072924",
   "amount1Before": "3994009290088178439",
   "amount1Delta": "-1000000000000000000",
@@ -1850,7 +1850,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap token0 for token1 to price 0.40000 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
+  "amount0Before": "3994009290088178439",
   "amount0Delta": "2325523181756544449",
   "amount1Before": "3994009290088178439",
   "amount1Delta": "-1464187161953474971",
@@ -1866,7 +1866,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap token0 for token1 to price 2.5000 1`] = `
 Object {
-  "poolBalance0": "3982081649422850916",
+  "poolBalance0": "3994009290088178439",
   "poolBalance1": "3994009290088178439",
   "poolPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
@@ -1876,7 +1876,7 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap token1 for exactly 0.0000000000000010000 token0 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
+  "amount0Before": "3994009290088178439",
   "amount0Delta": "-1000",
   "amount1Before": "3994009290088178439",
   "amount1Delta": "1005",
@@ -1892,23 +1892,23 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap token1 for exactly 1.0000 token0 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
+  "amount0Before": "3994009290088178439",
   "amount0Delta": "-1000000000000000000",
   "amount1Before": "3994009290088178439",
-  "amount1Delta": "1351353308576406667",
-  "executionPrice": "1.3514",
+  "amount1Delta": "1342022152495072924",
+  "executionPrice": "1.3420",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "349509475900775043325467715642874353",
-  "poolPriceAfter": "1.7992",
+  "feeGrowthGlobal1X128Delta": "344037963272993171369654596359692757",
+  "poolPriceAfter": "1.7849",
   "poolPriceBefore": "1.0000",
-  "tickAfter": 5873,
+  "tickAfter": 5793,
   "tickBefore": 0,
 }
 `;
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap token1 for token0 to price 0.40000 1`] = `
 Object {
-  "poolBalance0": "3982081649422850916",
+  "poolBalance0": "3994009290088178439",
   "poolBalance1": "3994009290088178439",
   "poolPriceBefore": "1.0000",
   "swapError": "VM Exception while processing transaction: revert SPL",
@@ -1918,13 +1918,13 @@ Object {
 
 exports[`UniswapV3Pool swap tests medium fee, 1:1 price, additional liquidity around current price swap token1 for token0 to price 2.5000 1`] = `
 Object {
-  "amount0Before": "3982081649422850916",
-  "amount0Delta": "-1452259521288147449",
+  "amount0Before": "3994009290088178439",
+  "amount0Delta": "-1464187161953474971",
   "amount1Before": "3994009290088178439",
-  "amount1Delta": "2313415230556509964",
-  "executionPrice": "1.5930",
+  "amount1Delta": "2325523181756544449",
+  "executionPrice": "1.5883",
   "feeGrowthGlobal0X128Delta": "0",
-  "feeGrowthGlobal1X128Delta": "595039006852697639857565724995693952",
+  "feeGrowthGlobal1X128Delta": "595039006852697724928157455230309818",
   "poolPriceAfter": "2.5000",
   "poolPriceBefore": "1.0000",
   "tickAfter": 9163,

@@ -19,7 +19,7 @@ describe('Tick', () => {
   describe('#tickSpacingToMaxLiquidityPerTick', () => {
     it('returns the correct value for low fee', async () => {
       const maxLiquidityPerTick = await tickTest.tickSpacingToMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.LOW])
-      expect(maxLiquidityPerTick).to.eq('2301086475570827930019641784376200') // 110.8 bits
+      expect(maxLiquidityPerTick).to.eq('1917569901783203986719870431555990') // 110.8 bits
       expect(maxLiquidityPerTick).to.eq(getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.LOW]))
     })
     it('returns the correct value for medium fee', async () => {
@@ -29,7 +29,7 @@ describe('Tick', () => {
     })
     it('returns the correct value for high fee', async () => {
       const maxLiquidityPerTick = await tickTest.tickSpacingToMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.HIGH])
-      expect(maxLiquidityPerTick).to.eq('34514896736072468147213166389265464') // 114.7 bits
+      expect(maxLiquidityPerTick).to.eq('38350317471085141830651933667504588') // 114.7 bits
       expect(maxLiquidityPerTick).to.eq(getMaxLiquidityPerTick(TICK_SPACINGS[FeeAmount.HIGH]))
     })
     it('returns the correct value for entire range', async () => {
