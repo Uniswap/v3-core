@@ -256,8 +256,8 @@ const TEST_POOLS: PoolTestCase[] = [
     startingPrice: encodePriceSqrt(10, 1),
     positions: [
       {
-        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
-        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         liquidity: expandTo18Decimals(2),
       },
     ],
@@ -269,8 +269,8 @@ const TEST_POOLS: PoolTestCase[] = [
     startingPrice: encodePriceSqrt(1, 10),
     positions: [
       {
-        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
-        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         liquidity: expandTo18Decimals(2),
       },
     ],
@@ -282,12 +282,12 @@ const TEST_POOLS: PoolTestCase[] = [
     startingPrice: encodePriceSqrt(1, 1),
     positions: [
       {
-        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         tickUpper: -TICK_SPACINGS[FeeAmount.MEDIUM],
         liquidity: expandTo18Decimals(2),
       },
       {
-        tickLower: TICK_SPACINGS[FeeAmount.HIGH],
+        tickLower: TICK_SPACINGS[FeeAmount.MEDIUM],
         tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         liquidity: expandTo18Decimals(2),
       },
@@ -300,17 +300,17 @@ const TEST_POOLS: PoolTestCase[] = [
     startingPrice: encodePriceSqrt(1, 1),
     positions: [
       {
-        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
-        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
+        tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         liquidity: expandTo18Decimals(2),
       },
       {
-        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.HIGH]),
+        tickLower: getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         tickUpper: -TICK_SPACINGS[FeeAmount.MEDIUM],
         liquidity: expandTo18Decimals(2),
       },
       {
-        tickLower: TICK_SPACINGS[FeeAmount.HIGH],
+        tickLower: TICK_SPACINGS[FeeAmount.MEDIUM],
         tickUpper: getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM]),
         liquidity: expandTo18Decimals(2),
       },

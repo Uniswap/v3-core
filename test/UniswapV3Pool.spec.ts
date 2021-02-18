@@ -932,8 +932,8 @@ describe('UniswapV3Pool', () => {
         getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)
       )
 
-      expect(feesOwed0Position0).to.be.eq('200000000000000')
-      expect(feesOwed0Position1).to.be.eq('400000000000000')
+      expect(feesOwed0Position0).to.be.eq('166666666666667')
+      expect(feesOwed0Position1).to.be.eq('333333333333334')
     })
 
     describe('works across large increases', () => {
@@ -993,7 +993,7 @@ describe('UniswapV3Pool', () => {
           MaxUint128,
           MaxUint128
         )
-        expect(amount0).to.be.eq('599999999999999')
+        expect(amount0).to.be.eq('499999999999999')
         expect(amount1).to.be.eq(0)
       })
       it('token1', async () => {
@@ -1007,7 +1007,7 @@ describe('UniswapV3Pool', () => {
           MaxUint128
         )
         expect(amount0).to.be.eq(0)
-        expect(amount1).to.be.eq('599999999999999')
+        expect(amount1).to.be.eq('499999999999999')
       })
       it('token0 and token1', async () => {
         await swapExact0For1(expandTo18Decimals(1), wallet.address)
@@ -1020,8 +1020,8 @@ describe('UniswapV3Pool', () => {
           MaxUint128,
           MaxUint128
         )
-        expect(amount0).to.be.eq('599999999999999')
-        expect(amount1).to.be.eq('600000000000000')
+        expect(amount0).to.be.eq('499999999999999')
+        expect(amount1).to.be.eq('500000000000000')
       })
     })
   })
@@ -1088,7 +1088,7 @@ describe('UniswapV3Pool', () => {
       })
 
       // 6 bips * 1e18
-      expect(token0Fees).to.eq('599999999999999')
+      expect(token0Fees).to.eq('499999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1100,21 +1100,21 @@ describe('UniswapV3Pool', () => {
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('599999999999999')
+      expect(token0Fees).to.eq('499999999999999')
       expect(token1Fees).to.eq(0)
       ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('1199999999999998')
+      expect(token0Fees).to.eq('999999999999998')
       expect(token1Fees).to.eq(0)
       ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('1799999999999997')
+      expect(token0Fees).to.eq('1499999999999997')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1127,21 +1127,21 @@ describe('UniswapV3Pool', () => {
         poke: true,
       }))
       expect(token0Fees).to.eq(0)
-      expect(token1Fees).to.eq('599999999999999')
+      expect(token1Fees).to.eq('499999999999999')
       ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: false,
         poke: true,
       }))
       expect(token0Fees).to.eq(0)
-      expect(token1Fees).to.eq('1199999999999998')
+      expect(token1Fees).to.eq('999999999999998')
       ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: false,
         poke: true,
       }))
       expect(token0Fees).to.eq(0)
-      expect(token1Fees).to.eq('1799999999999997')
+      expect(token1Fees).to.eq('1499999999999997')
     })
 
     it('position owner gets partial fees when protocol fee is on', async () => {
@@ -1153,7 +1153,7 @@ describe('UniswapV3Pool', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.be.eq('499999999999999')
+      expect(token0Fees).to.be.eq('416666666666666')
       expect(token1Fees).to.be.eq(0)
     })
 
@@ -1176,7 +1176,7 @@ describe('UniswapV3Pool', () => {
 
         await expect(pool.collectProtocol(other.address, MaxUint128, MaxUint128))
           .to.emit(token0, 'Transfer')
-          .withArgs(pool.address, other.address, '99999999999999')
+          .withArgs(pool.address, other.address, '83333333333332')
       })
 
       it('fees collected can differ between token0 and token1', async () => {
@@ -1196,10 +1196,10 @@ describe('UniswapV3Pool', () => {
         await expect(pool.collectProtocol(other.address, MaxUint128, MaxUint128))
           .to.emit(token0, 'Transfer')
           // more token0 fees because it's 1/5th the swap fees
-          .withArgs(pool.address, other.address, '74999999999999')
+          .withArgs(pool.address, other.address, '62499999999999')
           .to.emit(token1, 'Transfer')
           // less token1 fees because it's 1/8th the swap fees
-          .withArgs(pool.address, other.address, '119999999999999')
+          .withArgs(pool.address, other.address, '99999999999998')
       })
     })
 
@@ -1216,7 +1216,7 @@ describe('UniswapV3Pool', () => {
       })
 
       // 6 bips * 2e18
-      expect(token0Fees).to.eq('1199999999999998')
+      expect(token0Fees).to.eq('999999999999998')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1235,7 +1235,7 @@ describe('UniswapV3Pool', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('1099999999999999')
+      expect(token0Fees).to.eq('916666666666666')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1248,7 +1248,7 @@ describe('UniswapV3Pool', () => {
         poke: true,
       })
 
-      expect(token0Fees).to.eq('499999999999999')
+      expect(token0Fees).to.eq('416666666666666')
       expect(token1Fees).to.eq(0)
 
       // collect the fees
@@ -1264,15 +1264,15 @@ describe('UniswapV3Pool', () => {
       expect(token1FeesNext).to.eq(0)
 
       let { token0: token0ProtocolFees, token1: token1ProtocolFees } = await pool.protocolFees()
-      expect(token0ProtocolFees).to.eq('200000000000000')
+      expect(token0ProtocolFees).to.eq('166666666666666')
       expect(token1ProtocolFees).to.eq(0)
 
       await pool.burn(wallet.address, minTick, maxTick, 0) // poke to update fees
       await expect(pool.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
-        .withArgs(pool.address, wallet.address, '499999999999999')
+        .withArgs(pool.address, wallet.address, '416666666666666')
       ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pool.protocolFees())
-      expect(token0ProtocolFees).to.eq('200000000000000')
+      expect(token0ProtocolFees).to.eq('166666666666666')
       expect(token1ProtocolFees).to.eq(0)
     })
   })
