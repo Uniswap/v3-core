@@ -1,6 +1,6 @@
 {
   "name": "@uniswap/v3-core",
-  "description": "🗿 Core smart contracts of Uniswap V3",
+  "description": "🦄 Core smart contracts of Uniswap V3",
   "publishConfig": {
     "access": "restricted"
   },
