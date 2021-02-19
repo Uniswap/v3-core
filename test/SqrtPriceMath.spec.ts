@@ -1,8 +1,8 @@
-import { BigNumber, constants } from 'ethers'
+import { BigNumber, BigNumberish, constants } from 'ethers'
 import { ethers } from 'hardhat'
 import { SqrtPriceMathTest } from '../typechain/SqrtPriceMathTest'
-
 import { expect } from './shared/expect'
+import { randomUint128, randomUint160, randomUint256 } from './shared/rand'
 import snapshotGasCost from './shared/snapshotGasCost'
 import { encodePriceSqrt, expandTo18Decimals, MaxUint128 } from './shared/utilities'
 
@@ -374,6 +374,45 @@ describe('SqrtPriceMath', () => {
 
       const amount0Delta = await sqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, true)
       expect(amount0Delta).to.eq('406')
+    })
+  })
+
+  describe('#getNextSqrtPriceFromAmount0RoundingUp', () => {
+    describe('add == true', () => {
+      const MaxUint160 = BigNumber.from(2).pow(160).sub(1)
+      function fullPrecisionCalc(sqrtPX96: BigNumberish, liquidity: BigNumberish, amount: BigNumberish): BigNumber {
+        const numerator = BigNumber.from(liquidity).shl(96).mul(sqrtPX96)
+        const denominator = numerator.add(BigNumber.from(amount).mul(sqrtPX96))
+
+        const result = numerator.div(denominator).add(numerator.mod(denominator).gt(0) ? 1 : 0)
+        if (result.gt(MaxUint160)) throw new Error('overflow')
+        if (result.lte(0)) throw new Error('underflow')
+        return result
+      }
+
+      function overflowSafeCalc(sqrtPX96: BigNumberish, liquidity: BigNumberish, amount: BigNumberish): BigNumber {
+        const numerator = BigNumber.from(liquidity).shl(96)
+        const denominator = numerator.div(sqrtPX96).add(amount)
+
+        const result = numerator.div(denominator).add(numerator.mod(denominator).gt(0) ? 1 : 0)
+        if (result.gt(MaxUint160)) throw new Error('overflow')
+        if (result.lte(0)) throw new Error('underflow')
+        return result
+      }
+
+      it.only('fuzz test error bounds', () => {
+        for (let i = 0; i < 10_000; i++) {
+          const [sqrtP, liquidity, amount] = [randomUint160(), randomUint128(), randomUint256()]
+
+          const overflowSafeResult = overflowSafeCalc(sqrtP, liquidity, amount)
+          const fullPrecisionResult = fullPrecisionCalc(sqrtP, liquidity, amount)
+          const testCaseName = `sqrtP = ${sqrtP}; liquidity = ${liquidity}; amount = ${amount}`
+
+          expect(fullPrecisionResult, `${testCaseName}: full precision result == overflow safe result`).to.eq(
+            overflowSafeResult
+          )
+        }
+      })
     })
   })
 })
