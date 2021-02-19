@@ -111,7 +111,7 @@ describe('UniswapV3Pool', () => {
   describe('#initialize', () => {
     it('fails if already initialized', async () => {
       await pool.initialize(encodePriceSqrt(1, 1))
-      await expect(pool.initialize(encodePriceSqrt(1, 1))).to.be.revertedWith('AI')
+      await expect(pool.initialize(encodePriceSqrt(1, 1))).to.be.reverted
     })
     it('fails if starting price is too low', async () => {
       await expect(pool.initialize(1)).to.be.revertedWith('R')

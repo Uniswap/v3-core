@@ -13,12 +13,7 @@ export default {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
-      },
-      outputSelection: {
-        '*': {
-          '*': ['abi', 'userdoc', 'devdoc', 'evm.bytecode'],
-        },
+        runs: 800,
       },
       metadata: {
         // do not include the metadata hash, since this is machine dependent

@@ -4,7 +4,7 @@
   "publishConfig": {
     "access": "restricted"
   },
-  "version": "1.0.0-beta.0",
+  "version": "1.0.0-beta.1",
   "homepage": "https://uniswap.org",
   "keywords": [
     "uniswap",
@@ -16,7 +16,10 @@
     "url": "https://github.com/Uniswap/uniswap-v3-core"
   },
   "files": [
-    "contracts/interfaces"
+    "contracts/interfaces",
+    "artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json",
+    "artifacts/contracts/interfaces/**/*.json",
+    "!artifacts/contracts/interfaces/**/*.dbg.json"
   ],
   "engines": {
     "node": ">=10"

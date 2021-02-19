@@ -6,8 +6,8 @@ exports[`BitMath #leastSignificantBit gas cost of max uint256 1`] = `431`;
 
 exports[`BitMath #leastSignificantBit gas cost of smaller number 1`] = `429`;
 
-exports[`BitMath #mostSignificantBit gas cost of max uint128 1`] = `373`;
+exports[`BitMath #mostSignificantBit gas cost of max uint128 1`] = `367`;
 
-exports[`BitMath #mostSignificantBit gas cost of max uint256 1`] = `391`;
+exports[`BitMath #mostSignificantBit gas cost of max uint256 1`] = `385`;
 
-exports[`BitMath #mostSignificantBit gas cost of smaller number 1`] = `301`;
+exports[`BitMath #mostSignificantBit gas cost of smaller number 1`] = `295`;
