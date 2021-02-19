@@ -1661,4 +1661,115 @@ describe('UniswapV3Pool', () => {
       await expect(reentrant.swapToReenter(pool.address)).to.be.revertedWith('Unable to reenter')
     })
   })
+
+  describe('fees overflow scenarios', async () => {
+    it('up to max uint 128', async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, 1)
+      await flash(0, 0, wallet.address, MaxUint128, MaxUint128)
+
+      const [feeGrowthGlobal0X128, feeGrowthGlobal1X128] = await Promise.all([
+        pool.feeGrowthGlobal0X128(),
+        pool.feeGrowthGlobal1X128(),
+      ])
+      // all 1s in first 128 bits
+      expect(feeGrowthGlobal0X128).to.eq(MaxUint128.shl(128))
+      expect(feeGrowthGlobal1X128).to.eq(MaxUint128.shl(128))
+      await pool.burn(wallet.address, minTick, maxTick, 0)
+      const { amount0, amount1 } = await pool.callStatic.collect(
+        wallet.address,
+        minTick,
+        maxTick,
+        MaxUint128,
+        MaxUint128
+      )
+      expect(amount0).to.eq(MaxUint128)
+      expect(amount1).to.eq(MaxUint128)
+    })
+
+    it('overflow max uint 128', async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, 1)
+      await flash(0, 0, wallet.address, MaxUint128, MaxUint128)
+      await flash(0, 0, wallet.address, 1, 1)
+
+      const [feeGrowthGlobal0X128, feeGrowthGlobal1X128] = await Promise.all([
+        pool.feeGrowthGlobal0X128(),
+        pool.feeGrowthGlobal1X128(),
+      ])
+      // all 1s in first 128 bits
+      expect(feeGrowthGlobal0X128).to.eq(0)
+      expect(feeGrowthGlobal1X128).to.eq(0)
+      await pool.burn(wallet.address, minTick, maxTick, 0)
+      const { amount0, amount1 } = await pool.callStatic.collect(
+        wallet.address,
+        minTick,
+        maxTick,
+        MaxUint128,
+        MaxUint128
+      )
+      // fees burned
+      expect(amount0).to.eq(0)
+      expect(amount1).to.eq(0)
+    })
+
+    it('overflow max uint 128 after poke burns fees owed to 0', async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, 1)
+      await flash(0, 0, wallet.address, MaxUint128, MaxUint128)
+      await pool.burn(wallet.address, minTick, maxTick, 0)
+      await flash(0, 0, wallet.address, 1, 1)
+      await pool.burn(wallet.address, minTick, maxTick, 0)
+
+      const { amount0, amount1 } = await pool.callStatic.collect(
+        wallet.address,
+        minTick,
+        maxTick,
+        MaxUint128,
+        MaxUint128
+      )
+      // fees burned
+      expect(amount0).to.eq(0)
+      expect(amount1).to.eq(0)
+    })
+
+    it('two positions at the same snapshot', async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, 1)
+      await mint(other.address, minTick, maxTick, 1)
+      await flash(0, 0, wallet.address, MaxUint128, 0)
+      await flash(0, 0, wallet.address, MaxUint128, 0)
+      const feeGrowthGlobal0X128 = await pool.feeGrowthGlobal0X128()
+      expect(feeGrowthGlobal0X128).to.eq(MaxUint128.shl(128))
+      await flash(0, 0, wallet.address, 2, 0)
+      await pool.burn(wallet.address, minTick, maxTick, 0)
+      await pool.connect(other).burn(other.address, minTick, maxTick, 0)
+      let { amount0 } = await pool.callStatic.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128)
+      expect(amount0, 'amount0 of wallet').to.eq(0)
+      ;({ amount0 } = await pool
+        .connect(other)
+        .callStatic.collect(other.address, minTick, maxTick, MaxUint128, MaxUint128))
+      expect(amount0, 'amount0 of other').to.eq(0)
+    })
+
+    it('two positions 1 wei of fees apart overflows exactly once', async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, 1)
+      await flash(0, 0, wallet.address, 1, 0)
+      await mint(other.address, minTick, maxTick, 1)
+      await flash(0, 0, wallet.address, MaxUint128, 0)
+      await flash(0, 0, wallet.address, MaxUint128, 0)
+      const feeGrowthGlobal0X128 = await pool.feeGrowthGlobal0X128()
+      expect(feeGrowthGlobal0X128).to.eq(0)
+      await flash(0, 0, wallet.address, 2, 0)
+      await pool.burn(wallet.address, minTick, maxTick, 0)
+      await pool.connect(other).burn(other.address, minTick, maxTick, 0)
+      let { amount0 } = await pool.callStatic.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128)
+      expect(amount0, 'amount0 of wallet').to.eq(1)
+      ;({ amount0 } = await pool
+        .connect(other)
+        .callStatic.collect(other.address, minTick, maxTick, MaxUint128, MaxUint128))
+      expect(amount0, 'amount0 of other').to.eq(0)
+    })
+  })
 })
