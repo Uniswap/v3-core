@@ -140,17 +140,12 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
     /// @dev Get the pool's balance of token0
     function balance0() private view returns (uint256) {
-        return balanceOfToken(token0);
+        return IERC20Minimal(token0).balanceOf(address(this));
     }
 
     /// @dev Get the pool's balance of token1
     function balance1() private view returns (uint256) {
-        return balanceOfToken(token1);
-    }
-
-    /// @dev Get the balance of the token address. Saves bytecode.
-    function balanceOfToken(address token) private view returns (uint256) {
-        return IERC20Minimal(token).balanceOf(address(this));
+        return IERC20Minimal(token1).balanceOf(address(this));
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
