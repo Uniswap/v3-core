@@ -18,8 +18,8 @@ interface IUniswapV3PoolActions {
     /// @param tickUpper The upper tick of the position in which to add liquidity
     /// @param amount The amount of liquidity to mint
     /// @param data Any data that should be passed through to the callback
-    /// @return amount0 The amount of tokens sent in token0
-    /// @return amount1 The amount of tokens sent in token1
+    /// @return amount0 the amount of tokens sent in token0
+    /// @return amount1 the amount of tokens sent in token1
     function mint(
         address recipient,
         int24 tickLower,
@@ -87,12 +87,14 @@ interface IUniswapV3PoolActions {
     /// @param amount0 The amount of token0 to send
     /// @param amount1 The amount of token1 to send
     /// @param data Any data to be passed through to the callback
+    /// @return paid0 The amount of fees collected in token0
+    /// @return paid1 The amount of fees collected in token1
     function flash(
         address recipient,
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
-    ) external;
+    ) external returns (uint256 paid0, uint256 paid1);
 
     /// @notice Increase the maximum number of price and liquidity observations that this pool will store
     /// @dev This method is no-op if the pool already has an observationCardinalityNext greater than or equal to

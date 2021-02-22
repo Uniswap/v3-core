@@ -668,7 +668,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
-    ) external override lock noDelegateCall {
+    ) external override lock noDelegateCall returns (uint256 paid0, uint256 paid1) {
         uint128 _liquidity = liquidity;
         require(_liquidity > 0, 'L');
 
@@ -689,8 +689,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         require(balance1Before.add(fee1) <= balance1After, 'F1');
 
         // sub is safe because we know balanceAfter is gt balanceBefore by at least fee
-        uint256 paid0 = balance0After - balance0Before;
-        uint256 paid1 = balance1After - balance1Before;
+        paid0 = balance0After - balance0Before;
+        paid1 = balance1After - balance1Before;
 
         if (paid0 > 0) {
             uint8 feeProtocol0 = slot0.feeProtocol % 16;
