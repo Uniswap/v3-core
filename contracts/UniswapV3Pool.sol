@@ -366,7 +366,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external override lock {
+    ) external override lock returns (uint256 amount0, uint256 amount1) {
         require(amount > 0);
         (int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
@@ -378,8 +378,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 })
             );
 
-        uint256 amount0 = uint256(amount0Int);
-        uint256 amount1 = uint256(amount1Int);
+        amount0 = uint256(amount0Int);
+        amount1 = uint256(amount1Int);
 
         uint256 balance0Before;
         uint256 balance1Before;
