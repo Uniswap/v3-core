@@ -75,7 +75,12 @@ export function getPositionKey(address: string, lowerTick: number, upperTick: nu
   return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
 
-export type SwapFunction = (amount: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
+export type SwapFunction = (
+  amount: BigNumberish,
+  to: Wallet | string,
+  sqrtPriceLimitX96?: BigNumberish
+) => Promise<ContractTransaction>
+export type SwapToPriceFunction = (sqrtPriceX96: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
 export type FlashFunction = (
   amount0: BigNumberish,
   amount1: BigNumberish,
@@ -90,8 +95,8 @@ export type MintFunction = (
   liquidity: BigNumberish
 ) => Promise<ContractTransaction>
 export interface PoolFunctions {
-  swapToLowerPrice: SwapFunction
-  swapToHigherPrice: SwapFunction
+  swapToLowerPrice: SwapToPriceFunction
+  swapToHigherPrice: SwapToPriceFunction
   swapExact0For1: SwapFunction
   swap0ForExact1: SwapFunction
   swapExact1For0: SwapFunction
@@ -128,7 +133,7 @@ export function createPoolFunctions({
     inputToken: Contract,
     [amountIn, amountOut]: [BigNumberish, BigNumberish],
     to: Wallet | string,
-    sqrtPriceLimitX96?: BigNumber
+    sqrtPriceLimitX96?: BigNumberish
   ): Promise<ContractTransaction> {
     const exactInput = amountOut === 0
 
@@ -143,9 +148,9 @@ export function createPoolFunctions({
 
     if (typeof sqrtPriceLimitX96 === 'undefined') {
       if (inputToken === token0) {
-        sqrtPriceLimitX96 = BigNumber.from('4295128739').add(1)
+        sqrtPriceLimitX96 = MIN_SQRT_RATIO.add(1)
       } else {
-        sqrtPriceLimitX96 = BigNumber.from('1461446703485210103287273052203988822378723970342').sub(1)
+        sqrtPriceLimitX96 = MAX_SQRT_RATIO.sub(1)
       }
     }
     await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
@@ -155,28 +160,28 @@ export function createPoolFunctions({
     return method(pool.address, exactInput ? amountIn : amountOut, toAddress, sqrtPriceLimitX96)
   }
 
-  const swapToLowerPrice: SwapFunction = (sqrtPriceX96, to) => {
+  const swapToLowerPrice: SwapToPriceFunction = (sqrtPriceX96, to) => {
     return swapToSqrtPrice(token0, sqrtPriceX96, to)
   }
 
-  const swapToHigherPrice: SwapFunction = (sqrtPriceX96, to) => {
+  const swapToHigherPrice: SwapToPriceFunction = (sqrtPriceX96, to) => {
     return swapToSqrtPrice(token1, sqrtPriceX96, to)
   }
 
-  const swapExact0For1: SwapFunction = (amount, to) => {
-    return swap(token0, [amount, 0], to)
+  const swapExact0For1: SwapFunction = (amount, to, sqrtPriceLimitX96) => {
+    return swap(token0, [amount, 0], to, sqrtPriceLimitX96)
   }
 
-  const swap0ForExact1: SwapFunction = (amount, to) => {
-    return swap(token0, [0, amount], to)
+  const swap0ForExact1: SwapFunction = (amount, to, sqrtPriceLimitX96) => {
+    return swap(token0, [0, amount], to, sqrtPriceLimitX96)
   }
 
-  const swapExact1For0: SwapFunction = (amount, to) => {
-    return swap(token1, [amount, 0], to)
+  const swapExact1For0: SwapFunction = (amount, to, sqrtPriceLimitX96) => {
+    return swap(token1, [amount, 0], to, sqrtPriceLimitX96)
   }
 
-  const swap1ForExact0: SwapFunction = (amount, to) => {
-    return swap(token1, [0, amount], to)
+  const swap1ForExact0: SwapFunction = (amount, to, sqrtPriceLimitX96) => {
+    return swap(token1, [0, amount], to, sqrtPriceLimitX96)
   }
 
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
