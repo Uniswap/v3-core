@@ -23,13 +23,13 @@ contract UniswapV3PoolSwapTest is IUniswapV3SwapCallback {
             uint160 nextSqrtRatio
         )
     {
-        IUniswapV3Pool(pool).swap(address(0), zeroForOne, amountSpecified, sqrtPriceLimitX96, abi.encode(msg.sender));
-
-        amount0Delta = _amount0Delta;
-        amount1Delta = _amount1Delta;
-
-        delete _amount0Delta;
-        delete _amount1Delta;
+        (amount0Delta, amount1Delta) = IUniswapV3Pool(pool).swap(
+            address(0),
+            zeroForOne,
+            amountSpecified,
+            sqrtPriceLimitX96,
+            abi.encode(msg.sender)
+        );
 
         (nextSqrtRatio, , , , , , ) = IUniswapV3Pool(pool).slot0();
     }
@@ -46,8 +46,5 @@ contract UniswapV3PoolSwapTest is IUniswapV3SwapCallback {
         } else if (amount1Delta > 0) {
             IERC20Minimal(IUniswapV3Pool(msg.sender).token1()).transferFrom(sender, msg.sender, uint256(amount1Delta));
         }
-
-        _amount0Delta = amount0Delta;
-        _amount1Delta = amount1Delta;
     }
 }
