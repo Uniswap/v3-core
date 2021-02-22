@@ -111,15 +111,15 @@ async function executeSwap(
   if ('exactOut' in testCase) {
     if (testCase.exactOut) {
       if (testCase.zeroForOne) {
-        swap = await poolFunctions.swap0ForExact1(testCase.amount1, SWAP_RECIPIENT_ADDRESS)
+        swap = await poolFunctions.swap0ForExact1(testCase.amount1, SWAP_RECIPIENT_ADDRESS, testCase.sqrtPriceLimit)
       } else {
-        swap = await poolFunctions.swap1ForExact0(testCase.amount0, SWAP_RECIPIENT_ADDRESS)
+        swap = await poolFunctions.swap1ForExact0(testCase.amount0, SWAP_RECIPIENT_ADDRESS, testCase.sqrtPriceLimit)
       }
     } else {
       if (testCase.zeroForOne) {
-        swap = await poolFunctions.swapExact0For1(testCase.amount0, SWAP_RECIPIENT_ADDRESS)
+        swap = await poolFunctions.swapExact0For1(testCase.amount0, SWAP_RECIPIENT_ADDRESS, testCase.sqrtPriceLimit)
       } else {
-        swap = await poolFunctions.swapExact1For0(testCase.amount1, SWAP_RECIPIENT_ADDRESS)
+        swap = await poolFunctions.swapExact1For0(testCase.amount1, SWAP_RECIPIENT_ADDRESS, testCase.sqrtPriceLimit)
       }
     }
   } else {
@@ -153,6 +153,31 @@ const DEFAULT_POOL_SWAP_TESTS: SwapTestCase[] = [
     zeroForOne: false,
     exactOut: true,
     amount0: expandTo18Decimals(1),
+  },
+  // swap large amounts in/out with a price limit
+  {
+    zeroForOne: true,
+    exactOut: false,
+    amount0: expandTo18Decimals(1),
+    sqrtPriceLimit: encodePriceSqrt(50, 100),
+  },
+  {
+    zeroForOne: false,
+    exactOut: false,
+    amount1: expandTo18Decimals(1),
+    sqrtPriceLimit: encodePriceSqrt(200, 100),
+  },
+  {
+    zeroForOne: true,
+    exactOut: true,
+    amount1: expandTo18Decimals(1),
+    sqrtPriceLimit: encodePriceSqrt(50, 100),
+  },
+  {
+    zeroForOne: false,
+    exactOut: true,
+    amount0: expandTo18Decimals(1),
+    sqrtPriceLimit: encodePriceSqrt(200, 100),
   },
   // swap small amounts in/out
   {
