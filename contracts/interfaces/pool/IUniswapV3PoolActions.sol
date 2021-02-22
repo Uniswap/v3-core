@@ -18,13 +18,15 @@ interface IUniswapV3PoolActions {
     /// @param tickUpper The upper tick of the position in which to add liquidity
     /// @param amount The amount of liquidity to mint
     /// @param data Any data that should be passed through to the callback
+    /// @return amount0 The amount of tokens sent in token0
+    /// @return amount1 The amount of tokens sent in token1
     function mint(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external;
+    ) external returns (uint256 amount0, uint256 amount1);
 
     /// @notice Collects fees owed to a position
     /// @dev Does not recompute fees, which must be done either via mint, burn or poke. Must be called by the position
