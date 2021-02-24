@@ -7,7 +7,7 @@ import './FixedPoint96.sol';
 library LiquidityFromAmounts {
     /// @notice Gets the liquidityDelta delta between two prices for a certain amount1 given.
     /// Inverse function of `SqrtPriceMath.getAmount0Delta`
-    /// @dev Calculates amount0 * (sqrt(upper) * sqrt(lower)) / (sqrt(upper) - sqrt(lower)). 
+    /// @dev Calculates amount0 * (sqrt(upper) * sqrt(lower)) / (sqrt(upper) - sqrt(lower)).
     /// @param sqrtRatioAX96 A sqrt price
     /// @param sqrtRatioBX96 Another sqrt price
     /// @param amount0 The amount0 being sent in
