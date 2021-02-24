@@ -25,6 +25,7 @@ jobs:
           - LowGasSafeMathEchidnaTest
           - UnsafeMathEchidnaTest
           - FullMathEchidnaTest
+          - LiquidityFromAmountsEchidnaTest
 
     steps:
       - uses: actions/checkout@v2
