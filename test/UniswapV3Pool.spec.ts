@@ -354,13 +354,23 @@ describe('UniswapV3Pool', () => {
 
         describe('including current price', () => {
           it('price within range: transfers current price of both tokens', async () => {
-            await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 100))
+            const amount0 = 317
+            const amount1 = 32
+            const requestedLiquidity = 100
+            const tickLow = minTick + tickSpacing
+            const tickUpper = maxTick - tickSpacing
+
+            const expectedLiquidity = await pool.liquidityForAmounts(amount0, amount1, tickLow, tickUpper)
+            expect(expectedLiquidity).to.be.eq(requestedLiquidity)
+
+            await expect(mint(wallet.address, tickLow, tickUpper, requestedLiquidity))
               .to.emit(token0, 'Transfer')
-              .withArgs(wallet.address, pool.address, 317)
+              .withArgs(wallet.address, pool.address, amount0)
               .to.emit(token1, 'Transfer')
-              .withArgs(wallet.address, pool.address, 32)
-            expect(await token0.balanceOf(pool.address)).to.eq(9996 + 317)
-            expect(await token1.balanceOf(pool.address)).to.eq(1000 + 32)
+              .withArgs(wallet.address, pool.address, amount1)
+
+            expect(await token0.balanceOf(pool.address)).to.eq(9996 + amount0)
+            expect(await token1.balanceOf(pool.address)).to.eq(1000 + amount1)
           })
 
           it('initializes lower tick', async () => {

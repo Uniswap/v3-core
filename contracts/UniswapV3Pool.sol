@@ -20,6 +20,7 @@ import './libraries/TickMath.sol';
 import './libraries/LiquidityMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
+import './libraries/LiquidityFromAmounts.sol';
 
 import './interfaces/IUniswapV3PoolDeployer.sol';
 import './interfaces/IUniswapV3Factory.sol';
@@ -280,6 +281,41 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     params.liquidityDelta
                 );
             }
+        }
+    }
+
+    /// @notice Returns the amount of liquidity that would be received by depositing `amount0` and `amount1` to the specified tick range
+    function liquidityForAmounts(uint128 amount0, uint128 amount1, int24 tickLower, int24 tickUpper) public view returns (uint256 liquidityDelta) {
+        require (tickLower < tickUpper);
+
+        int24 tick = slot0.tick;
+        uint160 sqrtPriceX96 = slot0.sqrtPriceX96;
+        if (tick < tickLower) {
+            liquidityDelta = LiquidityFromAmounts.getLiquidityDeltaForAmount0(
+                TickMath.getSqrtRatioAtTick(tickLower),
+                TickMath.getSqrtRatioAtTick(tickUpper),
+                amount0
+            );
+        } else if (tick < tickUpper) {
+            uint256 liquidity0 = LiquidityFromAmounts.getLiquidityDeltaForAmount0(
+                sqrtPriceX96,
+                TickMath.getSqrtRatioAtTick(tickUpper),
+                amount0
+            );
+
+            uint256 liquidity1 = LiquidityFromAmounts.getLiquidityDeltaForAmount1(
+                TickMath.getSqrtRatioAtTick(tickLower),
+                sqrtPriceX96,
+                amount1
+            );
+
+            liquidityDelta = liquidity0 < liquidity1 ? liquidity0 : liquidity1;
+        } else {
+            liquidityDelta = LiquidityFromAmounts.getLiquidityDeltaForAmount1(
+                TickMath.getSqrtRatioAtTick(tickLower),
+                TickMath.getSqrtRatioAtTick(tickUpper),
+                amount1
+            );
         }
     }
 
