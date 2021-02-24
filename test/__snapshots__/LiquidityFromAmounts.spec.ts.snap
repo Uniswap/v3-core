@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LiquidityFromAmounts #getLiquidityDeltaForAmount0 gas 1`] = `999`;
+
+exports[`LiquidityFromAmounts #getLiquidityDeltaForAmount1 gas 1`] = `999`;
