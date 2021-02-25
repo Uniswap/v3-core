@@ -49,6 +49,9 @@ contract TestERC20 is IERC20Minimal {
         uint256 balanceRecipient = balanceOf[recipient];
         require(balanceRecipient + amount >= balanceRecipient, 'overflow balance recipient');
         balanceOf[recipient] = balanceRecipient + amount;
+        uint256 balanceSender = balanceOf[sender];
+        require(balanceSender >= amount, 'underflow balance sender');
+        balanceOf[sender] = balanceSender - amount;
 
         emit Transfer(sender, recipient, amount);
         return true;
