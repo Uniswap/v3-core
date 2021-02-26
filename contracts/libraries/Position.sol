@@ -75,20 +75,29 @@ library Position {
                 )
             );
 
+        // adjust fee growth for the less than 1 wei of fees that is not accounted to fees owed
+        uint256 feeGrowthInside0X128Adjustment =
+            liquidityNext == 0
+                ? 0
+                : (mulmod(feeGrowthInside0X128 - _self.feeGrowthInside0LastX128, _self.liquidity, FixedPoint128.Q128)) /
+                    liquidityNext;
+        uint256 feeGrowthInside1X128Adjustment =
+            liquidityNext == 0
+                ? 0
+                : (mulmod(feeGrowthInside1X128 - _self.feeGrowthInside1LastX128, _self.liquidity, FixedPoint128.Q128)) /
+                    liquidityNext;
+
         // update the position
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
-        self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-        self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+
+        // update the fee growth inside values to their adjusted-for-less-than-1-wei-fees-lost values
+        self.feeGrowthInside0LastX128 = feeGrowthInside0X128 - feeGrowthInside0X128Adjustment;
+        self.feeGrowthInside1LastX128 = feeGrowthInside1X128 - feeGrowthInside1X128Adjustment;
+
         if (feesOwed0 > 0 || feesOwed1 > 0) {
             // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
             self.feesOwed0 += feesOwed0;
             self.feesOwed1 += feesOwed1;
-        }
-
-        // clear position data that is no longer needed
-        if (liquidityNext == 0) {
-            delete self.feeGrowthInside0LastX128;
-            delete self.feeGrowthInside1LastX128;
         }
     }
 }

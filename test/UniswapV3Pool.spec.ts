@@ -518,8 +518,8 @@ describe('UniswapV3Pool', () => {
           feesOwed0,
         } = await pool.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)))
         expect(liquidity).to.eq(0)
-        expect(feeGrowthInside0LastX128).to.eq(0)
-        expect(feeGrowthInside1LastX128).to.eq(0)
+        expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
+        expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
         expect(feesOwed0).to.eq(0)
         expect(feesOwed1).to.eq(0)
       })
@@ -542,7 +542,7 @@ describe('UniswapV3Pool', () => {
       expect(liquidityGross).to.not.eq(0)
     }
 
-    it('clears the position fee growth snapshot if no more liquidity', async () => {
+    it('does not clear the position fee growth snapshot if no more liquidity', async () => {
       // some activity that would make the ticks non-zero
       await pool.advanceTime(10)
       await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
@@ -559,8 +559,8 @@ describe('UniswapV3Pool', () => {
       expect(liquidity).to.eq(0)
       expect(feesOwed0).to.not.eq(0)
       expect(feesOwed1).to.not.eq(0)
-      expect(feeGrowthInside0LastX128).to.eq(0)
-      expect(feeGrowthInside1LastX128).to.eq(0)
+      expect(feeGrowthInside0LastX128).to.eq('340282366920938463463374607431768211')
+      expect(feeGrowthInside1LastX128).to.eq('340282366920938576890830247744589365')
     })
 
     it('clears the tick if its the last position using it', async () => {
@@ -1107,14 +1107,14 @@ describe('UniswapV3Pool', () => {
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('999999999999998')
+      expect(token0Fees).to.eq('999999999999999')
       expect(token1Fees).to.eq(0)
       ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: true,
         poke: true,
       }))
-      expect(token0Fees).to.eq('1499999999999997')
+      expect(token0Fees).to.eq('1499999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1134,14 +1134,14 @@ describe('UniswapV3Pool', () => {
         poke: true,
       }))
       expect(token0Fees).to.eq(0)
-      expect(token1Fees).to.eq('999999999999998')
+      expect(token1Fees).to.eq('999999999999999')
       ;({ token0Fees, token1Fees } = await swapAndGetFeesOwed({
         amount: expandTo18Decimals(1),
         zeroForOne: false,
         poke: true,
       }))
       expect(token0Fees).to.eq(0)
-      expect(token1Fees).to.eq('1499999999999997')
+      expect(token1Fees).to.eq('1499999999999999')
     })
 
     it('position owner gets partial fees when protocol fee is on', async () => {
@@ -1216,7 +1216,7 @@ describe('UniswapV3Pool', () => {
       })
 
       // 6 bips * 2e18
-      expect(token0Fees).to.eq('999999999999998')
+      expect(token0Fees).to.eq('999999999999999')
       expect(token1Fees).to.eq(0)
     })
 
@@ -1270,7 +1270,7 @@ describe('UniswapV3Pool', () => {
       await pool.burn(wallet.address, minTick, maxTick, 0) // poke to update fees
       await expect(pool.collect(wallet.address, minTick, maxTick, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
-        .withArgs(pool.address, wallet.address, '416666666666666')
+        .withArgs(pool.address, wallet.address, '416666666666667')
       ;({ token0: token0ProtocolFees, token1: token1ProtocolFees } = await pool.protocolFees())
       expect(token0ProtocolFees).to.eq('166666666666666')
       expect(token1ProtocolFees).to.eq(0)
