@@ -77,8 +77,6 @@ library Position {
 
         // update the position
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
-        self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-        self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (feesOwed0 > 0 || feesOwed1 > 0) {
             // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
             self.feesOwed0 += feesOwed0;
@@ -89,6 +87,9 @@ library Position {
         if (liquidityNext == 0) {
             delete self.feeGrowthInside0LastX128;
             delete self.feeGrowthInside1LastX128;
+        } else {
+            self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+            self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         }
     }
 }
