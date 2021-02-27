@@ -398,15 +398,15 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         // we don't need to checkTicks here, because invalid positions will never have non-zero feesOwed{0,1}
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
 
-        amount0 = amount0Requested > position.feesOwed0 ? position.feesOwed0 : amount0Requested;
-        amount1 = amount1Requested > position.feesOwed1 ? position.feesOwed1 : amount1Requested;
+        amount0 = amount0Requested > position.token0Owed ? position.token0Owed : amount0Requested;
+        amount1 = amount1Requested > position.token1Owed ? position.token1Owed : amount1Requested;
 
         if (amount0 > 0) {
-            position.feesOwed0 -= amount0;
+            position.token0Owed -= amount0;
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
-            position.feesOwed1 -= amount1;
+            position.token1Owed -= amount1;
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 

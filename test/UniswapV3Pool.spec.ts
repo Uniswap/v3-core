@@ -500,28 +500,28 @@ describe('UniswapV3Pool', () => {
           liquidity,
           feeGrowthInside0LastX128,
           feeGrowthInside1LastX128,
-          feesOwed1,
-          feesOwed0,
+          token1Owed,
+          token0Owed,
         } = await pool.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing))
         expect(liquidity).to.eq(1)
         expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
         expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
-        expect(feesOwed0).to.eq(0)
-        expect(feesOwed1).to.eq(0)
+        expect(token0Owed).to.eq(0)
+        expect(token1Owed).to.eq(0)
 
         await pool.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         ;({
           liquidity,
           feeGrowthInside0LastX128,
           feeGrowthInside1LastX128,
-          feesOwed1,
-          feesOwed0,
+          token1Owed,
+          token0Owed,
         } = await pool.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)))
         expect(liquidity).to.eq(0)
         expect(feeGrowthInside0LastX128).to.eq(0)
         expect(feeGrowthInside1LastX128).to.eq(0)
-        expect(feesOwed0).to.eq(0)
-        expect(feesOwed1).to.eq(0)
+        expect(token0Owed).to.eq(0)
+        expect(token1Owed).to.eq(0)
       })
     })
   })
@@ -551,14 +551,14 @@ describe('UniswapV3Pool', () => {
       await pool.connect(other).burn(wallet.address, minTick, maxTick, expandTo18Decimals(1))
       const {
         liquidity,
-        feesOwed0,
-        feesOwed1,
+        token0Owed,
+        token1Owed,
         feeGrowthInside0LastX128,
         feeGrowthInside1LastX128,
       } = await pool.positions(getPositionKey(other.address, minTick, maxTick))
       expect(liquidity).to.eq(0)
-      expect(feesOwed0).to.not.eq(0)
-      expect(feesOwed1).to.not.eq(0)
+      expect(token0Owed).to.not.eq(0)
+      expect(token1Owed).to.not.eq(0)
       expect(feeGrowthInside0LastX128).to.eq(0)
       expect(feeGrowthInside1LastX128).to.eq(0)
     })
@@ -927,13 +927,13 @@ describe('UniswapV3Pool', () => {
       await pool.burn(wallet.address, minTick, maxTick, 0)
       await pool.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)
 
-      const { feesOwed0: feesOwed0Position0 } = await pool.positions(getPositionKey(wallet.address, minTick, maxTick))
-      const { feesOwed0: feesOwed0Position1 } = await pool.positions(
+      const { token0Owed: token0OwedPosition0 } = await pool.positions(getPositionKey(wallet.address, minTick, maxTick))
+      const { token0Owed: token0OwedPosition1 } = await pool.positions(
         getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)
       )
 
-      expect(feesOwed0Position0).to.be.eq('166666666666667')
-      expect(feesOwed0Position1).to.be.eq('333333333333334')
+      expect(token0OwedPosition0).to.be.eq('166666666666667')
+      expect(token0OwedPosition1).to.be.eq('333333333333334')
     })
 
     describe('works across large increases', () => {
@@ -949,30 +949,30 @@ describe('UniswapV3Pool', () => {
         await pool.setFeeGrowthGlobal0X128(magicNumber)
         await pool.burn(wallet.address, minTick, maxTick, 0)
 
-        const { feesOwed0, feesOwed1 } = await pool.positions(getPositionKey(wallet.address, minTick, maxTick))
+        const { token0Owed, token1Owed } = await pool.positions(getPositionKey(wallet.address, minTick, maxTick))
 
-        expect(feesOwed0).to.be.eq(MaxUint128.sub(1))
-        expect(feesOwed1).to.be.eq(0)
+        expect(token0Owed).to.be.eq(MaxUint128.sub(1))
+        expect(token1Owed).to.be.eq(0)
       })
 
       it('works just after the cap binds', async () => {
         await pool.setFeeGrowthGlobal0X128(magicNumber.add(1))
         await pool.burn(wallet.address, minTick, maxTick, 0)
 
-        const { feesOwed0, feesOwed1 } = await pool.positions(getPositionKey(wallet.address, minTick, maxTick))
+        const { token0Owed, token1Owed } = await pool.positions(getPositionKey(wallet.address, minTick, maxTick))
 
-        expect(feesOwed0).to.be.eq(MaxUint128)
-        expect(feesOwed1).to.be.eq(0)
+        expect(token0Owed).to.be.eq(MaxUint128)
+        expect(token1Owed).to.be.eq(0)
       })
 
       it('works well after the cap binds', async () => {
         await pool.setFeeGrowthGlobal0X128(constants.MaxUint256)
         await pool.burn(wallet.address, minTick, maxTick, 0)
 
-        const { feesOwed0, feesOwed1 } = await pool.positions(getPositionKey(wallet.address, minTick, maxTick))
+        const { token0Owed, token1Owed } = await pool.positions(getPositionKey(wallet.address, minTick, maxTick))
 
-        expect(feesOwed0).to.be.eq(MaxUint128)
-        expect(feesOwed1).to.be.eq(0)
+        expect(token0Owed).to.be.eq(MaxUint128)
+        expect(token1Owed).to.be.eq(0)
       })
     })
 
