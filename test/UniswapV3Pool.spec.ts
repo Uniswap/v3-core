@@ -1332,7 +1332,7 @@ describe('UniswapV3Pool', () => {
           await swapExact0For1(expandTo18Decimals(1), wallet.address)
           await expect(pool.burn(-121200, -120000, liquidityAmount))
             .to.emit(pool, 'Burn')
-            .withArgs(120000, 121200, '996999999999999999', '30027458295511')
+            .withArgs(wallet.address, 120000, 121200, liquidityAmount, '996999999999999999', '30027458295511')
             .to.not.emit(token0, 'Transfer')
             .to.not.emit(token1, 'Transfer')
           expect((await pool.slot0()).tick).to.eq(-120197)
