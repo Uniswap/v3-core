@@ -37,7 +37,7 @@ contract TestUniswapV3ReentrantCallee is IUniswapV3SwapCallback {
         }
 
         // try to reenter burn
-        try IUniswapV3Pool(msg.sender).burn(address(0), 0, 0, 0) {} catch Error(string memory reason) {
+        try IUniswapV3Pool(msg.sender).burn(0, 0, 0) {} catch Error(string memory reason) {
             require(keccak256(abi.encode(reason)) == keccak256(abi.encode(expectedReason)));
         }
 

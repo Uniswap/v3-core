@@ -100,7 +100,7 @@ type PoolFunctions = ReturnType<typeof createPoolFunctions>
 
 // can't use address zero because the ERC20 token does not allow it
 const SWAP_RECIPIENT_ADDRESS = constants.AddressZero.slice(0, -1) + '1'
-const BURN_RECIPIENT_ADDRESS = constants.AddressZero.slice(0, -1) + '2'
+const POSITION_PROCEEDS_OUTPUT_ADDRESS = constants.AddressZero.slice(0, -1) + '2'
 
 async function executeSwap(
   pool: MockTimeUniswapV3Pool,
@@ -497,8 +497,8 @@ describe('UniswapV3Pool swap tests', () => {
 
       afterEach('check can burn positions', async () => {
         for (const { liquidity, tickUpper, tickLower } of poolCase.positions) {
-          await pool.burn(BURN_RECIPIENT_ADDRESS, tickLower, tickUpper, liquidity)
-          await pool.collect(BURN_RECIPIENT_ADDRESS, tickLower, tickUpper, MaxUint128, MaxUint128)
+          await pool.burn(tickLower, tickUpper, liquidity)
+          await pool.collect(POSITION_PROCEEDS_OUTPUT_ADDRESS, tickLower, tickUpper, MaxUint128, MaxUint128)
         }
       })
 

@@ -81,8 +81,8 @@ interface IUniswapV3PoolState {
     /// @return _liquidity The amount of liquidity in the position,
     /// Returns feeGrowthInside0LastX128 fee growth of token0 inside the tick range as of the last mint/burn/poke,
     /// Returns feeGrowthInside1LastX128 fee growth of token1 inside the tick range as of the last mint/burn/poke,
-    /// Returns feesOwed0 the computed amount of token0 owed to the position as of the last mint/burn/poke,
-    /// Returns feesOwed1 the computed amount of token1 owed to the position as of the last mint/burn/poke
+    /// Returns tokensOwed0 the computed amount of token0 owed to the position as of the last mint/burn/poke,
+    /// Returns tokensOwed1 the computed amount of token1 owed to the position as of the last mint/burn/poke
     function positions(bytes32 key)
         external
         view
@@ -90,8 +90,8 @@ interface IUniswapV3PoolState {
             uint128 _liquidity,
             uint256 feeGrowthInside0LastX128,
             uint256 feeGrowthInside1LastX128,
-            uint128 feesOwed0,
-            uint128 feesOwed1
+            uint128 tokensOwed0,
+            uint128 tokensOwed1
         );
 
     /// @notice Returns data about a specific observation index
