@@ -79,10 +79,12 @@ library Position {
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
 
         if (liquidityNext == 0) {
-            // update the fee growth inside values to their adjusted-for-less-than-1-wei-fees-lost values
+            // we burn less than 1 wei of fees
             self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
             self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         } else {
+            // update to the latest fee growth inside, less the amount that could not be accounted due to rounding
+            // the less than 1 wei of fees will be accounted the next time >= 1 wei of fees is accrued
             self.feeGrowthInside0LastX128 =
                 feeGrowthInside0X128 -
                 (mulmod(feeGrowthInside0X128 - _self.feeGrowthInside0LastX128, _self.liquidity, FixedPoint128.Q128)) /
