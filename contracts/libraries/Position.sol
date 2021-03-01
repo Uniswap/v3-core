@@ -17,8 +17,8 @@ library Position {
         uint256 feeGrowthInside0LastX128;
         uint256 feeGrowthInside1LastX128;
         // the fees owed to the position owner in token0/token1
-        uint128 token0Owed;
-        uint128 token1Owed;
+        uint128 tokensOwed0;
+        uint128 tokensOwed1;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
@@ -58,7 +58,7 @@ library Position {
         }
 
         // calculate accumulated fees
-        uint128 token0Owed =
+        uint128 tokensOwed0 =
             uint128(
                 FullMath.mulDiv(
                     feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
@@ -66,7 +66,7 @@ library Position {
                     FixedPoint128.Q128
                 )
             );
-        uint128 token1Owed =
+        uint128 tokensOwed1 =
             uint128(
                 FullMath.mulDiv(
                     feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
@@ -79,10 +79,10 @@ library Position {
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
         self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        if (token0Owed > 0 || token1Owed > 0) {
+        if (tokensOwed0 > 0 || tokensOwed1 > 0) {
             // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
-            self.token0Owed += token0Owed;
-            self.token1Owed += token1Owed;
+            self.tokensOwed0 += tokensOwed0;
+            self.tokensOwed1 += tokensOwed1;
         }
 
         // clear position data that is no longer needed

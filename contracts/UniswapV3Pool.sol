@@ -409,15 +409,15 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         // we don't need to checkTicks here, because invalid positions will never have non-zero feesOwed{0,1}
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
 
-        amount0 = amount0Requested > position.token0Owed ? position.token0Owed : amount0Requested;
-        amount1 = amount1Requested > position.token1Owed ? position.token1Owed : amount1Requested;
+        amount0 = amount0Requested > position.tokensOwed0 ? position.tokensOwed0 : amount0Requested;
+        amount1 = amount1Requested > position.tokensOwed1 ? position.tokensOwed1 : amount1Requested;
 
         if (amount0 > 0) {
-            position.token0Owed -= amount0;
+            position.tokensOwed0 -= amount0;
             TransferHelper.safeTransfer(token0, recipient, amount0);
         }
         if (amount1 > 0) {
-            position.token1Owed -= amount1;
+            position.tokensOwed1 -= amount1;
             TransferHelper.safeTransfer(token1, recipient, amount1);
         }
 
@@ -446,9 +446,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         amount1 = uint256(-amount1Int);
 
         if (amount0 > 0 || amount1 > 0) {
-            (position.token0Owed, position.token1Owed) = (
-                position.token0Owed + uint128(amount0),
-                position.token1Owed + uint128(amount1)
+            (position.tokensOwed0, position.tokensOwed1) = (
+                position.tokensOwed0 + uint128(amount0),
+                position.tokensOwed1 + uint128(amount1)
             );
         }
 
@@ -658,13 +658,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
             uint256 balance0Before = balance0();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
-            require(balance0Before.add(uint256(amount0)) >= balance0(), 'IIA');
+            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');
         } else {
             if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
 
             uint256 balance1Before = balance1();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
-            require(balance1Before.add(uint256(amount1)) >= balance1(), 'IIA');
+            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');
         }
 
         emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.tick);
