@@ -522,8 +522,8 @@ describe('UniswapV3Pool', () => {
         expect(liquidity).to.eq(1)
         expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
         expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
-        expect(tokensOwed0).to.eq(0)
-        expect(tokensOwed1).to.eq(0)
+        expect(tokensOwed0, 'tokens owed 0 before').to.eq(0)
+        expect(tokensOwed1, 'tokens owed 1 before').to.eq(0)
 
         await pool.burn(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1)
         ;({
@@ -536,8 +536,8 @@ describe('UniswapV3Pool', () => {
         expect(liquidity).to.eq(0)
         expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
         expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
-        expect(tokensOwed0).to.eq(0)
-        expect(tokensOwed1).to.eq(0)
+        expect(tokensOwed0, 'tokens owed 0 after').to.eq(3)
+        expect(tokensOwed1, 'tokens owed 1 after').to.eq(0)
       })
     })
   })
