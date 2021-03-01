@@ -1324,6 +1324,8 @@ describe('UniswapV3Pool', () => {
           await expect(pool.burn(120000, 121200, liquidityAmount))
             .to.emit(pool, 'Burn')
             .withArgs(wallet.address, 120000, 121200, liquidityAmount, '30027458295511', '996999999999999999')
+            .to.not.emit(token0, 'Transfer')
+            .to.not.emit(token1, 'Transfer')
           expect((await pool.slot0()).tick).to.eq(120196)
         })
         it('swapping across gaps works in 0 for 1 direction', async () => {
