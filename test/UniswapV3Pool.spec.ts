@@ -1,8 +1,9 @@
 import { ethers, waffle } from 'hardhat'
-import { BigNumber, BigNumberish, constants, Wallet } from 'ethers'
+import { BigNumber, BigNumberish, constants } from 'ethers'
 import { TestERC20 } from '../typechain/TestERC20'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { MockTimeUniswapV3Pool } from '../typechain/MockTimeUniswapV3Pool'
+import { TestUniswapV3SwapPay } from '../typechain/TestUniswapV3SwapPay'
 import checkObservationEquals from './shared/checkObservationEquals'
 import { expect } from './shared/expect'
 
@@ -1770,6 +1771,59 @@ describe('UniswapV3Pool', () => {
         .connect(other)
         .callStatic.collect(other.address, minTick, maxTick, MaxUint128, MaxUint128))
       expect(amount0, 'amount0 of other').to.eq(0)
+    })
+  })
+
+  describe('swap underpayment tests', () => {
+    let underpay: TestUniswapV3SwapPay
+    beforeEach('deploy swap test', async () => {
+      const underpayFactory = await ethers.getContractFactory('TestUniswapV3SwapPay')
+      underpay = (await underpayFactory.deploy()) as TestUniswapV3SwapPay
+      await token0.approve(underpay.address, constants.MaxUint256)
+      await token1.approve(underpay.address, constants.MaxUint256)
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1))
+    })
+
+    it('underpay zero for one and exact in', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), 1000, 1, 0)
+      ).to.be.revertedWith('IIA')
+    })
+    it('overpay zero for one and exact in', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), 1000, 2000, 0)
+      ).to.not.be.revertedWith('IIA')
+    })
+    it('underpay zero for one and exact out', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), -1000, 1, 0)
+      ).to.be.revertedWith('IIA')
+    })
+    it('overpay zero for one and exact out', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), -1000, 2000, 0)
+      ).to.not.be.revertedWith('IIA')
+    })
+    it('underpay one for zero and exact in', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), 1000, 0, 1)
+      ).to.be.revertedWith('IIA')
+    })
+    it('overpay one for zero and exact in', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), 1000, 0, 2000)
+      ).to.not.be.revertedWith('IIA')
+    })
+    it('underpay one for zero and exact out', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), -1000, 0, 1)
+      ).to.be.revertedWith('IIA')
+    })
+    it('overpay one for zero and exact out', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), -1000, 0, 2000)
+      ).to.not.be.revertedWith('IIA')
     })
   })
 })
