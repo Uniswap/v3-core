@@ -256,12 +256,11 @@ describe('UniswapV3Pool arbitrage tests', () => {
 
                 // burn the arb's liquidity
                 const { amount0: amount0Burn, amount1: amount1Burn } = await pool.callStatic.burn(
-                  wallet.address,
                   tickLower,
                   tickUpper,
                   getMaxLiquidityPerTick(tickSpacing)
                 )
-                await pool.burn(wallet.address, tickLower, tickUpper, getMaxLiquidityPerTick(tickSpacing))
+                await pool.burn(tickLower, tickUpper, getMaxLiquidityPerTick(tickSpacing))
                 arbBalance0 = arbBalance0.add(amount0Burn)
                 arbBalance1 = arbBalance1.add(amount1Burn)
 

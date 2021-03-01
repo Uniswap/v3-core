@@ -47,7 +47,6 @@ interface IUniswapV3PoolEvents {
     /// @notice Emitted when a position's liquidity is removed
     /// @dev Does not withdraw any fees earned by the liquidity position, which must be withdrawn via #collect
     /// @param owner The owner of the position for which liquidity is removed
-    /// @param recipient The address that receives the tokens withdrawn via the burned liquidity
     /// @param tickLower The lower tick of the position
     /// @param tickUpper The upper tick of the position
     /// @param amount The amount of liquidity to remove
@@ -55,7 +54,6 @@ interface IUniswapV3PoolEvents {
     /// @param amount1 The amount of token1 withdrawn
     event Burn(
         address indexed owner,
-        address recipient,
         int24 indexed tickLower,
         int24 indexed tickUpper,
         uint128 amount,
