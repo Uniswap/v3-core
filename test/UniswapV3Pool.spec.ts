@@ -1774,7 +1774,7 @@ describe('UniswapV3Pool', () => {
     })
   })
 
-  describe.only('swap underpayment tests', () => {
+  describe('swap underpayment tests', () => {
     let underpay: TestUniswapV3SwapPay
     beforeEach('deploy swap test', async () => {
       const underpayFactory = await ethers.getContractFactory('TestUniswapV3SwapPay')
