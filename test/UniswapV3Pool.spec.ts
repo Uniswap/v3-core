@@ -860,7 +860,7 @@ describe('UniswapV3Pool', () => {
   describe('limit orders', () => {
     beforeEach('initialize at tick 0', () => initializeAtZeroTick(pool))
 
-    it('selling 1 for 0 at tick 0 thru 1', async () => {
+    it('limit selling 0 for 1 at tick 0 thru 1', async () => {
       await expect(mint(wallet.address, 0, 120, expandTo18Decimals(1)))
         .to.emit(token0, 'Transfer')
         .withArgs(wallet.address, pool.address, '5981737760509663')
@@ -869,59 +869,64 @@ describe('UniswapV3Pool', () => {
       await expect(pool.burn(0, 120, expandTo18Decimals(1)))
         .to.emit(pool, 'Burn')
         .withArgs(wallet.address, 0, 120, expandTo18Decimals(1), 0, '6017734268818165')
+        .to.not.emit(token0, 'Transfer')
+        .to.not.emit(token1, 'Transfer')
       await expect(pool.collect(wallet.address, 0, 120, MaxUint128, MaxUint128))
         .to.emit(token1, 'Transfer')
         .withArgs(pool.address, wallet.address, BigNumber.from('6017734268818165').add('18107525382602')) // roughly 0.3% despite other liquidity
         .to.not.emit(token0, 'Transfer')
       expect((await pool.slot0()).tick).to.be.gte(120)
     })
-    it('selling 0 for 1 at tick 0 thru -1', async () => {
+    it('limit selling 1 for 0 at tick 0 thru -1', async () => {
       await expect(mint(wallet.address, -120, 0, expandTo18Decimals(1)))
         .to.emit(token1, 'Transfer')
         .withArgs(wallet.address, pool.address, '5981737760509663')
       // somebody takes the limit order
       await swapExact0For1(expandTo18Decimals(2), other.address)
       await expect(pool.burn(-120, 0, expandTo18Decimals(1)))
-        .to.emit(token0, 'Transfer')
-        .withArgs(pool.address, wallet.address, '6017734268818165')
+        .to.emit(pool, 'Burn')
+        .withArgs(wallet.address, -120, 0, expandTo18Decimals(1), '6017734268818165', 0)
+        .to.not.emit(token0, 'Transfer')
         .to.not.emit(token1, 'Transfer')
       await expect(pool.collect(wallet.address, -120, 0, MaxUint128, MaxUint128))
         .to.emit(token0, 'Transfer')
-        .withArgs(pool.address, wallet.address, '18107525382602') // roughly 0.3% despite other liquidity
+        .withArgs(pool.address, wallet.address, BigNumber.from('6017734268818165').add('18107525382602')) // roughly 0.3% despite other liquidity
       expect((await pool.slot0()).tick).to.be.lt(-120)
     })
 
     describe('fee is on', () => {
       beforeEach(() => pool.setFeeProtocol(6, 6))
-      it('selling 1 for 0 at tick 0 thru 1', async () => {
+      it('limit selling 0 for 1 at tick 0 thru 1', async () => {
         await expect(mint(wallet.address, 0, 120, expandTo18Decimals(1)))
           .to.emit(token0, 'Transfer')
           .withArgs(wallet.address, pool.address, '5981737760509663')
         // somebody takes the limit order
         await swapExact1For0(expandTo18Decimals(2), other.address)
         await expect(pool.burn(0, 120, expandTo18Decimals(1)))
-          .to.emit(token1, 'Transfer')
-          .withArgs(pool.address, wallet.address, '6017734268818165')
+          .to.emit(pool, 'Burn')
+          .withArgs(wallet.address, 0, 120, expandTo18Decimals(1), 0, '6017734268818165')
           .to.not.emit(token0, 'Transfer')
+          .to.not.emit(token1, 'Transfer')
         await expect(pool.collect(wallet.address, 0, 120, MaxUint128, MaxUint128))
           .to.emit(token1, 'Transfer')
-          .withArgs(pool.address, wallet.address, '15089604485501') // roughly 0.25% despite other liquidity
+          .withArgs(pool.address, wallet.address, BigNumber.from('6017734268818165').add('15089604485501')) // roughly 0.25% despite other liquidity
           .to.not.emit(token0, 'Transfer')
         expect((await pool.slot0()).tick).to.be.gte(120)
       })
-      it('selling 0 for 1 at tick 0 thru -1', async () => {
+      it('limit selling 1 for 0 at tick 0 thru -1', async () => {
         await expect(mint(wallet.address, -120, 0, expandTo18Decimals(1)))
           .to.emit(token1, 'Transfer')
           .withArgs(wallet.address, pool.address, '5981737760509663')
         // somebody takes the limit order
         await swapExact0For1(expandTo18Decimals(2), other.address)
         await expect(pool.burn(-120, 0, expandTo18Decimals(1)))
-          .to.emit(token0, 'Transfer')
-          .withArgs(pool.address, wallet.address, '6017734268818165')
+          .to.emit(pool, 'Burn')
+          .withArgs(wallet.address, -120, 0, expandTo18Decimals(1), '6017734268818165', 0)
+          .to.not.emit(token0, 'Transfer')
           .to.not.emit(token1, 'Transfer')
         await expect(pool.collect(wallet.address, -120, 0, MaxUint128, MaxUint128))
           .to.emit(token0, 'Transfer')
-          .withArgs(pool.address, wallet.address, '15089604485501') // roughly 0.25% despite other liquidity
+          .withArgs(pool.address, wallet.address, BigNumber.from('6017734268818165').add('15089604485501')) // roughly 0.25% despite other liquidity
         expect((await pool.slot0()).tick).to.be.lt(-120)
       })
     })
@@ -1317,10 +1322,8 @@ describe('UniswapV3Pool', () => {
           await mint(wallet.address, 120000, 121200, liquidityAmount)
           await swapExact1For0(expandTo18Decimals(1), wallet.address)
           await expect(pool.burn(120000, 121200, liquidityAmount))
-            .to.emit(token0, 'Transfer')
-            .withArgs(pool.address, wallet.address, '30027458295511')
-            .to.emit(token1, 'Transfer')
-            .withArgs(pool.address, wallet.address, '996999999999999999')
+            .to.emit(pool, 'Burn')
+            .withArgs(wallet.address, 120000, 121200, '30027458295511', '996999999999999999')
           expect((await pool.slot0()).tick).to.eq(120196)
         })
         it('swapping across gaps works in 0 for 1 direction', async () => {
@@ -1328,10 +1331,10 @@ describe('UniswapV3Pool', () => {
           await mint(wallet.address, -121200, -120000, liquidityAmount)
           await swapExact0For1(expandTo18Decimals(1), wallet.address)
           await expect(pool.burn(-121200, -120000, liquidityAmount))
-            .to.emit(token0, 'Transfer')
-            .withArgs(pool.address, wallet.address, '996999999999999999')
-            .to.emit(token1, 'Transfer')
-            .withArgs(pool.address, wallet.address, '30027458295511')
+            .to.emit(pool, 'Burn')
+            .withArgs(wallet.address, 120000, 121200, '996999999999999999', '30027458295511')
+            .to.not.emit(token0, 'Transfer')
+            .to.not.emit(token1, 'Transfer')
           expect((await pool.slot0()).tick).to.eq(-120197)
         })
       })
