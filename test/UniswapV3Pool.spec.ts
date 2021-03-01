@@ -519,8 +519,8 @@ describe('UniswapV3Pool', () => {
           feesOwed0,
         } = await pool.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)))
         expect(liquidity).to.eq(0)
-        expect(feeGrowthInside0LastX128).to.eq(0)
-        expect(feeGrowthInside1LastX128).to.eq(0)
+        expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
+        expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
         expect(feesOwed0).to.eq(0)
         expect(feesOwed1).to.eq(0)
       })
@@ -543,7 +543,7 @@ describe('UniswapV3Pool', () => {
       expect(liquidityGross).to.not.eq(0)
     }
 
-    it('clears the position fee growth snapshot if no more liquidity', async () => {
+    it('does not clear the position fee growth snapshot if no more liquidity', async () => {
       // some activity that would make the ticks non-zero
       await pool.advanceTime(10)
       await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
@@ -560,8 +560,8 @@ describe('UniswapV3Pool', () => {
       expect(liquidity).to.eq(0)
       expect(feesOwed0).to.not.eq(0)
       expect(feesOwed1).to.not.eq(0)
-      expect(feeGrowthInside0LastX128).to.eq(0)
-      expect(feeGrowthInside1LastX128).to.eq(0)
+      expect(feeGrowthInside0LastX128).to.eq('340282366920938463463374607431768211')
+      expect(feeGrowthInside1LastX128).to.eq('340282366920938576890830247744589365')
     })
 
     it('clears the tick if its the last position using it', async () => {

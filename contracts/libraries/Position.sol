@@ -84,11 +84,5 @@ library Position {
             self.feesOwed0 += feesOwed0;
             self.feesOwed1 += feesOwed1;
         }
-
-        // clear position data that is no longer needed
-        if (liquidityNext == 0) {
-            delete self.feeGrowthInside0LastX128;
-            delete self.feeGrowthInside1LastX128;
-        }
     }
 }
