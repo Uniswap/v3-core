@@ -643,13 +643,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
             uint256 balance0Before = balance0();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
-            require(balance0Before.add(uint256(amount0)) >= balance0(), 'IIA');
+            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');
         } else {
             if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
 
             uint256 balance1Before = balance1();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
-            require(balance1Before.add(uint256(amount1)) >= balance1(), 'IIA');
+            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');
         }
 
         emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.tick);
