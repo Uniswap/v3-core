@@ -1774,7 +1774,7 @@ describe('UniswapV3Pool', () => {
     })
   })
 
-  describe('swap underpayment tests', () => {
+  describe.only('swap underpayment tests', () => {
     let underpay: TestUniswapV3SwapPay
     beforeEach('deploy swap test', async () => {
       const underpayFactory = await ethers.getContractFactory('TestUniswapV3SwapPay')
@@ -1790,6 +1790,11 @@ describe('UniswapV3Pool', () => {
         underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), 1000, 1, 0)
       ).to.be.revertedWith('IIA')
     })
+    it('pay in the wrong token zero for one and exact in', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), 1000, 0, 2000)
+      ).to.be.revertedWith('IIA')
+    })
     it('overpay zero for one and exact in', async () => {
       await expect(
         underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), 1000, 2000, 0)
@@ -1798,6 +1803,11 @@ describe('UniswapV3Pool', () => {
     it('underpay zero for one and exact out', async () => {
       await expect(
         underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), -1000, 1, 0)
+      ).to.be.revertedWith('IIA')
+    })
+    it('pay in the wrong token zero for one and exact out', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, true, MIN_SQRT_RATIO.add(1), -1000, 0, 2000)
       ).to.be.revertedWith('IIA')
     })
     it('overpay zero for one and exact out', async () => {
@@ -1810,6 +1820,11 @@ describe('UniswapV3Pool', () => {
         underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), 1000, 0, 1)
       ).to.be.revertedWith('IIA')
     })
+    it('pay in the wrong token one for zero and exact in', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), 1000, 2000, 0)
+      ).to.be.revertedWith('IIA')
+    })
     it('overpay one for zero and exact in', async () => {
       await expect(
         underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), 1000, 0, 2000)
@@ -1818,6 +1833,11 @@ describe('UniswapV3Pool', () => {
     it('underpay one for zero and exact out', async () => {
       await expect(
         underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), -1000, 0, 1)
+      ).to.be.revertedWith('IIA')
+    })
+    it('pay in the wrong token one for zero and exact out', async () => {
+      await expect(
+        underpay.swap(pool.address, wallet.address, false, MAX_SQRT_RATIO.sub(1), -1000, 2000, 0)
       ).to.be.revertedWith('IIA')
     })
     it('overpay one for zero and exact out', async () => {
