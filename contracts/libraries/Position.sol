@@ -84,11 +84,5 @@ library Position {
             self.tokensOwed0 += tokensOwed0;
             self.tokensOwed1 += tokensOwed1;
         }
-
-        // clear position data that is no longer needed
-        if (liquidityNext == 0) {
-            delete self.feeGrowthInside0LastX128;
-            delete self.feeGrowthInside1LastX128;
-        }
     }
 }

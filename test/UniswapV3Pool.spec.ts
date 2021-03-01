@@ -534,8 +534,8 @@ describe('UniswapV3Pool', () => {
           tokensOwed0,
         } = await pool.positions(getPositionKey(wallet.address, minTick + tickSpacing, maxTick - tickSpacing)))
         expect(liquidity).to.eq(0)
-        expect(feeGrowthInside0LastX128).to.eq(0)
-        expect(feeGrowthInside1LastX128).to.eq(0)
+        expect(feeGrowthInside0LastX128).to.eq('102084710076281216349243831104605583')
+        expect(feeGrowthInside1LastX128).to.eq('10208471007628121634924383110460558')
         expect(tokensOwed0).to.eq(0)
         expect(tokensOwed1).to.eq(0)
       })
@@ -558,7 +558,7 @@ describe('UniswapV3Pool', () => {
       expect(liquidityGross).to.not.eq(0)
     }
 
-    it('clears the position fee growth snapshot if no more liquidity', async () => {
+    it('does not clear the position fee growth snapshot if no more liquidity', async () => {
       // some activity that would make the ticks non-zero
       await pool.advanceTime(10)
       await mint(other.address, minTick, maxTick, expandTo18Decimals(1))
@@ -575,8 +575,8 @@ describe('UniswapV3Pool', () => {
       expect(liquidity).to.eq(0)
       expect(tokensOwed0).to.not.eq(0)
       expect(tokensOwed1).to.not.eq(0)
-      expect(feeGrowthInside0LastX128).to.eq(0)
-      expect(feeGrowthInside1LastX128).to.eq(0)
+      expect(feeGrowthInside0LastX128).to.eq('340282366920938463463374607431768211')
+      expect(feeGrowthInside1LastX128).to.eq('340282366920938576890830247744589365')
     })
 
     it('clears the tick if its the last position using it', async () => {
@@ -866,8 +866,7 @@ describe('UniswapV3Pool', () => {
         .withArgs(wallet.address, pool.address, '5981737760509663')
       // somebody takes the limit order
       await swapExact1For0(expandTo18Decimals(2), other.address)
-      await pool
-        .burn(wallet.address, 0, 120, expandTo18Decimals(1))
+      await expect(pool.burn(wallet.address, 0, 120, expandTo18Decimals(1)))
         .to.emit(token1, 'Transfer')
         .withArgs(pool.address, wallet.address, '6017734268818165')
       await expect(pool.collect(wallet.address, 0, 120, MaxUint128, MaxUint128))
