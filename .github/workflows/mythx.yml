@@ -51,17 +51,14 @@ jobs:
             --group-name "@uniswap/v3-core@${{ github.sha }}" \
             --solc-version 0.7.6 \
             --check-properties \
-            contracts/test/BitMathEchidnaTest.sol \
-            --include BitMathEchidnaTest \
-            contracts/test/LowGasSafeMathEchidnaTest.sol \
-            --include LowGasSafeMathEchidnaTest \
-            contracts/test/OracleEchidnaTest.sol \
-            --include OracleEchidnaTest \
-            contracts/test/SqrtPriceMathEchidnaTest.sol \
-            --include SqrtPriceMathEchidnaTest \
-            contracts/test/TickBitmapEchidnaTest.sol \
-            --include TickBitmapEchidnaTest \
-            contracts/test/TickMathEchidnaTest.sol \
-            --include TickMathEchidnaTest \
-            contracts/test/TickOverflowSafetyEchidnaTest.sol \
-            --include TickOverflowSafetyEchidnaTest
+            contracts/test/TickBitmapEchidnaTest.sol --include TickBitmapEchidnaTest \
+            contracts/test/TickMathEchidnaTest.sol --include TickMathEchidnaTest \
+            contracts/test/SqrtPriceMathEchidnaTest.sol --include SqrtPriceMathEchidnaTest \
+            contracts/test/SwapMathEchidnaTest.sol --include SwapMathEchidnaTest \
+            contracts/test/TickEchidnaTest.sol --include TickEchidnaTest \
+            contracts/test/TickOverflowSafetyEchidnaTest.sol --include TickOverflowSafetyEchidnaTest \
+            contracts/test/OracleEchidnaTest.sol --include OracleEchidnaTest \
+            contracts/test/BitMathEchidnaTest.sol --include BitMathEchidnaTest \
+            contracts/test/LowGasSafeMathEchidnaTest.sol --include LowGasSafeMathEchidnaTest \
+            contracts/test/UnsafeMathEchidnaTest.sol --include UnsafeMathEchidnaTest \
+            contracts/test/FullMathEchidnaTest.sol --include FullMathEchidnaTest
