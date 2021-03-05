@@ -10,8 +10,8 @@ exports[`SqrtPriceMath #getAmount1Delta gas cost for amount0 where roundUp = tru
 
 exports[`SqrtPriceMath #getNextSqrtPriceFromInput zeroForOne = false gas 1`] = `536`;
 
-exports[`SqrtPriceMath #getNextSqrtPriceFromInput zeroForOne = true gas 1`] = `756`;
+exports[`SqrtPriceMath #getNextSqrtPriceFromInput zeroForOne = true gas 1`] = `753`;
 
-exports[`SqrtPriceMath #getNextSqrtPriceFromOutput zeroForOne = false gas 1`] = `851`;
+exports[`SqrtPriceMath #getNextSqrtPriceFromOutput zeroForOne = false gas 1`] = `848`;
 
 exports[`SqrtPriceMath #getNextSqrtPriceFromOutput zeroForOne = true gas 1`] = `514`;
