@@ -54,4 +54,14 @@ jobs:
             contracts/test/BitMathEchidnaTest.sol \
             --include BitMathEchidnaTest \
             contracts/test/LowGasSafeMathEchidnaTest.sol \
-            --include LowGasSafeMathEchidnaTest
+            --include LowGasSafeMathEchidnaTest \
+            contracts/test/OracleEchidnaTest.sol \
+            --include OracleEchidnaTest \
+            contracts/test/SqrtPriceMathEchidnaTest.sol \
+            --include SqrtPriceMathEchidnaTest \
+            contracts/test/TickBitmapEchidnaTest.sol \
+            --include TickBitmapEchidnaTest \
+            contracts/test/TickMathEchidnaTest.sol \
+            --include TickMathEchidnaTest \
+            contracts/test/TickOverflowSafetyEchidnaTest.sol \
+            --include TickOverflowSafetyEchidnaTest
