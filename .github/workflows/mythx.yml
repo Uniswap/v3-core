@@ -51,7 +51,6 @@ jobs:
             --create-group \
             --group-name "@uniswap/v3-core@${{ github.sha }}" \
             --solc-version 0.7.6 \
-#            --check-properties \
             contracts/test/TickBitmapEchidnaTest.sol --include TickBitmapEchidnaTest \
             contracts/test/TickMathEchidnaTest.sol --include TickMathEchidnaTest \
             contracts/test/SqrtPriceMathEchidnaTest.sol --include SqrtPriceMathEchidnaTest \
