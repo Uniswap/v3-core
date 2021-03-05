@@ -44,6 +44,7 @@ jobs:
       - name: Submit code to Mythx
         run: |
           mythx --api-key ${{ secrets.MYTHX_API_KEY }} \
+            --yes \
             analyze --mode deep \
             --async \
             --create-group \
@@ -51,5 +52,4 @@ jobs:
             --solc-version 0.7.6 \
             --check-properties \
             contracts/ \
-            --include BitMathEchidnaTest \
-            --yes
+            --include BitMathEchidnaTest
