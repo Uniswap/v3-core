@@ -50,14 +50,5 @@ jobs:
             --group-name "@uniswap/v3-core@${{ github.sha }}" \
             --solc-version 0.7.6 \
             --check-properties \
-            contracts/ \
-            --include BitMathEchidnaTest \
-            --include FullMathEchidnaTest \
-            --include LowGasSafeMathEchidnaTest \
-            --include OracleEchidnaTest \
-            --include SqrtPriceMathEchidnaTest \
-            --include SwapMathEchidnaTest \
-            --include TickBitmapEchidnaTest \
-            --include TickEchidnaTest \
-            --include TickOverflowSafetyEchidnaTest \
-            --include UnsafeMathEchidnaTest
+            contracts/test/BitMathEchidnaTest.sol \
+            --include BitMathEchidnaTest
