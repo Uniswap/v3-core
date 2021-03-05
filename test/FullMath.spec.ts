@@ -75,6 +75,26 @@ describe('FullMath', () => {
       await expect(fullMath.mulDivRoundingUp(MaxUint256, MaxUint256, MaxUint256.sub(1))).to.be.reverted
     })
 
+    it('reverts if mulDiv overflows 256 bits after rounding up', async () => {
+      await expect(
+        fullMath.mulDivRoundingUp(
+          '535006138814359',
+          '432862656469423142931042426214547535783388063929571229938474969',
+          '2'
+        )
+      ).to.be.reverted
+    })
+
+    it('reverts if mulDiv overflows 256 bits after rounding up case 2', async () => {
+      await expect(
+        fullMath.mulDivRoundingUp(
+          '115792089237316195423570985008687907853269984659341747863450311749907997002549',
+          '115792089237316195423570985008687907853269984659341747863450311749907997002550',
+          '115792089237316195423570985008687907853269984653042931687443039491902864365164'
+        )
+      ).to.be.reverted
+    })
+
     it('all max inputs', async () => {
       expect(await fullMath.mulDivRoundingUp(MaxUint256, MaxUint256, MaxUint256)).to.eq(MaxUint256)
     })
