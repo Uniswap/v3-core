@@ -61,4 +61,5 @@ jobs:
             contracts/test/BitMathEchidnaTest.sol --include BitMathEchidnaTest \
             contracts/test/LowGasSafeMathEchidnaTest.sol --include LowGasSafeMathEchidnaTest \
             contracts/test/UnsafeMathEchidnaTest.sol --include UnsafeMathEchidnaTest \
-            contracts/test/FullMathEchidnaTest.sol --include FullMathEchidnaTest
+            contracts/test/FullMathEchidnaTest.sol --include FullMathEchidnaTest \
+            contracts/test/UniswapV3Pool.sol --include UniswapV3Pool
