@@ -51,15 +51,4 @@ jobs:
             --create-group \
             --group-name "@uniswap/v3-core@${{ github.sha }}" \
             --solc-version 0.7.6 \
-            contracts/test/TickBitmapEchidnaTest.sol --include TickBitmapEchidnaTest \
-            contracts/test/TickMathEchidnaTest.sol --include TickMathEchidnaTest \
-            contracts/test/SqrtPriceMathEchidnaTest.sol --include SqrtPriceMathEchidnaTest \
-            contracts/test/SwapMathEchidnaTest.sol --include SwapMathEchidnaTest \
-            contracts/test/TickEchidnaTest.sol --include TickEchidnaTest \
-            contracts/test/TickOverflowSafetyEchidnaTest.sol --include TickOverflowSafetyEchidnaTest \
-            contracts/test/OracleEchidnaTest.sol --include OracleEchidnaTest \
-            contracts/test/BitMathEchidnaTest.sol --include BitMathEchidnaTest \
-            contracts/test/LowGasSafeMathEchidnaTest.sol --include LowGasSafeMathEchidnaTest \
-            contracts/test/UnsafeMathEchidnaTest.sol --include UnsafeMathEchidnaTest \
-            contracts/test/FullMathEchidnaTest.sol --include FullMathEchidnaTest \
             contracts/test/UniswapV3Pool.sol --include UniswapV3Pool
