@@ -45,12 +45,13 @@ jobs:
         run: |
           mythx --api-key ${{ secrets.MYTHX_API_KEY }} \
             --yes \
-            analyze --mode deep \
+            analyze \
+            --mode deep \
             --async \
             --create-group \
             --group-name "@uniswap/v3-core@${{ github.sha }}" \
             --solc-version 0.7.6 \
-            --check-properties \
+#            --check-properties \
             contracts/test/TickBitmapEchidnaTest.sol --include TickBitmapEchidnaTest \
             contracts/test/TickMathEchidnaTest.sol --include TickMathEchidnaTest \
             contracts/test/SqrtPriceMathEchidnaTest.sol --include SqrtPriceMathEchidnaTest \
