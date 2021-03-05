@@ -51,4 +51,4 @@ jobs:
             --create-group \
             --group-name "@uniswap/v3-core@${{ github.sha }}" \
             --solc-version 0.7.6 \
-            contracts/test/UniswapV3Pool.sol --include UniswapV3Pool
+            contracts/UniswapV3Pool.sol --include UniswapV3Pool
