@@ -117,7 +117,7 @@ library FullMath {
     ) internal pure returns (uint256 result) {
         result = mulDiv(a, b, denominator);
         if (mulmod(a, b, denominator) > 0) {
-            require(result < type(uint256).max);
+            require(result != type(uint256).max);
             result++;
         }
     }
