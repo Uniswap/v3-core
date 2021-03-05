@@ -32,6 +32,15 @@ jobs:
         run: |
           pip3 install mythx-cli
 
+      - name: Install solc-select
+        run: |
+          pip3 install solc-select
+
+      - name: Install solc 0.7.6
+        run: |
+          solc-select install 0.7.6
+          solc-select use 0.7.6
+
       - name: Submit code to Mythx
         run: |
           mythx --api-key ${{ secrets.MYTHX_API_KEY }} \
