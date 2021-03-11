@@ -38,21 +38,21 @@ exports[`UniswapV3Pool gas tests fee is off #mint above current price new positi
 
 exports[`UniswapV3Pool gas tests fee is off #mint above current price second position in same range 1`] = `123472`;
 
-exports[`UniswapV3Pool gas tests fee is off #mint around current price add to position after some time passes 1`] = `160431`;
+exports[`UniswapV3Pool gas tests fee is off #mint around current price add to position after some time passes 1`] = `160446`;
 
-exports[`UniswapV3Pool gas tests fee is off #mint around current price add to position existing 1`] = `149623`;
+exports[`UniswapV3Pool gas tests fee is off #mint around current price add to position existing 1`] = `149638`;
 
-exports[`UniswapV3Pool gas tests fee is off #mint around current price new position mint first in range 1`] = `309246`;
+exports[`UniswapV3Pool gas tests fee is off #mint around current price new position mint first in range 1`] = `309261`;
 
-exports[`UniswapV3Pool gas tests fee is off #mint around current price second position in same range 1`] = `164623`;
+exports[`UniswapV3Pool gas tests fee is off #mint around current price second position in same range 1`] = `164638`;
 
-exports[`UniswapV3Pool gas tests fee is off #mint below current price add to position after some time passes 1`] = `108904`;
+exports[`UniswapV3Pool gas tests fee is off #mint below current price add to position after some time passes 1`] = `108919`;
 
-exports[`UniswapV3Pool gas tests fee is off #mint below current price add to position existing 1`] = `108904`;
+exports[`UniswapV3Pool gas tests fee is off #mint below current price add to position existing 1`] = `108919`;
 
-exports[`UniswapV3Pool gas tests fee is off #mint below current price new position mint first in range 1`] = `280552`;
+exports[`UniswapV3Pool gas tests fee is off #mint below current price new position mint first in range 1`] = `280567`;
 
-exports[`UniswapV3Pool gas tests fee is off #mint below current price second position in same range 1`] = `123904`;
+exports[`UniswapV3Pool gas tests fee is off #mint below current price second position in same range 1`] = `123919`;
 
 exports[`UniswapV3Pool gas tests fee is off #poke best case 1`] = `42584`;
 
@@ -116,21 +116,21 @@ exports[`UniswapV3Pool gas tests fee is on #mint above current price new positio
 
 exports[`UniswapV3Pool gas tests fee is on #mint above current price second position in same range 1`] = `123472`;
 
-exports[`UniswapV3Pool gas tests fee is on #mint around current price add to position after some time passes 1`] = `160431`;
+exports[`UniswapV3Pool gas tests fee is on #mint around current price add to position after some time passes 1`] = `160446`;
 
-exports[`UniswapV3Pool gas tests fee is on #mint around current price add to position existing 1`] = `149623`;
+exports[`UniswapV3Pool gas tests fee is on #mint around current price add to position existing 1`] = `149638`;
 
-exports[`UniswapV3Pool gas tests fee is on #mint around current price new position mint first in range 1`] = `309246`;
+exports[`UniswapV3Pool gas tests fee is on #mint around current price new position mint first in range 1`] = `309261`;
 
-exports[`UniswapV3Pool gas tests fee is on #mint around current price second position in same range 1`] = `164623`;
+exports[`UniswapV3Pool gas tests fee is on #mint around current price second position in same range 1`] = `164638`;
 
-exports[`UniswapV3Pool gas tests fee is on #mint below current price add to position after some time passes 1`] = `108904`;
+exports[`UniswapV3Pool gas tests fee is on #mint below current price add to position after some time passes 1`] = `108919`;
 
-exports[`UniswapV3Pool gas tests fee is on #mint below current price add to position existing 1`] = `108904`;
+exports[`UniswapV3Pool gas tests fee is on #mint below current price add to position existing 1`] = `108919`;
 
-exports[`UniswapV3Pool gas tests fee is on #mint below current price new position mint first in range 1`] = `280552`;
+exports[`UniswapV3Pool gas tests fee is on #mint below current price new position mint first in range 1`] = `280567`;
 
-exports[`UniswapV3Pool gas tests fee is on #mint below current price second position in same range 1`] = `123904`;
+exports[`UniswapV3Pool gas tests fee is on #mint below current price second position in same range 1`] = `123919`;
 
 exports[`UniswapV3Pool gas tests fee is on #poke best case 1`] = `42584`;
 

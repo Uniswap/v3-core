@@ -26,7 +26,7 @@ library FullMath {
                 revert(0, 0)
             }
             r := or(shl(160, h), shr(96, l))
-            if not(iszero(mm)) {
+            if gt(mulmod(a, b, 0x1000000000000000000000000), 0) {
                 if eq(r, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
                     revert(0, 0)
                 }
