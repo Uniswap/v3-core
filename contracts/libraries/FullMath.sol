@@ -21,17 +21,15 @@ library FullMath {
         assembly {
             let l := mul(a, b)
             let mm := mulmod(a, b, not(0))
-            let h := sub(sub(mm, l), lt(mm, l))
+            let h := add(
+                sub(sub(mm, l), lt(mm, l)),
+                gt(l, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000)
+            )
+            l := add(l, 0xFFFFFFFFFFFFFFFFFFFFFFFF)
             if shr(96, h) {
                 revert(0, 0)
             }
             r := or(shl(160, h), shr(96, l))
-            if gt(mulmod(a, b, 0x1000000000000000000000000), 0) {
-                if eq(r, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
-                    revert(0, 0)
-                }
-                r := add(r, 1)
-            }
         }
     }
 
