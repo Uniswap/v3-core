@@ -187,8 +187,8 @@ library SqrtPriceMath {
 
         return
             roundUp
-                ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96)
-                : FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+                ? FullMath.mulShift96RoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96)
+                : FullMath.mulShift96(liquidity, sqrtRatioBX96 - sqrtRatioAX96);
     }
 
     /// @notice Helper that gets signed token0 delta

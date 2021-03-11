@@ -5,6 +5,36 @@ pragma solidity >=0.4.0;
 /// @notice Facilitates multiplication and division that can have overflow of an intermediate value without any loss of precision
 /// @dev Handles "phantom overflow" i.e., allows multiplication and division where an intermediate value overflows 256 bits
 library FullMath {
+    function mulShift96(uint256 a, uint256 b) internal pure returns (uint256 r) {
+        assembly {
+            let l := mul(a, b)
+            let mm := mulmod(a, b, not(0))
+            let h := sub(sub(mm, l), lt(mm, l))
+            if shr(96, h) {
+                revert(0, 0)
+            }
+            r := or(shl(160, h), shr(96, l))
+        }
+    }
+
+    function mulShift96RoundingUp(uint256 a, uint256 b) internal pure returns (uint256 r) {
+        assembly {
+            let l := mul(a, b)
+            let mm := mulmod(a, b, not(0))
+            let h := sub(sub(mm, l), lt(mm, l))
+            if shr(96, h) {
+                revert(0, 0)
+            }
+            r := or(shl(160, h), shr(96, l))
+            if not(iszero(mm)) {
+                if eq(r, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+                    revert(0, 0)
+                }
+                r := add(r, 1)
+            }
+        }
+    }
+
     /// @notice Calculates floor(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
     /// @param a The multiplicand
     /// @param b The multiplier
