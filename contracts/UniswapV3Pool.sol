@@ -623,14 +623,19 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // update tick and write an oracle entry if the tick change
         if (state.tick != slot0Start.tick) {
-            slot0.tick = state.tick;
-            (slot0.observationIndex, slot0.observationCardinality) = observations.write(
-                slot0Start.observationIndex,
-                cache.blockTimestamp,
-                slot0Start.tick,
-                cache.liquidityStart,
-                slot0Start.observationCardinality,
-                slot0Start.observationCardinalityNext
+            (uint16 observationIndex, uint16 observationCardinality) =
+                observations.write(
+                    slot0Start.observationIndex,
+                    cache.blockTimestamp,
+                    slot0Start.tick,
+                    cache.liquidityStart,
+                    slot0Start.observationCardinality,
+                    slot0Start.observationCardinalityNext
+                );
+            (slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (
+                state.tick,
+                observationIndex,
+                observationCardinality
             );
         }
 
