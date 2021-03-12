@@ -618,20 +618,26 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             }
         }
 
-        // update price
-        slot0.sqrtPriceX96 = state.sqrtPriceX96;
-
         // update tick and write an oracle entry if the tick change
         if (state.tick != slot0Start.tick) {
-            slot0.tick = state.tick;
-            (slot0.observationIndex, slot0.observationCardinality) = observations.write(
-                slot0Start.observationIndex,
-                cache.blockTimestamp,
-                slot0Start.tick,
-                cache.liquidityStart,
-                slot0Start.observationCardinality,
-                slot0Start.observationCardinalityNext
+            (uint16 observationIndex, uint16 observationCardinality) =
+                observations.write(
+                    slot0Start.observationIndex,
+                    cache.blockTimestamp,
+                    slot0Start.tick,
+                    cache.liquidityStart,
+                    slot0Start.observationCardinality,
+                    slot0Start.observationCardinalityNext
+                );
+            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (
+                state.sqrtPriceX96,
+                state.tick,
+                observationIndex,
+                observationCardinality
             );
+        } else {
+            // otherwise just update the price
+            slot0.sqrtPriceX96 = state.sqrtPriceX96;
         }
 
         // update liquidity if it changed
