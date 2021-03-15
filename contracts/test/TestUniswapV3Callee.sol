@@ -3,8 +3,8 @@ pragma solidity =0.7.6;
 
 import '../interfaces/IERC20Minimal.sol';
 
-import '../libraries/SafeCast.sol';
-import '../libraries/TickMath.sol';
+import '../libraries/GPL/SafeCast.sol';
+import '../libraries/GPL/TickMath.sol';
 
 import '../interfaces/callback/IUniswapV3MintCallback.sol';
 import '../interfaces/callback/IUniswapV3SwapCallback.sol';

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import './FullMath.sol';
-import './FixedPoint128.sol';
+import './MIT/FullMath.sol';
+import './GPL/FixedPoint128.sol';
 import './LiquidityMath.sol';
 
 /// @title Position

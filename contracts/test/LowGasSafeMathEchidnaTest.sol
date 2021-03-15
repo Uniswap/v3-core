@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '../libraries/LowGasSafeMath.sol';
+import '../libraries/GPL/LowGasSafeMath.sol';
 
 contract LowGasSafeMathEchidnaTest {
     function checkAdd(uint256 x, uint256 y) external pure {

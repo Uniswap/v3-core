@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import './LowGasSafeMath.sol';
-import './SafeCast.sol';
+import './GPL/LowGasSafeMath.sol';
+import './GPL/SafeCast.sol';
 
-import './FullMath.sol';
-import './UnsafeMath.sol';
-import './FixedPoint96.sol';
+import './MIT/FullMath.sol';
+import './GPL/UnsafeMath.sol';
+import './GPL/FixedPoint96.sol';
 
 /// @title Functions based on Q64.96 sqrt price and liquidity
 /// @notice Contains the math that uses square root of price as a Q64.96 and liquidity to compute deltas
