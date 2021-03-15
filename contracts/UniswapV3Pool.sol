@@ -17,7 +17,7 @@ import './libraries/MIT/FullMath.sol';
 import './libraries/GPL/FixedPoint128.sol';
 import './libraries/GPL/TransferHelper.sol';
 import './libraries/GPL/TickMath.sol';
-import './libraries/LiquidityMath.sol';
+import './libraries/GPL/LiquidityMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 

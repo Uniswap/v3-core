@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 import './MIT/FullMath.sol';
 import './GPL/FixedPoint128.sol';
-import './LiquidityMath.sol';
+import './GPL/LiquidityMath.sol';
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary

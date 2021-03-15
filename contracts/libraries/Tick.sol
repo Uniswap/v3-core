@@ -5,7 +5,7 @@ import './GPL/LowGasSafeMath.sol';
 import './GPL/SafeCast.sol';
 
 import './GPL/TickMath.sol';
-import './LiquidityMath.sol';
+import './GPL/LiquidityMath.sol';
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
