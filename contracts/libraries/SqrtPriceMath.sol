@@ -59,7 +59,7 @@ library SqrtPriceMath {
     /// @dev Always rounds down, because in the exact output case (decreasing price) we need to move the price at least
     /// far enough to get the desired output amount, and in the exact input case (increasing price) we need to move the
     /// price less in order to not send too much output.
-    /// The formula we compute is lossless: sqrtPX96 +- amount / liquidity
+    /// The formula we compute is within <1 wei of the lossless version: sqrtPX96 +- amount / liquidity
     /// @param sqrtPX96 The starting price, i.e., before accounting for the token1 delta
     /// @param liquidity The amount of usable liquidity
     /// @param amount How much of token1 to add, or remove, from virtual reserves

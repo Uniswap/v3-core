@@ -65,7 +65,7 @@ interface IUniswapV3PoolEvents {
     /// @param sender The address that initiated the swap call, and that received the callback
     /// @param recipient The address that received the output of the swap
     /// @param amount0 The delta of the token0 balance of the pool
-    /// @param amount1 The Delta of the token1 balance of the pool
+    /// @param amount1 The delta of the token1 balance of the pool
     /// @param sqrtPriceX96 The sqrt(price) of the pool after the swap, as a Q64.96
     /// @param tick The log base 1.0001 of price of the pool after the swap
     event Swap(
