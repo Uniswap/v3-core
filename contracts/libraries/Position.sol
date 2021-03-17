@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import './MIT/FullMath.sol';
-import './GPL/FixedPoint128.sol';
-import './GPL/LiquidityMath.sol';
+import './FullMath.sol';
+import './FixedPoint128.sol';
+import './LiquidityMath.sol';
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary

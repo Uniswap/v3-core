@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import './GPL/LowGasSafeMath.sol';
-import './GPL/SafeCast.sol';
+import './LowGasSafeMath.sol';
+import './SafeCast.sol';
 
-import './GPL/TickMath.sol';
-import './GPL/LiquidityMath.sol';
+import './TickMath.sol';
+import './LiquidityMath.sol';
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations

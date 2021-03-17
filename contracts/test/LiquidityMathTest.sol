@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '../libraries/GPL/LiquidityMath.sol';
+import '../libraries/LiquidityMath.sol';
 
 contract LiquidityMathTest {
     function addDelta(uint128 x, int128 y) external pure returns (uint128 z) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.7.6;
 
-import '../libraries/GPL/TickMath.sol';
+import '../libraries/TickMath.sol';
 
 import '../interfaces/callback/IUniswapV3SwapCallback.sol';
 

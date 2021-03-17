@@ -6,4 +6,11 @@
 
 ## Licensing
 
-The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`). However, one portion is licensed under `MIT`, and several others are licensed under `GPL-2.0-or-later`. Where applicable, this is clearly indicated by the presence of a separate `LICENSE` file.
+The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`).
+
+### Exceptions
+
+- All files in `contracts/interfaces/` are licensed under `GPL-2.0-or-later` (as indicated in their SPDX headers), see `contracts/interfaces/LICENSE`
+- Several files in `contracts/libraries/` are licensed under `GPL-2.0-or-later` (as indicated in their SPDX headers), see `contracts/libraries/LICENSE_GPL`
+- `contracts/libraries/FullMath.sol` is licensed under `MIT` (as indicated in its SPDX header), see `contracts/libraries/LICENSE_MIT`
+- All files in `contracts/test` remain unlicensed.

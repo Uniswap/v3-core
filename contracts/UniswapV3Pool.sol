@@ -5,19 +5,19 @@ import './interfaces/IUniswapV3Pool.sol';
 
 import './NoDelegateCall.sol';
 
-import './libraries/GPL/LowGasSafeMath.sol';
-import './libraries/GPL/SafeCast.sol';
+import './libraries/LowGasSafeMath.sol';
+import './libraries/SafeCast.sol';
 import './libraries/Tick.sol';
 import './libraries/TickBitmap.sol';
 import './libraries/SecondsOutside.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
 
-import './libraries/MIT/FullMath.sol';
-import './libraries/GPL/FixedPoint128.sol';
-import './libraries/GPL/TransferHelper.sol';
-import './libraries/GPL/TickMath.sol';
-import './libraries/GPL/LiquidityMath.sol';
+import './libraries/FullMath.sol';
+import './libraries/FixedPoint128.sol';
+import './libraries/TransferHelper.sol';
+import './libraries/TickMath.sol';
+import './libraries/LiquidityMath.sol';
 import './libraries/SqrtPriceMath.sol';
 import './libraries/SwapMath.sol';
 
