@@ -6,7 +6,7 @@
 
 ## Licensing
 
-The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`).
+The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`), see `LICENSE`.
 
 ### Exceptions
 
