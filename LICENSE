@@ -12,9 +12,11 @@ Licensor:             Uniswap Labs
 Licensed Work:        Uniswap V3 Core
                       The Licensed Work is (c) 2021 Uniswap Labs
 
-Additional Use Grant: None
+Additional Use Grant: Any uses listed and defined at
+                      v3-core-license-grants.uniswap.eth
 
-Change Date:          2023-04-01
+Change Date:          The earlier of 2023-04-01 or a date specified at
+                      v3-core-license-date.uniswap.eth
 
 Change License:       GNU General Public License v2.0 or later
 
