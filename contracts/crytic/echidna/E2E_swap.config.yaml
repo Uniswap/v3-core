@@ -1,0 +1,10 @@
+checkAsserts: true
+coverage: true
+codeSize: 0x60000
+corpusDir: echidna_e2e_swap_corpus
+seqLen: 10
+testLimit: 100000
+timeout: 3600 # 1 hour
+
+# blacklist
+filterFunctions: ['E2E_swap.viewRandomInit(uint128)']
