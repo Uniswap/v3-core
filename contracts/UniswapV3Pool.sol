@@ -12,7 +12,6 @@ import './libraries/TickBitmap.sol';
 import './libraries/SecondsOutside.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
-import './libraries/LowGasBalanceOf.sol';
 
 import './libraries/FullMath.sol';
 import './libraries/FixedPoint128.sol';
@@ -141,12 +140,18 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
     /// @dev Get the pool's balance of token0
     function balance0() private view returns (uint256) {
-        return LowGasBalanceOf.balanceOf(token0, address(this));
+        (bool success, bytes memory data) =
+            token0.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
+        require(success && data.length == 32);
+        return abi.decode(data, (uint256));
     }
 
     /// @dev Get the pool's balance of token1
     function balance1() private view returns (uint256) {
-        return LowGasBalanceOf.balanceOf(token1, address(this));
+        (bool success, bytes memory data) =
+            token1.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
+        require(success && data.length == 32);
+        return abi.decode(data, (uint256));
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
