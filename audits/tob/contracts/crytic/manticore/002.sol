@@ -1,4 +1,4 @@
-import '../../libraries/BitMath.sol';
+import '../../../../../contracts/libraries/BitMath.sol';
 
 contract VerifyBitMathLsb {
     function verify(uint256 x) external {

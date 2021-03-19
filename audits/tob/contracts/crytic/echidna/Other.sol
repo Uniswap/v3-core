@@ -1,7 +1,7 @@
 pragma solidity =0.7.6;
 
-import '../../libraries/SqrtPriceMath.sol';
-import '../../libraries/TickMath.sol';
+import '../../../../../contracts/libraries/SqrtPriceMath.sol';
+import '../../../../../contracts/libraries/TickMath.sol';
 
 contract Other {
     // prop #30

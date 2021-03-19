@@ -1,4 +1,4 @@
-import '../../libraries/LiquidityMath.sol';
+import '../../../../../contracts/libraries/LiquidityMath.sol';
 
 contract VerifyLiquidityMathAddDelta {
     function verify(uint128 x, int128 y) external {

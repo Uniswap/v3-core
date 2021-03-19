@@ -2,10 +2,10 @@ pragma solidity =0.7.6;
 pragma abicoder v2;
 
 import './Setup.sol';
-import '../../test/TestERC20.sol';
-import '../../libraries/TickMath.sol';
-import '../../UniswapV3Pool.sol';
-import '../../libraries/Position.sol';
+import '../../../../../contracts/test/TestERC20.sol';
+import '../../../../../contracts/libraries/TickMath.sol';
+import '../../../../../contracts/UniswapV3Pool.sol';
+import '../../../../../contracts/libraries/Position.sol';
 
 // import 'hardhat/console.sol';
 

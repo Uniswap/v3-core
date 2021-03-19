@@ -1,9 +1,9 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import '../../test/TestERC20.sol';
-import '../../UniswapV3Pool.sol';
-import '../../UniswapV3Factory.sol';
+import '../../../../../contracts/test/TestERC20.sol';
+import '../../../../../contracts/UniswapV3Pool.sol';
+import '../../../../../contracts/UniswapV3Factory.sol';
 
 contract SetupToken {
     TestERC20 public token;
