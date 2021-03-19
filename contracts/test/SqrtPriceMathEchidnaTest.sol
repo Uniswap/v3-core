@@ -50,11 +50,11 @@ contract SqrtPriceMathEchidnaTest {
 
         if (zeroForOne) {
             assert(sqrtQ <= sqrtP);
-            assert(amountOut <= SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, true));
+            assert(amountOut <= SqrtPriceMath.getAmount1Delta(sqrtQ, sqrtP, liquidity, false));
         } else {
             assert(sqrtQ > 0); // this has to be true, otherwise we need another require
             assert(sqrtQ >= sqrtP);
-            assert(amountOut <= SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, true));
+            assert(amountOut <= SqrtPriceMath.getAmount0Delta(sqrtP, sqrtQ, liquidity, false));
         }
     }
 

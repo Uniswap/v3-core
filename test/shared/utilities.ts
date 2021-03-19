@@ -153,7 +153,7 @@ export function createPoolFunctions({
         sqrtPriceLimitX96 = MAX_SQRT_RATIO.sub(1)
       }
     }
-    await inputToken.approve(swapTarget.address, exactInput ? amountIn : constants.MaxUint256)
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
