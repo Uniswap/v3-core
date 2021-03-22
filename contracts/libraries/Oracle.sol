@@ -275,6 +275,7 @@ library Oracle {
     }
 
     /// @notice Returns the accumulator values as of each time seconds ago from the given time in the array of `secondsAgos`
+    /// @dev Reverts if `secondsAgos` > oldest observation
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param secondsAgos Each amount of time to look back, in seconds, at which point to return an observation
