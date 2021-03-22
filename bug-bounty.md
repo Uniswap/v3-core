@@ -67,7 +67,7 @@ To be eligible for a reward under this Program, you must:
 - Not submit a vulnerability caused by an underlying issue that is the same as an issue on which a reward has been paid under this Program.
 - Not be one of our current or former employees, vendors, or contractors or an employee of any of those vendors or contractors.
 - Not be subject to US sanctions or reside in a US-embargoed country.
-- Obtain the consent of your parent or guardian if you are considered a minor.
+- Be at least 18 years of age or, if younger, submit your vulnerability with the consent of your parent or guardian.
 
 ## Other Terms
 
