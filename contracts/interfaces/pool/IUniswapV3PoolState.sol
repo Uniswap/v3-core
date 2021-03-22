@@ -73,8 +73,7 @@ interface IUniswapV3PoolState {
     function tickBitmap(int16 wordPosition) external view returns (uint256);
 
     /// @notice Returns 8 packed tick seconds outside values
-    /// @param wordPosition The index of the word in the map to fetch. The seconds outside 32 bit values are packed into
-    /// words based on the tick and the pool's tick spacing
+    /// @param See SecondsOutside for more information
     function secondsOutside(int24 wordPosition) external view returns (uint256);
 
     /// @notice Returns the information about a position by the position's key
