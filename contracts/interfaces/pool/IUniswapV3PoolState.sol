@@ -69,8 +69,7 @@ interface IUniswapV3PoolState {
         );
 
     /// @notice Returns 256 packed tick initialized boolean values
-    /// @param wordPosition the index of the word in the bitmap to fetch. The initialized booleans are packed into words
-    /// based on the tick and the pool's tick spacing
+    /// @dev See TickBitmap for more information
     function tickBitmap(int16 wordPosition) external view returns (uint256);
 
     /// @notice Returns 8 packed tick seconds outside values
