@@ -9,6 +9,10 @@ This repository contains the core smart contracts for the Uniswap V3 Protocol.
 For higher level contracts, see the [uniswap-v3-periphery](https://github.com/Uniswap/uniswap-v3-periphery)
 repository.
 
+## Bug bounty
+
+This repository is subject to the Uniswap v3 bug bounty program, per the terms defined [here](./bug-bounty.md).
+
 ## Local deployment
 
 In order to deploy this code to a local testnet, you should install the npm package
