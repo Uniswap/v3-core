@@ -57,7 +57,7 @@ library Oracle {
     }
 
     /// @notice Writes an oracle observation to the array
-    /// @dev Writable at most once per block. Index represents the most recently written element, and must be tracked externally.
+    /// @dev Writable at most once per block. Index represents the most recently written element. cardinality and index must be tracked externally.
     /// If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
     /// is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
     /// @param self The stored oracle array

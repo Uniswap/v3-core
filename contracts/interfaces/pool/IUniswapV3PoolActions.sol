@@ -28,7 +28,7 @@ interface IUniswapV3PoolActions {
         bytes calldata data
     ) external returns (uint256 amount0, uint256 amount1);
 
-    /// @notice Collects fees owed to a position
+    /// @notice Collects swap fees owed to a position
     /// @dev Does not recompute fees, which must be done either via mint, burn or poke. Must be called by the position
     /// owner. To withdraw no fees for a token, amount0Requested or amount1Request may be set to zero. To withdraw all fees owed, caller may
     /// pass any value greater than the fees owed.

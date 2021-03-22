@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 /// @title An interface for a contract that is capable of deploying Uniswap V3 Pools
 /// @notice A contract that constructs a pool must implement this to pass arguments to the pool
-/// @dev This is used to remove all constructor arguments from the pool enabling pool addresses to be computed cheaply
+/// @dev This is used to remove all constructor arguments from the pool, enabling pool addresses to be computed cheaply via CREATE2
 /// without storing the entire init code of the pool.
 interface IUniswapV3PoolDeployer {
     /// @notice Get the parameters to be used in constructing the pool, set transiently during pool creation.
