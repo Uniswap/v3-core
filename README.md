@@ -11,7 +11,7 @@ repository.
 
 ## Bug bounty
 
-This repository is subject to the Uniswap v3 bug bounty program, per the terms defined [here](./bug-bounty.md).
+This repository is subject to the Uniswap V3 bug bounty program, per the terms defined [here](./bug-bounty.md).
 
 ## Local deployment
 
