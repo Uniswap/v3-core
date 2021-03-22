@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
 /// @title Stores packed 32 bit timestamp values
