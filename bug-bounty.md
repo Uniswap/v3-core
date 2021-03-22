@@ -2,15 +2,15 @@
 
 ## Overview
 
-Starting on March 23rd, 2021, the [uniswap-v3-core](https://github.com/Uniswap/uniswap-v3-core) repository is subject 
+Starting on March 23rd, 2021, the [uniswap-v3-core](https://github.com/Uniswap/uniswap-v3-core) repository is subject
 to the Uniswap v3 Bug Bounty (the “Program”) to incentivize responsible bug disclosure.
 
-We are limiting the scope of the Program to critical and high severity bugs and are offering a 
+We are limiting the scope of the Program to critical and high severity bugs and are offering a
 reward of up to $500,000. Happy hunting!
 
 ## Scope
 
-The scope of the Program will initially be limited to high severity bugs. 
+The scope of the Program will initially be limited to high severity bugs.
 Any bug found that would result in draining funds held by the contract is considered in scope.
 
 The following are not within the scope of the Program:
@@ -31,20 +31,20 @@ Vulnerabilities contingent upon the occurrence of any of the following also are 
 
 ## Assumptions
 
-Uniswap V3 was developed with the following assumptions, and thus any bug must also adhere to the following assumptions 
+Uniswap V3 was developed with the following assumptions, and thus any bug must also adhere to the following assumptions
 to be eligible for the bug bounty:
 
 - The total supply of any token does not exceed 2<sup>128</sup> - 1, i.e. `type(uint128).max`.
-- The transfer and transferFrom methods of any token strictly decrease the balance of the token sender by the transfer 
+- The transfer and transferFrom methods of any token strictly decrease the balance of the token sender by the transfer
   amount and increases the balance of token recipient by the transfer amount, i.e. fee on transfer tokens are excluded.
-- The token balance of an address can only change due to a call to transfer by the sender or transferFrom by an approved 
+- The token balance of an address can only change due to a call to transfer by the sender or transferFrom by an approved
   address, i.e. rebase tokens and interest bearing tokens are excluded.
 
 ## Rewards
 
-Rewards will be allocated based on the severity of the bug disclosed and will be evaluated and rewarded at the discretion 
-of the Uniswap Labs team. For critical bugs that lead to any loss of LP funds, rewards of up to $500,000 will be granted. 
-Lower severity bugs will be rewarded at the discretion of the team. In addition, all vulnerabilities disclosed prior to 
+Rewards will be allocated based on the severity of the bug disclosed and will be evaluated and rewarded at the discretion
+of the Uniswap Labs team. For critical bugs that lead to any loss of LP funds, rewards of up to $500,000 will be granted.
+Lower severity bugs will be rewarded at the discretion of the team. In addition, all vulnerabilities disclosed prior to
 the target mainnet launch date, May 5 will be subject to receive higher rewards.
 
 ## Disclosure
@@ -55,24 +55,24 @@ The vulnerability must not be disclosed publicly or to any other person, entity 
 been notified, has fixed the issue, and has granted permission for public disclosure. In addition, disclosure must be made
 within 24 hours following discovery of the vulnerability.
 
-A detailed report of a vulnerability increases the likelihood of a reward and may increase the reward amount. 
+A detailed report of a vulnerability increases the likelihood of a reward and may increase the reward amount.
 Please provide as much information about the vulnerability as possible, including:
 
 - The conditions on which reproducing the bug is contingent.
 - The steps needed to reproduce the bug or, preferably, a proof of concept.
 - The potential implications of the vulnerability being abused.
 
-Anyone who reports a unique, previously-unreported vulnerability that results in a change to the code or a configuration 
-change and who keeps such vulnerability confidential until it has been resolved by our engineers will be recognized 
+Anyone who reports a unique, previously-unreported vulnerability that results in a change to the code or a configuration
+change and who keeps such vulnerability confidential until it has been resolved by our engineers will be recognized
 publicly for their contribution if they so choose.
 
 ## Eligibility
 
 To be eligible for a reward under this Program, you must:
 
-- Discover a previously unreported, non-public vulnerability that would result in a loss of and/or lock on any ERC-20 
+- Discover a previously unreported, non-public vulnerability that would result in a loss of and/or lock on any ERC-20
   token on Uniswap V3 (but not on any third party platform interacting with Uniswap V3) and that is within the scope of this Program.
-- Be the first to disclose the unique vulnerability to security@uniswap.org, in compliance with the disclosure requirements 
+- Be the first to disclose the unique vulnerability to security@uniswap.org, in compliance with the disclosure requirements
   above. If similar vulnerabilities are reported within the same 24 hour period, rewards will be split at the discretion of Uniswap Labs.
 - Provide sufficient information to enable our engineers to reproduce and fix the vulnerability.
 - Not engage in any unlawful conduct when disclosing the bug to security@uniswap.org, including through threats, demands, or any other coercive tactics.
@@ -87,7 +87,7 @@ To be eligible for a reward under this Program, you must:
 
 ## Other Terms
 
-By submitting your report, you grant Uniswap Labs any and all rights, including intellectual property rights, needed to 
-validate, mitigate, and disclose the vulnerability. All reward decisions, including eligibility for and amounts of the 
+By submitting your report, you grant Uniswap Labs any and all rights, including intellectual property rights, needed to
+validate, mitigate, and disclose the vulnerability. All reward decisions, including eligibility for and amounts of the
 rewards and the manner in which such rewards will be paid, are made at our sole discretion.
 The terms and conditions of this Program may be altered at any time.
