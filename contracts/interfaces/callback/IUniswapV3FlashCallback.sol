@@ -5,7 +5,7 @@ pragma solidity >=0.5.0;
 /// @notice Any contract that calls IUniswapV3PoolActions#flash must implement this interface
 interface IUniswapV3FlashCallback {
     /// @notice Called after transferring tokens to the `msg.sender`, allows the sender to perform any actions and then
-    /// repay the flash transaction at the end of the transaction.
+    /// repay the flash transaction at the end of the transaction
     /// @dev The caller of this method must be checked to be a UniswapV3Pool deployed by the canonical factory
     /// @param fee0 The fee amount in token0 due to the pool by the end of the flash
     /// @param fee1 The fee amount in token1 due to the pool by the end of the flash
