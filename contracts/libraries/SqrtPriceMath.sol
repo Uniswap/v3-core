@@ -194,7 +194,7 @@ library SqrtPriceMath {
     /// @notice Helper that gets signed token0 delta
     /// @param sqrtRatioAX96 A sqrt price
     /// @param sqrtRatioBX96 Another sqrt price
-    /// @param liquidity The change in liquidity
+    /// @param liquidity The change in liquidity for which to compute the amount0 delta
     /// @return amount0 Amount of token0 corresponding to the passed liquidityDelta between the two prices
     function getAmount0Delta(
         uint160 sqrtRatioAX96,
@@ -210,7 +210,7 @@ library SqrtPriceMath {
     /// @notice Helper that gets signed token1 delta
     /// @param sqrtRatioAX96 A sqrt price
     /// @param sqrtRatioBX96 Another sqrt price
-    /// @param liquidity The change in liquidity
+    /// @param liquidity The change in liquidity for which to compute the amount1 delta
     /// @return amount1 Amount of token1 corresponding to the passed liquidityDelta between the two prices
     function getAmount1Delta(
         uint160 sqrtRatioAX96,

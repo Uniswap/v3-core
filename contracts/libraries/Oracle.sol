@@ -57,7 +57,7 @@ library Oracle {
     }
 
     /// @notice Writes an oracle observation to the array
-    /// @dev Writable at most once per block. Index represents the most recently written element, and must be tracked externally.
+    /// @dev Writable at most once per block. Index represents the most recently written element. cardinality and index must be tracked externally.
     /// If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
     /// is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
     /// @param self The stored oracle array
@@ -133,7 +133,8 @@ library Oracle {
         return aAdjusted <= bAdjusted;
     }
 
-    /// @notice Fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    /// @notice Fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied.
+    /// The result may be the same observation, or adjacent observations.
     /// @dev The answer must be contained in the array, used when the target is located within the stored observation
     /// boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
     /// @param self The stored oracle array

@@ -90,7 +90,7 @@ library Tick {
     /// @param liquidityDelta A new amount of liquidity to be added (subtracted) when tick is crossed from left to right (right to left)
     /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
     /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
-    /// @param upper A bool representing whether or not the call represents the upper, or lower tick
+    /// @param upper true for updating a position's upper tick, or false for updating a position's lower tick
     /// @param maxLiquidity The maximum liquidity allocation for a single tick
     /// @return flipped Whether the tick was flipped from initialized to uninitialized, or vice versa
     function update(

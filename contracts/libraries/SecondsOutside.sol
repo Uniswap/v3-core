@@ -5,6 +5,8 @@ pragma solidity >=0.5.0;
 /// @notice Contains methods for working with a mapping from tick to 32 bit timestamp values, specifically seconds
 /// spent outside the tick.
 /// @dev The mapping uses int24 for keys since ticks are represented as int24 and there are 8 (2^3) values per word.
+/// Note "seconds outside" is always a relative measurement, only consistent for as long as a the lower tick and upper tick
+/// have gross liquidity greater than 0.
 library SecondsOutside {
     /// @notice Computes the position of the least significant bit of the 32 bit seconds outside value for a given tick
     /// @param tick the tick for which to compute the position

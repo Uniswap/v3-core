@@ -5,7 +5,7 @@ pragma solidity >=0.5.0;
 /// @notice Contains pool methods that can be called by anyone
 interface IUniswapV3PoolActions {
     /// @notice Sets the initial price for the pool
-    /// @dev Price is represented as a sqrt(token1/token0) Q64.96 value
+    /// @dev Price is represented as a sqrt(amountToken1/amountToken0) Q64.96 value
     /// @param sqrtPriceX96 the initial sqrt price of the pool as a Q64.96
     function initialize(uint160 sqrtPriceX96) external;
 
@@ -28,10 +28,11 @@ interface IUniswapV3PoolActions {
         bytes calldata data
     ) external returns (uint256 amount0, uint256 amount1);
 
-    /// @notice Collects fees owed to a position
-    /// @dev Does not recompute fees, which must be done either via mint, burn or poke. Must be called by the position
-    /// owner. To withdraw no fees for a token, amount0Requested or amount1Request may be set to zero. To withdraw all fees owed, caller may
-    /// pass any value greater than the fees owed.
+    /// @notice Collects tokens owed to a position
+    /// @dev Does not recompute fees earned, which must be done either via mint or burn of any amount of liquidity.
+    /// Collect must be called by the position owner. To withdraw only token0 or only token1, amount0Requested or
+    /// amount1Requested may be set to zero. To withdraw all tokens owed, caller may pass any value greater than the
+    /// actual tokens owed, e.g. type(uint128).max. Tokens owed may be from accumulated swap fees or burned liquidity.
     /// @param recipient The address which should receive the fees collected
     /// @param tickLower The lower tick of the position for which to collect fees
     /// @param tickUpper The upper tick of the position for which to collect fees
