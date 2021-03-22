@@ -144,7 +144,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     function balance0() private view returns (uint256) {
         (bool success, bytes memory data) =
             token0.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
-        require(success && data.length == 32);
+        require(success && data.length >= 32);
         return abi.decode(data, (uint256));
     }
 
@@ -154,7 +154,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     function balance1() private view returns (uint256) {
         (bool success, bytes memory data) =
             token1.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
-        require(success && data.length == 32);
+        require(success && data.length >= 32);
         return abi.decode(data, (uint256));
     }
 
