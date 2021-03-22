@@ -139,13 +139,23 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     /// @dev Get the pool's balance of token0
+    /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
+    /// check
     function balance0() private view returns (uint256) {
-        return IERC20Minimal(token0).balanceOf(address(this));
+        (bool success, bytes memory data) =
+            token0.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
+        require(success && data.length >= 32);
+        return abi.decode(data, (uint256));
     }
 
     /// @dev Get the pool's balance of token1
+    /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
+    /// check
     function balance1() private view returns (uint256) {
-        return IERC20Minimal(token1).balanceOf(address(this));
+        (bool success, bytes memory data) =
+            token1.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
+        require(success && data.length >= 32);
+        return abi.decode(data, (uint256));
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
