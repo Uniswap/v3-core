@@ -3,7 +3,7 @@
   "description": "🦄 Core smart contracts of Uniswap V3",
   "license": "BUSL-1.1",
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "version": "1.0.0-rc.0",
   "homepage": "https://uniswap.org",
