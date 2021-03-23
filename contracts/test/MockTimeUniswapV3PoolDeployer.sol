@@ -7,7 +7,6 @@ import './MockTimeUniswapV3Pool.sol';
 
 contract MockTimeUniswapV3PoolDeployer is IUniswapV3PoolDeployer {
     struct Parameters {
-        address factory;
         address token0;
         address token1;
         uint24 fee;
@@ -19,13 +18,12 @@ contract MockTimeUniswapV3PoolDeployer is IUniswapV3PoolDeployer {
     event PoolDeployed(address pool);
 
     function deploy(
-        address factory,
         address token0,
         address token1,
         uint24 fee,
         int24 tickSpacing
     ) external returns (address pool) {
-        parameters = Parameters({factory: factory, token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
+        parameters = Parameters({token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
         pool = address(
             new MockTimeUniswapV3Pool{salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing))}()
         );
