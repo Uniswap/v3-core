@@ -8,10 +8,10 @@ exports[`SwapMath #computeSwapStep gas swap one for zero exact out capped 1`] = 
 
 exports[`SwapMath #computeSwapStep gas swap one for zero exact out partial 1`] = `2776`;
 
-exports[`SwapMath #computeSwapStep gas swap zero for one exact in capped 1`] = `2078`;
+exports[`SwapMath #computeSwapStep gas swap zero for one exact in capped 1`] = `2106`;
 
-exports[`SwapMath #computeSwapStep gas swap zero for one exact in partial 1`] = `3054`;
+exports[`SwapMath #computeSwapStep gas swap zero for one exact in partial 1`] = `3110`;
 
-exports[`SwapMath #computeSwapStep gas swap zero for one exact out capped 1`] = `1830`;
+exports[`SwapMath #computeSwapStep gas swap zero for one exact out capped 1`] = `1858`;
 
-exports[`SwapMath #computeSwapStep gas swap zero for one exact out partial 1`] = `3054`;
+exports[`SwapMath #computeSwapStep gas swap zero for one exact out partial 1`] = `3110`;
