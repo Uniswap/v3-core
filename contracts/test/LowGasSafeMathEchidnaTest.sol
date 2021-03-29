@@ -33,4 +33,14 @@ contract LowGasSafeMathEchidnaTest {
         assert(z == x - y);
         assert(y < 0 ? z > x : z <= x);
     }
+
+    function checkDivRoundingUp(uint256 x, uint256 d) external pure {
+        uint256 z = LowGasSafeMath.divRoundingUp(x, d);
+        uint256 diff = z - (x / d);
+        if (x % d == 0) {
+            assert(diff == 0);
+        } else {
+            assert(diff == 1);
+        }
+    }
 }

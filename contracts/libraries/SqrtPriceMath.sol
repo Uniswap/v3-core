@@ -5,7 +5,6 @@ import './LowGasSafeMath.sol';
 import './SafeCast.sol';
 
 import './FullMath.sol';
-import './UnsafeMath.sol';
 import './FixedPoint96.sol';
 
 /// @title Functions based on Q64.96 sqrt price and liquidity
@@ -44,7 +43,7 @@ library SqrtPriceMath {
                     return uint160(FullMath.mulDivRoundingUp(numerator1, sqrtPX96, denominator));
             }
 
-            return uint160(UnsafeMath.divRoundingUp(numerator1, (numerator1 / sqrtPX96).add(amount)));
+            return uint160(LowGasSafeMath.divRoundingUp(numerator1, (numerator1 / sqrtPX96).add(amount)));
         } else {
             uint256 product;
             // if the product overflows, we know the denominator underflows
@@ -86,7 +85,7 @@ library SqrtPriceMath {
             uint256 quotient =
                 (
                     amount <= type(uint160).max
-                        ? UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                        ? LowGasSafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
                         : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
                 );
 
@@ -163,7 +162,7 @@ library SqrtPriceMath {
 
         return
             roundUp
-                ? UnsafeMath.divRoundingUp(
+                ? LowGasSafeMath.divRoundingUp(
                     FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96),
                     sqrtRatioAX96
                 )

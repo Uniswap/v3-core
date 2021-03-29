@@ -23,7 +23,6 @@ jobs:
           - OracleEchidnaTest
           - BitMathEchidnaTest
           - LowGasSafeMathEchidnaTest
-          - UnsafeMathEchidnaTest
           - FullMathEchidnaTest
 
     steps:

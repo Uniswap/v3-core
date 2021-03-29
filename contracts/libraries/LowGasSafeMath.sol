@@ -43,4 +43,16 @@ library LowGasSafeMath {
     function sub(int256 x, int256 y) internal pure returns (int256 z) {
         require((z = x - y) <= x == (y >= 0));
     }
+
+    /// @notice Returns ceil(x / y)
+    /// @dev Throws if y == 0
+    /// @param x The dividend
+    /// @param y The divisor
+    /// @return z The quotient, ceil(x / y)
+    function divRoundingUp(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require(y > 0);
+        assembly {
+            z := add(div(x, y), gt(mod(x, y), 0))
+        }
+    }
 }
