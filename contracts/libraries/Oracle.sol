@@ -256,23 +256,25 @@ library Oracle {
         (Observation memory beforeOrAt, Observation memory atOrAfter) =
             getSurroundingObservations(self, time, target, tick, index, liquidity, cardinality);
 
-        Oracle.Observation memory at;
         if (target == beforeOrAt.blockTimestamp) {
             // we're at the left boundary
-            at = beforeOrAt;
+            return (beforeOrAt.tickCumulative, beforeOrAt.liquidityCumulative);
         } else if (target == atOrAfter.blockTimestamp) {
             // we're at the right boundary
-            at = atOrAfter;
+            return (atOrAfter.tickCumulative, atOrAfter.liquidityCumulative);
         } else {
             // we're in the middle
-            uint32 delta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
-            int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
-            uint128 liquidityDerived =
-                uint128((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / delta);
-            at = transform(beforeOrAt, target, tickDerived, liquidityDerived);
+            uint32 observationTimeDelta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
+            uint32 targetDelta = target - beforeOrAt.blockTimestamp;
+            return (
+                beforeOrAt.tickCumulative +
+                    ((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / observationTimeDelta) *
+                    targetDelta,
+                beforeOrAt.liquidityCumulative +
+                    ((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / observationTimeDelta) *
+                    targetDelta
+            );
         }
-
-        return (at.tickCumulative, at.liquidityCumulative);
     }
 
     /// @notice Returns the accumulator values as of each time seconds ago from the given time in the array of `secondsAgos`
