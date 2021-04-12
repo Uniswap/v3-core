@@ -268,10 +268,10 @@ library Oracle {
             uint32 targetDelta = target - beforeOrAt.blockTimestamp;
             return (
                 beforeOrAt.tickCumulative +
-                    int56((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / observationTimeDelta) *
+                    ((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / observationTimeDelta) *
                     targetDelta,
                 beforeOrAt.liquidityCumulative +
-                    uint160((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / observationTimeDelta) *
+                    ((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / observationTimeDelta) *
                     targetDelta
             );
         }
