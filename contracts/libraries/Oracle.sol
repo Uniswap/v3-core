@@ -265,13 +265,14 @@ library Oracle {
         } else {
             // we're in the middle
             uint32 observationTimeDelta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
-            int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / observationTimeDelta);
-            uint128 liquidityDerived =
-                uint128((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / observationTimeDelta);
             uint32 targetDelta = target - beforeOrAt.blockTimestamp;
             return (
-                beforeOrAt.tickCumulative + int56(tickDerived) * targetDelta,
-                beforeOrAt.liquidityCumulative + uint160(liquidityDerived) * targetDelta
+                beforeOrAt.tickCumulative +
+                    int56((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / observationTimeDelta) *
+                    targetDelta,
+                beforeOrAt.liquidityCumulative +
+                    uint160((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / observationTimeDelta) *
+                    targetDelta
             );
         }
     }
