@@ -147,7 +147,7 @@ describe('UniswapV3Pool gas tests', () => {
           expect((await pool.slot0()).tick).to.be.lte(startingTick - 2 * tickSpacing) // we crossed the last tick
         })
 
-        it('large swap crossing several initialized ticks after some time passes (seconds outside is set)', async () => {
+        it('large swap crossing several initialized ticks after some time passes', async () => {
           await mint(wallet.address, startingTick - 3 * tickSpacing, startingTick - tickSpacing, expandTo18Decimals(1))
           await mint(
             wallet.address,

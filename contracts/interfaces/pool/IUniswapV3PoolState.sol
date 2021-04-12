@@ -70,9 +70,6 @@ interface IUniswapV3PoolState {
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
     function tickBitmap(int16 wordPosition) external view returns (uint256);
 
-    /// @notice Returns 8 packed tick seconds outside values. See SecondsOutside for more information
-    function secondsOutside(int24 wordPosition) external view returns (uint256);
-
     /// @notice Returns the information about a position by the position's key
     /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
     /// @return _liquidity The amount of liquidity in the position,

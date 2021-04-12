@@ -9,7 +9,6 @@ import './libraries/LowGasSafeMath.sol';
 import './libraries/SafeCast.sol';
 import './libraries/Tick.sol';
 import './libraries/TickBitmap.sol';
-import './libraries/SecondsOutside.sol';
 import './libraries/Position.sol';
 import './libraries/Oracle.sol';
 
@@ -35,7 +34,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
     using TickBitmap for mapping(int16 => uint256);
-    using SecondsOutside for mapping(int24 => uint256);
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
     using Oracle for Oracle.Observation[65535];
@@ -96,8 +94,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @inheritdoc IUniswapV3PoolState
     mapping(int16 => uint256) public override tickBitmap;
     /// @inheritdoc IUniswapV3PoolState
-    mapping(int24 => uint256) public override secondsOutside;
-    /// @inheritdoc IUniswapV3PoolState
     mapping(bytes32 => Position.Info) public override positions;
     /// @inheritdoc IUniswapV3PoolState
     Oracle.Observation[65535] public override observations;
@@ -156,13 +152,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             token1.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
         require(success && data.length >= 32);
         return abi.decode(data, (uint256));
-    }
-
-    /// @inheritdoc IUniswapV3PoolDerivedState
-    function secondsInside(int24 tickLower, int24 tickUpper) external view override noDelegateCall returns (uint32) {
-        checkTicks(tickLower, tickUpper);
-        require(ticks[tickLower].liquidityGross > 0 && ticks[tickUpper].liquidityGross > 0, 'X');
-        return secondsOutside.secondsInside(tickLower, tickUpper, slot0.tick, tickSpacing, _blockTimestamp());
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
@@ -325,8 +314,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         bool flippedLower;
         bool flippedUpper;
         if (liquidityDelta != 0) {
-            uint32 blockTimestamp = _blockTimestamp();
-
             flippedLower = ticks.update(
                 tickLower,
                 tick,
@@ -348,11 +335,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
             if (flippedLower) {
                 tickBitmap.flipTick(tickLower, tickSpacing);
-                secondsOutside.initialize(tickLower, tick, tickSpacing, blockTimestamp);
             }
             if (flippedUpper) {
                 tickBitmap.flipTick(tickUpper, tickSpacing);
-                secondsOutside.initialize(tickUpper, tick, tickSpacing, blockTimestamp);
             }
         }
 
@@ -365,11 +350,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         if (liquidityDelta < 0) {
             if (flippedLower) {
                 ticks.clear(tickLower);
-                secondsOutside.clear(tickLower, tickSpacing);
             }
             if (flippedUpper) {
                 ticks.clear(tickUpper);
-                secondsOutside.clear(tickUpper, tickSpacing);
             }
         }
     }
@@ -615,8 +598,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     // if we're moving leftward, we interpret liquidityNet as the opposite sign
                     // safe because liquidityNet cannot be type(int128).min
                     if (zeroForOne) liquidityNet = -liquidityNet;
-
-                    secondsOutside.cross(step.tickNext, tickSpacing, cache.blockTimestamp);
 
                     state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);
                 }
