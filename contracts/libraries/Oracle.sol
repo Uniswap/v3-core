@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import './FullMath.sol';
-
 /// @title Oracle
 /// @notice Provides price and liquidity data useful for a wide variety of system designs
 /// @dev Instances of stored oracle data, "observations", are collected in the oracle array
@@ -280,11 +278,9 @@ library Oracle {
                     targetDelta,
                 beforeOrAt.secondsPerLiquidityCumulativeX128 +
                     uint160(
-                        FullMath.mulDiv(
-                            atOrAfter.secondsPerLiquidityCumulativeX128 - beforeOrAt.secondsPerLiquidityCumulativeX128,
-                            targetDelta,
-                            observationTimeDelta
-                        )
+                        (uint256(
+                            atOrAfter.secondsPerLiquidityCumulativeX128 - beforeOrAt.secondsPerLiquidityCumulativeX128
+                        ) * targetDelta) / observationTimeDelta
                     )
             );
         }
