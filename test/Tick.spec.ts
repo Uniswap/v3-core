@@ -67,6 +67,7 @@ describe('Tick', () => {
         feeGrowthOutside1X128: 3,
         liquidityGross: 0,
         liquidityNet: 0,
+        secondsPerLiquidityOutsideX128: 0,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(13)
@@ -79,6 +80,7 @@ describe('Tick', () => {
         feeGrowthOutside1X128: 3,
         liquidityGross: 0,
         liquidityNet: 0,
+        secondsPerLiquidityOutsideX128: 0,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(13)
@@ -91,12 +93,14 @@ describe('Tick', () => {
         feeGrowthOutside1X128: 3,
         liquidityGross: 0,
         liquidityNet: 0,
+        secondsPerLiquidityOutsideX128: 0,
       })
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 4,
         feeGrowthOutside1X128: 1,
         liquidityGross: 0,
         liquidityNet: 0,
+        secondsPerLiquidityOutsideX128: 0,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(9)
@@ -109,12 +113,14 @@ describe('Tick', () => {
         feeGrowthOutside1X128: constants.MaxUint256.sub(2),
         liquidityGross: 0,
         liquidityNet: 0,
+        secondsPerLiquidityOutsideX128: 0,
       })
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 3,
         feeGrowthOutside1X128: 5,
         liquidityGross: 0,
         liquidityNet: 0,
+        secondsPerLiquidityOutsideX128: 0,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(16)

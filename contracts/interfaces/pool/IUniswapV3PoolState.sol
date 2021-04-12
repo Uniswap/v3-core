@@ -64,7 +64,8 @@ interface IUniswapV3PoolState {
             uint128 liquidityGross,
             int128 liquidityNet,
             uint256 feeGrowthOutside0X128,
-            uint256 feeGrowthOutside1X128
+            uint256 feeGrowthOutside1X128,
+            uint160 secondsPerLiquidityOutsideX128
         );
 
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
@@ -93,10 +94,8 @@ interface IUniswapV3PoolState {
     /// @dev You most likely want to use #observe() instead of this method to get an observation as of some amount of time
     /// ago, rather than at a specific index in the array.
     /// @return blockTimestamp The timestamp of the observation,
-    /// Returns tickCumulative the current tick multiplied by seconds elapsed for the life of the pool as of the
-    /// observation,
-    /// Returns liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pool as of
-    /// the observation,
+    /// Returns tickCumulative the tick multiplied by seconds elapsed for the life of the pool as of the observation timestamp,
+    /// Returns secondsPerLiquidityCumulativeX128 the seconds per in range liquidity for the life of the pool as of the observation timestamp,
     /// Returns initialized whether the observation has been initialized and the values are safe to use
     function observations(uint256 index)
         external
@@ -104,7 +103,7 @@ interface IUniswapV3PoolState {
         returns (
             uint32 blockTimestamp,
             int56 tickCumulative,
-            uint160 liquidityCumulative,
+            uint160 secondsPerLiquidityCumulativeX128,
             bool initialized
         );
 }

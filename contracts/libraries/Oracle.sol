@@ -15,7 +15,7 @@ library Oracle {
         // the tick accumulator, i.e. tick * time elapsed since the pool was first initialized
         int56 tickCumulative;
         // the liquidity accumulator, i.e. liquidity * time elapsed since the pool was first initialized
-        uint160 liquidityCumulative;
+        uint160 secondsPerLiquidityCumulativeX128;
         // whether or not the observation is initialized
         bool initialized;
     }
@@ -38,7 +38,8 @@ library Oracle {
             Observation({
                 blockTimestamp: blockTimestamp,
                 tickCumulative: last.tickCumulative + int56(tick) * delta,
-                liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * delta,
+                secondsPerLiquidityCumulativeX128: last.secondsPerLiquidityCumulativeX128 +
+                    ((uint160(delta) << 128) / (liquidity > 0 ? liquidity : 1)),
                 initialized: true
             });
     }
@@ -52,7 +53,12 @@ library Oracle {
         internal
         returns (uint16 cardinality, uint16 cardinalityNext)
     {
-        self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 0, initialized: true});
+        self[0] = Observation({
+            blockTimestamp: time,
+            tickCumulative: 0,
+            secondsPerLiquidityCumulativeX128: 0,
+            initialized: true
+        });
         return (1, 1);
     }
 
@@ -235,7 +241,7 @@ library Oracle {
     /// @param liquidity The current in-range pool liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pool was first initialized, as of `secondsAgo`
-    /// @return liquidityCumulative The liquidity * time elapsed since the pool was first initialized, as of `secondsAgo`
+    /// @return secondsPerLiquidityCumulativeX128 The time elapsed / liquidity since the pool was first initialized, as of `secondsAgo`
     function observeSingle(
         Observation[65535] storage self,
         uint32 time,
@@ -244,11 +250,11 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) private view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+    ) private view returns (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) {
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
-            return (last.tickCumulative, last.liquidityCumulative);
+            return (last.tickCumulative, last.secondsPerLiquidityCumulativeX128);
         }
 
         uint32 target = time - secondsAgo;
@@ -267,12 +273,19 @@ library Oracle {
             // we're in the middle
             uint32 delta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
             int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
+            // TODO: better to linearly interpolate, because the reciprocal has rounding errors (which was not true
+            // when this just used liquidity because the delta of cumulative liquidity is always evenly divisible by the delta
+            // timestamp)
             uint128 liquidityDerived =
-                uint128((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / delta);
+                uint128(
+                    (uint256(2**160) /
+                        (atOrAfter.secondsPerLiquidityCumulativeX128 - beforeOrAt.secondsPerLiquidityCumulativeX128)) /
+                        delta
+                );
             at = transform(beforeOrAt, target, tickDerived, liquidityDerived);
         }
 
-        return (at.tickCumulative, at.liquidityCumulative);
+        return (at.tickCumulative, at.secondsPerLiquidityCumulativeX128);
     }
 
     /// @notice Returns the accumulator values as of each time seconds ago from the given time in the array of `secondsAgos`
@@ -285,7 +298,7 @@ library Oracle {
     /// @param liquidity The current in-range pool liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulatives The tick * time elapsed since the pool was first initialized, as of each `secondsAgo`
-    /// @return liquidityCumulatives The liquidity * time elapsed since the pool was first initialized, as of each `secondsAgo`
+    /// @return secondsPerLiquidityCumulativeX128s The cumulative seconds / in range liquidity since the pool was first initialized, as of each `secondsAgo`
     function observe(
         Observation[65535] storage self,
         uint32 time,
@@ -294,13 +307,13 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) internal view returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) {
+    ) internal view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) {
         require(cardinality > 0, 'I');
 
         tickCumulatives = new int56[](secondsAgos.length);
-        liquidityCumulatives = new uint160[](secondsAgos.length);
+        secondsPerLiquidityCumulativeX128s = new uint160[](secondsAgos.length);
         for (uint256 i = 0; i < secondsAgos.length; i++) {
-            (tickCumulatives[i], liquidityCumulatives[i]) = observeSingle(
+            (tickCumulatives[i], secondsPerLiquidityCumulativeX128s[i]) = observeSingle(
                 self,
                 time,
                 secondsAgos[i],

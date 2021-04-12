@@ -13,10 +13,10 @@ interface IUniswapV3PoolDerivedState {
     /// log base sqrt(1.0001) of token1 / token0. The TickMath library can be used to go from a tick value to a ratio.
     /// @param secondsAgos From how long ago each cumulative tick and liquidity value should be returned
     /// @return tickCumulatives Cumulative tick values as of each `secondsAgos` from the current block timestamp
-    /// @return liquidityCumulatives Cumulative liquidity-in-range value as of each `secondsAgos` from the current block
+    /// @return secondsPerLiquidityCumulativeX128s Cumulative seconds per liquidity-in-range value as of each `secondsAgos` from the current block
     /// timestamp
     function observe(uint32[] calldata secondsAgos)
         external
         view
-        returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives);
+        returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s);
 }

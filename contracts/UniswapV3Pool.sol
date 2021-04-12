@@ -160,7 +160,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         view
         override
         noDelegateCall
-        returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives)
+        returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
     {
         return
             observations.observe(
