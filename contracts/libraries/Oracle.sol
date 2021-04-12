@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import './FullMath.sol';
+
 /// @title Oracle
 /// @notice Provides price and liquidity data useful for a wide variety of system designs
 /// @dev Instances of stored oracle data, "observations", are collected in the oracle array
@@ -262,30 +264,30 @@ library Oracle {
         (Observation memory beforeOrAt, Observation memory atOrAfter) =
             getSurroundingObservations(self, time, target, tick, index, liquidity, cardinality);
 
-        Oracle.Observation memory at;
         if (target == beforeOrAt.blockTimestamp) {
             // we're at the left boundary
-            at = beforeOrAt;
+            return (beforeOrAt.tickCumulative, beforeOrAt.secondsPerLiquidityCumulativeX128);
         } else if (target == atOrAfter.blockTimestamp) {
             // we're at the right boundary
-            at = atOrAfter;
+            return (atOrAfter.tickCumulative, atOrAfter.secondsPerLiquidityCumulativeX128);
         } else {
             // we're in the middle
-            uint32 delta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
-            int24 tickDerived = int24((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / delta);
-            // TODO: better to linearly interpolate, because the reciprocal has rounding errors (which was not true
-            // when this just used liquidity because the delta of cumulative liquidity is always evenly divisible by the delta
-            // timestamp)
-            uint128 liquidityDerived =
-                uint128(
-                    (uint256(2**160) /
-                        (atOrAfter.secondsPerLiquidityCumulativeX128 - beforeOrAt.secondsPerLiquidityCumulativeX128)) /
-                        delta
-                );
-            at = transform(beforeOrAt, target, tickDerived, liquidityDerived);
+            uint32 observationTimeDelta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
+            uint32 targetDelta = target - beforeOrAt.blockTimestamp;
+            return (
+                beforeOrAt.tickCumulative +
+                    ((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / observationTimeDelta) *
+                    targetDelta,
+                beforeOrAt.secondsPerLiquidityCumulativeX128 +
+                    uint160(
+                        FullMath.mulDiv(
+                            atOrAfter.secondsPerLiquidityCumulativeX128 - beforeOrAt.secondsPerLiquidityCumulativeX128,
+                            targetDelta,
+                            observationTimeDelta
+                        )
+                    )
+            );
         }
-
-        return (at.tickCumulative, at.secondsPerLiquidityCumulativeX128);
     }
 
     /// @notice Returns the accumulator values as of each time seconds ago from the given time in the array of `secondsAgos`
