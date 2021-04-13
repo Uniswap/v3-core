@@ -315,13 +315,16 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         bool flippedUpper;
         if (liquidityDelta != 0) {
             uint32 time = _blockTimestamp();
+            uint160 secondsPerLiquidityCumulativeX128 =
+                observations.currentSecondsPerLiquidityCumulativeX128(slot0.observationIndex, time, liquidity);
+
             flippedLower = ticks.update(
                 tickLower,
                 tick,
                 liquidityDelta,
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
-                0, // todo
+                secondsPerLiquidityCumulativeX128,
                 time,
                 false,
                 maxLiquidityPerTick
@@ -332,7 +335,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 liquidityDelta,
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
-                0, // todo
+                secondsPerLiquidityCumulativeX128,
                 time,
                 true,
                 maxLiquidityPerTick
@@ -525,7 +528,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 liquidityStart: liquidity,
                 blockTimestamp: _blockTimestamp(),
                 feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),
-                secondsPerLiquidityCumulativeX128: 2**160
+                secondsPerLiquidityCumulativeX128: 2**160 // placeholder value
             });
 
         bool exactInput = amountSpecified > 0;
@@ -597,7 +600,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
-                    // 2**160 is a placeholder value, which we replace once we cross an initialized tick
+                    // check for the placeholder value, which we replace with the actual value the first time the swap
+                    // crosses an initialized tick
                     if (cache.secondsPerLiquidityCumulativeX128 == 2**160) {
                         cache.secondsPerLiquidityCumulativeX128 = observations.currentSecondsPerLiquidityCumulativeX128(
                             slot0Start.observationIndex,
