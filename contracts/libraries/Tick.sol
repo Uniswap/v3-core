@@ -103,6 +103,7 @@ library Tick {
         int128 liquidityDelta,
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128,
+        uint160 secondsPerLiquidityCumulativeX128,
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
@@ -120,6 +121,7 @@ library Tick {
             if (tick <= tickCurrent) {
                 info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
                 info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
+                info.secondsPerLiquidityOutsideX128 = secondsPerLiquidityCumulativeX128;
             }
         }
 
@@ -148,11 +150,13 @@ library Tick {
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
         uint256 feeGrowthGlobal0X128,
-        uint256 feeGrowthGlobal1X128
+        uint256 feeGrowthGlobal1X128,
+        uint160 secondsPerLiquidityCumulativeX128
     ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
         info.feeGrowthOutside0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128;
         info.feeGrowthOutside1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128;
         liquidityNet = info.liquidityNet;
+        info.secondsPerLiquidityOutsideX128 = secondsPerLiquidityCumulativeX128 - info.secondsPerLiquidityOutsideX128;
     }
 }

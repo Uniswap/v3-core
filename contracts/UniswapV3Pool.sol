@@ -320,6 +320,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 liquidityDelta,
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
+                0, // todo
                 false,
                 maxLiquidityPerTick
             );
@@ -329,6 +330,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 liquidityDelta,
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
+                0, // todo
                 true,
                 maxLiquidityPerTick
             );
@@ -454,6 +456,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint128 liquidityStart;
         // the timestamp of the current block
         uint32 blockTimestamp;
+        // the seconds per liquidity cumulative as of the current block
+        uint256 secondsPerLiquidityCumulativeX128;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
@@ -517,7 +521,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             SwapCache({
                 liquidityStart: liquidity,
                 blockTimestamp: _blockTimestamp(),
-                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4)
+                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),
+                secondsPerLiquidityCumulativeX128: 2**160
             });
 
         bool exactInput = amountSpecified > 0;
@@ -589,11 +594,20 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
+                    // 2**160 is a placeholder value, which we replace once we cross an initialized tick
+                    if (cache.secondsPerLiquidityCumulativeX128 == 2**160) {
+                        cache.secondsPerLiquidityCumulativeX128 = observations.currentSecondsPerLiquidityCumulativeX128(
+                            slot0Start.observationIndex,
+                            cache.blockTimestamp,
+                            cache.liquidityStart
+                        );
+                    }
                     int128 liquidityNet =
                         ticks.cross(
                             step.tickNext,
                             (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
-                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128)
+                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
+                            uint160(cache.secondsPerLiquidityCumulativeX128)
                         );
                     // if we're moving leftward, we interpret liquidityNet as the opposite sign
                     // safe because liquidityNet cannot be type(int128).min

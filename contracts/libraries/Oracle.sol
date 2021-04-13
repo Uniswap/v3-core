@@ -67,7 +67,7 @@ library Oracle {
     /// If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
     /// is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
     /// @param self The stored oracle array
-    /// @param index The location of the most recently updated observation
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param blockTimestamp The timestamp of the new observation
     /// @param tick The active tick at the time of the new observation
     /// @param liquidity The total in-range liquidity at the time of the new observation
@@ -146,7 +146,7 @@ library Oracle {
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
-    /// @param index The location of the most recently written observation within the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param cardinality The number of populated elements in the oracle array
     /// @return beforeOrAt The observation recorded before, or at, the target
     /// @return atOrAfter The observation recorded at, or after, the target
@@ -190,7 +190,7 @@ library Oracle {
     /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
     /// @param tick The active tick at the time of the returned or simulated observation
-    /// @param index The location of a given observation within the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param liquidity The total pool liquidity at the time of the call
     /// @param cardinality The number of populated elements in the oracle array
     /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
@@ -237,7 +237,7 @@ library Oracle {
     /// @param time The current block timestamp
     /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
     /// @param tick The current tick
-    /// @param index The location of a given observation within the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param liquidity The current in-range pool liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pool was first initialized, as of `secondsAgo`
@@ -292,7 +292,7 @@ library Oracle {
     /// @param time The current block.timestamp
     /// @param secondsAgos Each amount of time to look back, in seconds, at which point to return an observation
     /// @param tick The current tick
-    /// @param index The location of a given observation within the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param liquidity The current in-range pool liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulatives The tick * time elapsed since the pool was first initialized, as of each `secondsAgo`
@@ -321,5 +321,24 @@ library Oracle {
                 cardinality
             );
         }
+    }
+
+    /// @notice Returns the counterfactual value of the cumulative seconds per liquidity
+    /// @param self The stored oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
+    /// @param time The current block.timestamp
+    /// @param liquidity The liquidity before the start of the block
+    /// @return The cumulative seconds per liquidity as of the current block
+    function currentSecondsPerLiquidityCumulativeX128(
+        Observation[65535] storage self,
+        uint16 index,
+        uint32 time,
+        uint128 liquidity
+    ) internal view returns (uint160) {
+        Observation memory last = self[index];
+        if (last.blockTimestamp == time) return last.secondsPerLiquidityCumulativeX128;
+        return
+            last.secondsPerLiquidityCumulativeX128 +
+            ((uint160(time - last.blockTimestamp) << 128) / (liquidity > 0 ? liquidity : 1));
     }
 }
