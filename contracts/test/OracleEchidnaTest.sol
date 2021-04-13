@@ -63,8 +63,10 @@ contract OracleEchidnaTest {
             oracle.observe(secondsAgos);
         int56 timeWeightedTick = (tickCumulatives[1] - tickCumulatives[0]) / timeElapsed;
         uint256 timeWeightedHarmonicMeanLiquidity =
-            ((uint256(timeElapsed) << 160) /
-                (secondsPerLiquidityCumulativeX128s[1] - secondsPerLiquidityCumulativeX128s[0])) >> 32;
+            (
+                (((uint256(timeElapsed) << 160) /
+                    ((secondsPerLiquidityCumulativeX128s[1] - secondsPerLiquidityCumulativeX128s[0]))) << 32)
+            );
         assert(timeWeightedHarmonicMeanLiquidity <= type(uint128).max);
         assert(timeWeightedTick <= type(int24).max);
         assert(timeWeightedTick >= type(int24).min);
@@ -130,9 +132,10 @@ contract OracleEchidnaTest {
         assert(timeWeightedTick <= type(int24).max && timeWeightedTick >= type(int24).min);
 
         uint256 timeWeightedHarmonicMeanLiquidity =
-            ((uint256(secondsAgo) << 160) /
-                (secondsPerLiquidityCumulativeX128s[1] - secondsPerLiquidityCumulativeX128s[0])) >> 32;
-
+            (
+                (((uint256(secondsAgo) << 160) /
+                    ((secondsPerLiquidityCumulativeX128s[1] - secondsPerLiquidityCumulativeX128s[0]))) << 32)
+            );
         assert(timeWeightedHarmonicMeanLiquidity <= type(uint128).max);
     }
 }
