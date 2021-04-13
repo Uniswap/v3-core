@@ -62,9 +62,10 @@ contract OracleEchidnaTest {
         (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) =
             oracle.observe(secondsAgos);
         int56 timeWeightedTick = (tickCumulatives[1] - tickCumulatives[0]) / timeElapsed;
-        uint160 timeWeightedLiquidity =
-            (secondsPerLiquidityCumulativeX128s[1] - secondsPerLiquidityCumulativeX128s[0]) / timeElapsed;
-        assert(timeWeightedLiquidity <= type(uint128).max);
+        uint160 timeWeightedHarmonicMeanLiquidity =
+            ((uint256(timeElapsed) << 160) /
+                (secondsPerLiquidityCumulativeX128s[1] - secondsPerLiquidityCumulativeX128s[0])) >> 32;
+        assert(timeWeightedHarmonicMeanLiquidity <= type(uint128).max);
         assert(timeWeightedTick <= type(int24).max);
         assert(timeWeightedTick >= type(int24).min);
     }
@@ -92,14 +93,13 @@ contract OracleEchidnaTest {
         return success;
     }
 
-    function checkTwoAdjacentObservationsModTimeElapsedAlways0(uint16 index) external view {
+    function checkTwoAdjacentObservationsTickCumulativeModTimeElapsedAlways0(uint16 index) external view {
         uint16 cardinality = oracle.cardinality();
-        require(index < cardinality && index != (oracle.index() + 1) % cardinality);
+        require(index < cardinality && cardinality > 1);
 
-        (uint32 blockTimestamp0, int56 tickCumulative0, uint160 secondsPerLiquidityCumulative0, bool initialized0) =
+        (uint32 blockTimestamp0, int56 tickCumulative0, , bool initialized0) =
             oracle.observations(index == 0 ? cardinality - 1 : index - 1);
-        (uint32 blockTimestamp1, int56 tickCumulative1, uint160 secondsPerLiquidityCumulative1, bool initialized1) =
-            oracle.observations(index);
+        (uint32 blockTimestamp1, int56 tickCumulative1, , bool initialized1) = oracle.observations(index);
 
         require(initialized0);
         require(initialized1);
@@ -107,7 +107,6 @@ contract OracleEchidnaTest {
         uint32 timeElapsed = blockTimestamp1 - blockTimestamp0;
         assert(timeElapsed > 0);
         assert((tickCumulative1 - tickCumulative0) % timeElapsed == 0);
-        assert((secondsPerLiquidityCumulative1 - secondsPerLiquidityCumulative0) % timeElapsed == 0);
     }
 
     function checkTimeWeightedAveragesAlwaysFitsType(uint32 secondsAgo) external view {
@@ -119,7 +118,7 @@ contract OracleEchidnaTest {
         (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) =
             oracle.observe(secondsAgos);
 
-        // compute the time weighted tick, rounding consistently
+        // compute the time weighted tick, rounded towards negative infinity
         int56 numerator = tickCumulatives[1] - tickCumulatives[0];
         int56 timeWeightedTick = numerator / int56(secondsAgo);
         if (numerator < 0 && numerator % int56(secondsAgo) != 0) {
@@ -128,9 +127,11 @@ contract OracleEchidnaTest {
 
         // the time weighted averages fit in their respective accumulated types
         assert(timeWeightedTick <= type(int24).max && timeWeightedTick >= type(int24).min);
-        assert(
-            (secondsPerLiquidityCumulativeX128s[1] - secondsPerLiquidityCumulativeX128s[0]) / uint160(secondsAgo) <=
-                type(uint128).max
-        );
+
+        uint160 timeWeightedHarmonicMeanLiquidity =
+            ((uint256(secondsAgo) << 160) /
+                (secondsPerLiquidityCumulativeX128s[1] - secondsPerLiquidityCumulativeX128s[0])) >> 32;
+
+        assert(timeWeightedHarmonicMeanLiquidity <= type(uint128).max);
     }
 }
