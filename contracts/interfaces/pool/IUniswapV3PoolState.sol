@@ -57,6 +57,9 @@ interface IUniswapV3PoolState {
     /// feeGrowthOutsideX128 values can only be used if the tick is initialized,
     /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
     /// compute snapshots.
+    /// feeGrowthOutsideX128 values can only be used if the tick is initialized,
+    /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
+    /// compute snapshots.
     function ticks(int24 tick)
         external
         view
@@ -65,7 +68,8 @@ interface IUniswapV3PoolState {
             int128 liquidityNet,
             uint256 feeGrowthOutside0X128,
             uint256 feeGrowthOutside1X128,
-            uint160 secondsPerLiquidityOutsideX128
+            uint160 secondsPerLiquidityOutsideX128,
+            uint96 filler
         );
 
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information

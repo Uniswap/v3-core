@@ -26,6 +26,9 @@ library Tick {
         // the seconds per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint160 secondsPerLiquidityOutsideX128;
+        // the initialization sets this bit so we avoid clears and fresh sstores of the seconds per liquidity outside
+        // slot in swaps
+        uint96 filler;
     }
 
     /// @notice Derives max liquidity per tick from given tick spacing
@@ -123,6 +126,7 @@ library Tick {
                 info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
                 info.secondsPerLiquidityOutsideX128 = secondsPerLiquidityCumulativeX128;
             }
+            info.filler = uint96(1);
         }
 
         info.liquidityGross = liquidityGrossAfter;
