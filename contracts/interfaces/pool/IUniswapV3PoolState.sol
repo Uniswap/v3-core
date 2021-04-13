@@ -69,7 +69,8 @@ interface IUniswapV3PoolState {
             uint256 feeGrowthOutside0X128,
             uint256 feeGrowthOutside1X128,
             uint160 secondsPerLiquidityOutsideX128,
-            uint96 filler
+            uint32 secondsOutside,
+            uint64 filler
         );
 
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information

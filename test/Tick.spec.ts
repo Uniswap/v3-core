@@ -68,6 +68,7 @@ describe('Tick', () => {
         liquidityGross: 0,
         liquidityNet: 0,
         secondsPerLiquidityOutsideX128: 0,
+        secondsOutside: 0,
         filler: 1,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
@@ -82,6 +83,7 @@ describe('Tick', () => {
         liquidityGross: 0,
         liquidityNet: 0,
         secondsPerLiquidityOutsideX128: 0,
+        secondsOutside: 0,
         filler: 1,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
@@ -96,6 +98,7 @@ describe('Tick', () => {
         liquidityGross: 0,
         liquidityNet: 0,
         secondsPerLiquidityOutsideX128: 0,
+        secondsOutside: 0,
         filler: 1,
       })
       await tickTest.setTick(2, {
@@ -104,6 +107,7 @@ describe('Tick', () => {
         liquidityGross: 0,
         liquidityNet: 0,
         secondsPerLiquidityOutsideX128: 0,
+        secondsOutside: 0,
         filler: 1,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
@@ -118,6 +122,7 @@ describe('Tick', () => {
         liquidityGross: 0,
         liquidityNet: 0,
         secondsPerLiquidityOutsideX128: 0,
+        secondsOutside: 0,
         filler: 1,
       })
       await tickTest.setTick(2, {
@@ -126,6 +131,7 @@ describe('Tick', () => {
         liquidityGross: 0,
         liquidityNet: 0,
         secondsPerLiquidityOutsideX128: 0,
+        secondsOutside: 0,
         filler: 1,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)

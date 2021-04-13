@@ -314,6 +314,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         bool flippedLower;
         bool flippedUpper;
         if (liquidityDelta != 0) {
+            uint32 time = _blockTimestamp();
             flippedLower = ticks.update(
                 tickLower,
                 tick,
@@ -321,6 +322,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
                 0, // todo
+                time,
                 false,
                 maxLiquidityPerTick
             );
@@ -331,6 +333,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 _feeGrowthGlobal0X128,
                 _feeGrowthGlobal1X128,
                 0, // todo
+                time,
                 true,
                 maxLiquidityPerTick
             );
@@ -607,7 +610,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                             step.tickNext,
                             (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
                             (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
-                            uint160(cache.secondsPerLiquidityCumulativeX128)
+                            uint160(cache.secondsPerLiquidityCumulativeX128),
+                            cache.blockTimestamp
                         );
                     // if we're moving leftward, we interpret liquidityNet as the opposite sign
                     // safe because liquidityNet cannot be type(int128).min
