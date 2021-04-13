@@ -101,8 +101,8 @@ contract OracleEchidnaTest {
             oracle.observations(index == 0 ? cardinality - 1 : index - 1);
         (uint32 blockTimestamp1, int56 tickCumulative1, , bool initialized1) = oracle.observations(index);
 
-        require(initialized0);
-        require(initialized1);
+        assert(initialized0);
+        assert(initialized1);
 
         uint32 timeElapsed = blockTimestamp1 - blockTimestamp0;
         assert(timeElapsed > 0);
