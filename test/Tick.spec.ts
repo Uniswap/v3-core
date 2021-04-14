@@ -274,7 +274,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128,
       } = await tickTest.ticks(2)
       expect(feeGrowthOutside0X128).to.eq(6)
-      expect(feeGrowthOutside1X128).to.eq(6)
+      expect(feeGrowthOutside1X128).to.eq(7)
       expect(secondsPerLiquidityOutsideX128).to.eq(3)
       expect(secondsOutside).to.eq(4)
     })
