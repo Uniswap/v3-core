@@ -466,6 +466,11 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 secondsPerLiquidityCumulativeX128;
     }
 
+    /// @dev This value is used as a placeholder for SwapCache.secondsPerLiquidityCumulativeX128 until the actual value
+    /// needs to be computed. We use a uint256 with a value that cannot be mistaken for a valid uint160
+    /// secondsPerLiquidityCumulativeX128
+    uint256 private constant CACHE_SECONDS_PER_LIQUIDITY_CUMULATIVE_PLACEHOLDER = 2**160;
+
     // the top level state of the swap, the results of which are recorded in storage at the end
     struct SwapState {
         // the amount remaining to be swapped in/out of the input/output asset
@@ -528,7 +533,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 liquidityStart: liquidity,
                 blockTimestamp: _blockTimestamp(),
                 feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),
-                secondsPerLiquidityCumulativeX128: 2**160 // placeholder value
+                secondsPerLiquidityCumulativeX128: CACHE_SECONDS_PER_LIQUIDITY_CUMULATIVE_PLACEHOLDER
             });
 
         bool exactInput = amountSpecified > 0;
@@ -602,7 +607,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 if (step.initialized) {
                     // check for the placeholder value, which we replace with the actual value the first time the swap
                     // crosses an initialized tick
-                    if (cache.secondsPerLiquidityCumulativeX128 == 2**160) {
+                    if (cache.secondsPerLiquidityCumulativeX128 == CACHE_SECONDS_PER_LIQUIDITY_CUMULATIVE_PLACEHOLDER) {
                         cache.secondsPerLiquidityCumulativeX128 = observations.currentSecondsPerLiquidityCumulativeX128(
                             slot0Start.observationIndex,
                             cache.blockTimestamp,
