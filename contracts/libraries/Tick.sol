@@ -154,6 +154,8 @@ library Tick {
     /// @param tick The destination tick of the transition
     /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
     /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
+    /// @param secondsPerLiquidityCumulativeX128 The current seconds per liquidity
+    /// @param time The current block.timestamp
     /// @return liquidityNet The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
     function cross(
         mapping(int24 => Tick.Info) storage self,

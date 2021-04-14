@@ -574,6 +574,35 @@ describe('Oracle', () => {
     }
   })
 
+  describe('#currentSecondsPerLiquidityCumulativeX128', () => {
+    let oracle: OracleTest
+    beforeEach(async () => {
+      oracle = await oracleFixture()
+    })
+    it('0 before initialize', async () => {
+      expect(await oracle.currentSecondsPerLiquidityCumulativeX128()).to.eq(0)
+    })
+    it('0 after initialize', async () => {
+      await oracle.initialize({ liquidity: 100, tick: 0, time: 100 })
+      expect(await oracle.currentSecondsPerLiquidityCumulativeX128()).to.eq(0)
+    })
+    it('1<<128 / 1 for 1 second later with 0 liquidity', async () => {
+      await oracle.initialize({ liquidity: 0, tick: 0, time: 0 })
+      await oracle.advanceTime(1)
+      expect(await oracle.currentSecondsPerLiquidityCumulativeX128()).to.eq(BigNumber.from(1).shl(128))
+    })
+    it('1<<128 / 1 for 1 second later with 1 liquidity', async () => {
+      await oracle.initialize({ liquidity: 1, tick: 0, time: 0 })
+      await oracle.advanceTime(1)
+      expect(await oracle.currentSecondsPerLiquidityCumulativeX128()).to.eq(BigNumber.from(1).shl(128))
+    })
+    it('9 liquidity for 6 seconds', async () => {
+      await oracle.initialize({ liquidity: 9, tick: 0, time: 0 })
+      await oracle.advanceTime(6)
+      expect(await oracle.currentSecondsPerLiquidityCumulativeX128()).to.eq(BigNumber.from(6).shl(128).div(9))
+    })
+  })
+
   describe.skip('full oracle', function () {
     this.timeout(1_200_000)
 
