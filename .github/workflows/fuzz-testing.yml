@@ -52,7 +52,7 @@ jobs:
 
       - name: debug run slither
         run: |
-          slither -print echidna .
+          slither --print echidna .
 
       - name: Install echidna
         run: |
