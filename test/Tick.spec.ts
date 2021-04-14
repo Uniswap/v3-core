@@ -266,7 +266,30 @@ describe('Tick', () => {
         secondsOutside: 6,
         initialized: 7,
       })
-      await tickTest.cross(2, 2, 4, 8, 10)
+      await tickTest.cross(2, 7, 9, 8, 10)
+      const {
+        feeGrowthOutside0X128,
+        feeGrowthOutside1X128,
+        secondsOutside,
+        secondsPerLiquidityOutsideX128,
+      } = await tickTest.ticks(2)
+      expect(feeGrowthOutside0X128).to.eq(6)
+      expect(feeGrowthOutside1X128).to.eq(6)
+      expect(secondsPerLiquidityOutsideX128).to.eq(3)
+      expect(secondsOutside).to.eq(4)
+    })
+    it('two flips are no op', async () => {
+      await tickTest.setTick(2, {
+        feeGrowthOutside0X128: 1,
+        feeGrowthOutside1X128: 2,
+        liquidityGross: 3,
+        liquidityNet: 4,
+        secondsPerLiquidityOutsideX128: 5,
+        secondsOutside: 6,
+        initialized: 7,
+      })
+      await tickTest.cross(2, 7, 9, 8, 10)
+      await tickTest.cross(2, 7, 9, 8, 10)
       const {
         feeGrowthOutside0X128,
         feeGrowthOutside1X128,
@@ -275,8 +298,8 @@ describe('Tick', () => {
       } = await tickTest.ticks(2)
       expect(feeGrowthOutside0X128).to.eq(1)
       expect(feeGrowthOutside1X128).to.eq(2)
-      expect(secondsPerLiquidityOutsideX128).to.eq(3)
-      expect(secondsOutside).to.eq(4)
+      expect(secondsPerLiquidityOutsideX128).to.eq(5)
+      expect(secondsOutside).to.eq(6)
     })
   })
 })
