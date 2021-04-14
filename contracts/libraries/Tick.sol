@@ -31,7 +31,7 @@ library Tick {
         uint32 secondsOutside;
         // the initialization sets this slot to a nonzero value so we avoid clears and fresh sstores of the seconds
         // slot in swaps
-        uint64 filler;
+        uint64 initialized;
     }
 
     /// @notice Derives max liquidity per tick from given tick spacing
@@ -131,7 +131,7 @@ library Tick {
                 info.secondsPerLiquidityOutsideX128 = secondsPerLiquidityCumulativeX128;
                 info.secondsOutside = time;
             }
-            info.filler = uint64(1);
+            info.initialized = uint64(1);
         }
 
         info.liquidityGross = liquidityGrossAfter;

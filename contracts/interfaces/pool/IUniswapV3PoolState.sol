@@ -56,6 +56,7 @@ interface IUniswapV3PoolState {
     /// feeGrowthOutside1X128 the fee growth on the other side of the tick from the current tick in token1,
     /// secondsPerLiquidityOutsideX128 the seconds spent per liquidity on the other side of the tick from the current tick,
     /// secondsOutside the seconds spent on the other side of the tick from the current tick,
+    /// initialized Set to 1 if the tick is initialized, i.e. liquidityGross is greater than 0, otherwise equal to 0.
     /// Outside values can only be used if the tick is initialized, i.e. if liquidityGross is greater than 0.
     /// In addition, these values are only relative and must be used only in comparison to previous snapshots for
     /// a specific position.
@@ -69,7 +70,7 @@ interface IUniswapV3PoolState {
             uint256 feeGrowthOutside1X128,
             uint160 secondsPerLiquidityOutsideX128,
             uint32 secondsOutside,
-            uint64 filler
+            uint64 initialized
         );
 
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
