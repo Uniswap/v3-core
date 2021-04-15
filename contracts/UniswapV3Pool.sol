@@ -155,6 +155,48 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
+    function getSecondsSnapshotInside(int24 tickLower, int24 tickUpper)
+        external
+        view
+        override
+        returns (uint160 secondsPerLiquidityInsideX128, uint32 secondsInside)
+    {
+        Tick.Info storage lower = ticks[tickLower];
+        Tick.Info storage upper = ticks[tickUpper];
+        (uint160 secondsPerLiquidityOutsideLowerX128, uint32 secondsOutsideLower, uint64 initializedLower) =
+            (lower.secondsPerLiquidityOutsideX128, lower.secondsOutside, lower.initialized);
+        require(initializedLower != 0, 'L');
+
+        (uint160 secondsPerLiquidityOutsideUpperX128, uint32 secondsOutsideUpper, uint64 initializedUpper) =
+            (upper.secondsPerLiquidityOutsideX128, upper.secondsOutside, upper.initialized);
+        require(initializedUpper != 0, 'H');
+
+        (int24 tick, uint16 observationIndex) = (slot0.tick, slot0.observationIndex);
+
+        if (tick < tickLower) {
+            return (
+                secondsPerLiquidityOutsideLowerX128 - secondsPerLiquidityOutsideUpperX128,
+                secondsOutsideLower - secondsOutsideUpper
+            );
+        } else if (tick < tickUpper) {
+            uint32 time = _blockTimestamp();
+            uint160 secondsPerLiquidityCumulativeX128 =
+                observations.currentSecondsPerLiquidityCumulativeX128(observationIndex, time, liquidity);
+            return (
+                secondsPerLiquidityCumulativeX128 -
+                    secondsPerLiquidityOutsideLowerX128 -
+                    secondsPerLiquidityOutsideUpperX128,
+                time - secondsOutsideLower - secondsOutsideUpper
+            );
+        } else {
+            return (
+                secondsPerLiquidityOutsideUpperX128 - secondsPerLiquidityOutsideLowerX128,
+                secondsOutsideUpper - secondsOutsideLower
+            );
+        }
+    }
+
+    /// @inheritdoc IUniswapV3PoolDerivedState
     function observe(uint32[] calldata secondsAgos)
         external
         view
