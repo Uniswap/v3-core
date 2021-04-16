@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniswapV3Factory #createPool gas 1`] = `4419485`;
+exports[`UniswapV3Factory #createPool gas 1`] = `4416985`;
 
 exports[`UniswapV3Factory factory bytecode size 1`] = `23837`;
 
