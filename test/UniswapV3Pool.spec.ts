@@ -1692,7 +1692,7 @@ describe('UniswapV3Pool', () => {
     })
   })
 
-  describe.only('#getSecondsSnapshotInside', () => {
+  describe('#getSecondsSnapshotInside', () => {
     const tickLower = -TICK_SPACINGS[FeeAmount.MEDIUM]
     const tickUpper = TICK_SPACINGS[FeeAmount.MEDIUM]
     const tickSpacing = TICK_SPACINGS[FeeAmount.MEDIUM]
