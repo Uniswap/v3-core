@@ -25,6 +25,7 @@ import {
   MaxUint128,
   MAX_SQRT_RATIO,
   MIN_SQRT_RATIO,
+  SwapToPriceFunction,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { TestUniswapV3ReentrantCallee } from '../typechain/TestUniswapV3ReentrantCallee'
@@ -47,8 +48,8 @@ describe('UniswapV3Pool', () => {
 
   let swapTarget: TestUniswapV3Callee
 
-  let swapToLowerPrice: SwapFunction
-  let swapToHigherPrice: SwapFunction
+  let swapToLowerPrice: SwapToPriceFunction
+  let swapToHigherPrice: SwapToPriceFunction
   let swapExact0For1: SwapFunction
   let swap0ForExact1: SwapFunction
   let swapExact1For0: SwapFunction
