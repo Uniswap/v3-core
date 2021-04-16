@@ -161,15 +161,17 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         override
         returns (uint160 secondsPerLiquidityInsideX128, uint32 secondsInside)
     {
+        checkTicks(tickLower, tickUpper);
+
         Tick.Info storage lower = ticks[tickLower];
         Tick.Info storage upper = ticks[tickUpper];
         (uint160 secondsPerLiquidityOutsideLowerX128, uint32 secondsOutsideLower, uint64 initializedLower) =
             (lower.secondsPerLiquidityOutsideX128, lower.secondsOutside, lower.initialized);
-        require(initializedLower != 0, 'L');
+        require(initializedLower != 0);
 
         (uint160 secondsPerLiquidityOutsideUpperX128, uint32 secondsOutsideUpper, uint64 initializedUpper) =
             (upper.secondsPerLiquidityOutsideX128, upper.secondsOutside, upper.initialized);
-        require(initializedUpper != 0, 'H');
+        require(initializedUpper != 0);
 
         (int24 tick, uint16 observationIndex) = (slot0.tick, slot0.observationIndex);
 

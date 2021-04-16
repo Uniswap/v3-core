@@ -1691,6 +1691,50 @@ describe('UniswapV3Pool', () => {
     })
   })
 
+  describe('#getSecondsSnapshotInside', () => {
+    it('throws if ticks are in reverse order', async () => {
+      await expect(pool.getSecondsSnapshotInside(TICK_SPACINGS[FeeAmount.MEDIUM], -TICK_SPACINGS[FeeAmount.MEDIUM])).to
+        .be.reverted
+    })
+    it('throws if ticks are the same', async () => {
+      await expect(pool.getSecondsSnapshotInside(TICK_SPACINGS[FeeAmount.MEDIUM], TICK_SPACINGS[FeeAmount.MEDIUM])).to
+        .be.reverted
+    })
+    it('throws if tick lower is too low', async () => {
+      await expect(
+        pool.getSecondsSnapshotInside(getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]) - 1, TICK_SPACINGS[FeeAmount.MEDIUM])
+      ).be.reverted
+    })
+    it('throws if tick upper is too high', async () => {
+      await expect(
+        pool.getSecondsSnapshotInside(-TICK_SPACINGS[FeeAmount.MEDIUM], getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM] + 1))
+      ).be.reverted
+    })
+    it('throws if tick lower is not initialized', async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, 0, TICK_SPACINGS[FeeAmount.MEDIUM], 1)
+      await expect(pool.getSecondsSnapshotInside(-TICK_SPACINGS[FeeAmount.MEDIUM], TICK_SPACINGS[FeeAmount.MEDIUM])).to
+        .be.reverted
+    })
+    it('throws if tick upper is not initialized', async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, -TICK_SPACINGS[FeeAmount.MEDIUM], 0, 1)
+      await expect(pool.getSecondsSnapshotInside(-TICK_SPACINGS[FeeAmount.MEDIUM], TICK_SPACINGS[FeeAmount.MEDIUM])).to
+        .be.reverted
+    })
+    it('is zero immediately after initialize', async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, -TICK_SPACINGS[FeeAmount.MEDIUM], TICK_SPACINGS[FeeAmount.MEDIUM], 1)
+
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(
+        -TICK_SPACINGS[FeeAmount.MEDIUM],
+        TICK_SPACINGS[FeeAmount.MEDIUM]
+      )
+      expect(secondsPerLiquidityInsideX128).to.eq(0)
+      expect(secondsInside).to.eq(0)
+    })
+  })
+
   describe('fees overflow scenarios', async () => {
     it('up to max uint 128', async () => {
       await pool.initialize(encodePriceSqrt(1, 1))
