@@ -1,19 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`TickBitmap #flipTick gas cost of flipping a tick that results in deleting a word 1`] = `13827`;
+exports[`TickBitmap #flipTick gas cost of flipping a tick that results in deleting a word 1`] = `13427`;
 
-exports[`TickBitmap #flipTick gas cost of flipping first tick in word to initialized 1`] = `42665`;
+exports[`TickBitmap #flipTick gas cost of flipping first tick in word to initialized 1`] = `43965`;
 
-exports[`TickBitmap #flipTick gas cost of flipping second tick in word to initialized 1`] = `27665`;
+exports[`TickBitmap #flipTick gas cost of flipping second tick in word to initialized 1`] = `26865`;
 
-exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost for entire word 1`] = `1327`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost for entire word 1`] = `2627`;
 
-exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost just below boundary 1`] = `1327`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost just below boundary 1`] = `2627`;
 
-exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost on boundary 1`] = `1327`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = false gas cost on boundary 1`] = `2627`;
 
-exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost for entire word 1`] = `1318`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost for entire word 1`] = `2618`;
 
-exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost just below boundary 1`] = `1628`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost just below boundary 1`] = `2928`;
 
-exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost on boundary 1`] = `1318`;
+exports[`TickBitmap #nextInitializedTickWithinOneWord lte = true gas cost on boundary 1`] = `2618`;
