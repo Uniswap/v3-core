@@ -52,7 +52,7 @@ contract TickTest {
             );
     }
 
-    function clearTick(int24 tick) external {
+    function clear(int24 tick) external {
         //        ticks.clear(tick);
     }
 

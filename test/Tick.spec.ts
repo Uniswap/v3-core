@@ -237,7 +237,7 @@ describe('Tick', () => {
         secondsOutside: 6,
         initialized: 7,
       })
-      await tickTest.clearTick(2)
+      await tickTest.clear(2)
       const {
         feeGrowthOutside0X128,
         feeGrowthOutside1X128,
