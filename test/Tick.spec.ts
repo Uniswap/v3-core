@@ -226,7 +226,7 @@ describe('Tick', () => {
     })
   })
 
-  describe.skip('#clear', async () => {
+  describe('#clear', async () => {
     it('deletes all the data in the tick', async () => {
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 1,
@@ -237,7 +237,7 @@ describe('Tick', () => {
         secondsOutside: 6,
         initialized: 7,
       })
-      await tickTest.clear(2)
+      await tickTest.clearTick(2)
       const {
         feeGrowthOutside0X128,
         feeGrowthOutside1X128,

@@ -52,6 +52,10 @@ contract TickTest {
             );
     }
 
+    function clearTick(int24 tick) external {
+        ticks.clear(tick);
+    }
+
     function cross(
         int24 tick,
         uint256 feeGrowthGlobal0X128,
