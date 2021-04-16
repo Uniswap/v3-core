@@ -25,6 +25,7 @@ import {
   MaxUint128,
   MAX_SQRT_RATIO,
   MIN_SQRT_RATIO,
+  SwapToPriceFunction,
 } from './shared/utilities'
 import { TestUniswapV3Callee } from '../typechain/TestUniswapV3Callee'
 import { TestUniswapV3ReentrantCallee } from '../typechain/TestUniswapV3ReentrantCallee'
@@ -47,8 +48,8 @@ describe('UniswapV3Pool', () => {
 
   let swapTarget: TestUniswapV3Callee
 
-  let swapToLowerPrice: SwapFunction
-  let swapToHigherPrice: SwapFunction
+  let swapToLowerPrice: SwapToPriceFunction
+  let swapToHigherPrice: SwapToPriceFunction
   let swapExact0For1: SwapFunction
   let swap0ForExact1: SwapFunction
   let swapExact1For0: SwapFunction
@@ -1691,47 +1692,76 @@ describe('UniswapV3Pool', () => {
     })
   })
 
-  describe('#getSecondsSnapshotInside', () => {
+  describe.only('#getSecondsSnapshotInside', () => {
+    const tickLower = -TICK_SPACINGS[FeeAmount.MEDIUM]
+    const tickUpper = TICK_SPACINGS[FeeAmount.MEDIUM]
+    const tickSpacing = TICK_SPACINGS[FeeAmount.MEDIUM]
+    beforeEach(async () => {
+      await pool.initialize(encodePriceSqrt(1, 1))
+      await mint(wallet.address, tickLower, tickUpper, 10)
+    })
     it('throws if ticks are in reverse order', async () => {
-      await expect(pool.getSecondsSnapshotInside(TICK_SPACINGS[FeeAmount.MEDIUM], -TICK_SPACINGS[FeeAmount.MEDIUM])).to
-        .be.reverted
+      await expect(pool.getSecondsSnapshotInside(tickUpper, tickLower)).to.be.reverted
     })
     it('throws if ticks are the same', async () => {
-      await expect(pool.getSecondsSnapshotInside(TICK_SPACINGS[FeeAmount.MEDIUM], TICK_SPACINGS[FeeAmount.MEDIUM])).to
-        .be.reverted
+      await expect(pool.getSecondsSnapshotInside(tickUpper, tickUpper)).to.be.reverted
     })
     it('throws if tick lower is too low', async () => {
-      await expect(
-        pool.getSecondsSnapshotInside(getMinTick(TICK_SPACINGS[FeeAmount.MEDIUM]) - 1, TICK_SPACINGS[FeeAmount.MEDIUM])
-      ).be.reverted
+      await expect(pool.getSecondsSnapshotInside(getMinTick(tickSpacing) - 1, tickUpper)).be.reverted
     })
     it('throws if tick upper is too high', async () => {
-      await expect(
-        pool.getSecondsSnapshotInside(-TICK_SPACINGS[FeeAmount.MEDIUM], getMaxTick(TICK_SPACINGS[FeeAmount.MEDIUM] + 1))
-      ).be.reverted
+      await expect(pool.getSecondsSnapshotInside(tickLower, getMaxTick(tickSpacing) + 1)).be.reverted
     })
     it('throws if tick lower is not initialized', async () => {
-      await pool.initialize(encodePriceSqrt(1, 1))
-      await mint(wallet.address, 0, TICK_SPACINGS[FeeAmount.MEDIUM], 1)
-      await expect(pool.getSecondsSnapshotInside(-TICK_SPACINGS[FeeAmount.MEDIUM], TICK_SPACINGS[FeeAmount.MEDIUM])).to
-        .be.reverted
+      await expect(pool.getSecondsSnapshotInside(tickLower - tickSpacing, tickUpper)).to.be.reverted
     })
     it('throws if tick upper is not initialized', async () => {
-      await pool.initialize(encodePriceSqrt(1, 1))
-      await mint(wallet.address, -TICK_SPACINGS[FeeAmount.MEDIUM], 0, 1)
-      await expect(pool.getSecondsSnapshotInside(-TICK_SPACINGS[FeeAmount.MEDIUM], TICK_SPACINGS[FeeAmount.MEDIUM])).to
-        .be.reverted
+      await expect(pool.getSecondsSnapshotInside(tickLower, tickUpper + tickSpacing)).to.be.reverted
     })
     it('is zero immediately after initialize', async () => {
-      await pool.initialize(encodePriceSqrt(1, 1))
-      await mint(wallet.address, -TICK_SPACINGS[FeeAmount.MEDIUM], TICK_SPACINGS[FeeAmount.MEDIUM], 1)
-
-      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(
-        -TICK_SPACINGS[FeeAmount.MEDIUM],
-        TICK_SPACINGS[FeeAmount.MEDIUM]
-      )
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(tickLower, tickUpper)
       expect(secondsPerLiquidityInsideX128).to.eq(0)
       expect(secondsInside).to.eq(0)
+    })
+    it('increases by expected amount when time elapses in the range', async () => {
+      await pool.advanceTime(5)
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(tickLower, tickUpper)
+      expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(5).shl(128).div(10))
+      expect(secondsInside).to.eq(5)
+    })
+    it('does not account for time increase above range', async () => {
+      await pool.advanceTime(5)
+      await swapToHigherPrice(encodePriceSqrt(2, 1), wallet.address)
+      await pool.advanceTime(7)
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(tickLower, tickUpper)
+      expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(5).shl(128).div(10))
+      expect(secondsInside).to.eq(5)
+    })
+    it('does not account for time increase below range', async () => {
+      await pool.advanceTime(5)
+      await swapToLowerPrice(encodePriceSqrt(1, 2), wallet.address)
+      await pool.advanceTime(7)
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(tickLower, tickUpper)
+      expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(5).shl(128).div(10))
+      expect(secondsInside).to.eq(5)
+    })
+    it('time increase below range is not counted', async () => {
+      await swapToLowerPrice(encodePriceSqrt(1, 2), wallet.address)
+      await pool.advanceTime(5)
+      await swapToHigherPrice(encodePriceSqrt(1, 1), wallet.address)
+      await pool.advanceTime(7)
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(tickLower, tickUpper)
+      expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(7).shl(128).div(10))
+      expect(secondsInside).to.eq(7)
+    })
+    it('time increase above range is not counted', async () => {
+      await swapToHigherPrice(encodePriceSqrt(2, 1), wallet.address)
+      await pool.advanceTime(5)
+      await swapToLowerPrice(encodePriceSqrt(1, 1), wallet.address)
+      await pool.advanceTime(7)
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(tickLower, tickUpper)
+      expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(7).shl(128).div(10))
+      expect(secondsInside).to.eq(7)
     })
   })
 
