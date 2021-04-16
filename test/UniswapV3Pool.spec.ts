@@ -1763,6 +1763,50 @@ describe('UniswapV3Pool', () => {
       expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(7).shl(128).div(10))
       expect(secondsInside).to.eq(7)
     })
+    it('positions minted after time spent', async () => {
+      await pool.advanceTime(5)
+      await mint(wallet.address, tickUpper, getMaxTick(tickSpacing), 15)
+      await swapToHigherPrice(encodePriceSqrt(2, 1), wallet.address)
+      await pool.advanceTime(8)
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(
+        tickUpper,
+        getMaxTick(tickSpacing)
+      )
+      expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(8).shl(128).div(15))
+      expect(secondsInside).to.eq(8)
+    })
+    it('overlapping liquidity is aggregated', async () => {
+      await mint(wallet.address, tickLower, getMaxTick(tickSpacing), 15)
+      await pool.advanceTime(5)
+      await swapToHigherPrice(encodePriceSqrt(2, 1), wallet.address)
+      await pool.advanceTime(8)
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(tickLower, tickUpper)
+      expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(5).shl(128).div(25))
+      expect(secondsInside).to.eq(5)
+    })
+    it('relative behavior of snapshots', async () => {
+      await pool.advanceTime(5)
+      await mint(wallet.address, getMinTick(tickSpacing), tickLower, 15)
+      const {
+        secondsPerLiquidityInsideX128: secondsPerLiquidityInsideX128Start,
+        secondsInside: secondsInsideStart,
+      } = await pool.getSecondsSnapshotInside(getMinTick(tickSpacing), tickLower)
+      await pool.advanceTime(8)
+      // 13 seconds in starting range, then 3 seconds in newly minted range
+      await swapToLowerPrice(encodePriceSqrt(1, 2), wallet.address)
+      await pool.advanceTime(3)
+      const { secondsPerLiquidityInsideX128, secondsInside } = await pool.getSecondsSnapshotInside(
+        getMinTick(tickSpacing),
+        tickLower
+      )
+      const expectedDiffSecondsPerLiquidity = BigNumber.from(3).shl(128).div(15)
+      expect(secondsPerLiquidityInsideX128.sub(secondsPerLiquidityInsideX128Start)).to.eq(
+        expectedDiffSecondsPerLiquidity
+      )
+      expect(secondsPerLiquidityInsideX128).to.not.eq(expectedDiffSecondsPerLiquidity)
+      expect(secondsInside - secondsInsideStart).to.eq(3)
+      expect(secondsInside).to.not.eq(3)
+    })
   })
 
   describe('fees overflow scenarios', async () => {
