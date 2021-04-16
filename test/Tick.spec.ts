@@ -226,6 +226,35 @@ describe('Tick', () => {
     })
   })
 
+  describe.skip('#clear', async () => {
+    it('deletes all the data in the tick', async () => {
+      await tickTest.setTick(2, {
+        feeGrowthOutside0X128: 1,
+        feeGrowthOutside1X128: 2,
+        liquidityGross: 3,
+        liquidityNet: 4,
+        secondsPerLiquidityOutsideX128: 5,
+        secondsOutside: 6,
+        initialized: 7,
+      })
+      await tickTest.clear(2)
+      const {
+        feeGrowthOutside0X128,
+        feeGrowthOutside1X128,
+        secondsOutside,
+        secondsPerLiquidityOutsideX128,
+        liquidityGross,
+        liquidityNet,
+      } = await tickTest.ticks(2)
+      expect(feeGrowthOutside0X128).to.eq(0)
+      expect(feeGrowthOutside1X128).to.eq(0)
+      expect(secondsOutside).to.eq(0)
+      expect(secondsPerLiquidityOutsideX128).to.eq(0)
+      expect(liquidityGross).to.eq(0)
+      expect(liquidityNet).to.eq(0)
+    })
+  })
+
   describe('#cross', () => {
     it('flips the growth variables', async () => {
       await tickTest.setTick(2, {
