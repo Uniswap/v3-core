@@ -1843,6 +1843,8 @@ describe('UniswapV3Pool', () => {
         expectedDiffSecondsPerLiquidity
       )
       expect(secondsPerLiquidityInsideX128).to.not.eq(expectedDiffSecondsPerLiquidity)
+      // the tick is the one corresponding to the price of 1/2, or log base 1.0001 of 0.5
+      // this is -6932, and 3 seconds have passed, so the cumulative computed from the diff equals 6932 * 3
       expect(tickCumulativeInside.sub(tickCumulativeInsideStart), 'tickCumulativeInside').to.eq(-20796)
       expect(secondsInside - secondsInsideStart).to.eq(3)
       expect(secondsInside).to.not.eq(3)

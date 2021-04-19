@@ -159,6 +159,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         external
         view
         override
+        noDelegateCall
         returns (
             int56 tickCumulativeInside,
             uint160 secondsPerLiquidityInsideX128,
