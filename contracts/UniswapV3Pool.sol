@@ -592,6 +592,30 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 feeAmount;
     }
 
+    function createStep(SwapState memory state, bool zeroForOne)
+        private
+        view returns (StepComputations memory step)
+    {
+        step.sqrtPriceStartX96 = state.sqrtPriceX96;
+
+        (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
+            state.tick,
+            tickSpacing,
+            zeroForOne
+        );
+
+        // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
+        if (step.tickNext < TickMath.MIN_TICK) {
+            step.tickNext = TickMath.MIN_TICK;
+        } else if (step.tickNext > TickMath.MAX_TICK) {
+            step.tickNext = TickMath.MAX_TICK;
+        }
+
+        // get the price for the next tick
+        step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
+    }
+
+
     /// @inheritdoc IUniswapV3PoolActions
     function swap(
         address recipient,
@@ -639,25 +663,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
-            StepComputations memory step;
-
-            step.sqrtPriceStartX96 = state.sqrtPriceX96;
-
-            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
-                state.tick,
-                tickSpacing,
+            StepComputations memory step = createStep(
+                state,
                 zeroForOne
             );
-
-            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
-            if (step.tickNext < TickMath.MIN_TICK) {
-                step.tickNext = TickMath.MIN_TICK;
-            } else if (step.tickNext > TickMath.MAX_TICK) {
-                step.tickNext = TickMath.MAX_TICK;
-            }
-
-            // get the price for the next tick
-            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
 
             // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(

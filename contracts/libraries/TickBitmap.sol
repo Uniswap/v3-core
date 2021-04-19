@@ -44,7 +44,7 @@ library TickBitmap {
         int24 tick,
         int24 tickSpacing,
         bool lte
-    ) internal view returns (int24 next, bool initialized) {
+    ) public view returns (int24 next, bool initialized) {
         int24 compressed = tick / tickSpacing;
         if (tick < 0 && tick % tickSpacing != 0) compressed--; // round towards negative infinity
 
