@@ -20,16 +20,21 @@ interface IUniswapV3PoolDerivedState {
         view
         returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s);
 
-    /// @notice Returns a snapshot of the seconds per liquidity and seconds inside a tick range
+    /// @notice Returns a snapshot of the seconds per liquidity, tick cumulative and seconds inside a tick range
     /// @dev Snapshots must only be compared to other snapshots, taken over the life of a single position. A snapshot
     /// cannot be relied upon if a position is not held for the entire period between when the first snapshot is taken
     /// and the second snapshot is taken.
     /// @param tickLower The lower tick of the range
     /// @param tickUpper The upper tick of the range
-    /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range. Must only be used in comparison to a later snapshot of this value
-    /// @return secondsInside The snapshot of seconds per liquidity for the range. Must only be used in comparison to a later snapshot of this value
-    function getSecondsSnapshotInside(int24 tickLower, int24 tickUpper)
+    /// @return tickCumulativeInside The snapshot of cumulative tick for the range
+    /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range
+    /// @return secondsInside The snapshot of seconds per liquidity for the range
+    function snapshotCumulativesInside(int24 tickLower, int24 tickUpper)
         external
         view
-        returns (uint160 secondsPerLiquidityInsideX128, uint32 secondsInside);
+        returns (
+            int56 tickCumulativeInside,
+            uint160 secondsPerLiquidityInsideX128,
+            uint32 secondsInside
+        );
 }

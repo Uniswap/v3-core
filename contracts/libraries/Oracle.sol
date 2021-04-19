@@ -250,7 +250,7 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) private view returns (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) {
+    ) internal view returns (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) {
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
@@ -321,24 +321,5 @@ library Oracle {
                 cardinality
             );
         }
-    }
-
-    /// @notice Returns the counterfactual value of the cumulative seconds per liquidity
-    /// @param self The stored oracle array
-    /// @param index The index of the observation that was most recently written to the observations array
-    /// @param time The current block.timestamp
-    /// @param liquidity The liquidity before the start of the block
-    /// @return The cumulative seconds per liquidity as of the current block
-    function currentSecondsPerLiquidityCumulativeX128(
-        Observation[65535] storage self,
-        uint16 index,
-        uint32 time,
-        uint128 liquidity
-    ) internal view returns (uint160) {
-        Observation memory last = self[index];
-        if (last.blockTimestamp == time) return last.secondsPerLiquidityCumulativeX128;
-        return
-            last.secondsPerLiquidityCumulativeX128 +
-            ((uint160(time - last.blockTimestamp) << 128) / (liquidity > 0 ? liquidity : 1));
     }
 }

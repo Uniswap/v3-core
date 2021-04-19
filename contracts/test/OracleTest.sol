@@ -97,8 +97,4 @@ contract OracleTest {
         observations.observe(_time, secondsAgos, _tick, _index, _liquidity, cardinality);
         return gasBefore - gasleft();
     }
-
-    function currentSecondsPerLiquidityCumulativeX128() external view returns (uint160) {
-        return observations.currentSecondsPerLiquidityCumulativeX128(index, time, liquidity);
-    }
 }
