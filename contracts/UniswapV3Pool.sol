@@ -155,44 +155,77 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
-    function getSecondsSnapshotInside(int24 tickLower, int24 tickUpper)
+    function snapshotCumulativesInside(int24 tickLower, int24 tickUpper)
         external
         view
         override
-        returns (uint160 secondsPerLiquidityInsideX128, uint32 secondsInside)
+        returns (
+            uint160 secondsPerLiquidityInsideX128,
+            int56 tickCumulativeInside,
+            uint32 secondsInside
+        )
     {
         checkTicks(tickLower, tickUpper);
 
-        Tick.Info storage lower = ticks[tickLower];
-        Tick.Info storage upper = ticks[tickUpper];
-        (uint160 secondsPerLiquidityOutsideLowerX128, uint32 secondsOutsideLower, uint64 initializedLower) =
-            (lower.secondsPerLiquidityOutsideX128, lower.secondsOutside, lower.initialized);
-        require(initializedLower != 0);
+        uint160 secondsPerLiquidityOutsideLowerX128;
+        uint160 secondsPerLiquidityOutsideUpperX128;
+        int56 tickCumulativeLower;
+        int56 tickCumulativeUpper;
+        uint32 secondsOutsideLower;
+        uint32 secondsOutsideUpper;
 
-        (uint160 secondsPerLiquidityOutsideUpperX128, uint32 secondsOutsideUpper, uint64 initializedUpper) =
-            (upper.secondsPerLiquidityOutsideX128, upper.secondsOutside, upper.initialized);
-        require(initializedUpper != 0);
+        {
+            Tick.Info storage lower = ticks[tickLower];
+            Tick.Info storage upper = ticks[tickUpper];
+            uint8 initializedLower;
+            (secondsPerLiquidityOutsideLowerX128, tickCumulativeLower, secondsOutsideLower, initializedLower) = (
+                lower.secondsPerLiquidityOutsideX128,
+                lower.tickCumulativeOutside,
+                lower.secondsOutside,
+                lower.initialized
+            );
+            require(initializedLower != 0);
 
-        (int24 tick, uint16 observationIndex) = (slot0.tick, slot0.observationIndex);
+            uint8 initializedUpper;
+            (secondsPerLiquidityOutsideUpperX128, tickCumulativeUpper, secondsOutsideUpper, initializedUpper) = (
+                upper.secondsPerLiquidityOutsideX128,
+                upper.tickCumulativeOutside,
+                upper.secondsOutside,
+                upper.initialized
+            );
+            require(initializedUpper != 0);
+        }
 
-        if (tick < tickLower) {
+        Slot0 memory _slot0 = slot0;
+
+        if (_slot0.tick < tickLower) {
             return (
                 secondsPerLiquidityOutsideLowerX128 - secondsPerLiquidityOutsideUpperX128,
+                tickCumulativeLower - tickCumulativeUpper,
                 secondsOutsideLower - secondsOutsideUpper
             );
-        } else if (tick < tickUpper) {
+        } else if (_slot0.tick < tickUpper) {
             uint32 time = _blockTimestamp();
-            uint160 secondsPerLiquidityCumulativeX128 =
-                observations.currentSecondsPerLiquidityCumulativeX128(observationIndex, time, liquidity);
+            (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) =
+                observations.observeSingle(
+                    time,
+                    0,
+                    _slot0.tick,
+                    _slot0.observationIndex,
+                    liquidity,
+                    _slot0.observationCardinality
+                );
             return (
                 secondsPerLiquidityCumulativeX128 -
                     secondsPerLiquidityOutsideLowerX128 -
                     secondsPerLiquidityOutsideUpperX128,
+                tickCumulative - tickCumulativeLower - tickCumulativeUpper,
                 time - secondsOutsideLower - secondsOutsideUpper
             );
         } else {
             return (
                 secondsPerLiquidityOutsideUpperX128 - secondsPerLiquidityOutsideLowerX128,
+                tickCumulativeUpper - tickCumulativeLower,
                 secondsOutsideUpper - secondsOutsideLower
             );
         }
