@@ -10,7 +10,14 @@ import './UniswapV3Pool.sol';
 
 /// @title Canonical Uniswap V3 factory
 /// @notice Deploys Uniswap V3 pools and manages ownership and control over pool protocol fees
-contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegateCall {
+contract UniswapV3Factory is IUniswapV3Factory, NoDelegateCall {
+    struct Parameters {
+        address factory;
+        address token0;
+        address token1;
+        uint24 fee;
+        int24 tickSpacing;
+    }
     /// @inheritdoc IUniswapV3Factory
     address public override owner;
 
@@ -18,6 +25,8 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
     mapping(uint24 => int24) public override feeAmountTickSpacing;
     /// @inheritdoc IUniswapV3Factory
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPool;
+
+    Parameters public parameters;
 
     constructor() {
         owner = msg.sender;
@@ -43,7 +52,13 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0);
         require(getPool[token0][token1][fee] == address(0));
-        pool = deploy(address(this), token0, token1, fee, tickSpacing);
+        parameters = Parameters({factory: address(this), token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
+        pool = UniswapV3PoolDeployer.deploy(
+            token0,
+            token1,
+            fee
+        );
+        delete parameters;
         getPool[token0][token1][fee] = pool;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
         getPool[token1][token0][fee] = pool;
