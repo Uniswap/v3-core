@@ -50,7 +50,7 @@ library Oracle {
     /// @return cardinality The number of populated elements in the oracle array
     /// @return cardinalityNext The new length of the oracle array, independent of population
     function initialize(Observation[65535] storage self, uint32 time)
-        internal
+        public
         returns (uint16 cardinality, uint16 cardinalityNext)
     {
         self[0] = Observation({
@@ -83,7 +83,7 @@ library Oracle {
         uint128 liquidity,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+    ) public returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         Observation memory last = self[index];
 
         // early return if we've already written an observation this block
@@ -109,7 +109,7 @@ library Oracle {
         Observation[65535] storage self,
         uint16 current,
         uint16 next
-    ) internal returns (uint16) {
+    ) public returns (uint16) {
         require(current > 0, 'I');
         // no-op if the passed next value isn't greater than the current next value
         if (next <= current) return current;
@@ -305,7 +305,7 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) internal view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) {
+    ) public view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) {
         require(cardinality > 0, 'I');
 
         tickCumulatives = new int56[](secondsAgos.length);
