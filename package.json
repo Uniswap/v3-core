@@ -29,6 +29,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@eth-optimism/hardhat-ovm": "^0.0.2",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.1",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -40,6 +41,7 @@
     "ethereum-waffle": "^3.0.2",
     "ethers": "^5.0.8",
     "hardhat": "^2.2.0",
+    "hardhat-contract-sizer": "^2.0.3",
     "hardhat-typechain": "^0.3.5",
     "mocha": "^6.2.2",
     "mocha-chai-jest-snapshot": "^1.1.0",
