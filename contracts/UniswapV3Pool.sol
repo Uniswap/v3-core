@@ -549,11 +549,11 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint128 liquidityStart;
         // the timestamp of the current block
         uint32 blockTimestamp;
-        // the cumulative tick
+        // the current value of the tick accumulator, computed only if we cross an initialized tick
         int56 tickCumulative;
-        // the seconds per liquidity cumulative as of the current block
+        // the current value of seconds per liquidity accumulator, computed only if we cross an initialized tick
         uint160 secondsPerLiquidityCumulativeX128;
-        // whether we've computed the latest observation
+        // whether we've computed and cached the above two accumulators
         bool computedLatestObservation;
     }
 
