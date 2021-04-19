@@ -124,9 +124,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
     /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) private pure {
-        require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= TickMath.MIN_TICK, 'TLM');
-        require(tickUpper <= TickMath.MAX_TICK, 'TUM');
+        require(tickLower < tickUpper && tickLower >= TickMath.MIN_TICK && tickUpper <= TickMath.MAX_TICK, 'CT');
     }
 
     /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
@@ -601,8 +599,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         Slot0 memory slot0Start = slot0;
 
-        require(slot0Start.unlocked, 'LOK');
         require(
+            slot0Start.unlocked &&
             zeroForOne
                 ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
                 : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
