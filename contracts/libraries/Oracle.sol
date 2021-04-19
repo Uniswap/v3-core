@@ -14,7 +14,7 @@ library Oracle {
         uint32 blockTimestamp;
         // the tick accumulator, i.e. tick * time elapsed since the pool was first initialized
         int56 tickCumulative;
-        // the liquidity accumulator, i.e. liquidity * time elapsed since the pool was first initialized
+        // the seconds per liquidity, i.e. seconds elapsed / max(1, liquidity) since the pool was first initialized
         uint160 secondsPerLiquidityCumulativeX128;
         // whether or not the observation is initialized
         bool initialized;
