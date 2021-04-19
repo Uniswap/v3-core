@@ -1,5 +1,5 @@
 import { ethers, waffle } from 'hardhat'
-import { BigNumber, BigNumberish, constants } from 'ethers'
+import { BigNumber, BigNumberish, constants, Wallet } from 'ethers'
 import { TestERC20 } from '../typechain/TestERC20'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { MockTimeUniswapV3Pool } from '../typechain/MockTimeUniswapV3Pool'
@@ -75,7 +75,7 @@ describe('UniswapV3Pool', () => {
     ;({ token0, token1, token2, factory, createPool, swapTargetCallee: swapTarget } = await loadFixture(poolFixture))
 
     const oldCreatePool = createPool
-    createPool = async (_feeAmount, _tickSpacing) => {
+    createPool = async (_feeAmount: any, _tickSpacing: any) => {
       const pool = await oldCreatePool(_feeAmount, _tickSpacing)
       ;({
         swapToLowerPrice,
@@ -196,16 +196,17 @@ describe('UniswapV3Pool', () => {
       })
 
       describe('failure cases', () => {
+        // OVM: Check Tick errors have been combined to `CT`
         it('fails if tickLower greater than tickUpper', async () => {
           // should be TLU but...hardhat
-          await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted
+          await expect(mint(wallet.address, 1, 0, 1)).to.be.revertedWith('CT')
         })
         it('fails if tickLower less than min tick', async () => {
           // should be TLM but...hardhat
-          await expect(mint(wallet.address, -887273, 0, 1)).to.be.reverted
+          await expect(mint(wallet.address, -887273, 0, 1)).to.be.revertedWith('CT')
         })
         it('fails if tickUpper greater than max tick', async () => {
-          // should be TUM but...hardhat
+          // should be TLM but...hardhat
           await expect(mint(wallet.address, 0, 887273, 1)).to.be.reverted
         })
         it('fails if amount exceeds the max', async () => {
@@ -1348,8 +1349,15 @@ describe('UniswapV3Pool', () => {
   // https://github.com/Uniswap/uniswap-v3-core/issues/214
   it('tick transition cannot run twice if zero for one swap ends at fractional price just below tick', async () => {
     pool = await createPool(FeeAmount.MEDIUM, 1)
-    const sqrtTickMath = (await (await ethers.getContractFactory('TickMathTest')).deploy()) as TickMathTest
-    const swapMath = (await (await ethers.getContractFactory('SwapMathTest')).deploy()) as SwapMathTest
+
+    const tickMathLib = await (await ethers.getContractFactory('TickMath')).deploy()
+    const sqrtTickMath = (await (
+      await ethers.getContractFactory('TickMathTest', { libraries: { TickMath: tickMathLib.address } })
+    ).deploy()) as TickMathTest
+    const swapMathLib = await (await ethers.getContractFactory('SwapMath')).deploy()
+    const swapMath = (await (
+      await ethers.getContractFactory('SwapMathTest', { libraries: { SwapMath: swapMathLib.address } })
+    ).deploy()) as SwapMathTest
     const p0 = (await sqrtTickMath.getSqrtRatioAtTick(-24081)).add(1)
     // initialize at a price of ~0.3 token1/token0
     // meaning if you swap in 2 token0, you should end up getting 0 token1
@@ -1688,7 +1696,8 @@ describe('UniswapV3Pool', () => {
       ).deploy()) as TestUniswapV3ReentrantCallee
 
       // the tests happen in solidity
-      await expect(reentrant.swapToReenter(pool.address)).to.be.revertedWith('Unable to reenter')
+      // OVM Note: We combined the `lock` check inside `swap`
+      await expect(reentrant.swapToReenter(pool.address)).to.be.reverted
     })
   })
 

@@ -18,11 +18,9 @@ describe('UniswapV3Factory', () => {
   const [wallet, other] = waffle.provider.getWallets()
 
   let factory: UniswapV3Factory
+  let poolContractFactory: any
   let poolBytecode: string
-  const fixture = async () => {
-    const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
-    return (await factoryFactory.deploy()) as UniswapV3Factory
-  }
+  let libraries: any
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
   before('create fixture loader', async () => {
@@ -30,11 +28,32 @@ describe('UniswapV3Factory', () => {
   })
 
   before('load pool bytecode', async () => {
-    poolBytecode = (await ethers.getContractFactory('UniswapV3Pool')).bytecode
+    const position = await (await ethers.getContractFactory('Position')).deploy()
+    const oracle = await (await ethers.getContractFactory('Oracle')).deploy()
+    const swapMath = await (await ethers.getContractFactory('SwapMath')).deploy()
+    const tick = await (await ethers.getContractFactory('Tick')).deploy()
+    const tickBitmap = await (await ethers.getContractFactory('TickBitmap')).deploy()
+    const tickMath = await (await ethers.getContractFactory('TickMath')).deploy()
+    libraries = {
+      Position: position.address,
+      Oracle: oracle.address,
+      Tick: tick.address,
+      TickBitmap: tickBitmap.address,
+      TickMath: tickMath.address,
+      SwapMath: swapMath.address,
+    }
+    poolContractFactory = await ethers.getContractFactory('UniswapV3Pool', { libraries })
+    poolBytecode = poolContractFactory.bytecode
   })
 
   beforeEach('deploy factory', async () => {
-    factory = await loadFixture(fixture)
+    const deployer = await (await ethers.getContractFactory('UniswapV3PoolDeployer', { libraries })).deploy()
+    const factoryFactory = await ethers.getContractFactory('UniswapV3Factory', {
+      libraries: {
+        UniswapV3PoolDeployer: deployer.address,
+      },
+    })
+    factory = await factoryFactory.deploy() as UniswapV3Factory
   })
 
   it('owner is deployer', async () => {
@@ -74,7 +93,6 @@ describe('UniswapV3Factory', () => {
     expect(await factory.getPool(tokens[0], tokens[1], feeAmount), 'getPool in order').to.eq(create2Address)
     expect(await factory.getPool(tokens[1], tokens[0], feeAmount), 'getPool in reverse').to.eq(create2Address)
 
-    const poolContractFactory = await ethers.getContractFactory('UniswapV3Pool')
     const pool = poolContractFactory.attach(create2Address)
     expect(await pool.factory(), 'pool factory address').to.eq(factory.address)
     expect(await pool.token0(), 'pool token0').to.eq(TEST_ADDRESSES[0])

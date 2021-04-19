@@ -15,7 +15,8 @@ describe('TickMath', () => {
   let tickMath: TickMathTest
 
   before('deploy TickMathTest', async () => {
-    const factory = await ethers.getContractFactory('TickMathTest')
+    const tickMathLib = await (await ethers.getContractFactory('TickMath')).deploy()
+    const factory = await ethers.getContractFactory('TickMathTest', { libraries: { TickMath: tickMathLib.address }})
     tickMath = (await factory.deploy()) as TickMathTest
   })
 

@@ -97,7 +97,10 @@ describe('UniswapV3Pool arbitrage tests', () => {
             const testerFactory = await ethers.getContractFactory('UniswapV3PoolSwapTest')
             const tester = (await testerFactory.deploy()) as UniswapV3PoolSwapTest
 
-            const tickMathFactory = await ethers.getContractFactory('TickMathTest')
+            const tickMathLib = await (await ethers.getContractFactory('TickMath')).deploy()
+            const tickMathFactory = await ethers.getContractFactory('TickMathTest', {
+              libraries: { TickMath: tickMathLib.address },
+            })
             const tickMath = (await tickMathFactory.deploy()) as TickMathTest
 
             await fix.token0.approve(tester.address, MaxUint256)

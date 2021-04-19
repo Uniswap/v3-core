@@ -11,7 +11,10 @@ describe('SwapMath', () => {
   let swapMath: SwapMathTest
   let sqrtPriceMath: SqrtPriceMathTest
   before(async () => {
-    const swapMathTestFactory = await ethers.getContractFactory('SwapMathTest')
+    const swapMathLib = await (await ethers.getContractFactory('SwapMath')).deploy()
+    const swapMathTestFactory = await ethers.getContractFactory('SwapMathTest', {
+      libraries: { SwapMath: swapMathLib.address },
+    })
     const sqrtPriceMathTestFactory = await ethers.getContractFactory('SqrtPriceMathTest')
     swapMath = (await swapMathTestFactory.deploy()) as SwapMathTest
     sqrtPriceMath = (await sqrtPriceMathTestFactory.deploy()) as SqrtPriceMathTest

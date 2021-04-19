@@ -7,7 +7,12 @@ describe('TickBitmap', () => {
   let tickBitmap: TickBitmapTest
 
   beforeEach('deploy TickBitmapTest', async () => {
-    const tickBitmapTestFactory = await ethers.getContractFactory('TickBitmapTest')
+    const tickBitmapLib = await (await ethers.getContractFactory('TickBitmap')).deploy()
+    const tickBitmapTestFactory = await ethers.getContractFactory('TickBitmapTest', {
+      libraries: {
+        TickBitmap: tickBitmapLib.address
+      }
+    })
     tickBitmap = (await tickBitmapTestFactory.deploy()) as TickBitmapTest
   })
 
