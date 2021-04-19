@@ -46,7 +46,7 @@ library Position {
         int128 liquidityDelta,
         uint256 feeGrowthInside0X128,
         uint256 feeGrowthInside1X128
-    ) internal {
+    ) public {
         Info memory _self = self;
 
         uint128 liquidityNext;
