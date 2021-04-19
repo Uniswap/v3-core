@@ -160,48 +160,48 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         view
         override
         returns (
-            uint160 secondsPerLiquidityInsideX128,
             int56 tickCumulativeInside,
+            uint160 secondsPerLiquidityInsideX128,
             uint32 secondsInside
         )
     {
         checkTicks(tickLower, tickUpper);
 
-        uint160 secondsPerLiquidityOutsideLowerX128;
-        uint160 secondsPerLiquidityOutsideUpperX128;
         int56 tickCumulativeLower;
         int56 tickCumulativeUpper;
+        uint160 secondsPerLiquidityOutsideLowerX128;
+        uint160 secondsPerLiquidityOutsideUpperX128;
         uint32 secondsOutsideLower;
         uint32 secondsOutsideUpper;
 
         {
             Tick.Info storage lower = ticks[tickLower];
             Tick.Info storage upper = ticks[tickUpper];
-            uint8 initializedLower;
-            (secondsPerLiquidityOutsideLowerX128, tickCumulativeLower, secondsOutsideLower, initializedLower) = (
-                lower.secondsPerLiquidityOutsideX128,
+            bool initializedLower;
+            (tickCumulativeLower, secondsPerLiquidityOutsideLowerX128, secondsOutsideLower, initializedLower) = (
                 lower.tickCumulativeOutside,
+                lower.secondsPerLiquidityOutsideX128,
                 lower.secondsOutside,
                 lower.initialized
             );
-            require(initializedLower != 0);
+            require(initializedLower);
 
-            uint8 initializedUpper;
-            (secondsPerLiquidityOutsideUpperX128, tickCumulativeUpper, secondsOutsideUpper, initializedUpper) = (
-                upper.secondsPerLiquidityOutsideX128,
+            bool initializedUpper;
+            (tickCumulativeUpper, secondsPerLiquidityOutsideUpperX128, secondsOutsideUpper, initializedUpper) = (
                 upper.tickCumulativeOutside,
+                upper.secondsPerLiquidityOutsideX128,
                 upper.secondsOutside,
                 upper.initialized
             );
-            require(initializedUpper != 0);
+            require(initializedUpper);
         }
 
         Slot0 memory _slot0 = slot0;
 
         if (_slot0.tick < tickLower) {
             return (
-                secondsPerLiquidityOutsideLowerX128 - secondsPerLiquidityOutsideUpperX128,
                 tickCumulativeLower - tickCumulativeUpper,
+                secondsPerLiquidityOutsideLowerX128 - secondsPerLiquidityOutsideUpperX128,
                 secondsOutsideLower - secondsOutsideUpper
             );
         } else if (_slot0.tick < tickUpper) {
@@ -216,16 +216,16 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     _slot0.observationCardinality
                 );
             return (
+                tickCumulative - tickCumulativeLower - tickCumulativeUpper,
                 secondsPerLiquidityCumulativeX128 -
                     secondsPerLiquidityOutsideLowerX128 -
                     secondsPerLiquidityOutsideUpperX128,
-                tickCumulative - tickCumulativeLower - tickCumulativeUpper,
                 time - secondsOutsideLower - secondsOutsideUpper
             );
         } else {
             return (
-                secondsPerLiquidityOutsideUpperX128 - secondsPerLiquidityOutsideLowerX128,
                 tickCumulativeUpper - tickCumulativeLower,
+                secondsPerLiquidityOutsideUpperX128 - secondsPerLiquidityOutsideLowerX128,
                 secondsOutsideUpper - secondsOutsideLower
             );
         }

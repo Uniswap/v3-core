@@ -70,7 +70,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 0,
         tickCumulativeOutside: 0,
         secondsOutside: 0,
-        initialized: 1,
+        initialized: true,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(13)
@@ -86,7 +86,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 0,
         tickCumulativeOutside: 0,
         secondsOutside: 0,
-        initialized: 1,
+        initialized: true,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(13)
@@ -102,7 +102,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 0,
         tickCumulativeOutside: 0,
         secondsOutside: 0,
-        initialized: 1,
+        initialized: true,
       })
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 4,
@@ -112,7 +112,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 0,
         tickCumulativeOutside: 0,
         secondsOutside: 0,
-        initialized: 1,
+        initialized: true,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(9)
@@ -128,7 +128,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 0,
         tickCumulativeOutside: 0,
         secondsOutside: 0,
-        initialized: 1,
+        initialized: true,
       })
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 3,
@@ -138,7 +138,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 0,
         tickCumulativeOutside: 0,
         secondsOutside: 0,
-        initialized: 1,
+        initialized: true,
       })
       const { feeGrowthInside0X128, feeGrowthInside1X128 } = await tickTest.getFeeGrowthInside(-2, 2, 0, 15, 15)
       expect(feeGrowthInside0X128).to.eq(16)
@@ -199,7 +199,7 @@ describe('Tick', () => {
       expect(secondsPerLiquidityOutsideX128).to.eq(3)
       expect(tickCumulativeOutside).to.eq(4)
       expect(secondsOutside).to.eq(5)
-      expect(initialized).to.eq(1)
+      expect(initialized).to.eq(true)
     })
     it('does not set any growth fields if tick is already initialized', async () => {
       await tickTest.update(1, 1, 1, 1, 2, 3, 4, 5, false, MaxUint128)
@@ -217,7 +217,7 @@ describe('Tick', () => {
       expect(secondsPerLiquidityOutsideX128).to.eq(3)
       expect(tickCumulativeOutside).to.eq(4)
       expect(secondsOutside).to.eq(5)
-      expect(initialized).to.eq(1)
+      expect(initialized).to.eq(true)
     })
     it('does not set any growth fields for ticks gt current tick', async () => {
       await tickTest.update(2, 1, 1, 1, 2, 3, 4, 5, false, MaxUint128)
@@ -234,7 +234,7 @@ describe('Tick', () => {
       expect(secondsPerLiquidityOutsideX128).to.eq(0)
       expect(tickCumulativeOutside).to.eq(0)
       expect(secondsOutside).to.eq(0)
-      expect(initialized).to.eq(1)
+      expect(initialized).to.eq(true)
     })
   })
 
@@ -249,7 +249,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 5,
         tickCumulativeOutside: 6,
         secondsOutside: 7,
-        initialized: 8,
+        initialized: true,
       })
       await tickTest.clear(2)
       const {
@@ -269,7 +269,7 @@ describe('Tick', () => {
       expect(tickCumulativeOutside).to.eq(0)
       expect(liquidityGross).to.eq(0)
       expect(liquidityNet).to.eq(0)
-      expect(initialized).to.eq(0)
+      expect(initialized).to.eq(false)
     })
   })
 
@@ -283,7 +283,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 5,
         tickCumulativeOutside: 6,
         secondsOutside: 7,
-        initialized: 8,
+        initialized: true,
       })
       await tickTest.cross(2, 7, 9, 8, 15, 10)
       const {
@@ -308,7 +308,7 @@ describe('Tick', () => {
         secondsPerLiquidityOutsideX128: 5,
         tickCumulativeOutside: 6,
         secondsOutside: 7,
-        initialized: 8,
+        initialized: true,
       })
       await tickTest.cross(2, 7, 9, 8, 15, 10)
       await tickTest.cross(2, 7, 9, 8, 15, 10)

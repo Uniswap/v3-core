@@ -26,15 +26,15 @@ interface IUniswapV3PoolDerivedState {
     /// and the second snapshot is taken.
     /// @param tickLower The lower tick of the range
     /// @param tickUpper The upper tick of the range
-    /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range
     /// @return tickCumulativeInside The snapshot of cumulative tick for the range
+    /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range
     /// @return secondsInside The snapshot of seconds per liquidity for the range
     function snapshotCumulativesInside(int24 tickLower, int24 tickUpper)
         external
         view
         returns (
-            uint160 secondsPerLiquidityInsideX128,
             int56 tickCumulativeInside,
+            uint160 secondsPerLiquidityInsideX128,
             uint32 secondsInside
         );
 }

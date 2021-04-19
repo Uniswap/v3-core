@@ -23,17 +23,17 @@ library Tick {
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint256 feeGrowthOutside0X128;
         uint256 feeGrowthOutside1X128;
+        // the cumulative tick value on the other side of the tick
+        int56 tickCumulativeOutside;
         // the seconds per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint160 secondsPerLiquidityOutsideX128;
-        // the cumulative tick value on the other side of the tick
-        int56 tickCumulativeOutside;
         // the seconds spent on the other side of the tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint32 secondsOutside;
         // the initialization sets this slot to a nonzero value so we avoid clears and fresh sstores of the seconds
         // slot in swaps
-        uint8 initialized;
+        bool initialized;
     }
 
     /// @notice Derives max liquidity per tick from given tick spacing
@@ -137,7 +137,7 @@ library Tick {
                 info.tickCumulativeOutside = tickCumulative;
                 info.secondsOutside = time;
             }
-            info.initialized = uint8(1);
+            info.initialized = true;
         }
 
         info.liquidityGross = liquidityGrossAfter;
