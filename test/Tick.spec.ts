@@ -239,7 +239,7 @@ describe('Tick', () => {
   })
 
   // this is skipped because the presence of the method causes slither to fail
-  describe.skip('#clear', async () => {
+  describe('#clear', async () => {
     it('deletes all the data in the tick', async () => {
       await tickTest.setTick(2, {
         feeGrowthOutside0X128: 1,

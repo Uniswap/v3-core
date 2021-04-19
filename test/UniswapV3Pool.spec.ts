@@ -1762,6 +1762,7 @@ describe('UniswapV3Pool', () => {
         secondsInside,
       } = await pool.snapshotCumulativesInside(tickLower, tickUpper)
       expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(5).shl(128).div(10))
+      // tick is 0 for 5 seconds, then not in range
       expect(tickCumulativeInside, 'tickCumulativeInside').to.eq(0)
       expect(secondsInside).to.eq(5)
     })
@@ -1776,6 +1777,7 @@ describe('UniswapV3Pool', () => {
         secondsInside,
       } = await pool.snapshotCumulativesInside(tickLower, tickUpper)
       expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(7).shl(128).div(10))
+      // tick is not in range then tick is 0 for 7 seconds
       expect(tickCumulativeInside, 'tickCumulativeInside').to.eq(0)
       expect(secondsInside).to.eq(7)
     })
@@ -1790,6 +1792,7 @@ describe('UniswapV3Pool', () => {
         secondsInside,
       } = await pool.snapshotCumulativesInside(tickLower, tickUpper)
       expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(7).shl(128).div(10))
+      expect((await pool.slot0()).tick).to.eq(-1) // justify the -7 tick cumulative inside value
       expect(tickCumulativeInside, 'tickCumulativeInside').to.eq(-7)
       expect(secondsInside).to.eq(7)
     })
@@ -1804,6 +1807,8 @@ describe('UniswapV3Pool', () => {
         secondsInside,
       } = await pool.snapshotCumulativesInside(tickUpper, getMaxTick(tickSpacing))
       expect(secondsPerLiquidityInsideX128).to.eq(BigNumber.from(8).shl(128).div(15))
+      // the tick of 2/1 is 6931
+      // 8 seconds * 6931 = 55448
       expect(tickCumulativeInside, 'tickCumulativeInside').to.eq(55448)
       expect(secondsInside).to.eq(8)
     })

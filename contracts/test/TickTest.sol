@@ -54,10 +54,9 @@ contract TickTest {
             );
     }
 
-    // This is commented out because echidna breaks if it's included.
-    //    function clear(int24 tick) external {
-    //        ticks.clear(tick);
-    //    }
+    function clear(int24 tick) external {
+        ticks.clear(tick);
+    }
 
     function cross(
         int24 tick,
