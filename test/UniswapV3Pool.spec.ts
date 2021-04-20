@@ -37,7 +37,8 @@ const createFixtureLoader = waffle.createFixtureLoader
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
 describe('UniswapV3Pool', () => {
-  const [wallet, other] = waffle.provider.getWallets()
+  const wallet = Wallet.createRandom().connect(ethers.provider)
+  const other = Wallet.createRandom().connect(ethers.provider)
 
   let token0: TestERC20
   let token1: TestERC20
