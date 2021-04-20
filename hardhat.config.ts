@@ -17,6 +17,7 @@ extendEnvironment((hre) => {
 
     // Temporarily set gasPrice = 0, until l2geth provides pre-funded l2 accounts.
     const provider = new providers.JsonRpcProvider("http://localhost:8545")
+    provider.pollingInterval = 100
     provider.getGasPrice = async () => BigNumber.from(0)
     hre.ethers.provider = provider
   }
