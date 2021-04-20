@@ -5,6 +5,7 @@ import checkObservationEquals from './shared/checkObservationEquals'
 import { expect } from './shared/expect'
 import { TEST_POOL_START_TIME } from './shared/fixtures'
 import snapshotGasCost from './shared/snapshotGasCost'
+import { MaxUint128 } from './shared/utilities'
 
 const Q128 = BigNumber.from(2).pow(128)
 
@@ -291,6 +292,20 @@ describe('Oracle', () => {
         const { tickCumulative, secondsPerLiquidityCumulativeX128 } = await observeSingle(1)
         expect(tickCumulative).to.be.eq(2)
         expect(secondsPerLiquidityCumulativeX128).to.be.eq('85070591730234615865843651857942052864')
+      })
+
+      it('interpolates correctly at max liquidity', async () => {
+        await oracle.initialize({ liquidity: MaxUint128, tick: 0, time: 0 })
+        await oracle.grow(2)
+        await oracle.update({ advanceTimeBy: 13, tick: 0, liquidity: 0 })
+        let { secondsPerLiquidityCumulativeX128 } = await observeSingle(0)
+        expect(secondsPerLiquidityCumulativeX128).to.eq(13)
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(6))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(7)
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(12))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(1)
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(13))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(0)
       })
 
       it('single observation at current time', async () => {
