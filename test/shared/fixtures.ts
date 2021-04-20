@@ -80,7 +80,9 @@ export const poolFixture: Fixture<PoolFixture> = async function (): Promise<Pool
   const { token0, token1, token2 } = await tokensFixture()
 
   const MockTimeUniswapV3PoolDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PoolDeployer', {
-    libraries,
+    libraries: {
+      MockDeployerLib: await deployLib('MockDeployerLib', libraries),
+    },
   })
   const MockTimeUniswapV3PoolFactory = await ethers.getContractFactory('MockTimeUniswapV3Pool', { libraries })
 
