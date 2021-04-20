@@ -49,6 +49,9 @@ contract TickOverflowSafetyEchidnaTest {
                 liquidityDelta,
                 feeGrowthGlobal0X128,
                 feeGrowthGlobal1X128,
+                0,
+                0,
+                uint32(block.timestamp),
                 false,
                 MAX_LIQUIDITY
             );
@@ -59,6 +62,9 @@ contract TickOverflowSafetyEchidnaTest {
                 liquidityDelta,
                 feeGrowthGlobal0X128,
                 feeGrowthGlobal1X128,
+                0,
+                0,
+                uint32(block.timestamp),
                 true,
                 MAX_LIQUIDITY
             );
@@ -93,10 +99,11 @@ contract TickOverflowSafetyEchidnaTest {
         while (tick != target) {
             if (tick < target) {
                 if (ticks[tick + 1].liquidityGross > 0)
-                    ticks.cross(tick + 1, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
+                    ticks.cross(tick + 1, feeGrowthGlobal0X128, feeGrowthGlobal1X128, 0, 0, uint32(block.timestamp));
                 tick++;
             } else {
-                if (ticks[tick].liquidityGross > 0) ticks.cross(tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
+                if (ticks[tick].liquidityGross > 0)
+                    ticks.cross(tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128, 0, 0, uint32(block.timestamp));
                 tick--;
             }
         }

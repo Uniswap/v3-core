@@ -14,8 +14,8 @@ library Oracle {
         uint32 blockTimestamp;
         // the tick accumulator, i.e. tick * time elapsed since the pool was first initialized
         int56 tickCumulative;
-        // the liquidity accumulator, i.e. liquidity * time elapsed since the pool was first initialized
-        uint160 liquidityCumulative;
+        // the seconds per liquidity, i.e. seconds elapsed / max(1, liquidity) since the pool was first initialized
+        uint160 secondsPerLiquidityCumulativeX128;
         // whether or not the observation is initialized
         bool initialized;
     }
@@ -38,7 +38,8 @@ library Oracle {
             Observation({
                 blockTimestamp: blockTimestamp,
                 tickCumulative: last.tickCumulative + int56(tick) * delta,
-                liquidityCumulative: last.liquidityCumulative + uint160(liquidity) * delta,
+                secondsPerLiquidityCumulativeX128: last.secondsPerLiquidityCumulativeX128 +
+                    ((uint160(delta) << 128) / (liquidity > 0 ? liquidity : 1)),
                 initialized: true
             });
     }
@@ -52,7 +53,12 @@ library Oracle {
         internal
         returns (uint16 cardinality, uint16 cardinalityNext)
     {
-        self[0] = Observation({blockTimestamp: time, tickCumulative: 0, liquidityCumulative: 0, initialized: true});
+        self[0] = Observation({
+            blockTimestamp: time,
+            tickCumulative: 0,
+            secondsPerLiquidityCumulativeX128: 0,
+            initialized: true
+        });
         return (1, 1);
     }
 
@@ -61,7 +67,7 @@ library Oracle {
     /// If the index is at the end of the allowable array length (according to cardinality), and the next cardinality
     /// is greater than the current one, cardinality may be increased. This restriction is created to preserve ordering.
     /// @param self The stored oracle array
-    /// @param index The location of the most recently updated observation
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param blockTimestamp The timestamp of the new observation
     /// @param tick The active tick at the time of the new observation
     /// @param liquidity The total in-range liquidity at the time of the new observation
@@ -140,7 +146,7 @@ library Oracle {
     /// @param self The stored oracle array
     /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
-    /// @param index The location of the most recently written observation within the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param cardinality The number of populated elements in the oracle array
     /// @return beforeOrAt The observation recorded before, or at, the target
     /// @return atOrAfter The observation recorded at, or after, the target
@@ -184,7 +190,7 @@ library Oracle {
     /// @param time The current block.timestamp
     /// @param target The timestamp at which the reserved observation should be for
     /// @param tick The active tick at the time of the returned or simulated observation
-    /// @param index The location of a given observation within the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param liquidity The total pool liquidity at the time of the call
     /// @param cardinality The number of populated elements in the oracle array
     /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
@@ -231,11 +237,11 @@ library Oracle {
     /// @param time The current block timestamp
     /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
     /// @param tick The current tick
-    /// @param index The location of a given observation within the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param liquidity The current in-range pool liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulative The tick * time elapsed since the pool was first initialized, as of `secondsAgo`
-    /// @return liquidityCumulative The liquidity * time elapsed since the pool was first initialized, as of `secondsAgo`
+    /// @return secondsPerLiquidityCumulativeX128 The time elapsed / max(1, liquidity) since the pool was first initialized, as of `secondsAgo`
     function observeSingle(
         Observation[65535] storage self,
         uint32 time,
@@ -244,11 +250,11 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) private view returns (int56 tickCumulative, uint160 liquidityCumulative) {
+    ) internal view returns (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) {
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
-            return (last.tickCumulative, last.liquidityCumulative);
+            return (last.tickCumulative, last.secondsPerLiquidityCumulativeX128);
         }
 
         uint32 target = time - secondsAgo;
@@ -258,10 +264,10 @@ library Oracle {
 
         if (target == beforeOrAt.blockTimestamp) {
             // we're at the left boundary
-            return (beforeOrAt.tickCumulative, beforeOrAt.liquidityCumulative);
+            return (beforeOrAt.tickCumulative, beforeOrAt.secondsPerLiquidityCumulativeX128);
         } else if (target == atOrAfter.blockTimestamp) {
             // we're at the right boundary
-            return (atOrAfter.tickCumulative, atOrAfter.liquidityCumulative);
+            return (atOrAfter.tickCumulative, atOrAfter.secondsPerLiquidityCumulativeX128);
         } else {
             // we're in the middle
             uint32 observationTimeDelta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
@@ -270,9 +276,12 @@ library Oracle {
                 beforeOrAt.tickCumulative +
                     ((atOrAfter.tickCumulative - beforeOrAt.tickCumulative) / observationTimeDelta) *
                     targetDelta,
-                beforeOrAt.liquidityCumulative +
-                    ((atOrAfter.liquidityCumulative - beforeOrAt.liquidityCumulative) / observationTimeDelta) *
-                    targetDelta
+                beforeOrAt.secondsPerLiquidityCumulativeX128 +
+                    uint160(
+                        (uint256(
+                            atOrAfter.secondsPerLiquidityCumulativeX128 - beforeOrAt.secondsPerLiquidityCumulativeX128
+                        ) * targetDelta) / observationTimeDelta
+                    )
             );
         }
     }
@@ -283,11 +292,11 @@ library Oracle {
     /// @param time The current block.timestamp
     /// @param secondsAgos Each amount of time to look back, in seconds, at which point to return an observation
     /// @param tick The current tick
-    /// @param index The location of a given observation within the oracle array
+    /// @param index The index of the observation that was most recently written to the observations array
     /// @param liquidity The current in-range pool liquidity
     /// @param cardinality The number of populated elements in the oracle array
     /// @return tickCumulatives The tick * time elapsed since the pool was first initialized, as of each `secondsAgo`
-    /// @return liquidityCumulatives The liquidity * time elapsed since the pool was first initialized, as of each `secondsAgo`
+    /// @return secondsPerLiquidityCumulativeX128s The cumulative seconds / max(1, liquidity) since the pool was first initialized, as of each `secondsAgo`
     function observe(
         Observation[65535] storage self,
         uint32 time,
@@ -296,13 +305,13 @@ library Oracle {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) internal view returns (int56[] memory tickCumulatives, uint160[] memory liquidityCumulatives) {
+    ) internal view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) {
         require(cardinality > 0, 'I');
 
         tickCumulatives = new int56[](secondsAgos.length);
-        liquidityCumulatives = new uint160[](secondsAgos.length);
+        secondsPerLiquidityCumulativeX128s = new uint160[](secondsAgos.length);
         for (uint256 i = 0; i < secondsAgos.length; i++) {
-            (tickCumulatives[i], liquidityCumulatives[i]) = observeSingle(
+            (tickCumulatives[i], secondsPerLiquidityCumulativeX128s[i]) = observeSingle(
                 self,
                 time,
                 secondsAgos[i],

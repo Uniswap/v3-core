@@ -54,9 +54,13 @@ interface IUniswapV3PoolState {
     /// liquidityNet how much liquidity changes when the pool price crosses the tick,
     /// feeGrowthOutside0X128 the fee growth on the other side of the tick from the current tick in token0,
     /// feeGrowthOutside1X128 the fee growth on the other side of the tick from the current tick in token1,
-    /// feeGrowthOutsideX128 values can only be used if the tick is initialized,
-    /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
-    /// compute snapshots.
+    /// tickCumulativeOutside the cumulative tick value on the other side of the tick from the current tick
+    /// secondsPerLiquidityOutsideX128 the seconds spent per liquidity on the other side of the tick from the current tick,
+    /// secondsOutside the seconds spent on the other side of the tick from the current tick,
+    /// initialized Set to true if the tick is initialized, i.e. liquidityGross is greater than 0, otherwise equal to false.
+    /// Outside values can only be used if the tick is initialized, i.e. if liquidityGross is greater than 0.
+    /// In addition, these values are only relative and must be used only in comparison to previous snapshots for
+    /// a specific position.
     function ticks(int24 tick)
         external
         view
@@ -64,14 +68,15 @@ interface IUniswapV3PoolState {
             uint128 liquidityGross,
             int128 liquidityNet,
             uint256 feeGrowthOutside0X128,
-            uint256 feeGrowthOutside1X128
+            uint256 feeGrowthOutside1X128,
+            int56 tickCumulativeOutside,
+            uint160 secondsPerLiquidityOutsideX128,
+            uint32 secondsOutside,
+            bool initialized
         );
 
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
     function tickBitmap(int16 wordPosition) external view returns (uint256);
-
-    /// @notice Returns 8 packed tick seconds outside values. See SecondsOutside for more information
-    function secondsOutside(int24 wordPosition) external view returns (uint256);
 
     /// @notice Returns the information about a position by the position's key
     /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
@@ -96,10 +101,8 @@ interface IUniswapV3PoolState {
     /// @dev You most likely want to use #observe() instead of this method to get an observation as of some amount of time
     /// ago, rather than at a specific index in the array.
     /// @return blockTimestamp The timestamp of the observation,
-    /// Returns tickCumulative the current tick multiplied by seconds elapsed for the life of the pool as of the
-    /// observation,
-    /// Returns liquidityCumulative the current liquidity multiplied by seconds elapsed for the life of the pool as of
-    /// the observation,
+    /// Returns tickCumulative the tick multiplied by seconds elapsed for the life of the pool as of the observation timestamp,
+    /// Returns secondsPerLiquidityCumulativeX128 the seconds per in range liquidity for the life of the pool as of the observation timestamp,
     /// Returns initialized whether the observation has been initialized and the values are safe to use
     function observations(uint256 index)
         external
@@ -107,7 +110,7 @@ interface IUniswapV3PoolState {
         returns (
             uint32 blockTimestamp,
             int56 tickCumulative,
-            uint160 liquidityCumulative,
+            uint160 secondsPerLiquidityCumulativeX128,
             bool initialized
         );
 }

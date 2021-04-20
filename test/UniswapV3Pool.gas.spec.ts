@@ -17,6 +17,9 @@ import {
   MintFunction,
   getMaxTick,
   MaxUint128,
+  SwapToPriceFunction,
+  MAX_SQRT_RATIO,
+  MIN_SQRT_RATIO,
 } from './shared/utilities'
 
 const createFixtureLoader = waffle.createFixtureLoader
@@ -44,7 +47,7 @@ describe('UniswapV3Pool gas tests', () => {
 
         const pool = await fix.createPool(feeAmount, tickSpacing)
 
-        const { swapExact0For1, swapToHigherPrice, mint } = await createPoolFunctions({
+        const { swapExact0For1, swapToHigherPrice, mint, swapToLowerPrice } = await createPoolFunctions({
           swapTarget: fix.swapTargetCallee,
           token0: fix.token0,
           token1: fix.token1,
@@ -64,16 +67,17 @@ describe('UniswapV3Pool gas tests', () => {
         expect((await pool.slot0()).tick).to.eq(startingTick)
         expect((await pool.slot0()).sqrtPriceX96).to.eq(startingPrice)
 
-        return { pool, swapExact0For1, mint, swapToHigherPrice }
+        return { pool, swapExact0For1, mint, swapToHigherPrice, swapToLowerPrice }
       }
 
       let swapExact0For1: SwapFunction
-      let swapToHigherPrice: SwapFunction
+      let swapToHigherPrice: SwapToPriceFunction
+      let swapToLowerPrice: SwapToPriceFunction
       let pool: MockTimeUniswapV3Pool
       let mint: MintFunction
 
       beforeEach('load the fixture', async () => {
-        ;({ swapExact0For1, pool, mint, swapToHigherPrice } = await loadFixture(gasTestFixture))
+        ;({ swapExact0For1, pool, mint, swapToHigherPrice, swapToLowerPrice } = await loadFixture(gasTestFixture))
       })
 
       describe('#swapExact0For1', () => {
@@ -147,7 +151,7 @@ describe('UniswapV3Pool gas tests', () => {
           expect((await pool.slot0()).tick).to.be.lt(startingTick - 2 * tickSpacing) // we crossed the last tick
         })
 
-        it('large swap crossing several initialized ticks after some time passes (seconds outside is set)', async () => {
+        it('large swap crossing several initialized ticks after some time passes', async () => {
           await mint(wallet.address, startingTick - 3 * tickSpacing, startingTick - tickSpacing, expandTo18Decimals(1))
           await mint(
             wallet.address,
@@ -289,6 +293,20 @@ describe('UniswapV3Pool gas tests', () => {
         })
         it('no op', async () => {
           await snapshotGasCost(pool.increaseObservationCardinalityNext(3))
+        })
+      })
+
+      describe('#snapshotCumulativesInside', () => {
+        it('tick inside', async () => {
+          await snapshotGasCost(pool.estimateGas.snapshotCumulativesInside(minTick, maxTick))
+        })
+        it('tick above', async () => {
+          await swapToHigherPrice(MAX_SQRT_RATIO.sub(1), wallet.address)
+          await snapshotGasCost(pool.estimateGas.snapshotCumulativesInside(minTick, maxTick))
+        })
+        it('tick below', async () => {
+          await swapToLowerPrice(MIN_SQRT_RATIO.add(1), wallet.address)
+          await snapshotGasCost(pool.estimateGas.snapshotCumulativesInside(minTick, maxTick))
         })
       })
     })
