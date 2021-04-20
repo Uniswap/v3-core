@@ -308,6 +308,52 @@ describe('Oracle', () => {
         expect(secondsPerLiquidityCumulativeX128).to.eq(0)
       })
 
+      it('interpolates correctly at min liquidity', async () => {
+        await oracle.initialize({ liquidity: 0, tick: 0, time: 0 })
+        await oracle.grow(2)
+        await oracle.update({ advanceTimeBy: 13, tick: 0, liquidity: MaxUint128 })
+        let { secondsPerLiquidityCumulativeX128 } = await observeSingle(0)
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(13).shl(128))
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(6))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(7).shl(128))
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(12))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(1).shl(128))
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(13))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(0)
+      })
+
+      it('interpolates the same as 0 liquidity for 1 liquidity', async () => {
+        await oracle.initialize({ liquidity: 1, tick: 0, time: 0 })
+        await oracle.grow(2)
+        await oracle.update({ advanceTimeBy: 13, tick: 0, liquidity: MaxUint128 })
+        let { secondsPerLiquidityCumulativeX128 } = await observeSingle(0)
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(13).shl(128))
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(6))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(7).shl(128))
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(12))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(1).shl(128))
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(13))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(0)
+      })
+
+      it('interpolates correctly across uint32 seconds boundaries', async () => {
+        // setup
+        await oracle.initialize({ liquidity: 0, tick: 0, time: 0 })
+        await oracle.grow(2)
+        await oracle.update({ advanceTimeBy: 2 ** 32 - 6, tick: 0, liquidity: 0 })
+        let { secondsPerLiquidityCumulativeX128 } = await observeSingle(0)
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(2 ** 32 - 6).shl(128))
+        await oracle.update({ advanceTimeBy: 13, tick: 0, liquidity: 0 })
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(0))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(7).shl(128))
+
+        // interpolation checks
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(3))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(4).shl(128))
+        ;({ secondsPerLiquidityCumulativeX128 } = await observeSingle(8))
+        expect(secondsPerLiquidityCumulativeX128).to.eq(BigNumber.from(2 ** 32 - 1).shl(128))
+      })
+
       it('single observation at current time', async () => {
         await oracle.initialize({ liquidity: 4, tick: 2, time: 5 })
         const { tickCumulative, secondsPerLiquidityCumulativeX128 } = await observeSingle(0)
