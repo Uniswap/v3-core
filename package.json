@@ -56,6 +56,10 @@
   },
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "compile:ovm": "hardhat compile --network optimism",
+    "test:ovm": "hardhat test --network optimism",
+    "optimism-up": "./scripts/run-optimism.sh",
+    "optimism-down": "cd optimism/ops && docker-compose down -v"
   }
 }
