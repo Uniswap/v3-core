@@ -646,21 +646,21 @@ describe('Oracle', () => {
 
     it('can observe into the ordered portion with exact seconds ago', async () => {
       await checkObserve(100 * 13, {
-        secondsPerLiquidityCumulativeX128: '27970560813',
+        secondsPerLiquidityCumulativeX128: '60465049086512033878831623038233202591033',
         tickCumulative: '-27970560813',
       })
     })
 
     it('can observe into the ordered portion with unexact seconds ago', async () => {
       await checkObserve(100 * 13 + 5, {
-        secondsPerLiquidityCumulativeX128: '27970232823',
+        secondsPerLiquidityCumulativeX128: '60465023149565257990964350912969670793706',
         tickCumulative: '-27970232823',
       })
     })
 
     it('can observe at exactly the latest observation', async () => {
       await checkObserve(0, {
-        secondsPerLiquidityCumulativeX128: '28055903863',
+        secondsPerLiquidityCumulativeX128: '60471787506468701386237800669810720099776',
         tickCumulative: '-28055903863',
       })
     })
@@ -668,7 +668,7 @@ describe('Oracle', () => {
     it('can observe at exactly the latest observation after some time passes', async () => {
       await oracle.advanceTime(5)
       await checkObserve(5, {
-        secondsPerLiquidityCumulativeX128: '28055903863',
+        secondsPerLiquidityCumulativeX128: '60471787506468701386237800669810720099776',
         tickCumulative: '-28055903863',
       })
     })
@@ -676,28 +676,28 @@ describe('Oracle', () => {
     it('can observe after the latest observation counterfactual', async () => {
       await oracle.advanceTime(5)
       await checkObserve(3, {
-        secondsPerLiquidityCumulativeX128: '28056035261',
+        secondsPerLiquidityCumulativeX128: '60471797865298117996489508104462919730461',
         tickCumulative: '-28056035261',
       })
     })
 
     it('can observe into the unordered portion of array at exact seconds ago of observation', async () => {
       await checkObserve(200 * 13, {
-        secondsPerLiquidityCumulativeX128: '27885347763',
+        secondsPerLiquidityCumulativeX128: '60458300386499273141628780395875293027404',
         tickCumulative: '-27885347763',
       })
     })
 
     it('can observe into the unordered portion of array at seconds ago between observations', async () => {
       await checkObserve(200 * 13 + 5, {
-        secondsPerLiquidityCumulativeX128: '27885020273',
+        secondsPerLiquidityCumulativeX128: '60458274409952896081377821330361274907140',
         tickCumulative: '-27885020273',
       })
     })
 
     it('can observe the oldest observation 13*65534 seconds ago', async () => {
       await checkObserve(13 * 65534, {
-        secondsPerLiquidityCumulativeX128: '175890',
+        secondsPerLiquidityCumulativeX128: '33974356747348039873972993881117400879779',
         tickCumulative: '-175890',
       })
     })
@@ -705,7 +705,7 @@ describe('Oracle', () => {
     it('can observe the oldest observation 13*65534 + 5 seconds ago if time has elapsed', async () => {
       await oracle.advanceTime(5)
       await checkObserve(13 * 65534 + 5, {
-        secondsPerLiquidityCumulativeX128: '175890',
+        secondsPerLiquidityCumulativeX128: '33974356747348039873972993881117400879779',
         tickCumulative: '-175890',
       })
     })
