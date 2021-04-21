@@ -322,17 +322,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             _slot0.tick
         );
 
-        (uint160 sqrtPriceAX96, uint160 sqrtPriceBX96) = TickMath.getSqrtRatioAtTicks(params.tickLower, params.tickUpper);
+        (uint160 sqrtPriceAX96, uint160 sqrtPriceBX96) =
+            TickMath.getSqrtRatioAtTicks(params.tickLower, params.tickUpper);
 
         if (params.liquidityDelta != 0) {
             if (_slot0.tick < params.tickLower) {
                 // current tick is below the passed range; liquidity can only become in range by crossing from left to
                 // right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
-                amount0 = SqrtPriceMath.getAmount0Delta(
-                    sqrtPriceAX96,
-                    sqrtPriceBX96,
-                    params.liquidityDelta
-                );
+                amount0 = SqrtPriceMath.getAmount0Delta(sqrtPriceAX96, sqrtPriceBX96, params.liquidityDelta);
             } else if (_slot0.tick < params.tickUpper) {
                 // current tick is inside the passed range
                 uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
@@ -347,27 +344,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     _slot0.observationCardinalityNext
                 );
 
-
-                amount0 = SqrtPriceMath.getAmount0Delta(
-                    _slot0.sqrtPriceX96,
-                    sqrtPriceBX96,
-                    params.liquidityDelta
-                );
-                amount1 = SqrtPriceMath.getAmount1Delta(
-                    sqrtPriceAX96,
-                    _slot0.sqrtPriceX96,
-                    params.liquidityDelta
-                );
+                amount0 = SqrtPriceMath.getAmount0Delta(_slot0.sqrtPriceX96, sqrtPriceBX96, params.liquidityDelta);
+                amount1 = SqrtPriceMath.getAmount1Delta(sqrtPriceAX96, _slot0.sqrtPriceX96, params.liquidityDelta);
 
                 liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta);
             } else {
                 // current tick is above the passed range; liquidity can only become in range by crossing from right to
                 // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
-                amount1 = SqrtPriceMath.getAmount1Delta(
-                    sqrtPriceAX96,
-                    sqrtPriceBX96,
-                    params.liquidityDelta
-                );
+                amount1 = SqrtPriceMath.getAmount1Delta(sqrtPriceAX96, sqrtPriceBX96, params.liquidityDelta);
             }
         }
     }
@@ -390,15 +374,16 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
 
         // if we need to update the ticks, do it
-        (bool flippedLower, bool flippedUpper, uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = ticks.updateAndGetFeeGrowth(
-            tickLower,
-            tickUpper,
-            tick,
-            liquidityDelta,
-            _feeGrowthGlobal0X128,
-            _feeGrowthGlobal1X128,
-            maxLiquidityPerTick
-        );
+        (bool flippedLower, bool flippedUpper, uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
+            ticks.updateAndGetFeeGrowth(
+                tickLower,
+                tickUpper,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                maxLiquidityPerTick
+            );
 
         uint32 blockTimestamp = _blockTimestamp();
         if (flippedLower) {
@@ -453,7 +438,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
         require(
             (amount0 <= 0 || balance0Before.add(amount0) <= balance0()) &&
-            (amount1 <= 0 || balance1Before.add(amount1) <= balance1()),
+                (amount1 <= 0 || balance1Before.add(amount1) <= balance1()),
             'M'
         );
 
@@ -566,10 +551,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 feeAmount;
     }
 
-    function createStep(SwapState memory state, bool zeroForOne)
-        private
-        view returns (StepComputations memory step)
-    {
+    function createStep(SwapState memory state, bool zeroForOne) private view returns (StepComputations memory step) {
         step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
         (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
@@ -589,7 +571,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
     }
 
-
     /// @inheritdoc IUniswapV3PoolActions
     function swap(
         address recipient,
@@ -601,9 +582,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         Slot0 memory slot0Start = slot0;
 
         require(
-            amountSpecified != 0 &&
-            slot0Start.unlocked &&
-            zeroForOne
+            amountSpecified != 0 && slot0Start.unlocked && zeroForOne
                 ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
                 : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
             'SPL'
@@ -636,10 +615,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
-            StepComputations memory step = createStep(
-                state,
-                zeroForOne
-            );
+            StepComputations memory step = createStep(state, zeroForOne);
 
             // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(

@@ -52,12 +52,14 @@ contract UniswapV3Factory is IUniswapV3Factory, NoDelegateCall {
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0);
         require(getPool[token0][token1][fee] == address(0));
-        parameters = Parameters({factory: address(this), token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
-        pool = UniswapV3PoolDeployer.deploy(
-            token0,
-            token1,
-            fee
-        );
+        parameters = Parameters({
+            factory: address(this),
+            token0: token0,
+            token1: token1,
+            fee: fee,
+            tickSpacing: tickSpacing
+        });
+        pool = UniswapV3PoolDeployer.deploy(token0, token1, fee);
         delete parameters;
         getPool[token0][token1][fee] = pool;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses

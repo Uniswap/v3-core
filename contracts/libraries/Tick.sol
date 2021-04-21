@@ -103,7 +103,15 @@ library Tick {
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128,
         uint128 maxLiquidity
-    ) public returns (bool flippedLower, bool flippedUpper, uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) {
+    )
+        public
+        returns (
+            bool flippedLower,
+            bool flippedUpper,
+            uint256 feeGrowthInside0X128,
+            uint256 feeGrowthInside1X128
+        )
+    {
         if (liquidityDelta != 0) {
             flippedLower = update(
                 self,
@@ -128,8 +136,14 @@ library Tick {
             );
         }
 
-        (feeGrowthInside0X128, feeGrowthInside1X128) =
-            getFeeGrowthInside(self, tickLower, tickUpper, tickCurrent, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
+        (feeGrowthInside0X128, feeGrowthInside1X128) = getFeeGrowthInside(
+            self,
+            tickLower,
+            tickUpper,
+            tickCurrent,
+            feeGrowthGlobal0X128,
+            feeGrowthGlobal1X128
+        );
     }
 
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa

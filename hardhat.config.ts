@@ -7,7 +7,7 @@ import 'hardhat-contract-sizer'
 
 import { BigNumber, providers } from 'ethers'
 
-import { extendEnvironment } from "hardhat/config";
+import { extendEnvironment } from 'hardhat/config'
 extendEnvironment((hre) => {
   if (hre.network.name == 'optimism') {
     // Override Waffle Fixtures to be no-ops, because l2geth does not support
@@ -16,12 +16,12 @@ extendEnvironment((hre) => {
     hre.waffle.loadFixture = async (fixture: Promise<any>) => await fixture()
 
     // Temporarily set gasPrice = 0, until l2geth provides pre-funded l2 accounts.
-    const provider = new providers.JsonRpcProvider("http://localhost:8545")
+    const provider = new providers.JsonRpcProvider('http://localhost:8545')
     provider.pollingInterval = 100
     provider.getGasPrice = async () => BigNumber.from(0)
     hre.ethers.provider = provider
   }
-});
+})
 
 export default {
   networks: {
@@ -44,7 +44,7 @@ export default {
       url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
     },
     optimism: {
-      url: "http://localhost:8545",
+      url: 'http://localhost:8545',
       ovm: true,
     },
   },

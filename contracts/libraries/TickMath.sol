@@ -15,7 +15,11 @@ library TickMath {
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    function getSqrtRatioAtTicks(int24 tickLower, int24 tickUpper) public pure returns (uint160 sqrtPriceAX96, uint160 sqrtPriceBX96) {
+    function getSqrtRatioAtTicks(int24 tickLower, int24 tickUpper)
+        public
+        pure
+        returns (uint160 sqrtPriceAX96, uint160 sqrtPriceBX96)
+    {
         sqrtPriceAX96 = getSqrtRatioAtTick(tickLower);
         sqrtPriceBX96 = getSqrtRatioAtTick(tickUpper);
     }

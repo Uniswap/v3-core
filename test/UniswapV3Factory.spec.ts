@@ -53,7 +53,7 @@ describe('UniswapV3Factory', () => {
         UniswapV3PoolDeployer: deployer.address,
       },
     })
-    factory = await factoryFactory.deploy() as UniswapV3Factory
+    factory = (await factoryFactory.deploy()) as UniswapV3Factory
   })
 
   it('owner is deployer', async () => {

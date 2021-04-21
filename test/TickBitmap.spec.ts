@@ -10,8 +10,8 @@ describe('TickBitmap', () => {
     const tickBitmapLib = await (await ethers.getContractFactory('TickBitmap')).deploy()
     const tickBitmapTestFactory = await ethers.getContractFactory('TickBitmapTest', {
       libraries: {
-        TickBitmap: tickBitmapLib.address
-      }
+        TickBitmap: tickBitmapLib.address,
+      },
     })
     tickBitmap = (await tickBitmapTestFactory.deploy()) as TickBitmapTest
   })
