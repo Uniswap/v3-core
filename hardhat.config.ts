@@ -20,6 +20,15 @@ extendEnvironment((hre) => {
     provider.pollingInterval = 100
     provider.getGasPrice = async () => BigNumber.from(0)
     hre.ethers.provider = provider
+
+    // hre.waffle.provider.getWallets() throws if network.name !== 'hardhat', so we override it to generate 20
+    // wallets using Hardhat's default mnemonic and derivation path
+    hre.waffle.provider.getWallets = () => {
+      const mnemonic = 'test test test test test test test test test test test junk'
+      const path = "m/44'/60'/0'/0"
+      const indices = Array.from(Array(20).keys()) // generates array of [0, 1, 2, ..., 18, 19]
+      return indices.map((i) => hre.ethers.Wallet.fromMnemonic(mnemonic, `${path}/${i}`).connect(provider))
+    }
   }
 })
 
