@@ -5,7 +5,8 @@ import '@nomiclabs/hardhat-etherscan'
 import '@eth-optimism/hardhat-ovm'
 import 'hardhat-contract-sizer'
 
-import { BigNumber, providers } from 'ethers'
+import { BigNumber, providers, Wallet } from 'ethers'
+import { MockProvider } from 'ethereum-waffle'
 
 import { extendEnvironment } from 'hardhat/config'
 extendEnvironment((hre) => {
@@ -14,6 +15,11 @@ extendEnvironment((hre) => {
     // snapshotting
     // @ts-ignore
     hre.waffle.loadFixture = async (fixture: Promise<any>) => await fixture()
+    hre.waffle.createFixtureLoader = (wallets: Wallet[] | undefined, provider: MockProvider | undefined) => {
+      return async function load(fixture: any) {
+        return await fixture()
+      }
+    }
 
     // Temporarily set gasPrice = 0, until l2geth provides pre-funded l2 accounts.
     const provider = new providers.JsonRpcProvider('http://localhost:8545')
