@@ -17,7 +17,7 @@ extendEnvironment((hre) => {
     hre.waffle.loadFixture = async (fixture: Promise<any>) => await fixture()
     hre.waffle.createFixtureLoader = (wallets: Wallet[] | undefined, provider: MockProvider | undefined) => {
       return async function load(fixture: any) {
-        return await fixture()
+        return await fixture(wallets, provider)
       }
     }
 
