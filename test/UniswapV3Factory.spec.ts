@@ -84,9 +84,17 @@ describe('UniswapV3Factory', () => {
     const create2Address = getCreate2Address(factory.address, tokens, feeAmount, poolBytecode)
     const create = factory.createPool(tokens[0], tokens[1], feeAmount)
 
-    await expect(create)
-      .to.emit(factory, 'PoolCreated')
-      .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
+    const { logs } = await (await create).wait()
+    // Cannot seem to parse events with waffle for some reason?
+    // await expect(create)
+      // .to.emit(factory, 'PoolCreated')
+      // .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
+    const log = factory.interface.decodeEventLog('PoolCreated', logs[1].data, logs[1].topics)
+    expect(log.token0).to.be.eq(TEST_ADDRESSES[0])
+    expect(log.token1).to.be.eq(TEST_ADDRESSES[1])
+    expect(log.fee).to.be.eq(feeAmount)
+    expect(log.tickSpacing).to.be.eq(tickSpacing)
+    expect(log.pool).to.be.eq(create2Address)
 
     await expect(factory.createPool(tokens[0], tokens[1], feeAmount)).to.be.reverted
     await expect(factory.createPool(tokens[1], tokens[0], feeAmount)).to.be.reverted
@@ -124,9 +132,7 @@ describe('UniswapV3Factory', () => {
     it('fails if token a is 0 or token b is 0', async () => {
       await expect(factory.createPool(TEST_ADDRESSES[0], constants.AddressZero, FeeAmount.LOW)).to.be.reverted
       await expect(factory.createPool(constants.AddressZero, TEST_ADDRESSES[0], FeeAmount.LOW)).to.be.reverted
-      await expect(factory.createPool(constants.AddressZero, constants.AddressZero, FeeAmount.LOW)).to.be.revertedWith(
-        ''
-      )
+      await expect(factory.createPool(constants.AddressZero, constants.AddressZero, FeeAmount.LOW)).to.be.reverted
     })
 
     it('fails if fee amount is not enabled', async () => {
@@ -144,14 +150,17 @@ describe('UniswapV3Factory', () => {
     })
 
     it('updates owner', async () => {
-      await factory.setOwner(other.address)
+      const tx = await factory.setOwner(other.address)
+      await tx.wait()
       expect(await factory.owner()).to.eq(other.address)
     })
 
     it('emits event', async () => {
-      await expect(factory.setOwner(other.address))
-        .to.emit(factory, 'OwnerChanged')
-        .withArgs(wallet.address, other.address)
+      const tx = await factory.setOwner(other.address)
+      const { logs } = await tx.wait()
+      const { oldOwner, newOwner } = factory.interface.decodeEventLog('OwnerChanged', logs[1].data, logs[1].topics)
+      expect(oldOwner).to.be.eq(wallet.address)
+      expect(newOwner).to.be.eq(other.address)
     })
 
     it('cannot be called by original owner', async () => {
@@ -174,18 +183,22 @@ describe('UniswapV3Factory', () => {
       await expect(factory.enableFeeAmount(500, 16834)).to.be.reverted
     })
     it('fails if already initialized', async () => {
-      await factory.enableFeeAmount(100, 5)
+      await (await factory.enableFeeAmount(100, 5)).wait()
       await expect(factory.enableFeeAmount(100, 10)).to.be.reverted
     })
     it('sets the fee amount in the mapping', async () => {
-      await factory.enableFeeAmount(100, 5)
+      await (await factory.enableFeeAmount(100, 5)).wait()
       expect(await factory.feeAmountTickSpacing(100)).to.eq(5)
     })
     it('emits an event', async () => {
-      await expect(factory.enableFeeAmount(100, 5)).to.emit(factory, 'FeeAmountEnabled').withArgs(100, 5)
+      const tx = await factory.enableFeeAmount(100, 5)
+      const { logs } = await tx.wait()
+      const log = factory.interface.decodeEventLog('FeeAmountEnabled', logs[1].data, logs[1].topics)
+      expect(log[0]).to.be.eq(100)
+      expect(log[1]).to.be.eq(5)
     })
     it('enables pool creation', async () => {
-      await factory.enableFeeAmount(250, 15)
+      await (await factory.enableFeeAmount(250, 15)).wait()
       await createAndCheckPool([TEST_ADDRESSES[0], TEST_ADDRESSES[1]], 250, 15)
     })
   })
