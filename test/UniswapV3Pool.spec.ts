@@ -1351,26 +1351,31 @@ describe('UniswapV3Pool', () => {
     pool = await createPool(FeeAmount.MEDIUM, 1)
 
     const tickMathLib = await (await ethers.getContractFactory('TickMath')).deploy()
+    await tickMathLib.deployTransaction.wait()
     const sqrtTickMath = (await (
       await ethers.getContractFactory('TickMathTest', { libraries: { TickMath: tickMathLib.address } })
     ).deploy()) as TickMathTest
+    await sqrtTickMath.deployTransaction.wait()
     const swapMathLib = await (await ethers.getContractFactory('SwapMath')).deploy()
+    await swapMathLib.deployTransaction.wait()
     const swapMath = (await (
       await ethers.getContractFactory('SwapMathTest', { libraries: { SwapMath: swapMathLib.address } })
     ).deploy()) as SwapMathTest
+    await swapMath.deployTransaction.wait()
+
     const p0 = (await sqrtTickMath.getSqrtRatioAtTick(-24081)).add(1)
     // initialize at a price of ~0.3 token1/token0
     // meaning if you swap in 2 token0, you should end up getting 0 token1
-    await pool.initialize(p0)
+    await (await pool.initialize(p0)).wait()
     expect(await pool.liquidity(), 'current pool liquidity is 1').to.eq(0)
     expect((await pool.slot0()).tick, 'pool tick is -24081').to.eq(-24081)
 
     // add a bunch of liquidity around current price
     const liquidity = expandTo18Decimals(1000)
-    await mint(wallet.address, -24082, -24080, liquidity)
+    await (await mint(wallet.address, -24082, -24080, liquidity)).wait()
     expect(await pool.liquidity(), 'current pool liquidity is now liquidity + 1').to.eq(liquidity)
 
-    await mint(wallet.address, -24082, -24081, liquidity)
+    await (await mint(wallet.address, -24082, -24081, liquidity)).wait()
     expect(await pool.liquidity(), 'current pool liquidity is still liquidity + 1').to.eq(liquidity)
 
     // check the math works out to moving the price down 1, sending no amount out, and having some amount remaining
@@ -1389,10 +1394,17 @@ describe('UniswapV3Pool', () => {
     }
 
     // swap 2 amount in, should get 0 amount out
-    await expect(swapExact0For1(3, wallet.address))
-      .to.emit(token0, 'Transfer')
-      .withArgs(wallet.address, pool.address, 3)
-      .to.not.emit(token1, 'Transfer')
+    let tx = await swapExact0For1(3, wallet.address)
+    const { logs } = await tx.wait()
+    expect(logs.length).to.be.equal(4)
+    const log = token0.interface.decodeEventLog('Transfer', logs[2].data, logs[2].topics)
+    expect(log.from).to.be.equal(wallet.address)
+    expect(log.to).to.be.equal(pool.address)
+    expect(log.value).to.be.equal(3)
+    // await expect(swapExact0For1(3, wallet.address))
+    //   .to.emit(token0, 'Transfer')
+    //   .withArgs(wallet.address, pool.address, 3)
+    //   .to.not.emit(token1, 'Transfer')
 
     const { tick, sqrtPriceX96 } = await pool.slot0()
 
