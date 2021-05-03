@@ -22,15 +22,26 @@ const deployLib = async (name: string, libraries?: any): Promise<string> => {
 }
 
 export async function factoryFixture(): Promise<FactoryFixture> {
-  const libraries = {
-    Position: await deployLib('Position'),
-    Oracle: await deployLib('Oracle'),
-    Tick: await deployLib('Tick'),
-    TickBitmap: await deployLib('TickBitmap'),
-    TickMath: await deployLib('TickMath'),
-    SwapMath: await deployLib('SwapMath'),
-  }
+  const position = await deployLib('Position')
+  const oracle = await deployLib('Oracle')
+  const tick = await deployLib('Tick')
+  const tickBitmap = await deployLib('TickBitmap')
+  const tickMath = await deployLib('TickMath')
 
+  const stateLibs = {
+    Oracle: oracle,
+    TickBitmap: tickBitmap,
+    TickMath: tickMath,
+  }
+  const stateMath = await deployLib('StateMath', stateLibs)
+
+  const libraries = {
+    Position: position,
+    Oracle: oracle,
+    StateMath: stateMath,
+    Tick: tick,
+    TickMath: tickMath,
+  }
   const deployer = await (await ethers.getContractFactory('UniswapV3PoolDeployer', { libraries })).deploy()
   const factoryFactory = await ethers.getContractFactory('UniswapV3Factory', {
     libraries: {
