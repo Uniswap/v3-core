@@ -1,5 +1,5 @@
 import { BigNumber, Contract } from 'ethers'
-import { ethers } from 'hardhat'
+import { ethers, network } from 'hardhat'
 import { MockTimeUniswapV3Pool } from '../../typechain/MockTimeUniswapV3Pool'
 import { TestERC20 } from '../../typechain/TestERC20'
 import { UniswapV3Factory } from '../../typechain/UniswapV3Factory'
@@ -19,6 +19,10 @@ const deployLib = async (name: string, libraries?: any): Promise<string> => {
   const lib = await (await ethers.getContractFactory(name, { libraries })).deploy()
   return lib.address
 }
+
+// NB: OVM_ETH emits an additional `Transfer` event which means we need to change
+// take the 2nd element from the receipt's logs.
+const RECEIPT_OFFSET = network.name == 'optimism' ? 1 : 0
 
 export async function factoryFixture(): Promise<FactoryFixture> {
   const libraries = {
@@ -112,7 +116,7 @@ export const poolFixture: Fixture<PoolFixture> = async function (): Promise<Pool
       )
 
       const receipt = await tx.wait()
-      const poolAddress = receipt.events?.[0].args?.pool as string
+      const poolAddress = receipt.events?.[RECEIPT_OFFSET].args?.pool as string
       return MockTimeUniswapV3PoolFactory.attach(poolAddress) as MockTimeUniswapV3Pool
     },
   }
