@@ -1,4 +1,4 @@
-import { ethers, waffle } from 'hardhat'
+import { network, ethers, waffle } from 'hardhat'
 import { BigNumber, BigNumberish, constants, Wallet } from 'ethers'
 import { TestERC20 } from '../typechain/TestERC20'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
@@ -1393,11 +1393,15 @@ describe('UniswapV3Pool', () => {
       expect(amountOut, 'zero amount out').to.eq(0)
     }
 
+    // NB: OVM_ETH emits an additional `Transfer` event which means we need to change to
+    // take the 2nd element from the receipt's logs.
+    const RECEIPT_OFFSET = network.name == 'optimism' ? 2 : 1
+
     // swap 2 amount in, should get 0 amount out
     let tx = await swapExact0For1(3, wallet.address)
     const { logs } = await tx.wait()
-    expect(logs.length).to.be.equal(4)
-    const log = token0.interface.decodeEventLog('Transfer', logs[2].data, logs[2].topics)
+    expect(logs.length).to.be.equal(network.name == 'optimism' ? 4 : 3) // ternary for same reason as RECEIPT_OFFSET
+    const log = token0.interface.decodeEventLog('Transfer', logs[RECEIPT_OFFSET].data, logs[RECEIPT_OFFSET].topics)
     expect(log.from).to.be.equal(wallet.address)
     expect(log.to).to.be.equal(pool.address)
     expect(log.value).to.be.equal(3)

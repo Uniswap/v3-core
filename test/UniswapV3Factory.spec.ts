@@ -1,4 +1,4 @@
-import { ethers, waffle } from 'hardhat'
+import { network, ethers, waffle } from 'hardhat'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
@@ -13,6 +13,10 @@ const TEST_ADDRESSES: [string, string] = [
 ]
 
 const createFixtureLoader = waffle.createFixtureLoader
+
+// NB: OVM_ETH emits an additional `Transfer` event which means we need to change to
+// take the 2nd element from the receipt's logs.
+const RECEIPT_OFFSET = network.name == 'optimism' ? 1 : 0
 
 describe('UniswapV3Factory', () => {
   const [wallet, other] = waffle.provider.getWallets()
@@ -87,9 +91,9 @@ describe('UniswapV3Factory', () => {
     const { logs } = await (await create).wait()
     // Cannot seem to parse events with waffle for some reason?
     // await expect(create)
-      // .to.emit(factory, 'PoolCreated')
-      // .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
-    const log = factory.interface.decodeEventLog('PoolCreated', logs[1].data, logs[1].topics)
+    // .to.emit(factory, 'PoolCreated')
+    // .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
+    const log = factory.interface.decodeEventLog('PoolCreated', logs[RECEIPT_OFFSET].data, logs[RECEIPT_OFFSET].topics)
     expect(log.token0).to.be.eq(TEST_ADDRESSES[0])
     expect(log.token1).to.be.eq(TEST_ADDRESSES[1])
     expect(log.fee).to.be.eq(feeAmount)
@@ -158,7 +162,11 @@ describe('UniswapV3Factory', () => {
     it('emits event', async () => {
       const tx = await factory.setOwner(other.address)
       const { logs } = await tx.wait()
-      const { oldOwner, newOwner } = factory.interface.decodeEventLog('OwnerChanged', logs[1].data, logs[1].topics)
+      const { oldOwner, newOwner } = factory.interface.decodeEventLog(
+        'OwnerChanged',
+        logs[RECEIPT_OFFSET].data,
+        logs[RECEIPT_OFFSET].topics
+      )
       expect(oldOwner).to.be.eq(wallet.address)
       expect(newOwner).to.be.eq(other.address)
     })
@@ -193,7 +201,11 @@ describe('UniswapV3Factory', () => {
     it('emits an event', async () => {
       const tx = await factory.enableFeeAmount(100, 5)
       const { logs } = await tx.wait()
-      const log = factory.interface.decodeEventLog('FeeAmountEnabled', logs[1].data, logs[1].topics)
+      const log = factory.interface.decodeEventLog(
+        'FeeAmountEnabled',
+        logs[RECEIPT_OFFSET].data,
+        logs[RECEIPT_OFFSET].topics
+      )
       expect(log[0]).to.be.eq(100)
       expect(log[1]).to.be.eq(5)
     })
