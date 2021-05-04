@@ -1395,9 +1395,9 @@ describe('UniswapV3Pool', () => {
 
   describe('#flash', () => {
     it('fails if not initialized', async () => {
-      await expect(flash(100, 200, other.address)).to.be.revertedWith('LOK')
-      await expect(flash(100, 0, other.address)).to.be.revertedWith('LOK')
-      await expect(flash(0, 200, other.address)).to.be.revertedWith('LOK')
+      await expect(flash(100, 200, other.address)).to.be.reverted
+      await expect(flash(100, 0, other.address)).to.be.reverted
+      await expect(flash(0, 200, other.address)).to.be.reverted
     })
     it('fails if no liquidity', async () => {
       await pool.initialize(encodePriceSqrt(1, 1))
@@ -1469,12 +1469,12 @@ describe('UniswapV3Pool', () => {
           )
         })
         it('fails if original balance not returned in either token', async () => {
-          await expect(flash(1000, 0, other.address, 999, 0)).to.be.revertedWith('F0')
-          await expect(flash(0, 1000, other.address, 0, 999)).to.be.revertedWith('F1')
+          await expect(flash(1000, 0, other.address, 999, 0)).to.be.reverted
+          await expect(flash(0, 1000, other.address, 0, 999)).to.be.reverted
         })
         it('fails if underpays either token', async () => {
-          await expect(flash(1000, 0, other.address, 1002, 0)).to.be.revertedWith('F0')
-          await expect(flash(0, 1000, other.address, 0, 1002)).to.be.revertedWith('F1')
+          await expect(flash(1000, 0, other.address, 1002, 0)).to.be.reverted
+          await expect(flash(0, 1000, other.address, 0, 1002)).to.be.reverted
         })
         it('allows donating token0', async () => {
           await expect(flash(0, 0, constants.AddressZero, 567, 0))

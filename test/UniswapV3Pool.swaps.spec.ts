@@ -522,12 +522,14 @@ describe('UniswapV3Pool swap tests', () => {
             poolBalance0After,
             poolBalance1After,
             slot0After,
+            liquidityAfter,
             feeGrowthGlobal0X128,
             feeGrowthGlobal1X128,
           ] = await Promise.all([
             token0.balanceOf(pool.address),
             token1.balanceOf(pool.address),
             pool.slot0(),
+            pool.liquidity(),
             pool.feeGrowthGlobal0X128(),
             pool.feeGrowthGlobal1X128(),
           ])
@@ -558,6 +560,7 @@ describe('UniswapV3Pool swap tests', () => {
               poolBalance0Delta,
               poolBalance1Delta,
               slot0After.sqrtPriceX96,
+              liquidityAfter,
               slot0After.tick
             )
 
