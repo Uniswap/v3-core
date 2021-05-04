@@ -783,7 +783,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');
         }
 
-        emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.tick);
+        emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);
         slot0.unlocked = true;
     }
 
