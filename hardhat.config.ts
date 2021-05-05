@@ -25,6 +25,7 @@ extendEnvironment((hre) => {
     const provider = new providers.JsonRpcProvider('http://localhost:8545')
     provider.pollingInterval = 100
     provider.getGasPrice = async () => BigNumber.from(0)
+    provider.estimateGas = async () => BigNumber.from('8999999'); // gas limit is 8,999,999
     hre.ethers.provider = provider
 
     // hre.waffle.provider.getWallets() throws if network.name !== 'hardhat', so we override it to generate 20
