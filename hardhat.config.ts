@@ -212,4 +212,7 @@ export default {
       },
     },
   },
+  mocha: {
+    timeout: 60000,
+  }
 }
