@@ -155,7 +155,6 @@ describe('UniswapV3Factory', () => {
 
     it('updates owner', async () => {
       const tx = await factory.setOwner(other.address)
-      await tx.wait()
       expect(await factory.owner()).to.eq(other.address)
     })
 
@@ -191,11 +190,11 @@ describe('UniswapV3Factory', () => {
       await expect(factory.enableFeeAmount(500, 16834)).to.be.reverted
     })
     it('fails if already initialized', async () => {
-      await (await factory.enableFeeAmount(100, 5)).wait()
+      await factory.enableFeeAmount(100, 5)
       await expect(factory.enableFeeAmount(100, 10)).to.be.reverted
     })
     it('sets the fee amount in the mapping', async () => {
-      await (await factory.enableFeeAmount(100, 5)).wait()
+      await factory.enableFeeAmount(100, 5)
       expect(await factory.feeAmountTickSpacing(100)).to.eq(5)
     })
     it('emits an event', async () => {
@@ -210,7 +209,7 @@ describe('UniswapV3Factory', () => {
       expect(log[1]).to.be.eq(5)
     })
     it('enables pool creation', async () => {
-      await (await factory.enableFeeAmount(250, 15)).wait()
+      await factory.enableFeeAmount(250, 15)
       await createAndCheckPool([TEST_ADDRESSES[0], TEST_ADDRESSES[1]], 250, 15)
     })
   })

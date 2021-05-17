@@ -153,7 +153,7 @@ export function createPoolFunctions({
         sqrtPriceLimitX96 = MAX_SQRT_RATIO.sub(1)
       }
     }
-    await (await inputToken.approve(swapTarget.address, constants.MaxUint256)).wait()
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
 
     const toAddress = typeof to === 'string' ? to : to.address
 
@@ -185,8 +185,8 @@ export function createPoolFunctions({
   }
 
   const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
-    await (await token0.approve(swapTarget.address, constants.MaxUint256)).wait()
-    await (await token1.approve(swapTarget.address, constants.MaxUint256)).wait()
+    await token0.approve(swapTarget.address, constants.MaxUint256)
+    await token1.approve(swapTarget.address, constants.MaxUint256)
     return swapTarget.mint(pool.address, recipient, tickLower, tickUpper, liquidity)
   }
 

@@ -15,11 +15,8 @@ interface FactoryFixture {
   libraries: any
 }
 
-const OVERRIDES = { gasLimit: 8500000 }
-
 const deployLib = async (name: string, libraries?: any): Promise<string> => {
-  const lib = await (await ethers.getContractFactory(name, { libraries })).deploy(OVERRIDES)
-  await lib.deployTransaction.wait()
+  const lib = await (await ethers.getContractFactory(name, { libraries })).deploy()
   return lib.address
 }
 
@@ -37,15 +34,13 @@ export async function factoryFixture(): Promise<FactoryFixture> {
     SwapMath: await deployLib('SwapMath'),
   }
 
-  const deployer = await (await ethers.getContractFactory('UniswapV3PoolDeployer', { libraries })).deploy(OVERRIDES)
-  await deployer.deployTransaction.wait()
+  const deployer = await (await ethers.getContractFactory('UniswapV3PoolDeployer', { libraries })).deploy()
   const factoryFactory = await ethers.getContractFactory('UniswapV3Factory', {
     libraries: {
       UniswapV3PoolDeployer: await deployLib('UniswapV3PoolDeployer', libraries),
     },
   })
-  const factory = (await factoryFactory.deploy(OVERRIDES)) as UniswapV3Factory
-  await factory.deployTransaction.wait()
+  const factory = (await factoryFactory.deploy()) as UniswapV3Factory
   return { factory, deployer, libraries }
 }
 
@@ -57,12 +52,9 @@ interface TokensFixture {
 
 async function tokensFixture(): Promise<TokensFixture> {
   const tokenFactory = await ethers.getContractFactory('TestERC20')
-  const tokenA = (await tokenFactory.deploy(BigNumber.from(2).pow(255), OVERRIDES)) as TestERC20
-  await tokenA.deployTransaction.wait()
-  const tokenB = (await tokenFactory.deploy(BigNumber.from(2).pow(255), OVERRIDES)) as TestERC20
-  await tokenB.deployTransaction.wait()
-  const tokenC = (await tokenFactory.deploy(BigNumber.from(2).pow(255), OVERRIDES)) as TestERC20
-  await tokenC.deployTransaction.wait()
+  const tokenA = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
+  const tokenB = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
+  const tokenC = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
 
   const [token0, token1, token2] = [tokenA, tokenB, tokenC].sort((tokenA, tokenB) =>
     tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? -1 : 1
@@ -101,10 +93,8 @@ export const poolFixture: Fixture<PoolFixture> = async function (): Promise<Pool
   const calleeContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
   const routerContractFactory = await ethers.getContractFactory('TestUniswapV3Router')
 
-  const swapTargetCallee = (await calleeContractFactory.deploy(OVERRIDES)) as TestUniswapV3Callee
-  await swapTargetCallee.deployTransaction.wait()
-  const swapTargetRouter = (await routerContractFactory.deploy(OVERRIDES)) as TestUniswapV3Router
-  await swapTargetRouter.deployTransaction.wait()
+  const swapTargetCallee = (await calleeContractFactory.deploy()) as TestUniswapV3Callee
+  const swapTargetRouter = (await routerContractFactory.deploy()) as TestUniswapV3Router
 
   return {
     libraries,
@@ -116,15 +106,13 @@ export const poolFixture: Fixture<PoolFixture> = async function (): Promise<Pool
     swapTargetCallee,
     swapTargetRouter,
     createPool: async (fee: number, tickSpacing: number, firstToken = token0, secondToken = token1) => {
-      const mockTimePoolDeployer = (await MockTimeUniswapV3PoolDeployerFactory.deploy(OVERRIDES)) as MockTimeUniswapV3PoolDeployer
-      await mockTimePoolDeployer.deployTransaction.wait()
+      const mockTimePoolDeployer = (await MockTimeUniswapV3PoolDeployerFactory.deploy()) as MockTimeUniswapV3PoolDeployer
       const tx = await mockTimePoolDeployer.deploy(
         factory.address,
         firstToken.address,
         secondToken.address,
         fee,
-        tickSpacing,
-        OVERRIDES
+        tickSpacing
       )
 
       const receipt = await tx.wait()

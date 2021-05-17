@@ -1351,31 +1351,26 @@ describe('UniswapV3Pool', () => {
     pool = await createPool(FeeAmount.MEDIUM, 1)
 
     const tickMathLib = await (await ethers.getContractFactory('TickMath')).deploy()
-    await tickMathLib.deployTransaction.wait()
     const sqrtTickMath = (await (
       await ethers.getContractFactory('TickMathTest', { libraries: { TickMath: tickMathLib.address } })
     ).deploy()) as TickMathTest
-    await sqrtTickMath.deployTransaction.wait()
     const swapMathLib = await (await ethers.getContractFactory('SwapMath')).deploy()
-    await swapMathLib.deployTransaction.wait()
     const swapMath = (await (
       await ethers.getContractFactory('SwapMathTest', { libraries: { SwapMath: swapMathLib.address } })
     ).deploy()) as SwapMathTest
-    await swapMath.deployTransaction.wait()
-
     const p0 = (await sqrtTickMath.getSqrtRatioAtTick(-24081)).add(1)
     // initialize at a price of ~0.3 token1/token0
     // meaning if you swap in 2 token0, you should end up getting 0 token1
-    await (await pool.initialize(p0)).wait()
+    await pool.initialize(p0)
     expect(await pool.liquidity(), 'current pool liquidity is 1').to.eq(0)
     expect((await pool.slot0()).tick, 'pool tick is -24081').to.eq(-24081)
 
     // add a bunch of liquidity around current price
     const liquidity = expandTo18Decimals(1000)
-    await (await mint(wallet.address, -24082, -24080, liquidity)).wait()
+    await mint(wallet.address, -24082, -24080, liquidity)
     expect(await pool.liquidity(), 'current pool liquidity is now liquidity + 1').to.eq(liquidity)
 
-    await (await mint(wallet.address, -24082, -24081, liquidity)).wait()
+    await mint(wallet.address, -24082, -24081, liquidity)
     expect(await pool.liquidity(), 'current pool liquidity is still liquidity + 1').to.eq(liquidity)
 
     // check the math works out to moving the price down 1, sending no amount out, and having some amount remaining

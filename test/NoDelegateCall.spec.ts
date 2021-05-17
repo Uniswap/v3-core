@@ -22,7 +22,7 @@ describe('NoDelegateCall', () => {
       // Useful reference: https://blog.openzeppelin.com/deep-dive-into-the-minimal-proxy-contract/
       const proxyFactory = await ethers.getContractFactory('Proxy') // in reality this is not a minimal proxy
       const deployedProxy = await proxyFactory.deploy(noDelegateCallTest.address)
-      await deployedProxy.deployTransaction.wait()
+
       // If we try returning and using `deployedProxy`, tests fail with ` TypeError: proxy.<method> is not a function`,
       // so instead we explicitly get an instance with the correct ABI using getContractAt
       proxy = (await ethers.getContractAt('NoDelegateCallTest', deployedProxy.address)) as NoDelegateCallTest
