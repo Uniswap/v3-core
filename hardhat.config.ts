@@ -53,6 +53,7 @@ function makeContractWait(contract: Contract) {
 /**
  * @notice Deploys a contract, the modifies the contract so method calls always .wait(), and returns that contract
  * with the specified signer attached to it
+ * @dev This is similar to createWaitingContract, but is an asynchronous version for contract deployments
  * @param deployBound The deployer method, bound to the appropriate `this` context
  * @param deployArgs Contract deployment arguments
  * @param wallet Wallet to attach to the deployed contract
@@ -73,6 +74,33 @@ async function deployWaitingContract(
   let contract = await deployBound(...deployArgs)
   await contract.deployTransaction.wait()
   contract = contract.connect(wallet)
+
+  // Now reset Object.defineProperty
+  Object.defineProperty = def
+
+  // Return a contract that waits on calls
+  return makeContractWait(contract)
+}
+
+/**
+ * @notice Creates a contract, the modifies the contract so method calls always .wait(), and returns that contract
+ * with the specified signer attached to it
+ * @dev This is similar to deployWaitingContract, but is a synchronous version new contract instances, not deployments
+ * @param createFunction A method that when called with creationArgs creates a new contract instance
+ * @param createArgs Arguments to pass to the createFunction
+ * @param wallet Wallet to attach to the deployed contract
+ */
+function createWaitingContract(createFunction: (...args: any[]) => Contract, createArgs: any[], wallet?: Wallet) {
+  // Temporarily override Object.defineProperty to bypass ether's object protection.
+  const def = Object.defineProperty
+  Object.defineProperty = (obj, propName, prop) => {
+    prop.writable = true
+    return def(obj, propName, prop)
+  }
+
+  // Create contract
+  let contract = createFunction(...createArgs)
+  if (wallet) contract.connect(wallet)
 
   // Now reset Object.defineProperty
   Object.defineProperty = def
@@ -124,38 +152,32 @@ extendEnvironment((hre) => {
         // Bind the `.connect()` method to the ContractFactory and get the default factory instance
         const newFactory = connect.bind(this)(signer)
 
-        // Modify returned factory's `.deploy()` method to return a contract with the default signer that always
-        // calls `.wait()`
+        // Modify factory's `.deploy()` method to return a contract with the default signer that always calls `.wait()`
         const deploy = newFactory.deploy
         newFactory.deploy = async function (...args: any[]) {
           return await deployWaitingContract(deploy.bind(this), args, defaultWallet)
         }
 
-        // Modify returned factory's `.attach()` method to return a contract with the default signer that always
-        // calls `.wait()`
+        // Modify factory's `.attach()` method to return a contract with the default signer that always calls `.wait()`
         const attach = newFactory.attach
         newFactory.attach = function (address: string) {
-          // Bind the `.attach()` method to the ContractFactory and get the default contract instance
-          let contract = attach.bind(this)(address)
+          const createFunction = attach.bind(this)
+          const contract = createWaitingContract(createFunction, [address], defaultWallet)
 
-          // Temporarily override Object.defineProperty to bypass ether's object protection.
-          const def = Object.defineProperty
-          Object.defineProperty = (obj, propName, prop) => {
-            prop.writable = true
-            return def(obj, propName, prop)
+          // Modify the new contract's `.connect()` to return a new contract that always calls `.wait()`
+          const connect = contract.connect
+          contract.connect = function (signer: Signer) {
+            const createFunction = connect.bind(this)
+            return createWaitingContract(createFunction, [signer]) // no signer here, since it's provided as an argument
           }
-
-          // Get contract instance with the default signer, reset Object.defineProperty, and return waiting contract
-          contract = contract.connect(defaultWallet)
-          Object.defineProperty = def
-          return makeContractWait(contract)
+          return contract
         }
         return newFactory
       }
 
-      // Modify returned factory's `.deploy()` method to return a contract with the default signer that always calls
-      // `.wait()`. This is the same as what's done a few lines above, but for the *factory's* `deploy()` method,
-      // whereas the one above is for the `deploy()` method of the factory returned from `factory.connect()`
+      // Modify factory's `.deploy()` method to return a contract with the default signer that always calls `.wait()`.
+      // This is the same as what's done a few lines above, but for the *factory's* `deploy()` method, whereas the
+      // one above is for the `deploy()` method of the factory returned from `factory.connect()`
       const deploy = factory.deploy
       factory.deploy = async function (...args: any[]) {
         return await deployWaitingContract(deploy.bind(this), args, defaultWallet)
@@ -214,5 +236,5 @@ export default {
   },
   mocha: {
     timeout: 60000,
-  }
+  },
 }
