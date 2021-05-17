@@ -1,6 +1,6 @@
 import Decimal from 'decimal.js'
 import { BigNumber, BigNumberish, Wallet } from 'ethers'
-import { ethers, waffle } from 'hardhat'
+import { ethers, network, waffle } from 'hardhat'
 import { MockTimeUniswapV3Pool } from '../typechain/MockTimeUniswapV3Pool'
 import { TickMathTest } from '../typechain/TickMathTest'
 import { UniswapV3PoolSwapTest } from '../typechain/UniswapV3PoolSwapTest'
@@ -243,10 +243,15 @@ describe('UniswapV3Pool arbitrage tests', () => {
                 const mintReceipt = await (
                   await mint(wallet.address, tickLower, tickUpper, getMaxLiquidityPerTick(tickSpacing))
                 ).wait()
+
+                // NB: OVM_ETH emits an additional `Transfer` event which means we need to change to
+                // take the 3rd element from the receipt's logs instead of the 2nd
+                const RECEIPT_OFFSET = network.name == 'optimism' ? 3 : 2
+
                 // sub the mint costs
                 const { amount0: amount0Mint, amount1: amount1Mint } = pool.interface.decodeEventLog(
                   pool.interface.events['Mint(address,address,int24,int24,uint128,uint256,uint256)'],
-                  mintReceipt.events?.[2].data!
+                  mintReceipt.events?.[RECEIPT_OFFSET].data!
                 )
                 arbBalance0 = arbBalance0.sub(amount0Mint)
                 arbBalance1 = arbBalance1.sub(amount1Mint)
