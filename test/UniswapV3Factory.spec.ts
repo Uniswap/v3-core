@@ -1,6 +1,7 @@
-import { network, ethers, waffle } from 'hardhat'
+import { ethers, waffle } from 'hardhat'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { expect } from './shared/expect'
+import { getLogIndex } from './shared/utilities'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 import { FeeAmount, getCreate2Address, TICK_SPACINGS } from './shared/utilities'
@@ -13,10 +14,6 @@ const TEST_ADDRESSES: [string, string] = [
 ]
 
 const createFixtureLoader = waffle.createFixtureLoader
-
-// NB: OVM_ETH emits an additional `Transfer` event which means we need to change to
-// take the 2nd element from the receipt's logs.
-const RECEIPT_OFFSET = network.name == 'optimism' ? 1 : 0
 
 describe('UniswapV3Factory', () => {
   const [wallet, other] = waffle.provider.getWallets()
@@ -93,7 +90,7 @@ describe('UniswapV3Factory', () => {
     // await expect(create)
     // .to.emit(factory, 'PoolCreated')
     // .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], feeAmount, tickSpacing, create2Address)
-    const log = factory.interface.decodeEventLog('PoolCreated', logs[RECEIPT_OFFSET].data, logs[RECEIPT_OFFSET].topics)
+    const log = factory.interface.decodeEventLog('PoolCreated', logs[getLogIndex(0)].data, logs[getLogIndex(0)].topics)
     expect(log.token0).to.be.eq(TEST_ADDRESSES[0])
     expect(log.token1).to.be.eq(TEST_ADDRESSES[1])
     expect(log.fee).to.be.eq(feeAmount)
@@ -163,8 +160,8 @@ describe('UniswapV3Factory', () => {
       const { logs } = await tx.wait()
       const { oldOwner, newOwner } = factory.interface.decodeEventLog(
         'OwnerChanged',
-        logs[RECEIPT_OFFSET].data,
-        logs[RECEIPT_OFFSET].topics
+        logs[getLogIndex(0)].data,
+        logs[getLogIndex(0)].topics
       )
       expect(oldOwner).to.be.eq(wallet.address)
       expect(newOwner).to.be.eq(other.address)
@@ -202,8 +199,8 @@ describe('UniswapV3Factory', () => {
       const { logs } = await tx.wait()
       const log = factory.interface.decodeEventLog(
         'FeeAmountEnabled',
-        logs[RECEIPT_OFFSET].data,
-        logs[RECEIPT_OFFSET].topics
+        logs[getLogIndex(0)].data,
+        logs[getLogIndex(0)].topics
       )
       expect(log[0]).to.be.eq(100)
       expect(log[1]).to.be.eq(5)

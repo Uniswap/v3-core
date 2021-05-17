@@ -1,4 +1,5 @@
 import bn from 'bignumber.js'
+import { network } from 'hardhat'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
 import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
@@ -255,4 +256,13 @@ export function createMultiPoolFunctions({
     swapForExact0Multi,
     swapForExact1Multi,
   }
+}
+
+/**
+ * @notice The OVM emits an additional `Transfer` event due to its usage of WETH instead of native ETH. As a result,
+ * when indexing into receipt logs, we need to increment the target event's log index by 1 when testing on the OVM
+ * @param evmIndex The expected index of the log when testing against the EVM
+ */
+export function getLogIndex(evmIndex: number) {
+  return network.name === 'optimism' ? evmIndex + 1 : evmIndex
 }
