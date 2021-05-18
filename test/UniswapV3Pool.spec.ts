@@ -1,5 +1,5 @@
-import { network, ethers, waffle } from 'hardhat'
-import { BigNumber, BigNumberish, constants, Wallet } from 'ethers'
+import { ethers, waffle } from 'hardhat'
+import { BigNumber, BigNumberish, constants } from 'ethers'
 import { TestERC20 } from '../typechain/TestERC20'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { MockTimeUniswapV3Pool } from '../typechain/MockTimeUniswapV3Pool'
