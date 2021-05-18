@@ -51,7 +51,7 @@ function makeContractWait(contract: Contract) {
 }
 
 /**
- * @notice Deploys a contract, the modifies the contract so method calls always .wait(), and returns that contract
+ * @notice Deploys a contract, then modifies the contract so method calls always .wait(), and returns that contract
  * with the specified signer attached to it
  * @dev This is similar to createWaitingContract, but is an asynchronous version for contract deployments
  * @param deployBound The deployer method, bound to the appropriate `this` context
@@ -85,7 +85,7 @@ async function deployWaitingContract(
 /**
  * @notice Creates a contract, the modifies the contract so method calls always .wait(), and returns that contract
  * with the specified signer attached to it
- * @dev This is similar to deployWaitingContract, but is a synchronous version new contract instances, not deployments
+ * @dev This is similar to deployWaitingContract, but is a synchronous version for new contract instances, not deployments
  * @param createFunction A method that when called with creationArgs creates a new contract instance
  * @param createArgs Arguments to pass to the createFunction
  * @param wallet Wallet to attach to the deployed contract
@@ -235,6 +235,6 @@ export default {
     },
   },
   mocha: {
-    timeout: 60000,
+    timeout: 180000,
   },
 }
