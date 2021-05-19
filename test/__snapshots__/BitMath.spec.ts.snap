@@ -1,13 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`BitMath #leastSignificantBit gas cost of max uint128 1`] = `431`;
+exports[`BitMath #leastSignificantBit gas cost of max uint128 1`] = `455`;
 
-exports[`BitMath #leastSignificantBit gas cost of max uint256 1`] = `431`;
+exports[`BitMath #leastSignificantBit gas cost of max uint256 1`] = `455`;
 
-exports[`BitMath #leastSignificantBit gas cost of smaller number 1`] = `429`;
+exports[`BitMath #leastSignificantBit gas cost of smaller number 1`] = `453`;
 
-exports[`BitMath #mostSignificantBit gas cost of max uint128 1`] = `367`;
+exports[`BitMath #mostSignificantBit gas cost of max uint128 1`] = `385`;
 
-exports[`BitMath #mostSignificantBit gas cost of max uint256 1`] = `385`;
+exports[`BitMath #mostSignificantBit gas cost of max uint256 1`] = `403`;
 
-exports[`BitMath #mostSignificantBit gas cost of smaller number 1`] = `295`;
+exports[`BitMath #mostSignificantBit gas cost of smaller number 1`] = `313`;
