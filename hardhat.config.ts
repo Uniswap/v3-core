@@ -64,9 +64,24 @@ async function deployWaitingContract(
   wallet: Wallet
 ) {
   // Temporarily override Object.defineProperty to bypass ether's object protection.
+  // We override Object.defineProperty because ethers uses it to make certain properties read-only. Contract functions
+  // are one of these things that ethers tries to make read-only. We need to disable this so we can override the
+  // function to add that automatic `.wait()` but there's no way to make a property writable once it's already
+  // been marked as `writable: false`. It seems like there are cases in which `prop.writable = true` is disallowed
+  // when other properties are attached to `prop`, so if we only use `prop.writable = true` we'd get the following
+  // error:
+  //   `TypeError: Invalid property descriptor. Cannot both specify accessors and a value or writable attribute, #<Object>`
+  // So the trick here is to assume that the ethers codebase probably uses Object.defineProperty correctly, and
+  // therefore likely explicitly sets `prop.writable = false` whenever they'd like to make something read-only. If
+  // `prop.writable = false` then those other attributes definitely can't be attached to prop or else they'd get the
+  // exact same error as the one above. So adding a check that `prop.writable === false` before setting
+  // `prop.writable = true` is safe
+  //   -- From Kelvin
   const def = Object.defineProperty
   Object.defineProperty = (obj, propName, prop) => {
-    prop.writable = true
+    if (prop.writable === false) {
+      prop.writable = true
+    }
     return def(obj, propName, prop)
   }
 
@@ -94,7 +109,10 @@ function createWaitingContract(createFunction: (...args: any[]) => Contract, cre
   // Temporarily override Object.defineProperty to bypass ether's object protection.
   const def = Object.defineProperty
   Object.defineProperty = (obj, propName, prop) => {
-    prop.writable = true
+    // See comments in `deployWaitingContract()` for explanation of this block
+    if (prop.writable === false) {
+      prop.writable = true
+    }
     return def(obj, propName, prop)
   }
 
