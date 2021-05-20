@@ -10,6 +10,8 @@ current_dir=$(dirname "$0")
 
 git clone https://github.com/ethereum-optimism/optimism.git
 cd optimism/ops
+# TODO: Remove once the v0.4.0 regenesis is merged.
+git checkout regenesis/0.4.0
 
 # enabling the Docker BuildKit is recommended
 export COMPOSE_DOCKER_CLI_BUILD=1
