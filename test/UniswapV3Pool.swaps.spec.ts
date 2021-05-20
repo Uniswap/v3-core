@@ -510,7 +510,7 @@ describe('UniswapV3Pool swap tests', () => {
             await tx
           } catch (error) {
             expect({
-              swapError: error.message,
+              // swapError: error.message,
               poolBalance0: poolBalance0.toString(),
               poolBalance1: poolBalance1.toString(),
               poolPriceBefore: formatPrice(slot0.sqrtPriceX96),
