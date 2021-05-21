@@ -2,19 +2,19 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import "./../UniswapV3Pool.sol";
+import './../UniswapV3Pool.sol';
 import './../interfaces/IERC20Minimal.sol';
-import "./../interfaces/callback/IUniswapV3SwapCallback.sol";
+import './../interfaces/callback/IUniswapV3SwapCallback.sol';
 
-import "./TickMath.sol";
-import "./Tick.sol";
-import "./TickBitmap.sol";
-import "./SwapMath.sol";
-import "./FullMath.sol";
-import "./Oracle.sol";
-import "./FixedPoint128.sol";
-import "./SafeCast.sol";
-import "./LowGasSafeMath.sol";
+import './TickMath.sol';
+import './Tick.sol';
+import './TickBitmap.sol';
+import './SwapMath.sol';
+import './FullMath.sol';
+import './Oracle.sol';
+import './FixedPoint128.sol';
+import './SafeCast.sol';
+import './LowGasSafeMath.sol';
 
 library StateMath {
     using SafeCast for uint256;
@@ -59,32 +59,37 @@ library StateMath {
         mapping(int24 => Tick.Info) storage ticks,
         Oracle.Observation[65535] storage observations,
         mapping(int16 => uint256) storage tickBitmap
-    ) public returns (SwapState memory state, SwapCache memory, bool) {
+    )
+        public
+        returns (
+            SwapState memory state,
+            SwapCache memory,
+            bool
+        )
+    {
         Slot0 memory slot0Start = slot0;
-        state =
-            SwapState({
-                amountSpecifiedRemaining: args.amountSpecified,
-                amountCalculated: 0,
-                sqrtPriceX96: slot0Start.sqrtPriceX96,
-                tick: slot0Start.tick,
-                feeGrowthGlobalX128: args.zeroForOne ? args.feeGrowthGlobal0X128 : args.feeGrowthGlobal1X128,
-                protocolFee: 0,
-                liquidity: args.cache.liquidityStart
-            });
+        state = SwapState({
+            amountSpecifiedRemaining: args.amountSpecified,
+            amountCalculated: 0,
+            sqrtPriceX96: slot0Start.sqrtPriceX96,
+            tick: slot0Start.tick,
+            feeGrowthGlobalX128: args.zeroForOne ? args.feeGrowthGlobal0X128 : args.feeGrowthGlobal1X128,
+            protocolFee: 0,
+            liquidity: args.cache.liquidityStart
+        });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != args.sqrtPriceLimitX96) {
-            StepComputations memory step = createStep(
-                tickBitmap,
-                state,
-                args.zeroForOne,
-                args.tickSpacing
-            );
+            StepComputations memory step = createStep(tickBitmap, state, args.zeroForOne, args.tickSpacing);
 
             // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
             (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(
                 state.sqrtPriceX96,
-                (args.zeroForOne ? step.sqrtPriceNextX96 < args.sqrtPriceLimitX96 : step.sqrtPriceNextX96 > args.sqrtPriceLimitX96)
+                (
+                    args.zeroForOne
+                        ? step.sqrtPriceNextX96 < args.sqrtPriceLimitX96
+                        : step.sqrtPriceNextX96 > args.sqrtPriceLimitX96
+                )
                     ? args.sqrtPriceLimitX96
                     : step.sqrtPriceNextX96,
                 state.liquidity,
@@ -119,15 +124,14 @@ library StateMath {
         // update tick and write an oracle entry if the tick change
         if (state.tick != slot0Start.tick) {
             SwapCache memory cache = args.cache;
-            (slot0.observationIndex, slot0.observationCardinality) =
-                observations.write(
-                    slot0Start.observationIndex,
-                    cache.blockTimestamp,
-                    slot0Start.tick,
-                    cache.liquidityStart,
-                    slot0Start.observationCardinality,
-                    slot0Start.observationCardinalityNext
-                );
+            (slot0.observationIndex, slot0.observationCardinality) = observations.write(
+                slot0Start.observationIndex,
+                cache.blockTimestamp,
+                slot0Start.tick,
+                cache.liquidityStart,
+                slot0Start.observationCardinality,
+                slot0Start.observationCardinalityNext
+            );
             slot0.sqrtPriceX96 = state.sqrtPriceX96;
             slot0.tick = state.tick;
         } else {
@@ -140,9 +144,9 @@ library StateMath {
 
     function shiftTick(
         Slot0 memory slot0Start,
-        SwapState memory state, 
-        StepComputations memory step, 
-        SwapArgs memory args, 
+        SwapState memory state,
+        StepComputations memory step,
+        SwapArgs memory args,
         mapping(int24 => Tick.Info) storage ticks,
         Oracle.Observation[65535] storage observations
     ) private returns (SwapState memory) {
@@ -238,11 +242,12 @@ library StateMath {
         uint256 feeAmount;
     }
 
-    function createStep(mapping(int16 => uint256) storage tickBitmap, SwapState memory state, bool zeroForOne, int24 tickSpacing)
-    
-        public
-        view returns (StepComputations memory step)
-    {
+    function createStep(
+        mapping(int16 => uint256) storage tickBitmap,
+        SwapState memory state,
+        bool zeroForOne,
+        int24 tickSpacing
+    ) public view returns (StepComputations memory step) {
         step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
         (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
@@ -319,19 +324,16 @@ library StateMath {
                 secondsOutsideLower - secondsOutsideUpper
             );
         } else if (args.slot0.tick < args.tickUpper) {
-            ObsArgs memory args2 = ObsArgs(
-                tickCumulativeLower,
-                tickCumulativeUpper,
-                secondsPerLiquidityOutsideLowerX128,
-                secondsPerLiquidityOutsideUpperX128,
-                secondsOutsideLower,
-                secondsOutsideUpper
-            );
-            return observeTick(
-                observations,
-                args,
-                args2
-            );
+            ObsArgs memory args2 =
+                ObsArgs(
+                    tickCumulativeLower,
+                    tickCumulativeUpper,
+                    secondsPerLiquidityOutsideLowerX128,
+                    secondsPerLiquidityOutsideUpperX128,
+                    secondsOutsideLower,
+                    secondsOutsideUpper
+                );
+            return observeTick(observations, args, args2);
         } else {
             return (
                 tickCumulativeUpper - tickCumulativeLower,

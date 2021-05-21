@@ -152,19 +152,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         )
     {
         checkTicks(tickLower, tickUpper);
-        StateMath.SnapshotArgs memory args = StateMath.SnapshotArgs(
-            slot0,
-            liquidity,
-            _blockTimestamp(),
-            tickLower,
-            tickUpper
-
-        );
-        return StateMath.snapshotCumulativesInside(
-            ticks,
-            observations,
-            args
-        );
+        StateMath.SnapshotArgs memory args =
+            StateMath.SnapshotArgs(slot0, liquidity, _blockTimestamp(), tickLower, tickUpper);
+        return StateMath.snapshotCumulativesInside(ticks, observations, args);
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
@@ -296,21 +286,16 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     function makeFeeParams() private view returns (Tick.FeeParams memory params) {
         uint32 time = _blockTimestamp();
         (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) =
-                observations.observeSingle(
-                    time,
-                    0,
-                    slot0.tick,
-                    slot0.observationIndex,
-                    liquidity,
-                    slot0.observationCardinality
-                );
+            observations.observeSingle(
+                time,
+                0,
+                slot0.tick,
+                slot0.observationIndex,
+                liquidity,
+                slot0.observationCardinality
+            );
 
-        params = Tick.FeeParams(
-            tickCumulative,
-            secondsPerLiquidityCumulativeX128,
-            time,
-            maxLiquidityPerTick
-        );
+        params = Tick.FeeParams(tickCumulative, secondsPerLiquidityCumulativeX128, time, maxLiquidityPerTick);
     }
 
     /// @dev Gets and updates a position with the given liquidity delta
@@ -485,27 +470,22 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 computedLatestObservation: false
             });
 
-        StateMath.SwapState memory  state;
+        StateMath.SwapState memory state;
         bool exactInput;
 
         // pack the arguments to avoid abi encoder
-        StateMath.SwapArgs memory args = StateMath.SwapArgs(
-            cache,
-            fee,
-            tickSpacing,
-            feeGrowthGlobal0X128,
-            feeGrowthGlobal1X128,
-            zeroForOne,
-            amountSpecified,
-            sqrtPriceLimitX96
-        );
-        (state, cache, exactInput) = StateMath.swap(
-            args,
-            slot0,
-            ticks,
-            observations,
-            tickBitmap
-        );
+        StateMath.SwapArgs memory args =
+            StateMath.SwapArgs(
+                cache,
+                fee,
+                tickSpacing,
+                feeGrowthGlobal0X128,
+                feeGrowthGlobal1X128,
+                zeroForOne,
+                amountSpecified,
+                sqrtPriceLimitX96
+            );
+        (state, cache, exactInput) = StateMath.swap(args, slot0, ticks, observations, tickBitmap);
 
         // update liquidity if it changed
         if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;

@@ -95,7 +95,6 @@ library Tick {
         feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128;
     }
 
-
     struct FeeParams {
         int56 tickCumulative;
         uint160 secondsPerLiquidityCumulativeX128;
