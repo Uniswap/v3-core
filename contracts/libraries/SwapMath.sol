@@ -25,7 +25,7 @@ library SwapMath {
         int256 amountRemaining,
         uint24 feePips
     )
-        internal
+        public
         pure
         returns (
             uint160 sqrtRatioNextX96,

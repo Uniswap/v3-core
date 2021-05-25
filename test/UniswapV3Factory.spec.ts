@@ -31,21 +31,17 @@ describe('UniswapV3Factory', () => {
   before('load pool bytecode', async () => {
     const position = await (await ethers.getContractFactory('Position')).deploy()
     const oracle = await (await ethers.getContractFactory('Oracle')).deploy()
+    const swapMath = await (await ethers.getContractFactory('SwapMath')).deploy()
     const tick = await (await ethers.getContractFactory('Tick')).deploy()
     const tickBitmap = await (await ethers.getContractFactory('TickBitmap')).deploy()
     const tickMath = await (await ethers.getContractFactory('TickMath')).deploy()
-    const stateLibs = {
-      Oracle: oracle.address,
-      TickBitmap: tickBitmap.address,
-      TickMath: tickMath.address,
-    }
-    const stateMath = await (await ethers.getContractFactory('StateMath', { libraries: stateLibs })).deploy()
     libraries = {
-      StateMath: stateMath.address,
       Position: position.address,
       Oracle: oracle.address,
       Tick: tick.address,
+      TickBitmap: tickBitmap.address,
       TickMath: tickMath.address,
+      SwapMath: swapMath.address,
     }
     poolContractFactory = await ethers.getContractFactory('UniswapV3Pool', { libraries })
     poolBytecode = poolContractFactory.bytecode

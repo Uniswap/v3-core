@@ -1355,7 +1355,10 @@ describe('UniswapV3Pool', () => {
     const sqrtTickMath = (await (
       await ethers.getContractFactory('TickMathTest', { libraries: { TickMath: tickMathLib.address } })
     ).deploy()) as TickMathTest
-    const swapMath = (await (await ethers.getContractFactory('SwapMathTest')).deploy()) as SwapMathTest
+    const swapMathLib = await (await ethers.getContractFactory('SwapMath')).deploy()
+    const swapMath = (await (
+      await ethers.getContractFactory('SwapMathTest', { libraries: { SwapMath: swapMathLib.address } })
+    ).deploy()) as SwapMathTest
     const p0 = (await sqrtTickMath.getSqrtRatioAtTick(-24081)).add(1)
     // initialize at a price of ~0.3 token1/token0
     // meaning if you swap in 2 token0, you should end up getting 0 token1

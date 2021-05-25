@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
-pragma abicoder v2;
 
 import './LowGasSafeMath.sol';
 import './SafeCast.sol';
@@ -95,13 +94,6 @@ library Tick {
         feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128;
     }
 
-    struct FeeParams {
-        int56 tickCumulative;
-        uint160 secondsPerLiquidityCumulativeX128;
-        uint32 time;
-        uint128 maxLiquidity;
-    }
-
     function updateAndGetFeeGrowth(
         mapping(int24 => Tick.Info) storage self,
         int24 tickLower,
@@ -110,7 +102,7 @@ library Tick {
         int128 liquidityDelta,
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128,
-        FeeParams memory params
+        uint128 maxLiquidity
     )
         public
         returns (
@@ -128,11 +120,8 @@ library Tick {
                 liquidityDelta,
                 feeGrowthGlobal0X128,
                 feeGrowthGlobal1X128,
-                params.secondsPerLiquidityCumulativeX128,
-                params.tickCumulative,
-                params.time,
                 false,
-                params.maxLiquidity
+                maxLiquidity
             );
 
             flippedUpper = update(
@@ -142,11 +131,8 @@ library Tick {
                 liquidityDelta,
                 feeGrowthGlobal0X128,
                 feeGrowthGlobal1X128,
-                params.secondsPerLiquidityCumulativeX128,
-                params.tickCumulative,
-                params.time,
                 true,
-                params.maxLiquidity
+                maxLiquidity
             );
         }
 
