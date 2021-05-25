@@ -101,11 +101,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @dev Mutually exclusive reentrancy protection into the pool to/from a method. This method also prevents entrance
     /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
     /// we use balance checks to determine the payment status of interactions such as mint, swap and flash.
-    modifier lock() {
+    function lock() private {
         require(slot0.unlocked);
         slot0.unlocked = false;
-        _;
-        slot0.unlocked = true;
     }
 
     /// @dev Prevents calling a function from anyone except the address returned by IUniswapV3Factory#owner()
@@ -253,15 +251,16 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     function increaseObservationCardinalityNext(uint16 observationCardinalityNext)
         external
         override
-        lock
         noDelegateCall
     {
+        lock();
         uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
         uint16 observationCardinalityNextNew =
             observations.grow(observationCardinalityNextOld, observationCardinalityNext);
         slot0.observationCardinalityNext = observationCardinalityNextNew;
         if (observationCardinalityNextOld != observationCardinalityNextNew)
             emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
+        slot0.unlocked = true;
     }
 
     /// @inheritdoc IUniswapV3PoolActions
@@ -444,7 +443,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+    ) external override returns (uint256 amount0, uint256 amount1) {
+        lock();
         require(amount > 0);
         (, int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
@@ -470,6 +470,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         );
 
         emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
+        slot0.unlocked = true;
     }
 
     /// @inheritdoc IUniswapV3PoolActions
@@ -479,7 +480,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock returns (uint128 amount0, uint128 amount1) {
+    ) external override returns (uint128 amount0, uint128 amount1) {
+        lock();
         // we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
         Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
 
@@ -496,6 +498,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         }
 
         emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
+        slot0.unlocked = true;
     }
 
     /// @inheritdoc IUniswapV3PoolActions
@@ -504,7 +507,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+    ) external override returns (uint256 amount0, uint256 amount1) {
+        lock();
         (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({
@@ -526,6 +530,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         }
 
         emit Burn(msg.sender, tickLower, tickUpper, amount, amount0, amount1);
+        slot0.unlocked = true;
     }
 
     struct SwapCache {
@@ -777,7 +782,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
-    ) external override lock noDelegateCall {
+    ) external override noDelegateCall {
+        lock();
         uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);
         uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);
         uint256 balance0Before = balance0();
@@ -812,10 +818,12 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         }
 
         emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
+        slot0.unlocked = true;
     }
 
     /// @inheritdoc IUniswapV3PoolOwnerActions
-    function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock {
+    function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override {
+        lock();
         onlyFactoryOwner();
         require(
             (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10)) &&
@@ -824,6 +832,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint8 feeProtocolOld = slot0.feeProtocol;
         slot0.feeProtocol = feeProtocol0 + (feeProtocol1 << 4);
         emit SetFeeProtocol(feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1);
+        slot0.unlocked = true;
     }
 
     /// @inheritdoc IUniswapV3PoolOwnerActions
@@ -831,7 +840,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         address recipient,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock returns (uint128 amount0, uint128 amount1) {
+    ) external override returns (uint128 amount0, uint128 amount1) {
+        lock();
         onlyFactoryOwner();
         amount0 = amount0Requested > protocolFees.token0 ? protocolFees.token0 : amount0Requested;
         amount1 = amount1Requested > protocolFees.token1 ? protocolFees.token1 : amount1Requested;
@@ -848,5 +858,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         }
 
         emit CollectProtocol(msg.sender, recipient, amount0, amount1);
+        slot0.unlocked = true;
     }
 }
