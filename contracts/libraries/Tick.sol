@@ -94,6 +94,48 @@ library Tick {
         feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128;
     }
 
+    function updateBoth(
+        mapping(int24 => Tick.Info) storage ticks,
+        int24 tickLower,
+        int24 tickUpper,
+        int24 tickCurrent,
+        int128 liquidityDelta,
+        uint256 feeGrowthGlobal0X128,
+        uint256 feeGrowthGlobal1X128,
+        uint160 secondsPerLiquidityCumulativeX128,
+        int56 tickCumulative,
+        uint32 time,
+        uint128 maxLiquidityPerTick
+    ) public returns (bool flippedLower, bool flippedUpper) {
+        flippedLower = update(
+            ticks,
+            tickLower,
+            tickCurrent,
+            liquidityDelta,
+            feeGrowthGlobal0X128,
+            feeGrowthGlobal1X128,
+            secondsPerLiquidityCumulativeX128,
+            tickCumulative,
+            time,
+            false,
+            maxLiquidityPerTick
+        );
+
+        flippedUpper = update(
+            ticks,
+            tickUpper,
+            tickCurrent,
+            liquidityDelta,
+            feeGrowthGlobal0X128,
+            feeGrowthGlobal1X128,
+            secondsPerLiquidityCumulativeX128,
+            tickCumulative,
+            time,
+            true,
+            maxLiquidityPerTick
+        );
+    }
+
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
     /// @param self The mapping containing all tick information for initialized ticks
     /// @param tick The tick that will be updated

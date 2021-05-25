@@ -181,7 +181,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 lower.secondsOutside,
                 lower.initialized
             );
-            require(initializedLower);
 
             bool initializedUpper;
             (tickCumulativeUpper, secondsPerLiquidityOutsideUpperX128, secondsOutsideUpper, initializedUpper) = (
@@ -190,7 +189,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 upper.secondsOutside,
                 upper.initialized
             );
-            require(initializedUpper);
+            require(initializedLower && initializedUpper);
         }
 
         Slot0 memory _slot0 = slot0;
@@ -386,19 +385,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     slot0.observationCardinality
                 );
 
-            flippedLower = ticks.update(
+            (flippedLower, flippedUpper) = ticks.updateBoth(
                 tickLower,
-                tick,
-                liquidityDelta,
-                _feeGrowthGlobal0X128,
-                _feeGrowthGlobal1X128,
-                secondsPerLiquidityCumulativeX128,
-                tickCumulative,
-                time,
-                false,
-                maxLiquidityPerTick
-            );
-            flippedUpper = ticks.update(
                 tickUpper,
                 tick,
                 liquidityDelta,
@@ -407,7 +395,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 secondsPerLiquidityCumulativeX128,
                 tickCumulative,
                 time,
-                true,
                 maxLiquidityPerTick
             );
 
