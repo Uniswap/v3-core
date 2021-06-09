@@ -109,8 +109,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     /// @dev Prevents calling a function from anyone except the address returned by IUniswapV3Factory#owner()
-    function onlyFactoryOwner() private view {
+    modifier onlyFactoryOwner() {
         require(msg.sender == IUniswapV3Factory(factory).owner());
+        _;
     }
 
     constructor() {
@@ -802,8 +803,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     /// @inheritdoc IUniswapV3PoolOwnerActions
-    function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock {
-        onlyFactoryOwner();
+    function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock onlyFactoryOwner {
         require(
             (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10)) &&
                 (feeProtocol1 == 0 || (feeProtocol1 >= 4 && feeProtocol1 <= 10))
@@ -818,8 +818,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         address recipient,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock returns (uint128 amount0, uint128 amount1) {
-        onlyFactoryOwner();
+    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
         amount0 = amount0Requested > protocolFees.token0 ? protocolFees.token0 : amount0Requested;
         amount1 = amount1Requested > protocolFees.token1 ? protocolFees.token1 : amount1Requested;
 
