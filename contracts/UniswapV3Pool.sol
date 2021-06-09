@@ -792,7 +792,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 balance1After = balance1();
 
         uint128 _liquidity = liquidity;
-        require(_liquidity > 0 && balance0Before.add(fee0) <= balance0After && balance1Before.add(fee1) <= balance1After);
+        require(
+            _liquidity > 0 && balance0Before.add(fee0) <= balance0After && balance1Before.add(fee1) <= balance1After
+        );
 
         // sub is safe because we know balanceAfter is gt balanceBefore by at least fee
         uint256 paid0 = balance0After - balance0Before;
