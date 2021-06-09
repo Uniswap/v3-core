@@ -35,7 +35,7 @@ jobs:
         run: yarn compile
 
       - name: Run unit tests
-        run: UPDATE_SNAPSHOT=1 yarn test
+        run: yarn test
 
   ovm-unit-tests:
     name: Unit Tests
