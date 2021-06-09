@@ -102,15 +102,27 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
     /// we use balance checks to determine the payment status of interactions such as mint, swap and flash.
     modifier lock() {
-        require(slot0.unlocked);
-        slot0.unlocked = false;
+        lockFn();
         _;
+        unlockFn();
+    }
+
+    function lockFn() private {
+        require(slot0.unlocked, 'LOK');
+        slot0.unlocked = false;
+    }
+
+    function unlockFn() private {
         slot0.unlocked = true;
+    }
+
+    function isFactoryOwner() private view {
+        require(msg.sender == IUniswapV3Factory(factory).owner());
     }
 
     /// @dev Prevents calling a function from anyone except the address returned by IUniswapV3Factory#owner()
     modifier onlyFactoryOwner() {
-        require(msg.sender == IUniswapV3Factory(factory).owner());
+        isFactoryOwner();
         _;
     }
 
