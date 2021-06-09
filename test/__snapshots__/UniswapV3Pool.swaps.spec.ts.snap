@@ -85,7 +85,6 @@ Object {
   "poolBalance0": "1",
   "poolBalance1": "26087635650665564424699143612505016738",
   "poolPriceBefore": "1.7014e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 880340,
 }
 `;
@@ -207,7 +206,6 @@ Object {
   "poolBalance0": "1",
   "poolBalance1": "26087635650665564424699143612505016738",
   "poolPriceBefore": "1.7014e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 880340,
 }
 `;
@@ -217,7 +215,6 @@ Object {
   "poolBalance0": "1",
   "poolBalance1": "26087635650665564424699143612505016738",
   "poolPriceBefore": "1.7014e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 880340,
 }
 `;
@@ -227,7 +224,6 @@ Object {
   "poolBalance0": "1",
   "poolBalance1": "26087635650665564424699143612505016738",
   "poolPriceBefore": "1.7014e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 880340,
 }
 `;
@@ -285,7 +281,6 @@ Object {
   "poolBalance0": "26037782196502120275425782622539039026",
   "poolBalance1": "1",
   "poolPriceBefore": "0.0000000000000000000000000000000000000059000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -880303,
 }
 `;
@@ -359,7 +354,6 @@ Object {
   "poolBalance0": "26037782196502120275425782622539039026",
   "poolBalance1": "1",
   "poolPriceBefore": "0.0000000000000000000000000000000000000059000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -880303,
 }
 `;
@@ -369,7 +363,6 @@ Object {
   "poolBalance0": "26037782196502120275425782622539039026",
   "poolBalance1": "1",
   "poolPriceBefore": "0.0000000000000000000000000000000000000059000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -880303,
 }
 `;
@@ -379,7 +372,6 @@ Object {
   "poolBalance0": "26037782196502120275425782622539039026",
   "poolBalance1": "1",
   "poolPriceBefore": "0.0000000000000000000000000000000000000059000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -880303,
 }
 `;
@@ -629,7 +621,6 @@ Object {
   "poolBalance0": "2000000000000000000",
   "poolBalance1": "2000000000000000000",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -687,7 +678,6 @@ Object {
   "poolBalance0": "2000000000000000000",
   "poolBalance1": "2000000000000000000",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -729,7 +719,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "36796311329002736532545403775337522448",
   "poolPriceBefore": "3.4026e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 887271,
 }
 `;
@@ -771,7 +760,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "36796311329002736532545403775337522448",
   "poolPriceBefore": "3.4026e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 887271,
 }
 `;
@@ -781,7 +769,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "36796311329002736532545403775337522448",
   "poolPriceBefore": "3.4026e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 887271,
 }
 `;
@@ -871,7 +858,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "36796311329002736532545403775337522448",
   "poolPriceBefore": "3.4026e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 887271,
 }
 `;
@@ -881,7 +867,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "36796311329002736532545403775337522448",
   "poolPriceBefore": "3.4026e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 887271,
 }
 `;
@@ -891,7 +876,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "36796311329002736532545403775337522448",
   "poolPriceBefore": "3.4026e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 887271,
 }
 `;
@@ -901,7 +885,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "36796311329002736532545403775337522448",
   "poolPriceBefore": "3.4026e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 887271,
 }
 `;
@@ -911,7 +894,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "36796311329002736532545403775337522448",
   "poolPriceBefore": "3.4026e+38",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 887271,
 }
 `;
@@ -921,7 +903,6 @@ Object {
   "poolBalance0": "36796311322104302062438284732106019258",
   "poolBalance1": "0",
   "poolPriceBefore": "0.0000000000000000000000000000000000000029390",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -887272,
 }
 `;
@@ -947,7 +928,6 @@ Object {
   "poolBalance0": "36796311322104302062438284732106019258",
   "poolBalance1": "0",
   "poolPriceBefore": "0.0000000000000000000000000000000000000029390",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -887272,
 }
 `;
@@ -957,7 +937,6 @@ Object {
   "poolBalance0": "36796311322104302062438284732106019258",
   "poolBalance1": "0",
   "poolPriceBefore": "0.0000000000000000000000000000000000000029390",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -887272,
 }
 `;
@@ -999,7 +978,6 @@ Object {
   "poolBalance0": "36796311322104302062438284732106019258",
   "poolBalance1": "0",
   "poolPriceBefore": "0.0000000000000000000000000000000000000029390",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -887272,
 }
 `;
@@ -1009,7 +987,6 @@ Object {
   "poolBalance0": "36796311322104302062438284732106019258",
   "poolBalance1": "0",
   "poolPriceBefore": "0.0000000000000000000000000000000000000029390",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -887272,
 }
 `;
@@ -1019,7 +996,6 @@ Object {
   "poolBalance0": "36796311322104302062438284732106019258",
   "poolBalance1": "0",
   "poolPriceBefore": "0.0000000000000000000000000000000000000029390",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -887272,
 }
 `;
@@ -1029,7 +1005,6 @@ Object {
   "poolBalance0": "36796311322104302062438284732106019258",
   "poolBalance1": "0",
   "poolPriceBefore": "0.0000000000000000000000000000000000000029390",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -887272,
 }
 `;
@@ -1039,7 +1014,6 @@ Object {
   "poolBalance0": "36796311322104302062438284732106019258",
   "poolBalance1": "0",
   "poolPriceBefore": "0.0000000000000000000000000000000000000029390",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -887272,
 }
 `;
@@ -1289,7 +1263,6 @@ Object {
   "poolBalance0": "2000000000000000000",
   "poolBalance1": "2000000000000000000",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -1347,7 +1320,6 @@ Object {
   "poolBalance0": "2000000000000000000",
   "poolBalance1": "2000000000000000000",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -1533,7 +1505,6 @@ Object {
   "poolBalance0": "999700069986003",
   "poolBalance1": "999700069986003",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -1591,7 +1562,6 @@ Object {
   "poolBalance0": "999700069986003",
   "poolBalance1": "999700069986003",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -1777,7 +1747,6 @@ Object {
   "poolBalance0": "11505743598341114571255423385623647",
   "poolBalance1": "11505743598341114571255423385506404",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -1835,7 +1804,6 @@ Object {
   "poolBalance0": "11505743598341114571255423385623647",
   "poolBalance1": "11505743598341114571255423385506404",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -2021,7 +1989,6 @@ Object {
   "poolBalance0": "1994009290088178439",
   "poolBalance1": "1994009290088178439",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -2079,7 +2046,6 @@ Object {
   "poolBalance0": "1994009290088178439",
   "poolBalance1": "1994009290088178439",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -2265,7 +2231,6 @@ Object {
   "poolBalance0": "2000000000000000000",
   "poolBalance1": "2000000000000000000",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -2323,7 +2288,6 @@ Object {
   "poolBalance0": "2000000000000000000",
   "poolBalance1": "2000000000000000000",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -2509,7 +2473,6 @@ Object {
   "poolBalance0": "3994009290088178439",
   "poolBalance1": "3994009290088178439",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -2567,7 +2530,6 @@ Object {
   "poolBalance0": "3994009290088178439",
   "poolBalance1": "3994009290088178439",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -2641,7 +2603,6 @@ Object {
   "poolBalance0": "6324555320336758664",
   "poolBalance1": "632455532033675867",
   "poolPriceBefore": "0.10000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -23028,
 }
 `;
@@ -2715,7 +2676,6 @@ Object {
   "poolBalance0": "6324555320336758664",
   "poolBalance1": "632455532033675867",
   "poolPriceBefore": "0.10000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -23028,
 }
 `;
@@ -2725,7 +2685,6 @@ Object {
   "poolBalance0": "6324555320336758664",
   "poolBalance1": "632455532033675867",
   "poolPriceBefore": "0.10000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -23028,
 }
 `;
@@ -2735,7 +2694,6 @@ Object {
   "poolBalance0": "6324555320336758664",
   "poolBalance1": "632455532033675867",
   "poolPriceBefore": "0.10000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": -23028,
 }
 `;
@@ -2905,7 +2863,6 @@ Object {
   "poolBalance0": "632455532033675867",
   "poolBalance1": "6324555320336758664",
   "poolPriceBefore": "10.000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 23027,
 }
 `;
@@ -3027,7 +2984,6 @@ Object {
   "poolBalance0": "632455532033675867",
   "poolBalance1": "6324555320336758664",
   "poolPriceBefore": "10.000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 23027,
 }
 `;
@@ -3037,7 +2993,6 @@ Object {
   "poolBalance0": "632455532033675867",
   "poolBalance1": "6324555320336758664",
   "poolPriceBefore": "10.000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 23027,
 }
 `;
@@ -3047,7 +3002,6 @@ Object {
   "poolBalance0": "632455532033675867",
   "poolBalance1": "6324555320336758664",
   "poolPriceBefore": "10.000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 23027,
 }
 `;
@@ -3217,7 +3171,6 @@ Object {
   "poolBalance0": "1995041008271423675",
   "poolBalance1": "0",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -3275,7 +3228,6 @@ Object {
   "poolBalance0": "1995041008271423675",
   "poolBalance1": "0",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -3461,7 +3413,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "1995041008271423675",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
@@ -3519,7 +3470,6 @@ Object {
   "poolBalance0": "0",
   "poolBalance1": "1995041008271423675",
   "poolPriceBefore": "1.0000",
-  "swapError": "VM Exception while processing transaction: revert SPL",
   "tickBefore": 0,
 }
 `;
