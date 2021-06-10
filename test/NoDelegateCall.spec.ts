@@ -1,13 +1,15 @@
+import { Wallet } from 'ethers'
 import { ethers, waffle } from 'hardhat'
 import { NoDelegateCallTest } from '../typechain/NoDelegateCallTest'
 import { expect } from './shared/expect'
 import snapshotGasCost from './shared/snapshotGasCost'
 
 describe('NoDelegateCall', () => {
-  const [wallet, other] = waffle.provider.getWallets()
+  let wallet: Wallet, other: Wallet
 
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>
   before('create fixture loader', async () => {
+    ;[wallet, other] = await (ethers as any).getSigners()
     loadFixture = waffle.createFixtureLoader([wallet, other])
   })
 

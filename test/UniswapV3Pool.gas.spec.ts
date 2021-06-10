@@ -1,4 +1,4 @@
-import { waffle } from 'hardhat'
+import { ethers, waffle } from 'hardhat'
 import { Wallet } from 'ethers'
 import { MockTimeUniswapV3Pool } from '../typechain/MockTimeUniswapV3Pool'
 import { expect } from './shared/expect'
@@ -25,11 +25,12 @@ import {
 const createFixtureLoader = waffle.createFixtureLoader
 
 describe('UniswapV3Pool gas tests', () => {
-  const [wallet, other] = waffle.provider.getWallets()
+  let wallet: Wallet, other: Wallet
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
 
   before('create fixture loader', async () => {
+    ;[wallet, other] = await (ethers as any).getSigners()
     loadFixture = createFixtureLoader([wallet, other])
   })
 

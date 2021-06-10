@@ -1,5 +1,5 @@
 import { ethers, waffle } from 'hardhat'
-import { BigNumber, BigNumberish, constants } from 'ethers'
+import { BigNumber, BigNumberish, constants, Wallet } from 'ethers'
 import { TestERC20 } from '../typechain/TestERC20'
 import { UniswapV3Factory } from '../typechain/UniswapV3Factory'
 import { MockTimeUniswapV3Pool } from '../typechain/MockTimeUniswapV3Pool'
@@ -37,7 +37,7 @@ const createFixtureLoader = waffle.createFixtureLoader
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T
 
 describe('UniswapV3Pool', () => {
-  const [wallet, other] = waffle.provider.getWallets()
+  let wallet: Wallet, other: Wallet
 
   let token0: TestERC20
   let token1: TestERC20
@@ -68,6 +68,7 @@ describe('UniswapV3Pool', () => {
   let createPool: ThenArg<ReturnType<typeof poolFixture>>['createPool']
 
   before('create fixture loader', async () => {
+    ;[wallet, other] = await (ethers as any).getSigners()
     loadFixture = createFixtureLoader([wallet, other])
   })
 
