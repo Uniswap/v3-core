@@ -49,11 +49,12 @@ function applySqrtRatioBipsHundredthsDelta(sqrtRatio: BigNumber, bipsHundredths:
 }
 
 describe('UniswapV3Pool arbitrage tests', () => {
-  const [wallet, arbitrageur] = waffle.provider.getWallets()
+  let wallet: Wallet, arbitrageur: Wallet
 
   let loadFixture: ReturnType<typeof createFixtureLoader>
 
   before('create fixture loader', async () => {
+    ;[wallet, arbitrageur] = await (ethers as any).getSigners()
     loadFixture = createFixtureLoader([wallet, arbitrageur])
   })
 
