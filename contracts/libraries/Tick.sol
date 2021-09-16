@@ -102,6 +102,7 @@ library Tick {
     /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
     /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
     /// @param secondsPerLiquidityCumulativeX128 The all-time seconds per max(1, liquidity) of the pool
+    /// @param tickCumulative The tick * time elapsed since the pool was first initialized
     /// @param time The current block timestamp cast to a uint32
     /// @param upper true for updating a position's upper tick, or false for updating a position's lower tick
     /// @param maxLiquidity The maximum liquidity allocation for a single tick
@@ -161,6 +162,7 @@ library Tick {
     /// @param feeGrowthGlobal0X128 The all-time global fee growth, per unit of liquidity, in token0
     /// @param feeGrowthGlobal1X128 The all-time global fee growth, per unit of liquidity, in token1
     /// @param secondsPerLiquidityCumulativeX128 The current seconds per liquidity
+    /// @param tickCumulative The tick * time elapsed since the pool was first initialized
     /// @param time The current block.timestamp
     /// @return liquidityNet The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
     function cross(
