@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`TickBitmap #flipTick gas cost of flipping a tick that results in deleting a word 1`] = `13427`;
+exports[`TickBitmap #flipTick gas cost of flipping a tick that results in deleting a word 1`] = `22053`;
 
 exports[`TickBitmap #flipTick gas cost of flipping first tick in word to initialized 1`] = `43965`;
 
