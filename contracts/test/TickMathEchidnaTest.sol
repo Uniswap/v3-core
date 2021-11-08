@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../libraries/TickMath.sol';
+import {TickMath} from '../libraries/TickMath.sol';
 
 contract TickMathEchidnaTest {
     // uniqueness and increasing order

@@ -593,13 +593,7 @@ describe('Oracle', () => {
         it('fetch many values', async () => {
           await oracle.advanceTime(6)
           const { tickCumulatives, secondsPerLiquidityCumulativeX128s } = await oracle.observe([
-            20,
-            17,
-            13,
-            10,
-            5,
-            1,
-            0,
+            20, 17, 13, 10, 5, 1, 0,
           ])
           expect({
             tickCumulatives: tickCumulatives.map((tc) => tc.toNumber()),

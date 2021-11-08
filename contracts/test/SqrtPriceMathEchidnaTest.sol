@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../libraries/FullMath.sol';
-import '../libraries/SqrtPriceMath.sol';
-import '../libraries/FixedPoint96.sol';
+import {FullMath} from '../libraries/FullMath.sol';
+import {SqrtPriceMath} from '../libraries/SqrtPriceMath.sol';
+import {FixedPoint96} from '../libraries/FixedPoint96.sol';
 
 contract SqrtPriceMathEchidnaTest {
     function mulDivRoundingUpInvariants(
@@ -11,15 +11,17 @@ contract SqrtPriceMathEchidnaTest {
         uint256 y,
         uint256 z
     ) external pure {
-        require(z > 0);
-        uint256 notRoundedUp = FullMath.mulDiv(x, y, z);
-        uint256 roundedUp = FullMath.mulDivRoundingUp(x, y, z);
-        assert(roundedUp >= notRoundedUp);
-        assert(roundedUp - notRoundedUp < 2);
-        if (roundedUp - notRoundedUp == 1) {
-            assert(mulmod(x, y, z) > 0);
-        } else {
-            assert(mulmod(x, y, z) == 0);
+        unchecked {
+            require(z > 0);
+            uint256 notRoundedUp = FullMath.mulDiv(x, y, z);
+            uint256 roundedUp = FullMath.mulDivRoundingUp(x, y, z);
+            assert(roundedUp >= notRoundedUp);
+            assert(roundedUp - notRoundedUp < 2);
+            if (roundedUp - notRoundedUp == 1) {
+                assert(mulmod(x, y, z) > 0);
+            } else {
+                assert(mulmod(x, y, z) == 0);
+            }
         }
     }
 
@@ -134,10 +136,9 @@ contract SqrtPriceMathEchidnaTest {
         uint256 numerator2 = sqrtP - sqrtQ;
         uint256 denominator = uint256(sqrtP) * sqrtQ;
 
-        uint256 safeResult =
-            roundUp
-                ? FullMath.mulDivRoundingUp(numerator1, numerator2, denominator)
-                : FullMath.mulDiv(numerator1, numerator2, denominator);
+        uint256 safeResult = roundUp
+            ? FullMath.mulDivRoundingUp(numerator1, numerator2, denominator)
+            : FullMath.mulDiv(numerator1, numerator2, denominator);
         uint256 fullResult = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, roundUp);
 
         assert(safeResult == fullResult);

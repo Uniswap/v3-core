@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
-pragma abicoder v2;
+pragma solidity =0.8.12;
 
-import '../libraries/Oracle.sol';
+import {Oracle} from '../libraries/Oracle.sol';
 
 contract OracleTest {
     using Oracle for Oracle.Observation[65535];
@@ -31,7 +30,9 @@ contract OracleTest {
     }
 
     function advanceTime(uint32 by) public {
-        time += by;
+        unchecked {
+            time += by;
+        }
     }
 
     struct UpdateParams {

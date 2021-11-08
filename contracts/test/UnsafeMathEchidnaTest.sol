@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../libraries/UnsafeMath.sol';
+import {UnsafeMath} from '../libraries/UnsafeMath.sol';
 
 contract UnsafeMathEchidnaTest {
     function checkDivRoundingUp(uint256 x, uint256 d) external pure {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../libraries/SwapMath.sol';
+import {SwapMath} from '../libraries/SwapMath.sol';
 
 contract SwapMathEchidnaTest {
     function checkComputeSwapStepInvariants(
@@ -16,8 +16,13 @@ contract SwapMathEchidnaTest {
         require(feePips > 0);
         require(feePips < 1e6);
 
-        (uint160 sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount) =
-            SwapMath.computeSwapStep(sqrtPriceRaw, sqrtPriceTargetRaw, liquidity, amountRemaining, feePips);
+        (uint160 sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount) = SwapMath.computeSwapStep(
+            sqrtPriceRaw,
+            sqrtPriceTargetRaw,
+            liquidity,
+            amountRemaining,
+            feePips
+        );
 
         assert(amountIn <= type(uint256).max - feeAmount);
 

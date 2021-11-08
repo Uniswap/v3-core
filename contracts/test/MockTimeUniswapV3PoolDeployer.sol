@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../interfaces/IUniswapV3PoolDeployer.sol';
+import {IUniswapV3PoolDeployer} from '../interfaces/IUniswapV3PoolDeployer.sol';
 
-import './MockTimeUniswapV3Pool.sol';
+import {MockTimeUniswapV3Pool} from './MockTimeUniswapV3Pool.sol';
 
 contract MockTimeUniswapV3PoolDeployer is IUniswapV3PoolDeployer {
     struct Parameters {

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../interfaces/IERC20Minimal.sol';
+import {IERC20Minimal} from '../interfaces/IERC20Minimal.sol';
 
-import '../interfaces/callback/IUniswapV3SwapCallback.sol';
-import '../interfaces/IUniswapV3Pool.sol';
+import {IUniswapV3SwapCallback} from '../interfaces/callback/IUniswapV3SwapCallback.sol';
+import {IUniswapV3Pool} from '../interfaces/IUniswapV3Pool.sol';
 
 contract TestUniswapV3SwapPay is IUniswapV3SwapCallback {
     function swap(
