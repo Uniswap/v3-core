@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.9;
 pragma abicoder v2;
 
 import '../libraries/Oracle.sol';
@@ -31,7 +31,9 @@ contract OracleTest {
     }
 
     function advanceTime(uint32 by) public {
-        time += by;
+        unchecked {
+            time += by;
+        }
     }
 
     struct UpdateParams {
