@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import '../libraries/Tick.sol';
+import {Tick} from '../libraries/Tick.sol';
 
 contract TickOverflowSafetyEchidnaTest {
     using Tick for mapping(int24 => Tick.Info);

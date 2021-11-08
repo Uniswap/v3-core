@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import '../libraries/Tick.sol';
+import {Tick} from '../libraries/Tick.sol';
+import {TickMath} from '../libraries/TickMath.sol';
 
 contract TickEchidnaTest {
     function checkTickSpacingToParametersInvariants(int24 tickSpacing) external pure {

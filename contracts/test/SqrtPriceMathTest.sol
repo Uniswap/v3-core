@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import '../libraries/SqrtPriceMath.sol';
+import {SqrtPriceMath} from '../libraries/SqrtPriceMath.sol';
 
 contract SqrtPriceMathTest {
     function getNextSqrtPriceFromInput(

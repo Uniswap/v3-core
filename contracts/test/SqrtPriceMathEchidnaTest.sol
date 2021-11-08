@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import '../libraries/FullMath.sol';
-import '../libraries/SqrtPriceMath.sol';
-import '../libraries/FixedPoint96.sol';
+import {FullMath} from '../libraries/FullMath.sol';
+import {SqrtPriceMath} from '../libraries/SqrtPriceMath.sol';
+import {FixedPoint96} from '../libraries/FixedPoint96.sol';
 
 contract SqrtPriceMathEchidnaTest {
     function mulDivRoundingUpInvariants(

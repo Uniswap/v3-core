@@ -163,4 +163,3 @@ Manticore will create a `mcore_X` directory. If no `X.tx` file is generated, it 
 | --- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------- |
 | 01  | `BitMath.mostSignificantBit returns a value in x >= 2**msb && (msb == 255 or x < 2**(msb+1)).`       | [`VerifyBitMathMsb`](./contracts/crytic/manticore/001.sol)            | Verified |
 | 02  | `BitMath.leastSignificantBit returns a value in ((x & 2** lsb) != 0) && ((x & (2**(lsb -1))) == 0).` | [`VerifyBitMathLsb`](./contracts/crytic/manticore/002.sol)            | Verified |
-| 03  | `If LiquidityMath.addDelta returns, the value will be equal to x + uint128(y).`                      | [`VerifyLiquidityMathAddDelta`](./contracts/crytic/manticore/003.sol) | Verified |

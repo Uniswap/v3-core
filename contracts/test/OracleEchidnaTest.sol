@@ -2,7 +2,7 @@
 pragma solidity =0.8.9;
 pragma abicoder v2;
 
-import './OracleTest.sol';
+import {OracleTest} from './OracleTest.sol';
 
 contract OracleEchidnaTest {
     OracleTest private oracle;

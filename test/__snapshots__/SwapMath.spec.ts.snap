@@ -2,11 +2,11 @@
 
 exports[`SwapMath #computeSwapStep gas swap one for zero exact in capped 1`] = `2233`;
 
-exports[`SwapMath #computeSwapStep gas swap one for zero exact in partial 1`] = `3030`;
+exports[`SwapMath #computeSwapStep gas swap one for zero exact in partial 1`] = `3056`;
 
 exports[`SwapMath #computeSwapStep gas swap one for zero exact out capped 1`] = `1977`;
 
-exports[`SwapMath #computeSwapStep gas swap one for zero exact out partial 1`] = `3030`;
+exports[`SwapMath #computeSwapStep gas swap one for zero exact out partial 1`] = `3056`;
 
 exports[`SwapMath #computeSwapStep gas swap zero for one exact in capped 1`] = `2222`;
 

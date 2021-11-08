@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.9;
 
-import './FullMath.sol';
-import './FixedPoint128.sol';
-import './LiquidityMath.sol';
+import {FullMath} from './FullMath.sol';
+import {FixedPoint128} from './FixedPoint128.sol';
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
@@ -47,39 +46,45 @@ library Position {
         uint256 feeGrowthInside0X128,
         uint256 feeGrowthInside1X128
     ) internal {
+        Info memory _self = self;
+
+        uint128 liquidityNext;
+        if (liquidityDelta == 0) {
+            require(_self.liquidity > 0, 'NP'); // disallow pokes for 0 liquidity positions
+            liquidityNext = _self.liquidity;
+        } else {
+            liquidityNext = liquidityDelta < 0
+                ? _self.liquidity - uint128(-liquidityDelta)
+                : _self.liquidity + uint128(liquidityDelta);
+        }
+
+        // calculate accumulated fees. overflow in the subtraction of fee growth is expected
+        uint128 tokensOwed0;
+        uint128 tokensOwed1;
         unchecked {
-            Info memory _self = self;
-
-            uint128 liquidityNext;
-            if (liquidityDelta == 0) {
-                require(_self.liquidity > 0, 'NP'); // disallow pokes for 0 liquidity positions
-                liquidityNext = _self.liquidity;
-            } else {
-                liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
-            }
-
-            // calculate accumulated fees
-            uint128 tokensOwed0 = uint128(
+            tokensOwed0 = uint128(
                 FullMath.mulDiv(
                     feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
                     _self.liquidity,
                     FixedPoint128.Q128
                 )
             );
-            uint128 tokensOwed1 = uint128(
+            tokensOwed1 = uint128(
                 FullMath.mulDiv(
                     feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
                     _self.liquidity,
                     FixedPoint128.Q128
                 )
             );
+        }
 
-            // update the position
-            if (liquidityDelta != 0) self.liquidity = liquidityNext;
-            self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-            self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+        // update the position
+        if (liquidityDelta != 0) self.liquidity = liquidityNext;
+        self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+        self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+        // overflow is acceptable, user must withdraw before they hit type(uint128).max fees
+        unchecked {
             if (tokensOwed0 > 0 || tokensOwed1 > 0) {
-                // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
                 self.tokensOwed0 += tokensOwed0;
                 self.tokensOwed1 += tokensOwed1;
             }

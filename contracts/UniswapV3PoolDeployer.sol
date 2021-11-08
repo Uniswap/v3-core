@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.9;
 
-import './interfaces/IUniswapV3PoolDeployer.sol';
+import {IUniswapV3PoolDeployer} from './interfaces/IUniswapV3PoolDeployer.sol';
 
-import './UniswapV3Pool.sol';
+import {UniswapV3Pool} from './UniswapV3Pool.sol';
 
 contract UniswapV3PoolDeployer is IUniswapV3PoolDeployer {
     struct Parameters {

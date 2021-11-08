@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import '../libraries/TickMath.sol';
+import {TickMath} from '../libraries/TickMath.sol';
 
-import '../interfaces/callback/IUniswapV3SwapCallback.sol';
+import {IUniswapV3SwapCallback} from '../interfaces/callback/IUniswapV3SwapCallback.sol';
 
-import '../interfaces/IUniswapV3Pool.sol';
+import {IUniswapV3Pool} from '../interfaces/IUniswapV3Pool.sol';
 
 contract TestUniswapV3ReentrantCallee is IUniswapV3SwapCallback {
     string private constant expectedReason = 'LOK';

@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.9;
 
-import './LowGasSafeMath.sol';
-import './SafeCast.sol';
+import {SafeCast} from './SafeCast.sol';
 
-import './TickMath.sol';
-import './LiquidityMath.sol';
+import {TickMath} from './TickMath.sol';
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
-    using LowGasSafeMath for int256;
     using SafeCast for int256;
 
     // info stored for each initialized individual tick
@@ -124,35 +121,33 @@ library Tick {
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
-        unchecked {
-            Tick.Info storage info = self[tick];
+        Tick.Info storage info = self[tick];
 
-            uint128 liquidityGrossBefore = info.liquidityGross;
-            uint128 liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta);
+        uint128 liquidityGrossBefore = info.liquidityGross;
+        uint128 liquidityGrossAfter = liquidityDelta < 0
+            ? liquidityGrossBefore - uint128(-liquidityDelta)
+            : liquidityGrossBefore + uint128(liquidityDelta);
 
-            require(liquidityGrossAfter <= maxLiquidity, 'LO');
+        require(liquidityGrossAfter <= maxLiquidity, 'LO');
 
-            flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
+        flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
 
-            if (liquidityGrossBefore == 0) {
-                // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
-                if (tick <= tickCurrent) {
-                    info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
-                    info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
-                    info.secondsPerLiquidityOutsideX128 = secondsPerLiquidityCumulativeX128;
-                    info.tickCumulativeOutside = tickCumulative;
-                    info.secondsOutside = time;
-                }
-                info.initialized = true;
+        if (liquidityGrossBefore == 0) {
+            // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
+            if (tick <= tickCurrent) {
+                info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
+                info.feeGrowthOutside1X128 = feeGrowthGlobal1X128;
+                info.secondsPerLiquidityOutsideX128 = secondsPerLiquidityCumulativeX128;
+                info.tickCumulativeOutside = tickCumulative;
+                info.secondsOutside = time;
             }
-
-            info.liquidityGross = liquidityGrossAfter;
-
-            // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
-            info.liquidityNet = upper
-                ? int256(info.liquidityNet).sub(liquidityDelta).toInt128()
-                : int256(info.liquidityNet).add(liquidityDelta).toInt128();
+            info.initialized = true;
         }
+
+        info.liquidityGross = liquidityGrossAfter;
+
+        // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
+        info.liquidityNet = upper ? info.liquidityNet - liquidityDelta : info.liquidityNet + liquidityDelta;
     }
 
     /// @notice Clears tick data

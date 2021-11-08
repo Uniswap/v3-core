@@ -60,6 +60,5 @@ jobs:
             contracts/test/TickOverflowSafetyEchidnaTest.sol --include TickOverflowSafetyEchidnaTest \
             contracts/test/OracleEchidnaTest.sol --include OracleEchidnaTest \
             contracts/test/BitMathEchidnaTest.sol --include BitMathEchidnaTest \
-            contracts/test/LowGasSafeMathEchidnaTest.sol --include LowGasSafeMathEchidnaTest \
             contracts/test/UnsafeMathEchidnaTest.sol --include UnsafeMathEchidnaTest \
             contracts/test/FullMathEchidnaTest.sol --include FullMathEchidnaTest
