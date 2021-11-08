@@ -22,7 +22,6 @@ jobs:
           - TickOverflowSafetyEchidnaTest
           - OracleEchidnaTest
           - BitMathEchidnaTest
-          - LowGasSafeMathEchidnaTest
           - UnsafeMathEchidnaTest
           - FullMathEchidnaTest
 

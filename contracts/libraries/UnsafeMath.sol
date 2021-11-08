@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.5.0;
+pragma solidity ^0.8.9;
 
 /// @title Math functions that do not check inputs or outputs
 /// @notice Contains methods that perform common math functions but do not do any overflow or underflow checks
@@ -10,8 +10,10 @@ library UnsafeMath {
     /// @param y The divisor
     /// @return z The quotient, ceil(x / y)
     function divRoundingUp(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        assembly {
-            z := add(div(x, y), gt(mod(x, y), 0))
+        unchecked {
+            assembly {
+                z := add(div(x, y), gt(mod(x, y), 0))
+            }
         }
     }
 }
