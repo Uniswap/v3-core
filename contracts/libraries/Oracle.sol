@@ -259,8 +259,15 @@ library Oracle {
 
         uint32 target = time - secondsAgo;
 
-        (Observation memory beforeOrAt, Observation memory atOrAfter) =
-            getSurroundingObservations(self, time, target, tick, index, liquidity, cardinality);
+        (Observation memory beforeOrAt, Observation memory atOrAfter) = getSurroundingObservations(
+            self,
+            time,
+            target,
+            tick,
+            index,
+            liquidity,
+            cardinality
+        );
 
         if (target == beforeOrAt.blockTimestamp) {
             // we're at the left boundary
