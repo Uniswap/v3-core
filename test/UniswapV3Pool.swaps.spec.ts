@@ -461,10 +461,12 @@ describe('UniswapV3Pool swap tests', () => {
   for (const poolCase of TEST_POOLS) {
     describe(poolCase.description, () => {
       const poolCaseFixture = async () => {
-        const { createPool, token0, token1, swapTargetCallee: swapTarget } = await poolFixture(
-          [wallet],
-          waffle.provider
-        )
+        const {
+          createPool,
+          token0,
+          token1,
+          swapTargetCallee: swapTarget,
+        } = await poolFixture([wallet], waffle.provider)
         const pool = await createPool(poolCase.feeAmount, poolCase.tickSpacing)
         const poolFunctions = createPoolFunctions({ swapTarget, token0, token1, pool })
         await pool.initialize(poolCase.startingPrice)
