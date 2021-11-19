@@ -11,6 +11,8 @@ For higher level contracts, see the [uniswap-v3-periphery](https://github.com/Un
 repository.
 ## KC SHABI
 
+## I DON'T LET TERMINAL CHANGE COLOR
+
 ## Bug bounty
 
 This repository is subject to the Uniswap V3 bug bounty program, per the terms defined [here](./bug-bounty.md).
