@@ -24,17 +24,17 @@ export default {
       url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
     },
     arbitrumRinkeby: {
-      url: `https://arbitrum-rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`
+      url: `https://arbitrum-rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
     },
     arbitrum: {
-      url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`
+      url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
     },
     optimismKovan: {
-      url: `https://optimism-kovan.infura.io/v3/${process.env.INFURA_API_KEY}`
+      url: `https://optimism-kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
     },
     optimism: {
-      url: `https://optimism-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`
-    }
+      url: `https://optimism-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    },
   },
   etherscan: {
     // Your API key for Etherscan
