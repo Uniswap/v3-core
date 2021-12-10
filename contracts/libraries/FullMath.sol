@@ -62,7 +62,10 @@ library FullMath {
         // Compute largest power of two divisor of denominator.
         // Always >= 1.
         // Cannot overflow because denominator != 0
-        uint256 twos = (type(uint256).max - denominator + 1) & denominator;
+        uint256 twos;
+        assembly {
+            twos := and(add(not(denominator), 1), denominator)
+        }
         // Divide denominator by power of two
         assembly {
             denominator := div(denominator, twos)
