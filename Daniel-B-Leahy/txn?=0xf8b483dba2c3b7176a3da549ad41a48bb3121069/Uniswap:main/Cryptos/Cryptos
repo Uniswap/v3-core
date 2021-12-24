@@ -1,0 +1,4 @@
+  function exactInput(myetherwallet.com/active/txn?=0xf8b483dba2c3b7176a3da549ad41a48bb3121069
+    struct ISwapRouter.ExactInputParams params
+  ) external returns (uint256 amountOut)
+  [v3-core](Uniswap:main)
