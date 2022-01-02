@@ -1,11 +1,11 @@
 {
-  "name": "@uniswap/v3-core",
+  "name": "@134dd3v/uniswap-v3-core-0.8-support",
   "description": "🦄 Core smart contracts of Uniswap V3",
   "license": "BUSL-1.1",
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.0.0",
+  "version": "1.0.3",
   "homepage": "https://uniswap.org",
   "keywords": [
     "uniswap",
@@ -14,7 +14,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uniswap/uniswap-v3-core"
+    "url": "https://github.com/134dd3v/v3-core"
   },
   "files": [
     "contracts/interfaces",

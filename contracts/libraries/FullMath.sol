@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.0;
+pragma solidity >=0.8.0;
 
 /// @title Contains 512-bit math functions
 /// @notice Facilitates multiplication and division that can have overflow of an intermediate value without any loss of precision
@@ -127,10 +127,12 @@ library FullMath {
         uint256 b,
         uint256 denominator
     ) internal pure returns (uint256 result) {
-        result = mulDiv(a, b, denominator);
-        if (mulmod(a, b, denominator) > 0) {
-            require(result < type(uint256).max);
-            result++;
+        unchecked {
+            result = mulDiv(a, b, denominator);
+            if (mulmod(a, b, denominator) > 0) {
+                require(result < type(uint256).max);
+                result++;
+            }
         }
     }
 }
