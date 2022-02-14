@@ -15,6 +15,7 @@ contract BitMathTest {
     }
 
     function leastSignificantBit(uint256 x) external pure returns (uint8 r) {
+        // return BitMath.leastSignificantBit(x);
         return BitMath.leastSignificantBit(x);
     }
 
