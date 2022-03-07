@@ -386,77 +386,75 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int128 liquidityDelta,
         int24 tick
     ) private returns (Position.Info storage position) {
-        unchecked {
-            position = positions.get(owner, tickLower, tickUpper);
+        position = positions.get(owner, tickLower, tickUpper);
 
-            uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
-            uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
+        uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
+        uint256 _feeGrowthGlobal1X128 = feeGrowthGlobal1X128; // SLOAD for gas optimization
 
-            // if we need to update the ticks, do it
-            bool flippedLower;
-            bool flippedUpper;
-            if (liquidityDelta != 0) {
-                uint32 time = _blockTimestamp();
-                (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) = observations.observeSingle(
-                    time,
-                    0,
-                    slot0.tick,
-                    slot0.observationIndex,
-                    liquidity,
-                    slot0.observationCardinality
-                );
-
-                flippedLower = ticks.update(
-                    tickLower,
-                    tick,
-                    liquidityDelta,
-                    _feeGrowthGlobal0X128,
-                    _feeGrowthGlobal1X128,
-                    secondsPerLiquidityCumulativeX128,
-                    tickCumulative,
-                    time,
-                    false,
-                    maxLiquidityPerTick
-                );
-                flippedUpper = ticks.update(
-                    tickUpper,
-                    tick,
-                    liquidityDelta,
-                    _feeGrowthGlobal0X128,
-                    _feeGrowthGlobal1X128,
-                    secondsPerLiquidityCumulativeX128,
-                    tickCumulative,
-                    time,
-                    true,
-                    maxLiquidityPerTick
-                );
-
-                if (flippedLower) {
-                    tickBitmap.flipTick(tickLower, tickSpacing);
-                }
-                if (flippedUpper) {
-                    tickBitmap.flipTick(tickUpper, tickSpacing);
-                }
-            }
-
-            (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = ticks.getFeeGrowthInside(
-                tickLower,
-                tickUpper,
-                tick,
-                _feeGrowthGlobal0X128,
-                _feeGrowthGlobal1X128
+        // if we need to update the ticks, do it
+        bool flippedLower;
+        bool flippedUpper;
+        if (liquidityDelta != 0) {
+            uint32 time = _blockTimestamp();
+            (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) = observations.observeSingle(
+                time,
+                0,
+                slot0.tick,
+                slot0.observationIndex,
+                liquidity,
+                slot0.observationCardinality
             );
 
-            position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128);
+            flippedLower = ticks.update(
+                tickLower,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                secondsPerLiquidityCumulativeX128,
+                tickCumulative,
+                time,
+                false,
+                maxLiquidityPerTick
+            );
+            flippedUpper = ticks.update(
+                tickUpper,
+                tick,
+                liquidityDelta,
+                _feeGrowthGlobal0X128,
+                _feeGrowthGlobal1X128,
+                secondsPerLiquidityCumulativeX128,
+                tickCumulative,
+                time,
+                true,
+                maxLiquidityPerTick
+            );
 
-            // clear any tick data that is no longer needed
-            if (liquidityDelta < 0) {
-                if (flippedLower) {
-                    ticks.clear(tickLower);
-                }
-                if (flippedUpper) {
-                    ticks.clear(tickUpper);
-                }
+            if (flippedLower) {
+                tickBitmap.flipTick(tickLower, tickSpacing);
+            }
+            if (flippedUpper) {
+                tickBitmap.flipTick(tickUpper, tickSpacing);
+            }
+        }
+
+        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = ticks.getFeeGrowthInside(
+            tickLower,
+            tickUpper,
+            tick,
+            _feeGrowthGlobal0X128,
+            _feeGrowthGlobal1X128
+        );
+
+        position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128);
+
+        // clear any tick data that is no longer needed
+        if (liquidityDelta < 0) {
+            if (flippedLower) {
+                ticks.clear(tickLower);
+            }
+            if (flippedUpper) {
+                ticks.clear(tickUpper);
             }
         }
     }
@@ -502,13 +500,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint128 amount0Requested,
         uint128 amount1Requested
     ) external override lock returns (uint128 amount0, uint128 amount1) {
+        // we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
+        Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
+
+        amount0 = amount0Requested > position.tokensOwed0 ? position.tokensOwed0 : amount0Requested;
+        amount1 = amount1Requested > position.tokensOwed1 ? position.tokensOwed1 : amount1Requested;
+
         unchecked {
-            // we don't need to checkTicks here, because invalid positions will never have non-zero tokensOwed{0,1}
-            Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
-
-            amount0 = amount0Requested > position.tokensOwed0 ? position.tokensOwed0 : amount0Requested;
-            amount1 = amount1Requested > position.tokensOwed1 ? position.tokensOwed1 : amount1Requested;
-
             if (amount0 > 0) {
                 position.tokensOwed0 -= amount0;
                 TransferHelper.safeTransfer(token0, recipient, amount0);
@@ -517,9 +515,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 position.tokensOwed1 -= amount1;
                 TransferHelper.safeTransfer(token1, recipient, amount1);
             }
-
-            emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
         }
+
+        emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
     }
 
     /// @inheritdoc IUniswapV3PoolActions
@@ -684,12 +682,12 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 unchecked {
                     state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();
                 }
-                state.amountCalculated = state.amountCalculated - step.amountOut.toInt256();
+                state.amountCalculated -= step.amountOut.toInt256();
             } else {
                 unchecked {
                     state.amountSpecifiedRemaining += step.amountOut.toInt256();
                 }
-                state.amountCalculated = state.amountCalculated + (step.amountIn + step.feeAmount).toInt256();
+                state.amountCalculated += (step.amountIn + step.feeAmount).toInt256();
             }
 
             // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
@@ -846,32 +844,26 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         require(balance0Before + fee0 <= balance0After, 'F0');
         require(balance1Before + fee1 <= balance1After, 'F1');
 
-        // sub is safe because we know balanceAfter is gt balanceBefore by at least fee
-        uint256 paid0;
-        uint256 paid1;
         unchecked {
-            paid0 = balance0After - balance0Before;
-            paid1 = balance1After - balance1Before;
-        }
+            // sub is safe because we know balanceAfter is gt balanceBefore by at least fee
+            uint256 paid0 = balance0After - balance0Before;
+            uint256 paid1 = balance1After - balance1Before;
 
-        if (paid0 > 0) {
-            unchecked {
+            if (paid0 > 0) {
                 uint8 feeProtocol0 = slot0.feeProtocol % 16;
                 uint256 pFees0 = feeProtocol0 == 0 ? 0 : paid0 / feeProtocol0;
                 if (uint128(pFees0) > 0) protocolFees.token0 += uint128(pFees0);
                 feeGrowthGlobal0X128 += FullMath.mulDiv(paid0 - pFees0, FixedPoint128.Q128, _liquidity);
             }
-        }
-        if (paid1 > 0) {
-            unchecked {
+            if (paid1 > 0) {
                 uint8 feeProtocol1 = slot0.feeProtocol >> 4;
                 uint256 pFees1 = feeProtocol1 == 0 ? 0 : paid1 / feeProtocol1;
                 if (uint128(pFees1) > 0) protocolFees.token1 += uint128(pFees1);
                 feeGrowthGlobal1X128 += FullMath.mulDiv(paid1 - pFees1, FixedPoint128.Q128, _liquidity);
             }
-        }
 
-        emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
+            emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
+        }
     }
 
     /// @inheritdoc IUniswapV3PoolOwnerActions
@@ -891,10 +883,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint128 amount0Requested,
         uint128 amount1Requested
     ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
-        unchecked {
-            amount0 = amount0Requested > protocolFees.token0 ? protocolFees.token0 : amount0Requested;
-            amount1 = amount1Requested > protocolFees.token1 ? protocolFees.token1 : amount1Requested;
+        amount0 = amount0Requested > protocolFees.token0 ? protocolFees.token0 : amount0Requested;
+        amount1 = amount1Requested > protocolFees.token1 ? protocolFees.token1 : amount1Requested;
 
+        unchecked {
             if (amount0 > 0) {
                 if (amount0 == protocolFees.token0) amount0--; // ensure that the slot is not cleared, for gas savings
                 protocolFees.token0 -= amount0;
@@ -905,8 +897,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 protocolFees.token1 -= amount1;
                 TransferHelper.safeTransfer(token1, recipient, amount1);
             }
-
-            emit CollectProtocol(msg.sender, recipient, amount0, amount1);
         }
+
+        emit CollectProtocol(msg.sender, recipient, amount0, amount1);
     }
 }

@@ -76,14 +76,13 @@ library Position {
                     FixedPoint128.Q128
                 )
             );
-        }
 
-        // update the position
-        if (liquidityDelta != 0) self.liquidity = liquidityNext;
-        self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-        self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        // overflow is acceptable, user must withdraw before they hit type(uint128).max fees
-        unchecked {
+            // update the position
+            if (liquidityDelta != 0) self.liquidity = liquidityNext;
+            self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+            self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+            // overflow is acceptable, user must withdraw before they hit type(uint128).max fees
+
             if (tokensOwed0 > 0 || tokensOwed1 > 0) {
                 self.tokensOwed0 += tokensOwed0;
                 self.tokensOwed1 += tokensOwed1;
