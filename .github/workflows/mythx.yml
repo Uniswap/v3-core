@@ -36,10 +36,10 @@ jobs:
         run: |
           pip3 install solc-select
 
-      - name: Install solc 0.8.9
+      - name: Install solc 0.8.12
         run: |
-          solc-select install 0.8.9
-          solc-select use 0.8.9
+          solc-select install 0.8.12
+          solc-select use 0.8.12
 
       - name: Submit code to Mythx
         run: |
@@ -50,7 +50,7 @@ jobs:
             --async \
             --create-group \
             --group-name "@uniswap/v3-core@${{ github.sha }}" \
-            --solc-version 0.8.9 \
+            --solc-version 0.8.12 \
             --check-properties \
             contracts/test/TickBitmapEchidnaTest.sol --include TickBitmapEchidnaTest \
             contracts/test/TickMathEchidnaTest.sol --include TickMathEchidnaTest \
