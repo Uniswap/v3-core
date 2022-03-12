@@ -7,7 +7,7 @@ contract TestERC20 is IERC20Minimal {
     mapping(address => uint256) public override balanceOf;
     mapping(address => mapping(address => uint256)) public override allowance;
 
-    constructor(uint256 amountToMint) {
+    constructor (uint256 amountToMint) {
         mint(msg.sender, amountToMint);
     }
 

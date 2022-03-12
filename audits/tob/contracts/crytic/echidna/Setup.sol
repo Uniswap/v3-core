@@ -8,7 +8,7 @@ import '../../../../../contracts/UniswapV3Factory.sol';
 contract SetupToken {
     TestERC20 public token;
 
-    constructor() public {
+    constructor () public {
         // this contract will receive the total supply of 100 tokens
         token = new TestERC20(1e12 ether);
     }
@@ -25,7 +25,7 @@ contract SetupTokens {
     TestERC20 public token0;
     TestERC20 public token1;
 
-    constructor() public {
+    constructor () public {
         // create the token wrappers
         tokenSetup0 = new SetupToken();
         tokenSetup1 = new SetupToken();
@@ -64,7 +64,7 @@ contract SetupUniswap {
     // fee 10000 + tickSpacing 200
     UniswapV3Factory factory;
 
-    constructor(TestERC20 _token0, TestERC20 _token1) public {
+    constructor (TestERC20 _token0, TestERC20 _token1) public {
         factory = new UniswapV3Factory();
         token0 = _token0;
         token1 = _token1;
@@ -89,7 +89,7 @@ contract UniswapMinter {
         int128 tU_liqNet;
     }
 
-    constructor(TestERC20 _token0, TestERC20 _token1) public {
+    constructor (TestERC20 _token0, TestERC20 _token1) public {
         token0 = _token0;
         token1 = _token1;
     }
@@ -162,7 +162,7 @@ contract UniswapSwapper {
         int24 tick;
     }
 
-    constructor(TestERC20 _token0, TestERC20 _token1) public {
+    constructor (TestERC20 _token0, TestERC20 _token1) public {
         token0 = _token0;
         token1 = _token1;
     }
