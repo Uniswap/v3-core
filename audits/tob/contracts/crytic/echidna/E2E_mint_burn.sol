@@ -27,7 +27,7 @@ contract E2E_mint_burn {
     PoolPosition[] positions;
 
     struct PoolPosition {
-        int24 tickLower;
+        int24 tickLower; 
         int24 tickUpper;
         uint128 amount;
         bytes32 key;
