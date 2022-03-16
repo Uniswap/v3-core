@@ -10,7 +10,7 @@ contract OracleEchidnaTest {
     bool private initialized;
     uint32 private timePassed;
 
-    constructor() {
+    constructor () {
         oracle = new OracleTest();
     }
 

@@ -7,7 +7,7 @@ abstract contract NoDelegateCall {
     /// @dev The original address of this contract
     address private immutable original;
 
-    constructor() {
+    constructor () {
         // Immutables are computed in the init code of the contract, and then inlined into the deployed bytecode.
         // In other words, this variable won't change when it's checked at runtime.
         original = address(this);

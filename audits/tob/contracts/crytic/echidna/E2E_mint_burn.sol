@@ -45,7 +45,7 @@ contract E2E_mint_burn {
 
     PoolParams poolParams;
 
-    constructor() public {
+    constructor () public {
         tokens = new SetupTokens();
         token0 = tokens.token0();
         token1 = tokens.token1();

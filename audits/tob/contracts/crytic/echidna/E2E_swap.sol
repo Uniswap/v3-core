@@ -42,7 +42,7 @@ contract E2E_swap {
     PoolParams poolParams;
     PoolPositions poolPositions;
 
-    constructor() public {
+    constructor () public {
         tokens = new SetupTokens();
         token0 = tokens.token0();
         token1 = tokens.token1();
