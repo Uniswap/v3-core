@@ -11,9 +11,9 @@ import {UniswapV3Pool} from '../UniswapV3Pool.sol';
 
 import {IUniswapV3Pool} from '../interfaces/IUniswapV3Pool.sol';
 
-/// @title Library for simulating swaps in a view function.
+/// @title Library for simulating swaps.
+/// @notice By fully replicating the swap logic, we can make a static call to get a quote.
 library Simulate {
-    using TickBitmapExtended for function(int16) external view returns (uint256);
     using SafeCast for uint256;
 
     struct Cache {
@@ -82,7 +82,8 @@ library Simulate {
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
-            (step.tickNext, step.initialized) = pool.tickBitmap.nextInitializedTickWithinOneWord(
+            (step.tickNext, step.initialized) = nextInitializedTickWithinOneWord(
+                pool.tickBitmap,
                 state.tick,
                 cache.tickSpacing,
                 zeroForOne
@@ -143,24 +144,15 @@ library Simulate {
             ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)
             : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);
     }
-}
 
-/// @title Wrapper for TickBitmap that uses a function pointer instead of a bitmap
-library TickBitmapExtended {
-    /// @notice Returns the next initialized tick contained in the same word (or adjacent word) as the tick that is either
-    /// to the left (less than or equal to) or right (greater than) of the given tick
-    /// @param self The function which fetches ticks
-    /// @param tick The starting tick
-    /// @param tickSpacing The spacing between usable ticks
-    /// @param lte Whether to search for the next initialized tick to the left (less than or equal to the starting tick)
-    /// @return next The next initialized or uninitialized tick up to 256 ticks away from the current tick
-    /// @return initialized Whether the next tick is initialized, as the function only searches within up to 256 ticks
+    // This function replicates TickBitmap, but accepts a function pointer argument.
+    // It's private because it's messy, and shouldn't be re-used.
     function nextInitializedTickWithinOneWord(
         function(int16) external view returns (uint256) self,
         int24 tick,
         int24 tickSpacing,
         bool lte
-    ) internal view returns (int24 next, bool initialized) {
+    ) private view returns (int24 next, bool initialized) {
         unchecked {
             int24 compressed = tick / tickSpacing;
             if (tick < 0 && tick % tickSpacing != 0) compressed--; // round towards negative infinity
