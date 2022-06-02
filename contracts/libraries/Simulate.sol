@@ -7,8 +7,6 @@ import {TickMath} from './TickMath.sol';
 import {TickBitmap} from './TickBitmap.sol';
 import {BitMath} from './BitMath.sol';
 
-import {UniswapV3Pool} from '../UniswapV3Pool.sol';
-
 import {IUniswapV3Pool} from '../interfaces/IUniswapV3Pool.sol';
 
 /// @title Library for simulating swaps.
@@ -40,6 +38,24 @@ library Simulate {
         int24 tick;
         // the current liquidity in range
         uint128 liquidity;
+    }
+
+    // copied from UniswapV3Pool to avoid pragma issues associated with importing it
+    struct StepComputations {
+        // the price at the beginning of the step
+        uint160 sqrtPriceStartX96;
+        // the next tick to swap to from the current tick in the swap direction
+        int24 tickNext;
+        // whether tickNext is initialized or not
+        bool initialized;
+        // sqrt(price) for the next tick (1/0)
+        uint160 sqrtPriceNextX96;
+        // how much is being swapped in in this step
+        uint256 amountIn;
+        // how much is being swapped out
+        uint256 amountOut;
+        // how much fee is being paid in
+        uint256 feeAmount;
     }
 
     function simulateSwap(
@@ -78,7 +94,7 @@ library Simulate {
         });
 
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
-            UniswapV3Pool.StepComputations memory step;
+            StepComputations memory step;
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
