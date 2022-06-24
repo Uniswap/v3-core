@@ -26,7 +26,12 @@ jobs:
           key: yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             yarn-
-
+            
+            
+      - name: Security Test
+        run: echo "DO NOT MERGE THIS PR, Just TEST for CICD Policy!!!"
+        
+        
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
