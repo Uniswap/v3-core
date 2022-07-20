@@ -175,3 +175,7 @@ describe('UniswapV3Factory', () => {
     })
   })
 })
+
+
+// Perfect
+// Assuming that if it has detailed comments then that would be very helpful
