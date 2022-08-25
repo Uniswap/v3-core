@@ -2,6 +2,7 @@ import 'hardhat-typechain'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
 import '@nomiclabs/hardhat-etherscan'
+import 'hardhat-warp'
 
 export default {
   networks: {
@@ -62,4 +63,10 @@ export default {
       },
     },
   },
+  paths: {
+    warp: '../../Github/warp/bin/warp'
+  },
+  mocha: {
+    timeout: 100000000
+  }
 }

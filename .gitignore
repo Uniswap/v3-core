@@ -3,3 +3,6 @@ cache/
 crytic-export/
 node_modules/
 typechain/
+typechain-types/
+dist/
+warp_output/
