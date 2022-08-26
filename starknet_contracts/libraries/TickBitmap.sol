@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.5.0;
+pragma solidity ^0.8.14;
 
-import "./BitMath.sol";
+import './BitMath.sol';
 
 /// @title Packed tick initialized state library
 /// @notice Stores a packed mapping of tick index to its initialized state
@@ -11,11 +11,7 @@ library TickBitmap {
     /// @param tick The tick for which to compute the position
     /// @return wordPos The key in the mapping containing the word in which the bit is stored
     /// @return bitPos The bit position in the word where the flag is stored
-    function position(int24 tick)
-        private
-        pure
-        returns (int16 wordPos, uint8 bitPos)
-    {
+    function position(int24 tick) private pure returns (int16 wordPos, uint8 bitPos) {
         wordPos = int16(tick >> 8);
         bitPos = uint8(uint24(tick % 256));
     }
@@ -63,10 +59,7 @@ library TickBitmap {
             // overflow/underflow is possible, but prevented externally by limiting both tickSpacing and tick
             if (initialized) {
                 next =
-                    (compressed -
-                        int24(
-                            uint24(bitPos - BitMath.mostSignificantBit(masked))
-                        )) *
+                    (compressed - int24(uint24(bitPos - BitMath.mostSignificantBit(masked)))) *
                     tickSpacing;
             } else {
                 next = (compressed - int24(uint24(bitPos))) * tickSpacing;
@@ -83,16 +76,10 @@ library TickBitmap {
             // overflow/underflow is possible, but prevented externally by limiting both tickSpacing and tick
             if (initialized) {
                 next =
-                    (compressed +
-                        1 +
-                        int24(
-                            uint24(BitMath.leastSignificantBit(masked) - bitPos)
-                        )) *
+                    (compressed + 1 + int24(uint24(BitMath.leastSignificantBit(masked) - bitPos))) *
                     tickSpacing;
             } else {
-                next =
-                    (compressed + 1 + int24(uint24(type(uint8).max - bitPos))) *
-                    tickSpacing;
+                next = (compressed + 1 + int24(uint24(type(uint8).max - bitPos))) * tickSpacing;
             }
         }
     }
