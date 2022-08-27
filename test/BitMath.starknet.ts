@@ -3,7 +3,7 @@ import {expect} from 'chai';
 import { getStarknetContractFactory } from 'hardhat-warp/dist/testing'
 import BN from 'bn.js'
 
-describe.only('BitMath', () => {
+describe('BitMath', () => {
   let bitMath: BitMathTest__WC__BitMathTest_compiled
 
   beforeEach('deploy BitMathTest', async () => {
