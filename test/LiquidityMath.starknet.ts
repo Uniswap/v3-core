@@ -21,17 +21,17 @@ describe('LiquidityMath', () => {
       expect(res[0].toNumber()).to.eq(0)
     })
     it('1 + 1', async () => {
-      const res = await liquidityMath.addDelta(1, 1)
+      const res = await liquidityMath.addDelta_402d44fb(1, 1)
       expect(res[0].toNumber()).to.eq(2)
     })
     it('2**128-15 + 15 overflows', async () => {
-      expect(liquidityMath.addDelta(new BN(2).pow(new BN(128)).subn(15), 15)).to.be.revertedWith('LA')
+      expect(liquidityMath.addDelta_402d44fb(new BN(2).pow(new BN(128)).subn(15), 15)).to.be.revertedWith('LA')
     })
     it('0 + -1 underflows', async () => {
-      expect(liquidityMath.addDelta(0, new BN(-1).toTwos(128).toString())).to.be.revertedWith('LS')
+      expect(liquidityMath.addDelta_402d44fb(0, new BN(-1).toTwos(128).toString())).to.be.revertedWith('LS')
     })
     it('3 + -4 underflows', async () => {
-      expect(liquidityMath.addDelta(3, new BN(-4).toTwos(128).toString())).to.be.revertedWith('LS')
+      expect(liquidityMath.addDelta_402d44fb(3, new BN(-4).toTwos(128).toString())).to.be.revertedWith('LS')
     })
   })
 })
