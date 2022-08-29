@@ -201,18 +201,18 @@ describe('TickBitmap', () => {
             });
             it('does not exceed boundary', async () => {
                 const { __warp_usrid4_next, __warp_usrid5_initialized } = await tickBitmap.nextInitializedTickWithinOneWord_3e7ba228(508, 0)
-                expect(__warp_usrid4_next).to.eq('511');
-                expect(__warp_usrid5_initialized).to.eq('0');
+                expect(__warp_usrid4_next.toString()).to.eq('511');
+                expect(__warp_usrid5_initialized.toString()).to.eq('0');
             });
             it('skips entire word', async () => { // FAILS
                 const { __warp_usrid4_next, __warp_usrid5_initialized } = await tickBitmap.nextInitializedTickWithinOneWord_3e7ba228(255, 0)
-                expect(__warp_usrid4_next).to.eq('511');
-                expect(__warp_usrid5_initialized).to.eq('0');
+                expect(__warp_usrid4_next.toString()).to.eq('511');
+                expect(__warp_usrid5_initialized.toString()).to.eq('0');
             });
             it('skips half word', async () => {
                 const { __warp_usrid4_next, __warp_usrid5_initialized } = await tickBitmap.nextInitializedTickWithinOneWord_3e7ba228(383, 0)
-                expect(__warp_usrid4_next).to.eq('511')
-                expect(__warp_usrid5_initialized).to.eq('0')
+                expect(__warp_usrid4_next.toString()).to.eq('511')
+                expect(__warp_usrid5_initialized.toString()).to.eq('0')
             });
         });
 
@@ -231,7 +231,6 @@ describe('TickBitmap', () => {
             })
             it('will not exceed the word boundary', async () => {
               const { __warp_usrid4_next, __warp_usrid5_initialized } = await tickBitmap.nextInitializedTickWithinOneWord_3e7ba228(258, 1)
-      
               expect(__warp_usrid4_next.toString()).to.eq('256')
               expect(__warp_usrid5_initialized.toString()).to.eq('0')
             })
