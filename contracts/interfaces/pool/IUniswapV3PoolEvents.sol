@@ -20,9 +20,9 @@ interface IUniswapV3PoolEvents {
     /// @param amount1 How much token1 was required for the minted liquidity
     event Mint(
         address sender,
-        address indexed owner,
-        int24 indexed tickLower,
-        int24 indexed tickUpper,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
         uint128 amount,
         uint256 amount0,
         uint256 amount1
@@ -36,10 +36,10 @@ interface IUniswapV3PoolEvents {
     /// @param amount0 The amount of token0 fees collected
     /// @param amount1 The amount of token1 fees collected
     event Collect(
-        address indexed owner,
+        address owner,
         address recipient,
-        int24 indexed tickLower,
-        int24 indexed tickUpper,
+        int24 tickLower,
+        int24 tickUpper,
         uint128 amount0,
         uint128 amount1
     );
@@ -53,9 +53,9 @@ interface IUniswapV3PoolEvents {
     /// @param amount0 The amount of token0 withdrawn
     /// @param amount1 The amount of token1 withdrawn
     event Burn(
-        address indexed owner,
-        int24 indexed tickLower,
-        int24 indexed tickUpper,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
         uint128 amount,
         uint256 amount0,
         uint256 amount1
@@ -70,8 +70,8 @@ interface IUniswapV3PoolEvents {
     /// @param liquidity The liquidity of the pool after the swap
     /// @param tick The log base 1.0001 of price of the pool after the swap
     event Swap(
-        address indexed sender,
-        address indexed recipient,
+        address sender,
+        address recipient,
         int256 amount0,
         int256 amount1,
         uint160 sqrtPriceX96,
@@ -87,8 +87,8 @@ interface IUniswapV3PoolEvents {
     /// @param paid0 The amount of token0 paid for the flash, which can exceed the amount0 plus the fee
     /// @param paid1 The amount of token1 paid for the flash, which can exceed the amount1 plus the fee
     event Flash(
-        address indexed sender,
-        address indexed recipient,
+        address sender,
+        address recipient,
         uint256 amount0,
         uint256 amount1,
         uint256 paid0,
@@ -117,5 +117,5 @@ interface IUniswapV3PoolEvents {
     /// @param recipient The address that receives the collected protocol fees
     /// @param amount0 The amount of token0 protocol fees that is withdrawn
     /// @param amount0 The amount of token1 protocol fees that is withdrawn
-    event CollectProtocol(address indexed sender, address indexed recipient, uint128 amount0, uint128 amount1);
+    event CollectProtocol(address sender, address recipient, uint128 amount0, uint128 amount1);
 }
