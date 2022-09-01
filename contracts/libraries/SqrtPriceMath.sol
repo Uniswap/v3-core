@@ -74,21 +74,21 @@ library SqrtPriceMath {
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
         if (add) {
-            uint256 quotient =
-                (
-                    amount <= type(uint160).max
-                        ? (amount << FixedPoint96.RESOLUTION) / liquidity
-                        : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
-                );
+            uint256 quotient = 0;
+            if (amount <= type(uint160).max) {
+                quotient = (amount << FixedPoint96.RESOLUTION) / liquidity;
+            } else {
+                quotient = FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity);
+            }
 
             return uint256(sqrtPX96).add(quotient).toUint160();
         } else {
-            uint256 quotient =
-                (
-                    amount <= type(uint160).max
-                        ? UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
-                        : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
-                );
+            uint256 quotient = 0;
+            if (amount <= type(uint160).max) {
+                quotient = UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity);
+            } else {
+                quotient = FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity);
+            }
 
             require(sqrtPX96 > quotient);
             // always fits 160 bits
@@ -113,10 +113,11 @@ library SqrtPriceMath {
         require(liquidity > 0);
 
         // round to make sure that we don't pass the target price
-        return
-            zeroForOne
-                ? getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountIn, true)
-                : getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountIn, true);
+        if (zeroForOne) {
+            return getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountIn, true);
+        } else {
+            return getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountIn, true);
+        }
     }
 
     /// @notice Gets the next sqrt price given an output amount of token0 or token1
@@ -136,10 +137,11 @@ library SqrtPriceMath {
         require(liquidity > 0);
 
         // round to make sure that we pass the target price
-        return
-            zeroForOne
-                ? getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, false)
-                : getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
+        if (zeroForOne) {
+            return getNextSqrtPriceFromAmount1RoundingDown(sqrtPX96, liquidity, amountOut, false);
+        } else {
+            return getNextSqrtPriceFromAmount0RoundingUp(sqrtPX96, liquidity, amountOut, false);
+        }
     }
 
     /// @notice Gets the amount0 delta between two prices
@@ -163,13 +165,15 @@ library SqrtPriceMath {
 
         require(sqrtRatioAX96 > 0);
 
-        return
-            roundUp
-                ? UnsafeMath.divRoundingUp(
+        if (roundUp) {
+            return
+                UnsafeMath.divRoundingUp(
                     FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96),
                     sqrtRatioAX96
-                )
-                : FullMath.mulDiv(numerator1, numerator2, sqrtRatioBX96) / sqrtRatioAX96;
+                );
+        } else {
+            return FullMath.mulDiv(numerator1, numerator2, sqrtRatioBX96) / sqrtRatioAX96;
+        }
     }
 
     /// @notice Gets the amount1 delta between two prices
@@ -187,10 +191,11 @@ library SqrtPriceMath {
     ) internal pure returns (uint256 amount1) {
         if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
 
-        return
-            roundUp
-                ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96)
-                : FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+        if (roundUp) {
+            return FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+        } else {
+            FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+        }
     }
 
     /// @notice Helper that gets signed token0 delta
@@ -203,10 +208,11 @@ library SqrtPriceMath {
         uint160 sqrtRatioBX96,
         int128 liquidity
     ) internal pure returns (int256 amount0) {
-        return
-            liquidity < 0
-                ? -getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(-liquidity), false).toInt256()
-                : getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(liquidity), true).toInt256();
+        if (liquidity < 0) {
+            return -getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(-liquidity), false).toInt256();
+        } else {
+            return getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(liquidity), true).toInt256();
+        }
     }
 
     /// @notice Helper that gets signed token1 delta
@@ -219,9 +225,10 @@ library SqrtPriceMath {
         uint160 sqrtRatioBX96,
         int128 liquidity
     ) internal pure returns (int256 amount1) {
-        return
-            liquidity < 0
-                ? -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(-liquidity), false).toInt256()
-                : getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(liquidity), true).toInt256();
+        if (liquidity < 0) {
+            return -getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(-liquidity), false).toInt256();
+        } else {
+            return getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, uint128(liquidity), true).toInt256();
+        }
     }
 }

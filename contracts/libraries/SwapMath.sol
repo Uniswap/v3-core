@@ -39,9 +39,21 @@ library SwapMath {
 
         if (exactIn) {
             uint256 amountRemainingLessFee = FullMath.mulDiv(uint256(amountRemaining), 1e6 - feePips, 1e6);
-            amountIn = zeroForOne
-                ? SqrtPriceMath.getAmount0Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, true)
-                : SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, true);
+            if (zeroForOne) {
+                amountIn = SqrtPriceMath.getAmount0Delta(
+                    sqrtRatioTargetX96,
+                    sqrtRatioCurrentX96,
+                    liquidity,
+                    true
+                );
+            } else {
+                amountIn = SqrtPriceMath.getAmount1Delta(
+                    sqrtRatioCurrentX96,
+                    sqrtRatioTargetX96,
+                    liquidity,
+                    true
+                );
+            }
             if (amountRemainingLessFee >= amountIn) sqrtRatioNextX96 = sqrtRatioTargetX96;
             else
                 sqrtRatioNextX96 = SqrtPriceMath.getNextSqrtPriceFromInput(
@@ -51,9 +63,21 @@ library SwapMath {
                     zeroForOne
                 );
         } else {
-            amountOut = zeroForOne
-                ? SqrtPriceMath.getAmount1Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, false)
-                : SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, false);
+            if (zeroForOne) {
+                amountOut = SqrtPriceMath.getAmount1Delta(
+                    sqrtRatioTargetX96,
+                    sqrtRatioCurrentX96,
+                    liquidity,
+                    false
+                );
+            } else {
+                amountOut = SqrtPriceMath.getAmount0Delta(
+                    sqrtRatioCurrentX96,
+                    sqrtRatioTargetX96,
+                    liquidity,
+                    false
+                );
+            }
             if (uint256(-amountRemaining) >= amountOut) sqrtRatioNextX96 = sqrtRatioTargetX96;
             else
                 sqrtRatioNextX96 = SqrtPriceMath.getNextSqrtPriceFromOutput(
@@ -68,19 +92,39 @@ library SwapMath {
 
         // get the input/output amounts
         if (zeroForOne) {
-            amountIn = max && exactIn
-                ? amountIn
-                : SqrtPriceMath.getAmount0Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, true);
-            amountOut = max && !exactIn
-                ? amountOut
-                : SqrtPriceMath.getAmount1Delta(sqrtRatioNextX96, sqrtRatioCurrentX96, liquidity, false);
+            if (!(max && exactIn)) {
+                amountIn = SqrtPriceMath.getAmount0Delta(
+                    sqrtRatioNextX96,
+                    sqrtRatioCurrentX96,
+                    liquidity,
+                    true
+                );
+            }
+            if (!(max && !exactIn)) {
+                amountOut = SqrtPriceMath.getAmount1Delta(
+                    sqrtRatioNextX96,
+                    sqrtRatioCurrentX96,
+                    liquidity,
+                    false
+                );
+            }
         } else {
-            amountIn = max && exactIn
-                ? amountIn
-                : SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, true);
-            amountOut = max && !exactIn
-                ? amountOut
-                : SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioNextX96, liquidity, false);
+            if (!(max && exactIn)) {
+                amountIn = SqrtPriceMath.getAmount1Delta(
+                    sqrtRatioCurrentX96,
+                    sqrtRatioNextX96,
+                    liquidity,
+                    true
+                );
+            }
+            if (!(max && !exactIn)) {
+                amountOut = SqrtPriceMath.getAmount0Delta(
+                    sqrtRatioCurrentX96,
+                    sqrtRatioNextX96,
+                    liquidity,
+                    false
+                );
+            }
         }
 
         // cap the output amount to not exceed the remaining output amount

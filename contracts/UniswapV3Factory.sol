@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.7.6;
+pragma solidity ^0.8.14;
 
 import './interfaces/IUniswapV3Factory.sol';
 
@@ -38,7 +38,10 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
         uint24 fee
     ) external override noDelegateCall returns (address pool) {
         require(tokenA != tokenB);
-        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        (address token0, address token1) = (tokenB, tokenA);
+        if (tokenA < tokenB) {
+            (token0, token1) = (tokenA, tokenB);
+        }
         require(token0 != address(0));
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0);

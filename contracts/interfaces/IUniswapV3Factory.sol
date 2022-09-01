@@ -7,7 +7,7 @@ interface IUniswapV3Factory {
     /// @notice Emitted when the owner of the factory is changed
     /// @param oldOwner The owner before the owner was changed
     /// @param newOwner The owner after the owner was changed
-    event OwnerChanged(address indexed oldOwner, address indexed newOwner);
+    event OwnerChanged(address oldOwner, address newOwner);
 
     /// @notice Emitted when a pool is created
     /// @param token0 The first token of the pool by address sort order
@@ -16,9 +16,9 @@ interface IUniswapV3Factory {
     /// @param tickSpacing The minimum number of ticks between initialized ticks
     /// @param pool The address of the created pool
     event PoolCreated(
-        address indexed token0,
-        address indexed token1,
-        uint24 indexed fee,
+        address token0,
+        address token1,
+        uint24 fee,
         int24 tickSpacing,
         address pool
     );
@@ -26,7 +26,7 @@ interface IUniswapV3Factory {
     /// @notice Emitted when a new fee amount is enabled for pool creation via the factory
     /// @param fee The enabled fee, denominated in hundredths of a bip
     /// @param tickSpacing The minimum number of ticks between initialized ticks for pools created with the given fee
-    event FeeAmountEnabled(uint24 indexed fee, int24 indexed tickSpacing);
+    event FeeAmountEnabled(uint24 fee, int24 tickSpacing);
 
     /// @notice Returns the current owner of the factory
     /// @dev Can be changed by the current owner via setOwner
