@@ -2,12 +2,26 @@ import Decimal from 'decimal.js'
 import {TickMathTest__WC__TickMathTest_compiled} from '../typechain-types'
 import {expect} from 'chai';
 import { getStarknetContractFactory } from 'hardhat-warp/dist/testing'
-import { encodePriceSqrt, MIN_SQRT_RATIO, MAX_SQRT_RATIO } from './shared/utilities'
 import BN from 'bn.js'
-import { BigNumber } from 'ethers'
+import { BigNumber, BigNumberish} from 'ethers'
+import bn from 'bignumber.js'
 
 const MIN_TICK = -887272
 const MAX_TICK = 887272
+export const MIN_SQRT_RATIO = BigNumber.from('4295128739')
+export const MAX_SQRT_RATIO = BigNumber.from('1461446703485210103287273052203988822378723970342')
+
+// returns the sqrt price as a 64x96
+export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
+  return BigNumber.from(
+    new bn(reserve1.toString())
+      .div(reserve0.toString())
+      .sqrt()
+      .multipliedBy(new bn(2).pow(96))
+      .integerValue(3)
+      .toString()
+  )
+}
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
@@ -143,10 +157,10 @@ describe('TickMath', () => {
       const result = await tickMath.getTickAtSqrtRatio_4f76c058((MAX_SQRT_RATIO.sub(1)).toString())
       expect(result[0].toNumber()).to.eq(MAX_TICK - 1)
     })
-
+/*
     for (const ratio of [
       MIN_SQRT_RATIO,
-      encodePriceSqrt(BigNumber.from(10).pow(12), 1),
+      encodePriceSqrt((BigNumber.from(10).pow(12)).toString(), 1),
       encodePriceSqrt(BigNumber.from(10).pow(6), 1),
       encodePriceSqrt(1, 64),
       encodePriceSqrt(1, 8),
@@ -181,8 +195,8 @@ describe('TickMath', () => {
         
         it('gas', async () => {
           await snapshotGasCost(tickMath.getGasCostOfgetTickAtSqrtRatio_4f76c058(ratio))
-        })*/
+        })
       })
-    }
+    }*/
   })
 })
