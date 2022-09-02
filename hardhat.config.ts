@@ -84,7 +84,7 @@ export default {
     ]
   },
   paths: {
-    warp: '../../Github/warp/bin/warp'
+    warp: '../warp/bin/warp'
   },
   mocha: {
     timeout: 100000000

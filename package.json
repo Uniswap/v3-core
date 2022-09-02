@@ -43,7 +43,7 @@
     "ethers": "^5.7.0",
     "hardhat": "^2.2.0",
     "hardhat-typechain": "^0.3.5",
-    "hardhat-warp": "file:../../Github/hardhat-warp",
+    "hardhat-warp": "file:../hardhat-warp",
     "mocha": "^6.2.2",
     "mocha-chai-jest-snapshot": "^1.1.0",
     "prettier": "^2.0.5",
