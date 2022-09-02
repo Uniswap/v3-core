@@ -6,7 +6,7 @@ import { Uint256 } from '../typechain-types/FullMathTest__WC__FullMathTest_compi
 import { Decimal } from 'decimal.js'
 
 var Q128 = new BN(2).pow(new BN(128))
-var MaxUint256 = new BN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+var MaxUint256 = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 function toUint256(x: number | BN | string): Uint256 {
     var num = new BN(x);
     return {high: num.div(Q128), low: num.mod(Q128)};

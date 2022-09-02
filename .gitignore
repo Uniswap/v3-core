@@ -6,4 +6,4 @@ typechain/
 typechain-types/
 dist/
 warp_output/
-yarn.lock
+./yarn.lock
