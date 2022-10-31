@@ -74,21 +74,19 @@ library SqrtPriceMath {
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
         if (add) {
-            uint256 quotient =
-                (
-                    amount <= type(uint160).max
-                        ? (amount << FixedPoint96.RESOLUTION) / liquidity
-                        : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
-                );
+            uint256 quotient = (
+                amount <= type(uint160).max
+                    ? (amount << FixedPoint96.RESOLUTION) / liquidity
+                    : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
+            );
 
             return uint256(sqrtPX96).add(quotient).toUint160();
         } else {
-            uint256 quotient =
-                (
-                    amount <= type(uint160).max
-                        ? UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
-                        : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
-                );
+            uint256 quotient = (
+                amount <= type(uint160).max
+                    ? UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                    : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
+            );
 
             require(sqrtPX96 > quotient);
             // always fits 160 bits

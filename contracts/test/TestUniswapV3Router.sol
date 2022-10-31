@@ -60,8 +60,9 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
         if (pools.length == 1) {
             // get the address and amount of the token that we need to pay
-            address tokenToBePaid =
-                amount0Delta > 0 ? IUniswapV3Pool(msg.sender).token0() : IUniswapV3Pool(msg.sender).token1();
+            address tokenToBePaid = amount0Delta > 0
+                ? IUniswapV3Pool(msg.sender).token0()
+                : IUniswapV3Pool(msg.sender).token1();
             int256 amountToBePaid = amount0Delta > 0 ? amount0Delta : amount1Delta;
 
             bool zeroForOne = tokenToBePaid == IUniswapV3Pool(pools[0]).token1();

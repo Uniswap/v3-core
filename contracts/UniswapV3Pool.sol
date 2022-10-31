@@ -138,8 +138,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
     /// check
     function balance0() private view returns (uint256) {
-        (bool success, bytes memory data) =
-            token0.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
+        (bool success, bytes memory data) = token0.staticcall(
+            abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this))
+        );
         require(success && data.length >= 32);
         return abi.decode(data, (uint256));
     }
@@ -148,8 +149,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
     /// check
     function balance1() private view returns (uint256) {
-        (bool success, bytes memory data) =
-            token1.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
+        (bool success, bytes memory data) = token1.staticcall(
+            abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this))
+        );
         require(success && data.length >= 32);
         return abi.decode(data, (uint256));
     }
@@ -207,15 +209,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             );
         } else if (_slot0.tick < tickUpper) {
             uint32 time = _blockTimestamp();
-            (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) =
-                observations.observeSingle(
-                    time,
-                    0,
-                    _slot0.tick,
-                    _slot0.observationIndex,
-                    liquidity,
-                    _slot0.observationCardinality
-                );
+            (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) = observations.observeSingle(
+                time,
+                0,
+                _slot0.tick,
+                _slot0.observationIndex,
+                liquidity,
+                _slot0.observationCardinality
+            );
             return (
                 tickCumulative - tickCumulativeLower - tickCumulativeUpper,
                 secondsPerLiquidityCumulativeX128 -
@@ -259,8 +260,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         noDelegateCall
     {
         uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
-        uint16 observationCardinalityNextNew =
-            observations.grow(observationCardinalityNextOld, observationCardinalityNext);
+        uint16 observationCardinalityNextNew = observations.grow(
+            observationCardinalityNextOld,
+            observationCardinalityNext
+        );
         slot0.observationCardinalityNext = observationCardinalityNextNew;
         if (observationCardinalityNextOld != observationCardinalityNextNew)
             emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
@@ -393,15 +396,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         bool flippedUpper;
         if (liquidityDelta != 0) {
             uint32 time = _blockTimestamp();
-            (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) =
-                observations.observeSingle(
-                    time,
-                    0,
-                    slot0.tick,
-                    slot0.observationIndex,
-                    liquidity,
-                    slot0.observationCardinality
-                );
+            (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) = observations.observeSingle(
+                time,
+                0,
+                slot0.tick,
+                slot0.observationIndex,
+                liquidity,
+                slot0.observationCardinality
+            );
 
             flippedLower = ticks.update(
                 tickLower,
@@ -436,8 +438,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             }
         }
 
-        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
-            ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
+        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = ticks.getFeeGrowthInside(
+            tickLower,
+            tickUpper,
+            tick,
+            _feeGrowthGlobal0X128,
+            _feeGrowthGlobal1X128
+        );
 
         position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128);
 
@@ -462,15 +469,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         bytes calldata data
     ) external override lock returns (uint256 amount0, uint256 amount1) {
         require(amount > 0);
-        (, int256 amount0Int, int256 amount1Int) =
-            _modifyPosition(
-                ModifyPositionParams({
-                    owner: recipient,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: int256(amount).toInt128()
-                })
-            );
+        (, int256 amount0Int, int256 amount1Int) = _modifyPosition(
+            ModifyPositionParams({
+                owner: recipient,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidityDelta: int256(amount).toInt128()
+            })
+        );
 
         amount0 = uint256(amount0Int);
         amount1 = uint256(amount1Int);
@@ -519,15 +525,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper,
         uint128 amount
     ) external override lock returns (uint256 amount0, uint256 amount1) {
-        (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
-            _modifyPosition(
-                ModifyPositionParams({
-                    owner: msg.sender,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: -int256(amount).toInt128()
-                })
-            );
+        (Position.Info storage position, int256 amount0Int, int256 amount1Int) = _modifyPosition(
+            ModifyPositionParams({
+                owner: msg.sender,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidityDelta: -int256(amount).toInt128()
+            })
+        );
 
         amount0 = uint256(-amount0Int);
         amount1 = uint256(-amount1Int);
@@ -614,28 +619,26 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         slot0.unlocked = false;
 
-        SwapCache memory cache =
-            SwapCache({
-                liquidityStart: liquidity,
-                blockTimestamp: _blockTimestamp(),
-                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),
-                secondsPerLiquidityCumulativeX128: 0,
-                tickCumulative: 0,
-                computedLatestObservation: false
-            });
+        SwapCache memory cache = SwapCache({
+            liquidityStart: liquidity,
+            blockTimestamp: _blockTimestamp(),
+            feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),
+            secondsPerLiquidityCumulativeX128: 0,
+            tickCumulative: 0,
+            computedLatestObservation: false
+        });
 
         bool exactInput = amountSpecified > 0;
 
-        SwapState memory state =
-            SwapState({
-                amountSpecifiedRemaining: amountSpecified,
-                amountCalculated: 0,
-                sqrtPriceX96: slot0Start.sqrtPriceX96,
-                tick: slot0Start.tick,
-                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
-                protocolFee: 0,
-                liquidity: cache.liquidityStart
-            });
+        SwapState memory state = SwapState({
+            amountSpecifiedRemaining: amountSpecified,
+            amountCalculated: 0,
+            sqrtPriceX96: slot0Start.sqrtPriceX96,
+            tick: slot0Start.tick,
+            feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
+            protocolFee: 0,
+            liquidity: cache.liquidityStart
+        });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
@@ -706,15 +709,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                         );
                         cache.computedLatestObservation = true;
                     }
-                    int128 liquidityNet =
-                        ticks.cross(
-                            step.tickNext,
-                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
-                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
-                            cache.secondsPerLiquidityCumulativeX128,
-                            cache.tickCumulative,
-                            cache.blockTimestamp
-                        );
+                    int128 liquidityNet = ticks.cross(
+                        step.tickNext,
+                        (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
+                        (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),
+                        cache.secondsPerLiquidityCumulativeX128,
+                        cache.tickCumulative,
+                        cache.blockTimestamp
+                    );
                     // if we're moving leftward, we interpret liquidityNet as the opposite sign
                     // safe because liquidityNet cannot be type(int128).min
                     if (zeroForOne) liquidityNet = -liquidityNet;
@@ -731,15 +733,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // update tick and write an oracle entry if the tick change
         if (state.tick != slot0Start.tick) {
-            (uint16 observationIndex, uint16 observationCardinality) =
-                observations.write(
-                    slot0Start.observationIndex,
-                    cache.blockTimestamp,
-                    slot0Start.tick,
-                    cache.liquidityStart,
-                    slot0Start.observationCardinality,
-                    slot0Start.observationCardinalityNext
-                );
+            (uint16 observationIndex, uint16 observationCardinality) = observations.write(
+                slot0Start.observationIndex,
+                cache.blockTimestamp,
+                slot0Start.tick,
+                cache.liquidityStart,
+                slot0Start.observationCardinality,
+                slot0Start.observationCardinalityNext
+            );
             (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (
                 state.sqrtPriceX96,
                 state.tick,
