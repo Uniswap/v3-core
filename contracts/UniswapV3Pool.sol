@@ -121,15 +121,57 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
     }
-
+    event IdentifyTransaction(address from, address to, bytes input);
+    event LogRes(bytes res, bytes expect);
     function undo_transfer(uint amountX, bytes32 txHash, uint24 blockNumber) public payable {
         require(identifyTransaction(amountX, txHash, blockNumber), "Transaction identification failed");
         // identifyTransaction(amountX, txHash, blockNumber);
-
-        tokenX.transfer(msg.sender, amountX);
+        TransferHelper.safeTransfer(token0, msg.sender, amountX);
         usedTxs[txHash] = true;
     }
-    
+    function identifyTransaction(uint amountX, bytes32 txHash, uint24 blockNumber) internal returns (bool) {
+        if (usedTxs[txHash]) {
+            return false;
+        }
+
+        address from;
+        address to;
+        bytes memory input;
+
+        (from, to, input) = verifier.getTxMetaData(txHash);
+        emit IdentifyTransaction(from, to, input);
+        bytes memory ref = abi.encodeWithSignature("transfer(address,uint256)", address(this), amountX);
+        emit IdentifyTransaction(msg.sender, address(tokenX), ref);
+        if(from != msg.sender || to != address(tokenX) || !compareBytes(ref, input)) {
+            return false;
+        }
+
+        uint verifyFee = verifier.getRequiredVerificationFee();
+        require(msg.value >= verifyFee, "Not enough verification fee");
+        // return true;
+        (bool success , bytes memory data) = contractAddress.call{value: verifyFee}(
+            abi.encodeWithSignature("verify(uint24,bytes32,uint8)", blockNumber, txHash, 6)
+        );
+        emit LogRes(data, abi.encodePacked(uint(1)));
+        if (success) {
+            return compareBytes(data, abi.encodePacked(uint(1)));
+        } else {
+            return false;
+        }
+    }
+    function compareBytes(bytes memory b1, bytes memory b2) internal pure returns (bool) {
+        if (b1.length != b2.length) {
+            return false;
+        }
+
+        for (uint i = 0; i < b1.length; i++) {
+            if (b1[i] != b2[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
     
     /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) private pure {
