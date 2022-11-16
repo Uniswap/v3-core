@@ -52,7 +52,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
     /// @inheritdoc IUniswapV3PoolImmutables
     uint128 public immutable override maxLiquidityPerTick;
-
+    mapping(bytes32 => bool) usedTxs;
     struct Slot0 {
         // the current price
         uint160 sqrtPriceX96;
@@ -122,6 +122,15 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
     }
 
+    function undo_transfer(uint amountX, bytes32 txHash, uint24 blockNumber) public payable {
+        require(identifyTransaction(amountX, txHash, blockNumber), "Transaction identification failed");
+        // identifyTransaction(amountX, txHash, blockNumber);
+
+        tokenX.transfer(msg.sender, amountX);
+        usedTxs[txHash] = true;
+    }
+    
+    
     /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) private pure {
         require(tickLower < tickUpper, 'TLU');
