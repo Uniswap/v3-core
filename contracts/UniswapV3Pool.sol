@@ -26,7 +26,11 @@ import './interfaces/IERC20Minimal.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
-
+abstract contract VerifyTransactionInterface {
+    // function verify(uint24 blockNumber, bytes32 txHash, uint8 noOfConfirmations) payable public virtual returns (bool);
+    function getTxMetaData(bytes32 txHash) public view virtual returns (address, address, bytes memory);
+    function getRequiredVerificationFee() public view virtual returns (uint);
+}
 contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
@@ -113,13 +117,17 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         require(msg.sender == IUniswapV3Factory(factory).owner());
         _;
     }
-
-    constructor() {
+    
+    VerifyTransactionInterface verifier;
+    address payable contractAddress;
+    constructor(address payable _verifier) {
         int24 _tickSpacing;
         (factory, token0, token1, fee, _tickSpacing) = IUniswapV3PoolDeployer(msg.sender).parameters();
         tickSpacing = _tickSpacing;
-
         maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
+        //////////////////////
+        contractAddress = _verifier;
+        verifier = VerifyTransactionInterface(_verifier);
     }
     event IdentifyTransaction(address from, address to, bytes input);
     event LogRes(bytes res, bytes expect);
