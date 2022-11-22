@@ -55,5 +55,9 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test"
+  },
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/<YOUR-COLLECTIVE-SLUG>"
   }
 }
