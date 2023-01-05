@@ -26,7 +26,7 @@ import { join as pathJoin } from 'path'
 export default {
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: true,
+      allowUnlimitedContractSize: false,
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -73,7 +73,7 @@ export default {
       viaIR: true,
       optimizer: {
         enabled: true,
-        runs: 1_000_000,
+        runs: 550,
       },
       metadata: {
         // do not include the metadata hash, since this is machine dependent
