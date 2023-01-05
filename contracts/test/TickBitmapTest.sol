@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity ^0.8.17;
 
 import '../libraries/TickBitmap.sol';
 
@@ -18,11 +18,10 @@ contract TickBitmapTest {
         return gasBefore - gasleft();
     }
 
-    function nextInitializedTickWithinOneWord(int24 tick, bool lte)
-        external
-        view
-        returns (int24 next, bool initialized)
-    {
+    function nextInitializedTickWithinOneWord(
+        int24 tick,
+        bool lte
+    ) external view returns (int24 next, bool initialized) {
         return bitmap.nextInitializedTickWithinOneWord(tick, 1, lte);
     }
 

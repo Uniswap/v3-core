@@ -11,11 +11,7 @@ library TransferHelper {
     /// @param token The contract address of the token which will be transferred
     /// @param to The recipient of the transfer
     /// @param value The value of the transfer
-    function safeTransfer(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
+    function safeTransfer(address token, address to, uint256 value) internal {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(IERC20Minimal.transfer.selector, to, value)
         );

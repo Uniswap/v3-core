@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity ^0.8.17;
 
 import '../interfaces/IERC20Minimal.sol';
 
@@ -15,14 +15,7 @@ contract UniswapV3PoolSwapTest is IUniswapV3SwapCallback {
         bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96
-    )
-        external
-        returns (
-            int256 amount0Delta,
-            int256 amount1Delta,
-            uint160 nextSqrtRatio
-        )
-    {
+    ) external returns (int256 amount0Delta, int256 amount1Delta, uint160 nextSqrtRatio) {
         (amount0Delta, amount1Delta) = IUniswapV3Pool(pool).swap(
             address(0),
             zeroForOne,
@@ -34,11 +27,7 @@ contract UniswapV3PoolSwapTest is IUniswapV3SwapCallback {
         (nextSqrtRatio, , , , , , ) = IUniswapV3Pool(pool).slot0();
     }
 
-    function uniswapV3SwapCallback(
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata data
-    ) external override {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external override {
         address sender = abi.decode(data, (address));
 
         if (amount0Delta > 0) {

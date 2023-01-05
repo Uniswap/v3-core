@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
-pragma abicoder v2;
+pragma solidity ^0.8.17;
 
 import '../libraries/Oracle.sol';
 
@@ -31,7 +30,9 @@ contract OracleTest {
     }
 
     function advanceTime(uint32 by) public {
-        time += by;
+        unchecked {
+            time += by;
+        }
     }
 
     struct UpdateParams {
@@ -49,45 +50,45 @@ contract OracleTest {
     }
 
     function batchUpdate(UpdateParams[] calldata params) external {
-        // sload everything
-        int24 _tick = tick;
-        uint128 _liquidity = liquidity;
-        uint16 _index = index;
-        uint16 _cardinality = cardinality;
-        uint16 _cardinalityNext = cardinalityNext;
-        uint32 _time = time;
+        unchecked {
+            // sload everything
+            int24 _tick = tick;
+            uint128 _liquidity = liquidity;
+            uint16 _index = index;
+            uint16 _cardinality = cardinality;
+            uint16 _cardinalityNext = cardinalityNext;
+            uint32 _time = time;
 
-        for (uint256 i = 0; i < params.length; i++) {
-            _time += params[i].advanceTimeBy;
-            (_index, _cardinality) = observations.write(
-                _index,
-                _time,
-                _tick,
-                _liquidity,
-                _cardinality,
-                _cardinalityNext
-            );
-            _tick = params[i].tick;
-            _liquidity = params[i].liquidity;
+            for (uint256 i = 0; i < params.length; i++) {
+                _time += params[i].advanceTimeBy;
+                (_index, _cardinality) = observations.write(
+                    _index,
+                    _time,
+                    _tick,
+                    _liquidity,
+                    _cardinality,
+                    _cardinalityNext
+                );
+                _tick = params[i].tick;
+                _liquidity = params[i].liquidity;
+            }
+
+            // sstore everything
+            tick = _tick;
+            liquidity = _liquidity;
+            index = _index;
+            cardinality = _cardinality;
+            time = _time;
         }
-
-        // sstore everything
-        tick = _tick;
-        liquidity = _liquidity;
-        index = _index;
-        cardinality = _cardinality;
-        time = _time;
     }
 
     function grow(uint16 _cardinalityNext) external {
         cardinalityNext = observations.grow(cardinalityNext, _cardinalityNext);
     }
 
-    function observe(uint32[] calldata secondsAgos)
-        external
-        view
-        returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
-    {
+    function observe(
+        uint32[] calldata secondsAgos
+    ) external view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) {
         return observations.observe(time, secondsAgos, tick, index, liquidity, cardinality);
     }
 

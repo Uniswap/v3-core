@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity ^0.8.17;
 
 import '../UniswapV3Pool.sol';
 
@@ -17,7 +17,9 @@ contract MockTimeUniswapV3Pool is UniswapV3Pool {
     }
 
     function advanceTime(uint256 by) external {
-        time += by;
+        unchecked {
+            time += by;
+        }
     }
 
     function _blockTimestamp() internal view override returns (uint32) {
