@@ -8,20 +8,20 @@ import { subtask } from 'hardhat/config'
 import { TaskArguments } from 'hardhat/types'
 import { join as pathJoin } from 'path'
 
-// subtask(TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, async (args: TaskArguments, hre, runSuper) => {
-//   if (args.solcVersion !== '0.8.17') {
-//     throw new Error('need binary for solc version')
-//   }
-//
-//   const compilerPath = pathJoin(__dirname, 'bin', 'solc')
-//
-//   return {
-//     compilerPath,
-//     isSolcJs: false,
-//     version: '0.8.18',
-//     longVersion: '0.8.18-ci.2023.1.4+commit.6fc1be32.Darwin.appleclang',
-//   }
-// })
+subtask(TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, async (args: TaskArguments, hre, runSuper) => {
+  if (args.solcVersion !== '0.8.17') {
+    throw new Error('need binary for solc version')
+  }
+
+  const compilerPath = pathJoin(__dirname, 'bin', 'solc')
+
+  return {
+    compilerPath,
+    isSolcJs: false,
+    version: '0.8.18',
+    longVersion: '0.8.18-ci.2023.1.4+commit.6fc1be32.Darwin.appleclang',
+  }
+})
 
 export default {
   networks: {
@@ -68,9 +68,11 @@ export default {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   solidity: {
+    quiet: false,
     version: '0.8.17',
     settings: {
       viaIR: true,
+      evmVersion: 'shanghai',
       optimizer: {
         enabled: true,
         runs: 550,
