@@ -88,7 +88,7 @@ library SwapMath {
             amountOut = uint256(-amountRemaining);
         }
 
-        if (exactIn && sqrtRatioNextX96 != sqrtRatioTargetX96) {
+        if (exactIn && !max) {
             // we didn't reach the target, so take the remainder of the maximum input as fee
             feeAmount = uint256(amountRemaining) - amountIn;
         } else {
