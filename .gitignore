@@ -3,3 +3,5 @@ cache/
 crytic-export/
 node_modules/
 typechain/
+dist/
+state.json
