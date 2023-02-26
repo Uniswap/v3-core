@@ -41,6 +41,7 @@
     "chai": "^4.2.0",
     "commander": "^6.1.0",
     "decimal.js": "^10.2.1",
+    "dotenv": "^16.0.3",
     "ethereum-waffle": "^3.0.2",
     "ethers": "^5.0.8",
     "hardhat": "^2.2.0",

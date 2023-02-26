@@ -24,7 +24,7 @@ program
   .option('-g, --gas-price <number>', 'The gas price to pay in GWEI for each transaction (optional)')
   .option('-c, --confirmations <number>', 'How many confirmations to wait for after each transaction (optional)', '2')
 
-program.name('npx @uniswap/deploy-v3').version(version).parse(process.argv)
+program.name('yarn deploy').version(version).parse(process.argv)
 
 if (/^0x[a-zA-Z0-9]{64}$/.test(program.privateKey)) {
   console.error('Invalid private key!')
