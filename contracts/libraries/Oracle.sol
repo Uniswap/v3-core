@@ -28,7 +28,7 @@ library Oracle {
     /// @param liquidity The total in-range liquidity at the time of the new observation
     /// @return Observation The newly populated observation
     function transform(
-        Observation memory last,
+        Observation calldata last,
         uint32 blockTimestamp,
         int24 tick,
         uint128 liquidity
