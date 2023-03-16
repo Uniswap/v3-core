@@ -42,8 +42,8 @@ export default {
       url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
     },
     bnb: {
-     url: `https://bsc-dataseed.binance.org/`,
-   }
+      url: `https://bsc-dataseed.binance.org/`,
+    },
   },
   etherscan: {
     // Your API key for Etherscan
