@@ -382,18 +382,11 @@ contract E2E_mint_burn {
 
     function test_mint(uint128 _amount) public {
         if (!inited) _init(_amount);
-        (int24 _tL, int24 _tU) = forgePosition(
-            _amount,
-            poolParams.tickSpacing,
-            poolParams.tickCount,
-            poolParams.maxTick
-        );
+        (int24 _tL, int24 _tU) =
+            forgePosition(_amount, poolParams.tickSpacing, poolParams.tickCount, poolParams.maxTick);
 
-        (UniswapMinter.MinterStats memory bfre, UniswapMinter.MinterStats memory aftr) = minter.doMint(
-            _tL,
-            _tU,
-            _amount
-        );
+        (UniswapMinter.MinterStats memory bfre, UniswapMinter.MinterStats memory aftr) =
+            minter.doMint(_tL, _tU, _amount);
         storeUsedTicks(_tL, _tU);
 
         check_mint_invariants(_tL, _tU, bfre, aftr);

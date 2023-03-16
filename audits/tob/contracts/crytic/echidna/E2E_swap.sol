@@ -360,11 +360,8 @@ contract E2E_swap {
         uint160 sqrtPriceLimitX96 = get_random_zeroForOne_priceLimit(_amount);
         // console.log('sqrtPriceLimitX96 = %s', sqrtPriceLimitX96);
 
-        (UniswapSwapper.SwapperStats memory bfre, UniswapSwapper.SwapperStats memory aftr) = swapper.doSwap(
-            true,
-            _amountSpecified,
-            sqrtPriceLimitX96
-        );
+        (UniswapSwapper.SwapperStats memory bfre, UniswapSwapper.SwapperStats memory aftr) =
+            swapper.doSwap(true, _amountSpecified, sqrtPriceLimitX96);
 
         check_swap_invariants(
             bfre.tick,
@@ -397,11 +394,8 @@ contract E2E_swap {
         uint160 sqrtPriceLimitX96 = get_random_oneForZero_priceLimit(_amount);
         // console.log('sqrtPriceLimitX96 = %s', sqrtPriceLimitX96);
 
-        (UniswapSwapper.SwapperStats memory bfre, UniswapSwapper.SwapperStats memory aftr) = swapper.doSwap(
-            false,
-            _amountSpecified,
-            sqrtPriceLimitX96
-        );
+        (UniswapSwapper.SwapperStats memory bfre, UniswapSwapper.SwapperStats memory aftr) =
+            swapper.doSwap(false, _amountSpecified, sqrtPriceLimitX96);
 
         check_swap_invariants(
             bfre.tick,
@@ -434,11 +428,8 @@ contract E2E_swap {
         uint160 sqrtPriceLimitX96 = get_random_zeroForOne_priceLimit(_amount);
         // console.log('sqrtPriceLimitX96 = %s', sqrtPriceLimitX96);
 
-        (UniswapSwapper.SwapperStats memory bfre, UniswapSwapper.SwapperStats memory aftr) = swapper.doSwap(
-            true,
-            _amountSpecified,
-            sqrtPriceLimitX96
-        );
+        (UniswapSwapper.SwapperStats memory bfre, UniswapSwapper.SwapperStats memory aftr) =
+            swapper.doSwap(true, _amountSpecified, sqrtPriceLimitX96);
 
         check_swap_invariants(
             bfre.tick,
@@ -471,11 +462,8 @@ contract E2E_swap {
         uint160 sqrtPriceLimitX96 = get_random_oneForZero_priceLimit(_amount);
         // console.log('sqrtPriceLimitX96 = %s', sqrtPriceLimitX96);
 
-        (UniswapSwapper.SwapperStats memory bfre, UniswapSwapper.SwapperStats memory aftr) = swapper.doSwap(
-            false,
-            _amountSpecified,
-            sqrtPriceLimitX96
-        );
+        (UniswapSwapper.SwapperStats memory bfre, UniswapSwapper.SwapperStats memory aftr) =
+            swapper.doSwap(false, _amountSpecified, sqrtPriceLimitX96);
 
         check_swap_invariants(
             bfre.tick,
