@@ -134,9 +134,10 @@ contract SqrtPriceMathEchidnaTest {
         uint256 numerator2 = sqrtP - sqrtQ;
         uint256 denominator = uint256(sqrtP) * sqrtQ;
 
-        uint256 safeResult = roundUp
-            ? FullMath.mulDivRoundingUp(numerator1, numerator2, denominator)
-            : FullMath.mulDiv(numerator1, numerator2, denominator);
+        uint256 safeResult =
+            roundUp
+                ? FullMath.mulDivRoundingUp(numerator1, numerator2, denominator)
+                : FullMath.mulDiv(numerator1, numerator2, denominator);
         uint256 fullResult = SqrtPriceMath.getAmount0Delta(sqrtQ, sqrtP, liquidity, roundUp);
 
         assert(safeResult == fullResult);
