@@ -308,9 +308,10 @@ library Oracle {
     ) internal view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) {
         require(cardinality > 0, 'I');
 
-        tickCumulatives = new int56[](secondsAgos.length);
-        secondsPerLiquidityCumulativeX128s = new uint160[](secondsAgos.length);
-        for (uint256 i = 0; i < secondsAgos.length; i++) {
+        uint256 len = secondsAgos.length;
+        tickCumulatives = new int56[](len);
+        secondsPerLiquidityCumulativeX128s = new uint160[](len);
+        for (uint256 i = 0; i < len; i++) {
             (tickCumulatives[i], secondsPerLiquidityCumulativeX128s[i]) = observeSingle(
                 self,
                 time,
