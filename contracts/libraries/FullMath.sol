@@ -77,6 +77,7 @@ library FullMath {
         assembly {
             twos := add(div(sub(0, twos), twos), 1)
         }
+        unchecked {
         prod0 |= prod1 * twos;
 
         // Invert denominator mod 2**256
@@ -103,6 +104,7 @@ library FullMath {
         // is no longer required.
         result = prod0 * inv;
         return result;
+        }
     }
 
     /// @notice Calculates ceil(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
