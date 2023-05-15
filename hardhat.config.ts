@@ -1,68 +1,82 @@
+import type { NetworkUserConfig } from 'hardhat/types'
 import 'hardhat-typechain'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
 import '@nomiclabs/hardhat-etherscan'
 
+require('dotenv').config()
+
+const COMPILER_SETTINGS = {
+  version: '0.7.6',
+  settings: {
+    evmVersion: 'istanbul',
+    optimizer: {
+      enabled: true,
+      runs: 800,
+    },
+    metadata: {
+      bytecodeHash: 'none',
+    },
+  },
+}
+
+const SPECIFIC_COMPILER_SETTINGS = {
+  version: '0.7.6',
+  settings: {
+    evmVersion: 'istanbul',
+    optimizer: {
+      enabled: true,
+      runs: 800,
+    },
+    metadata: {
+      bytecodeHash: 'none',
+    },
+  },
+}
+
+const local: NetworkUserConfig = {
+  url: 'http://127.0.0.1:8545/',
+  chainId: 1337,
+  accounts: [process.env.ACCOUNT_KEY_LOCAL!],
+  allowUnlimitedContractSize: true
+}
+
+const testnet: NetworkUserConfig = {
+  url: 'https://data-seed-prebsc-2-s1.binance.org:8545/',
+  chainId: 97,
+  accounts: [process.env.ACCOUNT_KEY_TESTNET!],
+  allowUnlimitedContractSize: true
+}
+
+const mainnet: NetworkUserConfig = {
+  url: 'https://bsc-dataseed.binance.org/',
+  chainId: 56,
+  accounts: [process.env.ACCOUNT_KEY_MAINNET!],
+  allowUnlimitedContractSize: true
+}
+
 export default {
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: false,
+      allowUnlimitedContractSize: true,
     },
-    mainnet: {
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    ropsten: {
-      url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    goerli: {
-      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    kovan: {
-      url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    arbitrumRinkeby: {
-      url: `https://arbitrum-rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    arbitrum: {
-      url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    optimismKovan: {
-      url: `https://optimism-kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    optimism: {
-      url: `https://optimism-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    mumbai: {
-      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    polygon: {
-      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    },
-    bnb: {
-      url: `https://bsc-dataseed.binance.org/`,
-    },
+    ...(process.env.ACCOUNT_KEY_LOCAL && { local }),
+    ...(process.env.ACCOUNT_KEY_TESTNET && { testnet }),
+    ...(process.env.ACCOUNT_KEY_MAINNET && { mainnet })
   },
   etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.API_KEY,
   },
   solidity: {
-    version: '0.7.6',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 800,
-      },
-      metadata: {
-        // do not include the metadata hash, since this is machine dependent
-        // and we want all generated code to be deterministic
-        // https://docs.soliditylang.org/en/v0.7.6/metadata.html
-        bytecodeHash: 'none',
-      },
-    },
+    compilers: [COMPILER_SETTINGS],
+    overrides: {
+      'contracts/LeChainPool.sol': SPECIFIC_COMPILER_SETTINGS,
+      'contracts/LeChainFactory.sol': SPECIFIC_COMPILER_SETTINGS,
+      'contracts/test/MockTimeLeChainPool.sol': SPECIFIC_COMPILER_SETTINGS,
+      'contracts/test/MockTimeLeChainPoolDeployer.sol': SPECIFIC_COMPILER_SETTINGS
+    }
+  },
+  mocha: {
+    timeout: 50000,
   },
 }

@@ -13,7 +13,7 @@ describe('Tick', () => {
 
   beforeEach('deploy TickTest', async () => {
     const tickTestFactory = await ethers.getContractFactory('TickTest')
-    tickTest = (await tickTestFactory.deploy()) as TickTest
+    tickTest = (await tickTestFactory.deploy()) as unknown as TickTest
   })
 
   describe('#tickSpacingToMaxLiquidityPerTick', () => {

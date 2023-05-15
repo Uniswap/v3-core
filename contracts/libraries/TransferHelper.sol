@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.6.0;
 
-import '../interfaces/IERC20Minimal.sol';
+import '../interfaces/ILCP20Minimal.sol';
 
 /// @title TransferHelper
-/// @notice Contains helper methods for interacting with ERC20 tokens that do not consistently return true/false
+/// @notice Contains helper methods for interacting with LCP20 tokens that do not consistently return true/false
 library TransferHelper {
     /// @notice Transfers tokens from msg.sender to a recipient
     /// @dev Calls transfer on token contract, errors with TF if transfer fails
@@ -17,7 +17,7 @@ library TransferHelper {
         uint256 value
     ) internal {
         (bool success, bytes memory data) =
-            token.call(abi.encodeWithSelector(IERC20Minimal.transfer.selector, to, value));
+            token.call(abi.encodeWithSelector(ILCP20Minimal.transfer.selector, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'TF');
     }
 }

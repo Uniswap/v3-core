@@ -49,7 +49,7 @@ jobs:
             --mode deep \
             --async \
             --create-group \
-            --group-name "@uniswap/v3-core@${{ github.sha }}" \
+            --group-name "@lechainnetwork/lcp-core@${{ github.sha }}" \
             --solc-version 0.7.6 \
             --check-properties \
             contracts/test/TickBitmapEchidnaTest.sol --include TickBitmapEchidnaTest \

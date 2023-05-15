@@ -14,7 +14,7 @@ describe('SqrtPriceMath', () => {
   let sqrtPriceMath: SqrtPriceMathTest
   before(async () => {
     const sqrtPriceMathTestFactory = await ethers.getContractFactory('SqrtPriceMathTest')
-    sqrtPriceMath = (await sqrtPriceMathTestFactory.deploy()) as SqrtPriceMathTest
+    sqrtPriceMath = (await sqrtPriceMathTestFactory.deploy()) as unknown as SqrtPriceMathTest
   })
 
   describe('#getNextSqrtPriceFromInput', () => {

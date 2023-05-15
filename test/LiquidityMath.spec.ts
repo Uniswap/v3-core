@@ -9,7 +9,7 @@ describe('LiquidityMath', () => {
   let liquidityMath: LiquidityMathTest
   const fixture = async () => {
     const factory = await ethers.getContractFactory('LiquidityMathTest')
-    return (await factory.deploy()) as LiquidityMathTest
+    return (await factory.deploy()) as unknown as LiquidityMathTest
   }
   beforeEach('deploy LiquidityMathTest', async () => {
     liquidityMath = await waffle.loadFixture(fixture)

@@ -13,8 +13,8 @@ describe('SwapMath', () => {
   before(async () => {
     const swapMathTestFactory = await ethers.getContractFactory('SwapMathTest')
     const sqrtPriceMathTestFactory = await ethers.getContractFactory('SqrtPriceMathTest')
-    swapMath = (await swapMathTestFactory.deploy()) as SwapMathTest
-    sqrtPriceMath = (await sqrtPriceMathTestFactory.deploy()) as SqrtPriceMathTest
+    swapMath = (await swapMathTestFactory.deploy()) as unknown as SwapMathTest
+    sqrtPriceMath = (await sqrtPriceMathTestFactory.deploy()) as unknown as SqrtPriceMathTest
   })
 
   describe('#computeSwapStep', () => {

@@ -16,7 +16,7 @@ describe('TickMath', () => {
 
   before('deploy TickMathTest', async () => {
     const factory = await ethers.getContractFactory('TickMathTest')
-    tickMath = (await factory.deploy()) as TickMathTest
+    tickMath = (await factory.deploy()) as unknown as TickMathTest
   })
 
   describe('#getSqrtRatioAtTick', () => {

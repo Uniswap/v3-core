@@ -8,7 +8,7 @@ describe('TickBitmap', () => {
 
   beforeEach('deploy TickBitmapTest', async () => {
     const tickBitmapTestFactory = await ethers.getContractFactory('TickBitmapTest')
-    tickBitmap = (await tickBitmapTestFactory.deploy()) as TickBitmapTest
+    tickBitmap = (await tickBitmapTestFactory.deploy()) as unknown as TickBitmapTest
   })
 
   async function initTicks(ticks: number[]): Promise<void> {

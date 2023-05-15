@@ -1,34 +1,35 @@
 {
-  "name": "@uniswap/v3-core",
-  "description": "🦄 Core smart contracts of Uniswap V3",
-  "license": "BUSL-1.1",
+  "name": "@lechainnetwork/lcp-core",
+  "description": "Core smart contracts of LeChain Protocol",
+  "license": "GPL-3.0-or-later",
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.0.1",
-  "homepage": "https://uniswap.org",
+  "version": "1.0.0",
+  "homepage": "https://lechainnetwork.com",
   "keywords": [
-    "uniswap",
-    "core",
-    "v3"
+    "LeChainNetwork",
+    "LeChain Protocol",
+    "LCP",
+    "core"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uniswap/uniswap-v3-core"
+    "url": "https://github.com/lechainnetwork/lcp-core"
   },
   "files": [
     "contracts/interfaces",
     "contracts/libraries",
-    "artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json",
-    "artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json",
+    "artifacts/contracts/LeChainFactory.sol/LeChainFactory.json",
+    "artifacts/contracts/LeChainPool.sol/LeChainPool.json",
     "artifacts/contracts/interfaces/**/*.json",
     "!artifacts/contracts/interfaces/**/*.dbg.json"
   ],
   "engines": {
     "node": ">=10"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@nomicfoundation/hardhat-verify": "^1.0.0",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.8",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -37,6 +38,7 @@
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
     "decimal.js": "^10.2.1",
+    "dotenv": "^16.0.3",
     "ethereum-waffle": "^3.0.2",
     "ethers": "^5.0.8",
     "hardhat": "^2.2.0",
@@ -47,6 +49,7 @@
     "prettier-plugin-solidity": "^1.0.0-alpha.59",
     "solhint": "^3.2.1",
     "solhint-plugin-prettier": "^0.0.5",
+    "truffle-plugin-verify": "^0.5.31",
     "ts-generator": "^0.1.1",
     "ts-node": "^8.5.4",
     "typechain": "^4.0.0",
@@ -54,6 +57,11 @@
   },
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "deploy-local": "hardhat run scripts/deploy.ts --network local",
+    "deploy-testnet": "hardhat run scripts/deploy.ts --network testnet",
+    "deploy-mainnet": "hardhat run scripts/deploy.ts --network mainnet",
+    "verify-testnet": "hardhat verify --network testnet",
+    "verify-mainnet": "hardhat verify --network mainnet"
   }
 }

@@ -1,35 +1,35 @@
 import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
-import { MockTimeUniswapV3Pool } from '../../typechain/MockTimeUniswapV3Pool'
-import { TestERC20 } from '../../typechain/TestERC20'
-import { UniswapV3Factory } from '../../typechain/UniswapV3Factory'
-import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
-import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
-import { MockTimeUniswapV3PoolDeployer } from '../../typechain/MockTimeUniswapV3PoolDeployer'
+import { MockTimeLeChainPool } from '../../typechain/MockTimeLeChainPool'
+import { TestLCP20 } from '../../typechain/TestLCP20'
+import { LeChainFactory } from '../../typechain/LeChainFactory'
+import { TestLeChainCallee } from '../../typechain/TestLeChainCallee'
+import { TestLeChainRouter } from '../../typechain/TestLeChainRouter'
+import { MockTimeLeChainPoolDeployer } from '../../typechain/MockTimeLeChainPoolDeployer'
 
 import { Fixture } from 'ethereum-waffle'
 
 interface FactoryFixture {
-  factory: UniswapV3Factory
+  factory: LeChainFactory
 }
 
 async function factoryFixture(): Promise<FactoryFixture> {
-  const factoryFactory = await ethers.getContractFactory('UniswapV3Factory')
-  const factory = (await factoryFactory.deploy()) as UniswapV3Factory
+  const factoryFactory = await ethers.getContractFactory('LeChainFactory')
+  const factory = (await factoryFactory.deploy()) as unknown as LeChainFactory
   return { factory }
 }
 
 interface TokensFixture {
-  token0: TestERC20
-  token1: TestERC20
-  token2: TestERC20
+  token0: TestLCP20
+  token1: TestLCP20
+  token2: TestLCP20
 }
 
 async function tokensFixture(): Promise<TokensFixture> {
-  const tokenFactory = await ethers.getContractFactory('TestERC20')
-  const tokenA = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
-  const tokenB = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
-  const tokenC = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestERC20
+  const tokenFactory = await ethers.getContractFactory('TestLCP20') as unknown as TestLCP20
+  const tokenA = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestLCP20
+  const tokenB = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestLCP20
+  const tokenC = (await tokenFactory.deploy(BigNumber.from(2).pow(255))) as TestLCP20
 
   const [token0, token1, token2] = [tokenA, tokenB, tokenC].sort((tokenA, tokenB) =>
     tokenA.address.toLowerCase() < tokenB.address.toLowerCase() ? -1 : 1
@@ -41,14 +41,14 @@ async function tokensFixture(): Promise<TokensFixture> {
 type TokensAndFactoryFixture = FactoryFixture & TokensFixture
 
 interface PoolFixture extends TokensAndFactoryFixture {
-  swapTargetCallee: TestUniswapV3Callee
-  swapTargetRouter: TestUniswapV3Router
+  swapTargetCallee: TestLeChainCallee
+  swapTargetRouter: TestLeChainRouter
   createPool(
     fee: number,
     tickSpacing: number,
-    firstToken?: TestERC20,
-    secondToken?: TestERC20
-  ): Promise<MockTimeUniswapV3Pool>
+    firstToken?: TestLCP20,
+    secondToken?: TestLCP20
+  ): Promise<MockTimeLeChainPool>
 }
 
 // Monday, October 5, 2020 9:00:00 AM GMT-05:00
@@ -58,14 +58,14 @@ export const poolFixture: Fixture<PoolFixture> = async function (): Promise<Pool
   const { factory } = await factoryFixture()
   const { token0, token1, token2 } = await tokensFixture()
 
-  const MockTimeUniswapV3PoolDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PoolDeployer')
-  const MockTimeUniswapV3PoolFactory = await ethers.getContractFactory('MockTimeUniswapV3Pool')
+  const MockTimeLeChainPoolDeployerFactory = await ethers.getContractFactory('MockTimeLeChainPoolDeployer')
+  const MockTimeLeChainPoolFactory = await ethers.getContractFactory('MockTimeLeChainPool')
 
-  const calleeContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
-  const routerContractFactory = await ethers.getContractFactory('TestUniswapV3Router')
+  const calleeContractFactory = await ethers.getContractFactory('TestLeChainCallee')
+  const routerContractFactory = await ethers.getContractFactory('TestLeChainRouter')
 
-  const swapTargetCallee = (await calleeContractFactory.deploy()) as TestUniswapV3Callee
-  const swapTargetRouter = (await routerContractFactory.deploy()) as TestUniswapV3Router
+  const swapTargetCallee = (await calleeContractFactory.deploy()) as unknown as TestLeChainCallee
+  const swapTargetRouter = (await routerContractFactory.deploy()) as unknown as TestLeChainRouter
 
   return {
     token0,
@@ -75,7 +75,7 @@ export const poolFixture: Fixture<PoolFixture> = async function (): Promise<Pool
     swapTargetCallee,
     swapTargetRouter,
     createPool: async (fee, tickSpacing, firstToken = token0, secondToken = token1) => {
-      const mockTimePoolDeployer = (await MockTimeUniswapV3PoolDeployerFactory.deploy()) as MockTimeUniswapV3PoolDeployer
+      const mockTimePoolDeployer = (await MockTimeLeChainPoolDeployerFactory.deploy()) as unknown as MockTimeLeChainPoolDeployer
       const tx = await mockTimePoolDeployer.deploy(
         factory.address,
         firstToken.address,
@@ -86,7 +86,7 @@ export const poolFixture: Fixture<PoolFixture> = async function (): Promise<Pool
 
       const receipt = await tx.wait()
       const poolAddress = receipt.events?.[0].args?.pool as string
-      return MockTimeUniswapV3PoolFactory.attach(poolAddress) as MockTimeUniswapV3Pool
+      return MockTimeLeChainPoolFactory.attach(poolAddress) as unknown as MockTimeLeChainPool
     },
   }
 }

@@ -15,13 +15,13 @@ describe('NoDelegateCall', () => {
 
   const noDelegateCallFixture = async () => {
     const noDelegateCallTestFactory = await ethers.getContractFactory('NoDelegateCallTest')
-    const noDelegateCallTest = (await noDelegateCallTestFactory.deploy()) as NoDelegateCallTest
+    const noDelegateCallTest = (await noDelegateCallTestFactory.deploy()) as unknown as NoDelegateCallTest
     const minimalProxyFactory = new ethers.ContractFactory(
       noDelegateCallTestFactory.interface,
       `3d602d80600a3d3981f3363d3d373d3d3d363d73${noDelegateCallTest.address.slice(2)}5af43d82803e903d91602b57fd5bf3`,
       wallet
     )
-    const proxy = (await minimalProxyFactory.deploy()) as NoDelegateCallTest
+    const proxy = (await minimalProxyFactory.deploy()) as unknown as NoDelegateCallTest
     return { noDelegateCallTest, proxy }
   }
 

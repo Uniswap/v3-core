@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LeChainFactory #createPool gas 1`] = `4557092`;
+
+exports[`LeChainFactory factory bytecode size 1`] = `24535`;
+
+exports[`LeChainFactory pool bytecode size 1`] = `22142`;
