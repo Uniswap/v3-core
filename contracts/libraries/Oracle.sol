@@ -160,6 +160,7 @@ library Oracle {
         uint256 l = (index + 1) % cardinality; // oldest observation
         uint256 r = l + cardinality - 1; // newest observation
         uint256 i;
+        bool targetAtOrAfter;
         while (true) {
             i = (l + r) / 2;
 
@@ -173,7 +174,7 @@ library Oracle {
 
             atOrAfter = self[(i + 1) % cardinality];
 
-            bool targetAtOrAfter = lte(time, beforeOrAt.blockTimestamp, target);
+            targetAtOrAfter = lte(time, beforeOrAt.blockTimestamp, target);
 
             // check if we've found the answer!
             if (targetAtOrAfter && lte(time, target, atOrAfter.blockTimestamp)) break;
