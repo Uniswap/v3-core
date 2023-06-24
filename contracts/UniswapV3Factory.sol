@@ -52,8 +52,9 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
 
     /// @inheritdoc IUniswapV3Factory
     function setOwner(address _owner) external override {
-        require(msg.sender == owner);
-        emit OwnerChanged(owner, _owner);
+        address owner_local = owner;
+        require(msg.sender == owner_local);
+        emit OwnerChanged(owner_local, _owner);
         owner = _owner;
     }
 
