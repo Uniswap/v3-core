@@ -176,8 +176,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint32 secondsOutsideUpper;
 
         {
-            Tick.Info storage lower = ticks[tickLower];
-            Tick.Info storage upper = ticks[tickUpper];
+            Tick.Info memory lower = ticks[tickLower];
+            Tick.Info memory upper = ticks[tickUpper];
             bool initializedLower;
             (tickCumulativeLower, secondsPerLiquidityOutsideLowerX128, secondsOutsideLower, initializedLower) = (
                 lower.tickCumulativeOutside,

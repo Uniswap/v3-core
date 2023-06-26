@@ -65,8 +65,8 @@ library Tick {
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128
     ) internal view returns (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) {
-        Info storage lower = self[tickLower];
-        Info storage upper = self[tickUpper];
+        Info memory lower = self[tickLower];
+        Info memory upper = self[tickUpper];
 
         // calculate fee growth below
         uint256 feeGrowthBelow0X128;
@@ -142,11 +142,12 @@ library Tick {
         }
 
         info.liquidityGross = liquidityGrossAfter;
+        int128 liquidityNetBefore = info.liquidityNet;
 
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
         info.liquidityNet = upper
-            ? int256(info.liquidityNet).sub(liquidityDelta).toInt128()
-            : int256(info.liquidityNet).add(liquidityDelta).toInt128();
+            ? int256(liquidityNetBefore).sub(liquidityDelta).toInt128()
+            : int256(liquidityNetBefore).add(liquidityDelta).toInt128();
     }
 
     /// @notice Clears tick data

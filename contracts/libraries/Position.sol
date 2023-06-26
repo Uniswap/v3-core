@@ -81,8 +81,8 @@ library Position {
         self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
         if (tokensOwed0 > 0 || tokensOwed1 > 0) {
             // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
-            self.tokensOwed0 += tokensOwed0;
-            self.tokensOwed1 += tokensOwed1;
+            self.tokensOwed0 = _self.tokensOwed0 + tokensOwed0;
+            self.tokensOwed1 = _self.tokensOwed1 + tokensOwed1;
         }
     }
 }
