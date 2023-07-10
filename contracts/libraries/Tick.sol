@@ -142,12 +142,11 @@ library Tick {
         }
 
         info.liquidityGross = liquidityGrossAfter;
-        int128 liquidityNetBefore = info.liquidityNet;
 
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
         info.liquidityNet = upper
-            ? int256(liquidityNetBefore).sub(liquidityDelta).toInt128()
-            : int256(liquidityNetBefore).add(liquidityDelta).toInt128();
+            ? int256(info.liquidityNet).sub(liquidityDelta).toInt128()
+            : int256(info.liquidityNet).add(liquidityDelta).toInt128();
     }
 
     /// @notice Clears tick data
@@ -176,12 +175,11 @@ library Tick {
         uint32 time
     ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
-        Tick.Info memory info_memory = info;
-        info.feeGrowthOutside0X128 = feeGrowthGlobal0X128 - info_memory.feeGrowthOutside0X128;
-        info.feeGrowthOutside1X128 = feeGrowthGlobal1X128 - info_memory.feeGrowthOutside1X128;
-        info.secondsPerLiquidityOutsideX128 = secondsPerLiquidityCumulativeX128 - info_memory.secondsPerLiquidityOutsideX128;
-        info.tickCumulativeOutside = tickCumulative - info_memory.tickCumulativeOutside;
-        info.secondsOutside = time - info_memory.secondsOutside;
-        liquidityNet = info_memory.liquidityNet;
+        info.feeGrowthOutside0X128 = feeGrowthGlobal0X128 - info.feeGrowthOutside0X128;
+        info.feeGrowthOutside1X128 = feeGrowthGlobal1X128 - info.feeGrowthOutside1X128;
+        info.secondsPerLiquidityOutsideX128 = secondsPerLiquidityCumulativeX128 - info.secondsPerLiquidityOutsideX128;
+        info.tickCumulativeOutside = tickCumulative - info.tickCumulativeOutside;
+        info.secondsOutside = time - info.secondsOutside;
+        liquidityNet = info.liquidityNet;
     }
 }
