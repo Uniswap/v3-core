@@ -65,8 +65,8 @@ library Tick {
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128
     ) internal view returns (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) {
-        Info memory lower = self[tickLower];
-        Info memory upper = self[tickUpper];
+        Info storage lower = self[tickLower];
+        Info storage upper = self[tickUpper];
 
         // calculate fee growth below
         uint256 feeGrowthBelow0X128;
