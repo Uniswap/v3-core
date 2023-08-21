@@ -639,7 +639,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         StepComputations memory step;
-        uint256 delta;
         while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
@@ -681,7 +680,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
             // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
             if (cache.feeProtocol > 0) {
-                delta = step.feeAmount / cache.feeProtocol;
+                uint256 delta = step.feeAmount / cache.feeProtocol;
                 step.feeAmount -= delta;
                 state.protocolFee += uint128(delta);
             }
