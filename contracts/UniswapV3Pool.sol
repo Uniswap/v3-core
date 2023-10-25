@@ -53,6 +53,15 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @inheritdoc IUniswapV3PoolImmutables
     uint128 public immutable override maxLiquidityPerTick;
 
+/**
+ * @title Active Positions Mapping
+ * @dev This mapping tracks active liquidity positions provided at specific tick levels.
+ * 
+ * Key: The tick value (price level) at which liquidity is provided.
+ * Value: An array of addresses that have active positions at the respective tick.
+ * */
+    mapping(uint24 => address[]) public activePositions;
+
     struct Slot0 {
         // the current price
         uint160 sqrtPriceX96;
@@ -461,7 +470,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      * @param amount The amount of liquidity to be provided
      * @return bool indicating if the operation was successful
      */
-    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external returns (bool) {
+    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external returns (uint256 amount0, uint256 amount1) {
+        activePositions[uint24(tickLower)].push(recipient);
+        return this.mint(recipient,tickLower, tickLower + tickSpacing, amount, "");
     }
 
     /**
