@@ -60,7 +60,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      * Key: The tick value (price level) at which liquidity is provided.
      * Value: An array of addresses that have active positions at the respective tick.
      * */
-    mapping(uint24 => address[]) public activePositions;
+    mapping(int24 => address[]) public activePositions;
 
     struct Slot0 {
         // the current price
@@ -471,7 +471,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      * @return bool indicating if the operation was successful
      */
     function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external returns (uint256 amount0, uint256 amount1) { //TODO: add checks for limit order is at or crosses the current price
-        activePositions[uint24(tickLower)].push(recipient);
+        activePositions[(tickLower)].push(recipient);
         return this.mint(recipient,tickLower, tickLower + tickSpacing, amount, ""); // This was the only way of providing calldata argument to a function call which was supposed to be internal
                                                                                     // this.function() idiom makes the contract call itself as if it was making an external call
     }
@@ -811,13 +811,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     slot0Start.observationCardinalityNext
                 );
             // Previous Tick (slot0Start.tick) is different from the active tick (state.tick) so we must close all the associated positions
-            address[] memory memActivePositions = activePositions[uint24(slot0Start.tick)]; // address[] storage positionsToClose = activePositions[uint24(slot0Start.tick)] this can even be cheaper after EIP2929, need to test with foundry
+            address[] memory memActivePositions = activePositions[(slot0Start.tick)]; // address[] storage positionsToClose = activePositions[uint24(slot0Start.tick)] this can even be cheaper after EIP2929, need to test with foundry
             uint numberOfPositionsToCLose = memActivePositions.length;
             for (uint i = 0; i < numberOfPositionsToCLose;) { // if the list is too long, there is a chance we might run out of gas
                 collectLimitOrder(memActivePositions[i], slot0Start.tick);
                 unchecked { ++i; } // pre increment and unchecked scope for gas efficiency
             }
-            delete activePositions[uint24(slot0Start.tick)];
+            delete activePositions[(slot0Start.tick)];
 
             (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (
                 state.sqrtPriceX96,
