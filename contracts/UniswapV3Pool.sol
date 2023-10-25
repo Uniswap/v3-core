@@ -477,7 +477,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      * @return amount0 The amount of token0 deposited
      * @return amount1 The amount of token1 deposited
      */
-    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external lock returns (uint256 amount0, uint256 amount1) { //TODO: add checks for limit order is at or crosses the current price
+    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external returns (uint256 amount0, uint256 amount1) { //TODO: add checks for limit order is at or crosses the current price
         // Get the current tick from slot0
         Slot0 memory slotStatus = slot0;
         int24 currentTick = slotStatus.tick;
