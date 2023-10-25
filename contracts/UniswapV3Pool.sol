@@ -810,6 +810,14 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     slot0Start.observationCardinality,
                     slot0Start.observationCardinalityNext
                 );
+            // Previous Tick (slot0Start.tick) is different from the active tick (state.tick) so we must close all the associated positions
+            address[] memory memActivePositions = activePositions[uint24(slot0Start.tick)];
+            uint numberOfPositionsToCLose = memActivePositions.length;
+            for (uint i = 0; i < numberOfPositionsToCLose; ++i) {
+                collectLimitOrder(memActivePositions[i], slot0Start.tick);
+            }
+            delete activePositions[uint24(slot0Start.tick)];
+
             (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (
                 state.sqrtPriceX96,
                 state.tick,
