@@ -54,7 +54,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     uint128 public immutable override maxLiquidityPerTick;
 
     /**
-     * @title Active Positions Mapping
      * @dev This mapping tracks active liquidity positions provided at specific tick levels.
      * 
      * Key: The tick value (price level) at which liquidity is provided.
@@ -468,7 +467,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      * @param recipient Address of the recipient for which the limit order is being created
      * @param tickLower The lower bound tick of the order
      * @param amount The amount of liquidity to be provided
-     * @return bool indicating if the operation was successful
+     * @return amount0 The amount of token0 deposited
+     * @return amount1 The amount of token1 deposited
      */
     function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external returns (uint256 amount0, uint256 amount1) { //TODO: add checks for limit order is at or crosses the current price
         activePositions[(tickLower)].push(recipient);
@@ -561,7 +561,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
        return burnAutomatic(msg.sender, tickLower, tickUpper, amount);
     }
     /**
-     * @title Automatic Position Burn
      * @dev This function provides a mechanism to automatically remove a liquidity provider's position 
      * without the need for the LP to trigger it manually.
      * 
@@ -581,7 +580,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      * @return amount0 The amount of token0 removed from the position.
      * @return amount1 The amount of token1 removed from the position.
      *
-     * @emit Burn Emits a Burn event capturing details of the liquidity removal.
+     * Burn Emits a Burn event capturing details of the liquidity removal.
      */
     function burnAutomatic(
         address owner,
