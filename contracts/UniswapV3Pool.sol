@@ -470,9 +470,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      * @param amount The amount of liquidity to be provided
      * @return bool indicating if the operation was successful
      */
-    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external returns (uint256 amount0, uint256 amount1) {
+    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external returns (uint256 amount0, uint256 amount1) { //TODO: add checks for limit order is at or crosses the current price
         activePositions[uint24(tickLower)].push(recipient);
-        return this.mint(recipient,tickLower, tickLower + tickSpacing, amount, "");
+        return this.mint(recipient,tickLower, tickLower + tickSpacing, amount, ""); // This was the only way of providing calldata argument to a function call which was supposed to be internal
+                                                                                    // this.function() idiom makes the contract call itself as if it was making an external call
     }
 
     /**
