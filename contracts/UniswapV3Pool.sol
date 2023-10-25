@@ -486,7 +486,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      */
     function collectLimitOrder(address recipient, int24 tickLower) internal returns (uint256 amount0, uint256 amount1) {
         Position.Info memory position = positions.get(recipient, tickLower, tickLower + tickSpacing);
-        burnAutomatic(recipient, tickLower, tickLower + tickSpacing, position.liquidity);
+        return burnAutomatic(recipient, tickLower, tickLower + tickSpacing, position.liquidity);
     }
 
 
