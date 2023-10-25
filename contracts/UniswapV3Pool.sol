@@ -452,6 +452,31 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         }
     }
 
+    /**
+     * @notice Creates a limit order for the given recipient, tickLower and amount
+     * @dev This function creates a limit order of the given amount between tickLower and tickLower + tickSpacing. 
+     * The order will automatically be removed once filled. This function should be disallowed if the limit order is at or crosses the current price.
+     * @param recipient Address of the recipient for which the limit order is being created
+     * @param tickLower The lower bound tick of the order
+     * @param amount The amount of liquidity to be provided
+     * @return bool indicating if the operation was successful
+     */
+    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external returns (bool) {
+    }
+
+    /**
+     * @notice Collects a limit order, returning the swapped amount and/or refunding any unswapped amount to the user
+     * @dev This function collects the given limit order. It ensures the order exists and is active before proceeding.
+     * @param recipient Address of the recipient of the limit order
+     * @param tickLower The lower bound tick of the order
+     * @return amount0 The amount of token0 collected
+     * @return amount1 The amount of token1 collected
+     */
+    function collectLimitOrder(address recipient, int24 tickLower) external returns (uint256 amount0, uint256 amount1) {
+    }
+
+
+
     /// @inheritdoc IUniswapV3PoolActions
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function mint(
