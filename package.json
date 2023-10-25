@@ -5,7 +5,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.0.1",
+  "version": "1.0.1-solc-0.8",
   "homepage": "https://uniswap.org",
   "keywords": [
     "uniswap",

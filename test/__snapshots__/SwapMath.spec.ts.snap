@@ -1,17 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`SwapMath #computeSwapStep gas swap one for zero exact in capped 1`] = `2103`;
+exports[`SwapMath #computeSwapStep gas swap one for zero exact in capped 1`] = `2135`;
 
-exports[`SwapMath #computeSwapStep gas swap one for zero exact in partial 1`] = `2802`;
+exports[`SwapMath #computeSwapStep gas swap one for zero exact in partial 1`] = `2860`;
 
-exports[`SwapMath #computeSwapStep gas swap one for zero exact out capped 1`] = `1855`;
+exports[`SwapMath #computeSwapStep gas swap one for zero exact out capped 1`] = `1879`;
 
-exports[`SwapMath #computeSwapStep gas swap one for zero exact out partial 1`] = `2802`;
+exports[`SwapMath #computeSwapStep gas swap one for zero exact out partial 1`] = `2860`;
 
-exports[`SwapMath #computeSwapStep gas swap zero for one exact in capped 1`] = `2104`;
+exports[`SwapMath #computeSwapStep gas swap zero for one exact in capped 1`] = `2124`;
 
-exports[`SwapMath #computeSwapStep gas swap zero for one exact in partial 1`] = `3106`;
+exports[`SwapMath #computeSwapStep gas swap zero for one exact in partial 1`] = `3122`;
 
-exports[`SwapMath #computeSwapStep gas swap zero for one exact out capped 1`] = `1856`;
+exports[`SwapMath #computeSwapStep gas swap zero for one exact out capped 1`] = `1868`;
 
-exports[`SwapMath #computeSwapStep gas swap zero for one exact out partial 1`] = `3106`;
+exports[`SwapMath #computeSwapStep gas swap zero for one exact out partial 1`] = `3122`;

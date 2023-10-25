@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
-pragma abicoder v2;
+pragma solidity =0.8.12;
 
-import '../libraries/Tick.sol';
+import {Tick} from '../libraries/Tick.sol';
 
 contract TickTest {
     using Tick for mapping(int24 => Tick.Info);

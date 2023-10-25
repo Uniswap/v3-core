@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../libraries/Tick.sol';
+import {Tick} from '../libraries/Tick.sol';
 
 contract TickOverflowSafetyEchidnaTest {
     using Tick for mapping(int24 => Tick.Info);
@@ -42,32 +42,30 @@ contract TickOverflowSafetyEchidnaTest {
         require(tickLower > MIN_TICK);
         require(tickUpper < MAX_TICK);
         require(tickLower < tickUpper);
-        bool flippedLower =
-            ticks.update(
-                tickLower,
-                tick,
-                liquidityDelta,
-                feeGrowthGlobal0X128,
-                feeGrowthGlobal1X128,
-                0,
-                0,
-                uint32(block.timestamp),
-                false,
-                MAX_LIQUIDITY
-            );
-        bool flippedUpper =
-            ticks.update(
-                tickUpper,
-                tick,
-                liquidityDelta,
-                feeGrowthGlobal0X128,
-                feeGrowthGlobal1X128,
-                0,
-                0,
-                uint32(block.timestamp),
-                true,
-                MAX_LIQUIDITY
-            );
+        bool flippedLower = ticks.update(
+            tickLower,
+            tick,
+            liquidityDelta,
+            feeGrowthGlobal0X128,
+            feeGrowthGlobal1X128,
+            0,
+            0,
+            uint32(block.timestamp),
+            false,
+            MAX_LIQUIDITY
+        );
+        bool flippedUpper = ticks.update(
+            tickUpper,
+            tick,
+            liquidityDelta,
+            feeGrowthGlobal0X128,
+            feeGrowthGlobal1X128,
+            0,
+            0,
+            uint32(block.timestamp),
+            true,
+            MAX_LIQUIDITY
+        );
 
         if (flippedLower) {
             if (liquidityDelta < 0) {

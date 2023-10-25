@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import './interfaces/IUniswapV3Factory.sol';
+import {IUniswapV3Factory} from './interfaces/IUniswapV3Factory.sol';
 
-import './UniswapV3PoolDeployer.sol';
-import './NoDelegateCall.sol';
+import {UniswapV3PoolDeployer} from './UniswapV3PoolDeployer.sol';
+import {NoDelegateCall} from './NoDelegateCall.sol';
 
-import './UniswapV3Pool.sol';
+import {UniswapV3Pool} from './UniswapV3Pool.sol';
 
 /// @title Canonical Uniswap V3 factory
 /// @notice Deploys Uniswap V3 pools and manages ownership and control over pool protocol fees

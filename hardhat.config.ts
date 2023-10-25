@@ -1,7 +1,7 @@
-import 'hardhat-typechain'
 import '@nomiclabs/hardhat-ethers'
-import '@nomiclabs/hardhat-waffle'
 import '@nomiclabs/hardhat-etherscan'
+import '@nomiclabs/hardhat-waffle'
+import 'hardhat-typechain'
 
 export default {
   networks: {
@@ -51,16 +51,16 @@ export default {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   solidity: {
-    version: '0.7.6',
+    version: '0.8.12',
     settings: {
       optimizer: {
         enabled: true,
-        runs: 800,
+        runs: 625,
       },
       metadata: {
         // do not include the metadata hash, since this is machine dependent
         // and we want all generated code to be deterministic
-        // https://docs.soliditylang.org/en/v0.7.6/metadata.html
+        // https://docs.soliditylang.org/en/v0.8.12/metadata.html
         bytecodeHash: 'none',
       },
     },

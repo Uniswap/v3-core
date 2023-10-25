@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.5.0 <0.8.0;
+pragma solidity ^0.8.0;
 
-import './FullMath.sol';
-import './FixedPoint128.sol';
-import './LiquidityMath.sol';
+import {FullMath} from './FullMath.sol';
+import {FixedPoint128} from './FixedPoint128.sol';
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
 /// @dev Positions store additional state for tracking fees owed to the position
 library Position {
+    error NP();
+
     // info stored for each user's position
     struct Info {
         // the amount of liquidity owned by this position
@@ -51,23 +52,26 @@ library Position {
 
         uint128 liquidityNext;
         if (liquidityDelta == 0) {
-            require(_self.liquidity > 0, 'NP'); // disallow pokes for 0 liquidity positions
+            if (_self.liquidity <= 0) revert NP(); // disallow pokes for 0 liquidity positions
             liquidityNext = _self.liquidity;
         } else {
-            liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
+            liquidityNext = liquidityDelta < 0
+                ? _self.liquidity - uint128(-liquidityDelta)
+                : _self.liquidity + uint128(liquidityDelta);
         }
 
-        // calculate accumulated fees
-        uint128 tokensOwed0 =
-            uint128(
+        // calculate accumulated fees. overflow in the subtraction of fee growth is expected
+        uint128 tokensOwed0;
+        uint128 tokensOwed1;
+        unchecked {
+            tokensOwed0 = uint128(
                 FullMath.mulDiv(
                     feeGrowthInside0X128 - _self.feeGrowthInside0LastX128,
                     _self.liquidity,
                     FixedPoint128.Q128
                 )
             );
-        uint128 tokensOwed1 =
-            uint128(
+            tokensOwed1 = uint128(
                 FullMath.mulDiv(
                     feeGrowthInside1X128 - _self.feeGrowthInside1LastX128,
                     _self.liquidity,
@@ -75,14 +79,15 @@ library Position {
                 )
             );
 
-        // update the position
-        if (liquidityDelta != 0) self.liquidity = liquidityNext;
-        self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
-        self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
-        if (tokensOwed0 > 0 || tokensOwed1 > 0) {
-            // overflow is acceptable, have to withdraw before you hit type(uint128).max fees
-            self.tokensOwed0 += tokensOwed0;
-            self.tokensOwed1 += tokensOwed1;
+            // update the position
+            if (liquidityDelta != 0) self.liquidity = liquidityNext;
+            self.feeGrowthInside0LastX128 = feeGrowthInside0X128;
+            self.feeGrowthInside1LastX128 = feeGrowthInside1X128;
+            if (tokensOwed0 > 0 || tokensOwed1 > 0) {
+                // overflow is acceptable, user must withdraw before they hit type(uint128).max fees
+                self.tokensOwed0 += tokensOwed0;
+                self.tokensOwed1 += tokensOwed1;
+            }
         }
     }
 }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../libraries/Tick.sol';
+import {Tick} from '../libraries/Tick.sol';
+import {TickMath} from '../libraries/TickMath.sol';
 
 contract TickEchidnaTest {
     function checkTickSpacingToParametersInvariants(int24 tickSpacing) external pure {
@@ -20,7 +21,7 @@ contract TickEchidnaTest {
         // divisibility
         assert((maxTick - minTick) % tickSpacing == 0);
 
-        uint256 numTicks = uint256((maxTick - minTick) / tickSpacing) + 1;
+        uint256 numTicks = uint256(int256((maxTick - minTick) / tickSpacing)) + 1;
         // max liquidity at every tick is less than the cap
         assert(uint256(maxLiquidityPerTick) * numTicks <= type(uint128).max);
     }

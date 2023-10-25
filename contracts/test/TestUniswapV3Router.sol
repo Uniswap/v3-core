@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity =0.8.12;
 
-import '../libraries/SafeCast.sol';
-import '../libraries/TickMath.sol';
+import {SafeCast} from '../libraries/SafeCast.sol';
+import {TickMath} from '../libraries/TickMath.sol';
 
-import '../interfaces/IERC20Minimal.sol';
-import '../interfaces/callback/IUniswapV3SwapCallback.sol';
-import '../interfaces/IUniswapV3Pool.sol';
+import {IERC20Minimal} from '../interfaces/IERC20Minimal.sol';
+import {IUniswapV3SwapCallback} from '../interfaces/callback/IUniswapV3SwapCallback.sol';
+import {IUniswapV3Pool} from '../interfaces/IUniswapV3Pool.sol';
 
 contract TestUniswapV3Router is IUniswapV3SwapCallback {
     using SafeCast for uint256;
@@ -60,8 +60,9 @@ contract TestUniswapV3Router is IUniswapV3SwapCallback {
 
         if (pools.length == 1) {
             // get the address and amount of the token that we need to pay
-            address tokenToBePaid =
-                amount0Delta > 0 ? IUniswapV3Pool(msg.sender).token0() : IUniswapV3Pool(msg.sender).token1();
+            address tokenToBePaid = amount0Delta > 0
+                ? IUniswapV3Pool(msg.sender).token0()
+                : IUniswapV3Pool(msg.sender).token1();
             int256 amountToBePaid = amount0Delta > 0 ? amount0Delta : amount1Delta;
 
             bool zeroForOne = tokenToBePaid == IUniswapV3Pool(pools[0]).token1();
