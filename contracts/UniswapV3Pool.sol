@@ -53,13 +53,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @inheritdoc IUniswapV3PoolImmutables
     uint128 public immutable override maxLiquidityPerTick;
 
-/**
- * @title Active Positions Mapping
- * @dev This mapping tracks active liquidity positions provided at specific tick levels.
- * 
- * Key: The tick value (price level) at which liquidity is provided.
- * Value: An array of addresses that have active positions at the respective tick.
- * */
+    /**
+     * @title Active Positions Mapping
+     * @dev This mapping tracks active liquidity positions provided at specific tick levels.
+     * 
+     * Key: The tick value (price level) at which liquidity is provided.
+     * Value: An array of addresses that have active positions at the respective tick.
+     * */
     mapping(uint24 => address[]) public activePositions;
 
     struct Slot0 {
@@ -485,7 +485,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
      */
     function collectLimitOrder(address recipient, int24 tickLower) external returns (uint256 amount0, uint256 amount1) {
         Position.Info memory position = positions.get(recipient, tickLower, tickLower + tickSpacing);
-        burnAutomatic(recipient, tickLower, tickLower + tickSpacing, position.liquidity); // TO BE IMPLEMENTED
+        burnAutomatic(recipient, tickLower, tickLower + tickSpacing, position.liquidity);
     }
 
 
@@ -557,10 +557,41 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper,
         uint128 amount
     ) public override lock returns (uint256 amount0, uint256 amount1) {
-        (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
+       return burnAutomatic(msg.sender, tickLower, tickUpper, amount);
+    }
+    /**
+     * @title Automatic Position Burn
+     * @dev This function provides a mechanism to automatically remove a liquidity provider's position 
+     * without the need for the LP to trigger it manually.
+     * 
+     * The function is an internal variant of the standard Uniswap V3 'burn' function but 
+     * with a key distinction: it takes the 'owner' address as an argument, which allows 
+     * for automatic position removal.
+     * 
+     * Note:
+     * In the standard Uniswap V3 design, only the position owner can remove their liquidity 
+     * to ensure security. Here, we've modified the behavior to support automatic removal, 
+     * yet by making the function internal, we maintain the security of the protocol.
+     * 
+     * @param owner The address of the liquidity provider whose position is to be removed.
+     * @param tickLower The lower tick of the position.
+     * @param tickUpper The upper tick of the position.
+     * @param amount The amount of liquidity to be removed.
+     * @return amount0 The amount of token0 removed from the position.
+     * @return amount1 The amount of token1 removed from the position.
+     *
+     * @emit Burn Emits a Burn event capturing details of the liquidity removal.
+     */
+    function burnAutomatic(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) internal lock returns (uint256 amount0, uint256 amount1) {
+         (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({
-                    owner: msg.sender,
+                    owner: owner,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
                     liquidityDelta: -int256(amount).toInt128()
@@ -577,7 +608,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             );
         }
 
-        emit Burn(msg.sender, tickLower, tickUpper, amount, amount0, amount1);
+        emit Burn(owner, tickLower, tickUpper, amount, amount0, amount1);
     }
 
     struct SwapCache {
