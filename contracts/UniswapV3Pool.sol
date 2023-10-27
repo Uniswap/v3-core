@@ -849,6 +849,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                         ++i;
                     }
                 }
+                emit FilledPositions(memActivePositions,slot0Start.tick);
                 delete activePositions[(slot0Start.tick)];
             }
 

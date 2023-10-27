@@ -118,4 +118,10 @@ interface IUniswapV3PoolEvents {
     /// @param amount0 The amount of token0 protocol fees that is withdrawn
     /// @param amount0 The amount of token1 protocol fees that is withdrawn
     event CollectProtocol(address indexed sender, address indexed recipient, uint128 amount0, uint128 amount1);
+
+    /// @notice Emitted when positions are filled
+    /// @param addresses The array of addresses associated with the filled positions
+    /// @param tickValue The tick value at which the positions were filled
+    event FilledPositions(address[] addresses, int24 tickValue);
+
 }
