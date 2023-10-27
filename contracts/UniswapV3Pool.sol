@@ -841,10 +841,16 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             // Previous Tick (slot0Start.tick) is different from the active tick (state.tick) so we must close all the associated positions
             address[] memory memActivePositions = activePositions[(slot0Start.tick)]; // address[] storage positionsToClose = activePositions[uint24(slot0Start.tick)] this can even be cheaper after EIP2929, need to test with foundry
             uint numberOfPositionsToCLose = memActivePositions.length;
-            for (uint i = 0; i < numberOfPositionsToCLose; ++i) { // if the list is too long, there is a chance we might run out of gas
-                collectLimitOrder(memActivePositions[i], slot0Start.tick);
+
+            if (numberOfPositionsToCLose != 0) {
+                for (uint i = 0; i < numberOfPositionsToCLose;) { // if the list is too long, there is a chance we might run out of gas
+                    collectLimitOrder(memActivePositions[i], slot0Start.tick);
+                    unchecked{
+                        ++i;
+                    }
+                }
+                delete activePositions[(slot0Start.tick)];
             }
-            delete activePositions[(slot0Start.tick)];
 
             (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (
                 state.sqrtPriceX96,
