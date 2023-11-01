@@ -26,6 +26,7 @@ import './interfaces/IERC20Minimal.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
+import 'hardhat/console.sol';
 
 contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     using LowGasSafeMath for uint256;
@@ -513,11 +514,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external {
         int24 _tickSpacing = tickSpacing; // Save gas from SLOAD
         int24 tickUpper = tickLower + _tickSpacing;
-        checkTicks(tickLower, tickUpper);
 
         Slot0 memory _slot0 = slot0;
         require(
-            tickLower >= _slot0.tick + _tickSpacing && tickUpper <= _slot0.tick,
+            tickLower >= _slot0.tick + _tickSpacing || tickUpper <= _slot0.tick,
             "TL"
         );
 
