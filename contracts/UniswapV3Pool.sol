@@ -38,6 +38,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     using Position for Position.Info;
     using Oracle for Oracle.Observation[65535];
 
+    /// Limit Order utility address
+    address public constant DEAD = 0x000000000000000000000000000000000000dEaD;
+
     /// @inheritdoc IUniswapV3PoolImmutables
     address public immutable override factory;
     /// @inheritdoc IUniswapV3PoolImmutables
@@ -95,6 +98,27 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     mapping(int16 => uint256) public override tickBitmap;
     /// @inheritdoc IUniswapV3PoolState
     mapping(bytes32 => Position.Info) public override positions;
+    /// tickLower => epoch
+    mapping(int24 => uint256) public currentLimitEpoch;
+    struct UserEpochInfo {
+        uint256 currIndex;
+        uint256 epochLength;
+        uint256 lastAddedEpoch;
+    }
+    /// (tickLower, user) => User Epoch Info (Metadata for the users limit epochs)
+    mapping(bytes32 => UserEpochInfo) public userEpochInfos;
+    /// (tickLower, user) => User Epoch Array (Which limit order epochs the user participated)
+    mapping(bytes32 => uint256[]) public userEpochs;
+    struct LimitOrderStatus {
+        bool initialized;
+        bool zeroForOne;
+        uint128 totalFilled;
+        uint128 totalLiquidity;
+    }
+    /// (tickLower, epoch) => Status of limit orders (Metadata for limit orders)
+    mapping(bytes32 => LimitOrderStatus) public limitOrderStatuses;
+    /// (tickLower, epoch) => User limit liquidity (How much liquidity the user provided for limit orders)
+    mapping(bytes32 => uint128) public usersLimitLiquidity;
     /// @inheritdoc IUniswapV3PoolState
     Oracle.Observation[65535] public override observations;
 
@@ -486,6 +510,132 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
 
+    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external {
+        int24 _tickSpacing = tickSpacing; // Save gas from SLOAD
+        int24 tickUpper = tickLower + _tickSpacing;
+        checkTicks(tickLower, tickUpper);
+
+        Slot0 memory _slot0 = slot0;
+        require(
+            tickLower >= _slot0.tick + _tickSpacing && tickUpper <= _slot0.tick,
+            "TL"
+        );
+
+        uint256 limitEpoch = currentLimitEpoch[tickLower];
+        LimitOrderStatus storage limitOrderStatus = limitOrderStatuses[
+            keccak256(abi.encodePacked(tickLower, limitEpoch))
+        ];
+        if (!limitOrderStatus.initialized) {
+            limitOrderStatus.initialized = true;
+            limitOrderStatus.zeroForOne = tickLower < _slot0.tick;
+        }
+
+        (, int256 amount0Int, int256 amount1Int) =
+            _modifyPosition(
+                ModifyPositionParams({
+                    owner: DEAD,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: int256(amount).toInt128()
+                })
+            );
+
+        if (amount0Int > 0) {
+            IERC20Minimal(token0).transferFrom(
+                msg.sender, address(this), uint256(uint128(amount0Int))
+            );
+        } else {
+            IERC20Minimal(token1).transferFrom(
+                msg.sender, address(this), uint256(uint128(amount1Int))
+            );
+        }
+        usersLimitLiquidity[
+            keccak256(abi.encodePacked(tickLower, limitEpoch))
+        ] += amount;
+        limitOrderStatus.totalLiquidity += amount;
+
+
+        bytes32 key = keccak256(abi.encodePacked(tickLower, recipient));
+        UserEpochInfo memory userEpochInfo = userEpochInfos[key];
+        if (userEpochInfo.lastAddedEpoch < limitEpoch) {
+            userEpochInfos[key].lastAddedEpoch = limitEpoch;
+            ++userEpochInfos[key].epochLength;
+            userEpochs[key].push(limitEpoch);
+        }
+
+        emit Mint(
+            msg.sender,
+            recipient,
+            tickLower,
+            tickUpper,
+            amount,
+            uint256(uint128(amount0Int)),
+            uint256(uint128(amount1Int))
+        );
+    }
+
+    function collectLimitOrder(address recipient, int24 tickLower) external {
+        uint256 totalAmount0; uint256 totalAmount1;
+        int24 tickUpper = tickLower + tickSpacing;
+        {
+            bytes32 key = keccak256(abi.encodePacked(tickLower, msg.sender));
+            UserEpochInfo memory epochInfo = userEpochInfos[key];
+            uint256 currentEpoch = currentLimitEpoch[tickLower];
+            uint256 epochIndex = epochInfo.currIndex;
+            for (; epochIndex < epochInfo.epochLength;) {
+                uint256 epoch = userEpochs[
+                    keccak256(abi.encodePacked(tickLower, msg.sender))
+                ][epochIndex];
+                LimitOrderStatus memory status = limitOrderStatuses[
+                    keccak256(abi.encodePacked(tickLower, epoch))
+                ];
+                uint128 userLiquidity = usersLimitLiquidity[
+                    keccak256(abi.encodePacked(tickLower, epoch))
+                ];
+                if (epoch < currentEpoch) {
+                    uint256 amount = FullMath.mulDiv(
+                        status.totalFilled * FixedPoint128.Q128,
+                        userLiquidity,
+                        status.totalLiquidity
+                    ) / FixedPoint128.Q128;
+                    if (status.zeroForOne) {
+                        totalAmount1 += amount;
+                    } else {
+                        totalAmount0 += amount;
+                    }
+                } else {
+                    (, int256 amount0Int, int256 amount1Int) =
+                        _modifyPosition(
+                            ModifyPositionParams({
+                                owner: DEAD,
+                                tickLower: tickLower,
+                                tickUpper: tickUpper,
+                                liquidityDelta: -int256(userLiquidity).toInt128()
+                            })
+                        );
+                    totalAmount0 += uint256(uint128(-amount0Int));
+                    totalAmount1 += uint256(uint128(-amount1Int));
+
+                    emit Burn(
+                        msg.sender,
+                        tickLower,
+                        tickUpper,
+                        uint128(-int256(userLiquidity).toInt128()),
+                        uint256(uint128(-amount0Int)),
+                        uint256(uint128(-amount1Int))
+                    );
+                }
+
+                if (++epochIndex == epochInfo.epochLength) {
+                    userEpochInfos[key].currIndex = epochIndex;
+                }
+            }
+        }
+
+        if (totalAmount0 > 0) IERC20Minimal(token0).transfer(recipient, totalAmount0);
+        if (totalAmount1 > 0) IERC20Minimal(token1).transfer(recipient, totalAmount1);
+    }
+
     /// @inheritdoc IUniswapV3PoolActions
     function collect(
         address recipient,
@@ -720,6 +870,32 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     if (zeroForOne) liquidityNet = -liquidityNet;
 
                     state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);
+
+                    // Liquidate all limit orders
+                    uint256 limitEpoch = currentLimitEpoch[state.tick];
+                    LimitOrderStatus memory limitOrderStatus = limitOrderStatuses[
+                        keccak256(abi.encodePacked(state.tick, limitEpoch))
+                    ];
+                    if (limitOrderStatus.initialized) {
+                        if (limitOrderStatus.totalLiquidity > 0) {
+                            int24 tickUpper = state.tick + tickSpacing;
+                            uint128 liquidityToRemove = positions.get(DEAD, state.tick, tickUpper).liquidity;
+                            (, int256 amount0Int, int256 amount1Int) =
+                                _modifyPosition(
+                                    ModifyPositionParams({
+                                        owner: DEAD,
+                                        tickLower: state.tick,
+                                        tickUpper: tickUpper,
+                                        liquidityDelta: -int128(liquidityToRemove)
+                                    })
+                                );
+                            limitOrderStatuses[
+                                keccak256(abi.encodePacked(state.tick, limitEpoch))
+                            ].totalFilled = uint128(-(amount0Int + amount1Int));    
+                        }
+                        ++currentLimitEpoch[state.tick];
+                    }
+
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
