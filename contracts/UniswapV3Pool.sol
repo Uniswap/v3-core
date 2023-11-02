@@ -589,10 +589,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 uint128 userLiquidity = usersLimitLiquidity[epochKey];
                 if (epoch < currentEpoch) {
                     uint256 amount = FullMath.mulDiv(
-                        status.totalFilled * FixedPoint128.Q128,
+                        status.totalFilled,
                         userLiquidity,
                         status.totalLiquidity
-                    ) / FixedPoint128.Q128;
+                    );
                     if (status.zeroForOne) {
                         totalAmount1 += amount;
                     } else {
