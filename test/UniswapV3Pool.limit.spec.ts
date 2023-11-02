@@ -138,7 +138,7 @@ describe('UniswapV3Pool limit orders tests', () => {
         )
     })
 
-    it('Fulfill limit order by swapping tokens', async () => {
+    it('Fulfill limit order by swapping tokens (greater tick)', async () => {
         // Create limit order
         const amount = expandTo18Decimals(5);
         const tickLower = (await pool.slot0()).tick + await pool.tickSpacing()
@@ -166,6 +166,36 @@ describe('UniswapV3Pool limit orders tests', () => {
         // TODO: Compare the balances, difference should be equal to
         // swapped tokens + collected fees
         console.log(await token1.balanceOf(lpRecipient.address))
+    })
+
+    it('Fulfill limit order by swapping tokens (smaller tick)', async () => {
+        // Create limit order
+        const amount = expandTo18Decimals(5);
+        const tickLower = (await pool.slot0()).tick - await pool.tickSpacing()
+        await pool.createLimitOrder(
+            await lpRecipient.getAddress(),
+            tickLower,
+            amount
+        )
+
+        // swap tokens oneForZero
+        const amountIn = expandTo18Decimals(10);
+        await swapTarget.swapExact0For1(
+            pool.address,
+            amountIn,
+            await wallet.getAddress(),
+            MIN_SQRT_RATIO.add(1)
+        )
+
+        // Withdraw swapped tokens + fees
+        console.log(await token0.balanceOf(lpRecipient.address))
+        await pool.connect(lpRecipient).collectLimitOrder(
+            await lpRecipient.getAddress(),
+            tickLower
+        )
+        // TODO: Compare the balances, difference should be equal to
+        // swapped tokens + collected fees
+        console.log(await token0.balanceOf(lpRecipient.address))
     })
 
 })
