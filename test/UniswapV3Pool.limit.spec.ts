@@ -58,7 +58,7 @@ describe('UniswapV3Pool limit orders tests', () => {
     })
 
     it('Create limit order to tick greater than current tick', async () => {
-        // Create limit order
+        // Should emit 'Mint' event
         let amount = expandTo18Decimals(5);
         let tickLower = (await pool.slot0()).tick + await pool.tickSpacing()
         await expect(pool.createLimitOrder(
@@ -75,5 +75,28 @@ describe('UniswapV3Pool limit orders tests', () => {
             0
         )
     })
+
+    it('Create limit order and collect before fulfilling', async () => {
+        // Create limit order
+        let amount = expandTo18Decimals(5);
+        let tickLower = (await pool.slot0()).tick + await pool.tickSpacing()
+        await pool.createLimitOrder(
+            await lpRecipient.getAddress(),
+            tickLower,
+            amount
+        )
+
+        await expect(pool.connect(lpRecipient).collectLimitOrder(
+            await lpRecipient.getAddress(),
+            tickLower
+        )).to.emit(pool, "Burn").withArgs(
+            await lpRecipient.getAddress(),
+            tickLower,
+            tickLower + await pool.tickSpacing(),
+            amount,
+            BigNumber.from('14931914022994408'), // Internally rounded down by 1 unit
+            0
+        )
+    });
 
 })
