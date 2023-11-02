@@ -771,6 +771,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint128 protocolFee;
         // the current liquidity in range
         uint128 liquidity;
+        // number of times tick shifted (used to settle limit orders)
+        int24 ticksShifted;
     }
 
     struct StepComputations {
@@ -832,7 +834,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 tick: slot0Start.tick,
                 feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,
                 protocolFee: 0,
-                liquidity: cache.liquidityStart
+                liquidity: cache.liquidityStart,
+                ticksShifted: 0
             });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -889,6 +892,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
             // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
+                ++state.ticksShifted; // used to liquidate limit order later on
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     // check for the placeholder value, which we replace with the actual value the first time the swap
@@ -918,40 +922,6 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     if (zeroForOne) liquidityNet = -liquidityNet;
 
                     state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);
-
-                    // Liquidate all limit orders
-                    uint256 limitEpoch = currentLimitEpoch[state.tick];
-                    LimitOrderStatus memory limitOrderStatus = limitOrderStatuses[
-                        keccak256(abi.encodePacked(state.tick, limitEpoch))
-                    ];
-                    if (limitOrderStatus.initialized) {
-                        if (limitOrderStatus.totalLiquidity > 0) {
-                            int24 tickUpper = state.tick + tickSpacing;
-                            Position.Info storage position = positions.get(DEAD, state.tick, tickUpper);
-                            (, int256 amount0Int, int256 amount1Int) =
-                                _modifyPosition(
-                                    ModifyPositionParams({
-                                        owner: DEAD,
-                                        tickLower: state.tick,
-                                        tickUpper: tickUpper,
-                                        liquidityDelta: -int128(position.liquidity)
-                                    })
-                                );
-
-                            amount0Int += position.tokensOwed0;
-                            amount1Int += position.tokensOwed1;
-
-                            position.tokensOwed0 = 0;
-                            position.tokensOwed1 = 0;
-                            
-                            limitOrderStatuses[
-                                keccak256(abi.encodePacked(state.tick, limitEpoch))
-                            ].totalFilled = uint128(-(amount0Int + amount1Int));
-
-                        }
-                        ++currentLimitEpoch[state.tick];
-                    }
-
                 }
 
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
@@ -978,6 +948,42 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 observationIndex,
                 observationCardinality
             );
+
+            // Liquidate all limit orders
+            for (
+                int24 tickLower = slot0Start.tick;
+                tickLower < slot0Start.tick + state.ticksShifted * tickSpacing;
+                tickLower += tickSpacing
+            ) {
+                uint256 limitEpoch = currentLimitEpoch[tickLower];
+                LimitOrderStatus storage limitOrderStatus = limitOrderStatuses[
+                    keccak256(abi.encodePacked(tickLower, limitEpoch))
+                ];
+                if (limitOrderStatus.initialized) {
+                    if (limitOrderStatus.totalLiquidity > 0) {
+                        int24 tickUpper = tickLower + tickSpacing;
+                        Position.Info storage position = positions.get(DEAD, tickLower, tickUpper);
+                        (, int256 amount0Int, int256 amount1Int) =
+                            _modifyPosition(
+                                ModifyPositionParams({
+                                    owner: DEAD,
+                                    tickLower: tickLower,
+                                    tickUpper: tickUpper,
+                                    liquidityDelta: -int128(position.liquidity)
+                                })
+                            );
+
+                        amount0Int += position.tokensOwed0;
+                        amount1Int += position.tokensOwed1;
+
+                        position.tokensOwed0 = 0;
+                        position.tokensOwed1 = 0;
+                        
+                        limitOrderStatus.totalFilled = uint128(-(amount0Int + amount1Int));
+                    }
+                    ++currentLimitEpoch[tickLower];
+                }
+            }
         } else {
             // otherwise just update the price
             slot0.sqrtPriceX96 = state.sqrtPriceX96;

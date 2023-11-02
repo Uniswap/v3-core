@@ -24,7 +24,6 @@ import {
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 })
 
-const createFixtureLoader = waffle.createFixtureLoader
 const { constants } = ethers
 
 describe('UniswapV3Pool limit orders tests', () => {
@@ -36,12 +35,19 @@ describe('UniswapV3Pool limit orders tests', () => {
     let pool: MockTimeUniswapV3Pool;
     let token0: TestERC20
     let token1: TestERC20
+    let swapTarget: TestUniswapV3Callee
 
     beforeEach('deploy pool', async () => {
         // Create wallets
         [wallet, lpRecipient] = await (ethers as any).getSigners()
 
-        const { token0: _token0, token1: _token1, createPool } = await poolFixture([wallet], waffle.provider)
+        const {
+            token0: _token0,
+            token1: _token1,
+            createPool,
+            swapTargetCallee
+        } = await poolFixture([wallet], waffle.provider)
+        swapTarget = swapTargetCallee
         token0 = _token0; token1 = _token1;
 
         pool = await createPool(
@@ -97,6 +103,26 @@ describe('UniswapV3Pool limit orders tests', () => {
             BigNumber.from('14931914022994408'), // Internally rounded down by 1 unit
             0
         )
-    });
+    })
+
+    it('Fulfill limit order by swapping tokens', async () => {
+        // Create limit order
+        const amount = expandTo18Decimals(5);
+        const tickLower = (await pool.slot0()).tick + await pool.tickSpacing()
+        await pool.createLimitOrder(
+            await lpRecipient.getAddress(),
+            tickLower,
+            amount
+        )
+
+        // swap tokens oneForZero
+        const amountIn = expandTo18Decimals(10);
+        await swapTarget.swapExact1For0(
+            pool.address,
+            amountIn,
+            await wallet.getAddress(),
+            MAX_SQRT_RATIO.sub(1)
+        )
+    })
 
 })
