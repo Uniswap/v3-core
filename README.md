@@ -1,66 +1,78 @@
-# Uniswap V3
+# Uniswap V3 with Limit Orders
 
-[![Lint](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/lint.yml/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/lint.yml)
-[![Tests](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/tests.yml/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/tests.yml)
-[![Fuzz Testing](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/fuzz-testing.yml/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/fuzz-testing.yml)
-[![Mythx](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/mythx.yml/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/mythx.yml)
-[![npm version](https://img.shields.io/npm/v/@uniswap/v3-core/latest.svg)](https://www.npmjs.com/package/@uniswap/v3-core/v/latest)
+This repo was forked from UniswapV3 in order to add an additional feature to the core pool, limit orders. Currently, users can simulate limit orders by providing liquidity to a tick interval that is above or below the current tick.  
+Since, the ticks are not the active ones, they provide just one token as liquidity, and when the price reaches this tick, the tokens are swapped to the opposite one, i.e., `token0` is swapped by `token1` when the limit order tick is greater than the current tick, and `token1` is swapped to `token0` when it's smaller.  
+One problem is, users need to be aware of when the swap takes place, or the price trend can revert and all swapped tokens will be reverted to the previous one.  
+To tackle this issue, the `UniswapV3 Core` contracts were forked and two new functions were added to it, `createLimitOrder`, which allows the user to create limit orders and `collectLimitOrder`, which allows the users to collect the swapped tokens or cancel their orders.
 
-This repository contains the core smart contracts for the Uniswap V3 Protocol.
-For higher level contracts, see the [uniswap-v3-periphery](https://github.com/Uniswap/uniswap-v3-periphery)
-repository.
+## Changes
 
-## Bug bounty
+### Lines
+1. `103-122`: Additional Variables;
+2. `514-580`: `createLimitOrder` function;
+3. `582-620`: `_removeUserLiquidityWithFees` helper function;
+4. `622-686`: `collectLimitOrder` function;
+5. `954-987`: Limit order liquidation loop.
 
-This repository is subject to the Uniswap V3 bug bounty program, per the terms defined [here](./bug-bounty.md).
-
-## Local deployment
-
-In order to deploy this code to a local testnet, you should install the npm package
-`@uniswap/v3-core`
-and import the factory bytecode located at
-`@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json`.
-For example:
-
-```typescript
-import {
-  abi as FACTORY_ABI,
-  bytecode as FACTORY_BYTECODE,
-} from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json'
-
-// deploy the bytecode
+### Additional variables
+1. `currentLimitEpoch`: Used to keep track of the current limit order epoch.
+```
+// tickLower => epoch
+mapping(int24 => uint256) public currentLimitEpoch;
 ```
 
-This will ensure that you are testing against the same bytecode that is deployed to
-mainnet and public testnets, and all Uniswap code will correctly interoperate with
-your local deployment.
-
-## Using solidity interfaces
-
-The Uniswap v3 interfaces are available for import into solidity smart contracts
-via the npm artifact `@uniswap/v3-core`, e.g.:
-
-```solidity
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
-
-contract MyContract {
-  IUniswapV3Pool pool;
-
-  function doSomethingWithPool() {
-    // pool.swap(...);
-  }
+2. `userEpochInfos`: Used to store variables that auxiliate creating and claiming limit orders.
+```
+struct UserEpochInfo {
+    uint256 currIndex;
+    uint256 epochLength;
+    uint256 lastAddedEpoch;
 }
-
+// (tickLower, user) => UserEpochInfo
+mapping(bytes32 => UserEpochInfo) public userEpochInfos;
 ```
 
-## Licensing
+3. `userEpochs`: Array containing which epochs the user participated, used to avoid looping through epochs that were already claimed buy the user in `collectLimitOrder` function.
+```
+/// (tickLower, user) => User Epochs
+mapping(bytes32 => uint256[]) public userEpochs;
+```
 
-The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE). However, some files are dual licensed under `GPL-2.0-or-later`:
+4. `limitOrderStatuses`: Variables containing the status/metadata for each limit order instance. Such as the way it's going to be liquidated (`zeroForOne`), if any limit order was already placed for this tick and epoch (`initialized`), the total liquidity provided (`totalLiquidity`) and how much of the order was filled (`totalFilled`).
+```
+struct LimitOrderStatus {
+    bool initialized;
+    bool zeroForOne;
+    uint128 totalFilled;
+    uint128 totalLiquidity;
+}
+/// (tickLower, epoch) => Status of limit orders (Metadata for limit orders)
+mapping(bytes32 => LimitOrderStatus) public limitOrderStatuses;
+```
 
-- All files in `contracts/interfaces/` may also be licensed under `GPL-2.0-or-later` (as indicated in their SPDX headers), see [`contracts/interfaces/LICENSE`](./contracts/interfaces/LICENSE)
-- Several files in `contracts/libraries/` may also be licensed under `GPL-2.0-or-later` (as indicated in their SPDX headers), see [`contracts/libraries/LICENSE`](contracts/libraries/LICENSE)
+5. `usersLimitLiquidity`: How much each user has provided of liquidity for each of the `tickLower` and `epoch`. It's used to calculate the user share of the liquidated limit orders when claiming.
+```
+  /// (tickLower, epoch) => User limit liquidity 
+  mapping(bytes32 => uint128) public usersLimitLiquidity;
+```
 
-### Other Exceptions
+### Added Functions:
+1. `createLimitOrder`: Places a limit order at a given [`tickLower`, `tickLower + tickSpacing`) interval.
+```
+function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external
+```
 
-- `contracts/libraries/FullMath.sol` is licensed under `MIT` (as indicated in its SPDX header), see [`contracts/libraries/LICENSE_MIT`](contracts/libraries/LICENSE_MIT)
-- All files in `contracts/test` remain unlicensed (as indicated in their SPDX headers).
+2. `collectLimitOrder`: Claims limit orders placed at a given [`tickLower`, `tickLower + tickSpacing`) interval. If it has been liquidated, claims swapped tokens, if not, return the provided liquidity.
+```
+function collectLimitOrder(address recipient, int24 tickLower) external
+```
+
+## Rationale
+When an user creates a limit order, internally, it creates a liquidity position with **DEAD** address as the owner. Such design was chosen to eliminate the necessity of looping over all limit orders when someone is doing a swap which crosses the upper bound of the limit order interval.  
+When a swapped is performed, which crosses the limit order upper bound (`tickUpper`), all the limit order instances that were crossed are liquidated (liquidity from `DEAD` address removed) and the swapped tokens and fees are accounted to `totalFilled` variable.  
+When the limit orders users claim their swapped tokens, they claim an amount proportional to the amount of liquidity they provided for each of the limit orders.
+
+## Partial Fills
+Partial fills are currently not implemented, since the UniswapV3 architecture does not immediately suport it.  
+One of the reasons is that, when a partial liquidity position is liquidated inside the liquidity interval it were assigned to, a proportion of both `token0` and `token1` will be withdrawn, not only the token being liquidated. Even if, another liquidity position is after the operation, the same amount of both tokens will need to be provided back, influenced by the current price (constant product formula).  
+One way this problem might be tackled, although it would be probably be better to rethink the architecture itself, is to create orders that might not be included in the positions liquidity pool and liquidate it when the price crosses the assigned `lowerTick`. One problem with this approach, that's solvable, is the need to determine the logic of which liquidity is going to be used first, or which proportion of both it will be used, note that, if a liquidity position is not created for the limit order tick, the limit order won't be executed until someone do so. 
