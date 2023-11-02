@@ -8,6 +8,7 @@ To tackle this issue, the `UniswapV3 Core` contracts were forked and two new fun
 ## Changes
 
 ### Lines
+Solidity development has occurred [here](./contracts/UniswapV3Pool.sol) (UniswapV3Pool.sol)
 1. `103-122`: Additional Variables;
 2. `514-580`: `createLimitOrder` function;
 3. `582-620`: `_removeUserLiquidityWithFees` helper function;
