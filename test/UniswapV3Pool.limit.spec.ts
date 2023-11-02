@@ -85,6 +85,36 @@ describe('UniswapV3Pool limit orders tests', () => {
         )
     })
 
+    it('Create limit order to tick smaller than current tick', async () => {
+        // Should emit 'Mint' event
+        let amount = expandTo18Decimals(5);
+        let tickLower = (await pool.slot0()).tick - await pool.tickSpacing()
+        await expect(pool.createLimitOrder(
+            await lpRecipient.getAddress(),
+            tickLower,
+            amount
+        )).to.emit(pool, 'Mint').withArgs(
+            await wallet.getAddress(),
+            await lpRecipient.getAddress(),
+            tickLower,
+            tickLower + await pool.tickSpacing(),
+            amount,
+            0,
+            BigNumber.from('14976774779553905')
+        )
+    })
+
+    it('Creating limit orders should revert if tick is equal to current tick', async () => {
+        // Should emit 'Mint' event
+        let amount = expandTo18Decimals(5);
+        let tickLower = (await pool.slot0()).tick
+        await expect(pool.createLimitOrder(
+            await lpRecipient.getAddress(),
+            tickLower,
+            amount
+        )).to.be.revertedWith('TL')
+    })
+
     it('Create limit order and collect before fulfilling', async () => {
         // Create limit order
         let amount = expandTo18Decimals(5);
