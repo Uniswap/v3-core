@@ -61,6 +61,9 @@ describe('UniswapV3Pool limit orders tests', () => {
 
         await token0.approve(pool.address, constants.MaxUint256)
         await token1.approve(pool.address, constants.MaxUint256)
+
+        await token0.approve(swapTarget.address, constants.MaxUint256)
+        await token1.approve(swapTarget.address, constants.MaxUint256)
     })
 
     it('Create limit order to tick greater than current tick', async () => {
@@ -123,6 +126,16 @@ describe('UniswapV3Pool limit orders tests', () => {
             await wallet.getAddress(),
             MAX_SQRT_RATIO.sub(1)
         )
+
+        // Withdraw swapped tokens + fees
+        console.log(await token1.balanceOf(lpRecipient.address))
+        await pool.connect(lpRecipient).collectLimitOrder(
+            await lpRecipient.getAddress(),
+            tickLower
+        )
+        // TODO: Compare the balances, difference should be equal to
+        // swapped tokens + collected fees
+        console.log(await token1.balanceOf(lpRecipient.address))
     })
 
 })

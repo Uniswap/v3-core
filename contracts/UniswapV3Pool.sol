@@ -26,7 +26,6 @@ import './interfaces/IERC20Minimal.sol';
 import './interfaces/callback/IUniswapV3MintCallback.sol';
 import './interfaces/callback/IUniswapV3SwapCallback.sol';
 import './interfaces/callback/IUniswapV3FlashCallback.sol';
-import 'hardhat/console.sol';
 
 contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     using LowGasSafeMath for uint256;
@@ -1009,15 +1008,12 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
         // do the transfers and collect payment
         if (zeroForOne) {
-            console.log("HEY0");
             if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));
-
             uint256 balance0Before = balance0();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
             require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');
         } else {
             if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
-            console.log("HEY1");
             uint256 balance1Before = balance1();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
             require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');

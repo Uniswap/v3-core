@@ -14,6 +14,17 @@ To tackle this issue, the `UniswapV3 Core` contracts were forked and two new fun
 4. `622-686`: `collectLimitOrder` function;
 5. `954-987`: Limit order liquidation loop.
 
+### Added Functions:
+1. `createLimitOrder`: Places a limit order at a given [`tickLower`, `tickLower + tickSpacing`) interval.
+```
+function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external;
+```
+
+2. `collectLimitOrder`: Claims limit orders placed at a given [`tickLower`, `tickLower + tickSpacing`) interval. If it has been liquidated, claims swapped tokens, if not, return the provided liquidity.
+```
+function collectLimitOrder(address recipient, int24 tickLower) external;
+```
+
 ### Additional variables
 1. `currentLimitEpoch`: Used to keep track of the current limit order epoch.
 ```
@@ -56,16 +67,10 @@ mapping(bytes32 => LimitOrderStatus) public limitOrderStatuses;
   mapping(bytes32 => uint128) public usersLimitLiquidity;
 ```
 
-### Added Functions:
-1. `createLimitOrder`: Places a limit order at a given [`tickLower`, `tickLower + tickSpacing`) interval.
-```
-function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external
-```
+### Tests
+Test can be found [here](./test/UniswapV3Pool.limit.spec.ts). (UniswapV3Pool.limit.spec.ts file)
 
-2. `collectLimitOrder`: Claims limit orders placed at a given [`tickLower`, `tickLower + tickSpacing`) interval. If it has been liquidated, claims swapped tokens, if not, return the provided liquidity.
-```
-function collectLimitOrder(address recipient, int24 tickLower) external
-```
+`TODO: Create more test cases to get 100% coverage`
 
 ## Rationale
 When an user creates a limit order, internally, it creates a liquidity position with **DEAD** address as the owner. Such design was chosen to eliminate the necessity of looping over all limit orders when someone is doing a swap which crosses the upper bound of the limit order interval.  
