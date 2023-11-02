@@ -583,15 +583,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             uint256 currentEpoch = currentLimitEpoch[tickLower];
             uint256 epochIndex = epochInfo.currIndex;
             for (; epochIndex < epochInfo.epochLength;) {
-                uint256 epoch = userEpochs[
-                    keccak256(abi.encodePacked(tickLower, msg.sender))
-                ][epochIndex];
-                LimitOrderStatus memory status = limitOrderStatuses[
-                    keccak256(abi.encodePacked(tickLower, epoch))
-                ];
-                uint128 userLiquidity = usersLimitLiquidity[
-                    keccak256(abi.encodePacked(tickLower, epoch))
-                ];
+                uint256 epoch = userEpochs[key][epochIndex];
+                bytes32 epochKey = keccak256(abi.encodePacked(tickLower, epoch);
+                LimitOrderStatus memory status = limitOrderStatuses[epochKey];
+                uint128 userLiquidity = usersLimitLiquidity[epochKey];
                 if (epoch < currentEpoch) {
                     uint256 amount = FullMath.mulDiv(
                         status.totalFilled * FixedPoint128.Q128,
@@ -603,7 +598,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     } else {
                         totalAmount0 += amount;
                     }
-                } else {
+                } else if (userLiquidity > 0) {
                     (, int256 amount0Int, int256 amount1Int) =
                         _modifyPosition(
                             ModifyPositionParams({
@@ -616,6 +611,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     totalAmount0 += uint256(uint128(-amount0Int));
                     totalAmount1 += uint256(uint128(-amount1Int));
 
+                    delete usersLimitLiquidity[epochKey];
+
+                    limitOrderStatuses[epochKey].totalLiquidity -= userLiquidity;
+
                     emit Burn(
                         msg.sender,
                         tickLower,
@@ -627,7 +626,11 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 }
 
                 if (++epochIndex == epochInfo.epochLength) {
-                    userEpochInfos[key].currIndex = epochIndex;
+                    if (epoch < currentEpoch) {
+                        userEpochInfos[key].currIndex = epochIndex;
+                    } else {
+                        userEpochInfos[key].currIndex = epochIndex - 1;
+                    }
                 }
             }
         }

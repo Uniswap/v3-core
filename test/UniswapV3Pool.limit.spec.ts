@@ -29,21 +29,19 @@ const { constants } = ethers
 
 describe('UniswapV3Pool limit orders tests', () => {
 
-    const INIT_LIQUIDITY = expandTo18Decimals(2);
+    const INIT_LIQUIDITY = encodePriceSqrt(1, 1)
 
-    let deployer: Wallet;
-    let lp1: Wallet;
+    let wallet: Wallet;
     let lpRecipient: Wallet;
-    let swapper1: Wallet;
     let pool: MockTimeUniswapV3Pool;
     let token0: TestERC20
     let token1: TestERC20
 
     beforeEach('deploy pool', async () => {
         // Create wallets
-        [deployer, lp1, lpRecipient, swapper1] = await (ethers as any).getSigners()
+        [wallet, lpRecipient] = await (ethers as any).getSigners()
 
-        const { token0: _token0, token1: _token1, createPool } = await poolFixture([deployer], waffle.provider)
+        const { token0: _token0, token1: _token1, createPool } = await poolFixture([wallet], waffle.provider)
         token0 = _token0; token1 = _token1;
 
         pool = await createPool(
@@ -54,16 +52,27 @@ describe('UniswapV3Pool limit orders tests', () => {
         )
         
         await pool.initialize(INIT_LIQUIDITY)
+
+        await token0.approve(pool.address, constants.MaxUint256)
+        await token1.approve(pool.address, constants.MaxUint256)
     })
 
-    it("Create limit order to tick greater than current tick", async () => {
-        // Mint tokens to lp1
+    it('Create limit order to tick greater than current tick', async () => {
+        // Create limit order
         let amount = expandTo18Decimals(5);
-        let tickLower = (await pool.slot0()).tick + await pool.tickSpacing() 
-        await pool.createLimitOrder(
-            lpRecipient.address,
+        let tickLower = (await pool.slot0()).tick + await pool.tickSpacing()
+        await expect(pool.createLimitOrder(
+            await lpRecipient.getAddress(),
             tickLower,
             amount
+        )).to.emit(pool, 'Mint').withArgs(
+            await wallet.getAddress(),
+            await lpRecipient.getAddress(),
+            tickLower,
+            tickLower + await pool.tickSpacing(),
+            amount,
+            BigNumber.from('14931914022994409'),
+            0
         )
     })
 
