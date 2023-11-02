@@ -1,7 +1,7 @@
 # Uniswap V3 with Limit Orders
 
 This repo was forked from UniswapV3 in order to add an additional feature to the core pool, limit orders. Currently, users can simulate limit orders by providing liquidity to a tick interval that is above or below the current tick.  
-Since, the ticks are not the active ones, they provide just one token as liquidity, and when the price reaches this tick, the tokens are swapped to the opposite one, i.e., `token0` is swapped by `token1` when the limit order tick is greater than the current tick, and `token1` is swapped to `token0` when it's smaller.  
+Since, the ticks are not the active ones, they provide just one token as liquidity, and when the price reaches this tick, the tokens are swapped to the opposite one, i.e., `token0` is swapped by `token1` when the limit order tick is greater than the current tick, and `token1` is swapped by `token0` when it's less than the current tick.  
 One problem is, users need to be aware of when the swap takes place, or the price trend can revert and all swapped tokens will be reverted to the previous one.  
 To tackle this issue, the `UniswapV3 Core` contracts were forked and two new functions were added to it, `createLimitOrder`, which allows the user to create limit orders and `collectLimitOrder`, which allows the users to collect the swapped tokens or cancel their orders.
 
