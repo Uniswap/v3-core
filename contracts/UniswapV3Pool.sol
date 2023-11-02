@@ -626,11 +626,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 }
 
                 if (++epochIndex == epochInfo.epochLength) {
-                    if (epoch < currentEpoch) {
-                        userEpochInfos[key].currIndex = epochIndex;
-                    } else {
-                        userEpochInfos[key].currIndex = epochIndex - 1;
-                    }
+                    userEpochInfos[key].currIndex = epoch < currentEpoch
+                        ? epochIndex
+                        : epochIndex - 1;
                 }
             }
         }
