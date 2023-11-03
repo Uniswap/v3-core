@@ -9,11 +9,11 @@ To tackle this issue, the `UniswapV3 Core` contracts were forked and two new fun
 
 ### Lines
 Solidity development has occurred [here](./contracts/UniswapV3Pool.sol) (UniswapV3Pool.sol)
-1. `103-122`: Additional Variables;
-2. `514-580`: `createLimitOrder` function;
-3. `582-620`: `_removeUserLiquidityWithFees` helper function;
-4. `622-686`: `collectLimitOrder` function;
-5. `954-987`: Limit order liquidation loop.
+1. `101-118`: Additional Variables;
+2. `513-578`: `createLimitOrder` function;
+3. `580-627`: `_removeUserLiquidityWithFees` helper function;
+4. `629-706`: `collectLimitOrder` function;
+5. `973-1007`: Limit order liquidation loop.
 
 ### Added Functions:
 1. `createLimitOrder`: Places a limit order at a given [`tickLower`, `tickLower + tickSpacing`) interval.
@@ -33,24 +33,17 @@ function collectLimitOrder(address recipient, int24 tickLower) external;
 mapping(int24 => uint256) public currentLimitEpoch;
 ```
 
-2. `userEpochInfos`: Used to store variables that auxiliate creating and claiming limit orders.
+2. `userEpochInfos`: Used to store the epochs that the user participated (`epochs`) and the index of the last collected one.
 ```
 struct UserEpochInfo {
-    uint256 currIndex;
-    uint256 epochLength;
-    uint256 lastAddedEpoch;
+  uint256 currIndex;
+  uint256[] epochs;
 }
-// (tickLower, user) => UserEpochInfo
-mapping(bytes32 => UserEpochInfo) public userEpochInfos;
+/// (tickLower, user) => UserEpochInfo
+mapping(bytes32 => UserEpochInfo) public userEpochInfo;
 ```
 
-3. `userEpochs`: Array containing which epochs the user participated, used to avoid looping through epochs that were already claimed buy the user in `collectLimitOrder` function.
-```
-/// (tickLower, user) => User Epochs
-mapping(bytes32 => uint256[]) public userEpochs;
-```
-
-4. `limitOrderStatuses`: Variables containing the status/metadata for each limit order instance. Such as the way it's going to be liquidated (`zeroForOne`), if any limit order was already placed for this tick and epoch (`initialized`), the total liquidity provided (`totalLiquidity`) and how much of the order was filled (`totalFilled`).
+3. `limitOrderStatuses`: Variables containing the status/metadata for each limit order instance. Such as the way it's going to be liquidated (`zeroForOne`), if any limit order was already placed for this tick and epoch (`initialized`), the total liquidity provided (`totalLiquidity`) and how much of the order was filled (`totalFilled`).
 ```
 struct LimitOrderStatus {
     bool initialized;
@@ -62,10 +55,10 @@ struct LimitOrderStatus {
 mapping(bytes32 => LimitOrderStatus) public limitOrderStatuses;
 ```
 
-5. `usersLimitLiquidity`: How much each user has provided of liquidity for each of the `tickLower` and `epoch`. It's used to calculate the user share of the liquidated limit orders when claiming.
+4. `usersLimitLiquidity`: How much each user has provided of liquidity for each of the `tickLower` and `epoch`. It's used to calculate the user share of the liquidated limit orders when claiming.
 ```
-  /// (tickLower, epoch) => User limit liquidity 
-  mapping(bytes32 => uint128) public usersLimitLiquidity;
+/// (tickLower, epoch) => User limit liquidity 
+mapping(bytes32 => uint128) public usersLimitLiquidity;
 ```
 
 ### Tests

@@ -102,13 +102,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     mapping(int24 => uint256) public currentLimitEpoch;
     struct UserEpochInfo {
         uint256 currIndex;
-        uint256 epochLength;
-        uint256 lastAddedEpoch;
+        uint256[] epochs;
     }
-    /// (tickLower, user) => User Epoch Info (Metadata for the users limit epochs)
-    mapping(bytes32 => UserEpochInfo) public userEpochInfos;
-    /// (tickLower, user) => User Epoch Array (Which limit order epochs the user participated)
-    mapping(bytes32 => uint256[]) public userEpochs;
+    /// (tickLower, user) => UserEpochInfo
+    /// Used to store the epochs that the user participated
+    /// and the last claimed epoch, to avoid revisting ones
+    /// that were already claimed
+    mapping(bytes32 => UserEpochInfo) public userEpochInfo;
     struct LimitOrderStatus {
         bool initialized;
         bool zeroForOne;
@@ -560,11 +560,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
 
         bytes32 key = keccak256(abi.encodePacked(tickLower, recipient));
-        UserEpochInfo memory userEpochInfo = userEpochInfos[key];
-        if (userEpochInfo.lastAddedEpoch < limitEpoch) {
-            userEpochInfos[key].lastAddedEpoch = limitEpoch;
-            ++userEpochInfos[key].epochLength;
-            userEpochs[key].push(limitEpoch);
+        uint256[] storage _userEpochs = userEpochInfo[key].epochs;
+        uint256 userEpochsLength = _userEpochs.length;
+        if (userEpochsLength == 0 || _userEpochs[userEpochsLength-1] < limitEpoch) {
+            _userEpochs.push(limitEpoch);
         }
 
         emit Mint(
@@ -578,29 +577,38 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         );
     }
 
-    function _removeUserLiquidityWithFees(
-        uint128 userLiquidity,
-        uint128 totalLiquidity,
-        int24 tickLower,
-        int24 tickUpper
+    struct _removeUserLimitParams {
+        address user;
+        uint128 userLiquidity;
+        uint128 totalLiquidity;
+        int24 tickLower;
+        int24 tickUpper;
+    }
+
+    function _removeUserLimitWithFees(
+        _removeUserLimitParams memory params
     ) internal returns (int256 amount0Int, int256 amount1Int) {
         (, amount0Int, amount1Int) =
             _modifyPosition(
                 ModifyPositionParams({
                     owner: DEAD,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: -int256(userLiquidity).toInt128()
+                    tickLower: params.tickLower,
+                    tickUpper: params.tickUpper,
+                    liquidityDelta: -int256(params.userLiquidity).toInt128()
                 })
             );
 
-        Position.Info storage position = positions.get(msg.sender, tickLower, tickUpper);
+        Position.Info storage position = positions.get(
+            params.user,
+            params.tickLower,
+            params.tickUpper
+        );
         uint128 tokensOwed0 = position.tokensOwed0;
         if (tokensOwed0 > 0) {
             tokensOwed0 = uint128(FullMath.mulDiv(
                 liquidity,
                 tokensOwed0,
-                totalLiquidity
+                params.totalLiquidity
             ));
             position.tokensOwed0 -= tokensOwed0;
             amount0Int -= tokensOwed0;
@@ -611,30 +619,42 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             tokensOwed1 = uint128(FullMath.mulDiv(
                 liquidity,
                 tokensOwed1,
-                totalLiquidity
+                params.totalLiquidity
             ));
             position.tokensOwed1 -= tokensOwed1;
             amount1Int -= tokensOwed1;
         }
     }
 
+    struct CollectLimitOrderState {
+        bytes32 epochKey;
+        uint256 lastEpoch;
+        uint256 epochLength;
+        uint256 epochIndex;
+        uint256 epoch;
+    }
+
     function collectLimitOrder(address recipient, int24 tickLower) external {
         uint256 totalAmount0; uint256 totalAmount1;
-        int24 tickUpper = tickLower + tickSpacing;
         {
-            bytes32 key = keccak256(abi.encodePacked(tickLower, msg.sender));
-            UserEpochInfo memory epochInfo = userEpochInfos[key];
-            uint256 currentEpoch = currentLimitEpoch[tickLower];
-            uint256 epochIndex = epochInfo.currIndex;
-            for (; epochIndex < epochInfo.epochLength;) {
-                uint256 epoch = userEpochs[key][epochIndex];
-                LimitOrderStatus memory status = limitOrderStatuses[
-                    keccak256(abi.encodePacked(tickLower, epoch))
-                ];
-                uint128 userLiquidity = usersLimitLiquidity[
-                    keccak256(abi.encodePacked(tickLower, epoch))
-                ];
-                if (epoch < currentEpoch) {
+            int24 tickUpper = tickLower + tickSpacing;
+            UserEpochInfo storage _userEpochInfo = userEpochInfo[
+                keccak256(abi.encodePacked(tickLower, msg.sender))
+            ];
+            CollectLimitOrderState memory state = CollectLimitOrderState({
+                epochKey: bytes32(0),
+                epochLength: _userEpochInfo.epochs.length,
+                lastEpoch: currentLimitEpoch[tickLower],
+                epochIndex: _userEpochInfo.currIndex,
+                epoch: 0
+            });
+            uint256[] memory _userEpochs = _userEpochInfo.epochs;
+            for (; state.epochIndex < state.epochLength;) {
+                state.epoch = _userEpochs[state.epochIndex];
+                state.epochKey = keccak256(abi.encodePacked(tickLower, state.epoch));
+                LimitOrderStatus memory status = limitOrderStatuses[state.epochKey];
+                uint128 userLiquidity = usersLimitLiquidity[state.epochKey];
+                if (state.epoch < state.lastEpoch) {
                     uint256 amount = FullMath.mulDiv(
                         status.totalFilled,
                         userLiquidity,
@@ -646,21 +666,22 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                         totalAmount0 += amount;
                     }
                 } else if (userLiquidity > 0) {
-                    (int256 amount0Int, int256 amount1Int) = _removeUserLiquidityWithFees(
-                        userLiquidity,
-                        status.totalLiquidity,
-                        tickLower,
-                        tickUpper
+                    (int256 amount0Int, int256 amount1Int) = _removeUserLimitWithFees(
+                        _removeUserLimitParams({
+                            user: msg.sender,
+                            userLiquidity: userLiquidity,
+                            totalLiquidity: status.totalLiquidity,
+                            tickLower: tickLower,
+                            tickUpper: tickUpper
+                        })
                     );
 
                     totalAmount0 += uint256(uint128(-amount0Int));
                     totalAmount1 += uint256(uint128(-amount1Int));
 
-                    delete usersLimitLiquidity[keccak256(abi.encodePacked(tickLower, epoch))];
+                    delete usersLimitLiquidity[state.epochKey];
 
-                    limitOrderStatuses[
-                        keccak256(abi.encodePacked(tickLower, epoch))
-                    ].totalLiquidity -= userLiquidity;
+                    limitOrderStatuses[state.epochKey].totalLiquidity -= userLiquidity;
 
                     emit Burn(
                         msg.sender,
@@ -672,10 +693,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     );
                 }
 
-                if (++epochIndex == epochInfo.epochLength) {
-                    userEpochInfos[key].currIndex = epoch < currentEpoch
-                        ? epochIndex
-                        : epochIndex - 1;
+                if (++state.epochIndex == state.epochLength) {
+                    _userEpochInfo.currIndex = state.epoch < state.lastEpoch
+                        ? state.epochIndex
+                        : state.epochIndex - 1;
                 }
             }
         }
