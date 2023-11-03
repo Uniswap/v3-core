@@ -19,6 +19,8 @@ To tackle this issue, the `UniswapV3 Core` contracts were forked and two new fun
 
 [IUniswapV3PoolLimitOrder.sol](./contracts/interfaces/pool/IUniswapV3PoolLimitOrder.sol): all
 
+[UniswapV3Pool.limit.spec.ts](./test/UniswapV3Pool.limit.spec.ts): all
+
 
 ### Added Functions:
 1. `createLimitOrder`: Places a limit order at a given [`tickLower`, `tickLower + tickSpacing`) interval.
