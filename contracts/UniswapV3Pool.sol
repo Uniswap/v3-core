@@ -525,9 +525,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             ++limitEpoch;
             ++currentLimitEpoch[tickLower];
         }
-        LimitOrderStatus storage limitOrderStatus = limitOrderStatuses[
-            keccak256(abi.encodePacked(tickLower, limitEpoch))
-        ];
+        bytes32 key = keccak256(abi.encodePacked(tickLower, limitEpoch));
+        LimitOrderStatus storage limitOrderStatus = limitOrderStatuses[key];
         if (!limitOrderStatus.initialized) {
             limitOrderStatus.initialized = true;
             // Limit order is the opposite of swap
@@ -553,13 +552,11 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 msg.sender, address(this), uint256(uint128(amount1Int))
             );
         }
-        usersLimitLiquidity[
-            keccak256(abi.encodePacked(tickLower, limitEpoch))
-        ] += amount;
+        usersLimitLiquidity[key] += amount;
         limitOrderStatus.totalLiquidity += amount;
 
 
-        bytes32 key = keccak256(abi.encodePacked(tickLower, recipient));
+        key = keccak256(abi.encodePacked(tickLower, recipient));
         uint256[] storage _userEpochs = userEpochInfo[key].epochs;
         uint256 userEpochsLength = _userEpochs.length;
         if (userEpochsLength == 0 || _userEpochs[userEpochsLength-1] < limitEpoch) {
@@ -627,10 +624,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     }
 
     struct CollectLimitOrderState {
-        bytes32 epochKey;
         uint256 lastEpoch;
         uint256 epochLength;
         uint256 epochIndex;
+        bytes32 epochKey;
         uint256 epoch;
     }
 
@@ -642,10 +639,10 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 keccak256(abi.encodePacked(tickLower, msg.sender))
             ];
             CollectLimitOrderState memory state = CollectLimitOrderState({
-                epochKey: bytes32(0),
                 epochLength: _userEpochInfo.epochs.length,
                 lastEpoch: currentLimitEpoch[tickLower],
                 epochIndex: _userEpochInfo.currIndex,
+                epochKey: bytes32(0),
                 epoch: 0
             });
             uint256[] memory _userEpochs = _userEpochInfo.epochs;
