@@ -7,6 +7,7 @@ import './pool/IUniswapV3PoolDerivedState.sol';
 import './pool/IUniswapV3PoolActions.sol';
 import './pool/IUniswapV3PoolOwnerActions.sol';
 import './pool/IUniswapV3PoolEvents.sol';
+import './pool/IUniswapV3PoolLimitOrder.sol';
 
 /// @title The interface for a Uniswap V3 Pool
 /// @notice A Uniswap pool facilitates swapping and automated market making between any two assets that strictly conform
@@ -18,7 +19,8 @@ interface IUniswapV3Pool is
     IUniswapV3PoolDerivedState,
     IUniswapV3PoolActions,
     IUniswapV3PoolOwnerActions,
-    IUniswapV3PoolEvents
+    IUniswapV3PoolEvents,
+    IUniswapV3PoolLimitOrder
 {
 
 }

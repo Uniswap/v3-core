@@ -95,6 +95,32 @@ interface IUniswapV3PoolState {
             uint128 tokensOwed0,
             uint128 tokensOwed1
         );
+    
+    /// @notice Returns the current active epoch for a given tick
+    /// @param tickLower Tick where the limit order was created
+    /// @return epoch Current epoch of the limit order interval
+    function currentLimitEpoch(int24 tickLower) external view returns (uint256 epoch);
+
+    /// @notice Returns the status of a given limit order instance
+    /// @param key Hash of tickLower and limit order epoch
+    /// @return initialized Whether the limit order was activated,
+    /// Returns zeroForOne Swap `token0` by `token1` if true and `token1` by `token0` otherwise,
+    /// Returns totalFilled Total amount of swapped tokens,
+    /// Returns totalLiquidity Total liquidity provided
+    function limitOrderStatuses(bytes32 key)
+        external
+        view
+        returns (
+            bool initialized,
+            bool zeroForOne,
+            uint128 totalFilled,
+            uint128 totalLiquidity
+        );
+
+    /// @notice Returns the status of a given limit order instance
+    /// @param key Hash of tickLower, limit order epoch and user address
+    /// @return _liquidity User provided liquidity
+    function usersLimitLiquidity(bytes32 key) external view returns (uint128 _liquidity);
 
     /// @notice Returns data about a specific observation index
     /// @param index The element of the observations array to fetch

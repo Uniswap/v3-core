@@ -7,13 +7,18 @@ To tackle this issue, the `UniswapV3 Core` contracts were forked and two new fun
 
 ## Changes
 
-### Lines
-Solidity development has occurred [here](./contracts/UniswapV3Pool.sol) (UniswapV3Pool.sol)
-1. `101-118`: Additional Variables;
-2. `513-578`: `createLimitOrder` function;
-3. `580-627`: `_removeUserLiquidityWithFees` helper function;
-4. `629-706`: `collectLimitOrder` function;
-5. `973-1007`: Limit order liquidation loop.
+### Added Lines
+[UniswapV3Pool.sol](./contracts/UniswapV3Pool.sol):
+1. `101-120`: Additional Variables;
+2. `512-578`: `createLimitOrder` function;
+3. `580-628`: `_removeUserLimitWithFees` helper function;
+4. `630-711`: `collectLimitOrder` function;
+5. `978-1012`: Limit order liquidation loop.
+
+[IUniswapV3PoolState.sol](./contracts/interfaces/pool/IUniswapV3PoolState.sol): `99-123`
+
+[IUniswapV3PoolLimitOrder.sol](./contracts/interfaces/pool/IUniswapV3PoolLimitOrder.sol): all
+
 
 ### Added Functions:
 1. `createLimitOrder`: Places a limit order at a given [`tickLower`, `tickLower + tickSpacing`) interval.

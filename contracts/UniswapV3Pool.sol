@@ -98,27 +98,26 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     mapping(int16 => uint256) public override tickBitmap;
     /// @inheritdoc IUniswapV3PoolState
     mapping(bytes32 => Position.Info) public override positions;
-    /// tickLower => epoch
-    mapping(int24 => uint256) public currentLimitEpoch;
+    /// @inheritdoc IUniswapV3PoolState
+    mapping(int24 => uint256) public override currentLimitEpoch;
     struct UserEpochInfo {
         uint256 currIndex;
         uint256[] epochs;
     }
-    /// (tickLower, user) => UserEpochInfo
-    /// Used to store the epochs that the user participated
-    /// and the last claimed epoch, to avoid revisting ones
-    /// that were already claimed
-    mapping(bytes32 => UserEpochInfo) public userEpochInfo;
+    /// @dev Used to retrieve the index of the epochs array which has
+    ///     unclaimed limit order epochs
+    /// @dev key is the hash of tickLower and user address
+    mapping(bytes32 => UserEpochInfo) private userEpochInfo;
     struct LimitOrderStatus {
         bool initialized;
         bool zeroForOne;
         uint128 totalFilled;
         uint128 totalLiquidity;
     }
-    /// (tickLower, epoch) => Status of limit orders (Metadata for limit orders)
-    mapping(bytes32 => LimitOrderStatus) public limitOrderStatuses;
-    /// (tickLower, epoch) => User limit liquidity (How much liquidity the user provided for limit orders)
-    mapping(bytes32 => uint128) public usersLimitLiquidity;
+    /// @inheritdoc IUniswapV3PoolState
+    mapping(bytes32 => LimitOrderStatus) public override limitOrderStatuses;
+    /// @inheritdoc IUniswapV3PoolState
+    mapping(bytes32 => uint128) public override usersLimitLiquidity;
     /// @inheritdoc IUniswapV3PoolState
     Oracle.Observation[65535] public override observations;
 
@@ -510,7 +509,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
 
-    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external {
+    /// @inheritdoc IUniswapV3PoolLimitOrder
+    function createLimitOrder(address recipient, int24 tickLower, uint128 amount) external override {
         int24 _tickSpacing = tickSpacing; // Save gas from SLOAD
         int24 tickUpper = tickLower + _tickSpacing;
 
@@ -525,8 +525,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             ++limitEpoch;
             ++currentLimitEpoch[tickLower];
         }
-        bytes32 key = keccak256(abi.encodePacked(tickLower, limitEpoch));
-        LimitOrderStatus storage limitOrderStatus = limitOrderStatuses[key];
+        LimitOrderStatus storage limitOrderStatus = limitOrderStatuses[
+            keccak256(abi.encodePacked(tickLower, limitEpoch))
+        ];
         if (!limitOrderStatus.initialized) {
             limitOrderStatus.initialized = true;
             // Limit order is the opposite of swap
@@ -552,11 +553,13 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 msg.sender, address(this), uint256(uint128(amount1Int))
             );
         }
-        usersLimitLiquidity[key] += amount;
+        usersLimitLiquidity[
+            keccak256(abi.encodePacked(tickLower, limitEpoch, recipient))
+        ] += amount;
         limitOrderStatus.totalLiquidity += amount;
 
 
-        key = keccak256(abi.encodePacked(tickLower, recipient));
+        bytes32 key = keccak256(abi.encodePacked(tickLower, recipient));
         uint256[] storage _userEpochs = userEpochInfo[key].epochs;
         uint256 userEpochsLength = _userEpochs.length;
         if (userEpochsLength == 0 || _userEpochs[userEpochsLength-1] < limitEpoch) {
@@ -582,6 +585,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         int24 tickUpper;
     }
 
+    /// @dev Used to remove user's Limit order liquidity plus fees
     function _removeUserLimitWithFees(
         _removeUserLimitParams memory params
     ) internal returns (int256 amount0Int, int256 amount1Int) {
@@ -628,10 +632,12 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 epochLength;
         uint256 epochIndex;
         bytes32 epochKey;
+        bytes32 userEpochKey;
         uint256 epoch;
     }
 
-    function collectLimitOrder(address recipient, int24 tickLower) external {
+    /// @inheritdoc IUniswapV3PoolLimitOrder
+    function collectLimitOrder(address recipient, int24 tickLower) external override {
         uint256 totalAmount0; uint256 totalAmount1;
         {
             int24 tickUpper = tickLower + tickSpacing;
@@ -643,14 +649,16 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                 lastEpoch: currentLimitEpoch[tickLower],
                 epochIndex: _userEpochInfo.currIndex,
                 epochKey: bytes32(0),
+                userEpochKey: bytes32(0),
                 epoch: 0
             });
             uint256[] memory _userEpochs = _userEpochInfo.epochs;
             for (; state.epochIndex < state.epochLength;) {
                 state.epoch = _userEpochs[state.epochIndex];
                 state.epochKey = keccak256(abi.encodePacked(tickLower, state.epoch));
+                state.userEpochKey = keccak256(abi.encodePacked(tickLower, state.epoch, msg.sender));
                 LimitOrderStatus memory status = limitOrderStatuses[state.epochKey];
-                uint128 userLiquidity = usersLimitLiquidity[state.epochKey];
+                uint128 userLiquidity = usersLimitLiquidity[state.userEpochKey];
                 if (state.epoch < state.lastEpoch) {
                     uint256 amount = FullMath.mulDiv(
                         status.totalFilled,
@@ -676,7 +684,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
                     totalAmount0 += uint256(uint128(-amount0Int));
                     totalAmount1 += uint256(uint128(-amount1Int));
 
-                    delete usersLimitLiquidity[state.epochKey];
+                    delete usersLimitLiquidity[state.userEpochKey];
 
                     limitOrderStatuses[state.epochKey].totalLiquidity -= userLiquidity;
 
