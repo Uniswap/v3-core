@@ -118,4 +118,7 @@ interface IUniswapV3PoolEvents {
     /// @param amount0 The amount of token0 protocol fees that is withdrawn
     /// @param amount0 The amount of token1 protocol fees that is withdrawn
     event CollectProtocol(address indexed sender, address indexed recipient, uint128 amount0, uint128 amount1);
+
+    /// @notice Emitted when the dynamic swap fees is toggled by the factory owner
+    event ToggledDynamicFees(address indexed sender, bool useDynamicSwapFees);
 }
