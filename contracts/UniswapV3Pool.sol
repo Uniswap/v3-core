@@ -375,6 +375,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @param owner the owner of the position
     /// @param tickLower the lower tick of the position's tick range
     /// @param tickUpper the upper tick of the position's tick range
+    /// @param liquidityDelta any change in liquidity
     /// @param tick the current tick, passed to avoid sloads
     function _updatePosition(
         address owner,
