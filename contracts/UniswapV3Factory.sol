@@ -2,24 +2,35 @@
 pragma solidity =0.7.6;
 
 import './interfaces/IUniswapV3Factory.sol';
+import './interfaces/IUniswapV3PoolDeployer.sol';
 
-import './UniswapV3PoolDeployer.sol';
+// import './UniswapV3PoolDeployer.sol';
 import './NoDelegateCall.sol';
 
 import './UniswapV3Pool.sol';
 
 /// @title Canonical Uniswap V3 factory
 /// @notice Deploys Uniswap V3 pools and manages ownership and control over pool protocol fees
-contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegateCall {
+contract UniswapV3Factory is IUniswapV3Factory, NoDelegateCall {    //  UniswapV3PoolDeployer
     /// @inheritdoc IUniswapV3Factory
     address public override owner;
+
+    address public immutable override deployer;
+
+    address[] public override allPools;
+
+    address public override feeTo;
+    uint8 public override defaultFeeProtocol; // 0xAA (170)
 
     /// @inheritdoc IUniswapV3Factory
     mapping(uint24 => int24) public override feeAmountTickSpacing;
     /// @inheritdoc IUniswapV3Factory
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPool;
 
-    constructor() {
+    constructor(address _deployer) {
+
+        deployer = _deployer;
+
         owner = msg.sender;
         emit OwnerChanged(address(0), msg.sender);
 
@@ -29,6 +40,10 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
         emit FeeAmountEnabled(3000, 60);
         feeAmountTickSpacing[10000] = 200;
         emit FeeAmountEnabled(10000, 200);
+
+        // init: 10% (token0: 1/10, token1: 1/10)
+        defaultFeeProtocol = 170;
+        feeTo = msg.sender; //  FeeCollector
     }
 
     /// @inheritdoc IUniswapV3Factory
@@ -43,10 +58,13 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0);
         require(getPool[token0][token1][fee] == address(0));
-        pool = deploy(address(this), token0, token1, fee, tickSpacing);
+        pool = IUniswapV3PoolDeployer(deployer).deploy(address(this), token0, token1, fee, tickSpacing);
         getPool[token0][token1][fee] = pool;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
         getPool[token1][token0][fee] = pool;
+
+        allPools.push(pool);
+
         emit PoolCreated(token0, token1, fee, tickSpacing, pool);
     }
 
@@ -69,5 +87,19 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
 
         feeAmountTickSpacing[fee] = tickSpacing;
         emit FeeAmountEnabled(fee, tickSpacing);
+    }
+
+    function setDefaultFeeProtocol(uint8 _defaultFeeProtocol) external override {
+        require(msg.sender == owner, "Only owner");
+        defaultFeeProtocol = _defaultFeeProtocol;
+    }
+
+    function setFeeTo(address _feeTo) external override {
+        require(msg.sender == owner, "Only owner");
+        feeTo = _feeTo;
+    }
+
+    function allPoolsLength() external override view returns (uint256) {
+        return allPools.length;
     }
 }

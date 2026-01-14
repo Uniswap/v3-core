@@ -75,4 +75,17 @@ interface IUniswapV3Factory {
     /// @param fee The fee amount to enable, denominated in hundredths of a bip (i.e. 1e-6)
     /// @param tickSpacing The spacing between ticks to be enforced for all pools created with the given fee amount
     function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
+
+
+    function deployer() external view returns (address);
+
+    function defaultFeeProtocol() external view returns (uint8);
+    function setDefaultFeeProtocol(uint8 _defaultFeeProtocol) external;
+
+    function feeTo() external view returns (address);
+    function setFeeTo(address _feeTo) external;
+
+    function allPools(uint256 index) external view returns (address);
+    function allPoolsLength() external view returns (uint256);
+    
 }

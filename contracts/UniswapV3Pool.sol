@@ -271,6 +271,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, 'AI');
 
+        uint8 feeProtocol = IUniswapV3Factory(factory).defaultFeeProtocol();
+
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
         (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(_blockTimestamp());
@@ -281,7 +283,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
             observationIndex: 0,
             observationCardinality: cardinality,
             observationCardinalityNext: cardinalityNext,
-            feeProtocol: 0,
+            feeProtocol: feeProtocol, // Factory에서 가져온 값 세팅
             unlocked: true
         });
 
@@ -846,12 +848,15 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
     /// @inheritdoc IUniswapV3PoolOwnerActions
     function collectProtocol(
-        address recipient,
+        // address recipient,
         uint128 amount0Requested,
         uint128 amount1Requested
-    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
+    ) external override lock returns (uint128 amount0, uint128 amount1) {   //  onlyFactoryOwner 제거
         amount0 = amount0Requested > protocolFees.token0 ? protocolFees.token0 : amount0Requested;
         amount1 = amount1Requested > protocolFees.token1 ? protocolFees.token1 : amount1Requested;
+
+        address recipient = IUniswapV3Factory(factory).feeTo();
+        require(msg.sender == IUniswapV3Factory(factory).owner() || msg.sender == recipient, "Not authorized");
 
         if (amount0 > 0) {
             if (amount0 == protocolFees.token0) amount0--; // ensure that the slot is not cleared, for gas savings
