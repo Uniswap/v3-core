@@ -31,7 +31,7 @@ library Tick {
         // the seconds spent on the other side of the tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint32 secondsOutside;
-        // true iff the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
+        // true if the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
         // these 8 bits are set to prevent fresh sstores when crossing newly initialized ticks
         bool initialized;
     }
