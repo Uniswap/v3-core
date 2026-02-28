@@ -1,4 +1,4 @@
-name: Fuzz Testing
+Phi Le: Fuzz Testing
 
 on:
   push:
