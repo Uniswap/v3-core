@@ -52,17 +52,51 @@ contract MyContract {
 }
 
 ```
-## Understanding Pool Data (Beginner Friendly)
+### Understanding Pool Data (Beginner Friendly - Detailed)
 
-When interacting with a Uniswap V3 pool, some important values are returned that may be confusing for beginners:
+When interacting with a Uniswap V3 pool, some important values are returned that may be confusing for beginners. These values are packed inside a structure called `slot0`, which is designed for gas optimization and efficient state access.
 
-- **slot0**: A struct that contains multiple important variables such as current price, tick, and observation data.
-- **sqrtPriceX96**: Represents the current price of the pool in a fixed-point format (Q64.96). It is not a direct price and needs conversion.
-- **tick**: Represents the current price range index of the pool. Each tick corresponds to a specific price.
+#### What is slot0?
 
-These values are essential for understanding how the pool behaves and how swaps and liquidity positions are calculated.
+`slot0` is a struct that stores multiple frequently used variables of the pool in a single storage slot. This reduces gas costs and improves performance when reading pool state.
 
-Adding a simple explanation for these terms can make it much easier for new developers to understand Uniswap V3.
+It contains:
+
+- **sqrtPriceX96**  
+  This represents the current price of the pool in a fixed-point format (Q64.96).  
+  It is not a direct price. To get the actual token price, it must be converted using mathematical formulas.  
+  This format allows very high precision in price calculations.
+
+- **tick**  
+  The tick represents the current price index of the pool.  
+  Each tick corresponds to a specific price range.  
+  Instead of storing price directly, Uniswap uses ticks to efficiently manage liquidity across ranges.
+
+- **observationIndex**  
+  Points to the latest stored observation in the oracle array.
+
+- **observationCardinality**  
+  Total number of observations currently stored.
+
+- **observationCardinalityNext**  
+  The next maximum number of observations to be stored (used for oracle expansion).
+
+- **feeProtocol**  
+  Represents the protocol fee as a percentage of swap fees.
+
+- **unlocked**  
+  A boolean value indicating whether the pool is currently locked or not (used to prevent reentrancy issues).
+
+#### Why is slot0 important?
+
+Understanding `slot0` is essential because:
+
+- It gives the **current state of the pool**
+- It is used in **price calculation**
+- It plays a key role in **swaps and liquidity logic**
+- It helps developers understand how Uniswap V3 manages **efficient storage and gas optimization**
+
+Adding a clear understanding of these values helps new developers work with Uniswap V3 more effectively.
 ## Licensing
 
 The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE). However, some files are dual licensed under `GPL-2.0-or-later`:
