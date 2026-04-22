@@ -78,7 +78,50 @@ async function main() {
 main();
 ```
 ⚠️ Make sure to replace `YOUR_RPC_URL` and `UNISWAP_POOL_ADDRESS` with valid values.
+## 🔄 Uniswap V3 Pool Data Flow (Simplified)
 
+```text
++-----------------------------------------------------------+
+|                    UNISWAP V3 POOL FLOW                   |
++-----------------------------------------------------------+
+
+            👤 User / Trader
+     (swap / mint / burn / collect)
+                      │
+                      │  on-chain call
+                      ▼
+        +-----------------------------------+
+        |     Uniswap V3 Pool Contract      |
+        |         (UniswapV3Pool.sol)       |
+        +-----------------------------------+
+                      │
+                      ▼
+        +-----------------------------------+
+        |            slot0 (Core State)     |
+        |   (single SLOAD, packed storage)  |
+        +-----------------------------------+
+           │              │              │
+           ▼              ▼              ▼
+   +---------------+ +---------------+ +-------------------+
+   | sqrtPriceX96  | |     tick      | | observationIndex  |
+   |   (Q64.96)    | | log(1.0001 P) | | oracle pointer    |
+   +---------------+ +---------------+ +-------------------+
+           │              │              │
+           ▼              ▼              ▼
+   +---------------+ +---------------+ +-------------------+
+   |  Spot Price   | | Active Range  | |   TWAP / Oracle   |
+   | price=(√P)^2  | | tickLower <=  | | cumulative ticks  |
+   |               | | tick <= upper | | / time → avgPrice |
+   +---------------+ +---------------+ +-------------------+
+                      │
+                      ▼
+        +-----------------------------------+
+        |         Derived Outputs           |
+        |  • Token Price                   |
+        |  • Liquidity                    |
+        |  • Pool State                   |
+        +-----------------------------------+
+```
 ## Licensing
 
 The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE). However, some files are dual licensed under `GPL-2.0-or-later`:
