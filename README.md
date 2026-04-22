@@ -122,6 +122,35 @@ main();
         |  • Pool State                   |
         +-----------------------------------+
 ```
+## 💧 Liquidity in Uniswap V3 (Simple Explanation)
+
+Liquidity refers to the tokens deposited into a pool that enable trading.
+
+### 🧠 V2 vs V3 Difference
+
+- V2: Liquidity is distributed across the entire price range (0 → ∞)
+- V3: Liquidity is provided within a specific price range (more efficient)
+
+### 📊 Example
+
+Assume:
+ETH price = $2000
+
+You provide liquidity in the range:
+$1800 – $2200
+
+👉 Your liquidity will only be active within this price range.
+
+### 🔥 Key Concept
+
+- When price is within your range → you earn fees 💰  
+- When price moves outside → your liquidity becomes inactive ❌  
+
+### 🎯 Why this matters?
+
+- Higher capital efficiency  
+- Better control over positions  
+- Enables advanced liquidity strategies   
 ## Licensing
 
 The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE). However, some files are dual licensed under `GPL-2.0-or-later`:
