@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   run-linters:
     name: Run linters
@@ -21,12 +24,11 @@ jobs:
           node-version: 12
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --ignore-scripts
 
       - name: Run linters
         uses: wearerequired/lint-action@a8497ddb33fb1205941fd40452ca9fff07e0770d
         with:
-          github_token: ${{ secrets.github_token }}
           prettier: true
-          auto_fix: true
+          auto_fix: false
           prettier_extensions: 'css,html,js,json,jsx,md,sass,scss,ts,tsx,vue,yaml,yml,sol'
