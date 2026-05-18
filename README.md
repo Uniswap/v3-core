@@ -14,6 +14,14 @@ repository.
 
 This repository is subject to the Uniswap V3 bug bounty program, per the terms defined [here](./bug-bounty.md).
 
+## Precision and rounding
+
+Uniswap v3 core contracts use integer math. Position updates that call `modifyPosition`,
+such as minting, burning, increasing liquidity, or decreasing liquidity, can round down
+by less than 1 wei of fees or token amounts. Integrations should account for this
+possible dust when displaying or reconciling positions, including when a user requests
+to remove 100% of a position.
+
 ## Local deployment
 
 In order to deploy this code to a local testnet, you should install the npm package
