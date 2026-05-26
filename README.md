@@ -1,4 +1,4 @@
-# Uniswap V3
+<img width="1284" height="689" alt="image" src="https://github.com/user-attachments/assets/1df7b169-7832-41e0-aabe-09738df1329c" /># Uniswap V3
 
 [![Lint](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/lint.yml/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/lint.yml)
 [![Tests](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/tests.yml/badge.svg)](https://github.com/Uniswap/uniswap-v3-core/actions/workflows/tests.yml)
@@ -52,7 +52,105 @@ contract MyContract {
 }
 
 ```
+## Example: Reading Pool Data
 
+Here is a simple example using Ethers.js to read basic pool data from a Uniswap V3 pool:
+
+```javascript
+import { ethers } from "ethers";
+
+const provider = new ethers.providers.JsonRpcProvider("YOUR_RPC_URL");
+
+const poolAddress = "UNISWAP_POOL_ADDRESS";
+
+const abi = [
+  "function slot0() external view returns (uint160 sqrtPriceX96, int24 tick)"
+];
+
+const contract = new ethers.Contract(poolAddress, abi, provider);
+
+async function main() {
+  const data = await contract.slot0();
+  console.log("sqrtPriceX96:", data.sqrtPriceX96.toString());
+  console.log("tick:", data.tick);
+}
+
+main();
+```
+⚠️ Make sure to replace `YOUR_RPC_URL` and `UNISWAP_POOL_ADDRESS` with valid values.
+## 🔄 Uniswap V3 Pool Data Flow (Simplified)
+
+```text
++-----------------------------------------------------------+
+|                    UNISWAP V3 POOL FLOW                   |
++-----------------------------------------------------------+
+
+            👤 User / Trader
+     (swap / mint / burn / collect)
+                      │
+                      │  on-chain call
+                      ▼
+        +-----------------------------------+
+        |     Uniswap V3 Pool Contract      |
+        |         (UniswapV3Pool.sol)       |
+        +-----------------------------------+
+                      │
+                      ▼
+        +-----------------------------------+
+        |            slot0 (Core State)     |
+        |   (single SLOAD, packed storage)  |
+        +-----------------------------------+
+           │              │              │
+           ▼              ▼              ▼
+   +---------------+ +---------------+ +-------------------+
+   | sqrtPriceX96  | |     tick      | | observationIndex  |
+   |   (Q64.96)    | | log(1.0001 P) | | oracle pointer    |
+   +---------------+ +---------------+ +-------------------+
+           │              │              │
+           ▼              ▼              ▼
+   +---------------+ +---------------+ +-------------------+
+   |  Spot Price   | | Active Range  | |   TWAP / Oracle   |
+   | price=(√P)^2  | | tickLower <=  | | cumulative ticks  |
+   |               | | tick <= upper | | / time → avgPrice |
+   +---------------+ +---------------+ +-------------------+
+                      │
+                      ▼
+        +-----------------------------------+
+        |         Derived Outputs           |
+        |  • Token Price                   |
+        |  • Liquidity                    |
+        |  • Pool State                   |
+        +-----------------------------------+
+```
+## 💧 Liquidity in Uniswap V3 (Simple Explanation)
+
+Liquidity refers to the tokens deposited into a pool that enable trading.
+
+### 🧠 V2 vs V3 Difference
+
+- V2: Liquidity is distributed across the entire price range (0 → ∞)
+- V3: Liquidity is provided within a specific price range (more efficient)
+
+### 📊 Example
+
+Assume:
+ETH price = $2000
+
+You provide liquidity in the range:
+$1800 – $2200
+
+👉 Your liquidity will only be active within this price range.
+
+### 🔥 Key Concept
+
+- When price is within your range → you earn fees 💰  
+- When price moves outside → your liquidity becomes inactive ❌  
+
+### 🎯 Why this matters?
+
+- Higher capital efficiency  
+- Better control over positions  
+- Enables advanced liquidity strategies   
 ## Licensing
 
 The primary license for Uniswap V3 Core is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE). However, some files are dual licensed under `GPL-2.0-or-later`:
