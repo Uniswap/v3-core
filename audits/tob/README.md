@@ -13,7 +13,7 @@ In order to run this, you need to install [echidna 1.7.0](https://github.com/cry
 
 ## Run
 
-Assuming you're in the root of the repo
+Assuming you're in `audits/tob/`
 
 ```
 echidna-test contracts/crytic/echidna/E2E_swap.sol --config contracts/crytic/echidna/E2E_swap.config.yaml --contract E2E_swap
@@ -27,10 +27,10 @@ echidna-test contracts/crytic/echidna/Other.sol --config contracts/crytic/echidn
 
 To help Echidna to get good coverage we've used multiple helper functions to:
 
-- create random but valid pool initialization params (fee, tickSpacing, initial price) before doing swaps or mint/burn [link](./E2E_mint_burn.sol#L303-L337) [link](./E2E_swap.sol#L196-L230)
-- create a random number of random but valid positions before testing swaps [link](./E2E_swap.sol#L233-L283)
-- create a random but valid priceLimit when doing swap [link](./E2E_swap.sol#L68-L80)
-- create random but valid position params when doing mint [link](./E2E_mint_burn.sol#L102-L130)
+- create random but valid pool initialization params (fee, tickSpacing, initial price) before doing swaps or mint/burn [link](./contracts/crytic/echidna/E2E_mint_burn.sol#L303-L337) [link](./contracts/crytic/echidna/E2E_swap.sol#L196-L230)
+- create a random number of random but valid positions before testing swaps [link](./contracts/crytic/echidna/E2E_swap.sol#L233-L283)
+- create a random but valid priceLimit when doing swap [link](./contracts/crytic/echidna/E2E_swap.sol#L68-L80)
+- create random but valid position params when doing mint [link](./contracts/crytic/echidna/E2E_mint_burn.sol#L102-L130)
 
 By doing the above Echidna will be able to test the actual properties we want to test instead of bashing it's head against using an invalid priceLimit or invalid position params. The above also allows the creation of a dynamic number of random positions before executing swaps instead of using a static list.
 
