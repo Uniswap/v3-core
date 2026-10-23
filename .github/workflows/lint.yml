@@ -22,7 +22,7 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v1
         with:
-          node-version: 12
+          node-version: 22.23.4
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile --ignore-scripts
